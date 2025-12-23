@@ -15,13 +15,13 @@ export function RendezVous() {
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
   const [isLinkCopied, setIsLinkCopied] = useState(false)
 
-  // ÉTAPE 1 : Lien dynamique corrigé pour le développement local
+  // LOGIQUE CORRIGÉE : Utilisation du slug permanent de Supabase
   const bookingLink = useMemo(() => {
-    const slug = user?.user_metadata?.booking_slug || 
-                 user?.user_metadata?.full_name?.toLowerCase().trim().replace(/\s+/g, '-') || 
-                 user?.id?.substring(0, 8);
+    // On priorise le booking_slug de la base de données (verrouillé)
+    // S'il n'existe pas, on utilise l'ID unique de l'utilisateur (qui ne change jamais)
+    const slug = user?.user_metadata?.booking_slug || user?.id;
     
-    // On utilise window.location.origin pour que le lien fonctionne sur ton localhost
+    // Construction de l'URL finale basée sur le domaine actuel (localhost ou vercel)
     return `${window.location.origin}/book/${slug}`;
   }, [user]);
 
@@ -73,7 +73,7 @@ export function RendezVous() {
           </div>
         </div>
 
-        {/* Section Lien de réservation corrigée */}
+        {/* Section Lien de réservation verrouillé sur le slug Supabase */}
         <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
           <div className="mb-4 flex items-center gap-2">
             <Link2 className="h-5 w-5 text-blue-500" />
