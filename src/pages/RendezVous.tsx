@@ -15,14 +15,21 @@ export function RendezVous() {
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
   const [isLinkCopied, setIsLinkCopied] = useState(false)
 
-  // LOGIQUE CORRIGÉE : Utilisation du slug permanent de Supabase
+  // LOGIQUE AMÉLIORÉE : Priorité au Slug > Nom propre > ID
   const bookingLink = useMemo(() => {
-    // On priorise le booking_slug de la base de données (verrouillé)
-    // S'il n'existe pas, on utilise l'ID unique de l'utilisateur (qui ne change jamais)
-    const slug = user?.user_metadata?.booking_slug || user?.id;
+    // 1. On tente d'abord de récupérer le slug officiel de Supabase
+    const officialSlug = user?.user_metadata?.booking_slug;
     
-    // Construction de l'URL finale basée sur le domaine actuel (localhost ou vercel)
-    return `${window.location.origin}/book/${slug}`;
+    // 2. Si absent, on génère un slug à partir du nom (ex: "Ninho" -> "ninho")
+    // Cela évite d'afficher l'ID moche (eaf0f01b...) sur l'interface
+    const fallbackSlug = user?.user_metadata?.full_name
+      ? user.user_metadata.full_name.toLowerCase().trim().replace(/\s+/g, '-')
+      : user?.id;
+
+    const finalSlug = officialSlug || fallbackSlug;
+    
+    // Construction de l'URL finale
+    return `${window.location.origin}/book/${finalSlug}`;
   }, [user]);
 
   const handleCopyLink = () => {
@@ -73,7 +80,7 @@ export function RendezVous() {
           </div>
         </div>
 
-        {/* Section Lien de réservation verrouillé sur le slug Supabase */}
+        {/* Section Lien de réservation stable */}
         <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
           <div className="mb-4 flex items-center gap-2">
             <Link2 className="h-5 w-5 text-blue-500" />
