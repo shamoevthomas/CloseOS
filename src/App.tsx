@@ -142,4 +142,4 @@ function App() {
   )
 }
 
-export default Appgit add .
+export default App
