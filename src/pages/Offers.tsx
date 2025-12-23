@@ -1,16 +1,22 @@
 import { useState } from 'react'
 import { Plus, Briefcase, Euro, Calendar, Archive, ChevronDown, ChevronUp } from 'lucide-react'
 import { OfferDetailModal, type Offer } from '../components/OfferDetailModal'
+// Importez votre modale de création si elle existe
+// import { CreateOfferModal } from '../components/CreateOfferModal'
 import { useOffers } from '../contexts/OffersContext'
 
 export function Offers() {
   const { offers, addOffer, updateOffer, deleteOffer } = useOffers()
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null)
   const [showArchived, setShowArchived] = useState(false)
+  
+  // 1. AJOUT DE L'ÉTAT POUR LA MODALE DE CRÉATION
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   const activeOffers = offers.filter((o) => o.status === 'active')
   const archivedOffers = offers.filter((o) => o.status === 'archived')
 
+  // Fonction pour gérer la création manuelle (optionnelle si vous utilisez une modale complète)
   const handleCreateOffer = () => {
     const newOffer = {
       name: 'Nouvelle Offre',
@@ -27,6 +33,7 @@ export function Offers() {
       notes: '',
     }
     addOffer(newOffer)
+    // setIsCreateModalOpen(false) // Si vous utilisez la modale
   }
 
   const handleUpdateOffer = (updatedOffer: Offer) => {
@@ -46,8 +53,10 @@ export function Offers() {
               {activeOffers.length > 1 ? 's' : ''}
             </p>
           </div>
+          
+          {/* 2. BOUTON MODIFIÉ POUR DÉCLENCHER L'ÉTAT */}
           <button
-            onClick={handleCreateOffer}
+            onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-600"
           >
             <Plus className="h-4 w-4" />
@@ -199,6 +208,33 @@ export function Offers() {
             setSelectedOffer(null)
           }}
         />
+      )}
+
+      {/* 3. MODALE DE CRÉATION RAPIDE (Optionnelle - en attendant votre propre modale) */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md">
+            <h3 className="text-xl font-bold text-white mb-4">Créer une nouvelle offre ?</h3>
+            <p className="text-slate-400 mb-6">Cela ajoutera une offre par défaut que vous pourrez modifier ensuite.</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setIsCreateModalOpen(false)}
+                className="flex-1 px-4 py-2 rounded-lg bg-slate-800 text-white font-semibold hover:bg-slate-700"
+              >
+                Annuler
+              </button>
+              <button 
+                onClick={() => {
+                  handleCreateOffer();
+                  setIsCreateModalOpen(false);
+                }}
+                className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-500"
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
