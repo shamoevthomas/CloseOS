@@ -32,7 +32,7 @@ import { KPIPage } from './pages/KPIPage'
 import { RendezVous } from './pages/RendezVous'
 import { MessagesPage } from './pages/MessagesPage'
 import { PublicBooking } from './pages/PublicBooking'
-import Auth from './pages/Auth'
+import Login from './pages/Login'
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -69,7 +69,7 @@ function App() {
                       <BrowserRouter>
                         <Routes>
                           {/* Routes Publiques */}
-                          <Route path="/auth" element={<Auth />} />
+                          <Route path="/auth" element={<Login />} />
                           <Route path="/book/:slug" element={<PublicBooking />} />
 
                           {/* Routes Protégées */}
