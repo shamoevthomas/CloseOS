@@ -231,12 +231,11 @@ export function CallsPage() {
   }
 
   // Handle Join Call (Step 2: Join the Room internally)
-  // 🔄 MODIFICATION: Ajout de async/await pour résoudre la Promise de l'ID
   const handleJoinGeneratedCall = async () => {
     if (!generatedLink) return
 
     // Log the video call to history and wait for the ID
-    const callId = await addCallLog({
+    const result = await addCallLog({
       contactId: 0, // Quick call with no specific contact
       contactName: 'Appel Vidéo Rapide',
       contactType: 'internal',
@@ -245,6 +244,9 @@ export function CallsPage() {
       isAi: false,
       answered: true,
     })
+
+    // 🔄 CORRECTION: Extraction correcte de l'ID depuis le tableau de données Supabase
+    const callId = result?.data?.[0]?.id || result?.id
 
     console.log('Navigating to video call interface with ID:', callId)
     navigate(`/live-call?url=${encodeURIComponent(generatedLink)}&id=${callId}`)
@@ -285,7 +287,6 @@ export function CallsPage() {
   }
 
   // New Call Modal - Join Call (Step 2)
-  // 🔄 MODIFICATION: Ajout de async/await pour résoudre la Promise de l'ID
   const handleJoinNewCall = async () => {
     if (!newCallGeneratedLink || !selectedContactId) return
 
@@ -299,7 +300,7 @@ export function CallsPage() {
     }
 
     // Log the video call to history and wait for the real ID
-    const callId = await addCallLog({
+    const result = await addCallLog({
       contactId: selectedContactId,
       contactName,
       contactType: callType,
@@ -308,6 +309,9 @@ export function CallsPage() {
       isAi: false,
       answered: true,
     })
+
+    // 🔄 CORRECTION: Extraction correcte de l'ID depuis le tableau de données Supabase
+    const callId = result?.data?.[0]?.id || result?.id
 
     console.log('Navigating to video call interface with ID:', callId)
     navigate(`/live-call?url=${encodeURIComponent(newCallGeneratedLink)}&id=${callId}`)
