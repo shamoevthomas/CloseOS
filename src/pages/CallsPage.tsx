@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Video,
@@ -11,7 +11,9 @@ import {
   Loader2,
   Copy,
   Check,
-  Trash2
+  Trash2,
+  FileText,
+  Save
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
@@ -24,6 +26,7 @@ import { CallSummaryModal, type CallSummaryData } from '../components/CallSummar
 import { NoAnswerModal } from '../components/NoAnswerModal'
 import { ProspectView } from '../components/ProspectView'
 import { InternalContactModal } from '../components/InternalContactModal'
+import { supabase } from '../lib/supabase'
 
 export function CallsPage() {
   const navigate = useNavigate()
@@ -66,6 +69,57 @@ export function CallsPage() {
   // Detail views
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null)
   const [selectedInternalContact, setSelectedInternalContact] = useState<InternalContact | null>(null)
+
+  // --- NOUVEAUX ÉTATS POUR LE SCRIPT PERSO ---
+  const [isScriptModalOpen, setIsScriptModalOpen] = useState(false)
+  const [userScript, setUserScript] = useState('')
+  const [isSavingScript, setIsSavingScript] = useState(false)
+
+  // Charger le script au montage
+  useEffect(() => {
+    fetchUserScript()
+  }, [])
+
+  const fetchUserScript = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('user_scripts')
+        .select('content')
+        .eq('user_id', user.id)
+        .single()
+
+      if (data) setUserScript(data.content)
+    } catch (error) {
+      console.error('Erreur chargement script:', error)
+    }
+  }
+
+  const handleSaveScript = async () => {
+    setIsSavingScript(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error } = await supabase
+        .from('user_scripts')
+        .upsert({ 
+          user_id: user.id, 
+          content: userScript,
+          updated_at: new Date().toISOString()
+        })
+
+      if (error) throw error
+      setIsScriptModalOpen(false)
+    } catch (error) {
+      alert('Erreur lors de la sauvegarde du script')
+    } finally {
+      setIsSavingScript(false)
+    }
+  }
+  // ------------------------------------------
 
   // Calculate stats from real call history
   const stats = [
@@ -353,6 +407,15 @@ export function CallsPage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
+            {/* BOUTON SCRIPT PERSO - ROUGE CLAIR */}
+            <button
+              onClick={() => setIsScriptModalOpen(true)}
+              className="flex items-center gap-2 rounded-lg bg-red-400/10 px-5 py-2.5 text-sm font-semibold text-red-400 transition-all hover:bg-red-400/20"
+            >
+              <FileText className="h-4 w-4" />
+              Script
+            </button>
+
             {/* Quick Video Call Button */}
             <button
               onClick={handleStartQuickVideoCall}
@@ -502,6 +565,55 @@ export function CallsPage() {
         </div>
 
       </div>
+
+      {/* MODAL SCRIPT PERSONNALISÉ */}
+      {isScriptModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-red-400/10 p-2 text-red-400">
+                  <FileText className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Mon Script de Vente</h2>
+                  <p className="text-sm text-slate-400">Personnalisez votre trame d'appel</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsScriptModalOpen(false)} 
+                className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <textarea
+              value={userScript}
+              onChange={(e) => setUserScript(e.target.value)}
+              placeholder="Écrivez votre script ici..."
+              className="mb-6 min-h-[400px] w-full rounded-xl border border-slate-800 bg-slate-950 p-4 text-slate-300 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsScriptModalOpen(false)}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-400 hover:bg-slate-800"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveScript}
+                disabled={isSavingScript}
+                className="flex items-center gap-2 rounded-lg bg-red-500 px-6 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+              >
+                {isSavingScript ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Sauvegarder le script
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Call Modal */}
       {isNewCallModalOpen && (
