@@ -64,13 +64,13 @@ function AuthenticatedApp() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Routes Publiques */}
+        {/* --- ROUTES PUBLIQUES --- */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
 
-        {/* ROUTE PLEIN ÉCRAN : 
-          On la place ici, AVANT le Layout, pour qu'elle n'ait pas de Sidebar ni de Header 
+        {/* --- ROUTE PLEIN ÉCRAN (SANS SIDEBAR) --- 
+            En la mettant ici, elle ne chargera JAMAIS le composant Layout
         */}
         <Route 
           path="/live-call" 
@@ -81,7 +81,7 @@ function AuthenticatedApp() {
           } 
         />
 
-        {/* Routes avec Sidebar et Header (Layout) */}
+        {/* --- ROUTES AVEC SIDEBAR (LAYOUT) --- */}
         <Route
           path="/"
           element={
