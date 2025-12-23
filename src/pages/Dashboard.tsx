@@ -22,6 +22,7 @@ import { NoAnswerModal } from '../components/NoAnswerModal'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { useNotifications } from '../contexts/NotificationsContext'
+import { useMeetings } from '../contexts/MeetingsContext' // AJOUT : Importation du contexte des rendez-vous
 
 // Helper to parse commission percentage
 const parseCommission = (commissionString: string): number => {
@@ -42,7 +43,7 @@ const formatRelativeTime = (dateStr: string, timeStr: string): string => {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
-    const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
+    const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDay.getDate())
 
     // Check if it's today
     if (eventDay.getTime() === today.getTime()) {
@@ -142,6 +143,7 @@ export function Dashboard() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
   const { notifications } = useNotifications()
+  const { events } = useMeetings() // AJOUT : Utilisation des rendez-vous de MeetingsContext
 
   const [isCallOpen, setIsCallOpen] = useState(false)
   const [selectedProspect, setSelectedProspect] = useState({ name: '', avatar: '' })
@@ -220,63 +222,13 @@ export function Dashboard() {
     return notifications.slice(0, 5)
   }, [notifications])
 
-  // Load upcoming events from localStorage
+  // LOGIQUE MODIFIÉE : Load upcoming events from MeetingsContext (Supabase) instead of localStorage
   useEffect(() => {
     try {
-      console.log('📅 Loading upcoming events for Dashboard...')
+      console.log('📅 Loading upcoming events for Dashboard from Context...')
 
-      // STEP 1: Load Manual Events (closeros_events)
-      const savedEvents = localStorage.getItem('closeros_events')
-      let manualEvents: any[] = []
-
-      if (savedEvents) {
-        const parsedEvents = JSON.parse(savedEvents)
-        if (Array.isArray(parsedEvents)) {
-          manualEvents = parsedEvents
-          console.log(`✅ Found ${manualEvents.length} manual events`)
-        }
-      }
-
-      // STEP 2: Load Bookings (closeros_bookings)
-      const savedBookings = localStorage.getItem('closeros_bookings')
-      let bookingEvents: any[] = []
-
-      if (savedBookings) {
-        const parsedBookings = JSON.parse(savedBookings)
-        if (Array.isArray(parsedBookings)) {
-          // Convert bookings to event format
-          bookingEvents = parsedBookings.map((booking: any) => {
-            try {
-              const bookingDate = new Date(booking.date)
-              const dateStr = bookingDate.toISOString().split('T')[0]
-              const timeStr = booking.time || '09:00'
-
-              return {
-                id: booking.id,
-                title: `🎥 RDV - ${booking.prospectName || 'Prospect'}`,
-                contact: booking.prospectName || 'Prospect',
-                date: dateStr,
-                time: timeStr,
-                type: 'video' as const,
-                status: 'upcoming',
-                isBooking: true
-              }
-            } catch (err) {
-              console.error('Error converting booking:', err)
-              return null
-            }
-          }).filter((e: any) => e !== null)
-
-          console.log(`✅ Found ${bookingEvents.length} bookings`)
-        }
-      }
-
-      // STEP 3: Merge both sources
-      const allEvents = [...manualEvents, ...bookingEvents]
-
-      // STEP 4: Filter for upcoming events only (future dates)
       const now = new Date()
-      const upcomingOnly = allEvents.filter((event: any) => {
+      const upcomingOnly = events.filter((event: any) => {
         try {
           if (!event || !event.date || !event.time) return false
 
@@ -321,7 +273,7 @@ export function Dashboard() {
       console.error('❌ Error loading upcoming events:', error)
       setUpcomingEvents([])
     }
-  }, []) // Run once on mount
+  }, [events]) // S'exécute quand les événements changent dans Supabase
 
   const kpis = [
     {
