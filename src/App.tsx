@@ -47,7 +47,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />
+    return <Navigate to="/login" replace />
   }
 
   return <>{children}</>
@@ -69,7 +69,7 @@ function App() {
                       <BrowserRouter>
                         <Routes>
                           {/* Routes Publiques */}
-                          <Route path="/auth" element={<Login />} />
+                          <Route path="/login" element={<Login />} />
                           <Route path="/book/:slug" element={<PublicBooking />} />
 
                           {/* Routes Protégées */}
