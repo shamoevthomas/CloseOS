@@ -81,9 +81,6 @@ function App() {
                               <ProtectedRoute>
                                 <Layout onOpenSettings={() => setIsSettingsOpen(true)} />
                               </ProtectedRoute>
-                            }import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useState } from 'react'
-
 // Imports des Contextes
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { PrivacyProvider } from './contexts/PrivacyContext'
