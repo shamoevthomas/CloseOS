@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloserOS - Clean Events Data</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 700px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0f172a;
+      color: white;
+    }
+    .container {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 30px;
+    }
+    h1 {
+      color: #f97316;
+      margin-top: 0;
+    }
+    button {
+      background: #f97316;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin: 10px 0;
+    }
+    button:hover {
+      background: #ea580c;
+    }
+    button.danger {
+      background: #dc2626;
+    }
+    button.danger:hover {
+      background: #b91c1c;
+    }
+    .status {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 8px;
+      background: #334155;
+    }
+    .success {
+      background: #166534;
+      border: 1px solid #22c55e;
+    }
+    .error {
+      background: #7f1d1d;
+      border: 1px solid #ef4444;
+    }
+    .warning {
+      background: #92400e;
+      border: 1px solid #f59e0b;
+    }
+    .info {
+      background: #1e3a8a;
+      border: 1px solid #3b82f6;
+    }
+    pre {
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #475569;
+    }
+    .stat:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧹 Clean Events Data</h1>
+    <p>This tool scans and repairs corrupt event data in localStorage that causes Agenda crashes.</p>
+
+    <div id="status" class="status info">
+      <strong>📊 Scanning Events...</strong>
+      <pre id="scan-results">Click "Scan Events" to begin</pre>
+    </div>
+
+    <button onclick="scanEvents()">
+      🔍 Scan Events for Issues
+    </button>
+
+    <button onclick="cleanEvents()" class="danger">
+      🧹 Clean & Repair Events
+    </button>
+
+    <button onclick="window.location.reload()" style="background: #3b82f6;">
+      🔄 Refresh Page
+    </button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function isValidDate(dateString) {
+      if (!dateString || typeof dateString !== 'string') return false;
+      const date = new Date(dateString);
+      return !isNaN(date.getTime());
+    }
+
+    function isValidEvent(event) {
+      const issues = [];
+
+      if (!event) {
+        issues.push('Event is null/undefined');
+        return { valid: false, issues };
+      }
+
+      if (!event.id) issues.push('Missing ID');
+      if (!event.title) issues.push('Missing title');
+      if (!event.date || typeof event.date !== 'string') issues.push('Missing or invalid date field');
+      if (event.date && !isValidDate(event.date)) issues.push(`Invalid date format: ${event.date}`);
+      if (!event.time) issues.push('Missing time');
+
+      return { valid: issues.length === 0, issues };
+    }
+
+    function scanEvents() {
+      const resultDiv = document.getElementById('result');
+      const scanDiv = document.getElementById('scan-results');
+
+      try {
+        const raw = localStorage.getItem('closeros_events');
+
+        if (!raw) {
+          scanDiv.textContent = 'No events found in closeros_events';
+          document.getElementById('status').className = 'status warning';
+          return;
+        }
+
+        const events = JSON.parse(raw);
+
+        if (!Array.isArray(events)) {
+          scanDiv.textContent = 'ERROR: closeros_events is not an array!';
+          document.getElementById('status').className = 'status error';
+          return;
+        }
+
+        let validCount = 0;
+        let invalidCount = 0;
+        const invalidEvents = [];
+
+        events.forEach((event, index) => {
+          const check = isValidEvent(event);
+          if (check.valid) {
+            validCount++;
+          } else {
+            invalidCount++;
+            invalidEvents.push({ index, event, issues: check.issues });
+          }
+        });
+
+        const report = `
+SCAN RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total Events: ${events.length}
+✅ Valid Events: ${validCount}
+❌ Invalid Events: ${invalidCount}
+
+${invalidCount > 0 ? `\nINVALID EVENTS:\n${invalidEvents.map(inv =>
+  `\n[Index ${inv.index}] ID: ${inv.event?.id || 'N/A'}
+  Issues: ${inv.issues.join(', ')}
+  Data: ${JSON.stringify(inv.event, null, 2)}`
+).join('\n')}\n` : ''}
+${invalidCount > 0 ? '\n⚠️  ACTION REQUIRED: Click "Clean & Repair Events" to fix these issues' : ''}
+        `;
+
+        scanDiv.textContent = report;
+        document.getElementById('status').className = invalidCount > 0 ? 'status warning' : 'status success';
+
+      } catch (error) {
+        scanDiv.textContent = `ERROR during scan:\n${error.message}`;
+        document.getElementById('status').className = 'status error';
+      }
+    }
+
+    function cleanEvents() {
+      const resultDiv = document.getElementById('result');
+
+      if (!confirm('⚠️  This will remove all invalid events. Continue?')) {
+        return;
+      }
+
+      try {
+        const raw = localStorage.getItem('closeros_events');
+
+        if (!raw) {
+          resultDiv.innerHTML = `
+            <div class="status warning">
+              <strong>⚠️  No Events Found</strong>
+              <p>closeros_events is empty. Nothing to clean.</p>
+            </div>
+          `;
+          return;
+        }
+
+        const events = JSON.parse(raw);
+
+        if (!Array.isArray(events)) {
+          resultDiv.innerHTML = `
+            <div class="status error">
+              <strong>❌ Critical Error</strong>
+              <p>closeros_events is not an array. Resetting to empty array.</p>
+            </div>
+          `;
+          localStorage.setItem('closeros_events', JSON.stringify([]));
+          scanEvents();
+          return;
+        }
+
+        const cleanedEvents = events.filter(event => {
+          const check = isValidEvent(event);
+          return check.valid;
+        });
+
+        const removedCount = events.length - cleanedEvents.length;
+
+        localStorage.setItem('closeros_events', JSON.stringify(cleanedEvents));
+
+        resultDiv.innerHTML = `
+          <div class="status success">
+            <strong>✅ Cleaning Complete!</strong>
+            <div class="stat">
+              <span>Original Events:</span>
+              <strong>${events.length}</strong>
+            </div>
+            <div class="stat">
+              <span>Valid Events Kept:</span>
+              <strong style="color: #22c55e">${cleanedEvents.length}</strong>
+            </div>
+            <div class="stat">
+              <span>Invalid Events Removed:</span>
+              <strong style="color: #ef4444">${removedCount}</strong>
+            </div>
+            <p style="margin-top: 15px;">
+              <strong>✅ Your Agenda should now work without crashes!</strong><br>
+              Refresh your Dashboard to see the changes.
+            </p>
+          </div>
+        `;
+
+        // Re-scan to show new clean state
+        scanEvents();
+
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="status error">
+            <strong>❌ Cleaning Failed</strong>
+            <pre>${error.message}\n${error.stack}</pre>
+          </div>
+        `;
+      }
+    }
+
+    // Auto-scan on page load
+    scanEvents();
+  </script>
+</body>
+</html>
