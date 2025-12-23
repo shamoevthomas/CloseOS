@@ -64,13 +64,13 @@ function AuthenticatedApp() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* --- ROUTES PUBLIQUES --- */}
+        {/* 1. ROUTES PUBLIQUES (SANS AUTH) */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
 
-        {/* --- ROUTE PLEIN ÉCRAN (SANS SIDEBAR) --- 
-            En la mettant ici, elle ne chargera JAMAIS le composant Layout
+        {/* 2. ROUTE PLEIN ÉCRAN (SANS SIDEBAR)
+            Elle est placée SEULE ici pour ne pas charger le composant <Layout />
         */}
         <Route 
           path="/live-call" 
@@ -81,7 +81,7 @@ function AuthenticatedApp() {
           } 
         />
 
-        {/* --- ROUTES AVEC SIDEBAR (LAYOUT) --- */}
+        {/* 3. TOUTES LES AUTRES ROUTES (AVEC SIDEBAR) */}
         <Route
           path="/"
           element={
@@ -115,6 +115,7 @@ function AuthenticatedApp() {
         </Route>
       </Routes>
 
+      {/* Les modales ne s'affichent QUE si l'utilisateur est connecté */}
       {user && (
         <>
           <OnboardingModal 
