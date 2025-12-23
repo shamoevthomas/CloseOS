@@ -270,18 +270,17 @@ export function CallDetails() {
       // Update amount and payment details if won
       if (selectedOutcome === 'won' && amount > 0) {
         updates.value = amount
-        // Store payment terms and commission in notes for now
-        // In a real system, you'd have dedicated fields for this
       }
 
       // Update follow up date if applicable
       if (selectedOutcome === 'followup' && followupDate) {
-        // Store next action date (would need to add this field to Prospect interface)
         updates.notes = updates.notes + `\n[RAPPEL: ${followupDate}]`
       }
 
-      // Update prospect in Pipeline (ProspectsContext)
-      updateProspect(prospect.id, updates)
+      // 🔄 C'EST ICI QUE LA MAGIE OPÈRE : ON POUSSE DANS SUPABASE
+      if (updateProspect) {
+        await updateProspect(prospect.id, updates)
+      }
 
       // Log to console for KPI tracking
       console.log('📊 KPI Data:', {
