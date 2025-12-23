@@ -34,6 +34,7 @@ import { RendezVous } from './pages/RendezVous'
 import { MessagesPage } from './pages/MessagesPage'
 import { PublicBooking } from './pages/PublicBooking'
 import Login from './pages/Login'
+import Register from './pages/Register' // Ajout de l'import Register
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -54,7 +55,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-// Nouveau composant pour séparer la logique d'onboarding du Login
 function AuthenticatedApp() {
   const { user } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -65,6 +65,7 @@ function AuthenticatedApp() {
       <Routes>
         {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} /> {/* Ajout de la route Register */}
         <Route path="/book/:slug" element={<PublicBooking />} />
 
         {/* Routes Protégées */}
@@ -101,7 +102,6 @@ function AuthenticatedApp() {
         </Route>
       </Routes>
 
-      {/* Les modales ne s'affichent QUE si l'utilisateur est connecté */}
       {user && (
         <>
           <OnboardingModal 
