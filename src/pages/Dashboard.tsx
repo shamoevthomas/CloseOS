@@ -22,7 +22,7 @@ import { NoAnswerModal } from '../components/NoAnswerModal'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { useNotifications } from '../contexts/NotificationsContext'
-import { useMeetings } from '../contexts/MeetingsContext' // AJOUT : Importation du contexte des rendez-vous
+import { useMeetings } from '../contexts/MeetingsContext' // AJOUT : Import du contexte réel
 
 // Helper to parse commission percentage
 const parseCommission = (commissionString: string): number => {
@@ -43,7 +43,7 @@ const formatRelativeTime = (dateStr: string, timeStr: string): string => {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
-    const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDay.getDate())
+    const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
 
     // Check if it's today
     if (eventDay.getTime() === today.getTime()) {
@@ -143,7 +143,7 @@ export function Dashboard() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
   const { notifications } = useNotifications()
-  const { events } = useMeetings() // AJOUT : Utilisation des rendez-vous de MeetingsContext
+  const { events } = useMeetings() // MODIF : Utilisation des events du contexte Supabase
 
   const [isCallOpen, setIsCallOpen] = useState(false)
   const [selectedProspect, setSelectedProspect] = useState({ name: '', avatar: '' })
@@ -222,58 +222,45 @@ export function Dashboard() {
     return notifications.slice(0, 5)
   }, [notifications])
 
-  // LOGIQUE MODIFIÉE : Load upcoming events from MeetingsContext (Supabase) instead of localStorage
+  // MODIF : Nouvelle logique de chargement via le contexte (Supabase)
   useEffect(() => {
     try {
-      console.log('📅 Loading upcoming events for Dashboard from Context...')
-
       const now = new Date()
-      const upcomingOnly = events.filter((event: any) => {
+      
+      const filtered = events.filter((event: any) => {
         try {
-          if (!event || !event.date || !event.time) return false
+          if (!event || !event.date) return false
 
-          const [datePart] = event.date.split('T')
-          const [hours, minutes] = event.time.split(' - ')[0].split(':')
+          const eventDate = new Date(event.date)
+          
+          if (event.time) {
+            // Nettoyage pour gérer les formats "14:00 - 15:00"
+            const timePart = event.time.split(' ')[0]
+            const [hours, minutes] = timePart.split(':')
+            if (hours && minutes) {
+              eventDate.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+            }
+          }
 
-          const eventDate = new Date(datePart)
-          eventDate.setHours(parseInt(hours), parseInt(minutes), 0, 0)
-
-          return eventDate > now
+          // Marge de 15 min pour garder les RDV qui viennent de commencer
+          const margin = new Date(now.getTime() - 15 * 60000)
+          return eventDate >= margin
         } catch {
           return false
         }
       })
 
-      // STEP 5: Sort by date (soonest first)
-      upcomingOnly.sort((a: any, b: any) => {
-        try {
-          const [dateA] = a.date.split('T')
-          const [hoursA, minutesA] = a.time.split(' - ')[0].split(':')
-          const eventA = new Date(dateA)
-          eventA.setHours(parseInt(hoursA), parseInt(minutesA), 0, 0)
+      // Tri chronologique
+      filtered.sort((a: any, b: any) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      )
 
-          const [dateB] = b.date.split('T')
-          const [hoursB, minutesB] = b.time.split(' - ')[0].split(':')
-          const eventB = new Date(dateB)
-          eventB.setHours(parseInt(hoursB), parseInt(minutesB), 0, 0)
-
-          return eventA.getTime() - eventB.getTime()
-        } catch {
-          return 0
-        }
-      })
-
-      // STEP 6: Take top 3
-      const top3 = upcomingOnly.slice(0, 3)
-
-      console.log(`📊 Showing ${top3.length} upcoming events on Dashboard`)
-      setUpcomingEvents(top3)
-
+      setUpcomingEvents(filtered.slice(0, 3))
     } catch (error) {
-      console.error('❌ Error loading upcoming events:', error)
+      console.error('❌ Error filtering events for Dashboard:', error)
       setUpcomingEvents([])
     }
-  }, [events]) // S'exécute quand les événements changent dans Supabase
+  }, [events]) // Déclenché dès que Supabase met à jour les events
 
   const kpis = [
     {
@@ -294,10 +281,8 @@ export function Dashboard() {
   ]
 
   const totalPipeline = pipelineStages.reduce((sum, stage) => sum + stage.value, 0)
-  const maxValue = Math.max(...pipelineStages.map(s => s.value))
 
   const handleStartCall = (prospectName: string, withAi: boolean, avatar?: string) => {
-    console.log('🎯 Call triggered with mode:', withAi ? 'AI' : 'Standard', 'for:', prospectName)
     setSelectedProspect({ name: prospectName, avatar: avatar || '' })
     setCallModeWithAi(withAi)
     setIsCallOpen(true)
@@ -305,55 +290,28 @@ export function Dashboard() {
   }
 
   const handlePhoneCall = () => {
-    console.log('📱 Appel téléphonique - To be implemented')
     setCallDropdownOpen(null)
   }
 
   const handleCallEnd = (wasAiActive: boolean, wasAnswered: boolean) => {
     if (!wasAnswered) {
-      // Pas de réponse
       setIsNoAnswerModalOpen(true)
     } else {
-      // Appel décroché
       if (wasAiActive) {
-        // Mode IA: Toast
         setShowAiToast(true)
         setTimeout(() => setShowAiToast(false), 4000)
       } else {
-        // Mode Standard: Modale de qualification
         setIsCallSummaryModalOpen(true)
       }
     }
   }
 
   const handleCallSummarySubmit = (data: CallSummaryData) => {
-    console.log('Call Summary from Dashboard:', data)
-
-    // TODO: Sauvegarder dans la timeline du prospect
-    if (data.outcome === 'won') {
-      console.log('🎉 VENTE GAGNÉE!')
-      console.log('Plan de paiement:', data.paymentType)
-      if (data.paymentType === 'installments') {
-        console.log(`${data.installmentsCount}x ${data.installmentsFrequency}`)
-      }
-      console.log('Commission:', data.commissionRate + '%')
-      if (data.commissionSpread) {
-        console.log('Commission étalée:', data.commissionSpread)
-      }
-    }
-
-    if (data.outcome === 'followup') {
-      console.log('Follow up scheduled for:', data.followupDate)
-      console.log('Follow up reason:', data.followupReason)
-      if (data.followupReason === 'Autre' && data.followupReasonOther) {
-        console.log('Follow up reason details:', data.followupReasonOther)
-      }
-    }
+    setIsCallSummaryModalOpen(false)
   }
 
   const handleMarkAsNoShow = () => {
-    console.log('Marking prospect as No Show:', selectedProspect.name)
-    // TODO: Mettre à jour le statut
+    setIsNoAnswerModalOpen(false)
   }
 
   return (
@@ -367,7 +325,6 @@ export function Dashboard() {
                 key={kpi.name}
                 className="group relative overflow-hidden rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800 transition-all hover:ring-blue-500/50"
               >
-                {/* Gradient background subtle */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
                 <div className="relative">
@@ -403,10 +360,9 @@ export function Dashboard() {
               </div>
             </div>
 
-            {/* Progress Bar */}
             <div className="mb-6 flex h-4 overflow-hidden rounded-full bg-slate-800">
               {pipelineStages.map((stage, index) => {
-                const percentage = (stage.value / totalPipeline) * 100
+                const percentage = (stage.value / (totalPipeline || 1)) * 100
                 return (
                   <div
                     key={stage.name}
@@ -417,13 +373,12 @@ export function Dashboard() {
                       'transition-all hover:opacity-80'
                     )}
                     style={{ width: `${percentage}%` }}
-                    title={`${stage.name}: ${percentage.toFixed(1)}%`}
+                    title={`${stage.name}`}
                   />
                 )
               })}
             </div>
 
-            {/* Stages Grid */}
             <div className="grid grid-cols-4 gap-4">
               {pipelineStages.map((stage) => (
                 <div key={stage.name} className="rounded-xl bg-slate-800/50 p-4">
@@ -440,7 +395,6 @@ export function Dashboard() {
             </div>
           </div>
 
-          {/* Bottom Grid: Meetings & Activities */}
           <div className="grid gap-6 lg:grid-cols-2">
 
             {/* Upcoming Meetings */}
@@ -453,7 +407,6 @@ export function Dashboard() {
               </div>
 
               {upcomingEvents.length === 0 ? (
-                /* Empty State */
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800/50">
                     <Clock className="h-8 w-8 text-slate-600" />
@@ -466,8 +419,7 @@ export function Dashboard() {
               ) : (
                 <div className="space-y-3">
                   {upcomingEvents.map((event) => {
-                    // Determine icon based on type
-                    const EventIcon = event.type === 'video' ? Video : event.type === 'call' ? Phone : Phone
+                    const EventIcon = event.type === 'video' ? Video : Phone
                     const iconColor = event.type === 'video' ? 'bg-purple-500/20' : 'bg-blue-500/20'
                     const iconTextColor = event.type === 'video' ? 'text-purple-400' : 'text-blue-400'
 
@@ -501,10 +453,9 @@ export function Dashboard() {
                             </p>
                           </div>
 
-                          {/* Bouton Appeler avec menu déroulant */}
                           <div className="relative opacity-0 group-hover:opacity-100 transition-all">
                             <button
-                              onClick={() => setCallDropdownOpen(callDropdownOpen === event.id ? null : event.id)}
+                              onClick={() => setCallDropdownOpen(callDropdownOpen === (event.id as number) ? null : (event.id as number))}
                               className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600 transition-colors"
                             >
                               <Phone className="h-4 w-4" />
@@ -515,16 +466,13 @@ export function Dashboard() {
                               )} />
                             </button>
 
-                            {/* Dropdown Menu */}
                             {callDropdownOpen === event.id && (
                               <>
-                                {/* Backdrop */}
                                 <div
                                   className="fixed inset-0 z-10"
                                   onClick={() => setCallDropdownOpen(null)}
                                 />
 
-                                {/* Menu - Aligné à gauche */}
                                 <div
                                   className="absolute left-0 top-full z-20 mt-1 min-w-[280px] overflow-hidden rounded-lg border border-slate-700 bg-slate-800 shadow-xl"
                                   onClick={(e) => e.stopPropagation()}
@@ -532,7 +480,6 @@ export function Dashboard() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      console.log('📞 Appel Standard clicked')
                                       handleStartCall(event.contact, false)
                                     }}
                                     className="flex w-full items-center gap-3 px-5 py-3.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
@@ -540,7 +487,6 @@ export function Dashboard() {
                                     <Phone className="h-4 w-4 flex-shrink-0" />
                                     <div className="flex-1 text-left">
                                       <p className="font-semibold text-white">Appel Standard</p>
-                                      <p className="text-xs text-slate-500 mt-0.5">Qualification manuelle</p>
                                     </div>
                                   </button>
 
@@ -549,7 +495,6 @@ export function Dashboard() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      console.log('✨ Appel IA clicked')
                                       handleStartCall(event.contact, true)
                                     }}
                                     className="flex w-full items-center gap-3 px-5 py-3.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
@@ -557,7 +502,6 @@ export function Dashboard() {
                                     <Sparkles className="h-4 w-4 text-purple-400 flex-shrink-0" />
                                     <div className="flex-1 text-left">
                                       <p className="font-semibold text-white">Appel avec Assistant IA</p>
-                                      <p className="text-xs text-slate-500 mt-0.5">Analyse de l'appel</p>
                                     </div>
                                   </button>
 
@@ -566,7 +510,6 @@ export function Dashboard() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      console.log('📱 Appel Téléphonique clicked')
                                       handlePhoneCall()
                                     }}
                                     className="flex w-full items-center gap-3 px-5 py-3.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
@@ -574,7 +517,6 @@ export function Dashboard() {
                                     <Smartphone className="h-4 w-4 flex-shrink-0" />
                                     <div className="flex-1 text-left">
                                       <p className="font-semibold text-white">Appel Téléphonique</p>
-                                      <p className="text-xs text-slate-500 mt-0.5">Appel avec VoIP</p>
                                     </div>
                                   </button>
                                 </div>
@@ -604,9 +546,6 @@ export function Dashboard() {
                     <FileText className="h-8 w-8 text-slate-600" />
                   </div>
                   <p className="text-lg font-semibold text-slate-400">Aucune activité récente</p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    Les activités apparaîtront ici
-                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -635,11 +574,9 @@ export function Dashboard() {
                 </div>
               )}
             </div>
-
         </div>
       </div>
 
-      {/* Video Call Overlay */}
       <VideoCallOverlay
         isOpen={isCallOpen}
         onClose={() => setIsCallOpen(false)}
@@ -649,7 +586,6 @@ export function Dashboard() {
         initialAiEnabled={callModeWithAi}
       />
 
-      {/* Call Summary Modal (manuel - quand IA désactivée) */}
       <CallSummaryModal
         isOpen={isCallSummaryModalOpen}
         onClose={() => setIsCallSummaryModalOpen(false)}
@@ -658,7 +594,6 @@ export function Dashboard() {
         offerPrice={1500}
       />
 
-      {/* No Answer Modal (quand pas de réponse) */}
       <NoAnswerModal
         isOpen={isNoAnswerModalOpen}
         onClose={() => setIsNoAnswerModalOpen(false)}
@@ -666,7 +601,6 @@ export function Dashboard() {
         prospectName={selectedProspect.name}
       />
 
-      {/* AI Toast (quand IA activée) */}
       {showAiToast && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[70]">
           <div className="flex items-center gap-3 px-6 py-4 bg-slate-900 border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
