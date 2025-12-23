@@ -30,22 +30,27 @@ import { AICoachPage } from './pages/AICoachPage'
 import { InvoicesPage } from './pages/InvoicesPage'
 import { KPIPage } from './pages/KPIPage'
 import { RendezVous } from './pages/RendezVous'
-import { PublicBooking } from './pages/PublicBooking' // Importation de la page de booking
-import Login  from './pages/Login'
+import { MessagesPage } from './pages/MessagesPage'
+import { PublicBooking } from './pages/PublicBooking'
+import Auth from './pages/Auth'
 
 // Composant de protection des routes
-function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading } = useAuth()
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-950">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent"></div>
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     )
   }
 
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />
+  if (!user) {
+    return <Navigate to="/auth" replace />
+  }
+
+  return <>{children}</>
 }
 
 function App() {
@@ -63,25 +68,23 @@ function App() {
                     <NotificationsProvider>
                       <BrowserRouter>
                         <Routes>
-                          {/* Route Publique : Page de Login */}
-                          <Route path="/login" element={<Login />} />
-
-                          {/* RÉPARATION : Route Publique de Réservation avec paramètre :slug */}
+                          {/* Routes Publiques */}
+                          <Route path="/auth" element={<Auth />} />
                           <Route path="/book/:slug" element={<PublicBooking />} />
 
-                          {/* Routes Privées (Protégées) */}
+                          {/* Routes Protégées */}
                           <Route
                             path="/"
                             element={
-                              <PrivateRoute>
+                              <ProtectedRoute>
                                 <Layout onOpenSettings={() => setIsSettingsOpen(true)} />
-                              </PrivateRoute>
+                              </ProtectedRoute>
                             }
                           >
                             <Route index element={<Dashboard />} />
                             <Route path="pipeline" element={<Pipeline />} />
                             <Route path="contacts" element={<Contacts />} />
-                            <Route path="offres" element={<Offers />} />
+                            <Route path="offers" element={<Offers />} />
                             <Route
                               path="agenda"
                               element={
@@ -97,6 +100,7 @@ function App() {
                             <Route path="invoices" element={<InvoicesPage />} />
                             <Route path="kpi" element={<KPIPage />} />
                             <Route path="rendez-vous" element={<RendezVous />} />
+                            <Route path="messages" element={<MessagesPage />} />
                             
                             {/* Redirection par défaut vers le dashboard */}
                             <Route path="*" element={<Navigate to="/" replace />} />
