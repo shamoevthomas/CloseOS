@@ -33,7 +33,7 @@ import { KPIPage } from './pages/KPIPage'
 import { RendezVous } from './pages/RendezVous'
 import { MessagesPage } from './pages/MessagesPage'
 import { PublicBooking } from './pages/PublicBooking'
-import CallRoom from './pages/CallRoom' // Import de l'interface visio
+import CallRoom from './pages/CallRoom'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
@@ -69,7 +69,19 @@ function AuthenticatedApp() {
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
 
-        {/* Routes Protégées */}
+        {/* ROUTE PLEIN ÉCRAN : 
+          On la place ici, AVANT le Layout, pour qu'elle n'ait pas de Sidebar ni de Header 
+        */}
+        <Route 
+          path="/live-call" 
+          element={
+            <ProtectedRoute>
+              <CallRoom />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Routes avec Sidebar et Header (Layout) */}
         <Route
           path="/"
           element={
@@ -91,7 +103,6 @@ function AuthenticatedApp() {
             }
           />
           <Route path="calls" element={<CallsPage />} />
-          <Route path="live-call" element={<CallRoom />} /> {/* Route vers ton interface personnalisée */}
           <Route path="appels/:id" element={<CallDetails />} />
           <Route path="telephony" element={<TelephonyPage />} />
           <Route path="ai-coach" element={<AICoachPage />} />
