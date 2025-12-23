@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Shield, Clock, User, Save, Phone, Briefcase, Lock, Loader2, Check, Eye, EyeOff } from 'lucide-react'
+import { X, Shield, Clock, User, Save, Phone, Briefcase, Lock, Loader2, Check, Eye, EyeOff, AlertCircle } from 'lucide-react' // Ajout de AlertCircle
 import { usePrivacy } from '../../contexts/PrivacyContext'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -150,13 +150,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <label className="text-sm font-semibold text-slate-300 flex items-center gap-2">
                       <User className="h-4 w-4 text-blue-500" /> Nom complet
                     </label>
+                    {/* MODIFICATION : Input désactivé pour empêcher le changement de nom */}
                     <input
                       type="text"
+                      disabled
                       value={formData.full_name}
-                      onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                      className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                      className="w-full bg-slate-800/30 border border-slate-700/50 rounded-xl px-4 py-3 text-slate-500 cursor-not-allowed outline-none transition-all"
                       placeholder="Ex: Jean Dupont"
                     />
+                    {/* MODIFICATION : Message explicatif pour l'utilisateur */}
+                    <div className="flex items-start gap-2 mt-1.5 px-1">
+                      <AlertCircle className="h-3.5 w-3.5 text-blue-500/70 mt-0.5 shrink-0" />
+                      <p className="text-[11px] text-slate-500 leading-relaxed italic">
+                        Le nom est définitif après l'onboarding pour garantir la stabilité de vos liens de réservation.
+                      </p>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
