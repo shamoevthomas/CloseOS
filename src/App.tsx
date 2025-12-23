@@ -14,6 +14,7 @@ import { NotificationsProvider } from './contexts/NotificationsContext'
 
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
+import { OnboardingModal } from './components/onboarding/OnboardingModal' // Ajouté
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 
@@ -55,6 +56,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(true) // Gère l'onboarding
 
   return (
     <AuthProvider>
@@ -107,7 +109,12 @@ function App() {
                           </Route>
                         </Routes>
 
-                        {/* Modale de Paramètres globale */}
+                        {/* Modales globales */}
+                        <OnboardingModal 
+                          isOpen={isOnboardingOpen} 
+                          onClose={() => setIsOnboardingOpen(false)} 
+                        />
+                        
                         <SettingsModal
                           isOpen={isSettingsOpen}
                           onClose={() => setIsSettingsOpen(false)}
