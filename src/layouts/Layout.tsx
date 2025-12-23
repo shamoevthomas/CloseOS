@@ -1,136 +1,107 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from '../components/Sidebar'
 import { NotificationBell } from '../components/NotificationBell'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Menu, Coffee } from 'lucide-react' // Ajout de Menu et Coffee
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { cn } from '../lib/utils'
+import { useState } from 'react'
 
 interface LayoutProps {
   onOpenSettings: () => void
 }
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
-  '/': {
-    title: 'Cockpit',
-    subtitle: "Vue d'ensemble de vos performances commerciales"
-  },
-  '/pipeline': {
-    title: 'Pipeline Commercial',
-    subtitle: 'Suivez et gérez vos deals par étapes'
-  },
-  '/contacts': {
-    title: 'Contacts',
-    subtitle: 'Gérez vos prospects et contacts internes'
-  },
-  '/offers': {
-    title: 'Mes Offres',
-    subtitle: 'Gérez vos produits et services commerciaux'
-  },
-  '/agenda': {
-    title: 'Agenda',
-    subtitle: 'Votre emploi du temps du jour'
-  },
-  '/kpi': {
-    title: 'KPI & Analytics',
-    subtitle: 'Analysez vos performances par offre'
-  },
-  '/calls': {
-    title: 'Appels',
-    subtitle: 'Historique et gestion de vos appels vidéo'
-  },
-  '/messages': {
-    title: 'Messages',
-    subtitle: 'Communication interne avec votre équipe'
-  },
-  '/telephony': {
-    title: 'Téléphonie & SMS',
-    subtitle: 'Centralisez toutes vos communications'
-  },
-  '/ai-coach': {
-    title: 'Coach IA',
-    subtitle: 'Devenez un Top Closer avec l\'IA'
-  },
-  '/invoices': {
-    title: 'Facturation & Paiements',
-    subtitle: 'Gérez votre administratif en un clic'
-  }
+  '/': { title: 'Cockpit', subtitle: "Vue d'ensemble de vos performances" },
+  '/pipeline': { title: 'Pipeline', subtitle: 'Suivez vos deals' },
+  '/contacts': { title: 'Contacts', subtitle: 'Gérez vos prospects' },
+  '/offers': { title: 'Mes Offres', subtitle: 'Gérez vos services' },
+  '/agenda': { title: 'Agenda', subtitle: 'Votre emploi du temps' },
+  '/kpi': { title: 'KPI', subtitle: 'Analysez vos perfs' },
+  '/calls': { title: 'Appels', subtitle: 'Gestion vidéo' },
+  '/messages': { title: 'Messages', subtitle: 'Communication' },
+  '/telephony': { title: 'Téléphonie', subtitle: 'Centralisez vos échanges' },
+  '/ai-coach': { title: 'Coach IA', subtitle: 'Optimisez vos ventes' },
+  '/invoices': { title: 'Factures', subtitle: 'Suivez vos paiements' },
+  '/rendez-vous': { title: 'Rendez-vous', subtitle: 'Gérez vos créneaux' }
 }
 
 export function Layout({ onOpenSettings }: LayoutProps) {
   const location = useLocation()
   const { isPrivacyEnabled, togglePrivacy } = usePrivacy()
-
-  const pageInfo = PAGE_TITLES[location.pathname] || {
-    title: 'CloserOS',
-    subtitle: 'SaaS de gestion commerciale'
-  }
+  const pageInfo = PAGE_TITLES[location.pathname] || { title: 'CloserOS', subtitle: '' }
+  
+  // État pour gérer l'ouverture du menu sur mobile
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-950">
-      {/* Sidebar */}
-      <Sidebar onOpenSettings={onOpenSettings} />
+    <div className="flex h-screen bg-slate-950 overflow-hidden">
+      {/* Sidebar avec gestion du mobile */}
+      <Sidebar 
+        onOpenSettings={onOpenSettings} 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+      />
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* TopBar - Fixed Header */}
-        <header className="sticky top-0 z-10 border-b border-slate-800/50 bg-slate-950 px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white">{pageInfo.title}</h1>
-              <p className="mt-1 text-sm text-slate-400">{pageInfo.subtitle}</p>
+      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+        {/* Header adapté Mobile & Desktop */}
+        <header className="z-30 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md">
+          <div className="flex h-16 items-center justify-between px-4 sm:px-8">
+            
+            {/* Bouton Menu Mobile + Titre */}
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-2 text-slate-400 hover:text-white lg:hidden"
+              >
+                <Menu className="h-6 w-6" />
+              </button>
+              
+              <div className="hidden sm:block">
+                <h1 className="text-xl font-bold text-white">{pageInfo.title}</h1>
+                <p className="text-xs text-slate-500">{pageInfo.subtitle}</p>
+              </div>
+
+              {/* Logo minimal sur mobile très petit */}
+              <div className="flex items-center gap-2 sm:hidden">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+                  <Coffee className="h-4 w-4 text-white" />
+                </div>
+                <h1 className="text-lg font-bold text-white">{pageInfo.title}</h1>
+              </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              {/* Notification Bell */}
-              <NotificationBell />
-
-              {/* Privacy Mode Toggle */}
+            {/* Actions Droite */}
+            <div className="flex items-center gap-2 sm:gap-4">
               <button
                 onClick={togglePrivacy}
-                className={cn(
-                  'flex items-center gap-3 rounded-xl border px-4 py-2 transition-all',
-                  isPrivacyEnabled
-                    ? 'border-emerald-500/50 bg-emerald-500/10'
-                    : 'border-slate-700 bg-slate-800/50 hover:bg-slate-800'
-                )}
+                className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-slate-800 sm:px-4 sm:py-2"
               >
                 {isPrivacyEnabled ? (
                   <>
                     <Eye className="h-4 w-4 text-emerald-400" />
-                    <span className="text-sm font-medium text-emerald-400">Mode Discrétion</span>
+                    <span className="hidden text-sm font-medium text-emerald-400 md:block">Discrétion</span>
                   </>
                 ) : (
                   <>
                     <EyeOff className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm font-medium text-slate-400">Mode Discrétion</span>
+                    <span className="hidden text-sm font-medium text-slate-400 md:block">Discrétion</span>
                   </>
                 )}
-                <div
-                  className={cn(
-                    'relative h-5 w-9 rounded-full transition-colors',
-                    isPrivacyEnabled ? 'bg-emerald-500' : 'bg-slate-700'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform',
-                      isPrivacyEnabled ? 'translate-x-4' : 'translate-x-0.5'
-                    )}
-                  />
-                </div>
               </button>
 
-              {/* Live Indicator */}
-              <div className="flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2">
+              <NotificationBell />
+
+              {/* Live Indicator - Caché sur mobile très petit */}
+              <div className="hidden items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 xs:flex">
                 <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
-                <span className="text-sm font-medium text-blue-400">En direct</span>
+                <span className="text-xs font-medium text-blue-400">Live</span>
               </div>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-950">
+        <main className="flex-1 overflow-y-auto bg-slate-950 p-4 sm:p-8">
           <Outlet />
         </main>
       </div>
