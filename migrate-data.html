@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloserOS Data Migration</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0f172a;
+      color: white;
+    }
+    .container {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 30px;
+    }
+    h1 {
+      color: #f97316;
+      margin-top: 0;
+    }
+    button {
+      background: #f97316;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin: 10px 0;
+    }
+    button:hover {
+      background: #ea580c;
+    }
+    button:disabled {
+      background: #64748b;
+      cursor: not-allowed;
+    }
+    .status {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 8px;
+      background: #334155;
+    }
+    .success {
+      background: #166534;
+      border: 1px solid #22c55e;
+    }
+    .info {
+      background: #1e3a8a;
+      border: 1px solid #3b82f6;
+    }
+    .warning {
+      background: #92400e;
+      border: 1px solid #f59e0b;
+    }
+    pre {
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 CloserOS Data Migration</h1>
+    <p>This tool will migrate your data from old localStorage keys to the new standardized keys.</p>
+
+    <div id="status" class="status info">
+      <strong>📊 Current Data Status:</strong>
+      <pre id="current-status">Loading...</pre>
+    </div>
+
+    <button id="migrate-btn" onclick="migrateData()">
+      🚀 Migrate Data to New Keys
+    </button>
+
+    <button onclick="checkStatus()" style="background: #3b82f6;">
+      🔍 Refresh Status
+    </button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function checkStatus() {
+      const oldMeetings = localStorage.getItem('crm_meetings');
+      const newEvents = localStorage.getItem('closeros_events');
+      const oldProspects = localStorage.getItem('crm_prospects');
+      const newContacts = localStorage.getItem('closeros_contacts');
+      const newProspects = localStorage.getItem('closeros_prospects');
+      const pipeline = localStorage.getItem('closeros_pipeline');
+      const bookings = localStorage.getItem('closeros_bookings');
+
+      const status = `
+OLD KEYS:
+  crm_meetings: ${oldMeetings ? JSON.parse(oldMeetings).length + ' items' : 'empty'}
+  crm_prospects: ${oldProspects ? JSON.parse(oldProspects).length + ' items' : 'empty'}
+
+NEW KEYS:
+  closeros_events: ${newEvents ? JSON.parse(newEvents).length + ' items' : 'empty'}
+  closeros_contacts: ${newContacts ? JSON.parse(newContacts).length + ' items' : 'empty'}
+  closeros_prospects: ${newProspects ? JSON.parse(newProspects).length + ' items' : 'empty'}
+  closeros_pipeline: ${pipeline ? 'has data' : 'empty'}
+  closeros_bookings: ${bookings ? JSON.parse(bookings).length + ' items' : 'empty'}
+      `;
+
+      document.getElementById('current-status').textContent = status;
+    }
+
+    function migrateData() {
+      const resultDiv = document.getElementById('result');
+      let log = [];
+
+      try {
+        // Migrate meetings -> events
+        const oldMeetings = localStorage.getItem('crm_meetings');
+        if (oldMeetings) {
+          const meetings = JSON.parse(oldMeetings);
+          const existing = JSON.parse(localStorage.getItem('closeros_events') || '[]');
+
+          // Merge without duplicates
+          const merged = [...existing];
+          meetings.forEach(meeting => {
+            if (!merged.find(e => e.id === meeting.id)) {
+              merged.push(meeting);
+            }
+          });
+
+          localStorage.setItem('closeros_events', JSON.stringify(merged));
+          log.push(`✅ Migrated ${meetings.length} meetings to closeros_events`);
+        } else {
+          log.push(`ℹ️  No old meetings found (crm_meetings is empty)`);
+        }
+
+        // Migrate prospects -> contacts
+        const oldProspects = localStorage.getItem('crm_prospects');
+        if (oldProspects) {
+          const prospects = JSON.parse(oldProspects);
+          const existingContacts = JSON.parse(localStorage.getItem('closeros_contacts') || '[]');
+          const existingProspects = JSON.parse(localStorage.getItem('closeros_prospects') || '[]');
+
+          // Merge without duplicates
+          const mergedContacts = [...existingContacts];
+          const mergedProspects = [...existingProspects];
+
+          prospects.forEach(prospect => {
+            if (!mergedContacts.find(c => c.id === prospect.id)) {
+              mergedContacts.push(prospect);
+            }
+            if (!mergedProspects.find(p => p.id === prospect.id)) {
+              mergedProspects.push(prospect);
+            }
+          });
+
+          localStorage.setItem('closeros_contacts', JSON.stringify(mergedContacts));
+          localStorage.setItem('closeros_prospects', JSON.stringify(mergedProspects));
+          log.push(`✅ Migrated ${prospects.length} prospects to closeros_contacts & closeros_prospects`);
+        } else {
+          log.push(`ℹ️  No old prospects found (crm_prospects is empty)`);
+        }
+
+        // Show success
+        resultDiv.innerHTML = `
+          <div class="status success">
+            <strong>✅ Migration Complete!</strong>
+            <pre>${log.join('\n')}</pre>
+            <p style="margin-top: 15px;">
+              <strong>Next step:</strong> Refresh your Dashboard pages to see the migrated data.
+            </p>
+          </div>
+        `;
+
+        // Refresh status
+        checkStatus();
+
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="status warning">
+            <strong>❌ Migration Error:</strong>
+            <pre>${error.message}</pre>
+          </div>
+        `;
+      }
+    }
+
+    // Check status on load
+    checkStatus();
+  </script>
+</body>
+</html>
