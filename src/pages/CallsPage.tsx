@@ -231,11 +231,12 @@ export function CallsPage() {
   }
 
   // Handle Join Call (Step 2: Join the Room internally)
-  const handleJoinGeneratedCall = () => {
+  // 🔄 MODIFICATION: Ajout de async/await pour résoudre la Promise de l'ID
+  const handleJoinGeneratedCall = async () => {
     if (!generatedLink) return
 
-    // Log the video call to history and get the ID
-    const callId = addCallLog({
+    // Log the video call to history and wait for the ID
+    const callId = await addCallLog({
       contactId: 0, // Quick call with no specific contact
       contactName: 'Appel Vidéo Rapide',
       contactType: 'internal',
@@ -245,8 +246,7 @@ export function CallsPage() {
       answered: true,
     })
 
-    console.log('Navigating to video call interface:', generatedLink)
-    // On utilise la route interne /live-call pour charger CallRoom.tsx
+    console.log('Navigating to video call interface with ID:', callId)
     navigate(`/live-call?url=${encodeURIComponent(generatedLink)}&id=${callId}`)
   }
 
@@ -285,7 +285,8 @@ export function CallsPage() {
   }
 
   // New Call Modal - Join Call (Step 2)
-  const handleJoinNewCall = () => {
+  // 🔄 MODIFICATION: Ajout de async/await pour résoudre la Promise de l'ID
+  const handleJoinNewCall = async () => {
     if (!newCallGeneratedLink || !selectedContactId) return
 
     let contactName = ''
@@ -297,8 +298,8 @@ export function CallsPage() {
       contactName = contact?.name || 'Contact'
     }
 
-    // Log the video call to history and get the ID
-    const callId = addCallLog({
+    // Log the video call to history and wait for the real ID
+    const callId = await addCallLog({
       contactId: selectedContactId,
       contactName,
       contactType: callType,
@@ -308,8 +309,7 @@ export function CallsPage() {
       answered: true,
     })
 
-    console.log('Navigating to video call interface:', newCallGeneratedLink)
-    // On utilise la route interne /live-call pour charger CallRoom.tsx
+    console.log('Navigating to video call interface with ID:', callId)
     navigate(`/live-call?url=${encodeURIComponent(newCallGeneratedLink)}&id=${callId}`)
   }
 
