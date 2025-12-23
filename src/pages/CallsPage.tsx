@@ -759,7 +759,7 @@ export function CallsPage() {
           />
 
           {/* Modal */}
-          <div className="relative w-full max-lg rounded-xl bg-slate-900 p-6 shadow-2xl ring-1 ring-slate-800">
+          <div className="relative w-full max-w-lg rounded-xl bg-slate-900 p-6 shadow-2xl ring-1 ring-slate-800">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -815,13 +815,13 @@ export function CallsPage() {
                 </div>
               </div>
 
-              {/* Join Button - MODIFIED: Now joins the Visio instead of Cockpit */}
+              {/* Join Button - CORRIGÉ : Utilise handleJoinGeneratedCall pour l'interface interne */}
               <button
-                onClick={() => window.open(generatedLink, '_blank')}
+                onClick={handleJoinGeneratedCall}
                 className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-500 px-6 py-3 text-base font-semibold text-white transition-all hover:bg-purple-600"
               >
                 <Video className="h-5 w-5" />
-                🚀 Rejoindre la Visio
+                🚀 Rejoindre l'appel
               </button>
             </div>
           </div>
