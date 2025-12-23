@@ -14,7 +14,7 @@ import { NotificationsProvider } from './contexts/NotificationsContext'
 
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
-import { OnboardingModal } from './components/onboarding/OnboardingModal' // Ajouté
+import { OnboardingModal } from './components/OnboardingModal'
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 
