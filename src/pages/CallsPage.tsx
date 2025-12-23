@@ -230,7 +230,7 @@ export function CallsPage() {
     }
   }
 
-  // Handle Join Call (Step 2: Join the Room)
+  // Handle Join Call (Step 2: Join the Room internally)
   const handleJoinGeneratedCall = () => {
     if (!generatedLink) return
 
@@ -245,8 +245,8 @@ export function CallsPage() {
       answered: true,
     })
 
-    console.log('Navigating to video call:', generatedLink, 'with call ID:', callId)
-    // Navigate to the call room with call ID
+    console.log('Navigating to video call interface:', generatedLink)
+    // On utilise la route interne /live-call pour charger CallRoom.tsx
     navigate(`/live-call?url=${encodeURIComponent(generatedLink)}&id=${callId}`)
   }
 
@@ -308,8 +308,8 @@ export function CallsPage() {
       answered: true,
     })
 
-    console.log('Navigating to video call:', newCallGeneratedLink, 'with call ID:', callId)
-    // Navigate to the call room with call ID
+    console.log('Navigating to video call interface:', newCallGeneratedLink)
+    // On utilise la route interne /live-call pour charger CallRoom.tsx
     navigate(`/live-call?url=${encodeURIComponent(newCallGeneratedLink)}&id=${callId}`)
   }
 
@@ -509,7 +509,7 @@ export function CallsPage() {
           />
 
           {/* Modal */}
-          <div className="relative w-full max-w-md rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
+          <div className="relative w-full max-md rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-800 p-6">
               <div>
@@ -668,7 +668,7 @@ export function CallsPage() {
                     </div>
                   </div>
 
-                  {/* Join Button */}
+                  {/* Join Button - Internal route */}
                   <button
                     onClick={handleJoinNewCall}
                     className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-500 px-6 py-3 text-base font-semibold text-white transition-all hover:bg-purple-600"
@@ -815,7 +815,7 @@ export function CallsPage() {
                 </div>
               </div>
 
-              {/* Join Button - CORRIGÉ : Utilise handleJoinGeneratedCall pour l'interface interne */}
+              {/* Join Button - Internal route correction */}
               <button
                 onClick={handleJoinGeneratedCall}
                 className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-500 px-6 py-3 text-base font-semibold text-white transition-all hover:bg-purple-600"

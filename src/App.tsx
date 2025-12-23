@@ -33,8 +33,9 @@ import { KPIPage } from './pages/KPIPage'
 import { RendezVous } from './pages/RendezVous'
 import { MessagesPage } from './pages/MessagesPage'
 import { PublicBooking } from './pages/PublicBooking'
+import CallRoom from './pages/CallRoom' // Import de l'interface visio
 import Login from './pages/Login'
-import Register from './pages/Register' // Ajout de l'import Register
+import Register from './pages/Register'
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -65,7 +66,7 @@ function AuthenticatedApp() {
       <Routes>
         {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} /> {/* Ajout de la route Register */}
+        <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
 
         {/* Routes Protégées */}
@@ -90,6 +91,7 @@ function AuthenticatedApp() {
             }
           />
           <Route path="calls" element={<CallsPage />} />
+          <Route path="live-call" element={<CallRoom />} /> {/* Route vers ton interface personnalisée */}
           <Route path="appels/:id" element={<CallDetails />} />
           <Route path="telephony" element={<TelephonyPage />} />
           <Route path="ai-coach" element={<AICoachPage />} />
