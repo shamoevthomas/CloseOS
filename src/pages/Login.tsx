@@ -58,7 +58,7 @@ export default function Login() {
 
         <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8 shadow-xl">
           <div className="mb-8">
-            <h2 className="mb-2 text-2xl font-bold text-white">Bon retour !</h2>
+            <h2 className="mb-2 text-2xl font-bold text-white">Bienvenue !</h2>
             <p className="text-gray-400">Connectez-vous à votre compte</p>
           </div>
 

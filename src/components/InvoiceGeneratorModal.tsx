@@ -5,6 +5,7 @@ import type { Prospect } from '../contexts/ProspectsContext'
 import { useInternalContacts } from '../contexts/InternalContactsContext'
 import type { PaymentMethod as SavedPaymentMethod } from './PaymentMethodsModal'
 import type { IssuerProfile } from './IssuerProfilesModal'
+import { supabase } from '../lib/supabase'
 // @ts-ignore - html2pdf.js doesn't have types
 import html2pdf from 'html2pdf.js'
 
@@ -221,7 +222,7 @@ export function InvoiceGeneratorModal({
     setStep(2)
   }
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     // Use html2pdf.js for perfect PDF export - NO BROWSER PRINT
     const element = document.getElementById('invoice-preview-content')
 
@@ -230,26 +231,48 @@ export function InvoiceGeneratorModal({
       return
     }
 
-    // Options for perfect rendering
-    const opt = {
-      margin: 0, // No margins - padding is in the element itself
-      filename: `Facture-${new Date().toISOString().split('T')[0]}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        logging: true, // Enable logging for debugging
-        backgroundColor: '#ffffff' // Force white background
-      },
-      jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait'
-      }
-    }
+    try {
+      // 1. Sauvegarde dans Supabase avant l'export PDF
+      const { error } = await supabase.from('invoices').insert([
+        {
+          invoice_number: invoiceNumber,
+          offer_name: offer.name,
+          client_name: offer.company,
+          amount_ht: commissionHT,
+          amount_ttc: totalTTC,
+          status: 'générée'
+        }
+      ])
 
-    // Generate and download PDF directly - bypasses browser print dialog
-    html2pdf().set(opt).from(element).save()
+      if (error) throw error
+
+      // 2. Options pour perfect rendering et lancement PDF
+      const opt = {
+        margin: 0,
+        filename: `${invoiceNumber}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: true,
+          backgroundColor: '#ffffff'
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait'
+        }
+      }
+
+      await html2pdf().set(opt).from(element).save()
+      
+      // On ferme la modal après succès
+      onClose()
+      
+    } catch (err) {
+      console.error("Erreur lors de l'enregistrement de la facture:", err)
+      alert("Une erreur est survenue lors de l'enregistrement de la facture en base de données.")
+    }
   }
 
   const getPaymentMethodLabel = () => {

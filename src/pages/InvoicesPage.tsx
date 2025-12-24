@@ -1,14 +1,18 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { CreditCard, TrendingUp, DollarSign, Calendar, FileText, Wallet, Building2 } from 'lucide-react'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { InvoiceGeneratorModal } from '../components/InvoiceGeneratorModal'
 import { PaymentMethodsModal } from '../components/PaymentMethodsModal'
 import { IssuerProfilesModal } from '../components/IssuerProfilesModal'
+import { supabase } from '../lib/supabase'
 
 export function InvoicesPage() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
+
+  // New state for table history
+  const [savedInvoices, setSavedInvoices] = useState<any[]>([])
 
   // Get current month as default date range
   const now = new Date()
@@ -21,6 +25,19 @@ export function InvoicesPage() {
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false)
   const [isPaymentMethodsOpen, setIsPaymentMethodsOpen] = useState(false)
   const [isIssuerProfilesOpen, setIsIssuerProfilesOpen] = useState(false)
+
+  // Fetch invoices from Supabase
+  const fetchInvoices = async () => {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (data) setSavedInvoices(data)
+  }
+
+  useEffect(() => {
+    fetchInvoices()
+  }, [isGeneratorOpen]) // Refresh when modal is closed (potential new invoice)
 
   // Get active offers
   const activeOffers = offers.filter((offer) => offer.status === 'active')
@@ -245,7 +262,7 @@ export function InvoicesPage() {
 
       {/* Generate Invoice Button */}
       {selectedOffer && stats.dealsCount > 0 && (
-        <div className="flex justify-center">
+        <div className="flex justify-center mb-12">
           <button
             onClick={() => setIsGeneratorOpen(true)}
             className="group flex items-center gap-3 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 px-8 py-4 text-lg font-bold text-white shadow-lg transition-all hover:scale-105 hover:shadow-purple-500/50"
@@ -256,9 +273,52 @@ export function InvoicesPage() {
         </div>
       )}
 
+      {/* History Table Section */}
+      <div className="mt-12">
+        <h2 className="mb-4 text-xl font-bold text-white">Historique des factures</h2>
+        <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 shadow-lg">
+          <table className="w-full text-left text-sm text-slate-300">
+            <thead className="bg-slate-800/50 text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-6 py-4">N° Facture</th>
+                <th className="px-6 py-4">Date</th>
+                <th className="px-6 py-4">Client / Offre</th>
+                <th className="px-6 py-4">Montant TTC</th>
+                <th className="px-6 py-4">Statut</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {savedInvoices.map((inv) => (
+                <tr key={inv.id} className="transition-colors hover:bg-slate-800/30">
+                  <td className="px-6 py-4 font-mono font-medium text-purple-400">{inv.invoice_number}</td>
+                  <td className="px-6 py-4">{new Date(inv.created_at).toLocaleDateString()}</td>
+                  <td className="px-6 py-4">
+                    <div className="font-semibold text-white">{inv.client_name}</div>
+                    <div className="text-xs text-slate-500">{inv.offer_name}</div>
+                  </td>
+                  <td className="px-6 py-4 font-bold text-white">{formatCurrency(inv.amount_ttc)}</td>
+                  <td className="px-6 py-4">
+                    <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400">
+                      {inv.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {savedInvoices.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-slate-500 italic">
+                    Aucune facture enregistrée dans l'historique.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* No Deals Message */}
       {selectedOffer && stats.dealsCount === 0 && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-12 text-center">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-12 text-center mt-6">
           <FileText className="mx-auto mb-4 h-12 w-12 text-slate-600" />
           <p className="text-lg font-semibold text-slate-400">Aucun deal gagné</p>
           <p className="mt-2 text-sm text-slate-500">
