@@ -370,7 +370,7 @@ export function InvoicesPage() {
       />
 
       {/* Issuer Profiles Modal */}
-      <支配 IssuerProfilesModal
+      <IssuerProfilesModal
         isOpen={isIssuerProfilesOpen}
         onClose={() => setIsIssuerProfilesOpen(false)}
       />
