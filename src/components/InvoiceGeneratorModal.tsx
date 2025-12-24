@@ -223,7 +223,6 @@ export function InvoiceGeneratorModal({
   }
 
   const handleExportPDF = async () => {
-    // Use html2pdf.js for perfect PDF export - NO BROWSER PRINT
     const element = document.getElementById('invoice-preview-content')
 
     if (!element) {
@@ -232,21 +231,6 @@ export function InvoiceGeneratorModal({
     }
 
     try {
-      // 1. Sauvegarde dans Supabase avant l'export PDF
-      const { error } = await supabase.from('invoices').insert([
-        {
-          invoice_number: invoiceNumber,
-          offer_name: offer.name,
-          client_name: offer.company,
-          amount_ht: commissionHT,
-          amount_ttc: totalTTC,
-          status: 'générée'
-        }
-      ])
-
-      if (error) throw error
-
-      // 2. Options pour perfect rendering et lancement PDF
       const opt = {
         margin: 0,
         filename: `${invoiceNumber}.pdf`,
@@ -264,14 +248,48 @@ export function InvoiceGeneratorModal({
         }
       }
 
-      await html2pdf().set(opt).from(element).save()
+      // 1. Générer le PDF en Blob pour le stockage
+      const pdfBlob = await html2pdf().set(opt).from(element).output('blob')
+
+      // 2. Upload sur Supabase Storage (bucket: invoice)
+      const fileName = `${Date.now()}-${invoiceNumber}.pdf`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('invoice')
+        .upload(fileName, pdfBlob)
+
+      if (uploadError) throw uploadError
+
+      // 3. Récupérer l'URL publique du fichier stocké
+      const { data: { publicUrl } } = supabase.storage
+        .from('invoice')
+        .getPublicUrl(fileName)
+
+      // 4. Sauvegarde dans la table SQL incluant le pdf_url
+      const { error } = await supabase.from('invoices').insert([
+        {
+          invoice_number: invoiceNumber,
+          offer_name: offer.name,
+          client_name: offer.company,
+          amount_ht: commissionHT,
+          amount_ttc: totalTTC,
+          status: 'générée',
+          pdf_url: publicUrl
+        }
+      ])
+
+      if (error) throw error
+
+      // 5. Téléchargement local final pour l'utilisateur
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(pdfBlob)
+      link.download = `${invoiceNumber}.pdf`
+      link.click()
       
-      // On ferme la modal après succès
       onClose()
       
     } catch (err) {
       console.error("Erreur lors de l'enregistrement de la facture:", err)
-      alert("Une erreur est survenue lors de l'enregistrement de la facture en base de données.")
+      alert("Une erreur est survenue lors de l'enregistrement de la facture.")
     }
   }
 
