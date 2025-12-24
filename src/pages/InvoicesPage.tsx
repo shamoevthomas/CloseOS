@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { CreditCard, TrendingUp, DollarSign, Calendar, FileText, Wallet, Building2 } from 'lucide-react'
+import { CreditCard, TrendingUp, DollarSign, Calendar, FileText, Wallet, Building2, Eye, Download } from 'lucide-react'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { InvoiceGeneratorModal } from '../components/InvoiceGeneratorModal'
@@ -285,6 +285,7 @@ export function InvoicesPage() {
                 <th className="px-6 py-4">Client / Offre</th>
                 <th className="px-6 py-4">Montant TTC</th>
                 <th className="px-6 py-4">Statut</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -302,11 +303,34 @@ export function InvoicesPage() {
                       {inv.status}
                     </span>
                   </td>
+                  <td className="px-6 py-4 text-right">
+                    {inv.pdf_url && (
+                      <div className="flex justify-end gap-3">
+                        <a 
+                          href={inv.pdf_url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-slate-400 hover:text-purple-400 transition-colors"
+                          title="Voir la facture"
+                        >
+                          <Eye className="h-5 w-5" />
+                        </a>
+                        <a 
+                          href={inv.pdf_url} 
+                          download 
+                          className="text-slate-400 hover:text-emerald-400 transition-colors"
+                          title="Télécharger"
+                        >
+                          <Download className="h-5 w-5" />
+                        </a>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
               {savedInvoices.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-slate-500 italic">
+                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500 italic">
                     Aucune facture enregistrée dans l'historique.
                   </td>
                 </tr>
@@ -346,7 +370,7 @@ export function InvoicesPage() {
       />
 
       {/* Issuer Profiles Modal */}
-      <IssuerProfilesModal
+      <支配 IssuerProfilesModal
         isOpen={isIssuerProfilesOpen}
         onClose={() => setIsIssuerProfilesOpen(false)}
       />
