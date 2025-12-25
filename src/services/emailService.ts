@@ -83,8 +83,7 @@ export async function sendBookingEmails(data: {
       htmlContent: htmlLayout(true)
     };
 
-    // Envoi via notre API Proxy
-    await Promise.all([
+    const responses = await Promise.all([
       fetch(url, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -96,7 +95,8 @@ export async function sendBookingEmails(data: {
         body: JSON.stringify(payloadAgent)
       })
     ]);
-    return true;
+
+    return responses.every(r => r.ok);
   } catch (error) {
     console.error("Erreur d'envoi d'email:", error);
     return false;
