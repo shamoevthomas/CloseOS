@@ -12,6 +12,9 @@ export default async function handler(req: Request) {
   try {
     const body = await req.json();
     
+    // Log pour le debug dans Vercel
+    console.log("Tentative d'envoi d'email via Brevo...");
+
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -23,11 +26,18 @@ export default async function handler(req: Request) {
     });
 
     const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Erreur Brevo détaillée:", data);
+      return new Response(JSON.stringify(data), { status: response.status });
+    }
+
     return new Response(JSON.stringify(data), {
       status: response.status,
       headers: { 'content-type': 'application/json' }
     });
   } catch (error) {
+    console.error("Erreur critique API:", error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
 }

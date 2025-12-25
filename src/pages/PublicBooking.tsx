@@ -39,7 +39,6 @@ export function PublicBooking() {
       if (!slug || slug === 'undefined') return;
       
       try {
-        // On récupère toutes les colonnes pour être sûr de ne rien rater
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
@@ -48,7 +47,6 @@ export function PublicBooking() {
 
         if (profile) {
           setTargetUserId(profile.id)
-          // Correction finale : on accepte 'email' ou 'Email' selon ce qui existe
           setAgentEmail(profile.email || profile.Email || null)
         } else {
           console.error("Profil introuvable pour le slug:", slug);
@@ -89,7 +87,6 @@ export function PublicBooking() {
   }
 
   const handleSubmitBooking = async () => {
-    // Cette alerte ne devrait plus apparaître si le slug correspond bien dans Supabase
     if (!targetUserId) {
       return alert("Erreur de configuration : Impossible de lier la réservation à votre compte.");
     }
@@ -101,11 +98,12 @@ export function PublicBooking() {
       setMeetingLink(videoLink)
       
       const fullName = `${bookingData.firstName} ${bookingData.lastName}`.trim()
+      const rawDate = format(selectedDate!, 'yyyy-MM-dd') // Date formatée pour le code
       
       const { error } = await supabase.from('meetings').insert([{
         user_id: targetUserId,
         contact: fullName,
-        date: format(selectedDate!, 'yyyy-MM-dd'),
+        date: rawDate,
         time: selectedTime,
         type: 'video',
         status: 'upcoming',
@@ -115,17 +113,19 @@ export function PublicBooking() {
 
       if (error) throw error
 
-      const formattedDate = format(selectedDate!, 'eeee d MMMM', { locale: fr });
-      
-      // Envoi du mail Brevo
-      await sendBookingEmails({
+      // ENVOI DU MAIL AVEC LA DATE BRUTE (yyyy-MM-dd)
+      const success = await sendBookingEmails({
         prospectEmail: bookingData.email,
         prospectName: fullName,
-        date: formattedDate,
+        date: rawDate,
         time: selectedTime!,
         meetingLink: videoLink,
         agentEmail: agentEmail || "noreply@closeros.com"
       });
+
+      if (!success) {
+        console.warn("La réservation est faite mais l'envoi de l'email a échoué.");
+      }
 
       setStep('success')
     } catch (error) {
@@ -268,7 +268,7 @@ export function PublicBooking() {
               </div>
               <input type="email" className="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white focus:border-blue-500 outline-none transition-all" placeholder="Email" value={bookingData.email} onChange={e => setBookingData({...bookingData, email: e.target.value})} />
               <input className="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white focus:border-blue-500 outline-none transition-all" placeholder="Téléphone" value={bookingData.phone} onChange={e => setBookingData({...bookingData, phone: e.target.value})} />
-              <button type="button" disabled={isSubmitting} onClick={handleSubmitBooking} className="w-full bg-blue-600 py-5 rounded-2xl font-extrabold hover:bg-blue-500 transition-all mt-6 disabled:opacity-50 shadow-lg shadow-blue-600/20">
+              <button type=\"button\" disabled={isSubmitting} onClick={handleSubmitBooking} className="w-full bg-blue-600 py-5 rounded-2xl font-extrabold hover:bg-blue-500 transition-all mt-6 disabled:opacity-50 shadow-lg shadow-blue-600/20">
                 {isSubmitting ? "Enregistrement en cours..." : "Confirmer ma réservation"}
               </button>
             </div>
