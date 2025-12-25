@@ -570,19 +570,19 @@ export function Agenda() {
                   {isShort ? (
                     <div className="flex h-full items-center">
                       <p className="truncate text-xs font-semibold">
-                        <MaskedText value={event.contact} type="name" />
+                        <MaskedText value={event.contact || 'Inconnu'} type="name" />
                       </p>
                     </div>
                   ) : (
                     <div className="flex h-full flex-col overflow-hidden">
                       <p className="truncate text-xs font-semibold opacity-90">
-                        {event.time.split(' - ')[0]} - {isOvernight ? '→' : event.time.split(' - ')[1]}
+                        {event.time?.split(' - ')[0] || event.time} - {isOvernight ? '→' : event.time?.split(' - ')[1]}
                       </p>
                       <p className="mt-0.5 truncate text-sm font-bold">
-                        <MaskedText value={event.contact} type="name" />
+                        <MaskedText value={event.contact || 'Inconnu'} type="name" />
                       </p>
                       <p className="truncate text-xs opacity-80">
-                        {event.title.split(' - ')[0]}
+                        {event.title?.split(' - ')[0] || 'Sans titre'}
                       </p>
                     </div>
                   )}
@@ -703,8 +703,9 @@ export function Agenda() {
 
                   {/* Overnight event continuations from previous day */}
                   {overnightContinuations.map((event) => {
-                    const [, end] = event.time.split(' - ')
-                    const [endH, endM] = end.split(':').map(Number)
+                    const parts = event.time?.split(' - ') || [];
+                    const end = parts[1] || parts[0] || '00:00';
+                    const [endH, endM] = end?.split(':').map(Number) || [0, 0];
                     const endHour = endH + endM / 60
 
                     const top = 0 // Start at midnight
@@ -760,14 +761,14 @@ export function Agenda() {
                         {isShort ? (
                           <div className="flex h-full items-center">
                             <p className="truncate text-[10px] font-semibold">
-                              <MaskedText value={event.contact} type="name" />
+                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
                             </p>
                           </div>
                         ) : (
                           <div className="flex h-full flex-col overflow-hidden">
                             <p className="truncate text-[10px] font-semibold opacity-90">→ {end}</p>
                             <p className="truncate text-xs font-bold">
-                              <MaskedText value={event.contact} type="name" />
+                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
                             </p>
                           </div>
                         )}
@@ -843,16 +844,16 @@ export function Agenda() {
                         {isShort ? (
                           <div className="flex h-full items-center">
                             <p className="truncate text-[10px] font-semibold">
-                              <MaskedText value={event.contact} type="name" />
+                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
                             </p>
                           </div>
                         ) : (
                           <div className="flex h-full flex-col overflow-hidden">
                             <p className="truncate text-[10px] font-semibold opacity-90">
-                              {event.time.split(' - ')[0]}{isOvernight ? ' →' : ''}
+                              {event.time?.split(' - ')[0] || event.time}{isOvernight ? ' →' : ''}
                             </p>
                             <p className="truncate text-xs font-bold">
-                              <MaskedText value={event.contact} type="name" />
+                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
                             </p>
                           </div>
                         )}
@@ -957,7 +958,7 @@ export function Agenda() {
                         style={eventStyle}
                       >
                         <div className="truncate">
-                          {event.time.split(' - ')[0]} <MaskedText value={event.contact} type="name" />
+                          {event.time?.split(' - ')[0] || event.time} <MaskedText value={event.contact || 'Inconnu'} type="name" />
                         </div>
                       </div>
                     )
@@ -1141,10 +1142,10 @@ export function Agenda() {
                   {/* Contenu */}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-white">
-                      <MaskedText value={event.contact} type="name" />
+                      <MaskedText value={event.contact || 'Inconnu'} type="name" />
                     </p>
                     <p className="mt-0.5 text-sm text-slate-400">
-                      {event.title.split(' - ')[0]}
+                      {event.title?.split(' - ')[0] || 'Sans titre'}
                     </p>
                     <div className="mt-2 flex items-center gap-1 text-xs text-slate-500">
                       <Clock className="h-3 w-3" />
@@ -1294,7 +1295,7 @@ export function Agenda() {
                         )}
                         disabled={isGoogleEvent}
                       >
-                        <MaskedText value={selectedEvent.contact} type="name" />
+                        <MaskedText value={selectedEvent.contact || 'Inconnu'} type="name" />
                         {!isGoogleEvent && <ExternalLink className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />}
                       </button>
                       <p className="mt-1 text-sm text-slate-400">{selectedEvent.title}</p>
