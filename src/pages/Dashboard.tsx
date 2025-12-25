@@ -203,7 +203,7 @@ export function Dashboard() {
     const stages = [
       { name: 'Prospect', key: 'prospect', color: 'bg-blue-500' },
       { name: 'Qualifié', key: 'qualified', color: 'bg-orange-500' },
-      { name: 'Proposition', key: 'proposal', color: 'bg-emerald-400' },
+      { name: 'Follow up', key: 'proposal', color: 'bg-emerald-400' },
       { name: 'Gagné', key: 'won', color: 'bg-emerald-600' },
     ]
 
