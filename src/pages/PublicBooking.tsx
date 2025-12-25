@@ -98,7 +98,7 @@ export function PublicBooking() {
       setMeetingLink(videoLink)
       
       const fullName = `${bookingData.firstName} ${bookingData.lastName}`.trim()
-      const rawDate = format(selectedDate!, 'yyyy-MM-dd') // Date formatée pour le code
+      const rawDate = format(selectedDate!, 'yyyy-MM-dd') 
       
       const { error } = await supabase.from('meetings').insert([{
         user_id: targetUserId,
@@ -113,7 +113,6 @@ export function PublicBooking() {
 
       if (error) throw error
 
-      // ENVOI DU MAIL AVEC LA DATE BRUTE (yyyy-MM-dd)
       const success = await sendBookingEmails({
         prospectEmail: bookingData.email,
         prospectName: fullName,
@@ -268,7 +267,7 @@ export function PublicBooking() {
               </div>
               <input type="email" className="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white focus:border-blue-500 outline-none transition-all" placeholder="Email" value={bookingData.email} onChange={e => setBookingData({...bookingData, email: e.target.value})} />
               <input className="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white focus:border-blue-500 outline-none transition-all" placeholder="Téléphone" value={bookingData.phone} onChange={e => setBookingData({...bookingData, phone: e.target.value})} />
-              <button type=\"button\" disabled={isSubmitting} onClick={handleSubmitBooking} className="w-full bg-blue-600 py-5 rounded-2xl font-extrabold hover:bg-blue-500 transition-all mt-6 disabled:opacity-50 shadow-lg shadow-blue-600/20">
+              <button type="button" disabled={isSubmitting} onClick={handleSubmitBooking} className="w-full bg-blue-600 py-5 rounded-2xl font-extrabold hover:bg-blue-500 transition-all mt-6 disabled:opacity-50 shadow-lg shadow-blue-600/20">
                 {isSubmitting ? "Enregistrement en cours..." : "Confirmer ma réservation"}
               </button>
             </div>
