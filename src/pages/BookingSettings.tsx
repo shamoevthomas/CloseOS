@@ -55,7 +55,7 @@ export function BookingSettings() {
         setTitle(data.title)
         setDescription(data.description)
         setMinLeadTime(data.min_lead_time)
-        setAvailability(data.availability)
+        setAvailability(data.availability || {})
       }
     } catch (error) {
       console.error('Erreur chargement réglages:', error)
@@ -100,20 +100,29 @@ export function BookingSettings() {
   }
 
   const toggleDay = (dayId: string) => {
-    setAvailability(prev => ({
-      ...prev,
-      [dayId]: { ...prev[dayId], enabled: !prev[dayId].enabled }
-    }))
+    setAvailability(prev => {
+      // Sécurité : si le jour n'existe pas encore dans l'état, on crée une valeur par défaut
+      const current = prev[dayId] || { enabled: false, slots: [{ start: '09:00', end: '18:00' }] };
+      return {
+        ...prev,
+        [dayId]: { ...current, enabled: !current.enabled }
+      };
+    });
   }
 
   const updateTime = (dayId: string, type: 'start' | 'end', value: string) => {
-    setAvailability(prev => ({
-      ...prev,
-      [dayId]: {
-        ...prev[dayId],
-        slots: [{ ...prev[dayId].slots[0], [type]: value }]
-      }
-    }))
+    setAvailability(prev => {
+      // Sécurité : si le jour ou les créneaux n'existent pas, on crée une valeur par défaut
+      const current = prev[dayId] || { enabled: true, slots: [{ start: '09:00', end: '18:00' }] };
+      const slots = [...(current.slots || [{ start: '09:00', end: '18:00' }])];
+      
+      slots[0] = { ...slots[0], [type]: value };
+      
+      return {
+        ...prev,
+        [dayId]: { ...current, slots }
+      };
+    });
   }
 
   if (loading) {
