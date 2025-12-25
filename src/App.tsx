@@ -33,6 +33,7 @@ import { KPIPage } from './pages/KPIPage'
 import { RendezVous } from './pages/RendezVous'
 import { MessagesPage } from './pages/MessagesPage'
 import { PublicBooking } from './pages/PublicBooking'
+import { BookingSettings } from './pages/BookingSettings'
 import CallRoom from './pages/CallRoom'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -110,6 +111,7 @@ function AuthenticatedApp() {
           <Route path="kpi" element={<KPIPage />} />
           <Route path="rendez-vous" element={<RendezVous />} />
           <Route path="messages" element={<MessagesPage />} />
+          <Route path="settings/booking" element={<BookingSettings />} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

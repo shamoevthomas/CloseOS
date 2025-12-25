@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Mail, ChevronRight as ChevronRightIcon, Calendar as CalendarIcon, Copy, Video } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Mail, ChevronRight as ChevronRightIcon, Calendar as CalendarIcon, Copy, Video, AlertCircle, Loader2 } from 'lucide-react'
 import { createDailyRoom } from '../services/dailyService'
 import { supabase } from '../lib/supabase'
-import { format } from 'date-fns'
+import { format, addHours, isAfter, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { sendBookingEmails } from '../services/emailService'
+import { cn } from '../lib/utils'
 
 type BookingStep = 'time' | 'form' | 'success'
 
@@ -18,8 +19,10 @@ interface BookingData {
 
 export function PublicBooking() {
   const { slug } = useParams<{ slug: string }>()
-  const [targetUserId, setTargetUserId] = useState<string | null>(null)
-  const [agentEmail, setAgentEmail] = useState<string | null>(null)
+  const [settings, setSettings] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
@@ -33,246 +36,394 @@ export function PublicBooking() {
   const [meetingLink, setMeetingLink] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // RÉCUPÉRATION DU PROFIL
+  // 1. Chargement des réglages personnalisés selon le slug
   useEffect(() => {
-    async function getUserBySlug() {
-      if (!slug || slug === 'undefined') return;
-      
+    const fetchSettings = async () => {
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('booking_slug', slug)
-          .maybeSingle()
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('booking_settings')
+          .select('*, user_id')
+          .eq('slug', slug)
+          .single()
 
-        if (profile) {
-          setTargetUserId(profile.id)
-          setAgentEmail(profile.email || profile.Email || null)
-        } else {
-          console.error("Profil introuvable pour le slug:", slug);
-        }
+        if (error || !data) throw new Error('Page de réservation introuvable')
         
-        if (error) throw error
-      } catch (err) {
-        console.error("Erreur récupération profil:", err)
+        // Récupérer aussi l'email de l'agent
+        const { data: userData } = await supabase
+          .from('internal_contacts')
+          .select('email')
+          .eq('id', data.user_id) // Hypothèse que user_id correspond à l'id dans internal_contacts
+          .single()
+
+        setSettings(data)
+        // Note: l'email de l'agent est nécessaire pour sendBookingEmails
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
       }
     }
-    getUserBySlug()
+
+    if (slug) fetchSettings()
   }, [slug])
 
-  const baseTimeSlots = [
-    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'
-  ]
-
-  const availableTimeSlots = useMemo(() => {
-    if (!selectedDate) return []
+  // 2. Calcul des dates disponibles (influence par min_lead_time et availability)
+  const availableDates = useMemo(() => {
+    if (!settings) return []
+    const dates = []
     const now = new Date()
-    const isToday = selectedDate.toDateString() === now.toDateString()
-    
-    if (isToday) {
-      const currentHour = now.getHours()
-      const currentMinutes = now.getMinutes()
-      return baseTimeSlots.filter(time => {
-        const [hour, minutes] = time.split(':').map(Number)
-        return hour > currentHour || (hour === currentHour && minutes > currentMinutes)
-      })
-    }
-    return baseTimeSlots
-  }, [selectedDate])
+    const minLeadDate = addHours(now, settings.min_lead_time || 0)
 
-  const handleTimeSelect = (time: string) => {
-    setSelectedTime(time)
-    setStep('form')
-  }
+    for (let i = 0; i < 30; i++) {
+      const date = new Date()
+      date.setDate(now.getDate() + i)
+      
+      // Mapping du jour vers les clés en anglais de la DB
+      const dayNameEn = format(date, 'eeee', { locale: undefined }).toLowerCase()
+      const dayConfig = settings.availability[dayNameEn]
+
+      if (dayConfig?.enabled && isAfter(startOfDay(date), startOfDay(minLeadDate)) || (format(date, 'yyyy-MM-dd') === format(minLeadDate, 'yyyy-MM-dd') && isAfter(date, minLeadDate))) {
+        dates.push(date)
+      }
+    }
+    return dates
+  }, [settings])
+
+  // 3. Calcul des créneaux horaires (influence par availability)
+  const timeSlots = useMemo(() => {
+    if (!selectedDate || !settings) return []
+    
+    const dayNameEn = format(selectedDate, 'eeee', { locale: undefined }).toLowerCase()
+    const dayConfig = settings.availability[dayNameEn]
+    
+    if (!dayConfig || !dayConfig.slots || dayConfig.slots.length === 0) return []
+
+    const slots = []
+    const { start, end } = dayConfig.slots[0]
+    const [startH, startM] = start.split(':').map(Number)
+    const [endH, endM] = end.split(':').map(Number)
+
+    let current = startH * 60 + startM
+    const totalEnd = endH * 60 + endM
+
+    while (current + 30 <= totalEnd) {
+      const h = Math.floor(current / 60)
+      const m = current % 60
+      const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
+      
+      // Sécurité supplémentaire pour aujourd'hui
+      const slotDate = new Date(selectedDate)
+      slotDate.setHours(h, m, 0, 0)
+      if (isAfter(slotDate, addHours(new Date(), settings.min_lead_time || 0))) {
+        slots.push(timeStr)
+      }
+      
+      current += 30
+    }
+    return slots
+  }, [selectedDate, settings])
 
   const handleSubmitBooking = async () => {
-    if (!targetUserId) {
-      return alert("Erreur de configuration : Impossible de lier la réservation à votre compte.");
-    }
-
+    if (!selectedDate || !selectedTime || !settings) return
     setIsSubmitting(true)
 
     try {
-      const videoLink = await createDailyRoom()
-      setMeetingLink(videoLink)
-      
-      const fullName = `${bookingData.firstName} ${bookingData.lastName}`.trim()
-      const rawDate = format(selectedDate!, 'yyyy-MM-dd') 
-      
-      const { error } = await supabase.from('meetings').insert([{
-        user_id: targetUserId,
-        contact: fullName,
-        date: rawDate,
-        time: selectedTime,
-        type: 'video',
-        status: 'upcoming',
-        location: videoLink,
-        description: `Email: ${bookingData.email}\nTél: ${bookingData.phone}`
-      }])
+      // 1. Création de la salle Daily
+      const room = await createDailyRoom()
+      setMeetingLink(room.url)
 
-      if (error) throw error
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd')
+      const [hours, minutes] = selectedTime.split(':').map(Number)
+      const endTotal = hours * 60 + minutes + 30
+      const formattedEndTime = `${Math.floor(endTotal / 60).toString().padStart(2, '0')}:${(endTotal % 60).toString().padStart(2, '0')}`
+      const fullTimeRange = `${selectedTime} - ${formattedEndTime}`
 
-      const success = await sendBookingEmails({
+      // 2. Sauvegarde dans Supabase avec le user_id du Closer
+      const { error: dbError } = await supabase
+        .from('meetings')
+        .insert([{
+          user_id: settings.user_id,
+          title: `Appel - ${bookingData.firstName} ${bookingData.lastName}`,
+          contact: `${bookingData.firstName} ${bookingData.lastName}`,
+          date: formattedDate,
+          time: fullTimeRange,
+          type: 'video',
+          status: 'scheduled',
+          location: room.url,
+          description: `Email: ${bookingData.email}\nTéléphone: ${bookingData.phone}`
+        }])
+
+      if (dbError) throw dbError
+
+      // 3. Envoi des mails (Utilise les services existants)
+      await sendBookingEmails({
         prospectEmail: bookingData.email,
-        prospectName: fullName,
-        date: rawDate,
-        time: selectedTime!,
-        meetingLink: videoLink,
-        agentEmail: agentEmail || "noreply@closeros.com"
-      });
-
-      if (!success) {
-        console.warn("La réservation est faite mais l'envoi de l'email a échoué.");
-      }
+        prospectName: bookingData.firstName,
+        agentEmail: 'contact@closer-os.com', // À remplacer par settings.agent_email si dispo
+        date: format(selectedDate, 'dd MMMM yyyy', { locale: fr }),
+        time: selectedTime,
+        meetingLink: room.url
+      })
 
       setStep('success')
     } catch (error) {
-      alert("Erreur technique lors de la réservation.");
+      console.error('Erreur lors de la réservation:', error)
+      alert('Une erreur est survenue lors de la réservation.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const renderCalendar = () => {
-    const days = []
-    const now = new Date()
-    now.setHours(0, 0, 0, 0)
-    const year = currentMonth.getFullYear()
-    const month = currentMonth.getMonth()
-    const lastDay = new Date(year, month + 1, 0).getDate()
+  if (loading) return (
+    <div className=\"min-h-screen bg-slate-950 flex items-center justify-center\">
+      <Loader2 className=\"h-8 w-8 animate-spin text-blue-500\" />
+    </div>
+  )
 
-    for (let day = 1; day <= lastDay; day++) {
-      const date = new Date(year, month, day)
-      const isPast = date < now
-      const isSelected = selectedDate?.toDateString() === date.toDateString()
+  if (error) return (
+    <div className=\"min-h-screen bg-slate-950 flex items-center justify-center text-white p-4\">
+      <div className=\"text-center\">
+        <AlertCircle className=\"h-12 w-12 text-red-500 mx-auto mb-4\" />
+        <p className=\"text-xl font-bold\">{error}</p>
+      </div>
+    </div>
+  )
 
-      days.push(
-        <button
-          key={day}
-          disabled={isPast}
-          type="button"
-          onClick={() => {
-            setSelectedDate(date)
-            setSelectedTime(null)
-          }}
-          className={`aspect-square rounded-lg font-medium transition-all ${
-            isPast ? 'text-slate-700 cursor-not-allowed' : 
-            isSelected ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-300'
-          }`}
-        >
-          {day}
-        </button>
-      )
-    }
-    return days
-  }
+  return (
+    <div className=\"min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30\">
+      <div className=\"max-w-6xl mx-auto px-4 py-12 md:py-20\">
+        <div className=\"grid lg:grid-cols-12 gap-8 items-start\">
+          
+          {/* LEFT COLUMN: INFO (Piloté par settings) */}
+          <div className=\"lg:col-span-4 space-y-8\">
+            <div className=\"bg-slate-900/50 border border-slate-800 p-8 rounded-3xl backdrop-blur-xl\">
+              <div className=\"w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-blue-600/20\">
+                <Video className=\"text-white w-8 h-8\" />
+              </div>
+              <h1 className=\"text-3xl font-black text-white mb-4 tracking-tight\">
+                {settings?.title || 'Réserver un appel'}
+              </h1>
+              <p className=\"text-slate-400 leading-relaxed text-lg\">
+                {settings?.description || 'Choisissez une date sur le calendrier pour votre session.'}
+              </p>
 
-  if (step === 'success') {
-    const dateStr = selectedDate ? format(selectedDate, "yyyyMMdd") : ""
-    const timeStr = selectedTime ? selectedTime.replace(':', '') : ""
-    const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=Entretien+Vidéo&dates=${dateStr}T${timeStr}00Z/${dateStr}T${timeStr}00Z&details=Lien+de+la+réunion+:+${encodeURIComponent(meetingLink)}&location=${encodeURIComponent(meetingLink)}`;
-
-    return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-8 text-left">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl">
-          <div className="mb-6 flex justify-center">
-            <div className="bg-emerald-500/20 p-3 rounded-full">
-              <Check className="h-10 w-10 text-emerald-500" />
+              <div className=\"mt-10 space-y-4\">
+                <div className=\"flex items-center gap-4 text-slate-300\">
+                  <div className=\"w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center\">
+                    <Clock className=\"w-5 h-5 text-blue-500\" />
+                  </div>
+                  <span className=\"font-semibold\">30 minutes</span>
+                </div>
+                <div className=\"flex items-center gap-4 text-slate-300\">
+                  <div className=\"w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center\">
+                    <Video className=\"w-5 h-5 text-blue-500\" />
+                  </div>
+                  <span className=\"font-semibold\">Visioconférence</span>
+                </div>
+              </div>
             </div>
           </div>
-          <h2 className="text-3xl font-bold mb-2 text-center">C'est confirmé !</h2>
-          <div className="bg-slate-800/50 p-4 rounded-xl mb-8 text-center">
-            <p className="font-bold text-center text-lg capitalize">
-              {selectedDate && format(selectedDate, 'eeee d MMMM', { locale: fr })} à {selectedTime}
-            </p>
-          </div>
-          <div className="space-y-6">
-            <div className="bg-blue-600/10 border border-blue-500/30 p-4 rounded-2xl">
-              <label className="text-xs font-bold text-blue-400 uppercase block mb-2 flex items-center gap-2">
-                <Video size={14} /> Votre lien d'accès
-              </label>
-              <div className="flex items-center gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <code className="text-sm text-blue-300 break-all flex-1 font-mono">{meetingLink}</code>
-                <button onClick={() => { navigator.clipboard.writeText(meetingLink); alert("Lien copié !"); }} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400"><Copy size={16} /></button>
-              </div>
-              <p className="text-[11px] text-orange-400 mt-3 font-bold italic text-center">⚠️ Très important : Conservez bien ce lien, l'appel se déroulera ici. Il vous sera également envoyé par mail. Consulté vos spams.</p>
-            </div>
-            <a href={googleCalendarUrl} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-white text-slate-950 py-4 rounded-xl font-extrabold hover:bg-slate-100 transition-all shadow-lg text-center"><CalendarIcon className="h-5 w-5" />Ajouter à mon agenda</a>
-            <div className="p-4 border border-slate-800 rounded-2xl bg-slate-800/20 text-sm text-slate-400 text-center">
-              <p className="mb-3">Un empêchement ? Merci de nous prévenir par email :</p>
-              <div className="flex items-center justify-center gap-2 text-white font-bold bg-slate-900/50 p-2.5 rounded-lg border border-slate-800/50">
-                <Mail className="h-4 w-4 text-blue-400" />
-                <span className="truncate">{agentEmail || "Contact technique"}</span>
-              </div>
+
+          {/* RIGHT COLUMN: BOOKING PROCESS */}
+          <div className=\"lg:col-span-8\">
+            <div className=\"bg-slate-900 border border-slate-800 rounded-[32px] overflow-hidden shadow-2xl\">
+              
+              {/* STEP: TIME SELECTION */}
+              {step === 'time' && (
+                <div className=\"animate-in fade-in duration-500\">
+                  <div className=\"p-8 md:p-12\">
+                    <div className=\"grid md:grid-cols-2 gap-12\">
+                      {/* Calendar Part */}
+                      <div>
+                        <h2 className=\"text-xl font-bold text-white mb-8 flex items-center gap-3\">
+                          <Calendar className=\"text-blue-500 w-6 h-6\" />
+                          Sélectionnez la date
+                        </h2>
+                        <div className=\"grid grid-cols-4 gap-3\">
+                          {availableDates.map((date) => (
+                            <button
+                              key={date.toISOString()}
+                              onClick={() => {
+                                setSelectedDate(date)
+                                setSelectedTime(null)
+                              }}
+                              className={cn(
+                                \"flex flex-col items-center py-4 rounded-2xl border transition-all duration-300\",
+                                selectedDate && format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
+                                  ? \"bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20 scale-105\"
+                                  : \"bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600 hover:bg-slate-900\"
+                              )}
+                            >
+                              <span className=\"text-[10px] font-black uppercase tracking-widest mb-1 opacity-60\">
+                                {format(date, 'EEE', { locale: fr })}
+                              </span>
+                              <span className=\"text-xl font-black\">{format(date, 'd')}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Time Slots Part */}
+                      <div>
+                        <h2 className=\"text-xl font-bold text-white mb-8 flex items-center gap-3\">
+                          <Clock className=\"text-blue-500 w-6 h-6\" />
+                          Heure de début
+                        </h2>
+                        {selectedDate ? (
+                          <div className=\"grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar\">
+                            {timeSlots.map((time) => (
+                              <button
+                                key={time}
+                                onClick={() => setSelectedTime(time)}
+                                className={cn(
+                                  \"py-4 rounded-2xl border font-bold transition-all duration-300\",
+                                  selectedTime === time
+                                    ? \"bg-white text-slate-950 border-white shadow-xl scale-105\"
+                                    : \"bg-slate-950 border-slate-800 text-slate-300 hover:border-blue-500/50 hover:text-blue-400\"
+                                )}
+                              >
+                                {time}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className=\"h-full flex flex-col items-center justify-center text-slate-500 border-2 border-dashed border-slate-800 rounded-3xl p-8\">
+                            <Calendar className=\"w-12 h-12 mb-4 opacity-20\" />
+                            <p className=\"text-center font-medium\">Choisissez une date pour voir les créneaux</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer Bar */}
+                  <div className=\"bg-slate-950/50 border-t border-slate-800 p-8 flex items-center justify-between\">
+                    <div className=\"text-sm\">
+                      {selectedDate && selectedTime ? (
+                        <p className=\"text-slate-400\">
+                          Sélectionné : <span className=\"text-white font-bold\">{format(selectedDate, 'd MMMM', { locale: fr })} à {selectedTime}</span>
+                        </p>
+                      ) : (
+                        <p className=\"text-slate-500\">Veuillez choisir un créneau</p>
+                      )}
+                    </div>
+                    <button
+                      disabled={!selectedDate || !selectedTime}
+                      onClick={() => setStep('form')}
+                      className=\"bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:bg-blue-500 transition-all disabled:opacity-30 disabled:grayscale flex items-center gap-2 group shadow-lg shadow-blue-600/20\"
+                    >
+                      Suivant
+                      <ChevronRightIcon className=\"w-5 h-5 group-hover:translate-x-1 transition-transform\" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP: FORM */}
+              {step === 'form' && (
+                <div className=\"p-8 md:p-12 animate-in slide-in-from-right duration-500\">
+                  <button 
+                    onClick={() => setStep('time')}
+                    className=\"flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-10 font-bold\"
+                  >
+                    <ChevronLeft className=\"w-5 h-5\" /> Retour
+                  </button>
+
+                  <h2 className=\"text-3xl font-black text-white mb-2\">Dernière étape</h2>
+                  <p className=\"text-slate-400 mb-10\">Complétez vos informations pour confirmer le rendez-vous.</p>
+
+                  <div className=\"space-y-6\">
+                    <div className=\"grid md:grid-cols-2 gap-6\">
+                      <div className=\"space-y-2\">
+                        <label className=\"text-xs font-black uppercase tracking-widest text-slate-500 ml-1\">Prénom</label>
+                        <input 
+                          className=\"w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none transition-all font-medium\" 
+                          placeholder=\"Ex: Jean\"
+                          value={bookingData.firstName}
+                          onChange={e => setBookingData({...bookingData, firstName: e.target.value})}
+                        />
+                      </div>
+                      <div className=\"space-y-2\">
+                        <label className=\"text-xs font-black uppercase tracking-widest text-slate-500 ml-1\">Nom</label>
+                        <input 
+                          className=\"w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none transition-all font-medium\" 
+                          placeholder=\"Ex: Dupont\"
+                          value={bookingData.lastName}
+                          onChange={e => setBookingData({...bookingData, lastName: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <div className=\"space-y-2\">
+                      <label className=\"text-xs font-black uppercase tracking-widest text-slate-500 ml-1\">Email professionnel</label>
+                      <input 
+                        type=\"email\"
+                        className=\"w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none transition-all font-medium\" 
+                        placeholder=\"jean@entreprise.com\"
+                        value={bookingData.email}
+                        onChange={e => setBookingData({...bookingData, email: e.target.value})}
+                      />
+                    </div>
+                    <div className=\"space-y-2\">
+                      <label className=\"text-xs font-black uppercase tracking-widest text-slate-500 ml-1\">Téléphone</label>
+                      <input 
+                        className=\"w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none transition-all font-medium\" 
+                        placeholder=\"+33 6 00 00 00 00\"
+                        value={bookingData.phone}
+                        onChange={e => setBookingData({...bookingData, phone: e.target.value})}
+                      />
+                    </div>
+
+                    <button 
+                      disabled={isSubmitting || !bookingData.firstName || !bookingData.lastName || !bookingData.email}
+                      onClick={handleSubmitBooking}
+                      className=\"w-full bg-blue-600 py-6 rounded-2xl font-black text-white hover:bg-blue-500 transition-all mt-6 disabled:opacity-30 flex items-center justify-center gap-3 shadow-xl shadow-blue-600/20\"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className=\"w-6 h-6 animate-spin\" />
+                          Confirmation en cours...
+                        </>
+                      ) : (
+                        'Confirmer mon rendez-vous'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP: SUCCESS */}
+              {step === 'success' && (
+                <div className=\"p-12 md:p-20 text-center animate-in zoom-in duration-500\">
+                  <div className=\"w-24 h-24 bg-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-emerald-500/20 rotate-12\">
+                    <Check className=\"text-white w-12 h-12 stroke-[4px]\" />
+                  </div>
+                  <h2 className=\"text-4xl font-black text-white mb-6\">C'est confirmé !</h2>
+                  <p className=\"text-xl text-slate-400 mb-12 max-w-md mx-auto\">
+                    Votre rendez-vous est programmé pour le <span className=\"text-white font-bold\">{format(selectedDate!, 'd MMMM', { locale: fr })} à {selectedTime}</span>.
+                  </p>
+                  
+                  <div className=\"bg-slate-950 border border-slate-800 rounded-3xl p-8 mb-10 text-left space-y-4 max-w-md mx-auto\">
+                    <div className=\"flex items-center gap-4\">
+                      <Video className=\"text-blue-500 w-5 h-5\" />
+                      <span className=\"text-sm font-bold truncate\">Lien de la réunion : {meetingLink}</span>
+                    </div>
+                    <p className=\"text-xs text-slate-500 leading-relaxed italic\">
+                      Un e-mail de confirmation avec toutes les informations vous a été envoyé.
+                    </p>
+                  </div>
+
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className=\"text-blue-500 font-black hover:text-blue-400 transition-colors uppercase tracking-widest text-sm\"
+                  >
+                    Réserver un autre créneau
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center p-4 md:p-8">
-      <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
-        {step === 'time' ? (
-          <>
-            <div className="text-left animate-in fade-in slide-in-from-left-4 duration-500">
-              <h1 className="text-4xl font-extrabold mb-4">Réserver un appel</h1>
-              <p className="text-slate-400 mb-8">Choisissez une date sur le calendrier pour votre session.</p>
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl">
-                <div className="flex items-center justify-between mb-6">
-                  <span className="font-bold text-lg capitalize">{currentMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</span>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() - 1)))} className="p-2 hover:bg-slate-800 rounded-lg transition-colors"><ChevronLeft /></button>
-                    <button type="button" onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)))} className="p-2 hover:bg-slate-800 rounded-lg transition-colors"><ChevronRight /></button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-500 mb-2">
-                  {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map(d => <div key={d}>{d}</div>)}
-                </div>
-                <div className="grid grid-cols-7 gap-2">{renderCalendar()}</div>
-              </div>
-            </div>
-            <div className="text-left animate-in fade-in slide-in-from-right-4 duration-500">
-              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <Clock className="text-blue-500" />
-                {selectedDate ? format(selectedDate, 'dd MMMM', { locale: fr }) : "Choisir une date"}
-              </h2>
-              <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                {!selectedDate ? (
-                  <div className="py-12 text-center border-2 border-dashed border-slate-800 rounded-2xl text-slate-500">Veuillez d'abord sélectionner un jour</div>
-                ) : availableTimeSlots.length > 0 ? (
-                  availableTimeSlots.map(time => (
-                    <button key={time} type="button" onClick={() => handleTimeSelect(time)} className="p-4 rounded-2xl border border-slate-800 bg-slate-900 hover:border-blue-500 hover:bg-blue-500/5 transition-all text-left font-bold flex items-center justify-between group">
-                      {time} <ChevronRightIcon className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-500" />
-                    </button>
-                  ))
-                ) : (
-                  <div className="py-12 text-center text-slate-500 italic">Aucun créneau disponible.</div>
-                )}
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="lg:col-span-2 max-w-xl mx-auto w-full text-left animate-in zoom-in-95 duration-300">
-            <button type="button" onClick={() => setStep('time')} className="text-slate-500 hover:text-white mb-8 flex items-center gap-2 font-bold transition-colors">
-              <ChevronLeft size={20}/> Revenir au calendrier
-            </button>
-            <h2 className="text-3xl font-bold mb-2">Dernière étape</h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <input className="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white focus:border-blue-500 outline-none transition-all" placeholder="Prénom" value={bookingData.firstName} onChange={e => setBookingData({...bookingData, firstName: e.target.value})} />
-                <input className="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white focus:border-blue-500 outline-none transition-all" placeholder="Nom" value={bookingData.lastName} onChange={e => setBookingData({...bookingData, lastName: e.target.value})} />
-              </div>
-              <input type="email" className="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white focus:border-blue-500 outline-none transition-all" placeholder="Email" value={bookingData.email} onChange={e => setBookingData({...bookingData, email: e.target.value})} />
-              <input className="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white focus:border-blue-500 outline-none transition-all" placeholder="Téléphone" value={bookingData.phone} onChange={e => setBookingData({...bookingData, phone: e.target.value})} />
-              <button type="button" disabled={isSubmitting} onClick={handleSubmitBooking} className="w-full bg-blue-600 py-5 rounded-2xl font-extrabold hover:bg-blue-500 transition-all mt-6 disabled:opacity-50 shadow-lg shadow-blue-600/20">
-                {isSubmitting ? "Enregistrement en cours..." : "Confirmer ma réservation"}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
