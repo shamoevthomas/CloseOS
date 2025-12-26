@@ -49,7 +49,7 @@ export function PublicBooking() {
 
         if (error || !data) throw new Error('Page de réservation introuvable')
         
-        // On récupère dynamiquement l'email du Closer pour l'envoi du mail
+        // MODIFICATION : On récupère l'email de l'agent propriétaire du slug
         const { data: agentData } = await supabase
           .from('internal_contacts')
           .select('email')
@@ -129,8 +129,10 @@ export function PublicBooking() {
     setIsSubmitting(true)
 
     try {
+      // MODIFICATION : On génère le lien et on l'utilise immédiatement
       const room = await createDailyRoom()
-      setMeetingLink(room.url)
+      const generatedLink = room.url
+      setMeetingLink(generatedLink)
 
       const formattedDate = format(selectedDate, 'yyyy-MM-dd')
       const [hours, minutes] = selectedTime.split(':').map(Number)
@@ -148,19 +150,20 @@ export function PublicBooking() {
           time: fullTimeRange,
           type: 'video',
           status: 'scheduled',
-          location: room.url,
+          location: generatedLink, // Utilisation du lien généré
           description: `Email: ${bookingData.email}\nTéléphone: ${bookingData.phone}`
         }])
 
       if (dbError) throw dbError
 
+      // MODIFICATION : Envoi du mail avec l'email agent et le lien généré
       await sendBookingEmails({
         prospectEmail: bookingData.email,
         prospectName: bookingData.firstName,
         agentEmail: settings.agentEmail,
         date: format(selectedDate, 'dd MMMM yyyy', { locale: fr }),
         time: selectedTime,
-        meetingLink: room.url
+        meetingLink: generatedLink
       })
 
       setStep('success')
@@ -192,7 +195,7 @@ export function PublicBooking() {
       <div className="max-w-6xl mx-auto px-4 py-12 md:py-20">
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           
-          {/* COLONNE GAUCHE : INFO (Titre et Description pilotés par la DB) */}
+          {/* COLONNE GAUCHE : INFO */}
           <div className="lg:col-span-4 space-y-8">
             <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl backdrop-blur-xl">
               <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-blue-600/20">
@@ -222,7 +225,7 @@ export function PublicBooking() {
             </div>
           </div>
 
-          {/* COLONNE DROITE : PROCESSUS DE RÉSERVATION */}
+          {/* COLONNE DROITE : PROCESSUS */}
           <div className="lg:col-span-8">
             <div className="bg-slate-900 border border-slate-800 rounded-[32px] overflow-hidden shadow-2xl">
               
@@ -231,7 +234,6 @@ export function PublicBooking() {
                 <div className="animate-in fade-in duration-500">
                   <div className="p-8 md:p-12">
                     <div className="grid md:grid-cols-2 gap-12">
-                      {/* Partie Calendrier */}
                       <div>
                         <h2 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
                           <Calendar className="text-blue-500 w-6 h-6" />
@@ -261,7 +263,6 @@ export function PublicBooking() {
                         </div>
                       </div>
 
-                      {/* Partie Créneaux Horaires */}
                       <div>
                         <h2 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
                           <Clock className="text-blue-500 w-6 h-6" />
@@ -294,7 +295,6 @@ export function PublicBooking() {
                     </div>
                   </div>
 
-                  {/* Barre de pied de page */}
                   <div className="bg-slate-950/50 border-t border-slate-800 p-8 flex items-center justify-between">
                     <div className="text-sm">
                       {selectedDate && selectedTime ? (
