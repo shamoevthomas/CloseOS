@@ -49,14 +49,14 @@ export function PublicBooking() {
 
         if (error || !data) throw new Error('Page de réservation introuvable')
         
-        // MODIFICATION : On récupère l'email de l'agent propriétaire du slug
-        const { data: agentData } = await supabase
-          .from('internal_contacts')
+        // CORRECTIF EMAIL : On récupère l'email de l'agent dans la table profiles
+        const { data: profileData } = await supabase
+          .from('profiles')
           .select('email')
-          .eq('user_id', data.user_id)
+          .eq('id', data.user_id)
           .single()
 
-        setSettings({ ...data, agentEmail: agentData?.email || 'contact@closer-os.com' })
+        setSettings({ ...data, agentEmail: profileData?.email || 'contact@closer-os.com' })
       } catch (err: any) {
         setError(err.message)
       } finally {
@@ -129,9 +129,12 @@ export function PublicBooking() {
     setIsSubmitting(true)
 
     try {
-      // MODIFICATION : On génère le lien et on l'utilise immédiatement
+      // CORRECTIF LIEN : On s'assure de récupérer la chaîne de caractères du lien
       const room = await createDailyRoom()
-      const generatedLink = room.url
+      const generatedLink = typeof room === 'string' ? room : (room?.url || '')
+      
+      if (!generatedLink) throw new Error("Le lien de réunion n'a pas pu être généré.")
+      
       setMeetingLink(generatedLink)
 
       const formattedDate = format(selectedDate, 'yyyy-MM-dd')
@@ -150,13 +153,13 @@ export function PublicBooking() {
           time: fullTimeRange,
           type: 'video',
           status: 'scheduled',
-          location: generatedLink, // Utilisation du lien généré
+          location: generatedLink,
           description: `Email: ${bookingData.email}\nTéléphone: ${bookingData.phone}`
         }])
 
       if (dbError) throw dbError
 
-      // MODIFICATION : Envoi du mail avec l'email agent et le lien généré
+      // CORRECTIF EMAIL : Envoi avec le lien et l'email agent récupéré
       await sendBookingEmails({
         prospectEmail: bookingData.email,
         prospectName: bookingData.firstName,
