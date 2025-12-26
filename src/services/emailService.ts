@@ -20,7 +20,8 @@ function formatToICSDate(dateStr: string, timeStr: string, addMinutes = 0) {
   const h = pad(date.getHours());
   const mi = pad(date.getMinutes());
 
-  return `${y}${mo}${d}T${h}${mi}00`;
+  // CORRECTION : Ajout du 'Z' final pour valider le format UTC Google
+  return `${y}${mo}${d}T${h}${mi}00Z`;
 }
 
 export async function sendBookingEmails(data: {
@@ -39,7 +40,7 @@ export async function sendBookingEmails(data: {
   const startTime = formatToICSDate(data.date, data.time);
   const endTime = formatToICSDate(data.date, data.time, 30);
   
-  // Lien Google Agenda corrigé (Format simple sans Z pour éviter les décalages de zone)
+  // Lien Google Agenda corrigé avec les dates au format UTC strict
   const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Entretien CloseOS x ' + data.prospectName)}&dates=${startTime}/${endTime}&details=${encodeURIComponent('Lien de la réunion : ' + data.meetingLink)}&location=${encodeURIComponent(data.meetingLink)}`;
 
   const icsContent = [
