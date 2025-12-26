@@ -6,7 +6,8 @@ import { supabase } from '../lib/supabase'
 import { format, addHours, isAfter, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { sendBookingEmails } from '../services/emailService'
-import { cn } from '../utils'
+// CORRECTION : Chemin d'accès pour le build Vercel
+import { cn } from '../lib/utils'
 
 type BookingStep = 'time' | 'form' | 'success'
 
@@ -161,7 +162,8 @@ export function PublicBooking() {
         prospectEmail: bookingData.email,
         prospectName: bookingData.firstName,
         agentEmail: settings.agentEmail,
-        date: formattedDate, // MODIF : formattedDate au lieu du formatage texte
+        // CORRECTION : On envoie le format YYYY-MM-DD pour éviter l'erreur calendrier dans le mail
+        date: formattedDate,
         time: selectedTime,
         meetingLink: generatedLink
       })
@@ -179,7 +181,7 @@ export function PublicBooking() {
     if (!selectedDate || !selectedTime) return ''
     const dateStr = format(selectedDate, 'yyyyMMdd')
     const [h, m] = selectedTime.split(':')
-    // Format UTC strict (Z) pour Google Calendar
+    // CORRECTION : Format UTC (Z) requis par Google
     const startIso = `${dateStr}T${h}${m}00Z`
     const endH = m === '30' ? (parseInt(h) + 1).toString().padStart(2, '0') : h
     const endM = m === '30' ? '00' : '30'
