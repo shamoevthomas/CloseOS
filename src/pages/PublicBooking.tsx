@@ -48,7 +48,15 @@ export function PublicBooking() {
           .single()
 
         if (error || !data) throw new Error('Page de réservation introuvable')
-        setSettings(data)
+        
+        // On récupère dynamiquement l'email du Closer pour l'envoi du mail
+        const { data: agentData } = await supabase
+          .from('internal_contacts')
+          .select('email')
+          .eq('user_id', data.user_id)
+          .single()
+
+        setSettings({ ...data, agentEmail: agentData?.email || 'contact@closer-os.com' })
       } catch (err: any) {
         setError(err.message)
       } finally {
@@ -149,7 +157,7 @@ export function PublicBooking() {
       await sendBookingEmails({
         prospectEmail: bookingData.email,
         prospectName: bookingData.firstName,
-        agentEmail: 'contact@closer-os.com',
+        agentEmail: settings.agentEmail,
         date: format(selectedDate, 'dd MMMM yyyy', { locale: fr }),
         time: selectedTime,
         meetingLink: room.url
