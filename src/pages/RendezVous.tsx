@@ -1,47 +1,57 @@
-import { useState, useMemo } from 'react'
-import { Link2, Copy, Check, Calendar, Clock, User, ExternalLink, X, Video, Phone, Settings } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Link2, Copy, Check, Calendar, Clock, User, ExternalLink, X, Video, Phone, Settings, Loader2 } from 'lucide-react'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 import { format, isValid, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 export function RendezVous() {
   const { user } = useAuth()
-  const { meetings, loading } = useMeetings()
+  const navigate = useNavigate()
+  const { meetings, loading: meetingsLoading } = useMeetings()
   const { isPrivacyEnabled, maskData } = usePrivacy()
   
   const [isCopied, setIsCopied] = useState(false)
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
-  const [isLinkCopied, setIsLinkCopied] = useState(false)
+  const [dbSlug, setDbSlug] = useState<string | null>(null)
+  const [slugLoading, setSlugLoading] = useState(true)
 
-  // LOGIQUE AMÉLIORÉE : Priorité au Slug > Nom propre > ID
+  // Récupération du slug réel depuis la table booking_settings
+  useEffect(() => {
+    async function fetchBookingSlug() {
+      if (!user?.id) return
+      try {
+        const { data } = await supabase
+          .from('booking_settings')
+          .select('slug')
+          .eq('user_id', user.id)
+          .single()
+        
+        if (data?.slug) {
+          setDbSlug(data.slug)
+        }
+      } catch (err) {
+        console.error("Erreur lors de la récupération du slug:", err)
+      } finally {
+        setSlugLoading(false)
+      }
+    }
+    fetchBookingSlug()
+  }, [user?.id])
+
   const bookingLink = useMemo(() => {
-    // 1. On tente d'abord de récupérer le slug officiel de Supabase
-    const officialSlug = user?.user_metadata?.booking_slug;
-    
-    // 2. Si absent, on génère un slug à partir du nom (ex: "Ninho" -> "ninho")
-    // Cela évite d'afficher l'ID moche (eaf0f01b...) sur l'interface
-    const fallbackSlug = user?.user_metadata?.full_name
-      ? user.user_metadata.full_name.toLowerCase().trim().replace(/\s+/g, '-')
-      : user?.id;
-
-    const finalSlug = officialSlug || fallbackSlug;
-    
-    // Construction de l'URL finale
+    // Priorité : Slug DB > Metadata > ID
+    const finalSlug = dbSlug || user?.user_metadata?.booking_slug || user?.id;
     return `${window.location.origin}/book/${finalSlug}`;
-  }, [user]);
+  }, [user, dbSlug]);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(bookingLink)
     setIsCopied(true)
     setTimeout(() => setIsCopied(false), 2000)
-  }
-
-  const handleCopyMeetingLink = (link: string) => {
-    navigator.clipboard.writeText(link)
-    setIsLinkCopied(true)
-    setTimeout(() => setIsLinkCopied(false), 2000)
   }
 
   const safeFormat = (dateStr: string, formatStr: string) => {
@@ -62,7 +72,7 @@ export function RendezVous() {
     return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
   }
 
-  if (loading) {
+  if (meetingsLoading || slugLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-950">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
@@ -80,14 +90,14 @@ export function RendezVous() {
           </div>
         </div>
 
-        {/* Section Lien de réservation stable */}
+        {/* Section Lien de réservation stable avec bouton Personnaliser */}
         <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
           <div className="mb-4 flex items-center gap-2">
             <Link2 className="h-5 w-5 text-blue-500" />
             <h2 className="text-xl font-bold text-white">Mon lien de réservation</h2>
           </div>
           <div className="flex gap-3">
-            <div className="flex-1 rounded-xl border border-slate-800 bg-black/40 px-4 py-3 flex items-center">
+            <div className="flex-1 rounded-xl border border-slate-800 bg-black/40 px-4 py-3 flex items-center overflow-hidden">
               <span className="text-blue-400 font-medium truncate">{bookingLink}</span>
             </div>
             <button
@@ -98,6 +108,13 @@ export function RendezVous() {
             >
               {isCopied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
               {isCopied ? 'Copié !' : 'Copier'}
+            </button>
+            <button
+              onClick={() => navigate('/settings/booking')}
+              className="flex items-center gap-2 rounded-xl px-6 py-3 font-bold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all"
+            >
+              <Settings className="h-5 w-5" />
+              Personnaliser
             </button>
           </div>
         </div>
