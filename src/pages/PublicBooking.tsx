@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 import { format, addHours, isAfter, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { sendBookingEmails } from '../services/emailService'
-import { cn } from '../lib/utils'
+import { cn } from '../utils'
 
 type BookingStep = 'time' | 'form' | 'success'
 
@@ -49,7 +49,6 @@ export function PublicBooking() {
 
         if (error || !data) throw new Error('Page de réservation introuvable')
         
-        // CORRECTIF EMAIL : On récupère l'email de l'agent dans la table profiles
         const { data: profileData } = await supabase
           .from('profiles')
           .select('email')
@@ -129,7 +128,6 @@ export function PublicBooking() {
     setIsSubmitting(true)
 
     try {
-      // CORRECTIF LIEN : On s'assure de récupérer la chaîne de caractères du lien
       const room = await createDailyRoom()
       const generatedLink = typeof room === 'string' ? room : (room?.url || '')
       
@@ -159,12 +157,11 @@ export function PublicBooking() {
 
       if (dbError) throw dbError
 
-      // CORRECTIF EMAIL : Envoi avec le lien et l'email agent récupéré
       await sendBookingEmails({
         prospectEmail: bookingData.email,
         prospectName: bookingData.firstName,
         agentEmail: settings.agentEmail,
-        date: format(selectedDate, 'dd MMMM yyyy', { locale: fr }),
+        date: formattedDate, // MODIF : formattedDate au lieu du formatage texte
         time: selectedTime,
         meetingLink: generatedLink
       })
@@ -176,6 +173,18 @@ export function PublicBooking() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const getGoogleCalendarUrl = () => {
+    if (!selectedDate || !selectedTime) return ''
+    const dateStr = format(selectedDate, 'yyyyMMdd')
+    const [h, m] = selectedTime.split(':')
+    // Format UTC strict (Z) pour Google Calendar
+    const startIso = `${dateStr}T${h}${m}00Z`
+    const endH = m === '30' ? (parseInt(h) + 1).toString().padStart(2, '0') : h
+    const endM = m === '30' ? '00' : '30'
+    const endIso = `${dateStr}T${endH}${endM}00Z`
+    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Session de Closing - ' + (settings?.title || 'Appel'))}&dates=${startIso}/${endIso}&details=${encodeURIComponent('Lien de la réunion : ' + meetingLink)}&location=${encodeURIComponent(meetingLink)}`
   }
 
   if (loading) return (
@@ -403,14 +412,50 @@ export function PublicBooking() {
                     Votre rendez-vous est programmé pour le <span className="text-white font-bold">{format(selectedDate!, 'd MMMM', { locale: fr })} à {selectedTime}</span>.
                   </p>
                   
-                  <div className="bg-slate-950 border border-slate-800 rounded-3xl p-8 mb-10 text-left space-y-4 max-w-md mx-auto">
-                    <div className="flex items-center gap-4">
-                      <Video className="text-blue-500 w-5 h-5" />
-                      <span className="text-sm font-bold truncate">Lien de la réunion : {meetingLink}</span>
+                  {/* ACTIONS ET LIEN */}
+                  <div className="space-y-6 max-w-md mx-auto mb-10">
+                    {/* Cellule interactive du lien */}
+                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 overflow-hidden text-left">
+                          <Video className="text-blue-500 w-5 h-5 flex-shrink-0" />
+                          <a 
+                            href={meetingLink} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-sm font-bold text-blue-400 truncate hover:underline underline-offset-4"
+                          >
+                            {meetingLink}
+                          </a>
+                        </div>
+                        <button 
+                          onClick={() => { navigator.clipboard.writeText(meetingLink); alert('Lien copié !'); }}
+                          className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                        >
+                          <Copy size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed italic">
-                      Un e-mail de confirmation avec toutes les informations vous a été envoyé.
-                    </p>
+
+                    {/* Bouton Calendrier */}
+                    <a 
+                      href={getGoogleCalendarUrl()} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="w-full flex items-center justify-center gap-3 bg-white text-slate-950 py-4 rounded-2xl font-black hover:bg-slate-100 transition-all shadow-xl"
+                    >
+                      <CalendarIcon className="h-5 w-5" />
+                      Ajouter à mon agenda
+                    </a>
+                    
+                    {/* Contact en cas de modification */}
+                    <div className="p-4 border border-slate-800 rounded-2xl bg-slate-800/20 text-sm text-slate-400">
+                      <p className="mb-3">Un empêchement ? Merci de prévenir par email :</p>
+                      <div className="flex items-center justify-center gap-2 text-white font-bold bg-slate-950 p-2.5 rounded-lg border border-slate-800/50">
+                        <Mail className="h-4 w-4 text-blue-400" />
+                        {settings?.agentEmail}
+                      </div>
+                    </div>
                   </div>
 
                   <button 
