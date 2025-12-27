@@ -37,7 +37,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-  // 1. Charger les notifications existantes et retourner les données pour la suite
+  // 1. Charger les notifications existantes depuis la base
   const fetchNotifications = async () => {
     if (!user) {
       setNotifications([])
@@ -45,7 +45,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       return []
     }
 
-    setLoading(true)
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -59,52 +58,41 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       setNotifications(fetched)
       return fetched
     } catch (error) {
-      console.error('Erreur notifications:', error)
+      console.error('Erreur fetchNotifications:', error)
       return []
     } finally {
       setLoading(false)
     }
   }
 
-  // RÉCTIFICATION : Synchronisation intelligente (Booking récents + RDV du jour)
-  const syncMeetingsAlerts = async (currentNotifs: Notification[]) => {
+  // 2. LOGIQUE DEMANDÉE : Vérifier les RDV créés dans les dernières 24h
+  const syncRecentBookings = async (existingNotifs: Notification[]) => {
     if (!user) return
     
-    console.log("🔍 Analyse des rendez-vous pour notifications...");
-    const today = new Date().toISOString().split('T')[0]
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    console.log("🔍 Vérification des nouveaux RDV (Dernières 24H)...")
     
-    const { data: meetings } = await supabase
+    // Calcul de la date d'il y a 24h
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    
+    // Récupérer les meetings créés depuis 24h
+    const { data: recentMeetings } = await supabase
       .from('meetings')
       .select('*')
       .eq('user_id', user.id)
+      .gt('created_at', twentyFourHoursAgo) // Uniquement les nouveaux
 
-    if (!meetings) return
-
-    for (const m of meetings) {
-      // --- LOGIQUE 1 : Rappel pour les RDV du JOUR ---
-      if (m.date === today) {
-        const alreadyNotified = currentNotifs.some(n => 
-          n.type === 'agenda' && n.description.includes(m.contact) && n.time.startsWith(today)
+    if (recentMeetings && recentMeetings.length > 0) {
+      for (const m of recentMeetings) {
+        // Est-ce qu'on a déjà une notification pour ce RDV précis ?
+        // On vérifie si le nom du contact et la date du RDV sont déjà dans nos notifications
+        const alreadyNotified = existingNotifs.some(n => 
+          n.type === 'booking' && 
+          n.description.includes(m.contact) && 
+          n.description.includes(m.date)
         )
-        if (!alreadyNotified) {
-          await addNotification({
-            title: "RDV aujourd'hui",
-            description: `Rendez-vous avec ${m.contact} à ${m.time}.`,
-            type: 'agenda'
-          })
-        }
-      }
 
-      // --- LOGIQUE 2 : Alerte pour les NOUVEAUX BOOKINGS (Dernières 24h) ---
-      const createdAt = m.created_at ? new Date(m.created_at).getTime() : 0
-      const isNewBooking = (Date.now() - createdAt) < 86400000 // Moins de 24h
-
-      if (isNewBooking) {
-        const alreadyNotified = currentNotifs.some(n => 
-          n.type === 'booking' && n.description.includes(m.contact) && n.description.includes(m.date)
-        )
         if (!alreadyNotified) {
+          console.log(`🔔 Nouveau booking détecté pour ${m.contact}, création de la notification...`)
           await addNotification({
             title: 'Nouveau RDV programmé',
             description: `${m.contact} a réservé pour le ${m.date}.`,
@@ -115,27 +103,29 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Initialisation au chargement de l'utilisateur
   useEffect(() => {
     if (user) {
-      fetchNotifications().then((notifs) => {
-        syncMeetingsAlerts(notifs)
+      fetchNotifications().then((currentNotifs) => {
+        syncRecentBookings(currentNotifs)
       })
     }
   }, [user])
 
-  // Temps réel : INSERT en direct dans la table meetings
+  // 3. Écoute Real-time (pour les RDV pris pendant que l'app est ouverte)
   useEffect(() => {
     if (!user) return
 
     const channel = supabase
-      .channel('live-notifications')
+      .channel('meetings-monitor')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'meetings', filter: `user_id=eq.${user.id}` },
         (payload) => {
+          console.log("⚡ Nouveau RDV reçu en direct !", payload.new)
           addNotification({
             title: 'Nouveau RDV programmé',
-            description: `Un nouveau rendez-vous avec ${payload.new.contact} vient d'arriver.`,
+            description: `${payload.new.contact} vient de réserver pour le ${payload.new.date}.`,
             type: 'booking'
           })
         }
@@ -145,7 +135,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     return () => { supabase.removeChannel(channel) }
   }, [user])
 
-  // Ajouter une notification en base et localement
+  // Fonction pour insérer une notification en base
   const addNotification = async (notifData: Omit<Notification, 'id' | 'read' | 'time' | 'user_id'>) => {
     if (!user) return
 
