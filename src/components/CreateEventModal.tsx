@@ -39,17 +39,23 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // RÉCTIFICATION : Chargement des contacts internes depuis la table 'contacts'
+  // RÉCTIFICATION : Chargement des contacts internes avec filtrage local sécurisé
   useEffect(() => {
     async function fetchInternalCrmContacts() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('contacts')
         .select('*')
-        .or('is_internal.eq.true,category.eq.internal') // Filtre identique à ta page Contacts
       
       if (data) {
-        setInternalContactsList(data)
+        // On filtre en local pour être sûr de capturer tous les formats (category, is_internal ou type)
+        const internal = data.filter(c => 
+          c.category === 'internal' || 
+          c.is_internal === true || 
+          c.type === 'internal'
+        )
+        setInternalContactsList(internal)
       }
+      if (error) console.error("Erreur chargement contacts:", error)
     }
     if (isOpen) fetchInternalCrmContacts()
   }, [isOpen])
@@ -114,10 +120,10 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
 
   if (!isOpen) return null
 
-  // RÉCTIFICATION : Switch de source de données
-  // Externe = prospects du contexte | Interne = contacts internes de la table CRM
+  // Switch de source de données
+  // Externe = prospects du contexte | Interne = contacts internes filtrés
   const currentList = isInternal 
-    ? internalContactsList.map(c => ({ id: c.id, name: c.full_name || c.name || c.contact }))
+    ? internalContactsList.map(c => ({ id: c.id, name: c.full_name || c.name || c.contact || 'Sans nom' }))
     : prospects.map(p => ({ id: p.id, name: p.contact || p.title || 'Prospect' }))
 
   const filteredContacts = currentList.filter((c) => {
@@ -232,48 +238,21 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
 
           {/* SÉLECTEUR DE CATÉGORIE */}
           <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedCategory('call_video')}
-              className={cn(
-                'flex flex-col items-center gap-2 rounded-lg border p-3 transition-all',
-                selectedCategory === 'call_video'
-                  ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                  : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600'
-              )}
-            >
+            <button type="button" onClick={() => setSelectedCategory('call_video')} className={cn('flex flex-col items-center gap-2 rounded-lg border p-3 transition-all', selectedCategory === 'call_video' ? 'border-blue-500 bg-blue-500/10 text-blue-400' : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600')}>
               <Video className="h-5 w-5" />
               <span className="text-[10px] font-bold uppercase">Appel / Visio</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setSelectedCategory('event')}
-              className={cn(
-                'flex flex-col items-center gap-2 rounded-lg border p-3 transition-all',
-                selectedCategory === 'event'
-                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
-                  : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600'
-              )}
-            >
+            <button type="button" onClick={() => setSelectedCategory('event')} className={cn('flex flex-col items-center gap-2 rounded-lg border p-3 transition-all', selectedCategory === 'event' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600')}>
               <Calendar className="h-5 w-5" />
               <span className="text-[10px] font-bold uppercase">Événement</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setSelectedCategory('other')}
-              className={cn(
-                'flex flex-col items-center gap-2 rounded-lg border p-3 transition-all',
-                selectedCategory === 'other'
-                  ? 'border-orange-500 bg-orange-500/10 text-orange-400'
-                  : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600'
-              )}
-            >
+            <button type="button" onClick={() => setSelectedCategory('other')} className={cn('flex flex-col items-center gap-2 rounded-lg border p-3 transition-all', selectedCategory === 'other' ? 'border-orange-500 bg-orange-500/10 text-orange-400' : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600')}>
               <Users className="h-5 w-5" />
               <span className="text-[10px] font-bold uppercase">Autre</span>
             </button>
           </div>
 
-          {/* SÉLECTEUR DE CONTACT DYNAMIQUE SYNCHRONISÉ */}
+          {/* SÉLECTEUR DE CONTACT DYNAMIQUE */}
           <div className="relative" ref={dropdownRef}>
             <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
               {isInternal ? 'Contact Interne (CRM) *' : 'Prospect (CRM) *'}
