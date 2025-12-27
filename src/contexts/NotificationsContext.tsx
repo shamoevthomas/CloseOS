@@ -63,11 +63,76 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // AJOUT : Vérification des événements de la journée pour générer des rappels
+  const checkTodayMeetings = async () => {
+    if (!user) return
+    
+    const today = new Date().toISOString().split('T')[0]
+    
+    // Récupérer les meetings d'aujourd'hui
+    const { data: todayMeetings } = await supabase
+      .from('meetings')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('date', today)
+
+    if (todayMeetings) {
+      for (const m of todayMeetings) {
+        // Vérifier si une notification de rappel existe déjà pour ce meeting aujourd'hui
+        const alreadyNotified = notifications.some(n => 
+          n.type === 'agenda' && 
+          n.description.includes(m.contact) && 
+          n.time.startsWith(today)
+        )
+
+        if (!alreadyNotified) {
+          await addNotification({
+            title: 'Rappel : RDV aujourd\'hui',
+            description: `Vous avez rendez-vous avec ${m.contact} à ${m.time}.`,
+            type: 'agenda'
+          })
+        }
+      }
+    }
+  }
+
   useEffect(() => {
-    fetchNotifications()
+    fetchNotifications().then(() => {
+        if (user) checkTodayMeetings()
+    })
   }, [user])
 
-  // 2. Ajouter une notification (ex: suite à une action du coach IA ou une nouvelle réservation)
+  // AJOUT : Écoute en temps réel pour les nouvelles réservations (table meetings)
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'meetings',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const newMeeting = payload.new
+          addNotification({
+            title: 'Nouveau RDV programmé',
+            description: `Nouveau rendez-vous avec ${newMeeting.contact} ajouté via le calendrier.`,
+            type: 'booking'
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
+  // 2. Ajouter une notification
   const addNotification = async (notifData: Omit<Notification, 'id' | 'read' | 'time' | 'user_id'>) => {
     if (!user) return
 
@@ -125,7 +190,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Fonctions pour les badges (peuvent rester locales ou être liées à la DB selon besoin)
   const clearBadge = (type: keyof NotificationCounts) => {
     setCounts(prev => ({ ...prev, [type]: 0 }))
   }
