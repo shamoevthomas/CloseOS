@@ -143,7 +143,6 @@ export function Dashboard() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
   const { notifications } = useNotifications()
-  // MODIF : On utilise 'meetings' car c'est le nom exporté par MeetingsContext
   const { meetings } = useMeetings() 
 
   const [isCallOpen, setIsCallOpen] = useState(false)
@@ -223,7 +222,6 @@ export function Dashboard() {
     return notifications.slice(0, 5)
   }, [notifications])
 
-  // MODIF : On utilise 'meetings' pour filtrer sur les 3 prochains jours
   useEffect(() => {
     try {
       const now = new Date()
@@ -397,7 +395,7 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6">
 
             {/* Événements à venir */}
             <div className="rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
@@ -525,50 +523,6 @@ export function Dashboard() {
                               </>
                             )}
                           </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Recent Activities */}
-            <div className="rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white">Activités Récentes</h2>
-                <button className="text-sm font-medium text-blue-400 hover:text-blue-300">
-                  Voir tout
-                </button>
-              </div>
-
-              {recentActivities.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800/50">
-                    <FileText className="h-8 w-8 text-slate-600" />
-                  </div>
-                  <p className="text-lg font-semibold text-slate-400">Aucune activité récente</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {recentActivities.map((activity) => {
-                    const { icon: ActivityIcon, color: iconColor } = getActivityIcon(activity.type)
-
-                    return (
-                      <div
-                        key={activity.id}
-                        className="flex items-start gap-4 rounded-xl bg-slate-800/30 p-4 transition-all hover:bg-slate-800/50"
-                      >
-                        <div className={cn(
-                          'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg',
-                          iconColor
-                        )}>
-                          <ActivityIcon className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-white">{activity.title}</p>
-                          <p className="mt-1 text-sm text-slate-400">{activity.description}</p>
-                          <p className="mt-2 text-xs text-slate-500">{formatNotificationTime(activity.time)}</p>
                         </div>
                       </div>
                     )
