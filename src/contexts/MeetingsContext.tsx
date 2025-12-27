@@ -5,15 +5,16 @@ import { useAuth } from './AuthContext'
 export interface Meeting {
   id: number
   user_id: string
-  prospectId?: number // Rendu optionnel
+  prospectId?: number
   date: string 
   time: string 
-  type: 'call' | 'video' | 'meeting'
+  type: 'call' | 'video' | 'meeting' | 'event' | 'other' // Types mis à jour
   title: string
   contact: string
   status: 'upcoming' | 'completed' | 'cancelled' | 'scheduled'
   description?: string
   location?: string
+  is_internal?: boolean // Nouveau champ
 }
 
 interface MeetingsContextType {
@@ -65,7 +66,6 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     if (!user) return { data: null, error: 'Non authentifié' }
 
     try {
-      // On prépare les données en s'assurant que les noms correspondent à la table meetings
       const payload = {
         user_id: user.id,
         contact: meetingData.contact,
@@ -75,7 +75,8 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
         type: meetingData.type,
         status: meetingData.status || 'upcoming',
         description: meetingData.description,
-        location: meetingData.location
+        location: meetingData.location,
+        is_internal: meetingData.is_internal || false // Enregistrement du type interne/externe
       }
 
       const { data, error } = await supabase
