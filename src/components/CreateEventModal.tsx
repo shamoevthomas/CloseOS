@@ -120,7 +120,8 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // MODIFIÉ : Ajout de async pour attendre la réponse de la base de données
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!title || !date || !startTime || !endTime) {
@@ -128,53 +129,60 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
       return
     }
 
-    if (editingEvent) {
-      // Update existing meeting
-      updateMeeting(editingEvent.id, {
-        title,
-        date,
-        time: `${startTime} - ${endTime}`,
-        type,
-        description,
-        location,
-      })
-      console.log('✅ Meeting updated:', editingEvent.id)
-    } else {
-      // Create new meeting
-      // Use selectedProspect if available, otherwise fall back to props
-      const finalProspectId = selectedProspect?.id || prospectId
-      const finalProspectName = selectedProspect?.name || prospectName
+    try {
+      if (editingEvent) {
+        // Update existing meeting
+        const { error } = await updateMeeting(editingEvent.id, {
+          title,
+          date,
+          time: `${startTime} - ${endTime}`,
+          type,
+          description,
+          location,
+        })
+        if (error) throw error
+        console.log('✅ Meeting updated:', editingEvent.id)
+      } else {
+        // Create new meeting
+        const finalProspectId = selectedProspect?.id || prospectId
+        const finalProspectName = selectedProspect?.name || prospectName
 
-      if (!finalProspectId || !finalProspectName) {
-        alert('Veuillez sélectionner un prospect')
-        return
+        if (!finalProspectId || !finalProspectName) {
+          alert('Veuillez sélectionner un prospect')
+          return
+        }
+
+        // MODIFIÉ : On attend le résultat de l'ajout
+        const { error } = await addMeeting({
+          prospectId: finalProspectId,
+          contact: finalProspectName,
+          title,
+          date,
+          time: `${startTime} - ${endTime}`,
+          type,
+          status: 'upcoming',
+          description,
+          location,
+        })
+        if (error) throw error
+        console.log('✅ Meeting created')
       }
 
-      addMeeting({
-        prospectId: finalProspectId,
-        contact: finalProspectName,
-        title,
-        date,
-        time: `${startTime} - ${endTime}`,
-        type,
-        status: 'upcoming',
-        description,
-        location,
-      })
-      console.log('✅ Meeting created')
+      // Reset and close
+      setTitle('')
+      setDate('')
+      setStartTime('')
+      setEndTime('')
+      setType('call')
+      setDescription('')
+      setLocation('')
+      setSearchQuery('')
+      setSelectedProspect(null)
+      onClose()
+    } catch (error: any) {
+      console.error('❌ Erreur Supabase:', error)
+      alert(`Erreur lors de l'enregistrement : ${error.message || 'Problème de connexion'}`)
     }
-
-    // Reset and close
-    setTitle('')
-    setDate('')
-    setStartTime('')
-    setEndTime('')
-    setType('call')
-    setDescription('')
-    setLocation('')
-    setSearchQuery('')
-    setSelectedProspect(null)
-    onClose()
   }
 
   return (
