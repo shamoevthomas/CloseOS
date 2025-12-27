@@ -37,7 +37,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-  // 1. Charger les notifications réelles depuis Supabase
+  // 1. Charger les notifications réelles
   const fetchNotifications = async () => {
     if (!user) {
       setNotifications([])
@@ -63,73 +63,87 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // AJOUT : Vérification des événements de la journée pour générer des rappels
-  const checkTodayMeetings = async () => {
+  // RECTIFICATION : Synchronisation automatique des nouveaux bookings et rappels
+  const syncMeetingNotifications = async (currentNotifications: Notification[]) => {
     if (!user) return
     
     const today = new Date().toISOString().split('T')[0]
     
-    // Récupérer les meetings d'aujourd'hui
-    const { data: todayMeetings } = await supabase
+    // Récupérer tous les meetings récents (créés il y a moins de 24h) ou prévus aujourd'hui
+    const { data: recentMeetings } = await supabase
       .from('meetings')
       .select('*')
       .eq('user_id', user.id)
-      .eq('date', today)
+      .order('date', { ascending: true })
 
-    if (todayMeetings) {
-      for (const m of todayMeetings) {
-        // Vérifier si une notification de rappel existe déjà pour ce meeting aujourd'hui
-        const alreadyNotified = notifications.some(n => 
-          n.type === 'agenda' && 
-          n.description.includes(m.contact) && 
-          n.time.startsWith(today)
-        )
+    if (recentMeetings) {
+      for (const m of recentMeetings) {
+        // --- LOGIQUE 1 : Rappel des RDV du jour ---
+        if (m.date === today) {
+          const hasReminder = currentNotifications.some(n => 
+            n.type === 'agenda' && n.description.includes(m.contact) && n.time.startsWith(today)
+          )
+          if (!hasReminder) {
+            await addNotification({
+              title: 'Rappel : RDV aujourd\'hui',
+              description: `RDV avec ${m.contact} à ${m.time}.`,
+              type: 'agenda'
+            })
+          }
+        }
 
-        if (!alreadyNotified) {
-          await addNotification({
-            title: 'Rappel : RDV aujourd\'hui',
-            description: `Vous avez rendez-vous avec ${m.contact} à ${m.time}.`,
-            type: 'agenda'
-          })
+        // --- LOGIQUE 2 : Alerte Nouveau Booking (si créé il y a moins de 24h) ---
+        const createdDate = new Date(m.created_at || new Date())
+        const isRecent = (new Date().getTime() - createdDate.getTime()) < 86400000 // 24h
+        
+        if (isRecent) {
+          const hasBookingNotif = currentNotifications.some(n => 
+            n.type === 'booking' && n.description.includes(m.contact) && n.description.includes(m.date)
+          )
+          if (!hasBookingNotif) {
+            await addNotification({
+              title: 'Nouveau RDV booké',
+              description: `${m.contact} a réservé un créneau pour le ${m.date}.`,
+              type: 'booking'
+            })
+          }
         }
       }
     }
   }
 
   useEffect(() => {
-    fetchNotifications().then(() => {
-        if (user) checkTodayMeetings()
-    })
+    if (user) {
+      fetchNotifications().then(() => {
+        // On attend que les notifications soient chargées pour vérifier les manquantes
+        setNotifications(prev => {
+          syncMeetingNotifications(prev)
+          return prev
+        })
+      })
+    }
   }, [user])
 
-  // AJOUT : Écoute en temps réel pour les nouvelles réservations (table meetings)
+  // Real-time listener pour les bookings en direct
   useEffect(() => {
     if (!user) return
 
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel('meetings-realtime')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'meetings',
-          filter: `user_id=eq.${user.id}`
-        },
+        { event: 'INSERT', schema: 'public', table: 'meetings', filter: `user_id=eq.${user.id}` },
         (payload) => {
-          const newMeeting = payload.new
           addNotification({
             title: 'Nouveau RDV programmé',
-            description: `Nouveau rendez-vous avec ${newMeeting.contact} ajouté via le calendrier.`,
+            description: `Un nouveau rendez-vous avec ${payload.new.contact} vient d'être ajouté.`,
             type: 'booking'
           })
         }
       )
       .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [user])
 
   // 2. Ajouter une notification
@@ -154,49 +168,24 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // 3. Marquer tout comme lu
   const markAllAsRead = async () => {
     if (!user) return
-
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('user_id', user.id)
-        .eq('read', false)
-
-      if (error) throw error
+      await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false)
       setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-    } catch (error) {
-      console.error('Erreur markAllAsRead:', error)
-    }
+    } catch (error) { console.error(error) }
   }
 
-  // 4. Marquer une notification spécifique comme lue
   const markAsRead = async (id: string) => {
     if (!user) return
-
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', id)
-        .eq('user_id', user.id)
-
-      if (error) throw error
+      await supabase.from('notifications').update({ read: true }).eq('id', id).eq('user_id', user.id)
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
-    } catch (error) {
-      console.error('Erreur markAsRead:', error)
-    }
+    } catch (error) { console.error(error) }
   }
 
-  const clearBadge = (type: keyof NotificationCounts) => {
-    setCounts(prev => ({ ...prev, [type]: 0 }))
-  }
-
-  const incrementBadge = (type: keyof NotificationCounts) => {
-    setCounts(prev => ({ ...prev, [type]: prev[type] + 1 }))
-  }
+  const clearBadge = (type: keyof NotificationCounts) => setCounts(prev => ({ ...prev, [type]: 0 }))
+  const incrementBadge = (type: keyof NotificationCounts) => setCounts(prev => ({ ...prev, [type]: prev[type] + 1 }))
 
   return (
     <NotificationsContext.Provider
@@ -219,8 +208,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
 export function useNotifications() {
   const context = useContext(NotificationsContext)
-  if (context === undefined) {
-    throw new Error('useNotifications must be used within a NotificationsProvider')
-  }
+  if (context === undefined) throw new Error('useNotifications must be used within a NotificationsProvider')
   return context
 }
