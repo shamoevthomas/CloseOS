@@ -16,13 +16,12 @@ interface CreateEventModalProps {
 
 export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, editingEvent }: CreateEventModalProps) {
   const { addMeeting, updateMeeting } = useMeetings()
-  const { prospects } = useProspects()
+  const { prospects } = useProspects() // Source pour "Mes Prospects" (Externe)
 
-  // États pour la nouvelle structure Interne/Externe
+  // États pour la structure Interne/Externe
   const [isInternal, setIsInternal] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<'call_video' | 'event' | 'other'>('call_video')
   const [internalContactsList, setInternalContactsList] = useState<any[]>([])
-  const [externalContactsList, setExternalContactsList] = useState<any[]>([])
 
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
@@ -40,20 +39,19 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // MODIF : Chargement des listes de contacts depuis la table 'contacts'
+  // RÉCTIFICATION : Chargement des contacts internes depuis la table 'contacts'
   useEffect(() => {
-    async function fetchAllCrmContacts() {
-      const { data, error } = await supabase
+    async function fetchInternalCrmContacts() {
+      const { data } = await supabase
         .from('contacts')
         .select('*')
+        .or('is_internal.eq.true,category.eq.internal') // Filtre identique à ta page Contacts
       
       if (data) {
-        // On filtre selon la structure de ta page contacts
-        setInternalContactsList(data.filter(c => c.is_internal === true || c.category === 'internal'))
-        setExternalContactsList(data.filter(c => c.is_internal !== true && c.category !== 'internal'))
+        setInternalContactsList(data)
       }
     }
-    if (isOpen) fetchAllCrmContacts()
+    if (isOpen) fetchInternalCrmContacts()
   }, [isOpen])
 
   // Pré-remplissage prospect
@@ -116,18 +114,20 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
 
   if (!isOpen) return null
 
-  // Switch de source de contacts pour l'affichage
-  const currentList = isInternal ? internalContactsList : externalContactsList
+  // RÉCTIFICATION : Switch de source de données
+  // Externe = prospects du contexte | Interne = contacts internes de la table CRM
+  const currentList = isInternal 
+    ? internalContactsList.map(c => ({ id: c.id, name: c.full_name || c.name || c.contact }))
+    : prospects.map(p => ({ id: p.id, name: p.contact || p.title || 'Prospect' }))
 
   const filteredContacts = currentList.filter((c) => {
-    const name = c.name || c.full_name || c.contact || c.title || ''
+    const name = c.name || ''
     return name.toLowerCase().includes(searchQuery.toLowerCase())
   })
 
   const handleSelectContact = (contact: any) => {
-    const name = contact.name || contact.full_name || contact.contact || contact.title
-    setSelectedContact({ id: contact.id, name })
-    setSearchQuery(name)
+    setSelectedContact({ id: contact.id, name: contact.name })
+    setSearchQuery(contact.name)
     setIsDropdownOpen(false)
   }
 
@@ -164,7 +164,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
         description,
         location: selectedCategory === 'call_video' ? location : '',
         contact: selectedContact?.name || searchQuery,
-        prospectId: selectedContact?.id || null,
+        prospectId: isInternal ? null : (selectedContact?.id || null),
         is_internal: isInternal,
         status: 'upcoming' as const
       }
@@ -187,7 +187,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800 text-left">
         
         {/* HEADER */}
         <div className="flex items-center justify-between border-b border-slate-800 p-6">
@@ -273,10 +273,10 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
             </button>
           </div>
 
-          {/* SÉLECTEUR DE CONTACT DYNAMIQUE (Depuis table contacts) */}
+          {/* SÉLECTEUR DE CONTACT DYNAMIQUE SYNCHRONISÉ */}
           <div className="relative" ref={dropdownRef}>
             <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
-              {isInternal ? 'Contact Interne *' : 'Prospect Externe *'}
+              {isInternal ? 'Contact Interne (CRM) *' : 'Prospect (CRM) *'}
             </label>
             <div className="relative">
               <input
@@ -284,7 +284,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setIsDropdownOpen(true) }}
                 onFocus={() => setIsDropdownOpen(true)}
-                placeholder={isInternal ? "Chercher un contact interne..." : "Chercher un prospect..."}
+                placeholder={isInternal ? "Chercher Emilie, Kylian..." : "Chercher un prospect..."}
                 className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-10 text-sm text-white focus:border-blue-500 outline-none transition-all"
                 required
               />
@@ -304,9 +304,9 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
                       className="flex w-full items-center gap-3 border-b border-slate-700/50 px-4 py-3 text-left transition-colors hover:bg-slate-700 last:border-0"
                     >
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-white uppercase">
-                        {(contact.name || contact.full_name || contact.contact)?.charAt(0)}
+                        {contact.name?.charAt(0)}
                       </div>
-                      <span className="text-sm font-medium text-white">{contact.name || contact.full_name || contact.contact}</span>
+                      <span className="text-sm font-medium text-white">{contact.name}</span>
                     </button>
                   ))
                 ) : (
