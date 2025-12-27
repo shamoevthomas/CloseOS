@@ -22,7 +22,7 @@ import { NoAnswerModal } from '../components/NoAnswerModal'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { useNotifications } from '../contexts/NotificationsContext'
-import { useMeetings } from '../contexts/MeetingsContext' // AJOUT : Import du contexte réel
+import { useMeetings } from '../contexts/MeetingsContext'
 
 // Helper to parse commission percentage
 const parseCommission = (commissionString: string): number => {
@@ -143,7 +143,8 @@ export function Dashboard() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
   const { notifications } = useNotifications()
-  const { events } = useMeetings() // MODIF : Utilisation des events du contexte Supabase
+  // MODIF : On utilise 'meetings' car c'est le nom exporté par MeetingsContext
+  const { meetings } = useMeetings() 
 
   const [isCallOpen, setIsCallOpen] = useState(false)
   const [selectedProspect, setSelectedProspect] = useState({ name: '', avatar: '' })
@@ -222,16 +223,15 @@ export function Dashboard() {
     return notifications.slice(0, 5)
   }, [notifications])
 
-  // MODIF : Filtrage sur les 3 prochains jours
+  // MODIF : On utilise 'meetings' pour filtrer sur les 3 prochains jours
   useEffect(() => {
     try {
       const now = new Date()
-      // Date limite : Aujourd'hui + 3 jours à minuit
       const threeDaysLater = new Date()
       threeDaysLater.setDate(now.getDate() + 3)
       threeDaysLater.setHours(23, 59, 59, 999)
       
-      const filtered = events.filter((event: any) => {
+      const filtered = meetings.filter((event: any) => {
         try {
           if (!event || !event.date) return false
 
@@ -246,7 +246,6 @@ export function Dashboard() {
           }
 
           const margin = new Date(now.getTime() - 15 * 60000)
-          // On garde si c'est après maintenant (-15min) ET avant 3 jours
           return eventDate >= margin && eventDate <= threeDaysLater
         } catch {
           return false
@@ -263,7 +262,7 @@ export function Dashboard() {
       console.error('❌ Error filtering events for Dashboard:', error)
       setUpcomingEvents([])
     }
-  }, [events])
+  }, [meetings])
 
   const kpis = [
     {
@@ -400,7 +399,7 @@ export function Dashboard() {
 
           <div className="grid gap-6 lg:grid-cols-2">
 
-            {/* Upcoming Meetings - MODIFIÉ : Événements à venir */}
+            {/* Événements à venir */}
             <div className="rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white">Événements à venir</h2>
