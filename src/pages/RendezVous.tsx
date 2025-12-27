@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Link2, Copy, Check, Calendar, Clock, User, ExternalLink, X, Video, Phone, Settings, Loader2, History, Trash2, ChevronDown } from 'lucide-react'
+import { Link2, Copy, Check, Calendar, Clock, User, ExternalLink, X, Video, Phone, Settings, Loader2, History, Trash2, ChevronDown, Mail } from 'lucide-react'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -58,7 +58,6 @@ export function RendezVous() {
     return meetings.reduce(
       (acc: any, m: any) => {
         const meetingDate = parseISO(m.date);
-        // On considère à venir si c'est aujourd'hui ou dans le futur
         if (isAfter(meetingDate, today) || m.date === format(now, 'yyyy-MM-dd')) {
           acc.upcomingMeetings.push(m);
         } else {
@@ -280,9 +279,9 @@ export function RendezVous() {
         />
       </div>
 
-      {/* Modal Détails avec STATUT MODIFIABLE */}
+      {/* Modal Détails avec INFOS PROSPECT */}
       {selectedMeeting && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-left">
           <div className="w-full max-w-xl rounded-3xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
             <div className="mb-8 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Détails de l'appel</h2>
@@ -299,7 +298,6 @@ export function RendezVous() {
                       <p className="text-sm text-slate-500">Session de closing</p>
                     </div>
                  </div>
-                 {/* SÉLECTEUR DE STATUT DYNAMIQUE */}
                  <div className="relative">
                     <select 
                       disabled={isUpdatingStatus}
@@ -317,13 +315,30 @@ export function RendezVous() {
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none opacity-50" />
                  </div>
               </div>
+
+              {/* SECTION : INFORMATIONS DU PROSPECT (EXTRACTION DE DESCRIPTION) */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Date</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Mail size={10} /> Email</p>
+                  <p className="text-white font-bold truncate">
+                    {maskData(selectedMeeting.description?.match(/Email:\s*([^\n\r]*)/)?.[1] || 'Non renseigné', 'email')}
+                  </p>
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Phone size={10} /> Téléphone</p>
+                  <p className="text-white font-bold">
+                    {maskData(selectedMeeting.description?.match(/Téléphone:\s*([^\n\r]*)/)?.[1] || 'Non renseigné', 'phone')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Calendar size={10} /> Date</p>
                   <p className="text-white font-bold">{safeFormat(selectedMeeting.date, 'dd MMMM yyyy')}</p>
                 </div>
                 <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Heure</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Clock size={10} /> Heure</p>
                   <p className="text-white font-bold">{selectedMeeting.time}</p>
                 </div>
               </div>
