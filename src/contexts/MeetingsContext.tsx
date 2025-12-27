@@ -5,13 +5,13 @@ import { useAuth } from './AuthContext'
 export interface Meeting {
   id: number
   user_id: string
-  prospectId: number
-  date: string // Format YYYY-MM-DD
-  time: string // Format "HH:mm" ou "HH:mm - HH:mm"
+  prospectId?: number // Rendu optionnel
+  date: string 
+  time: string 
   type: 'call' | 'video' | 'meeting'
   title: string
   contact: string
-  status: 'upcoming' | 'completed' | 'cancelled'
+  status: 'upcoming' | 'completed' | 'cancelled' | 'scheduled'
   description?: string
   location?: string
 }
@@ -33,7 +33,6 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-  // 1. Charger les rendez-vous depuis Supabase (filtrés par utilisateur)
   const fetchMeetings = async () => {
     if (!user) {
       setMeetings([])
@@ -52,7 +51,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
       if (error) throw error
       setMeetings(data || [])
     } catch (error) {
-      console.error('Erreur lors du chargement des rendez-vous:', error)
+      console.error('Erreur chargement RDV:', error)
     } finally {
       setLoading(false)
     }
@@ -62,60 +61,66 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     fetchMeetings()
   }, [user])
 
-  // 2. Ajouter un rendez-vous lié à l'utilisateur
-  const addMeeting = async (meetingData: Omit<Meeting, 'id' | 'user_id'>) => {
+  const addMeeting = async (meetingData: any) => {
     if (!user) return { data: null, error: 'Non authentifié' }
 
     try {
+      // On prépare les données en s'assurant que les noms correspondent à la table meetings
+      const payload = {
+        user_id: user.id,
+        contact: meetingData.contact,
+        title: meetingData.title,
+        date: meetingData.date,
+        time: meetingData.time,
+        type: meetingData.type,
+        status: meetingData.status || 'upcoming',
+        description: meetingData.description,
+        location: meetingData.location
+      }
+
       const { data, error } = await supabase
         .from('meetings')
-        .insert([{ ...meetingData, user_id: user.id }])
+        .insert([payload])
         .select()
 
       if (error) throw error
-      if (data) setMeetings((prev) => [...prev, data[0]].sort((a, b) => a.date.localeCompare(b.date)))
+      
+      if (data) {
+        setMeetings((prev) => [...prev, data[0]].sort((a, b) => a.date.localeCompare(b.date)))
+      }
       
       return { data, error: null }
     } catch (error) {
+      console.error('Erreur creation RDV:', error)
       return { data: null, error }
     }
   }
 
-  // 3. Modifier un rendez-vous
   const updateMeeting = async (id: number, updates: Partial<Meeting>) => {
     if (!user) return { error: 'Non authentifié' }
-
     try {
       const { error } = await supabase
         .from('meetings')
         .update(updates)
         .eq('id', id)
         .eq('user_id', user.id)
-
       if (error) throw error
-      
-      setMeetings((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, ...updates } : m))
-      )
+      setMeetings((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)))
       return { error: null }
     } catch (error) {
       return { error }
     }
   }
 
-  // 4. Supprimer un rendez-vous
   const deleteMeeting = async (id: number) => {
     if (!user) return { error: 'Non authentifié' }
-
     try {
       const { error } = await supabase
         .from('meetings')
         .delete()
         .eq('id', id)
         .eq('user_id', user.id)
-
       if (error) throw error
-      
       setMeetings((prev) => prev.filter((m) => m.id !== id))
       return { error: null }
     } catch (error) {
@@ -123,12 +128,10 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // 5. Utilitaire pour trouver le prochain RDV d'un prospect (logique locale pour la performance)
   const getNextMeeting = (prospectId: number): Meeting | null => {
     const now = new Date()
     return meetings
       .filter(m => 
-        String(m.prospectId) === String(prospectId) && 
         m.status === 'upcoming' &&
         new Date(m.date + 'T' + (m.time.includes(' - ') ? m.time.split(' - ')[0] : m.time)) > now
       )
@@ -136,17 +139,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <MeetingsContext.Provider 
-      value={{ 
-        meetings, 
-        loading, 
-        addMeeting, 
-        updateMeeting, 
-        deleteMeeting, 
-        getNextMeeting,
-        refreshMeetings: fetchMeetings 
-      }}
-    >
+    <MeetingsContext.Provider value={{ meetings, loading, addMeeting, updateMeeting, deleteMeeting, getNextMeeting, refreshMeetings: fetchMeetings }}>
       {children}
     </MeetingsContext.Provider>
   )
@@ -154,8 +147,6 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
 
 export function useMeetings() {
   const context = useContext(MeetingsContext)
-  if (context === undefined) {
-    throw new Error('useMeetings must be used within a MeetingsProvider')
-  }
+  if (context === undefined) throw new Error('useMeetings must be used within a MeetingsProvider')
   return context
 }
