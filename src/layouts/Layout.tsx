@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from '../components/Sidebar'
-import { NotificationBell } from '../components/NotificationBell'
-import { Eye, EyeOff, Menu, Coffee } from 'lucide-react' // Ajout de Menu et Coffee
+// Import de NotificationBell supprimé
+import { Eye, EyeOff, Menu, Coffee } from 'lucide-react' 
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { cn } from '../lib/utils'
 import { useState } from 'react'
@@ -89,7 +89,7 @@ export function Layout({ onOpenSettings }: LayoutProps) {
                 )}
               </button>
 
-              <NotificationBell />
+              {/* NotificationBell supprimé d'ici */}
 
               {/* Live Indicator - Caché sur mobile très petit */}
               <div className="hidden items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 xs:flex">
