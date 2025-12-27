@@ -222,10 +222,14 @@ export function Dashboard() {
     return notifications.slice(0, 5)
   }, [notifications])
 
-  // MODIF : Nouvelle logique de chargement via le contexte (Supabase)
+  // MODIF : Filtrage sur les 3 prochains jours
   useEffect(() => {
     try {
       const now = new Date()
+      // Date limite : Aujourd'hui + 3 jours à minuit
+      const threeDaysLater = new Date()
+      threeDaysLater.setDate(now.getDate() + 3)
+      threeDaysLater.setHours(23, 59, 59, 999)
       
       const filtered = events.filter((event: any) => {
         try {
@@ -234,7 +238,6 @@ export function Dashboard() {
           const eventDate = new Date(event.date)
           
           if (event.time) {
-            // Nettoyage pour gérer les formats "14:00 - 15:00"
             const timePart = event.time.split(' ')[0]
             const [hours, minutes] = timePart.split(':')
             if (hours && minutes) {
@@ -242,9 +245,9 @@ export function Dashboard() {
             }
           }
 
-          // Marge de 15 min pour garder les RDV qui viennent de commencer
           const margin = new Date(now.getTime() - 15 * 60000)
-          return eventDate >= margin
+          // On garde si c'est après maintenant (-15min) ET avant 3 jours
+          return eventDate >= margin && eventDate <= threeDaysLater
         } catch {
           return false
         }
@@ -255,12 +258,12 @@ export function Dashboard() {
         new Date(a.date).getTime() - new Date(b.date).getTime()
       )
 
-      setUpcomingEvents(filtered.slice(0, 3))
+      setUpcomingEvents(filtered)
     } catch (error) {
       console.error('❌ Error filtering events for Dashboard:', error)
       setUpcomingEvents([])
     }
-  }, [events]) // Déclenché dès que Supabase met à jour les events
+  }, [events])
 
   const kpis = [
     {
@@ -397,12 +400,12 @@ export function Dashboard() {
 
           <div className="grid gap-6 lg:grid-cols-2">
 
-            {/* Upcoming Meetings */}
+            {/* Upcoming Meetings - MODIFIÉ : Événements à venir */}
             <div className="rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white">RDV à venir</h2>
+                <h2 className="text-xl font-bold text-white">Événements à venir</h2>
                 <div className="rounded-lg bg-blue-500/10 px-3 py-1">
-                  <span className="text-sm font-semibold text-blue-400">{upcomingEvents.length} RDV</span>
+                  <span className="text-sm font-semibold text-blue-400">{upcomingEvents.length} Événements</span>
                 </div>
               </div>
 
@@ -411,7 +414,7 @@ export function Dashboard() {
                   <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800/50">
                     <Clock className="h-8 w-8 text-slate-600" />
                   </div>
-                  <p className="text-lg font-semibold text-slate-400">Aucun rendez-vous à venir</p>
+                  <p className="text-lg font-semibold text-slate-400">Aucun événement à venir (3j)</p>
                   <p className="mt-2 text-sm text-slate-500">
                     Profitez-en pour prospecter !
                   </p>
