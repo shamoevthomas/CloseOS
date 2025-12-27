@@ -39,21 +39,17 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // RÉCTIFICATION : Chargement des contacts internes avec filtrage local sécurisé
+  // RÉCTIFICATION FINALE : Chargement des contacts internes depuis 'internal_contacts'
   useEffect(() => {
     async function fetchInternalCrmContacts() {
       const { data, error } = await supabase
-        .from('contacts')
+        .from('internal_contacts') // Nom de table réel
         .select('*')
       
       if (data) {
-        // On filtre en local pour être sûr de capturer tous les formats (category, is_internal ou type)
-        const internal = data.filter(c => 
-          c.category === 'internal' || 
-          c.is_internal === true || 
-          c.type === 'internal'
-        )
-        setInternalContactsList(internal)
+        // Comme ta table 'internal_contacts' est déjà dédiée à l'interne, 
+        // on ne filtre plus sur 'is_internal' (qui n'existe pas dans les colonnes).
+        setInternalContactsList(data)
       }
       if (error) console.error("Erreur chargement contacts:", error)
     }
@@ -120,10 +116,10 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
 
   if (!isOpen) return null
 
-  // Switch de source de données
-  // Externe = prospects du contexte | Interne = contacts internes filtrés
+  // SÉLECTION DE LA SOURCE DE DONNÉES
+  // Pour l'interne, on utilise la colonne 'name' visible dans ta capture
   const currentList = isInternal 
-    ? internalContactsList.map(c => ({ id: c.id, name: c.full_name || c.name || c.contact || 'Sans nom' }))
+    ? internalContactsList.map(c => ({ id: c.id, name: c.name || 'Sans nom' }))
     : prospects.map(p => ({ id: p.id, name: p.contact || p.title || 'Prospect' }))
 
   const filteredContacts = currentList.filter((c) => {
