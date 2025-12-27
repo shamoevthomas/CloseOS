@@ -37,12 +37,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-  // 1. Charger les notifications réelles
+  // 1. Charger les notifications existantes et retourner les données pour la suite
   const fetchNotifications = async () => {
     if (!user) {
       setNotifications([])
       setLoading(false)
-      return
+      return []
     }
 
     setLoading(true)
@@ -55,58 +55,61 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         .limit(20)
 
       if (error) throw error
-      setNotifications(data || [])
+      const fetched = data || []
+      setNotifications(fetched)
+      return fetched
     } catch (error) {
-      console.error('Erreur chargement notifications:', error)
+      console.error('Erreur notifications:', error)
+      return []
     } finally {
       setLoading(false)
     }
   }
 
-  // RECTIFICATION : Synchronisation automatique des nouveaux bookings et rappels
-  const syncMeetingNotifications = async (currentNotifications: Notification[]) => {
+  // RÉCTIFICATION : Synchronisation intelligente (Booking récents + RDV du jour)
+  const syncMeetingsAlerts = async (currentNotifs: Notification[]) => {
     if (!user) return
     
+    console.log("🔍 Analyse des rendez-vous pour notifications...");
     const today = new Date().toISOString().split('T')[0]
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     
-    // Récupérer tous les meetings récents (créés il y a moins de 24h) ou prévus aujourd'hui
-    const { data: recentMeetings } = await supabase
+    const { data: meetings } = await supabase
       .from('meetings')
       .select('*')
       .eq('user_id', user.id)
-      .order('date', { ascending: true })
 
-    if (recentMeetings) {
-      for (const m of recentMeetings) {
-        // --- LOGIQUE 1 : Rappel des RDV du jour ---
-        if (m.date === today) {
-          const hasReminder = currentNotifications.some(n => 
-            n.type === 'agenda' && n.description.includes(m.contact) && n.time.startsWith(today)
-          )
-          if (!hasReminder) {
-            await addNotification({
-              title: 'Rappel : RDV aujourd\'hui',
-              description: `RDV avec ${m.contact} à ${m.time}.`,
-              type: 'agenda'
-            })
-          }
+    if (!meetings) return
+
+    for (const m of meetings) {
+      // --- LOGIQUE 1 : Rappel pour les RDV du JOUR ---
+      if (m.date === today) {
+        const alreadyNotified = currentNotifs.some(n => 
+          n.type === 'agenda' && n.description.includes(m.contact) && n.time.startsWith(today)
+        )
+        if (!alreadyNotified) {
+          await addNotification({
+            title: "RDV aujourd'hui",
+            description: `Rendez-vous avec ${m.contact} à ${m.time}.`,
+            type: 'agenda'
+          })
         }
+      }
 
-        // --- LOGIQUE 2 : Alerte Nouveau Booking (si créé il y a moins de 24h) ---
-        const createdDate = new Date(m.created_at || new Date())
-        const isRecent = (new Date().getTime() - createdDate.getTime()) < 86400000 // 24h
-        
-        if (isRecent) {
-          const hasBookingNotif = currentNotifications.some(n => 
-            n.type === 'booking' && n.description.includes(m.contact) && n.description.includes(m.date)
-          )
-          if (!hasBookingNotif) {
-            await addNotification({
-              title: 'Nouveau RDV booké',
-              description: `${m.contact} a réservé un créneau pour le ${m.date}.`,
-              type: 'booking'
-            })
-          }
+      // --- LOGIQUE 2 : Alerte pour les NOUVEAUX BOOKINGS (Dernières 24h) ---
+      const createdAt = m.created_at ? new Date(m.created_at).getTime() : 0
+      const isNewBooking = (Date.now() - createdAt) < 86400000 // Moins de 24h
+
+      if (isNewBooking) {
+        const alreadyNotified = currentNotifs.some(n => 
+          n.type === 'booking' && n.description.includes(m.contact) && n.description.includes(m.date)
+        )
+        if (!alreadyNotified) {
+          await addNotification({
+            title: 'Nouveau RDV programmé',
+            description: `${m.contact} a réservé pour le ${m.date}.`,
+            type: 'booking'
+          })
         }
       }
     }
@@ -114,29 +117,25 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (user) {
-      fetchNotifications().then(() => {
-        // On attend que les notifications soient chargées pour vérifier les manquantes
-        setNotifications(prev => {
-          syncMeetingNotifications(prev)
-          return prev
-        })
+      fetchNotifications().then((notifs) => {
+        syncMeetingsAlerts(notifs)
       })
     }
   }, [user])
 
-  // Real-time listener pour les bookings en direct
+  // Temps réel : INSERT en direct dans la table meetings
   useEffect(() => {
     if (!user) return
 
     const channel = supabase
-      .channel('meetings-realtime')
+      .channel('live-notifications')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'meetings', filter: `user_id=eq.${user.id}` },
         (payload) => {
           addNotification({
             title: 'Nouveau RDV programmé',
-            description: `Un nouveau rendez-vous avec ${payload.new.contact} vient d'être ajouté.`,
+            description: `Un nouveau rendez-vous avec ${payload.new.contact} vient d'arriver.`,
             type: 'booking'
           })
         }
@@ -146,7 +145,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     return () => { supabase.removeChannel(channel) }
   }, [user])
 
-  // 2. Ajouter une notification
+  // Ajouter une notification en base et localement
   const addNotification = async (notifData: Omit<Notification, 'id' | 'read' | 'time' | 'user_id'>) => {
     if (!user) return
 
@@ -164,7 +163,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       if (error) throw error
       if (data) setNotifications(prev => [data[0], ...prev])
     } catch (error) {
-      console.error('Erreur ajout notification:', error)
+      console.error('Erreur addNotification:', error)
     }
   }
 
