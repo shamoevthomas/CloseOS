@@ -134,12 +134,22 @@ export function PublicBooking() {
       const slotDate = new Date(selectedDate)
       slotDate.setHours(h, m, 0, 0)
 
-      // AJOUT : Vérification de chevauchement sur toute la durée
+      // AJOUT : Vérification de chevauchement sur toute la durée avec sécurité split
       const isBusy = existingMeetings.some(m => {
         if (m.date !== formattedSelectedDate) return false;
         
+        // SÉCURITÉ : Empêche le crash si le champ time est vide ou n'est pas une chaîne
+        if (!m.time || typeof m.time !== 'string') return false; 
+
         // On parse la plage horaire du meeting existant (ex: "10:00 - 10:45")
-        const [mStart, mEnd] = m.time.split(' - ');
+        const parts = m.time.split(' - ');
+        if (parts.length < 2) return false; // SÉCURITÉ : Vérifie le format "HH:mm - HH:mm"
+
+        const [mStart, mEnd] = parts;
+        
+        // Vérification supplémentaire pour éviter les erreurs de split ultérieures
+        if (!mStart.includes(':') || !mEnd.includes(':')) return false;
+
         const [mStartH, mStartM] = mStart.split(':').map(Number);
         const [mEndH, mEndM] = mEnd.split(':').map(Number);
         
