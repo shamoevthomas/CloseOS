@@ -92,8 +92,16 @@ export function PublicBooking() {
       const dayNameEn = format(date, 'eeee', { locale: undefined }).toLowerCase()
       const dayConfig = settings.availability[dayNameEn]
 
-      if (dayConfig?.enabled) {
-        if (isAfter(startOfDay(date), startOfDay(minLeadDate)) || (format(date, 'yyyy-MM-dd') === format(minLeadDate, 'yyyy-MM-dd') && isAfter(date, minLeadDate))) {
+      // MODIFICATION : On vérifie si la fin de la journée est après le délai minimum pour afficher le jour
+      if (dayConfig?.enabled && dayConfig.slots?.[0]) {
+        const [endH, endM] = dayConfig.slots[0].end.split(':').map(Number)
+        const endOfWorkingDay = new Date(date)
+        endOfWorkingDay.setHours(endH, endM, 0, 0)
+
+        const isFutureDay = isAfter(startOfDay(date), startOfDay(minLeadDate))
+        const isTodayWithAvailableSlots = format(date, 'yyyy-MM-dd') === format(minLeadDate, 'yyyy-MM-dd') && isAfter(endOfWorkingDay, minLeadDate)
+
+        if (isFutureDay || isTodayWithAvailableSlots) {
           dates.push(date)
         }
       }
@@ -143,11 +151,10 @@ export function PublicBooking() {
 
         // On parse la plage horaire du meeting existant (ex: "10:00 - 10:45")
         const parts = m.time.split(' - ');
-        if (parts.length < 2) return false; // SÉCURITÉ : Vérifie le format "HH:mm - HH:mm"
+        if (parts.length < 2) return false; 
 
         const [mStart, mEnd] = parts;
         
-        // Vérification supplémentaire pour éviter les erreurs de split ultérieures
         if (!mStart.includes(':') || !mEnd.includes(':')) return false;
 
         const [mStartH, mStartM] = mStart.split(':').map(Number);
