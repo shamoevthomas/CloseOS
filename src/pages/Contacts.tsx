@@ -354,16 +354,7 @@ export function Contacts() {
                             >
                               <Mail className="h-4 w-4" />
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                console.log('Call:', prospect.phone)
-                              }}
-                              className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-400"
-                              title="Appeler"
-                            >
-                              <Phone className="h-4 w-4" />
-                            </button>
+                            {/* Le bouton d'appel a été retiré d'ici */}
                             <button
                               onClick={(e) => handleDeleteProspect(e, prospect.id)}
                               className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
