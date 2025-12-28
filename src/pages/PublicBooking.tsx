@@ -122,7 +122,11 @@ export function PublicBooking() {
 
     const formattedSelectedDate = format(selectedDate, 'yyyy-MM-dd')
 
-    while (current + slotDuration <= totalEnd) { // MODIFICATION : Check basé sur la durée
+    // MODIFICATION : Logique de détection de collision améliorée
+    while (current + slotDuration <= totalEnd) {
+      const slotStart = current;
+      const slotEnd = current + slotDuration;
+      
       const h = Math.floor(current / 60)
       const m = current % 60
       const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
@@ -130,10 +134,22 @@ export function PublicBooking() {
       const slotDate = new Date(selectedDate)
       slotDate.setHours(h, m, 0, 0)
 
-      // AJOUT : Vérification si le créneau est déjà pris dans l'agenda
-      const isBusy = existingMeetings.some(m => 
-        m.date === formattedSelectedDate && m.time.startsWith(timeStr)
-      )
+      // AJOUT : Vérification de chevauchement sur toute la durée
+      const isBusy = existingMeetings.some(m => {
+        if (m.date !== formattedSelectedDate) return false;
+        
+        // On parse la plage horaire du meeting existant (ex: "10:00 - 10:45")
+        const [mStart, mEnd] = m.time.split(' - ');
+        const [mStartH, mStartM] = mStart.split(':').map(Number);
+        const [mEndH, mEndM] = mEnd.split(':').map(Number);
+        
+        const existingStart = mStartH * 60 + mStartM;
+        const existingEnd = mEndH * 60 + mEndM;
+
+        // Il y a collision si le nouveau créneau commence avant la fin de l'ancien 
+        // ET finit après le début de l'ancien
+        return slotStart < existingEnd && slotEnd > existingStart;
+      });
 
       if (!isBusy && isAfter(slotDate, addHours(new Date(), settings.min_lead_time || 0))) {
         slots.push(timeStr)
@@ -242,9 +258,6 @@ export function PublicBooking() {
               <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-blue-600/20">
                 <Video className="text-white w-8 h-8" />
               </div>
-              <h1 className="text-3xl font-black text-white mb-4 tracking-tight">
-                {settings?.title || 'Réserver un appel'}
-              </h1>
               <h1 className="text-3xl font-black text-white mb-4 tracking-tight">
                 {settings?.title || 'Réserver un appel'}
               </h1>
