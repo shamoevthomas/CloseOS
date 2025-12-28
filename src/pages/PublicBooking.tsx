@@ -37,6 +37,9 @@ export function PublicBooking() {
   const [meetingLink, setMeetingLink] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // AJOUT : État pour stocker les rendez-vous existants afin d'éviter les doublons
+  const [existingMeetings, setExistingMeetings] = useState<any[]>([])
+
   // 1. Chargement des réglages personnalisés selon le slug
   useEffect(() => {
     const fetchSettings = async () => {
@@ -50,6 +53,14 @@ export function PublicBooking() {
 
         if (error || !data) throw new Error('Page de réservation introuvable')
         
+        // AJOUT : Récupération des rendez-vous déjà réservés pour ce Closer
+        const { data: meetingsData } = await supabase
+          .from('meetings')
+          .select('date, time')
+          .eq('user_id', data.user_id)
+        
+        if (meetingsData) setExistingMeetings(meetingsData)
+
         const { data: profileData } = await supabase
           .from('profiles')
           .select('email')
@@ -91,7 +102,7 @@ export function PublicBooking() {
     return dates
   }, [settings])
 
-  // 3. Calcul des créneaux horaires (Respect des plages horaires et de la durée personnalisée)
+  // 3. Calcul des créneaux horaires (Respect des plages horaires, de la durée et des disponibilités réelles)
   const timeSlots = useMemo(() => {
     if (!selectedDate || !settings) return []
     
@@ -109,6 +120,8 @@ export function PublicBooking() {
     let current = startH * 60 + startM
     const totalEnd = endH * 60 + endM
 
+    const formattedSelectedDate = format(selectedDate, 'yyyy-MM-dd')
+
     while (current + slotDuration <= totalEnd) { // MODIFICATION : Check basé sur la durée
       const h = Math.floor(current / 60)
       const m = current % 60
@@ -116,14 +129,20 @@ export function PublicBooking() {
       
       const slotDate = new Date(selectedDate)
       slotDate.setHours(h, m, 0, 0)
-      if (isAfter(slotDate, addHours(new Date(), settings.min_lead_time || 0))) {
+
+      // AJOUT : Vérification si le créneau est déjà pris dans l'agenda
+      const isBusy = existingMeetings.some(m => 
+        m.date === formattedSelectedDate && m.time.startsWith(timeStr)
+      )
+
+      if (!isBusy && isAfter(slotDate, addHours(new Date(), settings.min_lead_time || 0))) {
         slots.push(timeStr)
       }
       
       current += slotDuration // MODIFICATION : Incrémentation par la durée
     }
     return slots
-  }, [selectedDate, settings])
+  }, [selectedDate, settings, existingMeetings])
 
   const handleSubmitBooking = async () => {
     if (!selectedDate || !selectedTime || !settings) return
@@ -223,6 +242,9 @@ export function PublicBooking() {
               <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-blue-600/20">
                 <Video className="text-white w-8 h-8" />
               </div>
+              <h1 className="text-3xl font-black text-white mb-4 tracking-tight">
+                {settings?.title || 'Réserver un appel'}
+              </h1>
               <h1 className="text-3xl font-black text-white mb-4 tracking-tight">
                 {settings?.title || 'Réserver un appel'}
               </h1>
