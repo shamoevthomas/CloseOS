@@ -31,6 +31,7 @@ export async function sendBookingEmails(data: {
   time: string;
   meetingLink: string;
   agentEmail: string;
+  duration: number; // MODIFICATION : Ajout de la durée personnalisée
 }) {
   const url = '/api/send-email';
   const sender = { name: "Réservation CloseOS", email: "noreplycloseos@gmail.com" };
@@ -38,7 +39,7 @@ export async function sendBookingEmails(data: {
   const uid = Math.random().toString(36).substring(2) + "@closeos.com";
 
   const startTime = formatToICSDate(data.date, data.time);
-  const endTime = formatToICSDate(data.date, data.time, 30);
+  const endTime = formatToICSDate(data.date, data.time, data.duration); // MODIFICATION : Utilisation de la durée dynamique
   
   // Lien Google Agenda corrigé avec les dates au format UTC strict
   const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Entretien CloseOS x ' + data.prospectName)}&dates=${startTime}/${endTime}&details=${encodeURIComponent('Lien de la réunion : ' + data.meetingLink)}&location=${encodeURIComponent(data.meetingLink)}`;

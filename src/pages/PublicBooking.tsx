@@ -91,7 +91,7 @@ export function PublicBooking() {
     return dates
   }, [settings])
 
-  // 3. Calcul des créneaux horaires (Respect des plages horaires définies)
+  // 3. Calcul des créneaux horaires (Respect des plages horaires et de la durée personnalisée)
   const timeSlots = useMemo(() => {
     if (!selectedDate || !settings) return []
     
@@ -104,11 +104,12 @@ export function PublicBooking() {
     const { start, end } = dayConfig.slots[0]
     const [startH, startM] = start.split(':').map(Number)
     const [endH, endM] = end.split(':').map(Number)
+    const slotDuration = settings.duration || 30 // MODIFICATION : Utilisation de la durée personnalisée
 
     let current = startH * 60 + startM
     const totalEnd = endH * 60 + endM
 
-    while (current + 30 <= totalEnd) {
+    while (current + slotDuration <= totalEnd) { // MODIFICATION : Check basé sur la durée
       const h = Math.floor(current / 60)
       const m = current % 60
       const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
@@ -119,7 +120,7 @@ export function PublicBooking() {
         slots.push(timeStr)
       }
       
-      current += 30
+      current += slotDuration // MODIFICATION : Incrémentation par la durée
     }
     return slots
   }, [selectedDate, settings])
@@ -138,7 +139,8 @@ export function PublicBooking() {
 
       const formattedDate = format(selectedDate, 'yyyy-MM-dd')
       const [hours, minutes] = selectedTime.split(':').map(Number)
-      const endTotal = hours * 60 + minutes + 30
+      const duration = settings.duration || 30 // MODIFICATION : Calcul dynamique
+      const endTotal = hours * 60 + minutes + duration
       const formattedEndTime = `${Math.floor(endTotal / 60).toString().padStart(2, '0')}:${(endTotal % 60).toString().padStart(2, '0')}`
       const fullTimeRange = `${selectedTime} - ${formattedEndTime}`
 
@@ -162,10 +164,10 @@ export function PublicBooking() {
         prospectEmail: bookingData.email,
         prospectName: bookingData.firstName,
         agentEmail: settings.agentEmail,
-        // CORRECTION : On envoie le format YYYY-MM-DD pour éviter l'erreur calendrier dans le mail
         date: formattedDate,
         time: selectedTime,
-        meetingLink: generatedLink
+        meetingLink: generatedLink,
+        duration: settings.duration || 30 // MODIFICATION : Envoi de la durée au service email
       })
 
       setStep('success')
@@ -180,12 +182,18 @@ export function PublicBooking() {
   const getGoogleCalendarUrl = () => {
     if (!selectedDate || !selectedTime) return ''
     const dateStr = format(selectedDate, 'yyyyMMdd')
-    const [h, m] = selectedTime.split(':')
+    const [h, m] = selectedTime.split(':').map(Number) // MODIFICATION : Conversion en nombre
+    const duration = settings?.duration || 30
+    
     // CORRECTION : Format UTC (Z) requis par Google
-    const startIso = `${dateStr}T${h}${m}00Z`
-    const endH = m === '30' ? (parseInt(h) + 1).toString().padStart(2, '0') : h
-    const endM = m === '30' ? '00' : '30'
+    const startIso = `${dateStr}T${h.toString().padStart(2, '0')}${m.toString().padStart(2, '0')}00Z`
+    
+    // MODIFICATION : Calcul dynamique de la fin de l'événement Google
+    const endTotal = h * 60 + m + duration
+    const endH = Math.floor(endTotal / 60).toString().padStart(2, '0')
+    const endM = (endTotal % 60).toString().padStart(2, '0')
     const endIso = `${dateStr}T${endH}${endM}00Z`
+
     return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Session de Closing - ' + (settings?.title || 'Appel'))}&dates=${startIso}/${endIso}&details=${encodeURIComponent('Lien de la réunion : ' + meetingLink)}&location=${encodeURIComponent(meetingLink)}`
   }
 
@@ -227,7 +235,8 @@ export function PublicBooking() {
                   <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
                     <Clock className="w-5 h-5 text-blue-500" />
                   </div>
-                  <span className="font-semibold">30 minutes</span>
+                  {/* MODIFICATION : Affichage de la durée dynamique */}
+                  <span className="font-semibold">{settings?.duration || 30} minutes</span>
                 </div>
                 <div className="flex items-center gap-4 text-slate-300">
                   <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">

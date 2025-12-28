@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Save, Link, Clock, FileText, Calendar, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
-import { supabase } from '../lib/supabase' // Assure-toi que le chemin vers ton client supabase est correct
+import { supabase } from '../lib/supabase'
 import { cn } from '../lib/utils'
 
 interface AvailabilityDay {
@@ -32,6 +32,7 @@ export function BookingSettings() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [minLeadTime, setMinLeadTime] = useState(0)
+  const [duration, setDuration] = useState(30) // MODIFICATION : État pour la durée
   const [availability, setAvailability] = useState<Availability>({})
 
   useEffect(() => {
@@ -55,6 +56,7 @@ export function BookingSettings() {
         setTitle(data.title)
         setDescription(data.description)
         setMinLeadTime(data.min_lead_time)
+        setDuration(data.duration || 30) // MODIFICATION : Récupération de la durée
         setAvailability(data.availability || {})
       }
     } catch (error) {
@@ -80,6 +82,7 @@ export function BookingSettings() {
           title,
           description,
           min_lead_time: minLeadTime,
+          duration, // MODIFICATION : Sauvegarde de la durée
           availability,
           updated_at: new Date().toISOString(),
         })
@@ -101,7 +104,6 @@ export function BookingSettings() {
 
   const toggleDay = (dayId: string) => {
     setAvailability(prev => {
-      // Sécurité : si le jour n'existe pas encore dans l'état, on crée une valeur par défaut
       const current = prev[dayId] || { enabled: false, slots: [{ start: '09:00', end: '18:00' }] };
       return {
         ...prev,
@@ -112,7 +114,6 @@ export function BookingSettings() {
 
   const updateTime = (dayId: string, type: 'start' | 'end', value: string) => {
     setAvailability(prev => {
-      // Sécurité : si le jour ou les créneaux n'existent pas, on crée une valeur par défaut
       const current = prev[dayId] || { enabled: true, slots: [{ start: '09:00', end: '18:00' }] };
       const slots = [...(current.slots || [{ start: '09:00', end: '18:00' }])];
       
@@ -207,21 +208,35 @@ export function BookingSettings() {
           </div>
         </section>
 
-        {/* DÉLAI MINIMUM */}
+        {/* MODIFICATION : SECTION CONFIGURATION DES RDV (DURÉE & DÉLAI) */}
         <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
-          <div className="mb-4 flex items-center gap-2">
+          <div className="mb-6 flex items-center gap-2">
             <Clock className="h-5 w-5 text-orange-400" />
-            <h2 className="text-lg font-semibold text-white">Délai de réservation</h2>
+            <h2 className="text-lg font-semibold text-white">Configuration des rendez-vous</h2>
           </div>
-          <div className="flex items-center gap-4">
-            <input
-              type="number"
-              value={minLeadTime}
-              onChange={(e) => setMinLeadTime(parseInt(e.target.value) || 0)}
-              className="w-24 rounded-lg border border-slate-800 bg-slate-950 p-2.5 text-white outline-none focus:border-blue-500"
-            />
-            <span className="text-slate-400 text-sm">heures de délai minimum avant un rendez-vous (ex: 24 pour interdire le jour même).</span>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-400">Durée de l'appel (minutes)</label>
+              <input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(parseInt(e.target.value) || 30)}
+                className="w-full rounded-lg border border-slate-800 bg-slate-950 p-2.5 text-white outline-none focus:border-blue-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-400">Délai minimum (heures)</label>
+              <input
+                type="number"
+                value={minLeadTime}
+                onChange={(e) => setMinLeadTime(parseInt(e.target.value) || 0)}
+                className="w-full rounded-lg border border-slate-800 bg-slate-950 p-2.5 text-white outline-none focus:border-blue-500"
+              />
+            </div>
           </div>
+          <p className="mt-4 text-xs text-slate-500">
+            La durée impacte les créneaux disponibles et les invitations envoyées aux prospects.
+          </p>
         </section>
 
         {/* DISPONIBILITÉS */}
