@@ -74,6 +74,7 @@ export function BookingSettings() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Utilisateur non connecté')
 
+      // MODIFICATION : Ajout de onConflict: 'user_id' pour permettre la mise à jour de ses propres données
       const { error } = await supabase
         .from('booking_settings')
         .upsert({
@@ -85,11 +86,13 @@ export function BookingSettings() {
           duration, // MODIFICATION : Sauvegarde de la durée
           availability,
           updated_at: new Date().toISOString(),
+        }, { 
+          onConflict: 'user_id' 
         })
 
       if (error) {
         if (error.code === '23505') {
-          throw new Error('Ce lien (slug) est déjà utilisé. Veuillez en choisir un autre.')
+          throw new Error('Ce lien (slug) est déjà utilisé par un autre compte.')
         }
         throw error
       }
