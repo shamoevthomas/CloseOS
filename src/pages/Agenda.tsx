@@ -1334,12 +1334,9 @@ export function Agenda() {
                 </p>
               </div>
 
-              {/* Location */}
+              {/* Location - MODIFIÉ : Suppression du bouton Cockpit ici */}
               {(selectedEvent.location || (selectedEvent as any).location) && (() => {
                 const locationUrl = selectedEvent.location || (selectedEvent as any).location
-                const isVideoLink = locationUrl.startsWith('http://') || locationUrl.startsWith('https://')
-                const isDailyLink = isDailyCoLink(locationUrl)
-
                 return (
                   <div className="flex items-start gap-3 rounded-lg bg-slate-800/50 p-4">
                     <MapPin className="mt-0.5 h-5 w-5 text-emerald-400" />
@@ -1348,34 +1345,6 @@ export function Agenda() {
                       <p className="mt-1 text-base font-semibold text-white break-all">
                         {locationUrl}
                       </p>
-                      {isVideoLink && (
-                        <div className="mt-3">
-                          {isDailyLink ? (
-                            <button
-                              onClick={() => {
-                                const url = `/live-call?url=${encodeURIComponent(locationUrl)}&from=/agenda`
-                                console.log('Navigating to Call Room:', url)
-                                console.log('Daily URL:', locationUrl)
-                                navigate(url)
-                              }}
-                              className="flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-purple-600"
-                            >
-                              <Video className="h-4 w-4" />
-                              Rejoindre (Cockpit)
-                            </button>
-                          ) : (
-                            <a
-                              href={locationUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-blue-600"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              Rejoindre (Externe)
-                            </a>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
                 )
@@ -1405,7 +1374,7 @@ export function Agenda() {
               )}
             </div>
 
-            {/* Footer avec boutons d'action */}
+            {/* Footer avec boutons d'action - MODIFIÉ : Bouton "Rejoindre" intelligent */}
             <div className="flex-shrink-0 border-t border-slate-800 p-6">
               {/* Smart Action Button - Only for CRM events */}
               {!isGoogleEvent && (() => {
@@ -1413,14 +1382,21 @@ export function Agenda() {
                 const hasLink = meetingUrl && (meetingUrl.startsWith('http://') || meetingUrl.startsWith('https://'))
 
                 return hasLink ? (
-                  <a
-                    href={meetingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => {
+                      if (isDailyCoLink(meetingUrl)) {
+                        // Action "Cockpit" interne
+                        const url = `/live-call?url=${encodeURIComponent(meetingUrl)}&from=/agenda`
+                        navigate(url)
+                      } else {
+                        // Action externe normale
+                        window.open(meetingUrl, '_blank', 'noopener,noreferrer')
+                      }
+                    }}
                     className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white transition-all hover:bg-blue-700"
                   >
                     <Video className="h-4 w-4" /> Rejoindre
-                  </a>
+                  </button>
                 ) : (
                   <button
                     onClick={() => {/* Details action - can be implemented later */}}
