@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom' // Ajout de useLocation
 import { ChevronLeft, ChevronRight, Plus, Video, Phone, MapPin, Clock, X, Edit2, Trash2, Sparkles, Smartphone, ChevronDown, ExternalLink, Calendar as CalendarIcon, FileText, Info } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
@@ -155,6 +155,7 @@ const isToday = (date: Date): boolean => {
 
 export function Agenda() {
   const navigate = useNavigate()
+  const location = useLocation() // Initialisation de location pour lire le state
   const { meetings, addMeeting, updateMeeting, deleteMeeting } = useMeetings()
   const { googleEvents, isConnected, login, isLoading } = useGoogleCalendar()
   const dateInputRef = useRef<HTMLInputElement>(null)
@@ -175,6 +176,29 @@ export function Agenda() {
   const [currentProspect, setCurrentProspect] = useState({ name: '', avatar: '' })
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
   const [editingEventId, setEditingEventId] = useState<number | null>(null)
+
+  // MODIF : Écouteur pour ouvrir automatiquement un événement via son ID (Dashboard -> Agenda)
+  useEffect(() => {
+    const eventIdFromState = (location.state as any)?.eventId;
+    
+    if (eventIdFromState && meetings.length > 0) {
+      // Trouver l'événement dans la liste
+      const eventToOpen = meetings.find(m => m.id === eventIdFromState);
+      
+      if (eventToOpen) {
+        setSelectedEvent(eventToOpen);
+        
+        // Ajuster la date affichée à celle de l'événement
+        const eventDate = new Date(eventToOpen.date);
+        if (!isSameDay(currentDate, eventDate)) {
+          setCurrentDate(eventDate);
+        }
+
+        // Nettoyage du state pour éviter une réouverture involontaire
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, meetings, currentDate]);
 
   // Update current time every minute
   useEffect(() => {
@@ -1334,7 +1358,7 @@ export function Agenda() {
                 </p>
               </div>
 
-              {/* Location - MODIFIÉ : Suppression du bouton Cockpit ici */}
+              {/* Location - MODIFIÉ : Suppression du bouton Cockpit ici pour nettoyer la fiche */}
               {(selectedEvent.location || (selectedEvent as any).location) && (() => {
                 const locationUrl = selectedEvent.location || (selectedEvent as any).location
                 return (
@@ -1385,11 +1409,11 @@ export function Agenda() {
                   <button
                     onClick={() => {
                       if (isDailyCoLink(meetingUrl)) {
-                        // Action "Cockpit" interne
+                        // MODIF : Redirection vers le Cockpit interne
                         const url = `/live-call?url=${encodeURIComponent(meetingUrl)}&from=/agenda`
                         navigate(url)
                       } else {
-                        // Action externe normale
+                        // Action externe normale pour Zoom/Meet
                         window.open(meetingUrl, '_blank', 'noopener,noreferrer')
                       }
                     }}
@@ -1399,7 +1423,7 @@ export function Agenda() {
                   </button>
                 ) : (
                   <button
-                    onClick={() => {/* Details action - can be implemented later */}}
+                    onClick={() => {/* Details action */}}
                     className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-700 px-4 py-2.5 font-medium text-white transition-all hover:bg-gray-600"
                   >
                     <Info className="h-4 w-4" /> Détails

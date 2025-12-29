@@ -14,6 +14,7 @@ import {
   ChevronDown
 } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom' // AJOUT : Pour la navigation vers l'Agenda
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
 import { VideoCallOverlay } from '../components/VideoCallOverlay'
@@ -140,6 +141,7 @@ const getActivityIcon = (type: string) => {
 }
 
 export function Dashboard() {
+  const navigate = useNavigate() // INITIALISATION : Hook pour la navigation
   const { prospects } = useProspects()
   const { offers } = useOffers()
   const { notifications } = useNotifications()
@@ -426,7 +428,9 @@ export function Dashboard() {
                     return (
                       <div
                         key={event.id}
-                        className="group flex items-center justify-between rounded-xl bg-slate-800/50 p-4 transition-all hover:bg-slate-800"
+                        // MODIF : Navigation vers l'Agenda au clic avec l'ID de l'événement
+                        onClick={() => navigate('/agenda', { state: { eventId: event.id } })}
+                        className="group flex items-center justify-between rounded-xl bg-slate-800/50 p-4 transition-all hover:bg-slate-800 cursor-pointer"
                       >
                         <div className="flex items-center gap-4">
                           <div className={cn(
@@ -453,7 +457,11 @@ export function Dashboard() {
                             </p>
                           </div>
 
-                          <div className="relative opacity-0 group-hover:opacity-100 transition-all">
+                          {/* MODIF : Empêcher la navigation au clic sur le bouton d'appel */}
+                          <div 
+                            className="relative opacity-0 group-hover:opacity-100 transition-all"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <button
                               onClick={() => setCallDropdownOpen(callDropdownOpen === (event.id as number) ? null : (event.id as number))}
                               className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600 transition-colors"
