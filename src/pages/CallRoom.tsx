@@ -6,7 +6,7 @@ import {
   Monitor, PhoneOff, Maximize, Minimize,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
-import { supabase } from '../lib/supabase'; // Import nécessaire pour le script perso
+import { supabase } from '../lib/supabase'; 
 
 export default function CallRoom() {
   const [searchParams] = useSearchParams();
@@ -17,13 +17,13 @@ export default function CallRoom() {
   // DOM Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const callFrameRef = useRef<any>(null);
-  const startTimeRef = useRef<number | null>(null); // Track call start time
+  const startTimeRef = useRef<number | null>(null); 
 
   // UI State
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isScriptOpen, setIsScriptOpen] = useState(true); // Script state independent of Auto-Hide
+  const [isScriptOpen, setIsScriptOpen] = useState(true); 
 
   // Auto-Hide State
   const [showControls, setShowControls] = useState(true);
@@ -34,7 +34,6 @@ export default function CallRoom() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  // --- NOUVEL ÉTAT ET LOGIQUE POUR LE SCRIPT PERSO ---
   const [userScript, setUserScript] = useState(`1. INTRODUCTION\n- "Bonjour..."\n\n2. DÉCOUVERTE\n- "Quels sont vos objectifs ?"`);
 
   useEffect(() => {
@@ -59,9 +58,7 @@ export default function CallRoom() {
 
     fetchUserScript();
   }, []);
-  // --------------------------------------------------
 
-  // --- 1. AUTO-HIDE LOGIC (10 Seconds) ---
   const handleMouseMove = () => {
     setShowControls(true);
     if (timeoutRef.current) {
@@ -69,7 +66,7 @@ export default function CallRoom() {
     }
     timeoutRef.current = window.setTimeout(() => {
       setShowControls(false);
-    }, 10000); // 10 seconds delay
+    }, 10000); 
   };
 
   useEffect(() => {
@@ -80,7 +77,6 @@ export default function CallRoom() {
     };
   }, []);
 
-  // --- 2. DAILY SETUP (HEADLESS) ---
   useEffect(() => {
     if (!url) return;
 
@@ -92,8 +88,8 @@ export default function CallRoom() {
 
       const frame = DailyIframe.createFrame(containerRef.current, {
         iframeStyle: { width: '100%', height: '100%', border: '0' },
-        showLeaveButton: false,      // HIDDEN
-        showFullscreenButton: false, // HIDDEN
+        showLeaveButton: false,      
+        showFullscreenButton: false, 
         theme: {
           colors: {
             accent: '#E54D2E',
@@ -129,7 +125,7 @@ export default function CallRoom() {
     };
   }, [url, navigate, callId]);
 
-  // --- 3. RECORDING LOGIC ---
+  // --- 3. RECORDING LOGIC (MISE À JOUR MP4) ---
   const startRecording = async () => {
     try {
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
@@ -157,17 +153,26 @@ export default function CallRoom() {
         ...dest.stream.getAudioTracks()
       ]);
 
-      const recorder = new MediaRecorder(combinedStream);
+      // MODIFICATION : Détection du format MP4 ou repli sur WebM
+      const mimeType = MediaRecorder.isTypeSupported('video/mp4') 
+        ? 'video/mp4' 
+        : 'video/webm';
+
+      const recorder = new MediaRecorder(combinedStream, { mimeType });
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        const blob = new Blob(chunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `recording-${new Date().toISOString()}.webm`;
+        
+        // MODIFICATION : Extension de fichier dynamique (.mp4 ou .webm)
+        const extension = mimeType === 'video/mp4' ? 'mp4' : 'webm';
+        a.download = `recording-${new Date().toISOString()}.${extension}`;
+        
         a.click();
         screenStream.getTracks().forEach(track => track.stop());
         micStream.getTracks().forEach(track => track.stop());
@@ -196,7 +201,6 @@ export default function CallRoom() {
     else startRecording();
   };
 
-  // --- 4. SAVE CALL DURATION ---
   const saveCallDuration = () => {
     if (!startTimeRef.current || !callId) return;
     const duration = Date.now() - startTimeRef.current;
@@ -215,7 +219,6 @@ export default function CallRoom() {
     }
   };
 
-  // --- 5. CONTROLS ---
   const leaveCall = () => {
     saveCallDuration();
     callFrameRef.current?.leave();
@@ -246,7 +249,6 @@ export default function CallRoom() {
   return (
     <div className="flex h-screen w-screen bg-black overflow-hidden font-sans text-white">
 
-      {/* --- LEFT PANEL: SCRIPT PERSONNALISÉ --- */}
       <div
         className={`relative h-full bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out z-20 flex flex-col ${
           isScriptOpen ? 'w-1/3 translate-x-0' : 'w-0 -translate-x-full opacity-0'
@@ -261,11 +263,10 @@ export default function CallRoom() {
         <textarea
           className="flex-1 w-full bg-gray-900 p-6 text-gray-300 resize-none focus:outline-none leading-relaxed text-base"
           readOnly
-          value={userScript} // Utilise maintenant le script récupéré de Supabase
+          value={userScript} 
         />
       </div>
 
-      {/* --- RIGHT PANEL: VIDEO --- */}
       <div className="relative flex-1 bg-black h-full overflow-hidden">
 
         {!isScriptOpen && (
