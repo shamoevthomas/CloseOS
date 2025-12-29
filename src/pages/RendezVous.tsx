@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { format, isValid, parseISO, isAfter, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '../lib/utils'
+import { isDailyCoLink } from '../services/dailyService' // IMPORT AJOUTÉ
 
 export function RendezVous() {
   const { user } = useAuth()
@@ -344,10 +345,22 @@ export function RendezVous() {
               </div>
             </div>
             <div className="mt-8 flex flex-col gap-3">
+               {/* MODIFIÉ : LOGIQUE DE BOUTON INTELLIGENTE */}
                {selectedMeeting.location && (
-                 <a href={selectedMeeting.location} target="_blank" className="w-full flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20">
+                 <button 
+                   onClick={() => {
+                     const locationUrl = selectedMeeting.location;
+                     if (isDailyCoLink(locationUrl)) {
+                       const url = `/live-call?url=${encodeURIComponent(locationUrl)}&from=/rendez-vous`;
+                       navigate(url);
+                     } else {
+                       window.open(locationUrl, '_blank', 'noopener,noreferrer');
+                     }
+                   }} 
+                   className="w-full flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"
+                 >
                    <Video className="h-5 w-5" /> Rejoindre l'appel
-                 </a>
+                 </button>
                )}
                <button onClick={() => setSelectedMeeting(null)} className="w-full rounded-2xl border border-slate-800 bg-slate-800/50 py-4 font-bold text-slate-300 hover:bg-slate-800">Fermer</button>
             </div>
