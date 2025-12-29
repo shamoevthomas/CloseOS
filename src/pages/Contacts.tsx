@@ -6,6 +6,8 @@ import { useOffers } from '../contexts/OffersContext'
 import { ProspectView } from '../components/ProspectView'
 import { InternalContactModal } from '../components/InternalContactModal'
 import { CreateProspectModal } from '../components/CreateProspectModal'
+// MODIFICATION : Import de la modale de rendez-vous
+import { AddEventModal } from '../components/AddEventModal'
 
 interface LocalProspect {
   id: number
@@ -93,6 +95,8 @@ export function Contacts() {
   const [internalsExpanded, setInternalsExpanded] = useState(true)
   const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false)
   const [isNewProspectModalOpen, setIsNewProspectModalOpen] = useState(false)
+  // MODIFICATION : État pour la modale de rendez-vous
+  const [isAddMeetingModalOpen, setIsAddMeetingModalOpen] = useState(false)
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null)
   const [selectedContact, setSelectedContact] = useState<InternalContact | null>(null)
 
@@ -354,7 +358,7 @@ export function Contacts() {
                             >
                               <Mail className="h-4 w-4" />
                             </button>
-                            {/* Le bouton d'appel a été retiré d'ici */}
+                            {/* MODIFICATION : Le bouton d'appel a été retiré d'ici */}
                             <button
                               onClick={(e) => handleDeleteProspect(e, prospect.id)}
                               className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
@@ -688,10 +692,8 @@ export function Contacts() {
             }
             setSelectedProspect(null)
           }}
-          onCreateEvent={() => {
-            console.log('Create event for prospect:', selectedProspect.id)
-            // TODO: Open create event modal
-          }}
+          // MODIFICATION : Lien direct vers la modale de rendez-vous
+          onCreateEvent={() => setIsAddMeetingModalOpen(true)}
           onStartCall={(withAi) => {
             console.log('Start call with AI:', withAi)
             // TODO: Implement video call
@@ -700,6 +702,15 @@ export function Contacts() {
             console.log('Phone call:', selectedProspect.phone)
             // TODO: Implement phone call
           }}
+        />
+      )}
+
+      {/* MODIFICATION : Nouvelle modale de création de RDV avec sélection automatique du prospect */}
+      {isAddMeetingModalOpen && (
+        <AddEventModal
+          isOpen={isAddMeetingModalOpen}
+          onClose={() => setIsAddMeetingModalOpen(false)}
+          initialProspect={selectedProspect?.contact}
         />
       )}
 
