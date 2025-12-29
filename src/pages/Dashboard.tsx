@@ -14,7 +14,7 @@ import {
   ChevronDown
 } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom' // AJOUT : Pour la navigation vers l'Agenda
+import { useNavigate } from 'react-router-dom' // Hook pour la navigation
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
 import { VideoCallOverlay } from '../components/VideoCallOverlay'
@@ -141,7 +141,7 @@ const getActivityIcon = (type: string) => {
 }
 
 export function Dashboard() {
-  const navigate = useNavigate() // INITIALISATION : Hook pour la navigation
+  const navigate = useNavigate() // Hook de navigation
   const { prospects } = useProspects()
   const { offers } = useOffers()
   const { notifications } = useNotifications()
@@ -428,7 +428,7 @@ export function Dashboard() {
                     return (
                       <div
                         key={event.id}
-                        // MODIF : Navigation vers l'Agenda au clic avec l'ID de l'événement
+                        // Navigation au clic sur la ligne
                         onClick={() => navigate('/agenda', { state: { eventId: event.id } })}
                         className="group flex items-center justify-between rounded-xl bg-slate-800/50 p-4 transition-all hover:bg-slate-800 cursor-pointer"
                       >
@@ -457,79 +457,18 @@ export function Dashboard() {
                             </p>
                           </div>
 
-                          {/* MODIF : Empêcher la navigation au clic sur le bouton d'appel */}
-                          <div 
-                            className="relative opacity-0 group-hover:opacity-100 transition-all"
-                            onClick={(e) => e.stopPropagation()}
-                          >
+                          {/* MODIF : Nouveau bouton "Détails" */}
+                          <div className="opacity-0 group-hover:opacity-100 transition-all">
                             <button
-                              onClick={() => setCallDropdownOpen(callDropdownOpen === (event.id as number) ? null : (event.id as number))}
-                              className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Empêche le double déclenchement
+                                navigate('/agenda', { state: { eventId: event.id } });
+                              }}
+                              className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20"
                             >
-                              <Phone className="h-4 w-4" />
-                              Appeler
-                              <ChevronDown className={cn(
-                                'h-3.5 w-3.5 transition-transform',
-                                callDropdownOpen === event.id && 'rotate-180'
-                              )} />
+                              <FileText className="h-4 w-4" />
+                              Détails
                             </button>
-
-                            {callDropdownOpen === event.id && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-10"
-                                  onClick={() => setCallDropdownOpen(null)}
-                                />
-
-                                <div
-                                  className="absolute left-0 top-full z-20 mt-1 min-w-[280px] overflow-hidden rounded-lg border border-slate-700 bg-slate-800 shadow-xl"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleStartCall(event.contact, false)
-                                    }}
-                                    className="flex w-full items-center gap-3 px-5 py-3.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
-                                  >
-                                    <Phone className="h-4 w-4 flex-shrink-0" />
-                                    <div className="flex-1 text-left">
-                                      <p className="font-semibold text-white">Appel Standard</p>
-                                    </div>
-                                  </button>
-
-                                  <div className="h-px bg-slate-700" />
-
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleStartCall(event.contact, true)
-                                    }}
-                                    className="flex w-full items-center gap-3 px-5 py-3.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
-                                  >
-                                    <Sparkles className="h-4 w-4 text-purple-400 flex-shrink-0" />
-                                    <div className="flex-1 text-left">
-                                      <p className="font-semibold text-white">Appel avec Assistant IA</p>
-                                    </div>
-                                  </button>
-
-                                  <div className="h-px bg-slate-700" />
-
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handlePhoneCall()
-                                    }}
-                                    className="flex w-full items-center gap-3 px-5 py-3.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
-                                  >
-                                    <Smartphone className="h-4 w-4 flex-shrink-0" />
-                                    <div className="flex-1 text-left">
-                                      <p className="font-semibold text-white">Appel Téléphonique</p>
-                                    </div>
-                                  </button>
-                                </div>
-                              </>
-                            )}
                           </div>
                         </div>
                       </div>
