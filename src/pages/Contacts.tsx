@@ -6,8 +6,8 @@ import { useOffers } from '../contexts/OffersContext'
 import { ProspectView } from '../components/ProspectView'
 import { InternalContactModal } from '../components/InternalContactModal'
 import { CreateProspectModal } from '../components/CreateProspectModal'
-// MODIFICATION : Import de la modale de rendez-vous
-import { AddEventModal } from '../components/AddEventModal'
+// MODIFICATION : Utilisation de votre fichier existant CreateEventModal pour corriger l'erreur Vercel
+import { CreateEventModal } from '../components/CreateEventModal'
 
 interface LocalProspect {
   id: number
@@ -705,12 +705,13 @@ export function Contacts() {
         />
       )}
 
-      {/* MODIFICATION : Nouvelle modale de création de RDV avec sélection automatique du prospect */}
+      {/* MODIFICATION : Nouvelle modale de création de RDV avec sélection automatique du prospect utilisant CreateEventModal */}
       {isAddMeetingModalOpen && (
-        <AddEventModal
+        <CreateEventModal
           isOpen={isAddMeetingModalOpen}
           onClose={() => setIsAddMeetingModalOpen(false)}
-          initialProspect={selectedProspect?.contact}
+          prospectId={selectedProspect?.id}
+          prospectName={selectedProspect?.contact}
         />
       )}
 
