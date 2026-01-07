@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-// @ts-ignore - Install with: npm install @react-oauth/google
+// @ts-ignore
 import { useGoogleLogin } from '@react-oauth/google'
-// @ts-ignore - Install with: npm install axios
+// @ts-ignore
 import axios from 'axios'
+import { supabase } from '../lib/supabase' // Import nécessaire pour isoler par utilisateur
 
 interface GoogleCalendarEvent {
   id: string
@@ -27,21 +28,53 @@ interface GoogleCalendarContextType {
 
 const GoogleCalendarContext = createContext<GoogleCalendarContextType | undefined>(undefined)
 
-const STORAGE_KEY = 'closeros_google_access_token'
+// MODIFIÉ : Fonction pour générer une clé unique par utilisateur
+const getStorageKey = (userId: string) => `closeros_google_token_${userId}`
 const GOOGLE_BLUE = '#4285F4'
 
 export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
-  const [accessToken, setAccessToken] = useState<string | null>(() => {
-    return localStorage.getItem(STORAGE_KEY)
-  })
+  const [userId, setUserId] = useState<string | null>(null)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  // 1. Écouter l'utilisateur connecté pour isoler les données
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserId(user.id)
+        // Charger le token spécifique à CET utilisateur
+        const savedToken = localStorage.getItem(getStorageKey(user.id))
+        setAccessToken(savedToken)
+      } else {
+        setUserId(null)
+        setAccessToken(null)
+        setGoogleEvents([])
+      }
+    }
+
+    checkUser()
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUserId(session.user.id)
+        setAccessToken(localStorage.getItem(getStorageKey(session.user.id)))
+      } else {
+        setUserId(null)
+        setAccessToken(null)
+        setGoogleEvents([])
+      }
+    })
+
+    return () => authListener.subscription.unsubscribe()
+  }, [])
+
   // Fetch Google Calendar events
   const fetchEvents = async (token: string) => {
+    if (!token) return
     setIsLoading(true)
     try {
-      // Get current month date range
       const now = new Date()
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
@@ -56,17 +89,12 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
             orderBy: 'startTime',
             maxResults: 100,
           },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       )
 
-      // Transform Google Calendar events to app format
       const events: GoogleCalendarEvent[] = response.data.items.map((item: any) => {
-        // Detect all-day events: Google sends 'date' only (not 'dateTime') for all-day events
         const isAllDay = !item.start.dateTime && !!item.start.date
-
         return {
           id: `google-${item.id}`,
           title: `📅 ${item.summary || 'Sans titre'}`,
@@ -83,11 +111,8 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
 
       setGoogleEvents(events)
     } catch (error: any) {
-      console.error('Error fetching Google Calendar events:', error)
-
-      // If token is invalid, clear it
-      if (error.response?.status === 401) {
-        localStorage.removeItem(STORAGE_KEY)
+      if (error.response?.status === 401 && userId) {
+        localStorage.removeItem(getStorageKey(userId))
         setAccessToken(null)
         setGoogleEvents([])
       }
@@ -100,32 +125,28 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       const token = tokenResponse.access_token
-      setAccessToken(token)
-      localStorage.setItem(STORAGE_KEY, token)
-
-      // Immediately fetch events
-      await fetchEvents(token)
+      if (userId) {
+        setAccessToken(token)
+        localStorage.setItem(getStorageKey(userId), token) // MODIFIÉ : Clé unique
+        await fetchEvents(token)
+      }
     },
-    onError: (error) => {
-      console.error('Google Login Error:', error)
-      alert('Erreur lors de la connexion à Google Calendar')
-    },
+    onError: () => alert('Erreur lors de la connexion à Google Calendar'),
     scope: 'https://www.googleapis.com/auth/calendar.readonly',
   })
 
-  // Logout function
   const logout = () => {
+    if (userId) localStorage.removeItem(getStorageKey(userId))
     setAccessToken(null)
     setGoogleEvents([])
-    localStorage.removeItem(STORAGE_KEY)
   }
 
-  // Fetch events on mount if token exists
+  // Fetch events on mount or when token/userId changes
   useEffect(() => {
     if (accessToken) {
       fetchEvents(accessToken)
     }
-  }, [])
+  }, [accessToken, userId])
 
   return (
     <GoogleCalendarContext.Provider
