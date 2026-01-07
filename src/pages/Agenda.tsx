@@ -177,25 +177,47 @@ export function Agenda() {
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
   const [editingEventId, setEditingEventId] = useState<number | null>(null)
 
-  // Écouteur pour ouvrir automatiquement un événement via son ID (Dashboard -> Agenda)
+  // MODIFIÉ : Recherche étendue pour ouvrir automatiquement CRM ou GOOGLE
   useEffect(() => {
     const eventIdFromState = (location.state as any)?.eventId;
     
-    if (eventIdFromState && meetings.length > 0) {
-      const eventToOpen = meetings.find(m => m.id === eventIdFromState);
+    if (eventIdFromState) {
+      const findEvent = () => {
+        // 1. Chercher dans le CRM
+        const crmEvent = meetings.find(m => String(m.id) === String(eventIdFromState));
+        if (crmEvent) return crmEvent;
+
+        // 2. Chercher dans Google
+        const ge = googleEvents.find(g => String(g.id) === String(eventIdFromState));
+        if (ge && ge.start && ge.end) {
+          return {
+            id: ge.id as any,
+            title: ge.title,
+            date: ge.start.toISOString().split('T')[0],
+            time: `${ge.start.getHours().toString().padStart(2, '0')}:${ge.start.getMinutes().toString().padStart(2, '0')} - ${ge.end.getHours().toString().padStart(2, '0')}:${ge.end.getMinutes().toString().padStart(2, '0')}`,
+            type: 'meeting' as const,
+            contact: ge.title,
+            status: 'scheduled' as const,
+            isGoogleEvent: true,
+            location: ge.location || '',
+            description: ge.description || ''
+          };
+        }
+        return null;
+      };
+
+      const eventToOpen = findEvent();
       
       if (eventToOpen) {
         setSelectedEvent(eventToOpen);
-        
         const eventDate = new Date(eventToOpen.date);
         if (!isSameDay(currentDate, eventDate)) {
           setCurrentDate(eventDate);
         }
-
         window.history.replaceState({}, document.title);
       }
     }
-  }, [location.state, meetings, currentDate]);
+  }, [location.state, meetings, googleEvents, currentDate]);
 
   // Update current time every minute
   useEffect(() => {
@@ -304,6 +326,7 @@ export function Agenda() {
     // Get local CRM meetings
     const localMeetings = meetings.filter(meeting => {
       try {
+        // RÉPARATION : On vérifie si meeting.date existe avant de l'utiliser
         if (!meeting || !meeting.date) {
           return false
         }
@@ -327,7 +350,9 @@ export function Agenda() {
     const googleMeetingsForDate = googleEvents
       .filter(event => {
         try {
+          // Validate event has required data
           if (!event || !event.start) return false
+          // Filter out all-day events from the time-based grid
           if (event.allDay) return false
           return isSameDay(event.start, date)
         } catch (error) {
@@ -337,11 +362,13 @@ export function Agenda() {
       })
       .map(event => {
         try {
+          // Validate event dates
           if (!event.start || !event.end) {
             console.warn('Google event missing start or end:', event)
             return null
           }
 
+          // Transform Google event to meeting format
           const startTime = `${event.start.getHours().toString().padStart(2, '0')}:${event.start.getMinutes().toString().padStart(2, '0')}`
           const endTime = `${event.end.getHours().toString().padStart(2, '0')}:${event.end.getMinutes().toString().padStart(2, '0')}`
 
@@ -367,14 +394,17 @@ export function Agenda() {
       })
       .filter((event): event is NonNullable<typeof event> => event !== null)
 
+    // Merge and return all events
     return [...localMeetings, ...googleMeetingsForDate]
   }
 
+  // Filter meetings for today
   const getTodayMeetings = () => {
     const today = new Date()
     return getMeetingsForDate(today)
   }
 
+  // Get all-day Google events for a specific date
   const getAllDayEventsForDate = (date: Date) => {
     return googleEvents.filter(event => {
       if (!event.allDay) return false
@@ -382,6 +412,7 @@ export function Agenda() {
     })
   }
 
+  // Fonction pour déterminer si un événement est "court" (< 45min)
   const isShortEvent = (duration: number) => duration < 0.75
 
   const handleNavigateToProspect = (prospectId: number) => {
@@ -455,6 +486,7 @@ export function Agenda() {
 
     return (
       <div className="flex flex-col flex-1 rounded-lg border border-slate-800 bg-slate-900 overflow-hidden" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+        {/* All Day Events Section */}
         {allDayEvents.length > 0 && (
           <div className="border-b border-slate-800 bg-slate-950/50 p-3">
             <div className="text-xs font-semibold text-slate-400 mb-2">Toute la journée</div>
@@ -476,11 +508,13 @@ export function Agenda() {
           </div>
         )}
 
+        {/* Time Grid */}
         <div
           ref={dayViewScrollRef}
           className="flex-1 overflow-y-auto custom-scrollbar"
         >
           <div className="relative min-h-[1920px]">
+          {/* Heures (colonne gauche) */}
           <div className="absolute left-0 top-0 w-16 border-r border-slate-800">
             {HOURS.map((hour) => (
               <div key={hour} className="h-20 border-b border-slate-800/50 px-2 py-1">
@@ -491,11 +525,14 @@ export function Agenda() {
             ))}
           </div>
 
+          {/* Zone de la grille */}
           <div className="absolute inset-0 left-16">
+            {/* Lignes horaires */}
             {HOURS.map((hour) => (
               <div key={hour} className="h-20 border-b border-slate-800/30" />
             ))}
 
+            {/* Current Time Indicator */}
             {showCurrentTimeLine && currentTimePos >= 0 && currentTimePos <= 100 && (
               <div
                 className="absolute left-0 right-0 z-10"
@@ -508,24 +545,29 @@ export function Agenda() {
               </div>
             )}
 
+            {/* Événements positionnés */}
             {dayMeetings.map((event) => {
               const startHour = getStartHour(event.time)
               const isOvernight = isOvernightEvent(event.time)
 
+              // For overnight events, clip at midnight
               let duration = getDuration(event.time)
               let actualHeight = duration * 80
 
               if (isOvernight) {
+                // Clip the event to end at midnight (24:00)
                 const hoursUntilMidnight = 24 - startHour
                 actualHeight = hoursUntilMidnight * 80
               }
 
-              const top = startHour * 80
+              const top = startHour * 80 // Position from midnight (0:00)
               const height = actualHeight
               const isShort = isShortEvent(duration)
 
+              // Check if it's a Google event
               const isGoogleEvent = (event as any).isGoogleEvent
 
+              // Define styling based on event type
               let eventStyle = {}
               if (isGoogleEvent) {
                 eventStyle = {
@@ -599,7 +641,7 @@ export function Agenda() {
 
   // Render Week View
   const renderWeekView = () => {
-    const weekDates = get3DayDates(currentDate) 
+    const weekDates = get3DayDates(currentDate) // Use 3-day sliding view instead of full week
     const currentTimePos = getCurrentTimePosition()
     const todayIndex = weekDates.findIndex(date => isToday(date))
 
@@ -609,6 +651,7 @@ export function Agenda() {
         className="flex-1 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 custom-scrollbar"
         style={{ maxHeight: 'calc(100vh - 280px)' }}
       >
+        {/* Days header */}
         <div className="sticky top-0 z-20 flex border-b border-slate-800 bg-slate-900">
           <div className="w-16 border-r border-slate-800" />
           {weekDates.map((date, index) => (
@@ -632,6 +675,7 @@ export function Agenda() {
           ))}
         </div>
 
+        {/* All Day Events Row */}
         <div className="sticky top-[73px] z-10 flex border-b border-slate-800 bg-slate-950/90 backdrop-blur-sm">
           <div className="w-16 border-r border-slate-800 p-2">
             <span className="text-[10px] font-semibold text-slate-400">Toute la journée</span>
@@ -659,6 +703,7 @@ export function Agenda() {
         </div>
 
         <div className="relative min-h-[1920px]">
+          {/* Heures (colonne gauche) */}
           <div className="absolute left-0 top-0 w-16 border-r border-slate-800">
             {HOURS.map((hour) => (
               <div key={hour} className="h-20 border-b border-slate-800/50 px-2 py-1">
@@ -669,20 +714,24 @@ export function Agenda() {
             ))}
           </div>
 
+          {/* Grid columns for days */}
           <div className="absolute inset-0 left-16 flex">
             {weekDates.map((date, dayIndex) => {
               const dayMeetings = getMeetingsForDate(date)
 
+              // Check for overnight events from the previous day that continue into this day
               const previousDate = dayIndex > 0 ? weekDates[dayIndex - 1] : null
               const previousDayMeetings = previousDate ? getMeetingsForDate(previousDate) : []
               const overnightContinuations = previousDayMeetings.filter(event => isOvernightEvent(event.time))
 
               return (
                 <div key={dayIndex} className="relative flex-1 border-r border-slate-800/30">
+                  {/* Hour lines */}
                   {HOURS.map((hour) => (
                     <div key={hour} className="h-20 border-b border-slate-800/30" />
                   ))}
 
+                  {/* Current Time Indicator - only on today's column */}
                   {dayIndex === todayIndex && currentTimePos >= 0 && currentTimePos <= 100 && (
                     <div
                       className="absolute left-0 right-0 z-10"
@@ -695,18 +744,21 @@ export function Agenda() {
                     </div>
                   )}
 
+                  {/* Overnight event continuations from previous day */}
                   {overnightContinuations.map((event) => {
                     const parts = event.time?.split(' - ') || [];
                     const end = parts[1] || parts[0] || '00:00';
                     const [endH, endM] = end?.split(':').map(Number) || [0, 0];
                     const endHour = endH + endM / 60
 
-                    const top = 0 
-                    const height = endHour * 80 
+                    const top = 0 // Start at midnight
+                    const height = endHour * 80 // End at the specified time
                     const isShort = isShortEvent(endHour)
 
+                    // Check if it's a Google event
                     const isGoogleEvent = (event as any).isGoogleEvent
 
+                    // Define styling based on event type
                     let eventStyle = {}
                     if (isGoogleEvent) {
                       eventStyle = {
@@ -767,24 +819,29 @@ export function Agenda() {
                     )
                   })}
 
+                  {/* Events for this day */}
                   {dayMeetings.map((event) => {
                     const startHour = getStartHour(event.time)
                     const isOvernight = isOvernightEvent(event.time)
 
+                    // For overnight events on the start day, clip at midnight
                     let duration = getDuration(event.time)
                     let actualHeight = duration * 80
 
                     if (isOvernight) {
+                      // Clip the event to end at midnight (24:00) on the first day
                       const hoursUntilMidnight = 24 - startHour
                       actualHeight = hoursUntilMidnight * 80
                     }
 
-                    const top = startHour * 80
+                    const top = startHour * 80 // Position from midnight (0:00)
                     const height = actualHeight
                     const isShort = isShortEvent(duration)
 
+                    // Check if it's a Google event
                     const isGoogleEvent = (event as any).isGoogleEvent
 
+                    // Define styling based on event type
                     let eventStyle = {}
                     if (isGoogleEvent) {
                       eventStyle = {
@@ -862,6 +919,7 @@ export function Agenda() {
 
     return (
       <div className="flex-1 overflow-auto rounded-lg border border-slate-800 bg-slate-900">
+        {/* Days of week header */}
         <div className="grid grid-cols-7 border-b border-slate-800 bg-slate-950">
           {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
             <div key={day} className="border-r border-slate-800/30 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -870,6 +928,7 @@ export function Agenda() {
           ))}
         </div>
 
+        {/* Calendar grid */}
         <div className="grid grid-cols-7">
           {monthDates.map((date, index) => {
             const isCurrentMonth = date.getMonth() === currentMonth
@@ -896,10 +955,13 @@ export function Agenda() {
                   {date.getDate()}
                 </div>
 
+                {/* Events for this date */}
                 <div className="space-y-1">
                   {visibleMeetings.map((event) => {
+                    // Check if it's a Google event
                     const isGoogleEvent = (event as any).isGoogleEvent
 
+                    // Define styling based on event type
                     let eventStyle = {}
                     if (isGoogleEvent) {
                       eventStyle = {
@@ -961,9 +1023,12 @@ export function Agenda() {
 
   return (
     <div className="flex h-full gap-6 p-8">
+      {/* GAUCHE - CALENDRIER (70%) */}
       <div className="flex flex-1 flex-col">
+        {/* Header du Calendrier */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
+            {/* Today Button */}
             <button
               onClick={goToToday}
               className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-300 transition-all hover:bg-slate-700"
@@ -971,7 +1036,9 @@ export function Agenda() {
               Aujourd'hui
             </button>
 
+            {/* Navigation Arrows with Date Range */}
             <div className="flex items-center gap-4 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2">
+              {/* PREV BUTTON */}
               <button
                 onClick={view === 'week' ? handlePrevRange : goToPrev}
                 className="rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
@@ -979,10 +1046,12 @@ export function Agenda() {
                 <ChevronLeft className="h-5 w-5" />
               </button>
 
+              {/* DATE TEXT */}
               <h2 className="min-w-[200px] text-center text-lg font-medium capitalize text-white">
                 {getTitle()}
               </h2>
 
+              {/* NEXT BUTTON */}
               <button
                 onClick={view === 'week' ? handleNextRange : goToNext}
                 className="rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
@@ -991,6 +1060,7 @@ export function Agenda() {
               </button>
             </div>
 
+            {/* Date Picker */}
             <div className="relative">
               <button
                 onClick={() => dateInputRef.current?.showPicker()}
@@ -1009,7 +1079,9 @@ export function Agenda() {
             </div>
           </div>
 
+          {/* Right Side: View Switcher + New Event Button */}
           <div className="flex items-center gap-3">
+            {/* View Switcher */}
             <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800 p-1">
               <button
                 onClick={() => setView('day')}
@@ -1046,6 +1118,7 @@ export function Agenda() {
               </button>
             </div>
 
+            {/* Google Calendar Sync Button */}
             <button
               onClick={login}
               disabled={isLoading}
@@ -1060,6 +1133,7 @@ export function Agenda() {
               {isLoading ? 'Chargement...' : isConnected ? 'Compte connecté' : 'Synchroniser Google'}
             </button>
 
+            {/* New Event Button */}
             <button
               onClick={handleCreateEvent}
               className="flex items-center gap-2 rounded-lg bg-blue-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-600"
@@ -1070,16 +1144,19 @@ export function Agenda() {
           </div>
         </div>
 
+        {/* Render appropriate view */}
         {view === 'day' && renderDayView()}
         {view === 'week' && renderWeekView()}
         {view === 'month' && renderMonthView()}
       </div>
 
+      {/* DROITE - SIDEBAR "AUJOURD'HUI" (30%) */}
       <div className="w-80 flex-shrink-0">
         <div className="sticky top-0">
           <h3 className="mb-4 text-xl font-bold text-white">Aujourd'hui</h3>
           <div className="space-y-3">
             {getTodayMeetings().map((event) => {
+              // Check if it's a Google event
               const isGoogleEvent = (event as any).isGoogleEvent
 
               return (
@@ -1089,6 +1166,7 @@ export function Agenda() {
                   className="cursor-pointer rounded-lg border border-slate-800 bg-slate-900 p-4 transition-all hover:border-slate-700 hover:bg-slate-800/50"
                 >
                   <div className="flex items-start gap-3">
+                    {/* Icône */}
                     <div
                       className={cn(
                         'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full',
@@ -1104,6 +1182,7 @@ export function Agenda() {
                       {!isGoogleEvent && event.type === 'meeting' && <MapPin className="h-5 w-5 text-orange-400" />}
                     </div>
 
+                  {/* Contenu */}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-white">
                       <MaskedText value={event.contact || 'Inconnu'} type="name" />
@@ -1142,17 +1221,21 @@ export function Agenda() {
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setSelectedEvent(null)}
             />
 
+            {/* Modale */}
             <div className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
+              {/* Header */}
               <div className={cn(
                 "flex items-start justify-between border-b p-6 flex-shrink-0",
                 isGoogleEvent ? 'border-blue-500/30 bg-blue-500/5' : 'border-orange-500/30 bg-orange-500/5'
               )}>
                 <div className="flex-1">
+                  {/* Source Badge */}
                   <div className="mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
                     style={{
                       backgroundColor: isGoogleEvent ? 'rgba(59, 130, 246, 0.15)' : 'rgba(249, 115, 22, 0.15)',
@@ -1201,7 +1284,9 @@ export function Agenda() {
                 </button>
               </div>
 
+            {/* Contenu */}
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 p-6">
+              {/* Date & Heure */}
               <div className="flex items-start gap-3 rounded-lg bg-slate-800/50 p-4">
                 <Clock className="mt-0.5 h-5 w-5 text-blue-400" />
                 <div>
@@ -1213,6 +1298,7 @@ export function Agenda() {
                 </div>
               </div>
 
+              {/* Type de RDV */}
               <div className="rounded-lg bg-slate-800/50 p-4">
                 <p className="text-sm font-medium text-slate-400">Type de rendez-vous</p>
                 <p className="mt-1 text-base font-semibold capitalize text-white">
@@ -1222,6 +1308,7 @@ export function Agenda() {
                 </p>
               </div>
 
+              {/* Location */}
               {(selectedEvent.location || (selectedEvent as any).location) && (() => {
                 const locationUrl = selectedEvent.location || (selectedEvent as any).location
                 return (
@@ -1237,6 +1324,7 @@ export function Agenda() {
                 )
               })()}
 
+              {/* Description */}
               {(selectedEvent.description || (selectedEvent as any).description) && (
                 <div className="flex items-start gap-3 rounded-lg bg-slate-800/50 p-4">
                   <FileText className="mt-0.5 h-5 w-5 text-purple-400 flex-shrink-0" />
@@ -1249,6 +1337,7 @@ export function Agenda() {
                 </div>
               )}
 
+              {/* Statut */}
               {!isGoogleEvent && (
                 <div className="rounded-lg bg-slate-800/50 p-4">
                   <p className="text-sm font-medium text-slate-400">Statut</p>
@@ -1259,7 +1348,9 @@ export function Agenda() {
               )}
             </div>
 
+            {/* Footer avec boutons d'action - MODIFIÉ : Bouton "Rejoindre" intelligent */}
             <div className="flex-shrink-0 border-t border-slate-800 p-6">
+              {/* Smart Action Button - Only for CRM events */}
               {!isGoogleEvent && (() => {
                 const meetingUrl = selectedEvent.location || (selectedEvent as any).meetingUrl || (selectedEvent as any).link
                 const hasLink = meetingUrl && (meetingUrl.startsWith('http://') || meetingUrl.startsWith('https://'))
@@ -1268,9 +1359,11 @@ export function Agenda() {
                   <button
                     onClick={() => {
                       if (isDailyCoLink(meetingUrl)) {
+                        // Action "Cockpit" interne
                         const url = `/live-call?url=${encodeURIComponent(meetingUrl)}&from=/agenda`
                         navigate(url)
                       } else {
+                        // Action externe normale
                         window.open(meetingUrl, '_blank', 'noopener,noreferrer')
                       }
                     }}
@@ -1288,6 +1381,7 @@ export function Agenda() {
                 )
               })()}
 
+              {/* Autres actions - Only for CRM events */}
               {!isGoogleEvent && (
                 <div className="flex gap-3">
                   <button
@@ -1331,7 +1425,7 @@ export function Agenda() {
         offerPrice={1500}
       />
 
-      {/* No Answer Modal */}
+      {/* No Answer Modal */ }
       <NoAnswerModal
         isOpen={isNoAnswerModalOpen}
         onClose={() => setIsNoAnswerModalOpen(false)}
