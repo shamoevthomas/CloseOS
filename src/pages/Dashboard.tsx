@@ -200,7 +200,7 @@ export function Dashboard() {
     }
   }, [prospects, offers])
 
-  // MODIFIÉ : Correction de la clé pour "Follow up" (followup au lieu de proposal)
+  // Calculate pipeline stages distribution
   const pipelineStages = useMemo(() => {
     const stages = [
       { name: 'Prospect', key: 'prospect', color: 'bg-blue-500' },
@@ -210,7 +210,14 @@ export function Dashboard() {
     ]
 
     return stages.map(stage => {
-      const stageProspects = prospects.filter(p => p.stage === stage.key)
+      const stageProspects = prospects.filter(p => {
+        const pStage = (p.stage || '').toLowerCase();
+        if (stage.key === 'followup') {
+          return pStage.includes('follow') || pStage.includes('relance') || pStage === 'proposal';
+        }
+        return pStage === stage.key;
+      })
+      
       return {
         ...stage,
         count: stageProspects.length,
@@ -282,7 +289,9 @@ export function Dashboard() {
     },
   ]
 
-  const totalPipeline = pipelineStages.reduce((sum, stage) => sum + stage.value, 0)
+  // MODIFIÉ : Calcul basé sur le NOMBRE de leads pour le graphique
+  const totalPipelineValue = pipelineStages.reduce((sum, stage) => sum + stage.value, 0)
+  const totalPipelineCount = pipelineStages.reduce((sum, stage) => sum + stage.count, 0)
 
   const handleStartCall = (prospectName: string, withAi: boolean, avatar?: string) => {
     setSelectedProspect({ name: prospectName, avatar: avatar || '' })
@@ -357,14 +366,15 @@ export function Dashboard() {
               <div className="text-right">
                 <p className="text-sm text-slate-400">Total Pipeline</p>
                 <p className="text-2xl font-bold text-blue-500">
-                  <MaskedText value={`${totalPipeline.toLocaleString()}€`} type="number" />
+                  <MaskedText value={`${totalPipelineValue.toLocaleString()}€`} type="number" />
                 </p>
               </div>
             </div>
 
+            {/* MODIFIÉ : Calcul du pourcentage basé sur stage.count au lieu de stage.value */}
             <div className="mb-6 flex h-4 overflow-hidden rounded-full bg-slate-800">
               {pipelineStages.map((stage, index) => {
-                const percentage = (stage.value / (totalPipeline || 1)) * 100
+                const percentage = (stage.count / (totalPipelineCount || 1)) * 100
                 return (
                   <div
                     key={stage.name}
@@ -375,7 +385,7 @@ export function Dashboard() {
                       'transition-all hover:opacity-80'
                     )}
                     style={{ width: `${percentage}%` }}
-                    title={`${stage.name}`}
+                    title={`${stage.name}: ${stage.count} leads`}
                   />
                 )
               })}
