@@ -103,17 +103,19 @@ export function CallsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      // MODIFICATION : Ajout de onConflict pour éviter l'erreur 409
       const { error } = await supabase
         .from('user_scripts')
         .upsert({ 
           user_id: user.id, 
           content: userScript,
           updated_at: new Date().toISOString()
-        })
+        }, { onConflict: 'user_id' }) // Indique à Supabase de mettre à jour si l'user_id existe déjà
 
       if (error) throw error
       setIsScriptModalOpen(false)
     } catch (error) {
+      console.error('Erreur sauvegarde script:', error)
       alert('Erreur lors de la sauvegarde du script')
     } finally {
       setIsSavingScript(false)
