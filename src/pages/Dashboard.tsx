@@ -11,7 +11,8 @@ import {
   Clock,
   Sparkles,
   Smartphone,
-  ChevronDown
+  ChevronDown,
+  Calendar as CalendarIcon // Ajout de l'icône Calendar
 } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom' // Hook pour la navigation
@@ -24,6 +25,7 @@ import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { useNotifications } from '../contexts/NotificationsContext'
 import { useMeetings } from '../contexts/MeetingsContext'
+import { useGoogleCalendar } from '../contexts/GoogleCalendarContext' // AJOUT : Contexte Google
 
 // Helper to parse commission percentage
 const parseCommission = (commissionString: string): number => {
@@ -146,6 +148,7 @@ export function Dashboard() {
   const { offers } = useOffers()
   const { notifications } = useNotifications()
   const { meetings } = useMeetings() 
+  const { googleEvents } = useGoogleCalendar() // AJOUT : Récupération des événements Google
 
   const [isCallOpen, setIsCallOpen] = useState(false)
   const [selectedProspect, setSelectedProspect] = useState({ name: '', avatar: '' })
@@ -162,6 +165,7 @@ export function Dashboard() {
     type: 'call' | 'video' | 'meeting'
     status: string
     date: string
+    isGoogleEvent?: boolean // AJOUT : Flag pour identifier la source
   }>>([])
 
   // Calculate real metrics from prospects
@@ -231,6 +235,7 @@ export function Dashboard() {
     return notifications.slice(0, 5)
   }, [notifications])
 
+  // MODIFIÉ : Fusion des rendez-vous CRM et Google Agenda
   useEffect(() => {
     try {
       const now = new Date()
@@ -238,7 +243,24 @@ export function Dashboard() {
       threeDaysLater.setDate(now.getDate() + 3)
       threeDaysLater.setHours(23, 59, 59, 999)
       
-      const filtered = meetings.filter((event: any) => {
+      // 1. Transformer les événements Google au format attendu par le Dashboard
+      const transformedGoogle = googleEvents
+        .filter(ge => ge && ge.start && !ge.allDay)
+        .map(ge => ({
+          id: ge.id as string,
+          title: ge.title,
+          contact: ge.title,
+          time: `${ge.start!.getHours().toString().padStart(2, '0')}:${ge.start!.getMinutes().toString().padStart(2, '0')} - ${ge.end!.getHours().toString().padStart(2, '0')}:${ge.end!.getMinutes().toString().padStart(2, '0')}`,
+          type: 'meeting' as const,
+          status: 'Planifié',
+          date: ge.start!.toISOString().split('T')[0],
+          isGoogleEvent: true
+        }))
+
+      // 2. Fusionner les deux listes
+      const allEvents = [...meetings, ...transformedGoogle]
+
+      const filtered = allEvents.filter((event: any) => {
         try {
           if (!event || !event.date) return false
 
@@ -259,17 +281,27 @@ export function Dashboard() {
         }
       })
 
-      // Tri chronologique
-      filtered.sort((a: any, b: any) => 
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-      )
+      // 3. Tri chronologique précis
+      filtered.sort((a: any, b: any) => {
+        const dateA = new Date(a.date)
+        const dateB = new Date(b.date)
+        if (a.time) {
+          const [h, m] = a.time.split(' - ')[0].split(':').map(Number)
+          dateA.setHours(h, m)
+        }
+        if (b.time) {
+          const [h, m] = b.time.split(' - ')[0].split(':').map(Number)
+          dateB.setHours(h, m)
+        }
+        return dateA.getTime() - dateB.getTime()
+      })
 
       setUpcomingEvents(filtered)
     } catch (error) {
       console.error('❌ Error filtering events for Dashboard:', error)
       setUpcomingEvents([])
     }
-  }, [meetings])
+  }, [meetings, googleEvents]) // Déclenchement sur changement CRM ou Google
 
   const kpis = [
     {
@@ -289,7 +321,7 @@ export function Dashboard() {
     },
   ]
 
-  // MODIFIÉ : Calcul basé sur le NOMBRE de leads pour le graphique
+  // Calcul basé sur le NOMBRE de leads pour le graphique (Correction 50/50)
   const totalPipelineValue = pipelineStages.reduce((sum, stage) => sum + stage.value, 0)
   const totalPipelineCount = pipelineStages.reduce((sum, stage) => sum + stage.count, 0)
 
@@ -371,7 +403,6 @@ export function Dashboard() {
               </div>
             </div>
 
-            {/* MODIFIÉ : Calcul du pourcentage basé sur stage.count au lieu de stage.value */}
             <div className="mb-6 flex h-4 overflow-hidden rounded-full bg-slate-800">
               {pipelineStages.map((stage, index) => {
                 const percentage = (stage.count / (totalPipelineCount || 1)) * 100
@@ -409,7 +440,7 @@ export function Dashboard() {
 
           <div className="grid gap-6">
 
-            {/* Événements à venir */}
+            {/* Événements à venir (Fusionnés avec Google Agenda) */}
             <div className="rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white">Événements à venir</h2>
@@ -431,14 +462,14 @@ export function Dashboard() {
               ) : (
                 <div className="space-y-3">
                   {upcomingEvents.map((event) => {
-                    const EventIcon = event.type === 'video' ? Video : Phone
-                    const iconColor = event.type === 'video' ? 'bg-purple-500/20' : 'bg-blue-500/20'
-                    const iconTextColor = event.type === 'video' ? 'text-purple-400' : 'text-blue-400'
+                    // MODIFIÉ : Choix de l'icône en fonction de la source Google
+                    const EventIcon = event.isGoogleEvent ? CalendarIcon : (event.type === 'video' ? Video : Phone)
+                    const iconColor = event.isGoogleEvent ? 'bg-blue-500/20' : (event.type === 'video' ? 'bg-purple-500/20' : 'bg-blue-500/20')
+                    const iconTextColor = event.isGoogleEvent ? 'text-blue-400' : (event.type === 'video' ? 'text-purple-400' : 'text-blue-400')
 
                     return (
                       <div
                         key={event.id}
-                        // Navigation au clic sur la ligne
                         onClick={() => navigate('/agenda', { state: { eventId: event.id } })}
                         className="group flex items-center justify-between rounded-xl bg-slate-800/50 p-4 transition-all hover:bg-slate-800 cursor-pointer"
                       >
@@ -450,7 +481,12 @@ export function Dashboard() {
                             <EventIcon className={cn('h-5 w-5', iconTextColor)} />
                           </div>
                           <div>
-                            <p className="font-semibold text-white">{event.title}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-white">{event.title}</p>
+                              {event.isGoogleEvent && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Google</span>
+                              )}
+                            </div>
                             <p className="text-sm text-slate-400">
                               <MaskedText value={event.contact} type="name" />
                             </p>
@@ -467,11 +503,10 @@ export function Dashboard() {
                             </p>
                           </div>
 
-                          {/* MODIF : Nouveau bouton "Détails" */}
                           <div className="opacity-0 group-hover:opacity-100 transition-all">
                             <button
                               onClick={(e) => {
-                                e.stopPropagation(); // Empêche le double déclenchement
+                                e.stopPropagation();
                                 navigate('/agenda', { state: { eventId: event.id } });
                               }}
                               className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20"
