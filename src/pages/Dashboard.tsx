@@ -200,12 +200,12 @@ export function Dashboard() {
     }
   }, [prospects, offers])
 
-  // Calculate pipeline stages distribution
+  // MODIFIÉ : Correction de la clé pour "Follow up" (followup au lieu de proposal)
   const pipelineStages = useMemo(() => {
     const stages = [
       { name: 'Prospect', key: 'prospect', color: 'bg-blue-500' },
-      { name: 'Qualifié', key: 'qualified', color: 'bg-orange-500' },
-      { name: 'Follow up', key: 'proposal', color: 'bg-emerald-400' },
+      { name: 'Qualifié', key: 'qualified', color: 'bg-purple-500' },
+      { name: 'Follow up', key: 'followup', color: 'bg-orange-500' },
       { name: 'Gagné', key: 'won', color: 'bg-emerald-600' },
     ]
 
