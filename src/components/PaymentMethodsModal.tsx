@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Edit2, Trash2, CreditCard, Building, Repeat, DollarSign, Check } from 'lucide-react'
+import { X, Plus, Edit2, Trash2, CreditCard, Building, Repeat, DollarSign, Check, Loader2 } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { supabase } from '../lib/supabase' // Importation de supabase
 
 export type PaymentMethodType = 'VIREMENT' | 'PAYPAL' | 'REVOLUT' | 'STRIPE'
 
@@ -26,12 +27,13 @@ interface PaymentMethodsModalProps {
   onClose: () => void
 }
 
-const STORAGE_KEY = 'closeros_payment_methods'
+// MODIFIÉ : Retrait de STORAGE_KEY pour passer sur le Cloud
 
 export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProps) {
   const [methods, setMethods] = useState<PaymentMethod[]>([])
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false) // State pour le feedback de chargement
 
   // Form state
   const [formType, setFormType] = useState<PaymentMethodType>('VIREMENT')
@@ -43,38 +45,88 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
   const [formIdentifier, setFormIdentifier] = useState('')
   const [formPaymentLink, setFormPaymentLink] = useState('')
 
-  // Load methods from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      setMethods(JSON.parse(saved))
+  // MODIFIÉ : Chargement depuis Supabase
+  const fetchMethods = async () => {
+    setIsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .select('*')
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+
+      if (data) {
+        // Mapping SQL (snake_case) -> Interface (camelCase)
+        const mapped = data.map(m => ({
+          id: m.id,
+          type: m.type,
+          name: m.name,
+          isDefault: m.is_default,
+          details: m.details || {}
+        }))
+        setMethods(mapped)
+      }
+    } catch (err) {
+      console.error('Erreur chargement paiements:', err)
+    } finally {
+      setIsLoading(false)
     }
-  }, [])
-
-  // Save methods to localStorage
-  const saveMethod = (method: PaymentMethod) => {
-    const newMethods = editingId
-      ? methods.map((m) => (m.id === editingId ? method : m))
-      : [...methods, method]
-
-    setMethods(newMethods)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newMethods))
-    resetForm()
   }
 
-  const deleteMethod = (id: string) => {
-    const newMethods = methods.filter((m) => m.id !== id)
-    setMethods(newMethods)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newMethods))
+  useEffect(() => {
+    if (isOpen) {
+      fetchMethods()
+    }
+  }, [isOpen])
+
+  // MODIFIÉ : Sauvegarde dans Supabase
+  const saveMethod = async (method: PaymentMethod) => {
+    setIsLoading(true)
+    try {
+      const dbData = {
+        name: method.name,
+        type: method.type,
+        is_default: method.isDefault,
+        details: method.details
+      }
+
+      if (editingId) {
+        await supabase.from('payment_methods').update(dbData).eq('id', editingId)
+      } else {
+        await supabase.from('payment_methods').insert([dbData])
+      }
+
+      await fetchMethods()
+      resetForm()
+    } catch (err) {
+      console.error('Erreur sauvegarde paiement:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const setDefault = (id: string) => {
-    const newMethods = methods.map((m) => ({
-      ...m,
-      isDefault: m.id === id,
-    }))
-    setMethods(newMethods)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newMethods))
+  // MODIFIÉ : Suppression dans Supabase
+  const deleteMethod = async (id: string) => {
+    try {
+      await supabase.from('payment_methods').delete().eq('id', id)
+      await fetchMethods()
+    } catch (err) {
+      console.error('Erreur suppression paiement:', err)
+    }
+  }
+
+  // MODIFIÉ : Gestion du défaut dans Supabase
+  const setDefault = async (id: string) => {
+    try {
+      // 1. Désactiver tous les autres
+      await supabase.from('payment_methods').update({ is_default: false }).neq('id', id)
+      // 2. Activer celui-ci
+      await supabase.from('payment_methods').update({ is_default: true }).eq('id', id)
+      await fetchMethods()
+    } catch (err) {
+      console.error('Erreur changement défaut:', err)
+    }
   }
 
   const resetForm = () => {
@@ -112,10 +164,10 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
     }
 
     const method: PaymentMethod = {
-      id: editingId || Date.now().toString(),
+      id: editingId || '', // Géré par Supabase
       type: formType,
       name: formName,
-      isDefault: methods.length === 0, // First one is default
+      isDefault: methods.length === 0,
       details: {},
     }
 
@@ -375,9 +427,10 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 rounded-lg bg-purple-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600"
+                    disabled={isLoading}
+                    className="flex-1 rounded-lg bg-purple-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600 flex justify-center items-center"
                   >
-                    {editingId ? 'Enregistrer' : 'Ajouter'}
+                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingId ? 'Enregistrer' : 'Ajouter')}
                   </button>
                 </div>
               </form>
