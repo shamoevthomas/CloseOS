@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Edit2, Trash2, Building2, Check } from 'lucide-react'
+import { X, Plus, Edit2, Trash2, Building2, Check, Loader2 } from 'lucide-react' // Ajout de Loader2 pour le feedback
 import { cn } from '../lib/utils'
+import { supabase } from '../lib/supabase' // Importation de supabase
 
 export interface IssuerProfile {
   id: string
@@ -21,12 +22,13 @@ interface IssuerProfilesModalProps {
   onClose: () => void
 }
 
-const STORAGE_KEY = 'closeros_issuer_profiles'
+// MODIFIÉ : Retrait de STORAGE_KEY car on utilise Supabase maintenant
 
 export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProps) {
   const [profiles, setProfiles] = useState<IssuerProfile[]>([])
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false) // State pour le chargement
 
   // Form state
   const [formName, setFormName] = useState('')
@@ -39,38 +41,100 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
   const [formEmail, setFormEmail] = useState('')
   const [formPhone, setFormPhone] = useState('')
 
-  // Load profiles from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      setProfiles(JSON.parse(saved))
+  // MODIFIÉ : Chargement depuis Supabase avec mapping des colonnes
+  const fetchProfiles = async () => {
+    setIsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('issuer_profiles')
+        .select('*')
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+
+      if (data) {
+        const mapped = data.map(p => ({
+          id: p.id,
+          name: p.name,
+          companyName: p.company_name, // Mapping snake_case -> camelCase
+          address: p.address,
+          city: p.city,
+          zip: p.zip,
+          country: p.country,
+          siret: p.siret,
+          email: p.email,
+          phone: p.phone,
+          isDefault: p.is_default // Mapping snake_case -> camelCase
+        }))
+        setProfiles(mapped)
+      }
+    } catch (err) {
+      console.error('Erreur chargement profils:', err)
+    } finally {
+      setIsLoading(false)
     }
-  }, [])
-
-  // Save profile to localStorage
-  const saveProfile = (profile: IssuerProfile) => {
-    const newProfiles = editingId
-      ? profiles.map((p) => (p.id === editingId ? profile : p))
-      : [...profiles, profile]
-
-    setProfiles(newProfiles)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newProfiles))
-    resetForm()
   }
 
-  const deleteProfile = (id: string) => {
-    const newProfiles = profiles.filter((p) => p.id !== id)
-    setProfiles(newProfiles)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newProfiles))
+  useEffect(() => {
+    if (isOpen) {
+      fetchProfiles()
+    }
+  }, [isOpen])
+
+  // MODIFIÉ : Sauvegarde dans Supabase
+  const saveProfile = async (profile: any) => {
+    setIsLoading(true)
+    try {
+      // Préparation des données pour SQL (snake_case)
+      const dbData = {
+        name: profile.name,
+        company_name: profile.companyName,
+        address: profile.address,
+        city: profile.city,
+        zip: profile.zip,
+        country: profile.country,
+        siret: profile.siret,
+        email: profile.email,
+        phone: profile.phone,
+        is_default: profile.isDefault
+      }
+
+      if (editingId) {
+        await supabase.from('issuer_profiles').update(dbData).eq('id', editingId)
+      } else {
+        await supabase.from('issuer_profiles').insert([dbData])
+      }
+
+      await fetchProfiles()
+      resetForm()
+    } catch (err) {
+      console.error('Erreur sauvegarde profil:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const setDefault = (id: string) => {
-    const newProfiles = profiles.map((p) => ({
-      ...p,
-      isDefault: p.id === id,
-    }))
-    setProfiles(newProfiles)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newProfiles))
+  // MODIFIÉ : Suppression dans Supabase
+  const deleteProfile = async (id: string) => {
+    try {
+      await supabase.from('issuer_profiles').delete().eq('id', id)
+      await fetchProfiles()
+    } catch (err) {
+      console.error('Erreur suppression profil:', err)
+    }
+  }
+
+  // MODIFIÉ : Gestion du profil par défaut dans Supabase
+  const setDefault = async (id: string) => {
+    try {
+      // 1. On retire le défaut à tout le monde
+      await supabase.from('issuer_profiles').update({ is_default: false }).neq('id', id)
+      // 2. On met le nouveau par défaut
+      await supabase.from('issuer_profiles').update({ is_default: true }).eq('id', id)
+      await fetchProfiles()
+    } catch (err) {
+      console.error('Erreur profil par défaut:', err)
+    }
   }
 
   const resetForm = () => {
@@ -109,8 +173,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
       return
     }
 
-    const profile: IssuerProfile = {
-      id: editingId || Date.now().toString(),
+    const profile = {
       name: formName,
       companyName: formCompanyName,
       address: formAddress,
@@ -120,7 +183,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
       siret: formSiret,
       email: formEmail,
       phone: formPhone,
-      isDefault: profiles.length === 0, // First one is default
+      isDefault: profiles.length === 0, // Premier profil devient défaut
     }
 
     saveProfile(profile)
@@ -301,9 +364,10 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 rounded-lg bg-purple-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600"
+                    disabled={isLoading}
+                    className="flex-1 rounded-lg bg-purple-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600 flex justify-center"
                   >
-                    {editingId ? 'Enregistrer' : 'Ajouter'}
+                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingId ? 'Enregistrer' : 'Ajouter')}
                   </button>
                 </div>
               </form>
