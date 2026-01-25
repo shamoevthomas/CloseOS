@@ -1,20 +1,30 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
-// @ts-ignore - Install with: npm install @react-oauth/google
-import { GoogleOAuthProvider } from '@react-oauth/google'
-import { GoogleCalendarProvider } from './contexts/GoogleCalendarContext'
+import './index.css'
+import { MaintenancePage } from './components/MaintenancePage'
 
-// Google OAuth Client ID
-const GOOGLE_CLIENT_ID = '786115803806-tdcbvlu7u0mogn54dsqci4uku2rldoa8.apps.googleusercontent.com'
+// Récupère la config Vercel
+const MAINTENANCE_ACTIVE = import.meta.env.VITE_MAINTENANCE_MODE === 'true'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <GoogleCalendarProvider>
-        <App />
-      </GoogleCalendarProvider>
-    </GoogleOAuthProvider>
-  </StrictMode>,
+const checkAccess = () => {
+  // Vérifie si l'URL contient le code secret
+  const urlParams = new URLSearchParams(window.location.search)
+  const isAdmin = urlParams.get('admin') === 'thomas'
+  
+  if (isAdmin) {
+    localStorage.setItem('closeros_admin_access', 'true')
+    // Nettoie l'URL discrètement
+    window.history.replaceState({}, document.title, window.location.pathname)
+    return true
+  }
+  return localStorage.getItem('closeros_admin_access') === 'true'
+}
+
+const hasAccess = checkAccess()
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    {MAINTENANCE_ACTIVE && !hasAccess ? <MaintenancePage /> : <App />}
+  </React.StrictMode>,
 )

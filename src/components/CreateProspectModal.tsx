@@ -69,9 +69,9 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate required fields
-    if (!formData.name || !formData.email || !formData.phone) {
-      alert('Veuillez remplir tous les champs obligatoires')
+    // MODIFIÉ : Seul le nom est obligatoire désormais
+    if (!formData.name) {
+      alert('Veuillez entrer au moins un nom pour le prospect')
       return
     }
 
@@ -94,8 +94,8 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
       contact: formData.name,
       firstName,
       lastName,
-      email: formData.email,
-      phone: formData.phone,
+      email: formData.email, // Peut être vide maintenant
+      phone: formData.phone, // Peut être vide maintenant
       company: isB2B ? formData.company : 'N/A',
       offer: offerName,
       value: selectedOfferPrice,
@@ -156,27 +156,27 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
             />
           </div>
 
+          {/* MODIFIÉ : Email non requis */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Email *</label>
+            <label className="mb-2 block text-sm font-medium text-slate-300">Email</label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="Ex: jean.dupont@entreprise.com"
               className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-              required
             />
           </div>
 
+          {/* MODIFIÉ : Téléphone non requis */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Téléphone *</label>
+            <label className="mb-2 block text-sm font-medium text-slate-300">Téléphone</label>
             <input
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               placeholder="Ex: +33 6 12 34 56 78"
               className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-              required
             />
           </div>
 

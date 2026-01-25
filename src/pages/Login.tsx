@@ -3,10 +3,11 @@ import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase'; // AJOUT : Import direct pour gérer la redirection
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, loginWithGoogle } = useAuth(); // On récupère loginWithGoogle
+  const { login } = useAuth(); // On ne récupère plus loginWithGoogle ici car on le fait manuellement
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,15 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
-      const { error } = await loginWithGoogle();
+      // MODIFIÉ : On appelle supabase directement pour contrôler l'URL de retour
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          // C'est cette ligne qui corrige votre problème
+          redirectTo: window.location.origin 
+        }
+      });
+      
       if (error) setError(error.message);
     } catch (err) {
       setError("Impossible de lancer la connexion Google.");
