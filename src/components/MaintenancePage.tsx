@@ -16,7 +16,7 @@ export function MaintenancePage() {
         Mise à jour majeure en cours suite à vos retours.
       </p>
       <div className="flex gap-4 text-sm text-slate-500 bg-slate-900/50 p-6 rounded-xl border border-slate-800">
-        <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-blue-400" /><span>Retour Lundi</span></div>
+        <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-blue-400" /><span>Retour bientôt communiqué</span></div>
         <div className="flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-emerald-400" /><span>Données sécurisées</span></div>
       </div>
     </div>
