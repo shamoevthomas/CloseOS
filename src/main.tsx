@@ -7,21 +7,22 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { GoogleCalendarProvider } from './contexts/GoogleCalendarContext'
 import { OffersProvider } from './contexts/OffersContext'
-// AJOUT : Import du fournisseur Google OAuth
 import { GoogleOAuthProvider } from '@react-oauth/google'
 
+// Récupération du mode maintenance depuis Vercel
 const MAINTENANCE_ACTIVE = import.meta.env.VITE_MAINTENANCE_MODE === 'true'
 
-// AJOUT : On récupère l'ID Google. 
-// Si ça ne marche pas, vérifiez que vous avez bien cette variable dans Vercel.
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ""
+// 👇 TON ID GOOGLE CONFIRMÉ (C'est la clé publique, aucun danger ici)
+const GOOGLE_CLIENT_ID = "786115803806-plsj5610jgmsif4m3na35s50td7pppbd.apps.googleusercontent.com"
 
 const checkAccess = () => {
+  // Vérifie si l'URL contient ?admin=thomas pour la backdoor
   const urlParams = new URLSearchParams(window.location.search)
   const isAdmin = urlParams.get('admin') === 'thomas'
   
   if (isAdmin) {
     localStorage.setItem('closeros_admin_access', 'true')
+    // Nettoie l'URL pour que ce soit discret
     window.history.replaceState({}, document.title, window.location.pathname)
     return true
   }
@@ -35,7 +36,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     {MAINTENANCE_ACTIVE && !hasAccess ? (
       <MaintenancePage />
     ) : (
-      // AJOUT : La dernière couche de protection Google
+      // On enveloppe toute l'app avec la config Google
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
         <BrowserRouter>
           <AuthProvider>
