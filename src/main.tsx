@@ -3,15 +3,18 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { MaintenancePage } from './components/MaintenancePage'
-
-// --- 1. IMPORTATION DES PROVIDERS (C'est ce qui manquait) ---
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { GoogleCalendarProvider } from './contexts/GoogleCalendarContext'
-import { OffersProvider } from './contexts/OffersContext' 
+import { OffersProvider } from './contexts/OffersContext'
+// AJOUT : Import du fournisseur Google OAuth
+import { GoogleOAuthProvider } from '@react-oauth/google'
 
-// --- 2. LOGIQUE DE MAINTENANCE ---
 const MAINTENANCE_ACTIVE = import.meta.env.VITE_MAINTENANCE_MODE === 'true'
+
+// AJOUT : On récupère l'ID Google. 
+// Si ça ne marche pas, vérifiez que vous avez bien cette variable dans Vercel.
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ""
 
 const checkAccess = () => {
   const urlParams = new URLSearchParams(window.location.search)
@@ -32,16 +35,18 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     {MAINTENANCE_ACTIVE && !hasAccess ? (
       <MaintenancePage />
     ) : (
-      // --- 3. CORRECTION : On remet les "couches" autour de l'App ---
-      <BrowserRouter>
-        <AuthProvider>
-          <GoogleCalendarProvider>
-            <OffersProvider>
-              <App />
-            </OffersProvider>
-          </GoogleCalendarProvider>
-        </AuthProvider>
-      </BrowserRouter>
+      // AJOUT : La dernière couche de protection Google
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <BrowserRouter>
+          <AuthProvider>
+            <GoogleCalendarProvider>
+              <OffersProvider>
+                <App />
+              </OffersProvider>
+            </GoogleCalendarProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </GoogleOAuthProvider>
     )}
   </React.StrictMode>,
 )
