@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { useGoogleLogin } from '@react-oauth/google'
 // @ts-ignore
 import axios from 'axios'
-import { supabase } from '../lib/supabase' // Import nécessaire pour isoler par utilisateur
+import { supabase } from '../lib/supabase'
 
 interface GoogleCalendarEvent {
   id: string
@@ -15,6 +15,7 @@ interface GoogleCalendarEvent {
   color: string
   description?: string
   location?: string
+  hangoutLink?: string // AJOUT : Pour détecter la visio
   source: 'google'
 }
 
@@ -24,11 +25,11 @@ interface GoogleCalendarContextType {
   login: () => void
   logout: () => void
   isLoading: boolean
+  refreshEvents: () => void // AJOUT : Pour forcer le rafraîchissement
 }
 
 const GoogleCalendarContext = createContext<GoogleCalendarContextType | undefined>(undefined)
 
-// MODIFIÉ : Fonction pour générer une clé unique par utilisateur
 const getStorageKey = (userId: string) => `closeros_google_token_${userId}`
 const GOOGLE_BLUE = '#4285F4'
 
@@ -38,13 +39,11 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  // 1. Écouter l'utilisateur connecté pour isoler les données
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUserId(user.id)
-        // Charger le token spécifique à CET utilisateur
         const savedToken = localStorage.getItem(getStorageKey(user.id))
         setAccessToken(savedToken)
       } else {
@@ -70,24 +69,25 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
     return () => authListener.subscription.unsubscribe()
   }, [])
 
-  // Fetch Google Calendar events
   const fetchEvents = async (token: string) => {
     if (!token) return
     setIsLoading(true)
     try {
       const now = new Date()
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      // CORRECTION : On cherche sur une plage plus large (-1 mois à +3 mois)
+      // pour éviter que les événements disparaissent quand on change de mois
+      const timeMin = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      const timeMax = new Date(now.getFullYear(), now.getMonth() + 3, 0)
 
       const response = await axios.get(
         'https://www.googleapis.com/calendar/v3/calendars/primary/events',
         {
           params: {
-            timeMin: startOfMonth.toISOString(),
-            timeMax: endOfMonth.toISOString(),
+            timeMin: timeMin.toISOString(),
+            timeMax: timeMax.toISOString(),
             singleEvents: true,
             orderBy: 'startTime',
-            maxResults: 100,
+            maxResults: 200, // Augmenté pour supporter plus d'événements
           },
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -95,6 +95,13 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
 
       const events: GoogleCalendarEvent[] = response.data.items.map((item: any) => {
         const isAllDay = !item.start.dateTime && !!item.start.date
+        
+        // LOGIQUE GOOGLE MEET : Si pas de lieu mais un lien visio, on l'indique
+        let finalLocation = item.location || ''
+        if (!finalLocation && item.hangoutLink) {
+          finalLocation = 'Google Meet (Visio)'
+        }
+
         return {
           id: `google-${item.id}`,
           title: `📅 ${item.summary || 'Sans titre'}`,
@@ -104,13 +111,15 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
           isGoogleEvent: true,
           color: GOOGLE_BLUE,
           description: item.description || '',
-          location: item.location || '',
+          location: finalLocation,
+          hangoutLink: item.hangoutLink, // On garde le lien brut
           source: 'google' as const,
         }
       })
 
       setGoogleEvents(events)
     } catch (error: any) {
+      console.error("Erreur Google Calendar:", error)
       if (error.response?.status === 401 && userId) {
         localStorage.removeItem(getStorageKey(userId))
         setAccessToken(null)
@@ -121,13 +130,12 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Google Login hook
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       const token = tokenResponse.access_token
       if (userId) {
         setAccessToken(token)
-        localStorage.setItem(getStorageKey(userId), token) // MODIFIÉ : Clé unique
+        localStorage.setItem(getStorageKey(userId), token)
         await fetchEvents(token)
       }
     },
@@ -141,7 +149,6 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
     setGoogleEvents([])
   }
 
-  // Fetch events on mount or when token/userId changes
   useEffect(() => {
     if (accessToken) {
       fetchEvents(accessToken)
@@ -156,6 +163,7 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         isLoading,
+        refreshEvents: () => accessToken && fetchEvents(accessToken),
       }}
     >
       {children}

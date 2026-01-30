@@ -11,7 +11,7 @@ import { useMeetings } from '../contexts/MeetingsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
 import { isDailyCoLink } from '../services/dailyService'
 
-// RÉPARATION : Helper sécurisé pour extraire l'heure
+// Helper sécurisé pour extraire l'heure
 const getStartHour = (timeString: string) => {
   if (!timeString) return 0;
   const start = timeString.split(' - ')[0];
@@ -20,12 +20,11 @@ const getStartHour = (timeString: string) => {
   return parseInt(parts[0]) + parseInt(parts[1]) / 60;
 }
 
-// RÉPARATION : Helper sécurisé pour calculer la durée
+// Helper sécurisé pour calculer la durée
 const getDuration = (timeString: string) => {
   if (!timeString) return 1;
   const parts = timeString.split(' - ');
   
-  // Si le format n'est pas "HH:mm - HH:mm", on met une durée par défaut de 1h
   if (parts.length < 2) return 1;
 
   const [startH, startM] = parts[0].split(':').map(Number)
@@ -40,7 +39,6 @@ const getDuration = (timeString: string) => {
   return endTotal - startTotal
 }
 
-// Helper pour détecter si un événement s'étend sur la nuit (passe minuit)
 const isOvernightEvent = (timeString: string) => {
   if (!timeString || !timeString.includes(' - ')) return false;
   const [start, end] = timeString.split(' - ')
@@ -51,18 +49,13 @@ const isOvernightEvent = (timeString: string) => {
   return endTotal < startTotal
 }
 
-// Helper pour rendre les URLs cliquables dans le texte
 const renderTextWithLinks = (text: string) => {
   if (!text) return null
-
-  // Regex pour détecter les URLs (http, https, www)
   const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g
   const parts = text.split(urlRegex)
 
   return parts.map((part, index) => {
-    // Si la partie correspond à une URL
     if (part.match(urlRegex)) {
-      // Ajouter https:// si l'URL commence par www
       const href = part.startsWith('www.') ? `https://${part}` : part
       return (
         <a
@@ -77,39 +70,20 @@ const renderTextWithLinks = (text: string) => {
         </a>
       )
     }
-    // Sinon, retourner le texte normal
     return <span key={index}>{part}</span>
   })
 }
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i) // 0h à 23h (full 24-hour day)
+const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
 type ViewMode = 'day' | 'week' | 'month'
 
-// Helper functions for date manipulation
 const formatDate = (date: Date): string => {
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-const formatDayName = (date: Date): string => {
-  return date.toLocaleDateString('fr-FR', { weekday: 'long' })
-}
-
 const formatShortDayName = (date: Date): string => {
   return date.toLocaleDateString('fr-FR', { weekday: 'short' })
-}
-
-const getWeekDates = (date: Date): Date[] => {
-  const day = date.getDay()
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1) // Adjust for Monday start
-  const monday = new Date(date)
-  monday.setDate(diff)
-
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday)
-    d.setDate(monday.getDate() + i)
-    return d
-  })
 }
 
 // Get 3 consecutive days starting from the given date
@@ -125,14 +99,11 @@ const getMonthDates = (date: Date): Date[] => {
   const year = date.getFullYear()
   const month = date.getMonth()
   const firstDay = new Date(year, month, 1)
-  const lastDay = new Date(year, month + 1, 0)
-
-  // Start from the Monday of the week containing the 1st
+  
   const startDay = firstDay.getDay()
   const startOffset = startDay === 0 ? -6 : 1 - startDay
   const start = new Date(year, month, startOffset)
 
-  // Calculate how many days we need (always 6 weeks = 42 days)
   const dates: Date[] = []
   for (let i = 0; i < 42; i++) {
     const d = new Date(start)
@@ -162,7 +133,6 @@ export function Agenda() {
   const dayViewScrollRef = useRef<HTMLDivElement>(null)
   const weekViewScrollRef = useRef<HTMLDivElement>(null)
 
-  // State management
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<ViewMode>('week')
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -177,30 +147,31 @@ export function Agenda() {
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
   const [editingEventId, setEditingEventId] = useState<number | null>(null)
 
-  // MODIFIÉ : Recherche étendue pour ouvrir automatiquement CRM ou GOOGLE
   useEffect(() => {
     const eventIdFromState = (location.state as any)?.eventId;
     
     if (eventIdFromState) {
       const findEvent = () => {
-        // 1. Chercher dans le CRM
         const crmEvent = meetings.find(m => String(m.id) === String(eventIdFromState));
         if (crmEvent) return crmEvent;
 
-        // 2. Chercher dans Google
         const ge = googleEvents.find(g => String(g.id) === String(eventIdFromState));
         if (ge && ge.start && ge.end) {
+          // Détection automatique du type VIDEO pour Google
+          const isVideo = !!(ge as any).hangoutLink || ge.location?.toLowerCase().includes('meet') || ge.description?.includes('zoom');
+          
           return {
             id: ge.id as any,
             title: ge.title,
             date: ge.start.toISOString().split('T')[0],
             time: `${ge.start.getHours().toString().padStart(2, '0')}:${ge.start.getMinutes().toString().padStart(2, '0')} - ${ge.end.getHours().toString().padStart(2, '0')}:${ge.end.getMinutes().toString().padStart(2, '0')}`,
-            type: 'meeting' as const,
+            type: isVideo ? 'video' : 'meeting', // CORRECTION TYPE
             contact: ge.title,
             status: 'scheduled' as const,
             isGoogleEvent: true,
             location: ge.location || '',
-            description: ge.description || ''
+            description: ge.description || '',
+            hangoutLink: (ge as any).hangoutLink // On garde le lien
           };
         }
         return null;
@@ -209,7 +180,7 @@ export function Agenda() {
       const eventToOpen = findEvent();
       
       if (eventToOpen) {
-        setSelectedEvent(eventToOpen);
+        setSelectedEvent(eventToOpen as any);
         const eventDate = new Date(eventToOpen.date);
         if (!isSameDay(currentDate, eventDate)) {
           setCurrentDate(eventDate);
@@ -219,22 +190,19 @@ export function Agenda() {
     }
   }, [location.state, meetings, googleEvents, currentDate]);
 
-  // Update current time every minute
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date())
-    }, 60000) // Update every minute
-
+    }, 60000)
     return () => clearInterval(timer)
   }, [])
 
-  // Navigation functions
   const goToNext = () => {
     const newDate = new Date(currentDate)
     if (view === 'day') {
       newDate.setDate(newDate.getDate() + 1)
     } else if (view === 'week') {
-      newDate.setDate(newDate.getDate() + 2) // Shift by 2 days for 3-day sliding view
+      newDate.setDate(newDate.getDate() + 2)
     } else if (view === 'month') {
       newDate.setMonth(newDate.getMonth() + 1)
     }
@@ -246,7 +214,7 @@ export function Agenda() {
     if (view === 'day') {
       newDate.setDate(newDate.getDate() - 1)
     } else if (view === 'week') {
-      newDate.setDate(newDate.getDate() - 2) // Shift by 2 days for 3-day sliding view
+      newDate.setDate(newDate.getDate() - 2)
     } else if (view === 'month') {
       newDate.setMonth(newDate.getMonth() - 1)
     }
@@ -259,13 +227,13 @@ export function Agenda() {
 
   const handlePrevRange = () => {
     const newDate = new Date(currentDate)
-    newDate.setDate(newDate.getDate() - 2) // Shift back by 2 days
+    newDate.setDate(newDate.getDate() - 2)
     setCurrentDate(newDate)
   }
 
   const handleNextRange = () => {
     const newDate = new Date(currentDate)
-    newDate.setDate(newDate.getDate() + 2) // Shift forward by 2 days
+    newDate.setDate(newDate.getDate() + 2)
     setCurrentDate(newDate)
   }
 
@@ -276,14 +244,13 @@ export function Agenda() {
     }
   }
 
-  // Get title based on view
   const getTitle = () => {
     if (view === 'day') {
       return formatDate(currentDate)
     } else if (view === 'week') {
-      const weekDates = get3DayDates(currentDate) // Use 3-day range
+      const weekDates = get3DayDates(currentDate)
       const start = weekDates[0]
-      const end = weekDates[2] // Last day of the 3-day range
+      const end = weekDates[2]
       if (start.getMonth() === end.getMonth()) {
         return `${start.getDate()} - ${end.getDate()} ${start.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`
       } else {
@@ -294,23 +261,20 @@ export function Agenda() {
     }
   }
 
-  // Calculate current time indicator position (for 24-hour view)
   const getCurrentTimePosition = () => {
     const now = currentTime
     const minutesSinceMidnight = now.getHours() * 60 + now.getMinutes()
-    const totalMinutesInDay = 24 * 60 // Full 24 hours
+    const totalMinutesInDay = 24 * 60
     const percentage = (minutesSinceMidnight / totalMinutesInDay) * 100
     return percentage
   }
 
-  // Auto-scroll to current time on load
   useEffect(() => {
     if (view === 'day' && dayViewScrollRef.current) {
       const now = new Date()
       const currentHour = now.getHours()
-      // Scroll to 2 hours before current time for context (or start of day if early morning)
       const scrollToHour = Math.max(0, currentHour - 2)
-      const scrollPosition = scrollToHour * 80 // 80px per hour
+      const scrollPosition = scrollToHour * 80
       dayViewScrollRef.current.scrollTop = scrollPosition
     } else if (view === 'week' && weekViewScrollRef.current) {
       const now = new Date()
@@ -321,90 +285,93 @@ export function Agenda() {
     }
   }, [view])
 
-  // Filter meetings by date (timezone-safe comparison using isSameDay)
+  // --- CORRECTION CLÉ : Filtrage et Déduplication des Événements ---
   const getMeetingsForDate = (date: Date) => {
-    // Get local CRM meetings
+    // 1. Récupérer les événements CRM (Prioritaires)
     const localMeetings = meetings.filter(meeting => {
       try {
-        // RÉPARATION : On vérifie si meeting.date existe avant de l'utiliser
-        if (!meeting || !meeting.date) {
-          return false
-        }
+        if (!meeting || !meeting.date) return false
+        // On ne montre pas les événements annulés si on veut nettoyer la vue
+        if (meeting.status === 'cancelled') return false; 
 
         const parts = meeting.date.split('-')
         if (parts.length !== 3) return false
-
         const [year, month, day] = parts.map(Number)
-        if (isNaN(year) || isNaN(month) || isNaN(day)) return false
-
         const meetingDate = new Date(year, month - 1, day)
-        if (isNaN(meetingDate.getTime())) return false
-
         return isSameDay(meetingDate, date)
       } catch (error) {
         return false
       }
     })
 
-    // Get Google Calendar events for this date
+    // 2. Créer une signature unique pour chaque événement CRM (Heure + Titre approximatif)
+    // Cela permet de détecter si un événement Google est en fait le même
+    const existingSignatures = new Set(
+      localMeetings.map(m => {
+        const start = m.time?.split(' - ')[0] || '';
+        // Signature simple : HeureStart + 5 premiers chars du titre
+        return `${start}-${(m.title || m.contact || '').substring(0, 5).toLowerCase()}`;
+      })
+    );
+
+    // 3. Récupérer et filtrer les événements Google
     const googleMeetingsForDate = googleEvents
       .filter(event => {
         try {
-          // Validate event has required data
           if (!event || !event.start) return false
-          // Filter out all-day events from the time-based grid
           if (event.allDay) return false
           return isSameDay(event.start, date)
         } catch (error) {
-          console.error('Error filtering Google event:', error, event)
           return false
         }
       })
       .map(event => {
         try {
-          // Validate event dates
-          if (!event.start || !event.end) {
-            console.warn('Google event missing start or end:', event)
-            return null
-          }
+          if (!event.start || !event.end) return null
 
-          // Transform Google event to meeting format
           const startTime = `${event.start.getHours().toString().padStart(2, '0')}:${event.start.getMinutes().toString().padStart(2, '0')}`
           const endTime = `${event.end.getHours().toString().padStart(2, '0')}:${event.end.getMinutes().toString().padStart(2, '0')}`
+          
+          // Vérification de doublon
+          const signature = `${startTime}-${(event.title || '').substring(0, 5).toLowerCase()}`;
+          if (existingSignatures.has(signature)) {
+            return null; // On ignore cet événement Google car il existe déjà dans le CRM
+          }
+
+          // CORRECTION : Détection du type Vidéo
+          const isVideo = !!(event as any).hangoutLink || event.location?.toLowerCase().includes('meet') || event.description?.includes('zoom');
 
           return {
             id: event.id as any,
             title: event.title,
             date: event.start.toISOString().split('T')[0],
             time: `${startTime} - ${endTime}`,
-            type: 'meeting' as const,
+            type: isVideo ? 'video' : 'meeting' as const, // Force le type vidéo si lien détecté
             prospect: event.description || '',
-            contact: event.title, // Use title as contact name for display
-            prospectId: 0, // Google events don't have a prospect ID
+            contact: event.title,
+            prospectId: 0,
             status: 'scheduled' as const,
             isGoogleEvent: true,
             color: event.color,
             description: event.description || '',
-            location: event.location || ''
+            location: event.location || '',
+            hangoutLink: (event as any).hangoutLink // On préserve le lien
           }
         } catch (error) {
-          console.error('Error transforming Google event:', error, event)
           return null
         }
       })
       .filter((event): event is NonNullable<typeof event> => event !== null)
 
-    // Merge and return all events
+    // Fusionner
     return [...localMeetings, ...googleMeetingsForDate]
   }
 
-  // Filter meetings for today
   const getTodayMeetings = () => {
     const today = new Date()
     return getMeetingsForDate(today)
   }
 
-  // Get all-day Google events for a specific date
   const getAllDayEventsForDate = (date: Date) => {
     return googleEvents.filter(event => {
       if (!event.allDay) return false
@@ -412,26 +379,18 @@ export function Agenda() {
     })
   }
 
-  // Fonction pour déterminer si un événement est "court" (< 45min)
   const isShortEvent = (duration: number) => duration < 0.75
 
   const handleNavigateToProspect = (prospectId: number) => {
-    console.log('🔗 Navigating to prospect:', prospectId)
     navigate('/pipeline', { state: { prospectId } })
   }
 
   const handleStartCall = (prospectName: string, withAi: boolean) => {
-    console.log('🎯 Call triggered with mode:', withAi ? 'AI' : 'Standard', 'for:', prospectName)
     setCurrentProspect({ name: prospectName, avatar: prospectName.charAt(0) })
     setCallModeWithAi(withAi)
     setIsVideoCallOpen(true)
     setCallDropdownOpen(null)
     setSelectedEvent(null)
-  }
-
-  const handlePhoneCall = () => {
-    console.log('📱 Appel téléphonique - To be implemented')
-    setCallDropdownOpen(null)
   }
 
   const handleCallEnd = (wasAiActive: boolean, wasAnswered: boolean) => {
@@ -448,36 +407,30 @@ export function Agenda() {
   }
 
   const handleCallSummarySubmit = (data: CallSummaryData) => {
-    console.log('Call Summary from Agenda:', data)
     setIsCallSummaryModalOpen(false)
   }
 
   const handleMarkAsNoShow = () => {
-    console.log('Marking as No Show')
     setIsNoAnswerModalOpen(false)
   }
 
   const handleCreateEvent = () => {
-    console.log('📅 Opening create event modal')
     setEditingEventId(null)
     setIsCreateEventModalOpen(true)
   }
 
   const handleEditEvent = () => {
     if (!selectedEvent) return
-    console.log('✏️ Opening edit event modal for:', selectedEvent.id)
     setEditingEventId(selectedEvent.id)
     setIsCreateEventModalOpen(true)
   }
 
   const handleDeleteEvent = () => {
     if (!selectedEvent) return
-    console.log('🗑️ Deleting event:', selectedEvent.id)
     deleteMeeting(selectedEvent.id)
     setSelectedEvent(null)
   }
 
-  // Render Day View
   const renderDayView = () => {
     const dayMeetings = getMeetingsForDate(currentDate)
     const allDayEvents = getAllDayEventsForDate(currentDate)
@@ -486,7 +439,6 @@ export function Agenda() {
 
     return (
       <div className="flex flex-col flex-1 rounded-lg border border-slate-800 bg-slate-900 overflow-hidden" style={{ maxHeight: 'calc(100vh - 280px)' }}>
-        {/* All Day Events Section */}
         {allDayEvents.length > 0 && (
           <div className="border-b border-slate-800 bg-slate-950/50 p-3">
             <div className="text-xs font-semibold text-slate-400 mb-2">Toute la journée</div>
@@ -508,13 +460,8 @@ export function Agenda() {
           </div>
         )}
 
-        {/* Time Grid */}
-        <div
-          ref={dayViewScrollRef}
-          className="flex-1 overflow-y-auto custom-scrollbar"
-        >
+        <div ref={dayViewScrollRef} className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="relative min-h-[1920px]">
-          {/* Heures (colonne gauche) */}
           <div className="absolute left-0 top-0 w-16 border-r border-slate-800">
             {HOURS.map((hour) => (
               <div key={hour} className="h-20 border-b border-slate-800/50 px-2 py-1">
@@ -525,14 +472,11 @@ export function Agenda() {
             ))}
           </div>
 
-          {/* Zone de la grille */}
           <div className="absolute inset-0 left-16">
-            {/* Lignes horaires */}
             {HOURS.map((hour) => (
               <div key={hour} className="h-20 border-b border-slate-800/30" />
             ))}
 
-            {/* Current Time Indicator */}
             {showCurrentTimeLine && currentTimePos >= 0 && currentTimePos <= 100 && (
               <div
                 className="absolute left-0 right-0 z-10"
@@ -545,58 +489,31 @@ export function Agenda() {
               </div>
             )}
 
-            {/* Événements positionnés */}
             {dayMeetings.map((event) => {
               const startHour = getStartHour(event.time)
               const isOvernight = isOvernightEvent(event.time)
-
-              // For overnight events, clip at midnight
               let duration = getDuration(event.time)
               let actualHeight = duration * 80
 
               if (isOvernight) {
-                // Clip the event to end at midnight (24:00)
                 const hoursUntilMidnight = 24 - startHour
                 actualHeight = hoursUntilMidnight * 80
               }
 
-              const top = startHour * 80 // Position from midnight (0:00)
+              const top = startHour * 80
               const height = actualHeight
               const isShort = isShortEvent(duration)
-
-              // Check if it's a Google event
               const isGoogleEvent = (event as any).isGoogleEvent
 
-              // Define styling based on event type
               let eventStyle = {}
               if (isGoogleEvent) {
-                eventStyle = {
-                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                  borderLeft: '4px solid #3b82f6',
-                  color: '#ffffff',
-                  borderRadius: '6px'
-                }
+                eventStyle = { backgroundColor: 'rgba(59, 130, 246, 0.2)', borderLeft: '4px solid #3b82f6', color: '#ffffff', borderRadius: '6px' }
               } else if (event.type === 'meeting') {
-                eventStyle = {
-                  backgroundColor: 'rgba(249, 115, 22, 0.2)',
-                  borderLeft: '4px solid #f97316',
-                  color: '#ffffff',
-                  borderRadius: '6px'
-                }
+                eventStyle = { backgroundColor: 'rgba(249, 115, 22, 0.2)', borderLeft: '4px solid #f97316', color: '#ffffff', borderRadius: '6px' }
               } else if (event.type === 'video') {
-                eventStyle = {
-                  backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                  borderLeft: '4px solid #2563eb',
-                  color: '#ffffff',
-                  borderRadius: '6px'
-                }
+                eventStyle = { backgroundColor: 'rgba(37, 99, 235, 0.2)', borderLeft: '4px solid #2563eb', color: '#ffffff', borderRadius: '6px' }
               } else if (event.type === 'call') {
-                eventStyle = {
-                  backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                  borderLeft: '4px solid #10b981',
-                  color: '#ffffff',
-                  borderRadius: '6px'
-                }
+                eventStyle = { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderLeft: '4px solid #10b981', color: '#ffffff', borderRadius: '6px' }
               }
 
               return (
@@ -604,11 +521,7 @@ export function Agenda() {
                   key={event.id}
                   onClick={() => setSelectedEvent(event)}
                   className="absolute left-2 right-2 cursor-pointer overflow-hidden px-2 py-1 transition-all hover:shadow-lg"
-                  style={{
-                    top: `${top}px`,
-                    height: `${height}px`,
-                    ...eventStyle
-                  }}
+                  style={{ top: `${top}px`, height: `${height}px`, ...eventStyle }}
                 >
                   {isShort ? (
                     <div className="flex h-full items-center">
@@ -639,9 +552,8 @@ export function Agenda() {
     )
   }
 
-  // Render Week View
   const renderWeekView = () => {
-    const weekDates = get3DayDates(currentDate) // Use 3-day sliding view instead of full week
+    const weekDates = get3DayDates(currentDate)
     const currentTimePos = getCurrentTimePosition()
     const todayIndex = weekDates.findIndex(date => isToday(date))
 
@@ -651,7 +563,6 @@ export function Agenda() {
         className="flex-1 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 custom-scrollbar"
         style={{ maxHeight: 'calc(100vh - 280px)' }}
       >
-        {/* Days header */}
         <div className="sticky top-0 z-20 flex border-b border-slate-800 bg-slate-900">
           <div className="w-16 border-r border-slate-800" />
           {weekDates.map((date, index) => (
@@ -675,7 +586,6 @@ export function Agenda() {
           ))}
         </div>
 
-        {/* All Day Events Row */}
         <div className="sticky top-[73px] z-10 flex border-b border-slate-800 bg-slate-950/90 backdrop-blur-sm">
           <div className="w-16 border-r border-slate-800 p-2">
             <span className="text-[10px] font-semibold text-slate-400">Toute la journée</span>
@@ -703,7 +613,6 @@ export function Agenda() {
         </div>
 
         <div className="relative min-h-[1920px]">
-          {/* Heures (colonne gauche) */}
           <div className="absolute left-0 top-0 w-16 border-r border-slate-800">
             {HOURS.map((hour) => (
               <div key={hour} className="h-20 border-b border-slate-800/50 px-2 py-1">
@@ -714,24 +623,19 @@ export function Agenda() {
             ))}
           </div>
 
-          {/* Grid columns for days */}
           <div className="absolute inset-0 left-16 flex">
             {weekDates.map((date, dayIndex) => {
               const dayMeetings = getMeetingsForDate(date)
-
-              // Check for overnight events from the previous day that continue into this day
               const previousDate = dayIndex > 0 ? weekDates[dayIndex - 1] : null
               const previousDayMeetings = previousDate ? getMeetingsForDate(previousDate) : []
               const overnightContinuations = previousDayMeetings.filter(event => isOvernightEvent(event.time))
 
               return (
                 <div key={dayIndex} className="relative flex-1 border-r border-slate-800/30">
-                  {/* Hour lines */}
                   {HOURS.map((hour) => (
                     <div key={hour} className="h-20 border-b border-slate-800/30" />
                   ))}
 
-                  {/* Current Time Indicator - only on today's column */}
                   {dayIndex === todayIndex && currentTimePos >= 0 && currentTimePos <= 100 && (
                     <div
                       className="absolute left-0 right-0 z-10"
@@ -744,50 +648,25 @@ export function Agenda() {
                     </div>
                   )}
 
-                  {/* Overnight event continuations from previous day */}
                   {overnightContinuations.map((event) => {
                     const parts = event.time?.split(' - ') || [];
                     const end = parts[1] || parts[0] || '00:00';
                     const [endH, endM] = end?.split(':').map(Number) || [0, 0];
                     const endHour = endH + endM / 60
-
-                    const top = 0 // Start at midnight
-                    const height = endHour * 80 // End at the specified time
+                    const top = 0 
+                    const height = endHour * 80
                     const isShort = isShortEvent(endHour)
-
-                    // Check if it's a Google event
                     const isGoogleEvent = (event as any).isGoogleEvent
 
-                    // Define styling based on event type
                     let eventStyle = {}
                     if (isGoogleEvent) {
-                      eventStyle = {
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderLeft: '4px solid #3b82f6',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(59, 130, 246, 0.2)', borderLeft: '4px solid #3b82f6', color: '#ffffff', borderRadius: '6px' }
                     } else if (event.type === 'meeting') {
-                      eventStyle = {
-                        backgroundColor: 'rgba(249, 115, 22, 0.2)',
-                        borderLeft: '4px solid #f97316',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(249, 115, 22, 0.2)', borderLeft: '4px solid #f97316', color: '#ffffff', borderRadius: '6px' }
                     } else if (event.type === 'video') {
-                      eventStyle = {
-                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                        borderLeft: '4px solid #2563eb',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(37, 99, 235, 0.2)', borderLeft: '4px solid #2563eb', color: '#ffffff', borderRadius: '6px' }
                     } else if (event.type === 'call') {
-                      eventStyle = {
-                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                        borderLeft: '4px solid #10b981',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderLeft: '4px solid #10b981', color: '#ffffff', borderRadius: '6px' }
                     }
 
                     return (
@@ -795,11 +674,7 @@ export function Agenda() {
                         key={`overnight-${event.id}`}
                         onClick={() => setSelectedEvent(event)}
                         className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg"
-                        style={{
-                          top: `${top}px`,
-                          height: `${height}px`,
-                          ...eventStyle
-                        }}
+                        style={{ top: `${top}px`, height: `${height}px`, ...eventStyle }}
                       >
                         {isShort ? (
                           <div className="flex h-full items-center">
@@ -819,58 +694,31 @@ export function Agenda() {
                     )
                   })}
 
-                  {/* Events for this day */}
                   {dayMeetings.map((event) => {
                     const startHour = getStartHour(event.time)
                     const isOvernight = isOvernightEvent(event.time)
-
-                    // For overnight events on the start day, clip at midnight
                     let duration = getDuration(event.time)
                     let actualHeight = duration * 80
 
                     if (isOvernight) {
-                      // Clip the event to end at midnight (24:00) on the first day
                       const hoursUntilMidnight = 24 - startHour
                       actualHeight = hoursUntilMidnight * 80
                     }
 
-                    const top = startHour * 80 // Position from midnight (0:00)
+                    const top = startHour * 80
                     const height = actualHeight
                     const isShort = isShortEvent(duration)
-
-                    // Check if it's a Google event
                     const isGoogleEvent = (event as any).isGoogleEvent
 
-                    // Define styling based on event type
                     let eventStyle = {}
                     if (isGoogleEvent) {
-                      eventStyle = {
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderLeft: '4px solid #3b82f6',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(59, 130, 246, 0.2)', borderLeft: '4px solid #3b82f6', color: '#ffffff', borderRadius: '6px' }
                     } else if (event.type === 'meeting') {
-                      eventStyle = {
-                        backgroundColor: 'rgba(249, 115, 22, 0.2)',
-                        borderLeft: '4px solid #f97316',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(249, 115, 22, 0.2)', borderLeft: '4px solid #f97316', color: '#ffffff', borderRadius: '6px' }
                     } else if (event.type === 'video') {
-                      eventStyle = {
-                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                        borderLeft: '4px solid #2563eb',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(37, 99, 235, 0.2)', borderLeft: '4px solid #2563eb', color: '#ffffff', borderRadius: '6px' }
                     } else if (event.type === 'call') {
-                      eventStyle = {
-                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                        borderLeft: '4px solid #10b981',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderLeft: '4px solid #10b981', color: '#ffffff', borderRadius: '6px' }
                     }
 
                     return (
@@ -878,11 +726,7 @@ export function Agenda() {
                         key={event.id}
                         onClick={() => setSelectedEvent(event)}
                         className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg"
-                        style={{
-                          top: `${top}px`,
-                          height: `${height}px`,
-                          ...eventStyle
-                        }}
+                        style={{ top: `${top}px`, height: `${height}px`, ...eventStyle }}
                       >
                         {isShort ? (
                           <div className="flex h-full items-center">
@@ -912,14 +756,12 @@ export function Agenda() {
     )
   }
 
-  // Render Month View
   const renderMonthView = () => {
     const monthDates = getMonthDates(currentDate)
     const currentMonth = currentDate.getMonth()
 
     return (
       <div className="flex-1 overflow-auto rounded-lg border border-slate-800 bg-slate-900">
-        {/* Days of week header */}
         <div className="grid grid-cols-7 border-b border-slate-800 bg-slate-950">
           {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
             <div key={day} className="border-r border-slate-800/30 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -928,7 +770,6 @@ export function Agenda() {
           ))}
         </div>
 
-        {/* Calendar grid */}
         <div className="grid grid-cols-7">
           {monthDates.map((date, index) => {
             const isCurrentMonth = date.getMonth() === currentMonth
@@ -955,42 +796,18 @@ export function Agenda() {
                   {date.getDate()}
                 </div>
 
-                {/* Events for this date */}
                 <div className="space-y-1">
                   {visibleMeetings.map((event) => {
-                    // Check if it's a Google event
                     const isGoogleEvent = (event as any).isGoogleEvent
-
-                    // Define styling based on event type
                     let eventStyle = {}
                     if (isGoogleEvent) {
-                      eventStyle = {
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderLeft: '4px solid #3b82f6',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(59, 130, 246, 0.2)', borderLeft: '4px solid #3b82f6', color: '#ffffff', borderRadius: '6px' }
                     } else if (event.type === 'meeting') {
-                      eventStyle = {
-                        backgroundColor: 'rgba(249, 115, 22, 0.2)',
-                        borderLeft: '4px solid #f97316',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(249, 115, 22, 0.2)', borderLeft: '4px solid #f97316', color: '#ffffff', borderRadius: '6px' }
                     } else if (event.type === 'video') {
-                      eventStyle = {
-                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                        borderLeft: '4px solid #2563eb',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(37, 99, 235, 0.2)', borderLeft: '4px solid #2563eb', color: '#ffffff', borderRadius: '6px' }
                     } else if (event.type === 'call') {
-                      eventStyle = {
-                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                        borderLeft: '4px solid #10b981',
-                        color: '#ffffff',
-                        borderRadius: '6px'
-                      }
+                      eventStyle = { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderLeft: '4px solid #10b981', color: '#ffffff', borderRadius: '6px' }
                     }
 
                     return (
@@ -1023,12 +840,9 @@ export function Agenda() {
 
   return (
     <div className="flex h-full gap-6 p-8">
-      {/* GAUCHE - CALENDRIER (70%) */}
       <div className="flex flex-1 flex-col">
-        {/* Header du Calendrier */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {/* Today Button */}
             <button
               onClick={goToToday}
               className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-300 transition-all hover:bg-slate-700"
@@ -1036,9 +850,7 @@ export function Agenda() {
               Aujourd'hui
             </button>
 
-            {/* Navigation Arrows with Date Range */}
             <div className="flex items-center gap-4 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2">
-              {/* PREV BUTTON */}
               <button
                 onClick={view === 'week' ? handlePrevRange : goToPrev}
                 className="rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
@@ -1046,12 +858,10 @@ export function Agenda() {
                 <ChevronLeft className="h-5 w-5" />
               </button>
 
-              {/* DATE TEXT */}
               <h2 className="min-w-[200px] text-center text-lg font-medium capitalize text-white">
                 {getTitle()}
               </h2>
 
-              {/* NEXT BUTTON */}
               <button
                 onClick={view === 'week' ? handleNextRange : goToNext}
                 className="rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
@@ -1060,7 +870,6 @@ export function Agenda() {
               </button>
             </div>
 
-            {/* Date Picker */}
             <div className="relative">
               <button
                 onClick={() => dateInputRef.current?.showPicker()}
@@ -1079,17 +888,13 @@ export function Agenda() {
             </div>
           </div>
 
-          {/* Right Side: View Switcher + New Event Button */}
           <div className="flex items-center gap-3">
-            {/* View Switcher */}
             <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800 p-1">
               <button
                 onClick={() => setView('day')}
                 className={cn(
                   'rounded px-3 py-1.5 text-sm font-semibold transition-all',
-                  view === 'day'
-                    ? 'bg-blue-500 text-white'
-                    : 'text-slate-400 hover:text-slate-300'
+                  view === 'day' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-slate-300'
                 )}
               >
                 Jour
@@ -1098,9 +903,7 @@ export function Agenda() {
                 onClick={() => setView('week')}
                 className={cn(
                   'rounded px-3 py-1.5 text-sm font-semibold transition-all',
-                  view === 'week'
-                    ? 'bg-blue-500 text-white'
-                    : 'text-slate-400 hover:text-slate-300'
+                  view === 'week' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-slate-300'
                 )}
               >
                 Semaine
@@ -1109,16 +912,13 @@ export function Agenda() {
                 onClick={() => setView('month')}
                 className={cn(
                   'rounded px-3 py-1.5 text-sm font-semibold transition-all',
-                  view === 'month'
-                    ? 'bg-blue-500 text-white'
-                    : 'text-slate-400 hover:text-slate-300'
+                  view === 'month' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-slate-300'
                 )}
               >
                 Mois
               </button>
             </div>
 
-            {/* Google Calendar Sync Button */}
             <button
               onClick={login}
               disabled={isLoading}
@@ -1133,7 +933,6 @@ export function Agenda() {
               {isLoading ? 'Chargement...' : isConnected ? 'Compte connecté' : 'Synchroniser Google'}
             </button>
 
-            {/* New Event Button */}
             <button
               onClick={handleCreateEvent}
               className="flex items-center gap-2 rounded-lg bg-blue-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-600"
@@ -1144,21 +943,17 @@ export function Agenda() {
           </div>
         </div>
 
-        {/* Render appropriate view */}
         {view === 'day' && renderDayView()}
         {view === 'week' && renderWeekView()}
         {view === 'month' && renderMonthView()}
       </div>
 
-      {/* DROITE - SIDEBAR "AUJOURD'HUI" (30%) */}
       <div className="w-80 flex-shrink-0">
         <div className="sticky top-0">
           <h3 className="mb-4 text-xl font-bold text-white">Aujourd'hui</h3>
           <div className="space-y-3">
             {getTodayMeetings().map((event) => {
-              // Check if it's a Google event
               const isGoogleEvent = (event as any).isGoogleEvent
-
               return (
                 <div
                   key={event.id}
@@ -1166,7 +961,6 @@ export function Agenda() {
                   className="cursor-pointer rounded-lg border border-slate-800 bg-slate-900 p-4 transition-all hover:border-slate-700 hover:bg-slate-800/50"
                 >
                   <div className="flex items-start gap-3">
-                    {/* Icône */}
                     <div
                       className={cn(
                         'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full',
@@ -1182,7 +976,6 @@ export function Agenda() {
                       {!isGoogleEvent && event.type === 'meeting' && <MapPin className="h-5 w-5 text-orange-400" />}
                     </div>
 
-                  {/* Contenu */}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-white">
                       <MaskedText value={event.contact || 'Inconnu'} type="name" />
@@ -1197,7 +990,6 @@ export function Agenda() {
                   </div>
                 </div>
 
-                {/* MODIFIÉ : Remplacement du bouton Appeler par Détails */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -1215,27 +1007,21 @@ export function Agenda() {
         </div>
       </div>
 
-      {/* MODALE DÉTAILS DE L'ÉVÉNEMENT */}
       {selectedEvent && (() => {
         const isGoogleEvent = (selectedEvent as any).isGoogleEvent
-
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setSelectedEvent(null)}
             />
 
-            {/* Modale */}
             <div className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
-              {/* Header */}
               <div className={cn(
                 "flex items-start justify-between border-b p-6 flex-shrink-0",
                 isGoogleEvent ? 'border-blue-500/30 bg-blue-500/5' : 'border-orange-500/30 bg-orange-500/5'
               )}>
                 <div className="flex-1">
-                  {/* Source Badge */}
                   <div className="mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
                     style={{
                       backgroundColor: isGoogleEvent ? 'rgba(59, 130, 246, 0.15)' : 'rgba(249, 115, 22, 0.15)',
@@ -1284,9 +1070,7 @@ export function Agenda() {
                 </button>
               </div>
 
-            {/* Contenu */}
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 p-6">
-              {/* Date & Heure */}
               <div className="flex items-start gap-3 rounded-lg bg-slate-800/50 p-4">
                 <Clock className="mt-0.5 h-5 w-5 text-blue-400" />
                 <div>
@@ -1298,7 +1082,6 @@ export function Agenda() {
                 </div>
               </div>
 
-              {/* Type de RDV */}
               <div className="rounded-lg bg-slate-800/50 p-4">
                 <p className="text-sm font-medium text-slate-400">Type de rendez-vous</p>
                 <p className="mt-1 text-base font-semibold capitalize text-white">
@@ -1308,7 +1091,6 @@ export function Agenda() {
                 </p>
               </div>
 
-              {/* Location */}
               {(selectedEvent.location || (selectedEvent as any).location) && (() => {
                 const locationUrl = selectedEvent.location || (selectedEvent as any).location
                 return (
@@ -1324,7 +1106,6 @@ export function Agenda() {
                 )
               })()}
 
-              {/* Description */}
               {(selectedEvent.description || (selectedEvent as any).description) && (
                 <div className="flex items-start gap-3 rounded-lg bg-slate-800/50 p-4">
                   <FileText className="mt-0.5 h-5 w-5 text-purple-400 flex-shrink-0" />
@@ -1337,7 +1118,6 @@ export function Agenda() {
                 </div>
               )}
 
-              {/* Statut */}
               {!isGoogleEvent && (
                 <div className="rounded-lg bg-slate-800/50 p-4">
                   <p className="text-sm font-medium text-slate-400">Statut</p>
@@ -1348,22 +1128,18 @@ export function Agenda() {
               )}
             </div>
 
-            {/* Footer avec boutons d'action - MODIFIÉ : Bouton "Rejoindre" intelligent */}
             <div className="flex-shrink-0 border-t border-slate-800 p-6">
-              {/* Smart Action Button - Only for CRM events */}
-              {!isGoogleEvent && (() => {
-                const meetingUrl = selectedEvent.location || (selectedEvent as any).meetingUrl || (selectedEvent as any).link
+              {(() => {
+                const meetingUrl = selectedEvent.location || (selectedEvent as any).meetingUrl || (selectedEvent as any).hangoutLink || (selectedEvent as any).link
                 const hasLink = meetingUrl && (meetingUrl.startsWith('http://') || meetingUrl.startsWith('https://'))
 
                 return hasLink ? (
                   <button
                     onClick={() => {
-                      if (isDailyCoLink(meetingUrl)) {
-                        // Action "Cockpit" interne
+                      if (meetingUrl && isDailyCoLink(meetingUrl)) {
                         const url = `/live-call?url=${encodeURIComponent(meetingUrl)}&from=/agenda`
                         navigate(url)
                       } else {
-                        // Action externe normale
                         window.open(meetingUrl, '_blank', 'noopener,noreferrer')
                       }
                     }}
@@ -1371,17 +1147,9 @@ export function Agenda() {
                   >
                     <Video className="h-4 w-4" /> Rejoindre
                   </button>
-                ) : (
-                  <button
-                    onClick={() => {/* Details action */}}
-                    className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-700 px-4 py-2.5 font-medium text-white transition-all hover:bg-gray-600"
-                  >
-                    <Info className="h-4 w-4" /> Détails
-                  </button>
-                )
+                ) : null
               })()}
 
-              {/* Autres actions - Only for CRM events */}
               {!isGoogleEvent && (
                 <div className="flex gap-3">
                   <button
@@ -1396,7 +1164,7 @@ export function Agenda() {
                     className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Supprimer
+                    Supprimer définitivement
                   </button>
                 </div>
               )}
@@ -1406,7 +1174,6 @@ export function Agenda() {
         )
       })()}
 
-      {/* Video Call Overlay */}
       <VideoCallOverlay
         isOpen={isVideoCallOpen}
         onClose={() => setIsVideoCallOpen(false)}
@@ -1416,7 +1183,6 @@ export function Agenda() {
         initialAiEnabled={callModeWithAi}
       />
 
-      {/* Call Summary Modal */}
       <CallSummaryModal
         isOpen={isCallSummaryModalOpen}
         onClose={() => setIsCallSummaryModalOpen(false)}
@@ -1425,7 +1191,6 @@ export function Agenda() {
         offerPrice={1500}
       />
 
-      {/* No Answer Modal */ }
       <NoAnswerModal
         isOpen={isNoAnswerModalOpen}
         onClose={() => setIsNoAnswerModalOpen(false)}
@@ -1433,7 +1198,6 @@ export function Agenda() {
         prospectName={currentProspect.name}
       />
 
-      {/* Create/Edit Event Modal */}
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
         onClose={() => {
@@ -1443,7 +1207,6 @@ export function Agenda() {
         editingEvent={editingEventId ? meetings.find(m => m.id === editingEventId) || null : null}
       />
 
-      {/* AI Toast Notification */}
       {showAiToast && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[60]">
           <div className="flex items-center gap-3 px-6 py-4 bg-purple-500/20 border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
