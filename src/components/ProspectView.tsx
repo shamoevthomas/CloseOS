@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   X,
   Phone,
@@ -29,8 +29,8 @@ const parsePrice = (priceString: string): number => {
 const ALL_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500' },
+  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' }, // Follow Up déplacé
   { id: 'won', name: 'Gagné', color: 'bg-emerald-500' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' },
   { id: 'noshow', name: 'No Show', color: 'bg-slate-600' },
   { id: 'lost', name: 'Perdu', color: 'bg-red-500' },
 ]
@@ -57,6 +57,15 @@ export function ProspectView({
   const { offers } = useOffers()
   const activeOffers = offers.filter((o) => o.status === 'active')
 
+  // --- OPTIMISTIC UI : État local pour affichage instantané ---
+  const [localProspect, setLocalProspect] = useState(prospect)
+
+  // Synchronisation si le prospect change depuis l'extérieur
+  useEffect(() => {
+    setLocalProspect(prospect)
+    setTempNotes(prospect.notes || '')
+  }, [prospect])
+
   const [editingNotes, setEditingNotes] = useState(false)
   const [tempNotes, setTempNotes] = useState(prospect.notes || '')
 
@@ -73,14 +82,19 @@ export function ProspectView({
   const [editedOfferName, setEditedOfferName] = useState(prospect.offer || '')
   const [editedValue, setEditedValue] = useState(prospect.value || 0)
 
-  const handleUpdateProspect = (updates: Partial<Prospect>) => {
+  // Fonction unifiée pour mise à jour optimiste
+  const handleOptimisticUpdate = (updates: Partial<Prospect>) => {
+    // 1. Mise à jour visuelle immédiate
+    setLocalProspect(prev => ({ ...prev, ...updates }))
+    
+    // 2. Envoi au serveur (arrière-plan)
     if (onUpdate) {
       onUpdate(prospect.id, updates)
     }
   }
 
   const handleSaveNotes = () => {
-    handleUpdateProspect({ notes: tempNotes })
+    handleOptimisticUpdate({ notes: tempNotes })
     setEditingNotes(false)
   }
 
@@ -89,7 +103,7 @@ export function ProspectView({
     const firstName = nameParts[0] || ''
     const lastName = nameParts.slice(1).join(' ') || ''
 
-    handleUpdateProspect({
+    handleOptimisticUpdate({
       contact: editedContact,
       firstName,
       lastName,
@@ -101,10 +115,10 @@ export function ProspectView({
   }
 
   const handleCancelClient = () => {
-    setEditedContact(prospect.contact)
-    setEditedCompany(prospect.company)
-    setEditedEmail(prospect.email)
-    setEditedPhone(prospect.phone)
+    setEditedContact(localProspect.contact)
+    setEditedCompany(localProspect.company)
+    setEditedEmail(localProspect.email)
+    setEditedPhone(localProspect.phone)
     setEditingClient(false)
   }
 
@@ -120,7 +134,7 @@ export function ProspectView({
   }
 
   const handleSaveOffer = () => {
-    handleUpdateProspect({
+    handleOptimisticUpdate({
       offer: editedOfferName,
       value: editedValue,
     })
@@ -129,17 +143,26 @@ export function ProspectView({
 
   const handleCancelOffer = () => {
     setEditedOfferId('')
-    setEditedOfferName(prospect.offer || '')
-    setEditedValue(prospect.value || 0)
+    setEditedOfferName(localProspect.offer || '')
+    setEditedValue(localProspect.value || 0)
     setEditingOffer(false)
   }
 
   const handleDeleteProspect = () => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer ${prospect.contact} ?`)) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer ${localProspect.contact} ?`)) {
       if (onDelete) {
-        onDelete(prospect.id)
+        onDelete(localProspect.id)
       }
       onClose()
+    }
+  }
+
+  // Fonction pour ouvrir Gmail
+  const handleOpenGmail = () => {
+    if (localProspect.email) {
+      window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${localProspect.email}`, '_blank')
+    } else {
+      alert("Aucune adresse email renseignée pour ce prospect.")
     }
   }
 
@@ -158,10 +181,10 @@ export function ProspectView({
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-white">
-                    <MaskedText value={prospect.contact} type="name" />
+                    <MaskedText value={localProspect.contact} type="name" />
                   </h2>
-                  {prospect.company && prospect.company !== 'N/A' && (
-                    <p className="mt-1 text-sm text-slate-400">{prospect.company}</p>
+                  {localProspect.company && localProspect.company !== 'N/A' && (
+                    <p className="mt-1 text-sm text-slate-400">{localProspect.company}</p>
                   )}
                 </div>
                 <button
@@ -175,8 +198,8 @@ export function ProspectView({
               {/* Quick Actions */}
               <div className="mt-4 flex gap-2">
                 <button
-                  onClick={() => (window.location.href = `mailto:${prospect.email}`)}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-300 transition-all hover:bg-slate-800"
+                  onClick={handleOpenGmail}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-300 transition-all hover:bg-slate-800 hover:text-white"
                 >
                   <Mail className="h-4 w-4" />
                   Email
@@ -192,17 +215,14 @@ export function ProspectView({
                 </button>
               </div>
 
-              {/* Stage Selector */}
+              {/* Stage Selector (INSTANTANÉ) */}
               <div className="mt-4">
                 <label className="mb-2 block text-xs font-medium text-slate-400">
                   Étape actuelle
                 </label>
                 <select
-                  value={prospect.stage}
-                  onChange={(e) => {
-                    const newStage = e.target.value
-                    handleUpdateProspect({ stage: newStage })
-                  }}
+                  value={localProspect.stage}
+                  onChange={(e) => handleOptimisticUpdate({ stage: e.target.value })}
                   className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                 >
                   {ALL_STAGES.map((stage) => (
@@ -264,12 +284,12 @@ export function ProspectView({
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-slate-400">Offre concernée</p>
-                          <p className="mt-1 font-medium text-white">{prospect.offer || 'N/A'}</p>
+                          <p className="mt-1 font-medium text-white">{localProspect.offer || 'N/A'}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm text-slate-400">Montant</p>
                           <p className="mt-1 text-lg font-bold text-blue-400">
-                            <MaskedText value={`${(prospect.value || 0).toLocaleString()}€`} type="number" />
+                            <MaskedText value={`${(localProspect.value || 0).toLocaleString()}€`} type="number" />
                           </p>
                         </div>
                       </div>
@@ -315,21 +335,23 @@ export function ProspectView({
                         <Mail className="h-4 w-4 text-blue-400" />
                         <div className="min-w-0 flex-1">
                           <p className="text-xs text-slate-500">Email</p>
-                          <p className="truncate text-sm text-slate-300"><MaskedText value={prospect.email} type="name" /></p>
+                          <button onClick={handleOpenGmail} className="truncate text-sm text-slate-300 hover:text-white hover:underline text-left">
+                            <MaskedText value={localProspect.email} type="name" />
+                          </button>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
                         <Phone className="h-4 w-4 text-emerald-400" />
                         <div className="min-w-0 flex-1">
                           <p className="text-xs text-slate-500">Téléphone</p>
-                          <p className="text-sm text-slate-300"><MaskedText value={prospect.phone} type="name" /></p>
+                          <p className="text-sm text-slate-300"><MaskedText value={localProspect.phone} type="name" /></p>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Notes Internes */}
+                {/* Notes Internes (INSTANTANÉ) */}
                 <div>
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white">Notes Internes</h3>
@@ -352,7 +374,7 @@ export function ProspectView({
                     </div>
                   ) : (
                     <div className="rounded-lg border border-slate-800 bg-slate-800/50 p-4">
-                      <p className="whitespace-pre-wrap text-sm text-slate-300">{prospect.notes || 'Aucune note'}</p>
+                      <p className="whitespace-pre-wrap text-sm text-slate-300">{localProspect.notes || 'Aucune note'}</p>
                     </div>
                   )}
                 </div>

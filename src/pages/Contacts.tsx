@@ -348,13 +348,18 @@ export function Contacts() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-center gap-2">
+                            {/* BOUTON GMAIL RÉPARÉ */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                window.location.href = `mailto:${email}`
+                                if (email) {
+                                  window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank')
+                                } else {
+                                  alert('Pas d\'email renseigné')
+                                }
                               }}
                               className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
-                              title="Email"
+                              title="Envoyer un email (Gmail)"
                             >
                               <Mail className="h-4 w-4" />
                             </button>
