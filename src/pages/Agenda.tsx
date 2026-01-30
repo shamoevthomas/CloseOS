@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus, Video, Phone, MapPin, Clock, X, Edit2, Trash2, Sparkles, Smartphone, ChevronDown, ExternalLink, Calendar as CalendarIcon, FileText, Info } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Video, Phone, MapPin, Clock, X, Edit2, Trash2, Sparkles, ChevronDown, ExternalLink, Calendar as CalendarIcon, FileText, Info } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
 import { VideoCallOverlay } from '../components/VideoCallOverlay'
@@ -10,6 +10,48 @@ import { CreateEventModal } from '../components/CreateEventModal'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
 import { isDailyCoLink } from '../services/dailyService'
+
+// --- HELPER DE STYLE CENTRALISÉ (NOUVEAU) ---
+const getEventStyle = (event: any) => {
+  // 1. STYLE GOOGLE AGENDA (Blanc & Noir)
+  if (event.isGoogleEvent) {
+    return {
+      backgroundColor: '#ffffff',
+      color: '#000000',
+      border: '1px solid #e2e8f0', // Bordure grise subtile
+      borderLeft: '4px solid #4285F4', // Barre latérale Bleu Google
+      borderRadius: '4px',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+    }
+  }
+
+  // 2. STYLE CLOSEROS (Cadres Colorés)
+  let baseColor = '#64748b' // Gris par défaut
+  let bgColor = 'rgba(100, 116, 139, 0.15)'
+  
+  if (event.type === 'video') {
+    baseColor = '#3b82f6' // Bleu
+    bgColor = 'rgba(59, 130, 246, 0.15)'
+  } else if (event.type === 'call') {
+    baseColor = '#10b981' // Vert
+    bgColor = 'rgba(16, 185, 129, 0.15)'
+  } else if (event.type === 'meeting') {
+    baseColor = '#f97316' // Orange
+    bgColor = 'rgba(249, 115, 22, 0.15)'
+  } else if (event.type === 'other') {
+    baseColor = '#a855f7' // Violet pour "Autre"
+    bgColor = 'rgba(168, 85, 247, 0.15)'
+  }
+
+  return {
+    backgroundColor: bgColor,
+    color: '#ffffff',
+    border: `1px solid ${baseColor}`, // Cadre complet de la couleur
+    borderLeft: `4px solid ${baseColor}`, // Barre latérale plus épaisse
+    borderRadius: '4px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.2)' // Ombre pour faire ressortir
+  }
+}
 
 const getStartHour = (timeString: string) => {
   if (!timeString) return 0;
@@ -121,7 +163,7 @@ const isToday = (date: Date): boolean => {
 export function Agenda() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { meetings, addMeeting, updateMeeting, deleteMeeting } = useMeetings()
+  const { meetings, deleteMeeting } = useMeetings()
   const { googleEvents, isConnected, login, isLoading } = useGoogleCalendar()
   const dateInputRef = useRef<HTMLInputElement>(null)
   const dayViewScrollRef = useRef<HTMLDivElement>(null)
@@ -131,7 +173,6 @@ export function Agenda() {
   const [view, setView] = useState<ViewMode>('week')
   const [currentTime, setCurrentTime] = useState(new Date())
   const [selectedEvent, setSelectedEvent] = useState<typeof meetings[0] | null>(null)
-  const [callDropdownOpen, setCallDropdownOpen] = useState<number | null>(null)
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false)
   const [isCallSummaryModalOpen, setIsCallSummaryModalOpen] = useState(false)
   const [isNoAnswerModalOpen, setIsNoAnswerModalOpen] = useState(false)
@@ -361,14 +402,6 @@ export function Agenda() {
     navigate('/pipeline', { state: { prospectId } })
   }
 
-  const handleStartCall = (prospectName: string, withAi: boolean) => {
-    setCurrentProspect({ name: prospectName, avatar: prospectName.charAt(0) })
-    setCallModeWithAi(withAi)
-    setIsVideoCallOpen(true)
-    setCallDropdownOpen(null)
-    setSelectedEvent(null)
-  }
-
   const handleCallEnd = (wasAiActive: boolean, wasAnswered: boolean) => {
     if (!wasAnswered) {
       setIsNoAnswerModalOpen(true)
@@ -479,25 +512,14 @@ export function Agenda() {
               const top = startHour * 80
               const height = actualHeight
               const isShort = isShortEvent(duration)
-              const isGoogleEvent = (event as any).isGoogleEvent
-
-              let eventStyle = {}
-              if (isGoogleEvent) {
-                eventStyle = { backgroundColor: 'rgba(59, 130, 246, 0.2)', borderLeft: '4px solid #3b82f6', color: '#ffffff', borderRadius: '6px' }
-              } else if (event.type === 'meeting') {
-                eventStyle = { backgroundColor: 'rgba(249, 115, 22, 0.2)', borderLeft: '4px solid #f97316', color: '#ffffff', borderRadius: '6px' }
-              } else if (event.type === 'video') {
-                eventStyle = { backgroundColor: 'rgba(37, 99, 235, 0.2)', borderLeft: '4px solid #2563eb', color: '#ffffff', borderRadius: '6px' }
-              } else if (event.type === 'call') {
-                eventStyle = { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderLeft: '4px solid #10b981', color: '#ffffff', borderRadius: '6px' }
-              }
+              const style = getEventStyle(event) // UTILISATION DU STYLE CENTRALISÉ
 
               return (
                 <div
                   key={event.id}
                   onClick={() => setSelectedEvent(event)}
-                  className="absolute left-2 right-2 cursor-pointer overflow-hidden px-2 py-1 transition-all hover:shadow-lg"
-                  style={{ top: `${top}px`, height: `${height}px`, ...eventStyle }}
+                  className="absolute left-2 right-2 cursor-pointer overflow-hidden px-2 py-1 transition-all hover:shadow-lg hover:brightness-110"
+                  style={{ top: `${top}px`, height: `${height}px`, ...style }}
                 >
                   {isShort ? (
                     <div className="flex h-full items-center">
@@ -632,25 +654,14 @@ export function Agenda() {
                     const top = 0 
                     const height = endHour * 80
                     const isShort = isShortEvent(endHour)
-                    const isGoogleEvent = (event as any).isGoogleEvent
-
-                    let eventStyle = {}
-                    if (isGoogleEvent) {
-                      eventStyle = { backgroundColor: 'rgba(59, 130, 246, 0.2)', borderLeft: '4px solid #3b82f6', color: '#ffffff', borderRadius: '6px' }
-                    } else if (event.type === 'meeting') {
-                      eventStyle = { backgroundColor: 'rgba(249, 115, 22, 0.2)', borderLeft: '4px solid #f97316', color: '#ffffff', borderRadius: '6px' }
-                    } else if (event.type === 'video') {
-                      eventStyle = { backgroundColor: 'rgba(37, 99, 235, 0.2)', borderLeft: '4px solid #2563eb', color: '#ffffff', borderRadius: '6px' }
-                    } else if (event.type === 'call') {
-                      eventStyle = { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderLeft: '4px solid #10b981', color: '#ffffff', borderRadius: '6px' }
-                    }
+                    const style = getEventStyle(event)
 
                     return (
                       <div
                         key={`overnight-${event.id}`}
                         onClick={() => setSelectedEvent(event)}
-                        className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg"
-                        style={{ top: `${top}px`, height: `${height}px`, ...eventStyle }}
+                        className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg hover:brightness-110"
+                        style={{ top: `${top}px`, height: `${height}px`, ...style }}
                       >
                         {isShort ? (
                           <div className="flex h-full items-center">
@@ -684,25 +695,14 @@ export function Agenda() {
                     const top = startHour * 80
                     const height = actualHeight
                     const isShort = isShortEvent(duration)
-                    const isGoogleEvent = (event as any).isGoogleEvent
-
-                    let eventStyle = {}
-                    if (isGoogleEvent) {
-                      eventStyle = { backgroundColor: 'rgba(59, 130, 246, 0.2)', borderLeft: '4px solid #3b82f6', color: '#ffffff', borderRadius: '6px' }
-                    } else if (event.type === 'meeting') {
-                      eventStyle = { backgroundColor: 'rgba(249, 115, 22, 0.2)', borderLeft: '4px solid #f97316', color: '#ffffff', borderRadius: '6px' }
-                    } else if (event.type === 'video') {
-                      eventStyle = { backgroundColor: 'rgba(37, 99, 235, 0.2)', borderLeft: '4px solid #2563eb', color: '#ffffff', borderRadius: '6px' }
-                    } else if (event.type === 'call') {
-                      eventStyle = { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderLeft: '4px solid #10b981', color: '#ffffff', borderRadius: '6px' }
-                    }
+                    const style = getEventStyle(event)
 
                     return (
                       <div
                         key={event.id}
                         onClick={() => setSelectedEvent(event)}
-                        className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg"
-                        style={{ top: `${top}px`, height: `${height}px`, ...eventStyle }}
+                        className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg hover:brightness-110"
+                        style={{ top: `${top}px`, height: `${height}px`, ...style }}
                       >
                         {isShort ? (
                           <div className="flex h-full items-center">
@@ -774,24 +774,13 @@ export function Agenda() {
 
                 <div className="space-y-1">
                   {visibleMeetings.map((event) => {
-                    const isGoogleEvent = (event as any).isGoogleEvent
-                    let eventStyle = {}
-                    if (isGoogleEvent) {
-                      eventStyle = { backgroundColor: 'rgba(59, 130, 246, 0.2)', borderLeft: '4px solid #3b82f6', color: '#ffffff', borderRadius: '6px' }
-                    } else if (event.type === 'meeting') {
-                      eventStyle = { backgroundColor: 'rgba(249, 115, 22, 0.2)', borderLeft: '4px solid #f97316', color: '#ffffff', borderRadius: '6px' }
-                    } else if (event.type === 'video') {
-                      eventStyle = { backgroundColor: 'rgba(37, 99, 235, 0.2)', borderLeft: '4px solid #2563eb', color: '#ffffff', borderRadius: '6px' }
-                    } else if (event.type === 'call') {
-                      eventStyle = { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderLeft: '4px solid #10b981', color: '#ffffff', borderRadius: '6px' }
-                    }
-
+                    const style = getEventStyle(event)
                     return (
                       <div
                         key={event.id}
                         onClick={() => setSelectedEvent(event)}
                         className="cursor-pointer px-1.5 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm"
-                        style={eventStyle}
+                        style={style}
                       >
                         <div className="truncate">
                           {event.time?.split(' - ')[0] || event.time} <MaskedText value={event.contact || 'Inconnu'} type="name" />
@@ -929,37 +918,45 @@ export function Agenda() {
           <h3 className="mb-4 text-xl font-bold text-white">Aujourd'hui</h3>
           <div className="space-y-3">
             {getTodayMeetings().map((event) => {
+              const style = getEventStyle(event)
               const isGoogleEvent = (event as any).isGoogleEvent
+              
+              // Ajustement spécifique pour la sidebar (bordure complète)
+              const sidebarStyle = {
+                ...style,
+                backgroundColor: isGoogleEvent ? '#ffffff' : '#0f172a', // Fond sombre pour CloseOS dans sidebar
+                borderColor: isGoogleEvent ? '#e2e8f0' : '#1e293b',
+                borderLeftColor: style.borderLeft.split(' ')[2] // Garde la couleur latérale
+              }
+
               return (
                 <div
                   key={event.id}
                   onClick={() => setSelectedEvent(event)}
-                  className="cursor-pointer rounded-lg border border-slate-800 bg-slate-900 p-4 transition-all hover:border-slate-700 hover:bg-slate-800/50"
+                  className="cursor-pointer rounded-lg border p-4 transition-all hover:bg-slate-800/50"
+                  style={sidebarStyle}
                 >
                   <div className="flex items-start gap-3">
                     <div
                       className={cn(
                         'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full',
-                        isGoogleEvent && 'bg-blue-500/20',
-                        !isGoogleEvent && event.type === 'video' && 'bg-blue-500/20',
-                        !isGoogleEvent && event.type === 'call' && 'bg-emerald-500/20',
-                        !isGoogleEvent && event.type === 'meeting' && 'bg-orange-500/20'
+                        isGoogleEvent ? 'bg-blue-50' : 'bg-slate-800'
                       )}
                     >
-                      {isGoogleEvent && <CalendarIcon className="h-5 w-5 text-blue-400" />}
+                      {isGoogleEvent && <CalendarIcon className="h-5 w-5 text-blue-500" />}
                       {!isGoogleEvent && event.type === 'video' && <Video className="h-5 w-5 text-blue-400" />}
                       {!isGoogleEvent && event.type === 'call' && <Phone className="h-5 w-5 text-emerald-400" />}
                       {!isGoogleEvent && event.type === 'meeting' && <MapPin className="h-5 w-5 text-orange-400" />}
                     </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white">
+                    <p className={cn("font-semibold", isGoogleEvent ? "text-slate-900" : "text-white")}>
                       <MaskedText value={event.contact || 'Inconnu'} type="name" />
                     </p>
-                    <p className="mt-0.5 text-sm text-slate-400">
+                    <p className={cn("mt-0.5 text-sm", isGoogleEvent ? "text-slate-500" : "text-slate-400")}>
                       {event.title?.split(' - ')[0] || 'Sans titre'}
                     </p>
-                    <div className="mt-2 flex items-center gap-1 text-xs text-slate-500">
+                    <div className={cn("mt-2 flex items-center gap-1 text-xs", isGoogleEvent ? "text-slate-400" : "text-slate-500")}>
                       <Clock className="h-3 w-3" />
                       <span>{event.time}</span>
                     </div>
@@ -1064,6 +1061,7 @@ export function Agenda() {
                   {selectedEvent.type === 'video' && 'Visioconférence'}
                   {selectedEvent.type === 'call' && 'Appel téléphonique'}
                   {selectedEvent.type === 'meeting' && 'Réunion en présentiel'}
+                  {selectedEvent.type === 'other' && 'Autre événement'}
                 </p>
               </div>
 
@@ -1106,10 +1104,7 @@ export function Agenda() {
 
             <div className="flex-shrink-0 border-t border-slate-800 p-6">
               {(() => {
-                // CORRECTION : Priorité au vrai lien de réunion
                 const explicitLink = (selectedEvent as any).hangoutLink || (selectedEvent as any).meetingUrl || (selectedEvent as any).link;
-                
-                // Si pas de lien explicite, on regarde si le lieu est une URL
                 let meetingUrl = explicitLink;
                 if (!meetingUrl && selectedEvent.location && (selectedEvent.location.startsWith('http') || selectedEvent.location.startsWith('https'))) {
                   meetingUrl = selectedEvent.location;
