@@ -11,8 +11,21 @@ export function Offers() {
   // État pour la modale de confirmation
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-  const activeOffers = offers.filter((o) => o.status === 'active')
-  const archivedOffers = offers.filter((o) => o.status === 'archived')
+  // --- LOGIQUE DE TRI AUTOMATIQUE (NOUVEAU) ---
+  const isExpired = (offer: Offer) => {
+    if (!offer.endDate) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // On compare à minuit aujourd'hui
+    const end = new Date(offer.endDate)
+    return end < today
+  }
+
+  // Active = Statut 'active' ET Date non passée
+  const activeOffers = offers.filter((o) => o.status === 'active' && !isExpired(o))
+  
+  // Archivée = Statut 'archived' OU (Statut 'active' ET Date passée)
+  const archivedOffers = offers.filter((o) => o.status === 'archived' || (o.status === 'active' && isExpired(o)))
+  // ----------------------------------------------
 
   // FONCTION CORRIGÉE : Ajoute l'offre et ferme la modale
   const handleConfirmCreate = () => {
@@ -115,7 +128,7 @@ export function Offers() {
           )}
         </div>
 
-        {/* Section 2: Historique */}
+        {/* Section 2: Historique (Contient les archivées ET les expirées) */}
         <div>
           <button
             onClick={() => setShowArchived(!showArchived)}
@@ -140,38 +153,47 @@ export function Offers() {
           {showArchived && (
             <div className="space-y-3">
               {archivedOffers.length > 0 ? (
-                archivedOffers.map((offer) => (
-                  <div
-                    key={offer.id}
-                    onClick={() => setSelectedOffer(offer)}
-                    className="group cursor-pointer rounded-lg border border-slate-800/50 bg-slate-900/30 p-4 opacity-60 transition-all hover:opacity-100 hover:border-slate-700 hover:bg-slate-800/50"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800">
-                          <Archive className="h-5 w-5 text-slate-600" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-slate-400 group-hover:text-slate-300">
-                              {offer.name}
-                            </h4>
+                archivedOffers.map((offer) => {
+                  const expired = isExpired(offer)
+                  return (
+                    <div
+                      key={offer.id}
+                      onClick={() => setSelectedOffer(offer)}
+                      className="group cursor-pointer rounded-lg border border-slate-800/50 bg-slate-900/30 p-4 opacity-75 transition-all hover:opacity-100 hover:border-slate-700 hover:bg-slate-800/50"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800">
+                            <Archive className="h-5 w-5 text-slate-600" />
                           </div>
-                          <p className="mt-1 line-clamp-1 text-sm text-slate-500">
-                            {offer.description}
-                          </p>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-slate-400 group-hover:text-slate-300">
+                                {offer.name}
+                              </h4>
+                              {/* Badge Expirée */}
+                              {expired && (
+                                <span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                                  Expirée
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 line-clamp-1 text-sm text-slate-500">
+                              {offer.description}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-slate-500">{offer.price}€</p>
-                        <p className="mt-1 text-xs text-slate-600">{offer.commission}%</p>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-slate-500">{offer.price}€</p>
+                          <p className="mt-1 text-xs text-slate-600">{offer.commission}%</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  )
+                })
               ) : (
                 <p className="py-8 text-center text-sm text-slate-500">
-                  Aucune offre archivée
+                  Aucune offre archivée ou expirée
                 </p>
               )}
             </div>
@@ -192,7 +214,7 @@ export function Offers() {
         />
       )}
 
-      {/* MODALE DE CONFIRMATION CORRIGÉE */}
+      {/* MODALE DE CONFIRMATION */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
