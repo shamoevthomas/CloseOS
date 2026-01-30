@@ -11,7 +11,6 @@ import { useMeetings } from '../contexts/MeetingsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
 import { isDailyCoLink } from '../services/dailyService'
 
-// Helper sécurisé pour extraire l'heure
 const getStartHour = (timeString: string) => {
   if (!timeString) return 0;
   const start = timeString.split(' - ')[0];
@@ -20,11 +19,9 @@ const getStartHour = (timeString: string) => {
   return parseInt(parts[0]) + parseInt(parts[1]) / 60;
 }
 
-// Helper sécurisé pour calculer la durée
 const getDuration = (timeString: string) => {
   if (!timeString) return 1;
   const parts = timeString.split(' - ');
-  
   if (parts.length < 2) return 1;
 
   const [startH, startM] = parts[0].split(':').map(Number)
@@ -35,7 +32,6 @@ const getDuration = (timeString: string) => {
   if (endTotal < startTotal) {
     endTotal += 24
   }
-
   return endTotal - startTotal
 }
 
@@ -86,7 +82,6 @@ const formatShortDayName = (date: Date): string => {
   return date.toLocaleDateString('fr-FR', { weekday: 'short' })
 }
 
-// Get 3 consecutive days starting from the given date
 const get3DayDates = (date: Date): Date[] => {
   return Array.from({ length: 3 }, (_, i) => {
     const d = new Date(date)
@@ -110,7 +105,6 @@ const getMonthDates = (date: Date): Date[] => {
     d.setDate(start.getDate() + i)
     dates.push(d)
   }
-
   return dates
 }
 
@@ -149,7 +143,6 @@ export function Agenda() {
 
   useEffect(() => {
     const eventIdFromState = (location.state as any)?.eventId;
-    
     if (eventIdFromState) {
       const findEvent = () => {
         const crmEvent = meetings.find(m => String(m.id) === String(eventIdFromState));
@@ -157,28 +150,25 @@ export function Agenda() {
 
         const ge = googleEvents.find(g => String(g.id) === String(eventIdFromState));
         if (ge && ge.start && ge.end) {
-          // Détection automatique du type VIDEO pour Google
           const isVideo = !!(ge as any).hangoutLink || ge.location?.toLowerCase().includes('meet') || ge.description?.includes('zoom');
-          
           return {
             id: ge.id as any,
             title: ge.title,
             date: ge.start.toISOString().split('T')[0],
             time: `${ge.start.getHours().toString().padStart(2, '0')}:${ge.start.getMinutes().toString().padStart(2, '0')} - ${ge.end.getHours().toString().padStart(2, '0')}:${ge.end.getMinutes().toString().padStart(2, '0')}`,
-            type: isVideo ? 'video' : 'meeting', // CORRECTION TYPE
+            type: isVideo ? 'video' : 'meeting',
             contact: ge.title,
             status: 'scheduled' as const,
             isGoogleEvent: true,
             location: ge.location || '',
             description: ge.description || '',
-            hangoutLink: (ge as any).hangoutLink // On garde le lien
+            hangoutLink: (ge as any).hangoutLink
           };
         }
         return null;
       };
 
       const eventToOpen = findEvent();
-      
       if (eventToOpen) {
         setSelectedEvent(eventToOpen as any);
         const eventDate = new Date(eventToOpen.date);
@@ -285,15 +275,11 @@ export function Agenda() {
     }
   }, [view])
 
-  // --- CORRECTION CLÉ : Filtrage et Déduplication des Événements ---
   const getMeetingsForDate = (date: Date) => {
-    // 1. Récupérer les événements CRM (Prioritaires)
     const localMeetings = meetings.filter(meeting => {
       try {
         if (!meeting || !meeting.date) return false
-        // On ne montre pas les événements annulés si on veut nettoyer la vue
         if (meeting.status === 'cancelled') return false; 
-
         const parts = meeting.date.split('-')
         if (parts.length !== 3) return false
         const [year, month, day] = parts.map(Number)
@@ -304,17 +290,13 @@ export function Agenda() {
       }
     })
 
-    // 2. Créer une signature unique pour chaque événement CRM (Heure + Titre approximatif)
-    // Cela permet de détecter si un événement Google est en fait le même
     const existingSignatures = new Set(
       localMeetings.map(m => {
         const start = m.time?.split(' - ')[0] || '';
-        // Signature simple : HeureStart + 5 premiers chars du titre
         return `${start}-${(m.title || m.contact || '').substring(0, 5).toLowerCase()}`;
       })
     );
 
-    // 3. Récupérer et filtrer les événements Google
     const googleMeetingsForDate = googleEvents
       .filter(event => {
         try {
@@ -328,17 +310,12 @@ export function Agenda() {
       .map(event => {
         try {
           if (!event.start || !event.end) return null
-
           const startTime = `${event.start.getHours().toString().padStart(2, '0')}:${event.start.getMinutes().toString().padStart(2, '0')}`
           const endTime = `${event.end.getHours().toString().padStart(2, '0')}:${event.end.getMinutes().toString().padStart(2, '0')}`
           
-          // Vérification de doublon
           const signature = `${startTime}-${(event.title || '').substring(0, 5).toLowerCase()}`;
-          if (existingSignatures.has(signature)) {
-            return null; // On ignore cet événement Google car il existe déjà dans le CRM
-          }
+          if (existingSignatures.has(signature)) return null;
 
-          // CORRECTION : Détection du type Vidéo
           const isVideo = !!(event as any).hangoutLink || event.location?.toLowerCase().includes('meet') || event.description?.includes('zoom');
 
           return {
@@ -346,7 +323,7 @@ export function Agenda() {
             title: event.title,
             date: event.start.toISOString().split('T')[0],
             time: `${startTime} - ${endTime}`,
-            type: isVideo ? 'video' : 'meeting' as const, // Force le type vidéo si lien détecté
+            type: isVideo ? 'video' : 'meeting' as const,
             prospect: event.description || '',
             contact: event.title,
             prospectId: 0,
@@ -355,7 +332,7 @@ export function Agenda() {
             color: event.color,
             description: event.description || '',
             location: event.location || '',
-            hangoutLink: (event as any).hangoutLink // On préserve le lien
+            hangoutLink: (event as any).hangoutLink
           }
         } catch (error) {
           return null
@@ -363,7 +340,6 @@ export function Agenda() {
       })
       .filter((event): event is NonNullable<typeof event> => event !== null)
 
-    // Fusionner
     return [...localMeetings, ...googleMeetingsForDate]
   }
 
@@ -1130,8 +1106,16 @@ export function Agenda() {
 
             <div className="flex-shrink-0 border-t border-slate-800 p-6">
               {(() => {
-                const meetingUrl = selectedEvent.location || (selectedEvent as any).meetingUrl || (selectedEvent as any).hangoutLink || (selectedEvent as any).link
-                const hasLink = meetingUrl && (meetingUrl.startsWith('http://') || meetingUrl.startsWith('https://'))
+                // CORRECTION : Priorité au vrai lien de réunion
+                const explicitLink = (selectedEvent as any).hangoutLink || (selectedEvent as any).meetingUrl || (selectedEvent as any).link;
+                
+                // Si pas de lien explicite, on regarde si le lieu est une URL
+                let meetingUrl = explicitLink;
+                if (!meetingUrl && selectedEvent.location && (selectedEvent.location.startsWith('http') || selectedEvent.location.startsWith('https'))) {
+                  meetingUrl = selectedEvent.location;
+                }
+
+                const hasLink = !!meetingUrl;
 
                 return hasLink ? (
                   <button
