@@ -104,10 +104,9 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const [tempResLink, setTempResLink] = useState('')
 
   // Update edited offer when prop changes
+  // CORRECTION ICI : On force la mise à jour même si l'ID est le même (pour voir les modifs)
   useEffect(() => {
-    if (offer.id !== editedOffer.id) {
-       setEditedOffer(offer)
-    }
+    setEditedOffer(offer)
   }, [offer])
 
   const handleSave = () => {
@@ -674,6 +673,23 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes scale-in {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .animate-scale-in {
+          animation: scale-in 0.2s ease-out;
+        }
+      `}</style>
     </div>
   )
 }
