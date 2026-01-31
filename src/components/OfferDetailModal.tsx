@@ -13,7 +13,9 @@ import {
   Plus,
   User,
   Building2,
-  Tag // Ajout icône Tag pour les formules
+  Tag,
+  UserPlus, // AJOUT : Icône pour le bouton
+  Check     // AJOUT : Icône pour valider
 } from 'lucide-react'
 import { ContactSelector } from './ContactSelector'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
@@ -80,9 +82,15 @@ const calculateCommission = (price: string, commission: string): number => {
 }
 
 export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDetailModalProps) {
-  const { contacts: globalContacts } = useInternalContacts()
+  // MODIFICATION : On récupère addContact ici
+  const { contacts: globalContacts, addContact } = useInternalContacts()
+  
   const [isEditing, setIsEditing] = useState(false)
   
+  // MODIFICATION : États pour la création de contact
+  const [isCreatingContact, setIsCreatingContact] = useState(false)
+  const [newContactData, setNewContactData] = useState({ name: '', role: '', email: '', phone: '' })
+
   // Initialisation intelligente : si pas de formules, on crée une "Standard" avec le prix actuel
   const [editedOffer, setEditedOffer] = useState<Offer>(() => {
     if (!offer.formulas || offer.formulas.length === 0) {
@@ -104,8 +112,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const [tempResLink, setTempResLink] = useState('')
 
   // Update edited offer when prop changes
-  // CORRECTION ICI : On force la mise à jour même si l'ID est le même (pour voir les modifs)
   useEffect(() => {
+    // CORRECTION PRÉCÉDENTE : On garde le useEffect simple pour forcer la sync visuelle
     setEditedOffer(offer)
   }, [offer])
 
@@ -128,6 +136,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const handleCancel = () => {
     setEditedOffer(offer)
     setIsEditing(false)
+    setIsCreatingContact(false) // Reset
   }
 
   const handleDelete = () => {
@@ -136,6 +145,42 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
         onDelete(offer.id)
       }
       onClose()
+    }
+  }
+
+  // --- NOUVEAU : Logique de création et attachement du contact ---
+  const handleCreateAndAttachContact = async () => {
+    if (!newContactData.name || !newContactData.email) {
+      alert("Le nom et l'email sont requis.")
+      return
+    }
+
+    try {
+      // 1. Sauvegarder dans la base de données globale
+      const result = await addContact(newContactData)
+      
+      // On récupère le contact créé (ou on simule un ID si l'API ne renvoie rien directement, pour l'UX immédiate)
+      const createdId = result?.data?.[0]?.id || Date.now()
+      
+      const contactToAdd: OfferContact = {
+        id: createdId,
+        name: newContactData.name,
+        role: newContactData.role
+      }
+
+      // 2. L'ajouter à la liste des contacts de l'offre en cours d'édition
+      setEditedOffer(prev => ({
+        ...prev,
+        contacts: [...prev.contacts, contactToAdd]
+      }))
+
+      // 3. Nettoyage
+      setNewContactData({ name: '', role: '', email: '', phone: '' })
+      setIsCreatingContact(false)
+
+    } catch (error) {
+      console.error("Erreur création contact", error)
+      alert("Impossible de créer le contact.")
     }
   }
 
@@ -372,7 +417,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Zone A - Formules (Multi-Tarification) - MODIFIÉ */}
+            {/* Zone A - Formules (Multi-Tarification) */}
             <div className="rounded-lg border border-slate-800 bg-slate-950 p-4">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
@@ -506,12 +551,43 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             )}
           </div>
 
-          {/* Zone C - Contacts Rattachés */}
+          {/* Zone C - Contacts Rattachés - MODIFIÉ AVEC CRÉATION */}
           <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
-              <Users className="h-4 w-4" />
-              Contacts Rattachés
-            </h3>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+                <Users className="h-4 w-4" />
+                Contacts Rattachés
+              </h3>
+              {/* BOUTON CRÉER CONTACT */}
+              {isEditing && !isCreatingContact && (
+                <button 
+                  onClick={() => setIsCreatingContact(true)}
+                  className="flex items-center gap-1 rounded bg-purple-500/10 px-2 py-1 text-xs font-bold text-purple-400 hover:bg-purple-500/20"
+                >
+                  <UserPlus className="h-3 w-3" /> Nouveau Contact
+                </button>
+              )}
+            </div>
+
+            {/* FORMULAIRE CRÉATION RAPIDE */}
+            {isEditing && isCreatingContact && (
+              <div className="mb-4 rounded-lg border border-purple-500/30 bg-purple-500/5 p-4 animate-in fade-in slide-in-from-top-2">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase text-purple-300">Ajout Rapide</p>
+                  <button onClick={() => setIsCreatingContact(false)} className="text-slate-400 hover:text-white"><X className="h-3 w-3" /></button>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <input type="text" placeholder="Nom complet *" value={newContactData.name} onChange={(e) => setNewContactData({ ...newContactData, name: e.target.value })} className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+                  <input type="text" placeholder="Rôle (ex: Closer) *" value={newContactData.role} onChange={(e) => setNewContactData({ ...newContactData, role: e.target.value })} className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+                  <input type="email" placeholder="Email *" value={newContactData.email} onChange={(e) => setNewContactData({ ...newContactData, email: e.target.value })} className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+                  <input type="tel" placeholder="Téléphone" value={newContactData.phone} onChange={(e) => setNewContactData({ ...newContactData, phone: e.target.value })} className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+                </div>
+                <button onClick={handleCreateAndAttachContact} className="mt-3 flex w-full items-center justify-center gap-2 rounded bg-purple-600 py-2 text-sm font-bold text-white hover:bg-purple-500">
+                  <Check className="h-4 w-4" /> Créer et Attacher
+                </button>
+              </div>
+            )}
+
             {isEditing ? (
               <ContactSelector
                 selectedContactIds={editedOffer.contacts.map((c) => c.id)}
