@@ -11,8 +11,10 @@ import {
   FileText,
   Save,
   Tag,
-  MessageCircle, // Pour l'icône WhatsApp
-  AlertCircle    // Pour l'icône d'erreur
+  MessageCircle,
+  AlertCircle,
+  CreditCard, // Ajout icône Paiement
+  Wallet      // Ajout icône Portefeuille
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
@@ -72,8 +74,6 @@ export function ProspectView({
   const availableOffers = offers.filter((o) => o.status === 'active' && !isExpired(o))
 
   const [localProspect, setLocalProspect] = useState(prospect)
-  
-  // État pour le message d'erreur (Pop-up rouge)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -90,22 +90,41 @@ export function ProspectView({
   const [editedEmail, setEditedEmail] = useState(prospect.email)
   const [editedPhone, setEditedPhone] = useState(prospect.phone)
 
+  // OFFER STATES
   const [editingOffer, setEditingOffer] = useState(false)
   const [editedOfferId, setEditedOfferId] = useState('')
   const [editedFormulaId, setEditedFormulaId] = useState('')
   const [editedOfferName, setEditedOfferName] = useState(prospect.offer || '')
   const [editedValue, setEditedValue] = useState(prospect.value || 0)
 
+  // PAYMENT STATES (Nouveau)
+  const [editingPayment, setEditingPayment] = useState(false)
+  const [paymentMode, setPaymentMode] = useState<'cash' | 'installments'>('cash')
+  const [installments, setInstallments] = useState(1)
+  const [commissionRate, setCommissionRate] = useState(10) // Défaut 10%
+
   const selectedOfferObj = editedOfferId 
     ? availableOffers.find(o => String(o.id) === editedOfferId)
-    : null
+    : availableOffers.find(o => o.name === (localProspect.offer?.split(' - ')[0] || localProspect.offer))
   
   const hasFormulas = selectedOfferObj?.formulas && selectedOfferObj.formulas.length > 0
 
-  // Fonction pour afficher l'erreur temporairement
+  // Mise à jour auto de la commission si l'offre change
+  useEffect(() => {
+    if (selectedOfferObj) {
+      // On essaie de récupérer la commission de la formule ou de l'offre
+      let rate = parsePrice(selectedOfferObj.commission)
+      if (hasFormulas && editedFormulaId) {
+        const formula = selectedOfferObj.formulas?.find(f => f.id === editedFormulaId)
+        if (formula) rate = parsePrice(formula.commission)
+      }
+      setCommissionRate(rate > 0 ? rate : 10)
+    }
+  }, [selectedOfferObj, editedFormulaId, hasFormulas])
+
   const showError = (message: string) => {
     setErrorMessage(message)
-    setTimeout(() => setErrorMessage(null), 3000) // Disparaît après 3s
+    setTimeout(() => setErrorMessage(null), 3000)
   }
 
   const handleOptimisticUpdate = (updates: Partial<Prospect>) => {
@@ -180,7 +199,6 @@ export function ProspectView({
       alert("Veuillez sélectionner une formule pour cette offre.")
       return
     }
-
     handleOptimisticUpdate({
       offer: editedOfferName,
       value: editedValue,
@@ -196,16 +214,21 @@ export function ProspectView({
     setEditingOffer(false)
   }
 
+  // --- SAVE PAYMENT ---
+  const handleSavePayment = () => {
+    // Ici on met à jour le montant final si l'utilisateur l'a changé dans la section paiement
+    handleOptimisticUpdate({
+      value: editedValue
+    })
+    setEditingPayment(false)
+  }
+
   const handleDeleteProspect = () => {
     if (confirm(`Êtes-vous sûr de vouloir supprimer ${localProspect.contact} ?`)) {
-      if (onDelete) {
-        onDelete(localProspect.id)
-      }
+      if (onDelete) onDelete(localProspect.id)
       onClose()
     }
   }
-
-  // --- ACTIONS ---
 
   const handleOpenGmail = () => {
     if (localProspect.email) {
@@ -217,13 +240,16 @@ export function ProspectView({
 
   const handleOpenWhatsApp = () => {
     if (localProspect.phone) {
-      // Nettoyage du numéro : garde uniquement les chiffres et le +
       const cleanPhone = localProspect.phone.replace(/[^0-9+]/g, '')
       window.open(`https://wa.me/${cleanPhone}`, '_blank')
     } else {
       showError("Numéro de téléphone manquant !")
     }
   }
+
+  // Calculs financiers
+  const monthlyAmount = editedValue / (installments || 1)
+  const commissionAmount = (editedValue * commissionRate) / 100
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -236,7 +262,6 @@ export function ProspectView({
         <div className="w-screen max-w-md">
           <div className="flex h-full flex-col overflow-y-auto bg-slate-900 shadow-xl ring-1 ring-slate-800">
             
-            {/* Pop-up Erreur (Toast) */}
             {errorMessage && (
               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-xl animate-in fade-in slide-in-from-top-2">
                 <AlertCircle className="h-4 w-4" />
@@ -255,64 +280,143 @@ export function ProspectView({
                     <p className="mt-1 text-sm text-slate-400">{localProspect.company}</p>
                   )}
                 </div>
-                <button
-                  onClick={onClose}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
-                >
+                <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white">
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              {/* Quick Actions (Email / WhatsApp / RDV) */}
               <div className="mt-4 flex gap-2">
-                <button
-                  onClick={handleOpenGmail}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-300 transition-all hover:bg-slate-800 hover:text-white"
-                  title="Envoyer un email"
-                >
-                  <Mail className="h-4 w-4" />
-                  Email
+                <button onClick={handleOpenGmail} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-300 transition-all hover:bg-slate-800 hover:text-white">
+                  <Mail className="h-4 w-4" /> Email
                 </button>
-                <button
-                  onClick={handleOpenWhatsApp}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 transition-all hover:bg-emerald-500/20 hover:text-emerald-300"
-                  title="Ouvrir WhatsApp"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  WhatsApp
+                <button onClick={handleOpenWhatsApp} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 transition-all hover:bg-emerald-500/20 hover:text-emerald-300">
+                  <MessageCircle className="h-4 w-4" /> WhatsApp
                 </button>
-                <button
-                  onClick={() => {
-                    if (onCreateEvent) onCreateEvent()
-                  }}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-500/20"
-                >
-                  <Calendar className="h-4 w-4" />
-                  RDV
+                <button onClick={() => { if (onCreateEvent) onCreateEvent() }} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-500/20">
+                  <Calendar className="h-4 w-4" /> RDV
                 </button>
               </div>
 
-              {/* Stage Selector */}
               <div className="mt-4">
-                <label className="mb-2 block text-xs font-medium text-slate-400">
-                  Étape actuelle
-                </label>
+                <label className="mb-2 block text-xs font-medium text-slate-400">Étape actuelle</label>
                 <select
                   value={localProspect.stage}
                   onChange={(e) => handleOptimisticUpdate({ stage: e.target.value })}
                   className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                 >
                   {ALL_STAGES.map((stage) => (
-                    <option key={stage.id} value={stage.id}>
-                      {stage.name}
-                    </option>
+                    <option key={stage.id} value={stage.id}>{stage.name}</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* Content */}
             <div className="flex-1 space-y-6 p-6">
+                
+                {/* SECTION PAIEMENT (Visible seulement si Gagné) */}
+                {localProspect.stage === 'won' && (
+                  <div className="animate-in slide-in-from-top-4 fade-in duration-300">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="flex items-center gap-2 text-sm font-bold text-emerald-400">
+                        <CreditCard className="h-4 w-4" /> Détails du Paiement
+                      </h3>
+                      <button onClick={() => setEditingPayment(!editingPayment)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    {editingPayment ? (
+                      <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+                        {/* Montant */}
+                        <div>
+                          <label className="text-xs text-slate-400">Montant final (€)</label>
+                          <input 
+                            type="number" 
+                            value={editedValue} 
+                            onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
+                            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Mode */}
+                        <div className="flex rounded-lg bg-slate-900 p-1">
+                          <button
+                            type="button"
+                            onClick={() => { setPaymentMode('cash'); setInstallments(1); }}
+                            className={cn(
+                              "flex-1 rounded-md py-1.5 text-xs font-medium transition-all",
+                              paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"
+                            )}
+                          >
+                            Comptant
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPaymentMode('installments')}
+                            className={cn(
+                              "flex-1 rounded-md py-1.5 text-xs font-medium transition-all",
+                              paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"
+                            )}
+                          >
+                            Plusieurs fois
+                          </button>
+                        </div>
+
+                        {/* Mensualités */}
+                        {paymentMode === 'installments' && (
+                          <div className="animate-in fade-in slide-in-from-top-1">
+                            <label className="text-xs text-slate-400">Nombre de mensualités</label>
+                            <select
+                              value={installments}
+                              onChange={(e) => setInstallments(parseInt(e.target.value))}
+                              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                            >
+                              {[2, 3, 4, 5, 6, 10, 12].map(n => (
+                                <option key={n} value={n}>{n} fois ({ (editedValue/n).toFixed(2) }€/mois)</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {/* Commission Box */}
+                        <div className="rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">
+                              <Wallet className="h-3 w-3" /> Ta Commission ({commissionRate}%)
+                            </span>
+                            <span className="text-lg font-bold text-emerald-400">{commissionAmount.toFixed(2)}€</span>
+                          </div>
+                          {paymentMode === 'installments' && (
+                            <p className="mt-1 text-[10px] text-emerald-300/70">
+                              Tu recevras : {(commissionAmount / installments).toFixed(2)}€ / mois
+                            </p>
+                          )}
+                        </div>
+
+                        <button onClick={handleSavePayment} className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500">
+                          Valider les détails
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-slate-400">Montant Vente</span>
+                          <span className="text-sm font-bold text-white">{editedValue.toLocaleString()}€</span>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-slate-400">Commission ({commissionRate}%)</span>
+                          <span className="text-sm font-bold text-emerald-400">+{commissionAmount.toFixed(2)}€</span>
+                        </div>
+                        <div className="pt-2 border-t border-emerald-500/20 text-center">
+                          <span className="text-xs font-medium text-emerald-300">
+                            {paymentMode === 'cash' ? 'Paiement Comptant' : `Paiement en ${installments}x`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Infos Offre */}
                 <div>
                   <div className="mb-3 flex items-center justify-between">
