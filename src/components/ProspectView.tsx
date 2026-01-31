@@ -10,16 +10,18 @@ import {
   MessageSquare,
   FileText,
   Save,
+  Tag, // Ajout de l'icône Tag
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
 import { type Prospect } from '../contexts/ProspectsContext'
 import { useMeetings } from '../contexts/MeetingsContext'
-import { useOffers } from '../contexts/OffersContext'
+import { useOffers, type Offer } from '../contexts/OffersContext' // Import type Offer
 
 // Helper to parse price from string like "2 500€" to number 2500
 const parsePrice = (priceString: string): number => {
-  const cleaned = priceString.replace(/[^\d.,]/g, '')
+  if (!priceString) return 0
+  const cleaned = priceString.toString().replace(/[^\d.,]/g, '')
   const normalized = cleaned.replace(/,/g, '.')
   const withoutSpaces = normalized.replace(/\s/g, '')
   const parsed = parseFloat(withoutSpaces)
@@ -29,8 +31,8 @@ const parsePrice = (priceString: string): number => {
 const ALL_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' }, // Follow Up déplacé
   { id: 'won', name: 'Gagné', color: 'bg-emerald-500' },
+  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' }, // Follow Up déplacé
   { id: 'noshow', name: 'No Show', color: 'bg-slate-600' },
   { id: 'lost', name: 'Perdu', color: 'bg-red-500' },
 ]
@@ -55,7 +57,18 @@ export function ProspectView({
   onPhoneCall,
 }: ProspectViewProps) {
   const { offers } = useOffers()
-  const activeOffers = offers.filter((o) => o.status === 'active')
+
+  // 1. LOGIQUE DE FILTRAGE (Offres actives ET non expirées)
+  const isExpired = (offer: Offer) => {
+    if (!offer.endDate) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const end = new Date(offer.endDate)
+    return end < today
+  }
+
+  // Liste filtrée des offres disponibles
+  const availableOffers = offers.filter((o) => o.status === 'active' && !isExpired(o))
 
   // --- OPTIMISTIC UI : État local pour affichage instantané ---
   const [localProspect, setLocalProspect] = useState(prospect)
@@ -79,8 +92,16 @@ export function ProspectView({
   // Edit mode for offer
   const [editingOffer, setEditingOffer] = useState(false)
   const [editedOfferId, setEditedOfferId] = useState('')
+  const [editedFormulaId, setEditedFormulaId] = useState('') // Pour la formule
   const [editedOfferName, setEditedOfferName] = useState(prospect.offer || '')
   const [editedValue, setEditedValue] = useState(prospect.value || 0)
+
+  // Objet offre sélectionné en cours d'édition
+  const selectedOfferObj = editedOfferId 
+    ? availableOffers.find(o => String(o.id) === editedOfferId)
+    : null
+  
+  const hasFormulas = selectedOfferObj?.formulas && selectedOfferObj.formulas.length > 0
 
   // Fonction unifiée pour mise à jour optimiste
   const handleOptimisticUpdate = (updates: Partial<Prospect>) => {
@@ -122,18 +143,48 @@ export function ProspectView({
     setEditingClient(false)
   }
 
+  // Changement d'offre principal
   const handleOfferChange = (offerId: string) => {
     setEditedOfferId(offerId)
+    setEditedFormulaId('') // Reset formula
+
     if (offerId) {
-      const selectedOffer = activeOffers.find((o) => String(o.id) === offerId)
+      const selectedOffer = availableOffers.find((o) => String(o.id) === offerId)
       if (selectedOffer) {
-        setEditedOfferName(selectedOffer.name)
-        setEditedValue(parsePrice(selectedOffer.price))
+        // Si formules, on force la sélection (prix 0 par défaut)
+        if (selectedOffer.formulas && selectedOffer.formulas.length > 0) {
+          setEditedOfferName(selectedOffer.name) // Nom temporaire sans formule
+          setEditedValue(0)
+        } else {
+          // Sinon prix standard
+          setEditedOfferName(selectedOffer.name)
+          setEditedValue(parsePrice(selectedOffer.price))
+        }
+      }
+    } else {
+      setEditedValue(0)
+    }
+  }
+
+  // Changement de formule
+  const handleFormulaChange = (formulaId: string) => {
+    setEditedFormulaId(formulaId)
+    if (selectedOfferObj && selectedOfferObj.formulas) {
+      const formula = selectedOfferObj.formulas.find(f => f.id === formulaId)
+      if (formula) {
+        setEditedOfferName(`${selectedOfferObj.name} - ${formula.name}`)
+        setEditedValue(parsePrice(formula.price))
       }
     }
   }
 
   const handleSaveOffer = () => {
+    // Validation si formule requise
+    if (hasFormulas && !editedFormulaId) {
+      alert("Veuillez sélectionner une formule pour cette offre.")
+      return
+    }
+
     handleOptimisticUpdate({
       offer: editedOfferName,
       value: editedValue,
@@ -143,6 +194,7 @@ export function ProspectView({
 
   const handleCancelOffer = () => {
     setEditedOfferId('')
+    setEditedFormulaId('')
     setEditedOfferName(localProspect.offer || '')
     setEditedValue(localProspect.value || 0)
     setEditingOffer(false)
@@ -257,13 +309,43 @@ export function ProspectView({
                           className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                         >
                           <option value="">-- Sélectionner --</option>
-                          {activeOffers.map((offer) => (
+                          {availableOffers.map((offer) => (
                             <option key={offer.id} value={offer.id}>
-                              {offer.name} ({offer.price})
+                              {offer.name} {offer.formulas && offer.formulas.length > 0 ? '(Multi-formules)' : `(${offer.price})`}
                             </option>
                           ))}
                         </select>
                       </div>
+
+                      {/* SÉLECTEUR FORMULE (Conditionnel) */}
+                      {hasFormulas && (
+                        <div className="animate-in fade-in slide-in-from-top-2">
+                          <label className="mb-2 flex items-center gap-2 text-xs text-blue-400">
+                            <Tag className="h-3 w-3" />
+                            Choix de la formule
+                          </label>
+                          <select
+                            value={editedFormulaId}
+                            onChange={(e) => handleFormulaChange(e.target.value)}
+                            className="w-full rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                          >
+                            <option value="">-- Sélectionner la formule --</option>
+                            {selectedOfferObj?.formulas?.map((formula) => (
+                              <option key={formula.id} value={formula.id}>
+                                {formula.name} - {formula.price}€
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Prix auto */}
+                      {editedValue > 0 && (
+                        <p className="text-xs font-medium text-emerald-400 text-right">
+                          Nouveau montant : {editedValue.toLocaleString()}€
+                        </p>
+                      )}
+
                       <div className="flex gap-2">
                         <button
                           onClick={handleSaveOffer}
