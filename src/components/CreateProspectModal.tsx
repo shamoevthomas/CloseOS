@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { X, Building2 } from 'lucide-react'
-import { useOffers } from '../contexts/OffersContext'
+import { X, Building2, Tag } from 'lucide-react'
+import { useOffers, type Offer } from '../contexts/OffersContext'
 
 // Helper to parse price from string like "2 500€" to number 2500
 const parsePrice = (priceString: string): number => {
-  const cleaned = priceString.replace(/[^\d.,]/g, '')
+  if (!priceString) return 0
+  const cleaned = priceString.toString().replace(/[^\d.,]/g, '')
   const normalized = cleaned.replace(/,/g, '.')
   const withoutSpaces = normalized.replace(/\s/g, '')
   const parsed = parseFloat(withoutSpaces)
@@ -30,7 +31,17 @@ interface CreateProspectModalProps {
 
 export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspectModalProps) {
   const { offers } = useOffers()
-  const activeOffers = offers.filter((o) => o.status === 'active')
+
+  // 1. LOGIQUE DE FILTRAGE (Offres actives ET non expirées)
+  const isExpired = (offer: Offer) => {
+    if (!offer.endDate) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const end = new Date(offer.endDate)
+    return end < today
+  }
+
+  const activeOffers = offers.filter((o) => o.status === 'active' && !isExpired(o))
 
   const [formData, setFormData] = useState({
     name: '',
@@ -41,6 +52,8 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
     source: 'LinkedIn Ads',
   })
 
+  // État pour la formule sélectionnée
+  const [selectedFormulaId, setSelectedFormulaId] = useState<string>('')
   const [selectedOfferPrice, setSelectedOfferPrice] = useState(0)
 
   // Get the selected offer object
@@ -50,54 +63,83 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
 
   // Check if selected offer is B2B
   const isB2B = selectedOffer?.target === 'B2B'
+  
+  // Check if selected offer has formulas
+  const hasFormulas = selectedOffer?.formulas && selectedOffer.formulas.length > 0
 
-  // Handle offer selection and auto-fill price
+  // Handle offer selection
   const handleOfferChange = (offerId: string) => {
     setFormData({ ...formData, offerId })
+    setSelectedFormulaId('') // Reset formula when offer changes
 
     if (offerId) {
-      const selectedOffer = activeOffers.find((o) => String(o.id) === offerId)
-      if (selectedOffer) {
-        const price = parsePrice(selectedOffer.price)
-        setSelectedOfferPrice(price)
+      const offer = activeOffers.find((o) => String(o.id) === offerId)
+      if (offer) {
+        // Si l'offre n'a pas de formules, on prend le prix de base
+        if (!offer.formulas || offer.formulas.length === 0) {
+          const price = parsePrice(offer.price)
+          setSelectedOfferPrice(price)
+        } else {
+          // Si formules, on attend la sélection (prix à 0 ou par défaut)
+          setSelectedOfferPrice(0)
+        }
       }
     } else {
       setSelectedOfferPrice(0)
     }
   }
 
+  // Handle formula selection
+  const handleFormulaChange = (formulaId: string) => {
+    setSelectedFormulaId(formulaId)
+    if (selectedOffer && selectedOffer.formulas) {
+      const formula = selectedOffer.formulas.find(f => f.id === formulaId)
+      if (formula) {
+        setSelectedOfferPrice(parsePrice(formula.price))
+      }
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // MODIFIÉ : Seul le nom est obligatoire désormais
     if (!formData.name) {
       alert('Veuillez entrer au moins un nom pour le prospect')
       return
     }
 
-    // If B2B, company is required
     if (isB2B && !formData.company) {
       alert('Le nom de l\'entreprise est requis pour les offres B2B')
       return
     }
 
-    // Parse name into firstName and lastName
+    // Validation formule obligatoire si l'offre en a
+    if (hasFormulas && !selectedFormulaId) {
+      alert('Veuillez sélectionner une formule pour cette offre')
+      return
+    }
+
     const nameParts = formData.name.trim().split(' ')
     const firstName = nameParts[0] || ''
     const lastName = nameParts.slice(1).join(' ') || ''
 
-    // Get offer name
-    const selectedOffer = activeOffers.find((o) => String(o.id) === formData.offerId)
-    const offerName = selectedOffer ? selectedOffer.name : 'N/A'
+    // Construire le nom de l'offre (Ajouter le nom de la formule si présente)
+    let finalOfferName = selectedOffer ? selectedOffer.name : 'N/A'
+    if (hasFormulas && selectedFormulaId) {
+      const formula = selectedOffer?.formulas?.find(f => f.id === selectedFormulaId)
+      if (formula) {
+        finalOfferName = `${selectedOffer?.name} - ${formula.name}`
+      }
+    }
 
     onSubmit({
       contact: formData.name,
       firstName,
       lastName,
-      email: formData.email, // Peut être vide maintenant
-      phone: formData.phone, // Peut être vide maintenant
+      email: formData.email,
+      phone: formData.phone,
       company: isB2B ? formData.company : 'N/A',
-      offer: offerName,
+      offer: finalOfferName,
       value: selectedOfferPrice,
       source: formData.source,
       stage: 'prospect',
@@ -112,6 +154,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
       offerId: '',
       source: 'LinkedIn Ads',
     })
+    setSelectedFormulaId('')
     setSelectedOfferPrice(0)
     onClose()
   }
@@ -120,13 +163,11 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      {/* Modal */}
       <div className="relative w-full max-w-lg rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
         <div className="flex items-start justify-between">
           <div>
@@ -156,7 +197,6 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
             />
           </div>
 
-          {/* MODIFIÉ : Email non requis */}
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-300">Email</label>
             <input
@@ -168,7 +208,6 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
             />
           </div>
 
-          {/* MODIFIÉ : Téléphone non requis */}
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-300">Téléphone</label>
             <input
@@ -180,6 +219,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
             />
           </div>
 
+          {/* SÉLECTEUR D'OFFRE */}
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-300">Offre</label>
             <select
@@ -190,16 +230,43 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
               <option value="">-- Sélectionner une offre --</option>
               {activeOffers.map((offer) => (
                 <option key={offer.id} value={offer.id}>
-                  {offer.name} ({offer.price})
+                  {offer.name} {offer.formulas && offer.formulas.length > 0 ? '(Multi-formules)' : `(${offer.price}€)`}
                 </option>
               ))}
             </select>
-            {selectedOfferPrice > 0 && (
-              <p className="mt-1 text-xs text-blue-400">
-                Valeur automatique: {selectedOfferPrice.toLocaleString('fr-FR')} €
-              </p>
-            )}
           </div>
+
+          {/* SÉLECTEUR DE FORMULE (CONDITIONNEL) */}
+          {hasFormulas && (
+            <div className="animate-in fade-in slide-in-from-top-2">
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-400">
+                <Tag className="h-4 w-4" />
+                Choix de la formule *
+              </label>
+              <select
+                value={selectedFormulaId}
+                onChange={(e) => handleFormulaChange(e.target.value)}
+                className="w-full rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                required
+              >
+                <option value="">-- Sélectionner la formule --</option>
+                {selectedOffer.formulas?.map((formula) => (
+                  <option key={formula.id} value={formula.id}>
+                    {formula.name} - {formula.price}€
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* AFFICHAGE DU PRIX AUTOMATIQUE */}
+          {selectedOfferPrice > 0 && (
+            <div className="flex justify-end">
+              <p className="text-xs font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">
+                Valeur estimée : {selectedOfferPrice.toLocaleString('fr-FR')} €
+              </p>
+            </div>
+          )}
 
           {/* Conditional company field for B2B offers */}
           {isB2B && (
