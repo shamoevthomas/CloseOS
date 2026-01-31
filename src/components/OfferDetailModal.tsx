@@ -13,6 +13,7 @@ import {
   Plus,
   User,
   Building2,
+  Tag // Ajout icône Tag pour les formules
 } from 'lucide-react'
 import { ContactSelector } from './ContactSelector'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
@@ -30,6 +31,14 @@ export interface OfferResource {
   type: 'script' | 'payment' | 'drive' | 'other'
 }
 
+// NOUVEAU
+export interface OfferFormula {
+  id: string
+  name: string
+  price: string
+  commission: string
+}
+
 export interface Offer {
   id: number
   name: string
@@ -43,6 +52,7 @@ export interface Offer {
   description: string
   resources: OfferResource[]
   contacts: OfferContact[]
+  formulas?: OfferFormula[] // NOUVEAU
   notes?: string
 }
 
@@ -55,11 +65,8 @@ interface OfferDetailModalProps {
 
 // Helper function to extract numbers from strings
 const parseNumber = (value: string): number => {
-  // Remove all non-numeric characters except dots and commas
   const cleaned = value.replace(/[^\d.,]/g, '')
-  // Replace commas with dots for decimal parsing
   const normalized = cleaned.replace(/,/g, '.')
-  // Remove spaces
   const withoutSpaces = normalized.replace(/\s/g, '')
   const parsed = parseFloat(withoutSpaces)
   return isNaN(parsed) ? 0 : parsed
@@ -75,25 +82,47 @@ const calculateCommission = (price: string, commission: string): number => {
 export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDetailModalProps) {
   const { contacts: globalContacts } = useInternalContacts()
   const [isEditing, setIsEditing] = useState(false)
-  const [editedOffer, setEditedOffer] = useState<Offer>(offer)
+  
+  // Initialisation intelligente : si pas de formules, on crée une "Standard" avec le prix actuel
+  const [editedOffer, setEditedOffer] = useState<Offer>(() => {
+    if (!offer.formulas || offer.formulas.length === 0) {
+      return {
+        ...offer,
+        formulas: [{
+          id: Date.now().toString(),
+          name: 'Standard',
+          price: offer.price,
+          commission: offer.commission
+        }]
+      }
+    }
+    return offer
+  })
 
   // State for new resource inputs
   const [tempResName, setTempResName] = useState('')
   const [tempResLink, setTempResLink] = useState('')
 
-  // Update edited offer when prop changes (e.g., after save)
+  // Update edited offer when prop changes
   useEffect(() => {
-    setEditedOffer(offer)
+    if (offer.id !== editedOffer.id) {
+       setEditedOffer(offer)
+    }
   }, [offer])
 
-  // Calculate commission amount (updates in real-time when price or commission changes)
-  const commissionAmount = calculateCommission(
-    isEditing ? editedOffer.price : offer.price,
-    isEditing ? editedOffer.commission : offer.commission
-  )
-
   const handleSave = () => {
-    onUpdate(editedOffer)
+    // Mettre à jour le prix "principal" avec celui de la première formule pour l'affichage carte
+    const mainFormula = editedOffer.formulas && editedOffer.formulas.length > 0 
+      ? editedOffer.formulas[0] 
+      : { price: '0', commission: '0' }
+
+    const finalOffer = {
+      ...editedOffer,
+      price: mainFormula.price,
+      commission: mainFormula.commission
+    }
+
+    onUpdate(finalOffer)
     setIsEditing(false)
   }
 
@@ -111,6 +140,40 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     }
   }
 
+  // --- GESTION DES FORMULES ---
+  const handleAddFormula = () => {
+    const newFormula: OfferFormula = {
+      id: Date.now().toString(),
+      name: `Formule ${editedOffer.formulas?.length ? editedOffer.formulas.length + 1 : 1}`,
+      price: '0',
+      commission: '10'
+    }
+    setEditedOffer({
+      ...editedOffer,
+      formulas: [...(editedOffer.formulas || []), newFormula]
+    })
+  }
+
+  const handleUpdateFormula = (id: string, field: keyof OfferFormula, value: string) => {
+    setEditedOffer({
+      ...editedOffer,
+      formulas: editedOffer.formulas?.map(f => 
+        f.id === id ? { ...f, [field]: value } : f
+      )
+    })
+  }
+
+  const handleRemoveFormula = (id: string) => {
+    if ((editedOffer.formulas?.length || 0) <= 1) {
+      alert("Il faut au moins une formule.")
+      return
+    }
+    setEditedOffer({
+      ...editedOffer,
+      formulas: editedOffer.formulas?.filter(f => f.id !== id)
+    })
+  }
+
   const handleAddResource = () => {
     if (!tempResName.trim() || !tempResLink.trim()) {
       alert('Veuillez remplir le nom et le lien de la ressource')
@@ -118,10 +181,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     }
 
     const newResource: OfferResource = {
-      id: Date.now(), // Simple unique ID
+      id: Date.now(),
       name: tempResName.trim(),
       url: tempResLink.trim(),
-      type: 'other' // Default type, can be changed later
+      type: 'other'
     }
 
     setEditedOffer({
@@ -129,7 +192,6 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
       resources: [...editedOffer.resources, newResource]
     })
 
-    // Clear inputs
     setTempResName('')
     setTempResLink('')
   }
@@ -176,7 +238,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-slate-800 custom-scrollbar">
         {/* Header */}
         <div className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950 px-6 py-6">
           <div className="flex items-start justify-between">
@@ -311,63 +373,75 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Zone A - Financials */}
+            {/* Zone A - Formules (Multi-Tarification) - MODIFIÉ */}
             <div className="rounded-lg border border-slate-800 bg-slate-950 p-4">
-              <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
-                <Euro className="h-4 w-4" />
-                Tarification
-              </h3>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+                  <Tag className="h-4 w-4" /> Formules & Tarifs
+                </h3>
+                {isEditing && (
+                  <button onClick={handleAddFormula} className="flex items-center gap-1 rounded bg-blue-500/10 px-2 py-1 text-xs font-bold text-blue-400 hover:bg-blue-500/20">
+                    <Plus className="h-3 w-3" /> Formule
+                  </button>
+                )}
+              </div>
+              
               <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-slate-500">Prix de l'offre</p>
-                  {isEditing ? (
-                    <div className="relative mt-1">
-                      <input
-                        type="number"
-                        value={editedOffer.price}
-                        onChange={(e) =>
-                          setEditedOffer({ ...editedOffer, price: e.target.value })
-                        }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-8 text-lg font-bold text-emerald-400 focus:border-blue-500 focus:outline-none"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-lg font-bold text-emerald-400">
-                        €
-                      </span>
+                {(editedOffer.formulas || []).map((formula, index) => {
+                  const comm = calculateCommission(formula.price, formula.commission)
+                  return (
+                    <div key={formula.id} className="relative rounded-lg border border-slate-800 bg-slate-900 p-3 transition-all hover:border-slate-700">
+                      {isEditing ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={formula.name}
+                              onChange={(e) => handleUpdateFormula(formula.id, 'name', e.target.value)}
+                              placeholder="Nom (ex: Pack Gold)"
+                              className="flex-1 rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm font-bold text-white focus:border-blue-500 focus:outline-none"
+                            />
+                            <button onClick={() => handleRemoveFormula(formula.id)} className="text-red-400 hover:text-red-300"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                          <div className="flex gap-3">
+                            <div className="flex-1">
+                              <label className="text-[10px] text-slate-500 uppercase">Prix (€)</label>
+                              <input
+                                type="number"
+                                value={formula.price}
+                                onChange={(e) => handleUpdateFormula(formula.id, 'price', e.target.value)}
+                                className="w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-emerald-400 font-bold focus:border-emerald-500 focus:outline-none"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-[10px] text-slate-500 uppercase">Com. (%)</label>
+                              <input
+                                type="number"
+                                value={formula.commission}
+                                onChange={(e) => handleUpdateFormula(formula.id, 'commission', e.target.value)}
+                                className="w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-blue-400 font-bold focus:border-blue-500 focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500 text-right">Commission: {comm.toLocaleString()}€</p>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-bold text-white text-sm">{formula.name}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">Com: {formula.commission}% ({comm.toLocaleString()}€)</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-emerald-400">{parseFloat(formula.price).toLocaleString()}€</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-lg font-bold text-emerald-400">{offer.price}€</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500">Commission</p>
-                  {isEditing ? (
-                    <div>
-                      <div className="relative mt-1">
-                        <input
-                          type="number"
-                          value={editedOffer.commission}
-                          onChange={(e) =>
-                            setEditedOffer({ ...editedOffer, commission: e.target.value })
-                          }
-                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-8 text-lg font-bold text-blue-400 focus:border-blue-500 focus:outline-none"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-lg font-bold text-blue-400">
-                          %
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">
-                        = {commissionAmount.toLocaleString('fr-FR')}€ par vente
-                      </p>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-lg font-bold text-blue-400">{offer.commission}%</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        = {commissionAmount.toLocaleString('fr-FR')}€ par vente
-                      </p>
-                    </div>
-                  )}
-                </div>
+                  )
+                })}
+                {(!editedOffer.formulas || editedOffer.formulas.length === 0) && (
+                  <p className="text-sm text-slate-500 italic text-center py-2">Aucune formule définie</p>
+                )}
               </div>
             </div>
 
@@ -443,7 +517,6 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               <ContactSelector
                 selectedContactIds={editedOffer.contacts.map((c) => c.id)}
                 onAdd={(contactId) => {
-                  // Find contact from global list and add to offer
                   const globalContact = globalContacts.find((c) => c.id === contactId)
                   if (globalContact) {
                     setEditedOffer({
@@ -492,7 +565,6 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
             {isEditing ? (
               <div className="space-y-4">
-                {/* List of existing resources (editable) */}
                 <div className="space-y-2">
                   {editedOffer.resources.length > 0 ? (
                     editedOffer.resources.map((resource) => (
@@ -525,7 +597,6 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   )}
                 </div>
 
-                {/* Form to add new resource */}
                 <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-900/30 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Ajouter une ressource
@@ -603,23 +674,6 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes scale-in {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        .animate-scale-in {
-          animation: scale-in 0.2s ease-out;
-        }
-      `}</style>
     </div>
   )
 }

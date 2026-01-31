@@ -15,6 +15,14 @@ export interface OfferContact {
   role: string
 }
 
+// NOUVEAU : Définition d'une formule de prix
+export interface OfferFormula {
+  id: string
+  name: string
+  price: string
+  commission: string
+}
+
 export interface Offer {
   id: number
   user_id: string
@@ -23,11 +31,12 @@ export interface Offer {
   status: 'active' | 'archived'
   startDate: string
   endDate?: string
-  price: string
-  commission: string
+  price: string // Prix "par défaut" (pour l'affichage carte)
+  commission: string // Commission "par défaut"
   description: string
   resources: OfferResource[]
   contacts: OfferContact[]
+  formulas?: OfferFormula[] // NOUVEAU : Liste des formules
   notes: string
 }
 
@@ -47,7 +56,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-  // 1. Charger les offres depuis Supabase filtrées par utilisateur
+  // 1. Charger les offres depuis Supabase
   const fetchOffers = async () => {
     if (!user) {
       setOffers([])
@@ -60,11 +69,18 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('offers')
         .select('*')
-        .eq('user_id', user.id) // FILTRE DE SÉCURITÉ
+        .eq('user_id', user.id)
         .order('name', { ascending: true })
 
       if (error) throw error
-      setOffers(data || [])
+      
+      // Adaptation des données si le champ formulas n'existe pas encore
+      const adaptedOffers = (data || []).map(offer => ({
+        ...offer,
+        formulas: offer.formulas || [] // Garantir que formulas est un tableau
+      }))
+
+      setOffers(adaptedOffers)
     } catch (error) {
       console.error('Erreur lors du chargement des offres:', error)
     } finally {
@@ -76,7 +92,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     fetchOffers()
   }, [user])
 
-  // 2. Ajouter une offre liée à l'utilisateur
+  // 2. Ajouter une offre
   const addOffer = async (offerData: Omit<Offer, 'id' | 'user_id'>) => {
     if (!user) return { data: null, error: 'Non authentifié' }
 
@@ -86,7 +102,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
         .insert([
           {
             ...offerData,
-            user_id: user.id, // LIAISON OBLIGATOIRE
+            user_id: user.id,
           },
         ])
         .select()
@@ -109,7 +125,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
         .from('offers')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', user.id) // SÉCURITÉ
+        .eq('user_id', user.id)
 
       if (error) throw error
       
@@ -131,7 +147,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
         .from('offers')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id) // SÉCURITÉ
+        .eq('user_id', user.id)
 
       if (error) throw error
       
