@@ -10,15 +10,17 @@ import {
   MessageSquare,
   FileText,
   Save,
-  Tag, // Ajout de l'icône Tag
+  Tag,
+  MessageCircle, // Pour l'icône WhatsApp
+  AlertCircle    // Pour l'icône d'erreur
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
 import { type Prospect } from '../contexts/ProspectsContext'
 import { useMeetings } from '../contexts/MeetingsContext'
-import { useOffers, type Offer } from '../contexts/OffersContext' // Import type Offer
+import { useOffers, type Offer } from '../contexts/OffersContext'
 
-// Helper to parse price from string like "2 500€" to number 2500
+// Helper to parse price
 const parsePrice = (priceString: string): number => {
   if (!priceString) return 0
   const cleaned = priceString.toString().replace(/[^\d.,]/g, '')
@@ -32,7 +34,7 @@ const ALL_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500' },
   { id: 'won', name: 'Gagné', color: 'bg-emerald-500' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' }, // Follow Up déplacé
+  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' },
   { id: 'noshow', name: 'No Show', color: 'bg-slate-600' },
   { id: 'lost', name: 'Perdu', color: 'bg-red-500' },
 ]
@@ -58,7 +60,7 @@ export function ProspectView({
 }: ProspectViewProps) {
   const { offers } = useOffers()
 
-  // 1. LOGIQUE DE FILTRAGE (Offres actives ET non expirées)
+  // Filtre anti-expiration
   const isExpired = (offer: Offer) => {
     if (!offer.endDate) return false
     const today = new Date()
@@ -67,13 +69,13 @@ export function ProspectView({
     return end < today
   }
 
-  // Liste filtrée des offres disponibles
   const availableOffers = offers.filter((o) => o.status === 'active' && !isExpired(o))
 
-  // --- OPTIMISTIC UI : État local pour affichage instantané ---
   const [localProspect, setLocalProspect] = useState(prospect)
+  
+  // État pour le message d'erreur (Pop-up rouge)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Synchronisation si le prospect change depuis l'extérieur
   useEffect(() => {
     setLocalProspect(prospect)
     setTempNotes(prospect.notes || '')
@@ -82,33 +84,32 @@ export function ProspectView({
   const [editingNotes, setEditingNotes] = useState(false)
   const [tempNotes, setTempNotes] = useState(prospect.notes || '')
 
-  // Edit mode for client info
   const [editingClient, setEditingClient] = useState(false)
   const [editedContact, setEditedContact] = useState(prospect.contact)
   const [editedCompany, setEditedCompany] = useState(prospect.company)
   const [editedEmail, setEditedEmail] = useState(prospect.email)
   const [editedPhone, setEditedPhone] = useState(prospect.phone)
 
-  // Edit mode for offer
   const [editingOffer, setEditingOffer] = useState(false)
   const [editedOfferId, setEditedOfferId] = useState('')
-  const [editedFormulaId, setEditedFormulaId] = useState('') // Pour la formule
+  const [editedFormulaId, setEditedFormulaId] = useState('')
   const [editedOfferName, setEditedOfferName] = useState(prospect.offer || '')
   const [editedValue, setEditedValue] = useState(prospect.value || 0)
 
-  // Objet offre sélectionné en cours d'édition
   const selectedOfferObj = editedOfferId 
     ? availableOffers.find(o => String(o.id) === editedOfferId)
     : null
   
   const hasFormulas = selectedOfferObj?.formulas && selectedOfferObj.formulas.length > 0
 
-  // Fonction unifiée pour mise à jour optimiste
+  // Fonction pour afficher l'erreur temporairement
+  const showError = (message: string) => {
+    setErrorMessage(message)
+    setTimeout(() => setErrorMessage(null), 3000) // Disparaît après 3s
+  }
+
   const handleOptimisticUpdate = (updates: Partial<Prospect>) => {
-    // 1. Mise à jour visuelle immédiate
     setLocalProspect(prev => ({ ...prev, ...updates }))
-    
-    // 2. Envoi au serveur (arrière-plan)
     if (onUpdate) {
       onUpdate(prospect.id, updates)
     }
@@ -143,20 +144,17 @@ export function ProspectView({
     setEditingClient(false)
   }
 
-  // Changement d'offre principal
   const handleOfferChange = (offerId: string) => {
     setEditedOfferId(offerId)
-    setEditedFormulaId('') // Reset formula
+    setEditedFormulaId('')
 
     if (offerId) {
       const selectedOffer = availableOffers.find((o) => String(o.id) === offerId)
       if (selectedOffer) {
-        // Si formules, on force la sélection (prix 0 par défaut)
         if (selectedOffer.formulas && selectedOffer.formulas.length > 0) {
-          setEditedOfferName(selectedOffer.name) // Nom temporaire sans formule
+          setEditedOfferName(selectedOffer.name)
           setEditedValue(0)
         } else {
-          // Sinon prix standard
           setEditedOfferName(selectedOffer.name)
           setEditedValue(parsePrice(selectedOffer.price))
         }
@@ -166,7 +164,6 @@ export function ProspectView({
     }
   }
 
-  // Changement de formule
   const handleFormulaChange = (formulaId: string) => {
     setEditedFormulaId(formulaId)
     if (selectedOfferObj && selectedOfferObj.formulas) {
@@ -179,7 +176,6 @@ export function ProspectView({
   }
 
   const handleSaveOffer = () => {
-    // Validation si formule requise
     if (hasFormulas && !editedFormulaId) {
       alert("Veuillez sélectionner une formule pour cette offre.")
       return
@@ -209,12 +205,23 @@ export function ProspectView({
     }
   }
 
-  // Fonction pour ouvrir Gmail
+  // --- ACTIONS ---
+
   const handleOpenGmail = () => {
     if (localProspect.email) {
       window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${localProspect.email}`, '_blank')
     } else {
-      alert("Aucune adresse email renseignée pour ce prospect.")
+      showError("Email manquant !")
+    }
+  }
+
+  const handleOpenWhatsApp = () => {
+    if (localProspect.phone) {
+      // Nettoyage du numéro : garde uniquement les chiffres et le +
+      const cleanPhone = localProspect.phone.replace(/[^0-9+]/g, '')
+      window.open(`https://wa.me/${cleanPhone}`, '_blank')
+    } else {
+      showError("Numéro de téléphone manquant !")
     }
   }
 
@@ -228,6 +235,15 @@ export function ProspectView({
       <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
         <div className="w-screen max-w-md">
           <div className="flex h-full flex-col overflow-y-auto bg-slate-900 shadow-xl ring-1 ring-slate-800">
+            
+            {/* Pop-up Erreur (Toast) */}
+            {errorMessage && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-xl animate-in fade-in slide-in-from-top-2">
+                <AlertCircle className="h-4 w-4" />
+                {errorMessage}
+              </div>
+            )}
+
             {/* Header */}
             <div className="border-b border-slate-800 bg-slate-950 px-6 py-6">
               <div className="flex items-start justify-between">
@@ -247,14 +263,23 @@ export function ProspectView({
                 </button>
               </div>
 
-              {/* Quick Actions */}
+              {/* Quick Actions (Email / WhatsApp / RDV) */}
               <div className="mt-4 flex gap-2">
                 <button
                   onClick={handleOpenGmail}
                   className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-300 transition-all hover:bg-slate-800 hover:text-white"
+                  title="Envoyer un email"
                 >
                   <Mail className="h-4 w-4" />
                   Email
+                </button>
+                <button
+                  onClick={handleOpenWhatsApp}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 transition-all hover:bg-emerald-500/20 hover:text-emerald-300"
+                  title="Ouvrir WhatsApp"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp
                 </button>
                 <button
                   onClick={() => {
@@ -267,7 +292,7 @@ export function ProspectView({
                 </button>
               </div>
 
-              {/* Stage Selector (INSTANTANÉ) */}
+              {/* Stage Selector */}
               <div className="mt-4">
                 <label className="mb-2 block text-xs font-medium text-slate-400">
                   Étape actuelle
@@ -286,7 +311,7 @@ export function ProspectView({
               </div>
             </div>
 
-            {/* Content - Informations Only */}
+            {/* Content */}
             <div className="flex-1 space-y-6 p-6">
                 {/* Infos Offre */}
                 <div>
@@ -317,7 +342,6 @@ export function ProspectView({
                         </select>
                       </div>
 
-                      {/* SÉLECTEUR FORMULE (Conditionnel) */}
                       {hasFormulas && (
                         <div className="animate-in fade-in slide-in-from-top-2">
                           <label className="mb-2 flex items-center gap-2 text-xs text-blue-400">
@@ -339,7 +363,6 @@ export function ProspectView({
                         </div>
                       )}
 
-                      {/* Prix auto */}
                       {editedValue > 0 && (
                         <p className="text-xs font-medium text-emerald-400 text-right">
                           Nouveau montant : {editedValue.toLocaleString()}€
@@ -426,14 +449,16 @@ export function ProspectView({
                         <Phone className="h-4 w-4 text-emerald-400" />
                         <div className="min-w-0 flex-1">
                           <p className="text-xs text-slate-500">Téléphone</p>
-                          <p className="text-sm text-slate-300"><MaskedText value={localProspect.phone} type="name" /></p>
+                          <button onClick={handleOpenWhatsApp} className="text-sm text-slate-300 hover:text-white hover:underline text-left">
+                            <MaskedText value={localProspect.phone} type="name" />
+                          </button>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Notes Internes (INSTANTANÉ) */}
+                {/* Notes Internes */}
                 <div>
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white">Notes Internes</h3>
