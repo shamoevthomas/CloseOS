@@ -268,12 +268,10 @@ export function Pipeline() {
     console.log('🎯 Call triggered with mode:', withAi ? 'AI' : 'Standard')
     setCallModeWithAi(withAi)
     setIsVideoCallOpen(true)
-    setCallDropdownOpen(false)
   }
 
   const handlePhoneCall = () => {
     console.log('📱 Appel téléphonique - To be implemented')
-    setCallDropdownOpen(false)
     // TODO: Implémenter l'appel téléphonique réel
   }
 
@@ -448,7 +446,7 @@ export function Pipeline() {
                 </div>
               </div>
               
-              {/* BOUTON NOUVEAU PROSPECT (Ajouté ici) */}
+              {/* BOUTON NOUVEAU PROSPECT */}
               <button
                 onClick={() => setIsNewProspectModalOpen(true)}
                 className="flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 font-medium transition-colors shadow-lg shadow-blue-900/20"
@@ -504,11 +502,10 @@ export function Pipeline() {
                       )}
                     </div>
 
-                    {/* Deals */}
+                    {/* Deals (MODIFIÉ: max-height pour limiter à ~2 prospects visibles) */}
                     {!isCollapsed && (
-                      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+                      <div className="space-y-3 overflow-y-auto p-4 max-h-[400px]">
                         {stageDeals.map((deal) => {
-                          // Find related offer to check if B2B or B2C
                           const relatedOffer = offers.find(o => o.name === deal.offer)
                           const isB2B = relatedOffer?.target === 'B2B'
                           const mainTitle = isB2B ? (deal.company || deal.contact) : deal.contact
@@ -602,11 +599,10 @@ export function Pipeline() {
                       </div>
                     </div>
 
-                    {/* Deals */}
+                    {/* Deals (MODIFIÉ: max-height pour limiter à ~2 prospects visibles) */}
                     {!isCollapsed && (
-                      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+                      <div className="space-y-3 overflow-y-auto p-4 max-h-[400px]">
                         {stageDeals.map((deal) => {
-                          // Find related offer to check if B2B or B2C
                           const relatedOffer = offers.find(o => o.name === deal.offer)
                           const isB2B = relatedOffer?.target === 'B2B'
                           const mainTitle = isB2B ? (deal.company || deal.contact) : deal.contact
