@@ -14,7 +14,8 @@ import {
   Trash2,
   FileText,
   Save,
-  ExternalLink
+  ExternalLink,
+  Link as LinkIcon
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
@@ -49,6 +50,10 @@ export function CallsPage() {
     contactId: number
     startTime: Date
   } | null>(null)
+
+  // --- MODALE DE PRÉPARATION (SALLE D'ATTENTE) ---
+  const [isMeetModalOpen, setIsMeetModalOpen] = useState(false)
+  const [meetLinkInput, setMeetLinkInput] = useState('') 
 
   // Post-call modals
   const [isNoAnswerModalOpen, setIsNoAnswerModalOpen] = useState(false)
@@ -142,42 +147,76 @@ export function CallsPage() {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
   }
 
-  // --- LOGIQUE D'APPEL GOOGLE MEET ---
+  // --- LOGIQUE D'APPEL ---
 
-  const startGoogleMeetCall = (contactId: number, contactName: string, type: 'prospect' | 'internal') => {
-    // 1. Ouvrir Google Meet dans un nouvel onglet
+  // 1. Ouvre la SALLE D'ATTENTE (Modale de préparation)
+  const prepareCall = (contactId: number | null, type: 'prospect' | 'internal') => {
+    if (contactId === null) {
+        setSelectedContactId(null) // Appel rapide
+    } else {
+        setSelectedContactId(contactId) // Contact spécifique
+        setIsNewCallModalOpen(false) 
+    }
+    // C'EST ICI QU'ON OUVRE LA MODALE DE PRÉPARATION
+    setIsMeetModalOpen(true)
+    setMeetLinkInput('')
+  }
+
+  // 2. Action utilisateur : Ouvrir l'onglet Google Meet
+  const openMeetTab = () => {
     window.open('https://meet.google.com/new', '_blank')
+  }
 
-    // 2. Démarrer le Cockpit (Overlay) immédiatement
+  // 3. Action utilisateur : Démarrer le Cockpit
+  const startCockpit = () => {
+    let contactName = 'Appel Vidéo Rapide'
+    let contactAvatar = 'A'
+    let type: 'prospect' | 'internal' = 'internal'
+    let cId = 0
+
+    if (selectedContactId) {
+       if (callType === 'prospect') {
+          const p = prospects.find(x => x.id === selectedContactId)
+          if (p) {
+              contactName = p.contact
+              contactAvatar = p.contact.charAt(0)
+              type = 'prospect'
+              cId = p.id
+          }
+       } else {
+          const c = internalContacts.find(x => x.id === selectedContactId)
+          if (c) {
+              contactName = c.name
+              contactAvatar = c.name.charAt(0)
+              type = 'internal'
+              cId = c.id
+          }
+       }
+    }
+
     setCurrentCall({
       name: contactName,
-      avatar: contactName.charAt(0),
+      avatar: contactAvatar,
       type: type,
-      contactId: contactId,
+      contactId: cId,
       startTime: new Date()
     })
+    
+    // Ferme la modale de préparation et lance l'overlay
+    setIsMeetModalOpen(false)
     setIsCallActive(true)
   }
 
+  // Clic sur "Lancer Visio Rapide" -> Etape 1
   const handleStartQuickVideoCall = () => {
-    // Appel rapide sans contact spécifique
-    startGoogleMeetCall(0, 'Appel Vidéo Rapide', 'internal')
+    setCallType('internal')
+    prepareCall(null, 'internal')
   }
 
-  const handleJoinNewCall = () => {
+  // Clic sur "Préparer l'appel" (depuis Nouvel Appel) -> Etape 1
+  const handleProceedToMeet = () => {
     if (!selectedContactId) return
-
-    let contactName = ''
-    if (callType === 'prospect') {
-      const prospect = prospects.find(p => p.id === selectedContactId)
-      contactName = prospect?.contact || 'Prospect'
-    } else {
-      const contact = internalContacts.find(c => c.id === selectedContactId)
-      contactName = contact?.name || 'Contact'
-    }
-
-    startGoogleMeetCall(selectedContactId, contactName, callType)
-    handleCloseNewCallModal()
+    prepareCall(selectedContactId, callType)
   }
 
   // --- FIN APPEL & LOGS ---
@@ -187,7 +226,6 @@ export function CallsPage() {
 
     const duration = calculateDuration(currentCall.startTime)
 
-    // Log call
     addCallLog({
       contactId: currentCall.contactId,
       contactName: currentCall.name,
@@ -198,10 +236,8 @@ export function CallsPage() {
       answered: wasAnswered
     })
 
-    // Fermer l'overlay
     setIsCallActive(false)
 
-    // Flux post-appel
     if (currentCall.type === 'prospect') {
       if (!wasAnswered) {
         setIsNoAnswerModalOpen(true)
@@ -301,13 +337,13 @@ export function CallsPage() {
               Script
             </button>
 
-            {/* Quick Video Call Button (GOOGLE MEET) */}
+            {/* BOUTON VISIO RAPIDE -> Déclenche prepareCall */}
             <button
               onClick={handleStartQuickVideoCall}
               className="flex items-center gap-2 rounded-lg bg-purple-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600 shadow-lg shadow-purple-500/20"
             >
               <Video className="h-4 w-4" />
-              🚀 Visio Rapide (Meet)
+              🚀 Visio Rapide
             </button>
 
             <button
@@ -340,7 +376,7 @@ export function CallsPage() {
           ))}
         </div>
 
-        {/* Call History Section */}
+        {/* Call History */}
         <div className="rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-bold text-white">Appels Récents</h2>
@@ -428,6 +464,70 @@ export function CallsPage() {
         </div>
       </div>
 
+      {/* --- MODALE PRÉPARATION APPEL (SALLE D'ATTENTE) --- */}
+      {isMeetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMeetModalOpen(false)} />
+          <div className="relative w-full max-w-lg rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800 animate-in fade-in zoom-in-95">
+             <div className="flex items-center justify-between border-b border-slate-800 p-6">
+                <h3 className="text-xl font-bold text-white">🎥 Préparer l'appel</h3>
+                <button onClick={() => setIsMeetModalOpen(false)} className="rounded p-2 text-slate-400 hover:text-white">
+                    <X className="h-5 w-5"/>
+                </button>
+             </div>
+             
+             <div className="p-6 space-y-6">
+                {/* Etape 1 : Générer */}
+                <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white font-bold text-sm">1</div>
+                        <div className="flex-1">
+                            <p className="font-semibold text-white">Ouvrir la salle Google Meet</p>
+                            <p className="text-sm text-slate-400 mt-1">Cela ouvrira un nouvel onglet. Vous pourrez copier le lien de la réunion.</p>
+                            <button 
+                                onClick={openMeetTab}
+                                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+                            >
+                                <ExternalLink className="h-4 w-4" /> Ouvrir Google Meet
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Etape 2 : Lancer le cockpit */}
+                <div className="rounded-lg bg-purple-500/10 border border-purple-500/20 p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-500 text-white font-bold text-sm">2</div>
+                        <div className="flex-1">
+                            <p className="font-semibold text-white">Lancer le Cockpit de Vente</p>
+                            <p className="text-sm text-slate-400 mt-1">Démarrez l'interface CloseOS pour suivre votre script et prendre des notes.</p>
+                            
+                            {/* Champ pour coller le lien (pour archive future) */}
+                            <div className="mt-3 relative">
+                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                <input 
+                                    type="text" 
+                                    value={meetLinkInput}
+                                    onChange={(e) => setMeetLinkInput(e.target.value)}
+                                    placeholder="Collez le lien Meet ici (optionnel)"
+                                    className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-9 pr-4 text-sm text-white focus:border-purple-500 focus:outline-none placeholder-slate-600"
+                                />
+                            </div>
+
+                            <button 
+                                onClick={startCockpit}
+                                className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-base font-bold text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20"
+                            >
+                                <Video className="h-5 w-5" /> 🚀 Démarrer le Cockpit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL SCRIPT */}
       {isScriptModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -465,7 +565,7 @@ export function CallsPage() {
         </div>
       )}
 
-      {/* New Call Modal */}
+      {/* New Call Modal - Selection Contact */}
       {isNewCallModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleCloseNewCallModal} />
@@ -530,20 +630,21 @@ export function CallsPage() {
             </div>
 
             <div className="border-t border-slate-800 p-6">
+              {/* BOUTON PREPARER L'APPEL -> Ouvre la modale de préparation */}
               <button
-                onClick={handleJoinNewCall}
+                onClick={handleProceedToMeet}
                 disabled={!selectedContactId}
                 className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-500 px-6 py-3 text-base font-semibold text-white transition-all hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Video className="h-5 w-5" />
-                Lancer l'appel Google Meet
+                Préparer l'appel
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* COCKPIT OVERLAY (Visible during call) */}
+      {/* COCKPIT OVERLAY */}
       {isCallActive && currentCall && (
         <VideoCallOverlay
           isOpen={isCallActive}
