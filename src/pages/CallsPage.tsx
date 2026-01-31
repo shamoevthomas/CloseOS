@@ -13,13 +13,13 @@ import {
   Check,
   Trash2,
   FileText,
-  Save
+  Save,
+  ExternalLink
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
 import { useCalls } from '../contexts/CallsContext'
-import { createDailyRoom } from '../services/dailyService'
 import { MaskedText } from '../components/MaskedText'
 import { VideoCallOverlay } from '../components/VideoCallOverlay'
 import { CallSummaryModal, type CallSummaryData } from '../components/CallSummaryModal'
@@ -39,18 +39,7 @@ export function CallsPage() {
   const [callType, setCallType] = useState<'prospect' | 'internal'>('prospect')
   const [selectedContactId, setSelectedContactId] = useState<number | null>(null)
   const [selectedContactSearch, setSelectedContactSearch] = useState('')
-  const [isCreatingVideoCall, setIsCreatingVideoCall] = useState(false)
-
-  // Link generation modal (Quick Call)
-  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null)
-  const [isCopied, setIsCopied] = useState(false)
-
-  // New Call Modal - Link generation
-  const [newCallGeneratedLink, setNewCallGeneratedLink] = useState<string | null>(null)
-  const [isGeneratingNewCallLink, setIsGeneratingNewCallLink] = useState(false)
-  const [newCallLinkCopied, setNewCallLinkCopied] = useState(false)
-
+  
   // Call overlay states
   const [isCallActive, setIsCallActive] = useState(false)
   const [currentCall, setCurrentCall] = useState<{
@@ -70,12 +59,11 @@ export function CallsPage() {
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null)
   const [selectedInternalContact, setSelectedInternalContact] = useState<InternalContact | null>(null)
 
-  // --- NOUVEAUX ÉTATS POUR LE SCRIPT PERSO ---
+  // Script Perso
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false)
   const [userScript, setUserScript] = useState('')
   const [isSavingScript, setIsSavingScript] = useState(false)
 
-  // Charger le script au montage
   useEffect(() => {
     fetchUserScript()
   }, [])
@@ -84,13 +72,11 @@ export function CallsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('user_scripts')
         .select('content')
         .eq('user_id', user.id)
         .single()
-
       if (data) setUserScript(data.content)
     } catch (error) {
       console.error('Erreur chargement script:', error)
@@ -102,15 +88,13 @@ export function CallsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
-      // MODIFICATION : Ajout de onConflict pour éviter l'erreur 409
       const { error } = await supabase
         .from('user_scripts')
         .upsert({ 
           user_id: user.id, 
           content: userScript,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' }) // Indique à Supabase de mettre à jour si l'user_id existe déjà
+        }, { onConflict: 'user_id' })
 
       if (error) throw error
       setIsScriptModalOpen(false)
@@ -121,9 +105,7 @@ export function CallsPage() {
       setIsSavingScript(false)
     }
   }
-  // ------------------------------------------
 
-  // Calculate stats from real call history
   const stats = [
     {
       label: 'Appels ce mois',
@@ -134,7 +116,6 @@ export function CallsPage() {
     },
   ]
 
-  // Get contacts for selector
   const getContactList = () => {
     if (callType === 'prospect') {
       return prospects.filter(p =>
@@ -147,11 +128,8 @@ export function CallsPage() {
     }
   }
 
-  // Reset New Call Modal state
   const handleCloseNewCallModal = () => {
     setIsNewCallModalOpen(false)
-    setNewCallGeneratedLink(null)
-    setNewCallLinkCopied(false)
     setSelectedContactId(null)
     setSelectedContactSearch('')
   }
@@ -164,12 +142,52 @@ export function CallsPage() {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
   }
 
+  // --- LOGIQUE D'APPEL GOOGLE MEET ---
+
+  const startGoogleMeetCall = (contactId: number, contactName: string, type: 'prospect' | 'internal') => {
+    // 1. Ouvrir Google Meet dans un nouvel onglet
+    window.open('https://meet.google.com/new', '_blank')
+
+    // 2. Démarrer le Cockpit (Overlay) immédiatement
+    setCurrentCall({
+      name: contactName,
+      avatar: contactName.charAt(0),
+      type: type,
+      contactId: contactId,
+      startTime: new Date()
+    })
+    setIsCallActive(true)
+  }
+
+  const handleStartQuickVideoCall = () => {
+    // Appel rapide sans contact spécifique
+    startGoogleMeetCall(0, 'Appel Vidéo Rapide', 'internal')
+  }
+
+  const handleJoinNewCall = () => {
+    if (!selectedContactId) return
+
+    let contactName = ''
+    if (callType === 'prospect') {
+      const prospect = prospects.find(p => p.id === selectedContactId)
+      contactName = prospect?.contact || 'Prospect'
+    } else {
+      const contact = internalContacts.find(c => c.id === selectedContactId)
+      contactName = contact?.name || 'Contact'
+    }
+
+    startGoogleMeetCall(selectedContactId, contactName, callType)
+    handleCloseNewCallModal()
+  }
+
+  // --- FIN APPEL & LOGS ---
+
   const handleCallEnd = (wasAiActive: boolean, wasAnswered: boolean) => {
     if (!currentCall) return
 
     const duration = calculateDuration(currentCall.startTime)
 
-    // Log the call to global history
+    // Log call
     addCallLog({
       contactId: currentCall.contactId,
       contactName: currentCall.name,
@@ -180,37 +198,34 @@ export function CallsPage() {
       answered: wasAnswered
     })
 
-    // Handle post-call flow based on type and AI mode
+    // Fermer l'overlay
+    setIsCallActive(false)
+
+    // Flux post-appel
     if (currentCall.type === 'prospect') {
       if (!wasAnswered) {
-        // No answer - show no answer modal
         setIsNoAnswerModalOpen(true)
       } else if (wasAiActive) {
-        // AI call - show AI analysis toast
         setShowAiAnalysisToast(true)
         setTimeout(() => {
           setShowAiAnalysisToast(false)
           setCurrentCall(null)
         }, 3000)
       } else {
-        // Manual call - show summary modal
         setIsCallSummaryModalOpen(true)
       }
     } else {
-      // Internal call - just close
       setCurrentCall(null)
     }
   }
 
   const handleCallSummarySubmit = (data: CallSummaryData) => {
     console.log('Call Summary:', data)
-    // TODO: Save to prospect timeline
     setIsCallSummaryModalOpen(false)
     setCurrentCall(null)
   }
 
   const handleNoAnswerAction = () => {
-    console.log('No answer recorded')
     setIsNoAnswerModalOpen(false)
     setCurrentCall(null)
   }
@@ -218,14 +233,10 @@ export function CallsPage() {
   const handleContactClick = (call: typeof callHistory[0]) => {
     if (call.contactType === 'prospect') {
       const prospect = prospects.find(p => p.id === call.contactId)
-      if (prospect) {
-        setSelectedProspect(prospect)
-      }
+      if (prospect) setSelectedProspect(prospect)
     } else {
       const contact = internalContacts.find(c => c.id === call.contactId)
-      if (contact) {
-        setSelectedInternalContact(contact)
-      }
+      if (contact) setSelectedInternalContact(contact)
     }
   }
 
@@ -233,7 +244,6 @@ export function CallsPage() {
     const colors: Record<string, string> = {
       prospect: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
       qualified: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
-      proposal: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
       won: 'bg-emerald-600/10 text-emerald-500 border-emerald-600/30',
       lost: 'bg-red-500/10 text-red-400 border-red-500/30',
     }
@@ -244,7 +254,6 @@ export function CallsPage() {
     const labels: Record<string, string> = {
       prospect: 'Prospect',
       qualified: 'Qualifié',
-      proposal: 'Proposition',
       won: 'Gagné',
       lost: 'Perdu',
     }
@@ -266,136 +275,12 @@ export function CallsPage() {
     return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
   }
 
-  // Handle Quick Video Call Creation (Step 1: Generate Link)
-  const handleStartQuickVideoCall = async () => {
-    setIsCreatingVideoCall(true)
-    try {
-      console.log('Creating Daily.co room for quick video call...')
-      const roomUrl = await createDailyRoom()
-
-      // Save the generated link
-      setGeneratedLink(roomUrl)
-      setIsLinkModalOpen(true)
-
-      console.log('Link generated:', roomUrl)
-    } catch (error) {
-      console.error('Error creating video call:', error)
-      alert('Erreur lors de la création de l\'appel vidéo')
-    } finally {
-      setIsCreatingVideoCall(false)
-    }
-  }
-
-  // Handle Join Call (Step 2: Join the Room internally)
-  const handleJoinGeneratedCall = async () => {
-    if (!generatedLink) return
-
-    // Log the video call to history and wait for the ID
-    const result = await addCallLog({
-      contactId: 0, // Quick call with no specific contact
-      contactName: 'Appel Vidéo Rapide',
-      contactType: 'internal',
-      date: new Date().toISOString(),
-      duration: 'En cours...',
-      isAi: false,
-      answered: true,
-    })
-
-    // 🔄 CORRECTION: Extraction correcte de l'ID depuis le tableau de données Supabase
-    const callId = result?.data?.[0]?.id || result?.id
-
-    console.log('Navigating to video call interface with ID:', callId)
-    navigate(`/live-call?url=${encodeURIComponent(generatedLink)}&id=${callId}`)
-  }
-
-  // Copy link to clipboard (Quick Call)
-  const handleCopyLink = () => {
-    if (!generatedLink) return
-
-    navigator.clipboard.writeText(generatedLink)
-      .then(() => {
-        console.log('Link copied to clipboard')
-        setIsCopied(true)
-        setTimeout(() => setIsCopied(false), 2000)
-      })
-      .catch((error) => {
-        console.error('Error copying link:', error)
-        alert('Erreur lors de la copie du lien')
-      })
-  }
-
-  // New Call Modal - Generate Video Link (Step 1)
-  const handleGenerateNewCallLink = async () => {
-    if (!selectedContactId) return
-
-    setIsGeneratingNewCallLink(true)
-    try {
-      console.log('Creating Daily.co room for new call...')
-      const roomUrl = await createDailyRoom()
-      setNewCallGeneratedLink(roomUrl)
-      console.log('Link generated for new call:', roomUrl)
-    } catch (error) {
-      console.error('Error creating video call:', error)
-      alert('Erreur lors de la création de l\'appel vidéo')
-    } finally {
-      setIsGeneratingNewCallLink(false)
-    }
-  }
-
-  // New Call Modal - Join Call (Step 2)
-  const handleJoinNewCall = async () => {
-    if (!newCallGeneratedLink || !selectedContactId) return
-
-    let contactName = ''
-    if (callType === 'prospect') {
-      const prospect = prospects.find(p => p.id === selectedContactId)
-      contactName = prospect?.contact || 'Prospect'
-    } else {
-      const contact = internalContacts.find(c => c.id === selectedContactId)
-      contactName = contact?.name || 'Contact'
-    }
-
-    // Log the video call to history and wait for the real ID
-    const result = await addCallLog({
-      contactId: selectedContactId,
-      contactName,
-      contactType: callType,
-      date: new Date().toISOString(),
-      duration: 'En cours...',
-      isAi: false,
-      answered: true,
-    })
-
-    // 🔄 CORRECTION: Extraction correcte de l'ID depuis le tableau de données Supabase
-    const callId = result?.data?.[0]?.id || result?.id
-
-    console.log('Navigating to video call interface with ID:', callId)
-    navigate(`/live-call?url=${encodeURIComponent(newCallGeneratedLink)}&id=${callId}`)
-  }
-
-  // New Call Modal - Copy link to clipboard
-  const handleCopyNewCallLink = () => {
-    if (!newCallGeneratedLink) return
-
-    navigator.clipboard.writeText(newCallGeneratedLink)
-      .then(() => {
-        console.log('New call link copied to clipboard')
-        setNewCallLinkCopied(true)
-        setTimeout(() => setNewCallLinkCopied(false), 2000)
-      })
-      .catch((error) => {
-        console.error('Error copying link:', error)
-        alert('Erreur lors de la copie du lien')
-      })
-  }
-
   return (
     <div className="p-8">
       <div className="mx-auto max-w-7xl space-y-8">
 
         {/* Header Section */}
         <div className="flex items-center justify-between">
-          {/* Search Bar */}
           <div className="relative w-96">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
             <input
@@ -407,9 +292,7 @@ export function CallsPage() {
             />
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center gap-3">
-            {/* BOUTON SCRIPT PERSO - ROUGE CLAIR */}
             <button
               onClick={() => setIsScriptModalOpen(true)}
               className="flex items-center gap-2 rounded-lg bg-red-400/10 px-5 py-2.5 text-sm font-semibold text-red-400 transition-all hover:bg-red-400/20"
@@ -418,26 +301,15 @@ export function CallsPage() {
               Script
             </button>
 
-            {/* Quick Video Call Button */}
+            {/* Quick Video Call Button (GOOGLE MEET) */}
             <button
               onClick={handleStartQuickVideoCall}
-              disabled={isCreatingVideoCall}
-              className="flex items-center gap-2 rounded-lg bg-purple-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-purple-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600 shadow-lg shadow-purple-500/20"
             >
-              {isCreatingVideoCall ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Création...
-                </>
-              ) : (
-                <>
-                  <Video className="h-4 w-4" />
-                  🎥 Lancer Visio Rapide
-                </>
-              )}
+              <Video className="h-4 w-4" />
+              🚀 Visio Rapide (Meet)
             </button>
 
-            {/* New Phone Call Button */}
             <button
               onClick={() => setIsNewCallModalOpen(true)}
               className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-emerald-600"
@@ -448,7 +320,7 @@ export function CallsPage() {
           </div>
         </div>
 
-        {/* Stats Row - 4 COLUMNS SIDE BY SIDE */}
+        {/* Stats Row */}
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
             <div
@@ -490,7 +362,6 @@ export function CallsPage() {
           <div className="space-y-3">
             {callHistory.length > 0 ? (
               callHistory.map((call) => {
-                // LIVE STATUS LOOKUP: Find the linked prospect
                 const linkedProspect = call.contactType === 'prospect'
                   ? prospects.find(p => p.id === call.contactId)
                   : null
@@ -501,12 +372,10 @@ export function CallsPage() {
                     className="group flex items-center justify-between rounded-xl bg-slate-800/50 p-4 transition-all hover:bg-slate-800"
                   >
                     <div className="flex items-center gap-4 flex-1">
-                      {/* Video Icon */}
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
                         <Video className="h-5 w-5 text-blue-400" />
                       </div>
 
-                      {/* Contact Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <button
@@ -515,7 +384,6 @@ export function CallsPage() {
                           >
                             <MaskedText value={call.contactName} type="name" />
                           </button>
-                          {/* SMART BADGE: Show LIVE prospect status */}
                           {linkedProspect && (
                             <span className={cn(
                               'rounded-full border px-2 py-0.5 text-xs font-medium',
@@ -540,17 +408,10 @@ export function CallsPage() {
                       </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => navigate(`/appels/${call.id}`)}
-                        className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-300 transition-all hover:bg-slate-700"
-                      >
+                      <button className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-300 transition-all hover:bg-slate-700">
                         <Eye className="inline h-3.5 w-3.5 mr-1" />
                         Détails
-                      </button>
-                      <button className="rounded-lg p-2 text-slate-400 hover:bg-slate-700 hover:text-white">
-                        <MoreVertical className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -565,10 +426,9 @@ export function CallsPage() {
             )}
           </div>
         </div>
-
       </div>
 
-      {/* MODAL SCRIPT PERSONNALISÉ */}
+      {/* MODAL SCRIPT */}
       {isScriptModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
@@ -582,35 +442,23 @@ export function CallsPage() {
                   <p className="text-sm text-slate-400">Personnalisez votre trame d'appel</p>
                 </div>
               </div>
-              <button 
-                onClick={() => setIsScriptModalOpen(false)} 
-                className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
-              >
+              <button onClick={() => setIsScriptModalOpen(false)} className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white">
                 <X className="h-6 w-6" />
               </button>
             </div>
-
             <textarea
               value={userScript}
               onChange={(e) => setUserScript(e.target.value)}
               placeholder="Écrivez votre script ici..."
-              className="mb-6 min-h-[400px] w-full rounded-xl border border-slate-800 bg-slate-950 p-4 text-slate-300 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+              className="mb-6 min-h-[400px] w-full rounded-xl border border-slate-800 bg-slate-950 p-4 text-slate-300 focus:border-red-400 focus:outline-none"
             />
-
             <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setIsScriptModalOpen(false)}
-                className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-400 hover:bg-slate-800"
-              >
+              <button onClick={() => setIsScriptModalOpen(false)} className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-400 hover:bg-slate-800">
                 Annuler
               </button>
-              <button
-                onClick={handleSaveScript}
-                disabled={isSavingScript}
-                className="flex items-center gap-2 rounded-lg bg-red-500 px-6 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
-              >
+              <button onClick={handleSaveScript} disabled={isSavingScript} className="flex items-center gap-2 rounded-lg bg-red-500 px-6 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50">
                 {isSavingScript ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Sauvegarder le script
+                Sauvegarder
               </button>
             </div>
           </div>
@@ -620,65 +468,34 @@ export function CallsPage() {
       {/* New Call Modal */}
       {isNewCallModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={handleCloseNewCallModal}
-          />
-
-          {/* Modal */}
-          <div className="relative w-full max-md rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
-            {/* Header */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleCloseNewCallModal} />
+          <div className="relative w-full max-w-lg rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
             <div className="flex items-start justify-between border-b border-slate-800 p-6">
               <div>
                 <h2 className="text-xl font-bold text-white">Nouvel Appel</h2>
                 <p className="mt-1 text-sm text-slate-400">Sélectionnez un contact à appeler</p>
               </div>
-              <button
-                onClick={handleCloseNewCallModal}
-                className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
-              >
+              <button onClick={handleCloseNewCallModal} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Content */}
             <div className="p-6 space-y-6">
-              {/* Toggle: Prospect <-> Internal */}
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => {
-                    setCallType('prospect')
-                    setSelectedContactId(null)
-                    setSelectedContactSearch('')
-                  }}
-                  className={cn(
-                    'flex-1 rounded-lg px-4 py-3 text-sm font-semibold transition-all',
-                    callType === 'prospect'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                  )}
+                  onClick={() => { setCallType('prospect'); setSelectedContactId(null); setSelectedContactSearch('') }}
+                  className={cn('flex-1 rounded-lg px-4 py-3 text-sm font-semibold transition-all', callType === 'prospect' ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700')}
                 >
                   Prospect
                 </button>
                 <button
-                  onClick={() => {
-                    setCallType('internal')
-                    setSelectedContactId(null)
-                    setSelectedContactSearch('')
-                  }}
-                  className={cn(
-                    'flex-1 rounded-lg px-4 py-3 text-sm font-semibold transition-all',
-                    callType === 'internal'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                  )}
+                  onClick={() => { setCallType('internal'); setSelectedContactId(null); setSelectedContactSearch('') }}
+                  className={cn('flex-1 rounded-lg px-4 py-3 text-sm font-semibold transition-all', callType === 'internal' ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700')}
                 >
                   Interne
                 </button>
               </div>
 
-              {/* Searchable Contact Selector */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-300">
                   {callType === 'prospect' ? 'Sélectionner un prospect' : 'Sélectionner un contact'}
@@ -695,17 +512,11 @@ export function CallsPage() {
                     getContactList().map((contact) => {
                       const id = callType === 'prospect' ? (contact as Prospect).id : (contact as InternalContact).id
                       const name = callType === 'prospect' ? (contact as Prospect).contact : (contact as InternalContact).name
-
                       return (
                         <button
                           key={id}
                           onClick={() => setSelectedContactId(id)}
-                          className={cn(
-                            'w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-all',
-                            selectedContactId === id
-                              ? 'bg-blue-500 text-white'
-                              : 'text-slate-300 hover:bg-slate-700'
-                          )}
+                          className={cn('w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-all', selectedContactId === id ? 'bg-blue-500 text-white' : 'text-slate-300 hover:bg-slate-700')}
                         >
                           {name}
                         </button>
@@ -718,90 +529,21 @@ export function CallsPage() {
               </div>
             </div>
 
-            {/* Footer Actions */}
             <div className="border-t border-slate-800 p-6">
-              {!newCallGeneratedLink ? (
-                /* Step 1: Generate Link */
-                <div className="space-y-3">
-                  <button
-                    onClick={handleGenerateNewCallLink}
-                    disabled={!selectedContactId || isGeneratingNewCallLink}
-                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-500 px-6 py-3 text-base font-semibold text-white transition-all hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isGeneratingNewCallLink ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Génération...
-                      </>
-                    ) : (
-                      <>
-                        <Video className="h-5 w-5" />
-                        🎥 Générer Lien Visio
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={handleCloseNewCallModal}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-all hover:bg-slate-700"
-                  >
-                    Annuler
-                  </button>
-                </div>
-              ) : (
-                /* Step 2: Show Link and Join Button */
-                <div className="space-y-4">
-                  {/* Link Display */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Lien à envoyer :
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newCallGeneratedLink}
-                        readOnly
-                        className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none"
-                      />
-                      <button
-                        onClick={handleCopyNewCallLink}
-                        className={cn(
-                          'flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all',
-                          newCallLinkCopied
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                        )}
-                      >
-                        {newCallLinkCopied ? (
-                          <>
-                            <Check className="h-4 w-4" />
-                            Copié
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-4 w-4" />
-                            Copier
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Join Button - Internal route */}
-                  <button
-                    onClick={handleJoinNewCall}
-                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-500 px-6 py-3 text-base font-semibold text-white transition-all hover:bg-purple-600"
-                  >
-                    <Phone className="h-5 w-5" />
-                    📞 Rejoindre l'appel
-                  </button>
-                </div>
-              )}
+              <button
+                onClick={handleJoinNewCall}
+                disabled={!selectedContactId}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-500 px-6 py-3 text-base font-semibold text-white transition-all hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Video className="h-5 w-5" />
+                Lancer l'appel Google Meet
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Video Call Overlay */}
+      {/* COCKPIT OVERLAY (Visible during call) */}
       {isCallActive && currentCall && (
         <VideoCallOverlay
           isOpen={isCallActive}
@@ -813,7 +555,7 @@ export function CallsPage() {
         />
       )}
 
-      {/* No Answer Modal (Prospect calls only) */}
+      {/* Post-Call Modals */}
       <NoAnswerModal
         isOpen={isNoAnswerModalOpen}
         onClose={() => setIsNoAnswerModalOpen(false)}
@@ -821,7 +563,6 @@ export function CallsPage() {
         prospectName={currentCall?.name || ''}
       />
 
-      {/* Call Summary Modal (Manual prospect calls only) */}
       <CallSummaryModal
         isOpen={isCallSummaryModalOpen}
         onClose={() => setIsCallSummaryModalOpen(false)}
@@ -830,20 +571,18 @@ export function CallsPage() {
         offerPrice={1500}
       />
 
-      {/* AI Analysis Toast (AI calls only) */}
       {showAiAnalysisToast && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[70]">
           <div className="flex items-center gap-3 px-6 py-4 bg-purple-500/20 border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
             <Sparkles className="h-5 w-5 text-purple-400 animate-pulse" />
             <div>
               <p className="text-sm font-semibold text-white">🤖 Analyse IA en cours...</p>
-              <p className="text-xs text-purple-300 mt-0.5">Les données seront sauvegardées automatiquement</p>
+              <p className="text-xs text-purple-300 mt-0.5">Sauvegarde auto.</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Prospect Detail View */}
       {selectedProspect && (
         <ProspectView
           prospect={selectedProspect}
@@ -855,95 +594,11 @@ export function CallsPage() {
         />
       )}
 
-      {/* Internal Contact Detail View */}
       {selectedInternalContact && (
         <InternalContactModal
           contact={selectedInternalContact}
           onClose={() => setSelectedInternalContact(null)}
         />
-      )}
-
-      {/* Link Generation Modal */}
-      {isLinkModalOpen && generatedLink && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => {
-              setIsLinkModalOpen(false)
-              setGeneratedLink(null)
-              setIsCopied(false)
-            }}
-          />
-
-          {/* Modal */}
-          <div className="relative w-full max-w-lg rounded-xl bg-slate-900 p-6 shadow-2xl ring-1 ring-slate-800">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-xl font-bold text-white">🎥 Votre lien de réunion est prêt</h3>
-                <p className="mt-1 text-sm text-slate-400">Partagez ce lien avec vos participants</p>
-              </div>
-              <button
-                onClick={() => {
-                  setIsLinkModalOpen(false)
-                  setGeneratedLink(null)
-                  setIsCopied(false)
-                }}
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Link Display */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Lien à envoyer :
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={generatedLink}
-                    readOnly
-                    className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none"
-                  />
-                  <button
-                    onClick={handleCopyLink}
-                    className={cn(
-                      'flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all',
-                      isCopied
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    )}
-                  >
-                    {isCopied ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Copié
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4" />
-                        Copier
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Join Button - Internal route correction */}
-              <button
-                onClick={handleJoinGeneratedCall}
-                className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-500 px-6 py-3 text-base font-semibold text-white transition-all hover:bg-purple-600"
-              >
-                <Video className="h-5 w-5" />
-                🚀 Rejoindre l'appel
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   )
