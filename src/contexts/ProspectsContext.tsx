@@ -1,11 +1,11 @@
-// Remplacer le contenu de src/contexts/ProspectsContext.tsx
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
-import { useAuth } from './AuthContext' // Ajout de l'Auth
+import { useAuth } from './AuthContext'
 
+// Mise à jour de l'interface pour inclure call_notes (format DB)
 export interface Prospect {
   id: number
-  user_id: string // Ajout du champ user_id
+  user_id: string
   company: string
   contact: string
   email: string
@@ -15,6 +15,13 @@ export interface Prospect {
   notes?: string
   created_at?: string
   last_contact?: string
+  // ✅ AJOUT CRITIQUE POUR SUPABASE ET LE BUILD
+  call_notes?: {
+    id: string
+    date: string
+    content: string
+    author?: string
+  }[]
 }
 
 interface ProspectsContextType {
@@ -30,7 +37,7 @@ const ProspectsContext = createContext<ProspectsContextType | undefined>(undefin
 export function ProspectsProvider({ children }: { children: ReactNode }) {
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [loading, setLoading] = useState(true)
-  const { user } = useAuth() // On récupère l'utilisateur connecté
+  const { user } = useAuth()
 
   useEffect(() => {
     if (user) fetchProspects()
@@ -42,7 +49,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('prospects')
         .select('*')
-        .eq('user_id', user.id) // SÉCURITÉ : Filtre par utilisateur
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -58,7 +65,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('prospects')
-        .insert([{ ...prospect, user_id: user.id }]) // LIAISON : Ajout user_id
+        .insert([{ ...prospect, user_id: user.id }])
         .select()
 
       if (error) throw error
@@ -74,7 +81,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
         .from('prospects')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', user.id) // SÉCURITÉ : Vérification propriété
+        .eq('user_id', user.id)
 
       if (error) throw error
       setProspects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
@@ -89,7 +96,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
         .from('prospects')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id) // SÉCURITÉ
+        .eq('user_id', user.id)
 
       if (error) throw error
       setProspects(prev => prev.filter(p => p.id !== id))
