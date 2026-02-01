@@ -13,10 +13,11 @@ import {
   Tag,
   MessageCircle,
   AlertCircle,
-  CreditCard, // Ajout icône Paiement
-  Wallet,     // Ajout icône Portefeuille
-  ClipboardList, // NOUVEAU : Icône pour l'historique des notes
-  Clock          // NOUVEAU : Icône horloge
+  CreditCard,
+  Wallet,
+  ClipboardList,
+  Clock,
+  Plus
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
@@ -34,7 +35,7 @@ const parsePrice = (priceString: string): number => {
   return isNaN(parsed) ? 0 : parsed
 }
 
-// NOUVEAU : Extension du type Prospect pour inclure l'historique des notes d'appel
+// Extension du type Prospect pour inclure l'historique des notes d'appel
 interface ExtendedProspect extends Prospect {
   callNotes?: {
     id: string
@@ -85,7 +86,6 @@ export function ProspectView({
 
   const availableOffers = offers.filter((o) => o.status === 'active' && !isExpired(o))
 
-  // MODIFIÉ : On utilise le type étendu pour gérer callNotes
   const [localProspect, setLocalProspect] = useState<ExtendedProspect>(prospect)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -110,14 +110,16 @@ export function ProspectView({
   const [editedOfferName, setEditedOfferName] = useState(prospect.offer || '')
   const [editedValue, setEditedValue] = useState(prospect.value || 0)
 
-  // PAYMENT STATES (Nouveau)
+  // PAYMENT STATES
   const [editingPayment, setEditingPayment] = useState(false)
   const [paymentMode, setPaymentMode] = useState<'cash' | 'installments'>('cash')
   const [installments, setInstallments] = useState(1)
-  const [commissionRate, setCommissionRate] = useState(10) // Défaut 10%
+  const [commissionRate, setCommissionRate] = useState(10)
 
-  // NOUVEAU : État pour l'accordéon des notes d'appel
+  // CALL NOTES STATE
   const [isCallNotesOpen, setIsCallNotesOpen] = useState(true)
+  const [isAddingNote, setIsAddingNote] = useState(false)
+  const [newNoteContent, setNewNoteContent] = useState('')
 
   const selectedOfferObj = editedOfferId 
     ? availableOffers.find(o => String(o.id) === editedOfferId)
@@ -125,10 +127,8 @@ export function ProspectView({
   
   const hasFormulas = selectedOfferObj?.formulas && selectedOfferObj.formulas.length > 0
 
-  // Mise à jour auto de la commission si l'offre change
   useEffect(() => {
     if (selectedOfferObj) {
-      // On essaie de récupérer la commission de la formule ou de l'offre
       let rate = parsePrice(selectedOfferObj.commission)
       if (hasFormulas && editedFormulaId) {
         const formula = selectedOfferObj.formulas?.find(f => f.id === editedFormulaId)
@@ -154,6 +154,40 @@ export function ProspectView({
     handleOptimisticUpdate({ notes: tempNotes })
     setEditingNotes(false)
   }
+
+  // --- GESTION DES NOTES D'APPEL ---
+  
+  const handleAddManualNote = () => {
+    if (!newNoteContent.trim()) return
+
+    const newNote = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      content: newNoteContent,
+      author: 'Manuel'
+    }
+
+    const updatedNotes = [newNote, ...(localProspect.callNotes || [])]
+
+    handleOptimisticUpdate({
+      callNotes: updatedNotes
+    })
+
+    setNewNoteContent('')
+    setIsAddingNote(false)
+  }
+
+  // NOUVEAU : Fonction de suppression
+  const handleDeleteNote = (noteId: string) => {
+    if (!confirm("Voulez-vous vraiment supprimer cette note ?")) return
+
+    const updatedNotes = (localProspect.callNotes || []).filter(n => n.id !== noteId)
+    
+    handleOptimisticUpdate({
+      callNotes: updatedNotes
+    })
+  }
+  // ---------------------------------
 
   const handleSaveClient = () => {
     const nameParts = editedContact.trim().split(' ')
@@ -230,9 +264,7 @@ export function ProspectView({
     setEditingOffer(false)
   }
 
-  // --- SAVE PAYMENT ---
   const handleSavePayment = () => {
-    // Ici on met à jour le montant final si l'utilisateur l'a changé dans la section paiement
     handleOptimisticUpdate({
       value: editedValue
     })
@@ -263,7 +295,6 @@ export function ProspectView({
     }
   }
 
-  // Calculs financiers
   const monthlyAmount = editedValue / (installments || 1)
   const commissionAmount = (editedValue * commissionRate) / 100
 
@@ -329,7 +360,7 @@ export function ProspectView({
 
             <div className="flex-1 space-y-6 p-6">
                 
-                {/* SECTION PAIEMENT (Visible seulement si Gagné) */}
+                {/* SECTION PAIEMENT */}
                 {localProspect.stage === 'won' && (
                   <div className="animate-in slide-in-from-top-4 fade-in duration-300">
                     <div className="mb-3 flex items-center justify-between">
@@ -343,7 +374,6 @@ export function ProspectView({
 
                     {editingPayment ? (
                       <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
-                        {/* Montant */}
                         <div>
                           <label className="text-xs text-slate-400">Montant final (€)</label>
                           <input 
@@ -353,53 +383,21 @@ export function ProspectView({
                             className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
                           />
                         </div>
-
-                        {/* Mode */}
                         <div className="flex rounded-lg bg-slate-900 p-1">
-                          <button
-                            type="button"
-                            onClick={() => { setPaymentMode('cash'); setInstallments(1); }}
-                            className={cn(
-                              "flex-1 rounded-md py-1.5 text-xs font-medium transition-all",
-                              paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"
-                            )}
-                          >
-                            Comptant
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setPaymentMode('installments')}
-                            className={cn(
-                              "flex-1 rounded-md py-1.5 text-xs font-medium transition-all",
-                              paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"
-                            )}
-                          >
-                            Plusieurs fois
-                          </button>
+                          <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white")}>Comptant</button>
+                          <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white")}>Plusieurs fois</button>
                         </div>
-
-                        {/* Mensualités */}
                         {paymentMode === 'installments' && (
                           <div className="animate-in fade-in slide-in-from-top-1">
                             <label className="text-xs text-slate-400">Nombre de mensualités</label>
-                            <select
-                              value={installments}
-                              onChange={(e) => setInstallments(parseInt(e.target.value))}
-                              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
-                            >
-                              {[2, 3, 4, 5, 6, 10, 12].map(n => (
-                                <option key={n} value={n}>{n} fois ({ (editedValue/n).toFixed(2) }€/mois)</option>
-                              ))}
+                            <select value={installments} onChange={(e) => setInstallments(parseInt(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+                              {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{n} fois ({ (editedValue/n).toFixed(2) }€/mois)</option>)}
                             </select>
                           </div>
                         )}
-
-                        {/* Commission Box */}
                         <div className="rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">
-                              <Wallet className="h-3 w-3" /> Ta Commission ({commissionRate}%)
-                            </span>
+                            <span className="text-xs font-medium text-emerald-400 flex items-center gap-1"><Wallet className="h-3 w-3" /> Ta Commission ({commissionRate}%)</span>
                             <span className="text-lg font-bold text-emerald-400">{commissionAmount.toFixed(2)}€</span>
                           </div>
                           {paymentMode === 'installments' && (
@@ -408,10 +406,7 @@ export function ProspectView({
                             </p>
                           )}
                         </div>
-
-                        <button onClick={handleSavePayment} className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500">
-                          Valider les détails
-                        </button>
+                        <button onClick={handleSavePayment} className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500">Valider les détails</button>
                       </div>
                     ) : (
                       <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
@@ -424,16 +419,14 @@ export function ProspectView({
                           <span className="text-sm font-bold text-emerald-400">+{commissionAmount.toFixed(2)}€</span>
                         </div>
                         <div className="pt-2 border-t border-emerald-500/20 text-center">
-                          <span className="text-xs font-medium text-emerald-300">
-                            {paymentMode === 'cash' ? 'Paiement Comptant' : `Paiement en ${installments}x`}
-                          </span>
+                          <span className="text-xs font-medium text-emerald-300">{paymentMode === 'cash' ? 'Paiement Comptant' : `Paiement en ${installments}x`}</span>
                         </div>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* --- NOUVEAU : HISTORIQUE DES NOTES D'APPEL --- */}
+                {/* --- HISTORIQUE DES NOTES D'APPEL --- */}
                 <div>
                   <div 
                     className="mb-3 flex items-center justify-between cursor-pointer"
@@ -450,9 +443,46 @@ export function ProspectView({
 
                   {isCallNotesOpen && (
                     <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                      
+                      {/* BOUTON AJOUTER NOTE */}
+                      {!isAddingNote ? (
+                        <button 
+                          onClick={() => setIsAddingNote(true)}
+                          className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 bg-slate-800/30 py-2.5 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-all"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Ajouter une note manuelle
+                        </button>
+                      ) : (
+                        <div className="rounded-lg border border-slate-700 bg-slate-800 p-3 animate-in fade-in zoom-in-95">
+                          <textarea
+                            value={newNoteContent}
+                            onChange={(e) => setNewNoteContent(e.target.value)}
+                            placeholder="Écrivez votre note d'appel..."
+                            className="w-full rounded-md bg-slate-900 border border-slate-700 p-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 min-h-[80px]"
+                            autoFocus
+                          />
+                          <div className="mt-2 flex justify-end gap-2">
+                            <button 
+                              onClick={() => { setIsAddingNote(false); setNewNoteContent(''); }}
+                              className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white"
+                            >
+                              Annuler
+                            </button>
+                            <button 
+                              onClick={handleAddManualNote}
+                              disabled={!newNoteContent.trim()}
+                              className="px-3 py-1.5 rounded bg-purple-600 text-xs font-bold text-white hover:bg-purple-500 disabled:opacity-50 transition-colors"
+                            >
+                              Enregistrer
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* LISTE DES NOTES AVEC BOUTON SUPPRIMER */}
                       {localProspect.callNotes && localProspect.callNotes.length > 0 ? (
                         localProspect.callNotes.map((note) => (
-                          <div key={note.id} className="rounded-lg border border-slate-800 bg-slate-900/50 p-4 shadow-sm hover:border-slate-700 transition-colors">
+                          <div key={note.id} className="group relative rounded-lg border border-slate-800 bg-slate-900/50 p-4 shadow-sm hover:border-slate-700 transition-colors">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 <Clock className="h-3 w-3 text-slate-500" />
@@ -460,9 +490,18 @@ export function ProspectView({
                                   {new Date(note.date).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
-                              {note.author && (
-                                <span className="text-[10px] uppercase tracking-wider text-slate-600">{note.author}</span>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {note.author && (
+                                  <span className="text-[10px] uppercase tracking-wider text-slate-600">{note.author}</span>
+                                )}
+                                <button 
+                                  onClick={() => handleDeleteNote(note.id)}
+                                  className="hidden group-hover:block rounded p-1 text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                  title="Supprimer la note"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
                             <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">
                               {note.content}
@@ -473,7 +512,7 @@ export function ProspectView({
                         <div className="rounded-lg border border-slate-800/50 bg-slate-900/20 p-6 text-center">
                           <ClipboardList className="mx-auto h-8 w-8 text-slate-700 mb-2" />
                           <p className="text-sm text-slate-500">Aucune note d'appel enregistrée.</p>
-                          <p className="text-xs text-slate-600 mt-1">Les notes prises dans le cockpit apparaîtront ici.</p>
+                          <p className="text-xs text-slate-600 mt-1">Ajoutez-en une manuellement ou via le Cockpit.</p>
                         </div>
                       )}
                     </div>
@@ -484,10 +523,7 @@ export function ProspectView({
                 <div>
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white">Infos Offre</h3>
-                    <button
-                      onClick={() => setEditingOffer(!editingOffer)}
-                      className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
-                    >
+                    <button onClick={() => setEditingOffer(!editingOffer)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
                       <Edit2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -508,12 +544,10 @@ export function ProspectView({
                           ))}
                         </select>
                       </div>
-
                       {hasFormulas && (
                         <div className="animate-in fade-in slide-in-from-top-2">
                           <label className="mb-2 flex items-center gap-2 text-xs text-blue-400">
-                            <Tag className="h-3 w-3" />
-                            Choix de la formule
+                            <Tag className="h-3 w-3" /> Choix de la formule
                           </label>
                           <select
                             value={editedFormulaId}
@@ -522,33 +556,15 @@ export function ProspectView({
                           >
                             <option value="">-- Sélectionner la formule --</option>
                             {selectedOfferObj?.formulas?.map((formula) => (
-                              <option key={formula.id} value={formula.id}>
-                                {formula.name} - {formula.price}€
-                              </option>
+                              <option key={formula.id} value={formula.id}>{formula.name} - {formula.price}€</option>
                             ))}
                           </select>
                         </div>
                       )}
-
-                      {editedValue > 0 && (
-                        <p className="text-xs font-medium text-emerald-400 text-right">
-                          Nouveau montant : {editedValue.toLocaleString()}€
-                        </p>
-                      )}
-
+                      {editedValue > 0 && <p className="text-xs font-medium text-emerald-400 text-right">Nouveau montant : {editedValue.toLocaleString()}€</p>}
                       <div className="flex gap-2">
-                        <button
-                          onClick={handleSaveOffer}
-                          className="flex-1 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-600"
-                        >
-                          Sauvegarder
-                        </button>
-                        <button
-                          onClick={handleCancelOffer}
-                          className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-700"
-                        >
-                          Annuler
-                        </button>
+                        <button onClick={handleSaveOffer} className="flex-1 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-600">Sauvegarder</button>
+                        <button onClick={handleCancelOffer} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-700">Annuler</button>
                       </div>
                     </div>
                   ) : (
@@ -560,9 +576,7 @@ export function ProspectView({
                         </div>
                         <div className="text-right">
                           <p className="text-sm text-slate-400">Montant</p>
-                          <p className="mt-1 text-lg font-bold text-blue-400">
-                            <MaskedText value={`${(localProspect.value || 0).toLocaleString()}€`} type="number" />
-                          </p>
+                          <p className="mt-1 text-lg font-bold text-blue-400"><MaskedText value={`${(localProspect.value || 0).toLocaleString()}€`} type="number" /></p>
                         </div>
                       </div>
                     </div>
@@ -573,29 +587,14 @@ export function ProspectView({
                 <div>
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white">Fiche Client</h3>
-                    <button
-                      onClick={() => setEditingClient(!editingClient)}
-                      className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
-                    >
+                    <button onClick={() => setEditingClient(!editingClient)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
                       <Edit2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                   {editingClient ? (
                     <div className="space-y-3">
-                      <input
-                        type="text"
-                        value={editedContact}
-                        onChange={(e) => setEditedContact(e.target.value)}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
-                        placeholder="Nom"
-                      />
-                      <input
-                        type="text"
-                        value={editedCompany}
-                        onChange={(e) => setEditedCompany(e.target.value)}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
-                        placeholder="Entreprise"
-                      />
+                      <input type="text" value={editedContact} onChange={(e) => setEditedContact(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Nom" />
+                      <input type="text" value={editedCompany} onChange={(e) => setEditedCompany(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Entreprise" />
                       <div className="flex gap-2">
                         <button onClick={handleSaveClient} className="flex-1 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white">Sauvegarder</button>
                         <button onClick={handleCancelClient} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-300">Annuler</button>
@@ -607,18 +606,14 @@ export function ProspectView({
                         <Mail className="h-4 w-4 text-blue-400" />
                         <div className="min-w-0 flex-1">
                           <p className="text-xs text-slate-500">Email</p>
-                          <button onClick={handleOpenGmail} className="truncate text-sm text-slate-300 hover:text-white hover:underline text-left">
-                            <MaskedText value={localProspect.email} type="name" />
-                          </button>
+                          <button onClick={handleOpenGmail} className="truncate text-sm text-slate-300 hover:text-white hover:underline text-left"><MaskedText value={localProspect.email} type="name" /></button>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
                         <Phone className="h-4 w-4 text-emerald-400" />
                         <div className="min-w-0 flex-1">
                           <p className="text-xs text-slate-500">Téléphone</p>
-                          <button onClick={handleOpenWhatsApp} className="text-sm text-slate-300 hover:text-white hover:underline text-left">
-                            <MaskedText value={localProspect.phone} type="name" />
-                          </button>
+                          <button onClick={handleOpenWhatsApp} className="text-sm text-slate-300 hover:text-white hover:underline text-left"><MaskedText value={localProspect.phone} type="name" /></button>
                         </div>
                       </div>
                     </div>
@@ -635,12 +630,7 @@ export function ProspectView({
                   </div>
                   {editingNotes ? (
                     <div>
-                      <textarea
-                        value={tempNotes}
-                        onChange={(e) => setTempNotes(e.target.value)}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none"
-                        rows={4}
-                      />
+                      <textarea value={tempNotes} onChange={(e) => setTempNotes(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none" rows={4} />
                       <div className="mt-2 flex gap-2">
                         <button onClick={handleSaveNotes} className="rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white">Enregistrer</button>
                         <button onClick={() => setEditingNotes(false)} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-300">Annuler</button>
@@ -656,12 +646,8 @@ export function ProspectView({
 
             {/* Footer */}
             <div className="border-t border-slate-800 bg-slate-950 p-6">
-              <button
-                onClick={handleDeleteProspect}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20"
-              >
-                <Trash2 className="h-4 w-4" />
-                Supprimer le prospect
+              <button onClick={handleDeleteProspect} className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20">
+                <Trash2 className="h-4 w-4" /> Supprimer le prospect
               </button>
             </div>
           </div>
