@@ -31,10 +31,32 @@ export default function CallRoom() {
 
   // Recording State
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0); // Nouveau state pour le timer
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null); // Ref pour nettoyer les streams
 
   const [userScript, setUserScript] = useState(`1. INTRODUCTION\n- "Bonjour..."\n\n2. DÉCOUVERTE\n- "Quels sont vos objectifs ?"`);
+
+  // --- TIMER LOGIC ---
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isRecording) {
+      interval = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setRecordingSeconds(0);
+    }
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+  // -------------------
 
   useEffect(() => {
     const fetchUserScript = async () => {
@@ -101,12 +123,7 @@ export default function CallRoom() {
       });
 
       frame.on('left-meeting', () => {
-        saveCallDuration();
-        if (callId) {
-          navigate(`/appels/${callId}`);
-        } else {
-          navigate('/agenda');
-        }
+        // La logique de navigation est gérée dans leaveCall maintenant pour assurer l'enregistrement
       });
 
       await frame.join({ url });
@@ -125,17 +142,21 @@ export default function CallRoom() {
     };
   }, [url, navigate, callId]);
 
-  // --- 3. RECORDING LOGIC (MISE À JOUR MP4) ---
+  // --- RECORDING LOGIC ROBUSTE ---
   const startRecording = async () => {
     try {
+      // 1. Capturer l'écran et le son système
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true
       });
+      
+      // 2. Capturer le micro
       const micStream = await navigator.mediaDevices.getUserMedia({
         audio: true
       });
 
+      // 3. Mixer les audios
       const audioContext = new AudioContext();
       const dest = audioContext.createMediaStreamDestination();
 
@@ -143,49 +164,70 @@ export default function CallRoom() {
         const screenSource = audioContext.createMediaStreamSource(screenStream);
         screenSource.connect(dest);
       }
+      
       if (micStream.getAudioTracks().length > 0) {
         const micSource = audioContext.createMediaStreamSource(micStream);
         micSource.connect(dest);
       }
 
+      // 4. Combiner vidéo et mix audio
       const combinedStream = new MediaStream([
         ...screenStream.getVideoTracks(),
         ...dest.stream.getAudioTracks()
       ]);
 
-      // MODIFICATION : Détection du format MP4 ou repli sur WebM
+      streamRef.current = combinedStream;
+
       const mimeType = MediaRecorder.isTypeSupported('video/mp4') 
         ? 'video/mp4' 
         : 'video/webm';
 
       const recorder = new MediaRecorder(combinedStream, { mimeType });
-      chunksRef.current = [];
+      chunksRef.current = []; // Reset chunks
+
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
       };
+
+      // Fonction de sauvegarde déclenchée à l'arrêt
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
+        if (blob.size === 0) return; // Évite les fichiers vides
+
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        
-        // MODIFICATION : Extension de fichier dynamique (.mp4 ou .webm)
         const extension = mimeType === 'video/mp4' ? 'mp4' : 'webm';
-        a.download = `recording-${new Date().toISOString()}.${extension}`;
-        
+        const filename = `Call_Recording_${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.${extension}`;
+        a.download = filename;
+        document.body.appendChild(a);
         a.click();
+        
+        // Nettoyage
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+
+        // Arrêt des pistes
         screenStream.getTracks().forEach(track => track.stop());
         micStream.getTracks().forEach(track => track.stop());
         audioContext.close();
       };
 
-      recorder.start();
+      recorder.start(1000); // Sauvegarde des chunks toutes les 1s pour éviter la perte de données
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
+
+      // Arrêt auto si l'utilisateur arrête le partage via l'interface du navigateur
       screenStream.getVideoTracks()[0].onended = () => stopRecording();
+
     } catch (err) {
       console.error("Recording failed", err);
-      alert("Impossible de lancer l'enregistrement.");
+      alert("Impossible de lancer l'enregistrement. Vérifiez les permissions.");
+      setIsRecording(false);
     }
   };
 
@@ -219,11 +261,32 @@ export default function CallRoom() {
     }
   };
 
-  const leaveCall = () => {
+  // --- LOGIQUE DE DÉPART CORRIGÉE ---
+  const leaveCall = async () => {
+    // 1. Si enregistrement en cours, on arrête et on attend un peu pour le téléchargement
+    if (isRecording && mediaRecorderRef.current) {
+        stopRecording();
+        // Petit délai pour laisser le temps au navigateur de lancer le téléchargement
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // 2. Sauvegarde des stats
     saveCallDuration();
-    callFrameRef.current?.leave();
-    if (callId) { navigate(`/appels/${callId}`); } else { navigate('/agenda'); }
+
+    // 3. Nettoyage Daily
+    if (callFrameRef.current) {
+        await callFrameRef.current.leave();
+        callFrameRef.current.destroy();
+    }
+
+    // 4. Navigation
+    if (callId) { 
+        navigate(`/appels/${callId}`); 
+    } else { 
+        navigate('/agenda'); 
+    }
   };
+
   const toggleMic = () => {
     const current = callFrameRef.current?.participants().local.audio;
     callFrameRef.current?.setLocalAudio(!current);
@@ -308,7 +371,7 @@ export default function CallRoom() {
                         }`}
                     >
                         <Monitor size={24} />
-                        <span>{isRecording ? 'Enregistrement...' : 'Enregistrer'}</span>
+                        <span>{isRecording ? `REC (${formatDuration(recordingSeconds)})` : 'Enregistrer'}</span>
                     </button>
                     <div className="w-px h-10 bg-gray-600/50 mx-2"></div>
                     <button onClick={leaveCall} className="p-4 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg hover:scale-105 transition-transform">
