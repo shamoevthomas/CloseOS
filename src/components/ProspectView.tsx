@@ -14,7 +14,9 @@ import {
   MessageCircle,
   AlertCircle,
   CreditCard, // Ajout icône Paiement
-  Wallet      // Ajout icône Portefeuille
+  Wallet,     // Ajout icône Portefeuille
+  ClipboardList, // NOUVEAU : Icône pour l'historique des notes
+  Clock          // NOUVEAU : Icône horloge
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
@@ -32,6 +34,16 @@ const parsePrice = (priceString: string): number => {
   return isNaN(parsed) ? 0 : parsed
 }
 
+// NOUVEAU : Extension du type Prospect pour inclure l'historique des notes d'appel
+interface ExtendedProspect extends Prospect {
+  callNotes?: {
+    id: string
+    date: string
+    content: string
+    author?: string
+  }[]
+}
+
 const ALL_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500' },
@@ -44,7 +56,7 @@ const ALL_STAGES = [
 interface ProspectViewProps {
   prospect: Prospect
   onClose: () => void
-  onUpdate?: (prospectId: number, updates: Partial<Prospect>) => void
+  onUpdate?: (prospectId: number, updates: Partial<ExtendedProspect>) => void
   onDelete?: (prospectId: number) => void
   onCreateEvent?: () => void
   onStartCall?: (withAi: boolean) => void
@@ -73,7 +85,8 @@ export function ProspectView({
 
   const availableOffers = offers.filter((o) => o.status === 'active' && !isExpired(o))
 
-  const [localProspect, setLocalProspect] = useState(prospect)
+  // MODIFIÉ : On utilise le type étendu pour gérer callNotes
+  const [localProspect, setLocalProspect] = useState<ExtendedProspect>(prospect)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -103,6 +116,9 @@ export function ProspectView({
   const [installments, setInstallments] = useState(1)
   const [commissionRate, setCommissionRate] = useState(10) // Défaut 10%
 
+  // NOUVEAU : État pour l'accordéon des notes d'appel
+  const [isCallNotesOpen, setIsCallNotesOpen] = useState(true)
+
   const selectedOfferObj = editedOfferId 
     ? availableOffers.find(o => String(o.id) === editedOfferId)
     : availableOffers.find(o => o.name === (localProspect.offer?.split(' - ')[0] || localProspect.offer))
@@ -127,7 +143,7 @@ export function ProspectView({
     setTimeout(() => setErrorMessage(null), 3000)
   }
 
-  const handleOptimisticUpdate = (updates: Partial<Prospect>) => {
+  const handleOptimisticUpdate = (updates: Partial<ExtendedProspect>) => {
     setLocalProspect(prev => ({ ...prev, ...updates }))
     if (onUpdate) {
       onUpdate(prospect.id, updates)
@@ -416,6 +432,53 @@ export function ProspectView({
                     )}
                   </div>
                 )}
+
+                {/* --- NOUVEAU : HISTORIQUE DES NOTES D'APPEL --- */}
+                <div>
+                  <div 
+                    className="mb-3 flex items-center justify-between cursor-pointer"
+                    onClick={() => setIsCallNotesOpen(!isCallNotesOpen)}
+                  >
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <ClipboardList className="h-4 w-4 text-purple-400" /> 
+                      Notes d'Appel
+                    </h3>
+                    <button className={cn("rounded p-1 text-slate-400 hover:text-white transition-transform", isCallNotesOpen ? "rotate-90" : "")}>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  {isCallNotesOpen && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                      {localProspect.callNotes && localProspect.callNotes.length > 0 ? (
+                        localProspect.callNotes.map((note) => (
+                          <div key={note.id} className="rounded-lg border border-slate-800 bg-slate-900/50 p-4 shadow-sm hover:border-slate-700 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-3 w-3 text-slate-500" />
+                                <span className="text-xs font-medium text-purple-400">
+                                  {new Date(note.date).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              {note.author && (
+                                <span className="text-[10px] uppercase tracking-wider text-slate-600">{note.author}</span>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">
+                              {note.content}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="rounded-lg border border-slate-800/50 bg-slate-900/20 p-6 text-center">
+                          <ClipboardList className="mx-auto h-8 w-8 text-slate-700 mb-2" />
+                          <p className="text-sm text-slate-500">Aucune note d'appel enregistrée.</p>
+                          <p className="text-xs text-slate-600 mt-1">Les notes prises dans le cockpit apparaîtront ici.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Infos Offre */}
                 <div>
