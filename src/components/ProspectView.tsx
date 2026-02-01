@@ -38,7 +38,7 @@ const parsePrice = (priceString: string): number => {
   return isNaN(parsed) ? 0 : parsed
 }
 
-// CORRECTION 1 : Extension du type pour supporter les deux formats (App & DB)
+// Extension du type pour l'affichage local
 interface ExtendedProspect extends Prospect {
   callNotes?: {
     id: string
@@ -46,7 +46,7 @@ interface ExtendedProspect extends Prospect {
     content: string
     author?: string
   }[]
-  call_notes?: { // Format Supabase (snake_case)
+  call_notes?: {
     id: string
     date: string
     content: string
@@ -102,10 +102,10 @@ export function ProspectView({
   const [activeTab, setActiveTab] = useState<'info' | 'notes'>('info')
 
   useEffect(() => {
-    // CORRECTION 2 : Chargement intelligent des notes depuis la DB
     const loadedProspect = { ...prospect } as ExtendedProspect
     
-    // Si on reçoit 'call_notes' de Supabase mais que 'callNotes' est vide dans l'app, on remplit
+    // Si on reçoit 'call_notes' de Supabase (snake_case)
+    // On remplit 'callNotes' (camelCase) pour l'affichage
     if (loadedProspect.call_notes && (!loadedProspect.callNotes || loadedProspect.callNotes.length === 0)) {
       loadedProspect.callNotes = loadedProspect.call_notes
     }
@@ -162,20 +162,25 @@ export function ProspectView({
     setTimeout(() => setErrorMessage(null), 3000)
   }
 
-  // --- COEUR DE LA CORRECTION : SAUVEGARDE UNIFIÉE ---
+  // --- CORRECTION MAJEURE ICI ---
   const handleOptimisticUpdate = (updates: Partial<ExtendedProspect>) => {
-    // 1. Mise à jour locale (pour que l'interface réagisse vite)
+    // 1. Mise à jour de l'UI locale instantanée
     setLocalProspect(prev => ({ ...prev, ...updates }))
     
-    // 2. Préparation pour la Base de Données
-    const dbUpdates = { ...updates }
+    // 2. Préparation de l'objet pour Supabase
+    // On utilise 'any' pour pouvoir supprimer des propriétés dynamiquement sans erreur TS
+    const dbUpdates: any = { ...updates }
     
-    // Si on a touché aux notes d'appel, on crée le champ 'call_notes' pour Supabase
+    // Si on a mis à jour callNotes (format UI), on transfère vers call_notes (format DB)
     if (updates.callNotes) {
         dbUpdates.call_notes = updates.callNotes
     }
 
-    // 3. Envoi au parent (qui appellera Supabase)
+    // ⛔️ NETTOYAGE OBLIGATOIRE : On supprime 'callNotes' car Supabase ne connait pas cette colonne
+    // Si on laisse ça, Supabase rejette silencieusement toute la requête
+    delete dbUpdates.callNotes 
+
+    // 3. Envoi au contexte
     if (onUpdate) {
       onUpdate(prospect.id, dbUpdates)
     }
@@ -186,7 +191,6 @@ export function ProspectView({
     setEditingNotes(false)
   }
 
-  // --- GESTION DES NOTES D'APPEL ---
   const handleAddManualNote = () => {
     if (!newNoteContent.trim()) return
 
@@ -199,7 +203,6 @@ export function ProspectView({
 
     const updatedNotes = [newNote, ...(localProspect.callNotes || [])]
 
-    // On déclenche la mise à jour (qui va créer call_notes automatiquement)
     handleOptimisticUpdate({
       callNotes: updatedNotes
     })
@@ -217,7 +220,6 @@ export function ProspectView({
       callNotes: updatedNotes
     })
   }
-  // ---------------------------------
 
   const handleSaveClient = () => {
     const nameParts = editedContact.trim().split(' ')
@@ -725,7 +727,7 @@ export function ProspectView({
 
             </div>
 
-            {/* Footer */}
+            {/* Footer */ }
             <div className="border-t border-slate-800 bg-slate-950 p-6">
               <button onClick={handleDeleteProspect} className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20">
                 <Trash2 className="h-4 w-4" /> Supprimer le prospect

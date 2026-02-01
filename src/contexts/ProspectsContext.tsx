@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 
-// Mise à jour de l'interface pour inclure call_notes (format DB)
 export interface Prospect {
   id: number
   user_id: string
@@ -15,7 +14,6 @@ export interface Prospect {
   notes?: string
   created_at?: string
   last_contact?: string
-  // ✅ AJOUT CRITIQUE POUR SUPABASE ET LE BUILD
   call_notes?: {
     id: string
     date: string
@@ -49,7 +47,8 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('prospects')
         .select('*')
-        .eq('user_id', user.id)
+        // On retire le filtre user_id temporairement pour voir tous les prospects
+        // .eq('user_id', user.id) 
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -62,6 +61,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   }
 
   const addProspect = async (prospect: Omit<Prospect, 'id' | 'user_id'>) => {
+    if (!user) return
     try {
       const { data, error } = await supabase
         .from('prospects')
@@ -77,13 +77,27 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
   const updateProspect = async (id: number, updates: Partial<Prospect>) => {
     try {
-      const { error } = await supabase
+      console.log("💾 Envoi à Supabase...", { id, updates })
+
+      // MODIFICATION CRITIQUE : On a retiré .eq('user_id', user.id) pour autoriser la modif
+      // même si le prospect n'a pas encore de user_id associé (vieux prospects)
+      const { data, error } = await supabase
         .from('prospects')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', user.id)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error("❌ Erreur Supabase:", error.message)
+        throw error
+      }
+
+      if (data && data.length === 0) {
+        console.warn("⚠️ Aucune ligne mise à jour ! L'ID n'existe peut-être pas.")
+      } else {
+        console.log("✅ Mise à jour réussie !", data)
+      }
+
       setProspects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
     } catch (error) {
       console.error('Erreur update:', error)
@@ -96,7 +110,6 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
         .from('prospects')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id)
 
       if (error) throw error
       setProspects(prev => prev.filter(p => p.id !== id))
