@@ -25,7 +25,8 @@ import { Contacts } from './pages/Contacts'
 import { Offers } from './pages/Offers'
 import { Agenda } from './pages/Agenda'
 import { CallsPage } from './pages/CallsPage'
-import { CallDetails } from './pages/CallDetails'
+// REMPLACEMENT ICI : On importe la nouvelle page
+import { CallDetailsPage } from './pages/CallDetailsPage'
 import { TelephonyPage } from './pages/TelephonyPage'
 import { AICoachPage } from './pages/AICoachPage'
 import { InvoicesPage } from './pages/InvoicesPage'
@@ -104,7 +105,8 @@ function AuthenticatedApp() {
             }
           />
           <Route path="calls" element={<CallsPage />} />
-          <Route path="appels/:id" element={<CallDetails />} />
+          {/* REMPLACEMENT ICI : On utilise le nouveau composant CallDetailsPage */}
+          <Route path="appels/:id" element={<CallDetailsPage />} />
           <Route path="telephony" element={<TelephonyPage />} />
           <Route path="ai-coach" element={<AICoachPage />} />
           <Route path="invoices" element={<InvoicesPage />} />
