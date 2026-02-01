@@ -17,7 +17,10 @@ import {
   Wallet,
   ClipboardList,
   Clock,
-  Plus
+  Plus,
+  ChevronDown,
+  ChevronRight,
+  User
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
@@ -89,6 +92,9 @@ export function ProspectView({
   const [localProspect, setLocalProspect] = useState<ExtendedProspect>(prospect)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  // --- NOUVEAU : GESTION DES ONGLETS ---
+  const [activeTab, setActiveTab] = useState<'info' | 'notes'>('info')
+
   useEffect(() => {
     setLocalProspect(prospect)
     setTempNotes(prospect.notes || '')
@@ -117,7 +123,6 @@ export function ProspectView({
   const [commissionRate, setCommissionRate] = useState(10)
 
   // CALL NOTES STATE
-  const [isCallNotesOpen, setIsCallNotesOpen] = useState(true)
   const [isAddingNote, setIsAddingNote] = useState(false)
   const [newNoteContent, setNewNoteContent] = useState('')
 
@@ -177,7 +182,6 @@ export function ProspectView({
     setIsAddingNote(false)
   }
 
-  // NOUVEAU : Fonction de suppression
   const handleDeleteNote = (noteId: string) => {
     if (!confirm("Voulez-vous vraiment supprimer cette note ?")) return
 
@@ -307,7 +311,7 @@ export function ProspectView({
 
       <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
         <div className="w-screen max-w-md">
-          <div className="flex h-full flex-col overflow-y-auto bg-slate-900 shadow-xl ring-1 ring-slate-800">
+          <div className="flex h-full flex-col bg-slate-900 shadow-xl ring-1 ring-slate-800">
             
             {errorMessage && (
               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-xl animate-in fade-in slide-in-from-top-2">
@@ -316,9 +320,9 @@ export function ProspectView({
               </div>
             )}
 
-            {/* Header */}
-            <div className="border-b border-slate-800 bg-slate-950 px-6 py-6">
-              <div className="flex items-start justify-between">
+            {/* Header Fixe */}
+            <div className="border-b border-slate-800 bg-slate-950 px-6 pt-6 pb-0">
+              <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-white">
                     <MaskedText value={localProspect.contact} type="name" />
@@ -332,7 +336,7 @@ export function ProspectView({
                 </button>
               </div>
 
-              <div className="mt-4 flex gap-2">
+              <div className="flex gap-2 mb-6">
                 <button onClick={handleOpenGmail} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-300 transition-all hover:bg-slate-800 hover:text-white">
                   <Mail className="h-4 w-4" /> Email
                 </button>
@@ -344,304 +348,355 @@ export function ProspectView({
                 </button>
               </div>
 
-              <div className="mt-4">
-                <label className="mb-2 block text-xs font-medium text-slate-400">Étape actuelle</label>
-                <select
-                  value={localProspect.stage}
-                  onChange={(e) => handleOptimisticUpdate({ stage: e.target.value })}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+              {/* TABS */}
+              <div className="flex border-b border-slate-800">
+                <button
+                  onClick={() => setActiveTab('info')}
+                  className={cn(
+                    "flex-1 pb-3 text-sm font-medium transition-all relative",
+                    activeTab === 'info' ? "text-white" : "text-slate-500 hover:text-slate-300"
+                  )}
                 >
-                  {ALL_STAGES.map((stage) => (
-                    <option key={stage.id} value={stage.id}>{stage.name}</option>
-                  ))}
-                </select>
+                  Informations
+                  {activeTab === 'info' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('notes')}
+                  className={cn(
+                    "flex-1 pb-3 text-sm font-medium transition-all relative",
+                    activeTab === 'notes' ? "text-white" : "text-slate-500 hover:text-slate-300"
+                  )}
+                >
+                  Notes d'Appel
+                  {activeTab === 'notes' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500" />
+                  )}
+                </button>
               </div>
             </div>
 
-            <div className="flex-1 space-y-6 p-6">
+            {/* Content Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 
-                {/* SECTION PAIEMENT */}
-                {localProspect.stage === 'won' && (
-                  <div className="animate-in slide-in-from-top-4 fade-in duration-300">
-                    <div className="mb-3 flex items-center justify-between">
-                      <h3 className="flex items-center gap-2 text-sm font-bold text-emerald-400">
-                        <CreditCard className="h-4 w-4" /> Détails du Paiement
-                      </h3>
-                      <button onClick={() => setEditingPayment(!editingPayment)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </button>
+                {/* --- ONGLET 1: INFORMATIONS --- */}
+                {activeTab === 'info' && (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+                    
+                    {/* Étape Pipeline */}
+                    <div>
+                        <label className="mb-2 block text-xs font-medium text-slate-400">Étape actuelle</label>
+                        <select
+                        value={localProspect.stage}
+                        onChange={(e) => handleOptimisticUpdate({ stage: e.target.value })}
+                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                        >
+                        {ALL_STAGES.map((stage) => (
+                            <option key={stage.id} value={stage.id}>{stage.name}</option>
+                        ))}
+                        </select>
                     </div>
 
-                    {editingPayment ? (
-                      <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
-                        <div>
-                          <label className="text-xs text-slate-400">Montant final (€)</label>
-                          <input 
-                            type="number" 
-                            value={editedValue} 
-                            onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
-                            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
-                          />
+                    {/* SECTION PAIEMENT */}
+                    {localProspect.stage === 'won' && (
+                      <div className="animate-in slide-in-from-top-4 fade-in duration-300">
+                        <div className="mb-3 flex items-center justify-between">
+                          <h3 className="flex items-center gap-2 text-sm font-bold text-emerald-400">
+                            <CreditCard className="h-4 w-4" /> Détails du Paiement
+                          </h3>
+                          <button onClick={() => setEditingPayment(!editingPayment)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
                         </div>
-                        <div className="flex rounded-lg bg-slate-900 p-1">
-                          <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white")}>Comptant</button>
-                          <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white")}>Plusieurs fois</button>
-                        </div>
-                        {paymentMode === 'installments' && (
-                          <div className="animate-in fade-in slide-in-from-top-1">
-                            <label className="text-xs text-slate-400">Nombre de mensualités</label>
-                            <select value={installments} onChange={(e) => setInstallments(parseInt(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
-                              {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{n} fois ({ (editedValue/n).toFixed(2) }€/mois)</option>)}
-                            </select>
+
+                        {editingPayment ? (
+                          <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+                            <div>
+                              <label className="text-xs text-slate-400">Montant final (€)</label>
+                              <input 
+                                type="number" 
+                                value={editedValue} 
+                                onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
+                                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
+                              />
+                            </div>
+                            <div className="flex rounded-lg bg-slate-900 p-1">
+                              <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white")}>Comptant</button>
+                              <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white")}>Plusieurs fois</button>
+                            </div>
+                            {paymentMode === 'installments' && (
+                              <div className="animate-in fade-in slide-in-from-top-1">
+                                <label className="text-xs text-slate-400">Nombre de mensualités</label>
+                                <select value={installments} onChange={(e) => setInstallments(parseInt(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+                                  {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{n} fois ({ (editedValue/n).toFixed(2) }€/mois)</option>)}
+                                </select>
+                              </div>
+                            )}
+                            <div className="rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-emerald-400 flex items-center gap-1"><Wallet className="h-3 w-3" /> Ta Commission ({commissionRate}%)</span>
+                                <span className="text-lg font-bold text-emerald-400">{commissionAmount.toFixed(2)}€</span>
+                              </div>
+                              {paymentMode === 'installments' && (
+                                <p className="mt-1 text-[10px] text-emerald-300/70">
+                                  Tu recevras : {(commissionAmount / installments).toFixed(2)}€ / mois
+                                </p>
+                              )}
+                            </div>
+                            <button onClick={handleSavePayment} className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500">Valider les détails</button>
+                          </div>
+                        ) : (
+                          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs text-slate-400">Montant Vente</span>
+                              <span className="text-sm font-bold text-white">{editedValue.toLocaleString()}€</span>
+                            </div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs text-slate-400">Commission ({commissionRate}%)</span>
+                              <span className="text-sm font-bold text-emerald-400">+{commissionAmount.toFixed(2)}€</span>
+                            </div>
+                            <div className="pt-2 border-t border-emerald-500/20 text-center">
+                              <span className="text-xs font-medium text-emerald-300">{paymentMode === 'cash' ? 'Paiement Comptant' : `Paiement en ${installments}x`}</span>
+                            </div>
                           </div>
                         )}
-                        <div className="rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-emerald-400 flex items-center gap-1"><Wallet className="h-3 w-3" /> Ta Commission ({commissionRate}%)</span>
-                            <span className="text-lg font-bold text-emerald-400">{commissionAmount.toFixed(2)}€</span>
-                          </div>
-                          {paymentMode === 'installments' && (
-                            <p className="mt-1 text-[10px] text-emerald-300/70">
-                              Tu recevras : {(commissionAmount / installments).toFixed(2)}€ / mois
-                            </p>
-                          )}
-                        </div>
-                        <button onClick={handleSavePayment} className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500">Valider les détails</button>
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-slate-400">Montant Vente</span>
-                          <span className="text-sm font-bold text-white">{editedValue.toLocaleString()}€</span>
-                        </div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-slate-400">Commission ({commissionRate}%)</span>
-                          <span className="text-sm font-bold text-emerald-400">+{commissionAmount.toFixed(2)}€</span>
-                        </div>
-                        <div className="pt-2 border-t border-emerald-500/20 text-center">
-                          <span className="text-xs font-medium text-emerald-300">{paymentMode === 'cash' ? 'Paiement Comptant' : `Paiement en ${installments}x`}</span>
-                        </div>
                       </div>
                     )}
+
+                    {/* Infos Offre */}
+                    <div>
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-white">Infos Offre</h3>
+                        <button onClick={() => setEditingOffer(!editingOffer)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {editingOffer ? (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="mb-2 block text-xs text-slate-400">Sélectionner une offre</label>
+                            <select
+                              value={editedOfferId}
+                              onChange={(e) => handleOfferChange(e.target.value)}
+                              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                            >
+                              <option value="">-- Sélectionner --</option>
+                              {availableOffers.map((offer) => (
+                                <option key={offer.id} value={offer.id}>
+                                  {offer.name} {offer.formulas && offer.formulas.length > 0 ? '(Multi-formules)' : `(${offer.price})`}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          {hasFormulas && (
+                            <div className="animate-in fade-in slide-in-from-top-2">
+                              <label className="mb-2 flex items-center gap-2 text-xs text-blue-400">
+                                <Tag className="h-3 w-3" /> Choix de la formule
+                              </label>
+                              <select
+                                value={editedFormulaId}
+                                onChange={(e) => handleFormulaChange(e.target.value)}
+                                className="w-full rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                              >
+                                <option value="">-- Sélectionner la formule --</option>
+                                {selectedOfferObj?.formulas?.map((formula) => (
+                                  <option key={formula.id} value={formula.id}>{formula.name} - {formula.price}€</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                          {editedValue > 0 && <p className="text-xs font-medium text-emerald-400 text-right">Nouveau montant : {editedValue.toLocaleString()}€</p>}
+                          <div className="flex gap-2">
+                            <button onClick={handleSaveOffer} className="flex-1 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-600">Sauvegarder</button>
+                            <button onClick={handleCancelOffer} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-700">Annuler</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-slate-800 bg-slate-800/50 p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-slate-400">Offre concernée</p>
+                              <p className="mt-1 font-medium text-white">{localProspect.offer || 'N/A'}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm text-slate-400">Montant</p>
+                              <p className="mt-1 text-lg font-bold text-blue-400"><MaskedText value={`${(localProspect.value || 0).toLocaleString()}€`} type="number" /></p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Fiche Client */}
+                    <div>
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-white">Fiche Client</h3>
+                        <button onClick={() => setEditingClient(!editingClient)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {editingClient ? (
+                        <div className="space-y-3">
+                          <input type="text" value={editedContact} onChange={(e) => setEditedContact(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Nom" />
+                          <input type="text" value={editedCompany} onChange={(e) => setEditedCompany(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Entreprise" />
+                          <div className="flex gap-2">
+                            <button onClick={handleSaveClient} className="flex-1 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white">Sauvegarder</button>
+                            <button onClick={handleCancelClient} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-300">Annuler</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
+                            <Mail className="h-4 w-4 text-blue-400" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs text-slate-500">Email</p>
+                              <button onClick={handleOpenGmail} className="truncate text-sm text-slate-300 hover:text-white hover:underline text-left"><MaskedText value={localProspect.email} type="name" /></button>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
+                            <Phone className="h-4 w-4 text-emerald-400" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs text-slate-500">Téléphone</p>
+                              <button onClick={handleOpenWhatsApp} className="text-sm text-slate-300 hover:text-white hover:underline text-left"><MaskedText value={localProspect.phone} type="name" /></button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Notes Internes (Générales) */}
+                    <div>
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-white">Notes Internes</h3>
+                        <button onClick={() => setEditingNotes(!editingNotes)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {editingNotes ? (
+                        <div>
+                          <textarea value={tempNotes} onChange={(e) => setTempNotes(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none" rows={4} />
+                          <div className="mt-2 flex gap-2">
+                            <button onClick={handleSaveNotes} className="rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white">Enregistrer</button>
+                            <button onClick={() => setEditingNotes(false)} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-300">Annuler</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-slate-800 bg-slate-800/50 p-4">
+                          <p className="whitespace-pre-wrap text-sm text-slate-300">{localProspect.notes || 'Aucune note'}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {/* --- HISTORIQUE DES NOTES D'APPEL --- */}
-                <div>
-                  <div 
-                    className="mb-3 flex items-center justify-between cursor-pointer"
-                    onClick={() => setIsCallNotesOpen(!isCallNotesOpen)}
-                  >
-                    <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
-                      <ClipboardList className="h-4 w-4 text-purple-400" /> 
-                      Notes d'Appel
-                    </h3>
-                    <button className={cn("rounded p-1 text-slate-400 hover:text-white transition-transform", isCallNotesOpen ? "rotate-90" : "")}>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-
-                  {isCallNotesOpen && (
-                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                      
-                      {/* BOUTON AJOUTER NOTE */}
-                      {!isAddingNote ? (
-                        <button 
-                          onClick={() => setIsAddingNote(true)}
-                          className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 bg-slate-800/30 py-2.5 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-all"
-                        >
-                          <Plus className="h-3.5 w-3.5" /> Ajouter une note manuelle
-                        </button>
-                      ) : (
-                        <div className="rounded-lg border border-slate-700 bg-slate-800 p-3 animate-in fade-in zoom-in-95">
-                          <textarea
-                            value={newNoteContent}
-                            onChange={(e) => setNewNoteContent(e.target.value)}
-                            placeholder="Écrivez votre note d'appel..."
-                            className="w-full rounded-md bg-slate-900 border border-slate-700 p-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 min-h-[80px]"
-                            autoFocus
-                          />
-                          <div className="mt-2 flex justify-end gap-2">
-                            <button 
-                              onClick={() => { setIsAddingNote(false); setNewNoteContent(''); }}
-                              className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white"
-                            >
-                              Annuler
-                            </button>
-                            <button 
-                              onClick={handleAddManualNote}
-                              disabled={!newNoteContent.trim()}
-                              className="px-3 py-1.5 rounded bg-purple-600 text-xs font-bold text-white hover:bg-purple-500 disabled:opacity-50 transition-colors"
-                            >
-                              Enregistrer
-                            </button>
-                          </div>
+                {/* --- ONGLET 2: NOTES D'APPEL (Page Dédiée) --- */}
+                {activeTab === 'notes' && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                    
+                    {/* BOUTON AJOUTER NOTE */}
+                    {!isAddingNote ? (
+                      <button 
+                        onClick={() => setIsAddingNote(true)}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 bg-slate-800/30 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-all"
+                      >
+                        <Plus className="h-4 w-4" /> Ajouter une note manuelle
+                      </button>
+                    ) : (
+                      <div className="rounded-xl border border-slate-700 bg-slate-800 p-4 shadow-lg animate-in fade-in zoom-in-95">
+                        <h4 className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Nouvelle Note</h4>
+                        <textarea
+                          value={newNoteContent}
+                          onChange={(e) => setNewNoteContent(e.target.value)}
+                          placeholder="Écrivez votre note d'appel ici..."
+                          className="w-full rounded-lg bg-slate-900 border border-slate-700 p-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 min-h-[100px] mb-3"
+                          autoFocus
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            onClick={() => { setIsAddingNote(false); setNewNoteContent(''); }}
+                            className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                          >
+                            Annuler
+                          </button>
+                          <button 
+                            onClick={handleAddManualNote}
+                            disabled={!newNoteContent.trim()}
+                            className="px-4 py-2 rounded-lg bg-purple-600 text-sm font-bold text-white hover:bg-purple-500 disabled:opacity-50 transition-all shadow-lg shadow-purple-900/20"
+                          >
+                            Enregistrer
+                          </button>
                         </div>
-                      )}
+                      </div>
+                    )}
 
-                      {/* LISTE DES NOTES AVEC BOUTON SUPPRIMER */}
+                    <div className="h-px bg-slate-800 my-4" />
+
+                    {/* LISTE DES NOTES (Cellules Déroulantes) */}
+                    <div className="space-y-3">
                       {localProspect.callNotes && localProspect.callNotes.length > 0 ? (
                         localProspect.callNotes.map((note) => (
-                          <div key={note.id} className="group relative rounded-lg border border-slate-800 bg-slate-900/50 p-4 shadow-sm hover:border-slate-700 transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-3 w-3 text-slate-500" />
-                                <span className="text-xs font-medium text-purple-400">
-                                  {new Date(note.date).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                </span>
+                          <details key={note.id} className="group rounded-xl border border-slate-800 bg-slate-900/50 open:bg-slate-900 transition-all overflow-hidden">
+                            <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-slate-800/50 transition-colors select-none list-none [&::-webkit-details-marker]:hidden">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-400 group-open:bg-purple-500/20 group-open:text-purple-400 transition-colors">
+                                  <Calendar className="h-4 w-4" />
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-semibold text-white">
+                                    {new Date(note.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                  </h4>
+                                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{new Date(note.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                    {note.author && (
+                                      <>
+                                        <span>•</span>
+                                        <span className="uppercase tracking-wider">{note.author}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                {note.author && (
-                                  <span className="text-[10px] uppercase tracking-wider text-slate-600">{note.author}</span>
-                                )}
+                              <div className="flex items-center gap-3">
                                 <button 
-                                  onClick={() => handleDeleteNote(note.id)}
-                                  className="hidden group-hover:block rounded p-1 text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    handleDeleteNote(note.id)
+                                  }}
+                                  className="rounded p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
                                   title="Supprimer la note"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-4 w-4" />
                                 </button>
+                                <ChevronDown className="h-5 w-5 text-slate-500 transition-transform duration-300 group-open:rotate-180" />
+                              </div>
+                            </summary>
+                            
+                            <div className="border-t border-slate-800 p-4 pt-2">
+                              <div className="prose prose-invert prose-sm max-w-none">
+                                <p className="text-slate-300 whitespace-pre-wrap leading-relaxed">
+                                  {note.content}
+                                </p>
                               </div>
                             </div>
-                            <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">
-                              {note.content}
-                            </p>
-                          </div>
+                          </details>
                         ))
                       ) : (
-                        <div className="rounded-lg border border-slate-800/50 bg-slate-900/20 p-6 text-center">
-                          <ClipboardList className="mx-auto h-8 w-8 text-slate-700 mb-2" />
-                          <p className="text-sm text-slate-500">Aucune note d'appel enregistrée.</p>
-                          <p className="text-xs text-slate-600 mt-1">Ajoutez-en une manuellement ou via le Cockpit.</p>
+                        <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-slate-800 bg-slate-900/30">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 mb-3">
+                            <ClipboardList className="h-6 w-6 text-slate-500" />
+                          </div>
+                          <p className="text-sm font-medium text-slate-400">Aucune note d'appel</p>
+                          <p className="text-xs text-slate-500 mt-1 max-w-[200px]">
+                            L'historique de vos appels et vos notes manuelles apparaîtront ici.
+                          </p>
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-
-                {/* Infos Offre */}
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-white">Infos Offre</h3>
-                    <button onClick={() => setEditingOffer(!editingOffer)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </button>
                   </div>
-                  {editingOffer ? (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="mb-2 block text-xs text-slate-400">Sélectionner une offre</label>
-                        <select
-                          value={editedOfferId}
-                          onChange={(e) => handleOfferChange(e.target.value)}
-                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-                        >
-                          <option value="">-- Sélectionner --</option>
-                          {availableOffers.map((offer) => (
-                            <option key={offer.id} value={offer.id}>
-                              {offer.name} {offer.formulas && offer.formulas.length > 0 ? '(Multi-formules)' : `(${offer.price})`}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      {hasFormulas && (
-                        <div className="animate-in fade-in slide-in-from-top-2">
-                          <label className="mb-2 flex items-center gap-2 text-xs text-blue-400">
-                            <Tag className="h-3 w-3" /> Choix de la formule
-                          </label>
-                          <select
-                            value={editedFormulaId}
-                            onChange={(e) => handleFormulaChange(e.target.value)}
-                            className="w-full rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-                          >
-                            <option value="">-- Sélectionner la formule --</option>
-                            {selectedOfferObj?.formulas?.map((formula) => (
-                              <option key={formula.id} value={formula.id}>{formula.name} - {formula.price}€</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                      {editedValue > 0 && <p className="text-xs font-medium text-emerald-400 text-right">Nouveau montant : {editedValue.toLocaleString()}€</p>}
-                      <div className="flex gap-2">
-                        <button onClick={handleSaveOffer} className="flex-1 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-600">Sauvegarder</button>
-                        <button onClick={handleCancelOffer} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-700">Annuler</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border border-slate-800 bg-slate-800/50 p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-slate-400">Offre concernée</p>
-                          <p className="mt-1 font-medium text-white">{localProspect.offer || 'N/A'}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-slate-400">Montant</p>
-                          <p className="mt-1 text-lg font-bold text-blue-400"><MaskedText value={`${(localProspect.value || 0).toLocaleString()}€`} type="number" /></p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                )}
 
-                {/* Fiche Client */}
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-white">Fiche Client</h3>
-                    <button onClick={() => setEditingClient(!editingClient)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  {editingClient ? (
-                    <div className="space-y-3">
-                      <input type="text" value={editedContact} onChange={(e) => setEditedContact(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Nom" />
-                      <input type="text" value={editedCompany} onChange={(e) => setEditedCompany(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Entreprise" />
-                      <div className="flex gap-2">
-                        <button onClick={handleSaveClient} className="flex-1 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white">Sauvegarder</button>
-                        <button onClick={handleCancelClient} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-300">Annuler</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
-                        <Mail className="h-4 w-4 text-blue-400" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs text-slate-500">Email</p>
-                          <button onClick={handleOpenGmail} className="truncate text-sm text-slate-300 hover:text-white hover:underline text-left"><MaskedText value={localProspect.email} type="name" /></button>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
-                        <Phone className="h-4 w-4 text-emerald-400" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs text-slate-500">Téléphone</p>
-                          <button onClick={handleOpenWhatsApp} className="text-sm text-slate-300 hover:text-white hover:underline text-left"><MaskedText value={localProspect.phone} type="name" /></button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Notes Internes */}
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-white">Notes Internes</h3>
-                    <button onClick={() => setEditingNotes(!editingNotes)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  {editingNotes ? (
-                    <div>
-                      <textarea value={tempNotes} onChange={(e) => setTempNotes(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none" rows={4} />
-                      <div className="mt-2 flex gap-2">
-                        <button onClick={handleSaveNotes} className="rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white">Enregistrer</button>
-                        <button onClick={() => setEditingNotes(false)} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-300">Annuler</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border border-slate-800 bg-slate-800/50 p-4">
-                      <p className="whitespace-pre-wrap text-sm text-slate-300">{localProspect.notes || 'Aucune note'}</p>
-                    </div>
-                  )}
-                </div>
             </div>
 
             {/* Footer */}
