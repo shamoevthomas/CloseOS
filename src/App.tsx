@@ -25,8 +25,8 @@ import { Contacts } from './pages/Contacts'
 import { Offers } from './pages/Offers'
 import { Agenda } from './pages/Agenda'
 import { CallsPage } from './pages/CallsPage'
-// REMPLACEMENT ICI : On importe la nouvelle page
-import { CallDetailsPage } from './pages/CallDetailsPage'
+// ✅ CORRECTION ICI : On importe la nouvelle page de détails
+import { CallDetailsPage } from './pages/CallDetailsPage' 
 import { TelephonyPage } from './pages/TelephonyPage'
 import { AICoachPage } from './pages/AICoachPage'
 import { InvoicesPage } from './pages/InvoicesPage'
@@ -71,9 +71,7 @@ function AuthenticatedApp() {
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
 
-        {/* 2. ROUTE PLEIN ÉCRAN (SANS SIDEBAR)
-            Elle est placée SEULE ici pour ne pas charger le composant <Layout />
-        */}
+        {/* 2. ROUTE PLEIN ÉCRAN (SANS SIDEBAR) */}
         <Route 
           path="/live-call" 
           element={
@@ -105,8 +103,10 @@ function AuthenticatedApp() {
             }
           />
           <Route path="calls" element={<CallsPage />} />
-          {/* REMPLACEMENT ICI : On utilise le nouveau composant CallDetailsPage */}
+          
+          {/* ✅ CORRECTION ICI : La route pointe vers CallDetailsPage */}
           <Route path="appels/:id" element={<CallDetailsPage />} />
+          
           <Route path="telephony" element={<TelephonyPage />} />
           <Route path="ai-coach" element={<AICoachPage />} />
           <Route path="invoices" element={<InvoicesPage />} />

@@ -29,14 +29,12 @@ export function CallDetailsPage() {
 
   useEffect(() => {
     if (id) {
-      // On cherche l'appel par ID (string ou number)
       const foundCall = callHistory.find(c => c.id === parseInt(id) || c.id === Number(id))
       setCall(foundCall || null)
     }
   }, [id, callHistory])
 
   useEffect(() => {
-    // Si c'est un prospect, on va chercher sa fiche complète pour avoir les notes
     if (call && call.contactType === 'prospect') {
       const prospect = prospects.find(p => p.id === call.contactId)
       setRelatedProspect(prospect || null)
@@ -46,13 +44,12 @@ export function CallDetailsPage() {
   if (!call) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-950 text-slate-400">
-        <p>Chargement de l'appel ou appel introuvable...</p>
+        <p>Chargement de l'appel...</p>
       </div>
     )
   }
 
-  // LOGIQUE INTELLIGENTE : Trouver la note qui correspond à CET appel
-  // On compare la date de l'appel avec la date des notes (à 60 min près)
+  // On cherche la note correspondante (à +/- 60 min près)
   const matchedNote = relatedProspect?.call_notes?.find(note => {
     const callTime = new Date(call.date).getTime()
     const noteTime = new Date(note.date).getTime()
@@ -64,15 +61,15 @@ export function CallDetailsPage() {
     <div className="min-h-screen bg-slate-950 p-8 text-slate-200">
       <div className="mx-auto max-w-6xl space-y-8">
         
-        {/* BOUTON RETOUR */}
+        {/* BOUTON RETOUR (Redirige vers /calls et non /appels) */}
         <button 
-          onClick={() => navigate('/appels')}
+          onClick={() => navigate('/calls')}
           className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="h-4 w-4" /> Retour aux appels
         </button>
 
-        {/* EN-TÊTE DE LA FICHE APPEL */}
+        {/* EN-TÊTE */}
         <div className="flex items-start justify-between rounded-2xl bg-slate-900 border border-slate-800 p-8 shadow-xl">
           <div className="flex items-center gap-6">
             <div className={cn(
@@ -120,8 +117,7 @@ export function CallDetailsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* COLONNE GAUCHE : INFO TECHNIQUE */}
+          {/* COLONNE GAUCHE */}
           <div className="space-y-6">
             <div className="rounded-xl bg-slate-900 border border-slate-800 p-6 shadow-lg">
               <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Détails techniques</h3>
@@ -137,7 +133,6 @@ export function CallDetailsPage() {
               </div>
             </div>
 
-            {/* CARTE PROSPECT (Si dispo) */}
             {relatedProspect && (
               <div className="rounded-xl bg-slate-900 border border-slate-800 p-6 shadow-lg">
                 <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Fiche Prospect</h3>
@@ -161,7 +156,7 @@ export function CallDetailsPage() {
             )}
           </div>
 
-          {/* COLONNE CENTRALE : NOTES */}
+          {/* COLONNE DROITE : NOTES */}
           <div className="lg:col-span-2 space-y-6">
             <div className="rounded-xl bg-slate-900 border border-slate-800 p-8 shadow-lg min-h-[400px]">
               <div className="flex items-center justify-between mb-6">
@@ -187,8 +182,8 @@ export function CallDetailsPage() {
               ) : relatedProspect ? (
                 <div className="text-center py-12 bg-slate-950/50 rounded-xl border border-dashed border-slate-800">
                   <FileText className="h-10 w-10 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400 font-medium">Aucune note liée trouvée.</p>
-                  <p className="text-sm text-slate-600 mt-1">Si vous avez pris des notes, vérifiez qu'elles ont bien été enregistrées dans la fiche prospect.</p>
+                  <p className="text-slate-400 font-medium">Aucune note liée trouvée pour cet horaire.</p>
+                  <p className="text-sm text-slate-600 mt-1">Consultez la fiche prospect complète pour voir tout l'historique.</p>
                 </div>
               ) : (
                 <div className="text-center py-12">
@@ -197,7 +192,6 @@ export function CallDetailsPage() {
               )}
             </div>
           </div>
-
         </div>
       </div>
     </div>

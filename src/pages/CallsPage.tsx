@@ -51,7 +51,7 @@ export function CallsPage() {
     startTime: Date
   } | null>(null)
 
-  // --- MODALE DE PRÉPARATION (SALLE D'ATTENTE) ---
+  // Modale de préparation
   const [isMeetModalOpen, setIsMeetModalOpen] = useState(false)
   const [meetLinkInput, setMeetLinkInput] = useState('') 
 
@@ -149,7 +149,6 @@ export function CallsPage() {
 
   // --- LOGIQUE D'APPEL ---
 
-  // 1. Ouvre la SALLE D'ATTENTE (Modale de préparation)
   const prepareCall = (contactId: number | null, type: 'prospect' | 'internal') => {
     if (contactId === null) {
         setSelectedContactId(null) // Appel rapide
@@ -157,17 +156,14 @@ export function CallsPage() {
         setSelectedContactId(contactId) // Contact spécifique
         setIsNewCallModalOpen(false) 
     }
-    // C'EST ICI QU'ON OUVRE LA MODALE DE PRÉPARATION
     setIsMeetModalOpen(true)
     setMeetLinkInput('')
   }
 
-  // 2. Action utilisateur : Ouvrir l'onglet Google Meet
   const openMeetTab = () => {
     window.open('https://meet.google.com/new', '_blank')
   }
 
-  // 3. Action utilisateur : Démarrer le Cockpit
   const startCockpit = () => {
     let contactName = 'Appel Vidéo Rapide'
     let contactAvatar = 'A'
@@ -202,18 +198,15 @@ export function CallsPage() {
       startTime: new Date()
     })
     
-    // Ferme la modale de préparation et lance l'overlay
     setIsMeetModalOpen(false)
     setIsCallActive(true)
   }
 
-  // Clic sur "Lancer Visio Rapide" -> Etape 1
   const handleStartQuickVideoCall = () => {
     setCallType('internal')
     prepareCall(null, 'internal')
   }
 
-  // Clic sur "Préparer l'appel" (depuis Nouvel Appel) -> Etape 1
   const handleProceedToMeet = () => {
     if (!selectedContactId) return
     prepareCall(selectedContactId, callType)
@@ -445,7 +438,10 @@ export function CallsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-300 transition-all hover:bg-slate-700">
+                      <button
+                        onClick={() => navigate(`/appels/${call.id}`)}
+                        className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-300 transition-all hover:bg-slate-700"
+                      >
                         <Eye className="inline h-3.5 w-3.5 mr-1" />
                         Détails
                       </button>
