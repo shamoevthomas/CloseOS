@@ -8,27 +8,16 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-// Fonction utilitaire pour trouver le format vidéo supporté par le navigateur
-const getSupportedMimeType = () => {
-  const types = [
-    'video/webm;codecs=vp9,opus',
-    'video/webm;codecs=vp8,opus',
-    'video/webm',
-    'video/mp4' // Safari supporte parfois mieux mp4
-  ];
-  return types.find(type => MediaRecorder.isTypeSupported(type)) || '';
-};
-
 export default function CallRoom() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const url = searchParams.get('url');
   const callId = searchParams.get('id');
 
-  // Refs
+  // DOM Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const callFrameRef = useRef<any>(null);
-  const callStartTimeRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   // UI State
   const [isMicOn, setIsMicOn] = useState(true);
@@ -38,220 +27,173 @@ export default function CallRoom() {
   const [showControls, setShowControls] = useState(true);
   const timeoutRef = useRef<number | null>(null);
 
-  // Recording State
+  // --- RECORDING STATE ---
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   
-  // Refs pour l'enregistrement (pour y accéder dans les event listeners sans re-render)
+  // Refs techniques
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const recordingStartTimeRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
 
-  const [userScript, setUserScript] = useState(`1. INTRODUCTION\n- "Bonjour..."`);
+  const [userScript, setUserScript] = useState(`Chargement du script...`);
 
-  // --- TIMER INFAILLIBLE ---
+  // --- 1. LE TIMER ---
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRecording) {
-      // On met à jour l'affichage toutes les 500ms en comparant avec l'heure de début
-      // Cela évite que le compteur ne se "bloque" si une seconde saute
       interval = setInterval(() => {
-        const now = Date.now();
-        const diffInSeconds = Math.floor((now - recordingStartTimeRef.current) / 1000);
-        setRecordingSeconds(diffInSeconds);
-      }, 500);
+        setRecordingSeconds(prev => prev + 1);
+      }, 1000);
     } else {
       setRecordingSeconds(0);
     }
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  const formatDuration = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // --- CHARGEMENT SCRIPT ---
+  // --- 2. SCRIPT ---
   useEffect(() => {
-    const fetchUserScript = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data } = await supabase
-          .from('user_scripts')
-          .select('content')
-          .eq('user_id', user.id)
-          .single();
-        if (data?.content) setUserScript(data.content);
-      } catch (err) {
-        console.error(err);
-      }
+    const fetchScript = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from('user_scripts').select('content').eq('user_id', user.id).single();
+      if (data) setUserScript(data.content);
     };
-    fetchUserScript();
+    fetchScript();
   }, []);
 
-  // --- UI CONTROLS AUTO-HIDE ---
+  // --- 3. UI AUTO-HIDE ---
   useEffect(() => {
     const handleMouseMove = () => {
       setShowControls(true);
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = window.setTimeout(() => setShowControls(false), 5000);
     };
     window.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-    };
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // --- DAILY SETUP ---
+  // --- 4. DAILY IFRAME ---
   useEffect(() => {
     if (!url || !containerRef.current) return;
 
     const initCall = async () => {
-      const existingCall = DailyIframe.getCallInstance();
-      if (existingCall) await existingCall.destroy();
+      if (DailyIframe.getCallInstance()) await DailyIframe.getCallInstance()?.destroy();
 
       const frame = DailyIframe.createFrame(containerRef.current!, {
         iframeStyle: { width: '100%', height: '100%', border: '0' },
         showLeaveButton: false,
         showFullscreenButton: false,
-        theme: {
-          colors: {
-            accent: '#E54D2E',
-            accentText: '#FFFFFF',
-            background: '#1F2937',
-            mainAreaBg: '#111827',
-          }
-        }
+        theme: { colors: { accent: '#E54D2E', background: '#1F2937' } }
       });
 
       await frame.join({ url });
       callFrameRef.current = frame;
-      callStartTimeRef.current = Date.now();
+      startTimeRef.current = Date.now();
     };
-
     initCall();
-
-    return () => {
-      const call = DailyIframe.getCallInstance();
-      if (call) call.destroy();
-    };
+    return () => { DailyIframe.getCallInstance()?.destroy(); };
   }, [url]);
 
-  // --- ENREGISTREMENT ---
+  // --- 5. ENREGISTREMENT (CŒUR DU PROBLÈME) ---
 
-  const saveFile = () => {
-    const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-    
-    // Si le fichier est vide, on ne fait rien (ou on alerte)
-    if (blob.size === 0) {
-      console.warn("Fichier enregistrement vide.");
-      return;
+  const handleDataAvailable = (e: BlobEvent) => {
+    if (e.data && e.data.size > 0) {
+      chunksRef.current.push(e.data);
     }
+  };
+
+  const handleStop = () => {
+    // Création du fichier final
+    const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+    if (blob.size === 0) return;
 
     const fileUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.style.display = 'none';
     a.href = fileUrl;
-    // Nom de fichier précis avec la date
-    const dateStr = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
-    a.download = `Enregistrement_CloseOS_${dateStr}.webm`;
+    // On force l'extension .webm car c'est ce que le navigateur produit réellement
+    a.download = `Enregistrement_${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.webm`;
     
     document.body.appendChild(a);
     a.click();
     
-    // Nettoyage propre
+    // Nettoyage
     setTimeout(() => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(fileUrl);
     }, 100);
+
+    // Arrêt des streams (caméra/écran)
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
   };
 
   const startRecording = async () => {
     try {
-      const mimeType = getSupportedMimeType();
-      if (!mimeType) {
-        alert("Votre navigateur ne supporte pas l'enregistrement (MimeType inconnu).");
-        return;
-      }
+      chunksRef.current = []; // Reset buffer
 
-      // 1. Capture écran + audio système
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+      // 1. Demander l'écran (Vidéo + Audio Système)
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
-        audio: true
+        audio: true 
       });
 
-      // 2. Capture micro
+      // 2. Demander le micro (Audio)
       const micStream = await navigator.mediaDevices.getUserMedia({
         audio: true
       });
 
-      // 3. Mixage Audio
-      const audioCtx = new AudioContext();
-      audioContextRef.current = audioCtx;
-      const destination = audioCtx.createMediaStreamDestination();
+      // 3. Combiner les pistes (Approche simple et robuste)
+      // On prend la vidéo de l'écran + le son de l'écran + le son du micro
+      const tracks = [
+        ...displayStream.getVideoTracks(),
+        ...displayStream.getAudioTracks(),
+        ...micStream.getAudioTracks()
+      ];
 
-      if (screenStream.getAudioTracks().length > 0) {
-        const screenSource = audioCtx.createMediaStreamSource(screenStream);
-        screenSource.connect(destination);
-      }
-      
-      if (micStream.getAudioTracks().length > 0) {
-        const micSource = audioCtx.createMediaStreamSource(micStream);
-        micSource.connect(destination);
-      }
-
-      // 4. Stream Final
-      const combinedStream = new MediaStream([
-        ...screenStream.getVideoTracks(),
-        ...destination.stream.getAudioTracks()
-      ]);
-      
+      const combinedStream = new MediaStream(tracks);
       streamRef.current = combinedStream;
 
+      // 4. Configurer le recorder
+      // On préfère WebM car MP4 n'est pas supporté en écriture par Chrome/Firefox
+      let mimeType = 'video/webm;codecs=vp9,opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm'; // Fallback
+      }
+
       const recorder = new MediaRecorder(combinedStream, { mimeType });
-      chunksRef.current = []; // Reset du buffer
+      
+      recorder.ondataavailable = handleDataAvailable;
+      recorder.onstop = handleStop;
 
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
-      };
-
-      recorder.onstop = () => {
-        saveFile(); // Sauvegarde automatique à l'arrêt
-        
-        // Arrêt de tous les flux pour éteindre les icônes rouges du navigateur
-        screenStream.getTracks().forEach(track => track.stop());
-        micStream.getTracks().forEach(track => track.stop());
-        audioCtx.close();
-      };
-
-      // Si l'utilisateur clique sur "Arrêter le partage" dans la barre du navigateur
-      screenStream.getVideoTracks()[0].onended = () => {
+      // Arrêt automatique si l'utilisateur coupe le partage via la barre du navigateur
+      displayStream.getVideoTracks()[0].onended = () => {
         stopRecording();
       };
 
-      recorder.start(1000); // Sauvegarde un bloc toutes les secondes
+      // 5. Démarrage
+      recorder.start(1000); // Sauvegarde chaque seconde
       mediaRecorderRef.current = recorder;
       
-      // Démarrage du timer
-      recordingStartTimeRef.current = Date.now();
-      setIsRecording(true);
+      // ✅ C'est ici que le timer se déclenche
+      setIsRecording(true); 
 
     } catch (err) {
       console.error("Erreur startRecording:", err);
-      alert("Erreur lors du lancement de l'enregistrement. Vérifiez les permissions.");
-      setIsRecording(false);
+      alert("Erreur: Impossible de démarrer l'enregistrement. Vérifiez que vous avez autorisé l'accès à l'écran et au micro.");
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
@@ -262,114 +204,82 @@ export default function CallRoom() {
     else startRecording();
   };
 
-  // --- QUITTER L'APPEL ---
+  // --- 6. QUITTER L'APPEL ---
   const leaveCall = async () => {
-    // 1. GESTION ENREGISTREMENT
-    if (isRecording && mediaRecorderRef.current) {
-      // On arrête proprement
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      
-      // On force une petite attente pour être sûr que le fichier se télécharge
-      // C'est vital car sinon la navigation tue le processus de téléchargement
+    // Force l'arrêt et la sauvegarde
+    if (isRecording) {
+      stopRecording();
+      // On attend 2 secondes pour être sûr que le fichier se télécharge
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
-    // 2. SAUVEGARDE DURÉE APPEL (LocalStorage)
-    if (callStartTimeRef.current && callId) {
-      const duration = Date.now() - callStartTimeRef.current;
-      const seconds = Math.floor(duration / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = seconds % 60;
-      const formattedDuration = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-
-      const historyJson = localStorage.getItem('closeros_call_history');
-      if (historyJson) {
-        const history = JSON.parse(historyJson);
-        const callIndex = history.findIndex((c: any) => c.id === Number(callId));
-        if (callIndex !== -1) {
-          history[callIndex] = { ...history[callIndex], duration: formattedDuration, status: 'Terminé' };
-          localStorage.setItem('closeros_call_history', JSON.stringify(history));
-        }
+    // Sauvegarde durée
+    if (startTimeRef.current && callId) {
+      const duration = Date.now() - startTimeRef.current;
+      const minutes = Math.floor(duration / 60000);
+      const seconds = Math.floor((duration % 60000) / 1000);
+      const formatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      
+      const history = JSON.parse(localStorage.getItem('closeros_call_history') || '[]');
+      const idx = history.findIndex((c: any) => c.id === Number(callId));
+      if (idx !== -1) {
+        history[idx].duration = formatted;
+        history[idx].status = 'Terminé';
+        localStorage.setItem('closeros_call_history', JSON.stringify(history));
       }
     }
 
-    // 3. NETTOYAGE DAILY
+    // Nettoyage
     if (callFrameRef.current) {
       await callFrameRef.current.leave();
       callFrameRef.current.destroy();
     }
 
-    // 4. NAVIGATION
-    if (callId) {
-      navigate(`/appels/${callId}`);
-    } else {
-      navigate('/agenda');
-    }
+    // Redirection
+    if (callId) navigate(`/appels/${callId}`);
+    else navigate('/agenda');
   };
 
-  // Toggle Daily
+  // UI Toggles
   const toggleMic = () => {
-    const current = callFrameRef.current?.participants().local.audio;
-    callFrameRef.current?.setLocalAudio(!current);
-    setIsMicOn(!current);
+    callFrameRef.current?.setLocalAudio(!isMicOn);
+    setIsMicOn(!isMicOn);
   };
   const toggleCam = () => {
-    const current = callFrameRef.current?.participants().local.video;
-    callFrameRef.current?.setLocalVideo(!current);
-    setIsCamOn(!current);
+    callFrameRef.current?.setLocalVideo(!isCamOn);
+    setIsCamOn(!isCamOn);
   };
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
       setIsFullscreen(true);
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
+      document.exitFullscreen();
+      setIsFullscreen(false);
     }
   };
 
   return (
     <div className="flex h-screen w-screen bg-black overflow-hidden font-sans text-white">
-
-      <div
-        className={`relative h-full bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out z-20 flex flex-col ${
-          isScriptOpen ? 'w-1/3 translate-x-0' : 'w-0 -translate-x-full opacity-0'
-        }`}
-      >
+      {/* SCRIPT PANEL */}
+      <div className={`relative h-full bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out z-20 flex flex-col ${isScriptOpen ? 'w-1/3 translate-x-0' : 'w-0 -translate-x-full opacity-0'}`}>
         <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900">
-          <h2 className="font-bold text-orange-500 tracking-wide">📜 Script de Vente</h2>
-          <button onClick={() => setIsScriptOpen(false)} className="p-1 hover:bg-gray-800 rounded">
-            <ChevronLeft size={20} />
-          </button>
+          <h2 className="font-bold text-orange-500 tracking-wide">📜 Script</h2>
+          <button onClick={() => setIsScriptOpen(false)} className="p-1 hover:bg-gray-800 rounded"><ChevronLeft size={20} /></button>
         </div>
-        <textarea
-          className="flex-1 w-full bg-gray-900 p-6 text-gray-300 resize-none focus:outline-none leading-relaxed text-base"
-          readOnly
-          value={userScript} 
-        />
+        <textarea className="flex-1 w-full bg-gray-900 p-6 text-gray-300 resize-none focus:outline-none leading-relaxed text-base" readOnly value={userScript} />
       </div>
 
+      {/* VIDEO AREA */}
       <div className="relative flex-1 bg-black h-full overflow-hidden">
-
         {!isScriptOpen && (
-          <button
-            onClick={() => setIsScriptOpen(true)}
-            className="absolute top-4 left-4 z-50 p-3 bg-gray-800/80 hover:bg-gray-700 rounded-lg shadow-lg text-white transition"
-          >
-            <ChevronRight size={20} />
-          </button>
+          <button onClick={() => setIsScriptOpen(true)} className="absolute top-4 left-4 z-50 p-3 bg-gray-800/80 hover:bg-gray-700 rounded-lg shadow-lg text-white transition"><ChevronRight size={20} /></button>
         )}
 
         <div ref={containerRef} className="absolute inset-0 w-full h-full" />
 
-        <div
-          className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ease-in-out z-40 ${
-            showControls ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
+        {/* CONTROLS */}
+        <div className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ease-in-out z-40 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
             <div className="absolute top-6 right-6 flex gap-3 pointer-events-auto">
                 <button onClick={toggleFullscreen} className="p-3 bg-gray-900/60 hover:bg-gray-800 backdrop-blur-md rounded-xl">
                     {isFullscreen ? <Minimize size={20}/> : <Maximize size={20}/>}
