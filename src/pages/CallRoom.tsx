@@ -14,7 +14,7 @@ export default function CallRoom() {
   const url = searchParams.get('url');
   const callId = searchParams.get('id');
 
-  // DOM Refs
+  // Refs DOM et Daily
   const containerRef = useRef<HTMLDivElement>(null);
   const callFrameRef = useRef<any>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -31,19 +31,20 @@ export default function CallRoom() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   
-  // Refs techniques
+  // Refs pour l'enregistrement
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
   const [userScript, setUserScript] = useState(`Chargement du script...`);
 
-  // --- 1. LE TIMER ---
+  // --- 1. TIMER SIMPLE ET EFFICACE ---
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     if (isRecording) {
+      // On incrémente simplement de 1 chaque seconde (plus robuste que les dates)
       interval = setInterval(() => {
-        setRecordingSeconds(prev => prev + 1);
+        setRecordingSeconds(s => s + 1);
       }, 1000);
     } else {
       setRecordingSeconds(0);
@@ -60,15 +61,17 @@ export default function CallRoom() {
   // --- 2. SCRIPT ---
   useEffect(() => {
     const fetchScript = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase.from('user_scripts').select('content').eq('user_id', user.id).single();
-      if (data) setUserScript(data.content);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase.from('user_scripts').select('content').eq('user_id', user.id).single();
+        if (data) setUserScript(data.content);
+      } catch (e) { /* ignore */ }
     };
     fetchScript();
   }, []);
 
-  // --- 3. UI AUTO-HIDE ---
+  // --- 3. AUTO-HIDE CONTROLS ---
   useEffect(() => {
     const handleMouseMove = () => {
       setShowControls(true);
@@ -79,7 +82,7 @@ export default function CallRoom() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // --- 4. DAILY IFRAME ---
+  // --- 4. DAILY IFRAME SETUP ---
   useEffect(() => {
     if (!url || !containerRef.current) return;
 
@@ -101,58 +104,53 @@ export default function CallRoom() {
     return () => { DailyIframe.getCallInstance()?.destroy(); };
   }, [url]);
 
-  // --- 5. ENREGISTREMENT (CŒUR DU PROBLÈME) ---
+  // --- 5. FONCTIONS D'ENREGISTREMENT (Simplified) ---
 
-  const handleDataAvailable = (e: BlobEvent) => {
-    if (e.data && e.data.size > 0) {
-      chunksRef.current.push(e.data);
-    }
-  };
-
-  const handleStop = () => {
-    // Création du fichier final
+  const downloadVideo = () => {
     const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-    if (blob.size === 0) return;
+    console.log("💾 Tentative de téléchargement. Taille du fichier :", blob.size);
+    
+    if (blob.size === 0) {
+        alert("L'enregistrement semble vide. Vérifiez que vous avez bien partagé votre écran.");
+        return;
+    }
 
     const fileUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.style.display = 'none';
     a.href = fileUrl;
-    // On force l'extension .webm car c'est ce que le navigateur produit réellement
-    a.download = `Enregistrement_${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.webm`;
+    // On force l'extension .mp4 comme demandé (le contenu reste compatible web)
+    const fileName = `Enregistrement_${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.mp4`;
+    a.download = fileName;
     
     document.body.appendChild(a);
     a.click();
     
-    // Nettoyage
     setTimeout(() => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(fileUrl);
-    }, 100);
-
-    // Arrêt des streams (caméra/écran)
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
+    }, 200);
   };
 
   const startRecording = async () => {
     try {
-      chunksRef.current = []; // Reset buffer
+      console.log("🎥 Démarrage de l'enregistrement...");
+      chunksRef.current = []; // Reset
 
-      // 1. Demander l'écran (Vidéo + Audio Système)
+      // 1. Capture Écran + Audio Système
+      // IMPORTANT: Cochez "Partager l'audio système" dans la popup du navigateur !
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true 
       });
 
-      // 2. Demander le micro (Audio)
+      // 2. Capture Micro
       const micStream = await navigator.mediaDevices.getUserMedia({
         audio: true
       });
 
-      // 3. Combiner les pistes (Approche simple et robuste)
-      // On prend la vidéo de l'écran + le son de l'écran + le son du micro
+      // 3. Combinaison simple des pistes (Sans AudioContext complexe qui peut planter)
+      // On prend la vidéo de l'écran, l'audio de l'écran, et l'audio du micro.
       const tracks = [
         ...displayStream.getVideoTracks(),
         ...displayStream.getAudioTracks(),
@@ -162,33 +160,44 @@ export default function CallRoom() {
       const combinedStream = new MediaStream(tracks);
       streamRef.current = combinedStream;
 
-      // 4. Configurer le recorder
-      // On préfère WebM car MP4 n'est pas supporté en écriture par Chrome/Firefox
-      let mimeType = 'video/webm;codecs=vp9,opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm'; // Fallback
-      }
+      // 4. Configuration Recorder
+      // On utilise WebM en interne (le plus sûr) mais on sauvegardera en .mp4
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
+        ? 'video/webm;codecs=vp9' 
+        : 'video/webm';
 
       const recorder = new MediaRecorder(combinedStream, { mimeType });
-      
-      recorder.ondataavailable = handleDataAvailable;
-      recorder.onstop = handleStop;
 
-      // Arrêt automatique si l'utilisateur coupe le partage via la barre du navigateur
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        console.log("🛑 Arrêt enregistreur. Génération du fichier...");
+        downloadVideo();
+        
+        // Arrêt propre des flux
+        combinedStream.getTracks().forEach(track => track.stop());
+      };
+
+      // Si l'utilisateur clique sur "Arrêter le partage" dans la barre du navigateur
       displayStream.getVideoTracks()[0].onended = () => {
         stopRecording();
       };
 
-      // 5. Démarrage
-      recorder.start(1000); // Sauvegarde chaque seconde
+      // Démarrage
+      recorder.start(1000); // Sauvegarde par blocs de 1s
       mediaRecorderRef.current = recorder;
       
-      // ✅ C'est ici que le timer se déclenche
-      setIsRecording(true); 
+      setIsRecording(true);
+      console.log("✅ Enregistrement actif !");
 
     } catch (err) {
-      console.error("Erreur startRecording:", err);
-      alert("Erreur: Impossible de démarrer l'enregistrement. Vérifiez que vous avez autorisé l'accès à l'écran et au micro.");
+      console.error("❌ Erreur startRecording:", err);
+      alert("Impossible de démarrer l'enregistrement. Avez-vous donné les permissions ?");
+      setIsRecording(false);
     }
   };
 
@@ -206,14 +215,17 @@ export default function CallRoom() {
 
   // --- 6. QUITTER L'APPEL ---
   const leaveCall = async () => {
-    // Force l'arrêt et la sauvegarde
+    console.log("👋 Quitter l'appel demandé");
+    
+    // Si on enregistre encore, on force l'arrêt et le téléchargement
     if (isRecording) {
       stopRecording();
-      // On attend 2 secondes pour être sûr que le fichier se télécharge
+      // On attend 2 secondes bloquantes pour laisser le téléchargement se lancer
+      // C'est vital sinon le changement de page tue le téléchargement
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
-    // Sauvegarde durée
+    // Sauvegarde de la durée (LocalStorage)
     if (startTimeRef.current && callId) {
       const duration = Date.now() - startTimeRef.current;
       const minutes = Math.floor(duration / 60000);
@@ -229,7 +241,7 @@ export default function CallRoom() {
       }
     }
 
-    // Nettoyage
+    // Nettoyage Daily
     if (callFrameRef.current) {
       await callFrameRef.current.leave();
       callFrameRef.current.destroy();
