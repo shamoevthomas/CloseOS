@@ -392,6 +392,13 @@ export function CallDetails() {
       // Update amount and payment details if won
       if (selectedOutcome === 'won' && amount > 0) {
         updates.value = amount
+        // --- AJOUT IMPORTANT : ON ENVOIE LES DETAILS DE PAIEMENT ---
+        updates.payment_type = paymentType
+        if (paymentType === 'installments') {
+            updates.installments = installmentsCount
+        } else {
+            updates.installments = null
+        }
       }
 
       // Update follow up date if applicable
@@ -563,7 +570,7 @@ export function CallDetails() {
           )}
 
           {/* Form Content - Apply blur if no prospect */}
-          <div className={cn("space-y-6 transition-all duration-500", !prospect ? "opacity-50 pointer-events-none blur-[2px]" : "opacity-100")}>
+          <div className={cn("transition-all duration-500", !prospect ? "opacity-50 pointer-events-none blur-[2px]" : "opacity-100")}>
             
             {activeTab === 'qualification' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">

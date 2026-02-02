@@ -129,7 +129,10 @@ export function ProspectView({
     setTempNotes(prospect.notes || '')
 
     // --- CORRECTION : INITIALISATION DES ETATS DE PAIEMENT ---
-    if (loadedProspect.payment_type === 'installments') {
+    // On vérifie si c'est 'installments' OU si le nombre d'installments est > 1 (sécurité)
+    const isInstallments = loadedProspect.payment_type === 'installments' || (loadedProspect.installments && loadedProspect.installments > 1);
+
+    if (isInstallments) {
         setPaymentMode('installments')
         setInstallments(loadedProspect.installments || 1)
     } else {
@@ -328,10 +331,14 @@ export function ProspectView({
   const commissionAmount = (editedValue * commissionRate) / 100
 
   // Calculs pour l'affichage (mode lecture - basé sur le prospect sauvegardé)
+  // On sécurise pour être sûr d'avoir les bonnes valeurs
   const savedInstallments = localProspect.installments || 1
   const savedCommission = (localProspect.value || 0) * (commissionRate / 100)
   const savedMonthlyPayment = (localProspect.value || 0) / savedInstallments
   const savedMonthlyCommission = savedCommission / savedInstallments
+  
+  // Vérification robuste du mode de paiement pour l'affichage
+  const isPayingInInstallments = localProspect.payment_type === 'installments' || (savedInstallments > 1);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -490,7 +497,7 @@ export function ProspectView({
                             </div>
                             
                             {/* DETAILS MENSUELS SI PLUSIEURS FOIS */}
-                            {localProspect.payment_type === 'installments' && (
+                            {isPayingInInstallments && (
                                 <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-2">
                                     <div className="flex justify-between items-center">
                                         <span className="text-xs text-slate-300">Client paie (x{savedInstallments}) :</span>
@@ -505,7 +512,7 @@ export function ProspectView({
 
                             <div className="pt-2 border-t border-emerald-500/20 text-center mt-2">
                               <span className="text-[10px] font-medium text-emerald-300/60 uppercase tracking-wider">
-                                {localProspect.payment_type === 'installments' ? `Paiement en ${savedInstallments} fois` : 'Paiement Comptant'}
+                                {isPayingInInstallments ? `Paiement en ${savedInstallments} fois` : 'Paiement Comptant'}
                               </span>
                             </div>
                           </div>
