@@ -17,6 +17,9 @@ export default function CallRoom() {
   const [userScript, setUserScript] = useState("Chargement du script...");
   const [notes, setNotes] = useState("");
   
+  // Timer de l'appel (Durée de la séance)
+  const [callDuration, setCallDuration] = useState(0);
+
   // Recording State
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -35,7 +38,15 @@ export default function CallRoom() {
     loadScript();
   }, []);
 
-  // --- 2. TIMER ENREGISTREMENT ---
+  // --- 2. TIMER GLOBAL (DURÉE APPEL) ---
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCallDuration(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // --- 3. TIMER ENREGISTREMENT ---
   useEffect(() => {
     let interval: any;
     if (isRecording) {
@@ -52,7 +63,7 @@ export default function CallRoom() {
     return `${mins}:${secs}`;
   };
 
-  // --- 3. ENREGISTREMENT SCREEN ---
+  // --- 4. ENREGISTREMENT SCREEN ---
   const startRecording = async () => {
     try {
       chunksRef.current = [];
@@ -74,7 +85,7 @@ export default function CallRoom() {
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        a.download = `Enregistrement_${contactName}_${new Date().toISOString().slice(0,10)}.mp4`; // Extension .mp4 pour compatibilité
+        a.download = `Enregistrement_${contactName}_${new Date().toISOString().slice(0,10)}.mp4`;
         document.body.appendChild(a);
         a.click();
         
@@ -84,7 +95,6 @@ export default function CallRoom() {
         micStream.getTracks().forEach(t => t.stop());
       };
 
-      // Arrêt si l'utilisateur clique sur "Arrêter le partage" du navigateur
       displayStream.getVideoTracks()[0].onended = () => stopRecording();
 
       recorder.start(1000);
@@ -102,19 +112,13 @@ export default function CallRoom() {
     }
   };
 
-  // --- 4. QUITTER ---
+  // --- 5. QUITTER ---
   const handleLeave = async () => {
     if (isRecording) {
       stopRecording();
-      await new Promise(r => setTimeout(r, 2000)); // Attendre le téléchargement
+      await new Promise(r => setTimeout(r, 2000));
     }
-    
-    // Sauvegarder la durée si possible (optionnel)
-    if (callId) {
-        // Logique de mise à jour de l'historique ici si besoin
-    }
-
-    navigate(callId ? `/appels/${callId}` : '/'); // Retour Dashboard ou Détails
+    navigate(callId ? `/appels/${callId}` : '/');
   };
 
   return (
@@ -128,9 +132,17 @@ export default function CallRoom() {
             </div>
             <div>
                 <h1 className="font-bold text-lg">{contactName}</h1>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    En ligne
+                
+                {/* INDICATEUR EN LIGNE + TIMER */}
+                <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                    <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span className="font-medium text-emerald-400">En ligne</span>
+                    </div>
+                    <span className="text-slate-600">•</span>
+                    <span className="font-mono text-slate-300 font-medium tracking-wide">
+                        {formatDuration(callDuration)}
+                    </span>
                 </div>
             </div>
         </div>
@@ -185,7 +197,7 @@ export default function CallRoom() {
         </div>
       </div>
 
-      {/* --- MAIN CONTENT (SPLIT VIEW) --- */}
+      {/* --- MAIN CONTENT --- */}
       <div className="flex-1 flex overflow-hidden">
         
         {/* VOLET GAUCHE : SCRIPT */}
@@ -202,7 +214,7 @@ export default function CallRoom() {
             </div>
         </div>
 
-        {/* VOLET DROIT : NOTES (Remplace la vidéo) */}
+        {/* VOLET DROIT : NOTES */}
         <div className="flex-1 flex flex-col bg-slate-950 relative">
             <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/30">
                 <h3 className="font-bold text-slate-400 text-sm tracking-wider flex items-center gap-2">
