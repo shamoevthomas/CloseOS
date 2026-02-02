@@ -96,7 +96,7 @@ export function CallDetails() {
   const [notes, setNotes] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
-  // Payment terms (for Won)
+  // Payment terms
   const [paymentType, setPaymentType] = useState<'comptant' | 'installments'>('comptant')
   const [installmentsCount, setInstallmentsCount] = useState(3)
 
@@ -124,7 +124,7 @@ export function CallDetails() {
 
   const call = callHistory.find(c => c.id === Number(id))
 
-  // Enhanced prospect lookup
+  // Recherche du prospect (Local ou via création)
   const prospect = createdProspect || (call && call.contactType === 'prospect'
     ? prospects.find(p => {
         if (p.id === call.contactId) return true
@@ -134,7 +134,7 @@ export function CallDetails() {
       })
     : null)
 
-  // Enhanced offer lookup
+  // Recherche de l'offre liée
   const prospectOffer = prospect
     ? (() => {
         if (prospect.offerId) {
@@ -158,7 +158,7 @@ export function CallDetails() {
     }
   }, [selectedOutcome, prospectOffer, amount])
 
-  // --- LOGIQUE DE CRÉATION DE PROSPECT VIA MODALE ---
+  // --- LOGIQUE CRÉATION PROSPECT ---
   const handleCreateProspect = async () => {
     if (!newProspectForm.name) return
     setIsCreating(true)
@@ -181,28 +181,33 @@ export function CallDetails() {
           }
       }
 
+      // CORRECTION : On ne met PAS offerId dans l'insert pour éviter l'erreur 400
       const newProspectData = {
         user_id: user.id,
         contact: newProspectForm.name,
         email: newProspectForm.email,
         phone: newProspectForm.phone,
-        offer: offerName,
-        offerId: newProspectForm.offerId,
+        offer: offerName, // On stocke juste le nom (string)
+        // offerId: newProspectForm.offerId, // SUPPRIMÉ car cause l'erreur "column not found"
         value: finalValue,
         source: newProspectForm.source,
         stage: 'prospect',
         created_at: new Date().toISOString()
       }
 
+      // 1. Création dans Supabase
       const { data: insertedProspect, error } = await supabase
         .from('prospects')
         .insert([newProspectData])
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error("Supabase error:", error)
+        throw error
+      }
 
-      // Lier à l'appel
+      // 2. Mise à jour de l'appel pour le lier
       if (call) {
         await supabase
           .from('calls')
@@ -219,13 +224,12 @@ export function CallDetails() {
 
     } catch (error) {
       console.error("Erreur création", error)
-      alert("Erreur lors de la création")
+      alert("Erreur lors de la création du prospect. Vérifiez la console.")
     } finally {
       setIsCreating(false)
     }
   }
 
-  // Si pas d'appel, écran vide
   if (!call) {
     return (
       <div className="min-h-screen bg-gray-950 p-8 flex items-center justify-center">
@@ -234,7 +238,7 @@ export function CallDetails() {
     )
   }
 
-  // Parse commission rate
+  // Commission calculations
   const parseCommissionRate = (commissionStr: string): number => {
     const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
     return match ? parseFloat(match[1]) : 10
