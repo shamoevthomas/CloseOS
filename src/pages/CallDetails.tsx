@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom' // Ajout useLocation
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign, Calendar, Award, UserPlus, X, Tag, LayoutList, PenTool } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useCalls } from '../contexts/CallsContext'
@@ -392,10 +392,14 @@ export function CallDetails() {
       // Update amount and payment details if won
       if (selectedOutcome === 'won' && amount > 0) {
         updates.value = amount
+        // --- CORRECTION : AJOUT EXPLICITE DU TYPE DE PAIEMENT ---
+        updates.payment_type = paymentType
+        if (paymentType === 'installments') {
+            updates.installments = installmentsCount
+        } else {
+            updates.installments = null // Reset si on repasse en comptant
+        }
       }
-
-      // Update follow up date if applicable
-      // NOTE: On ne touche PAS à la colonne "notes" (interne) ici.
 
       // 🔄 C'EST ICI QUE LA MAGIE OPÈRE : ON POUSSE DANS SUPABASE
       if (updateProspect) {
@@ -465,51 +469,6 @@ export function CallDetails() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* DEBUG PANEL - Shows data linking status */}
-        <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4">
-          <h3 className="text-sm font-semibold text-purple-400 mb-3">🔍 Debug: Data Linking</h3>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="rounded-lg bg-gray-800 p-3">
-              <p className="text-gray-500 mb-1">Prospect trouvé</p>
-              <p className={prospect ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                {prospect ? `✓ ${prospect.contact}` : '✗ Non trouvé'}
-              </p>
-              {prospect && (
-                <p className="text-gray-400 mt-1">ID: {prospect.id} | offerId: {prospect.offerId || 'N/A'}</p>
-              )}
-            </div>
-            <div className="rounded-lg bg-gray-800 p-3">
-              <p className="text-gray-500 mb-1">Offre liée</p>
-              <p className={prospectOffer ? 'text-green-400 font-semibold' : 'text-yellow-400 font-semibold'}>
-                {prospectOffer ? `✓ ${prospectOffer.name}` : '✗ Non trouvée'}
-              </p>
-              {prospectOffer && (
-                <p className="text-gray-400 mt-1">Prix: {prospectOffer.price} | Commission: {prospectOffer.commission}</p>
-              )}
-            </div>
-          </div>
-          {!prospect && (
-            <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/30 p-3">
-              <p className="text-sm text-red-400">
-                ⚠️ Prospect non trouvé avec le nom: <span className="font-semibold">{call.contactName}</span>
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Vérifiez que le prospect existe dans ProspectsContext
-              </p>
-            </div>
-          )}
-          {prospect && !prospectOffer && (
-            <div className="mt-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3">
-              <p className="text-sm text-yellow-400">
-                ⚠️ Prospect trouvé mais aucune offre liée
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                offerId: {prospect.offerId || 'null'} | offer: {prospect.offer || 'null'}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* --- TABS --- */}
@@ -868,7 +827,7 @@ export function CallDetails() {
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between gap-4 pt-4">
+            <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-800 mt-6">
                 <button
                 onClick={() => navigate('/')}
                 className="rounded-lg border border-gray-700 bg-gray-800 px-6 py-3 text-sm font-semibold text-gray-300 transition-all hover:bg-gray-700"
@@ -885,7 +844,7 @@ export function CallDetails() {
                     : 'bg-gray-700 cursor-not-allowed opacity-50'
                 )}
                 >
-                {isSaving ? 'Enregistrement...' : 'Enregistrer et retourner au Cockpit'}
+                {isSaving ? 'Enregistrement...' : 'Tout Enregistrer'}
                 </button>
             </div>
           </div>
