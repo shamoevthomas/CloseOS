@@ -345,32 +345,47 @@ export function CallDetails() {
         noshow: 'noshow'
       }
 
-      // Build notes with call summary
-      let callNotes = `[${new Date().toLocaleDateString('fr-FR')}] Appel: ${selectedOutcome}`
+      // Build technical summary
+      let technicalSummary = `[${new Date().toLocaleDateString('fr-FR')}] Appel: ${selectedOutcome}`
 
       if (selectedOutcome === 'won') {
-        callNotes += `\n- Montant: ${amount}€ (${paymentType === 'comptant' ? 'Comptant' : `${installmentsCount}x`})`
-        callNotes += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/mois)` : ''}`
+        technicalSummary += `\n- Montant: ${amount}€ (${paymentType === 'comptant' ? 'Comptant' : `${installmentsCount}x`})`
+        technicalSummary += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/mois)` : ''}`
       }
 
       if (selectedOutcome === 'followup') {
         const reason = followupReason === 'Autre' ? followupReasonOther : followupReason
-        callNotes += `\n- Motif: ${reason}`
-        callNotes += `\n- Rappel: ${new Date(followupDate).toLocaleDateString('fr-FR')}`
+        technicalSummary += `\n- Motif: ${reason}`
+        technicalSummary += `\n- Rappel: ${new Date(followupDate).toLocaleDateString('fr-FR')}`
       }
 
       if (selectedOutcome === 'lost') {
         const reason = lostReason === 'Autre' ? lostReasonOther : lostReason
-        callNotes += `\n- Motif: ${reason}`
+        technicalSummary += `\n- Motif: ${reason}`
       }
 
-      if (notes) {
-        callNotes += `\n- Notes: ${notes}`
+      // --- CORRECTION SAUVEGARDE : JSONB call_notes ---
+      
+      // On combine les notes de l'utilisateur avec le résumé technique
+      const finalNoteContent = notes ? `${notes}\n\n${technicalSummary}` : technicalSummary
+
+      // Création de l'objet Note
+      const newCallNoteEntry = {
+        id: crypto.randomUUID(),
+        date: new Date().toISOString(),
+        content: finalNoteContent,
+        type: 'call',
+        call_id: id,
+        author: 'Closer'
       }
+
+      // Récupération des notes existantes (si call_notes existe déjà)
+      const currentCallNotes = Array.isArray((prospect as any).call_notes) ? (prospect as any).call_notes : []
+      const updatedCallNotes = [...currentCallNotes, newCallNoteEntry]
 
       const updates: any = {
         stage: stageMap[selectedOutcome!],
-        notes: prospect.notes ? `${prospect.notes}\n\n${callNotes}` : callNotes,
+        call_notes: updatedCallNotes, // C'EST ICI QU'ON SAUVEGARDE DANS call_notes (JSONB)
         lastContact: new Date()
       }
 
@@ -380,9 +395,7 @@ export function CallDetails() {
       }
 
       // Update follow up date if applicable
-      if (selectedOutcome === 'followup' && followupDate) {
-        updates.notes = updates.notes + `\n[RAPPEL: ${followupDate}]`
-      }
+      // NOTE: On ne touche PAS à la colonne "notes" (interne) ici.
 
       // 🔄 C'EST ICI QUE LA MAGIE OPÈRE : ON POUSSE DANS SUPABASE
       if (updateProspect) {
@@ -720,7 +733,7 @@ export function CallDetails() {
 
             {/* Follow up: Reschedule & Objection Tracking */}
             {selectedOutcome === 'followup' && (
-                <div className="space-y-4 rounded-xl border border-orange-500/30 bg-orange-500/5 p-6">
+                <div className="space-y-4 rounded-xl border border-orange-500/30 bg-orange-500/5 p-6 animate-in slide-in-from-top-2">
                 <h3 className="text-sm font-semibold text-orange-400 flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     Informations de suivi
@@ -784,7 +797,7 @@ export function CallDetails() {
 
             {/* Lost: Objection Tracking */}
             {selectedOutcome === 'lost' && (
-                <div className="space-y-4 rounded-xl border border-red-500/30 bg-red-500/5 p-6">
+                <div className="space-y-4 rounded-xl border border-red-500/30 bg-red-500/5 p-6 animate-in slide-in-from-top-2">
                 <h3 className="text-sm font-semibold text-red-400 flex items-center gap-2">
                     <XCircle className="h-4 w-4" />
                     Raison de la perte

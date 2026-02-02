@@ -135,7 +135,7 @@ export default function CallRoom() {
 
     // 3. Redirection vers la page de Qualification (CallDetails)
     if (callId) {
-        // --- MODIF ICI : On passe les notes dans le state de navigation ---
+        // --- MODIFICATION ICI : TRANSMISSION DES NOTES ---
         navigate(`/appels/${callId}`, { state: { liveNotes: notes } });
     } else {
         navigate('/'); // Fallback si pas d'ID
