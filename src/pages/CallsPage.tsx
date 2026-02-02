@@ -22,9 +22,9 @@ import { useCalls } from '../contexts/CallsContext'
 import { MaskedText } from '../components/MaskedText'
 import { supabase } from '../lib/supabase'
 
-// Type pour les scripts
+// Type pour les scripts - ID flexible (number ou string)
 interface Script {
-  id: number
+  id: number | string
   title: string
   content: string
 }
@@ -48,18 +48,20 @@ export function CallsPage() {
   // --- GESTION DES SCRIPTS MULTIPLES ---
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false)
   const [scripts, setScripts] = useState<Script[]>([])
-  const [selectedScriptId, setSelectedScriptId] = useState<number | 'new'>('new')
+  // Typage strict pour l'ID sélectionné
+  const [selectedScriptId, setSelectedScriptId] = useState<string | number | 'new'>('new')
   const [scriptContent, setScriptContent] = useState('')
-  const [scriptTitle, setScriptTitle] = useState('') // Pour le nouveau script
+  const [scriptTitle, setScriptTitle] = useState('')
   const [isSavingScript, setIsSavingScript] = useState(false)
 
+  // 1. Chargement des scripts à l'ouverture de la modale
   useEffect(() => {
     if (isScriptModalOpen) {
       fetchUserScripts()
     }
   }, [isScriptModalOpen])
 
-  // Charger la liste des scripts
+  // 2. Fonction de chargement
   const fetchUserScripts = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -75,12 +77,13 @@ export function CallsPage() {
 
       if (data && data.length > 0) {
         setScripts(data)
-        // Sélectionner le premier script par défaut
-        setSelectedScriptId(data[0].id)
-        setScriptContent(data[0].content)
-        setScriptTitle(data[0].title || 'Mon Script')
+        // Sélection par défaut du premier script
+        const firstScript = data[0]
+        setSelectedScriptId(firstScript.id)
+        setScriptContent(firstScript.content || '')
+        setScriptTitle(firstScript.title || 'Mon Script')
       } else {
-        // Aucun script, mode création par défaut
+        // Mode création par défaut si vide
         setScripts([])
         setSelectedScriptId('new')
         setScriptContent('')
@@ -91,23 +94,26 @@ export function CallsPage() {
     }
   }
 
-  // Changer de script via le menu déroulant
-  const handleScriptChange = (id: string) => {
-    if (id === 'new') {
+  // 3. Gestion du changement de script (CORRECTION PRINCIPALE ICI)
+  const handleScriptChange = (val: string) => {
+    if (val === 'new') {
       setSelectedScriptId('new')
       setScriptContent('')
       setScriptTitle('')
     } else {
-      const script = scripts.find(s => s.id === Number(id))
+      // On compare en String pour être sûr de trouver le bon script
+      // peu importe si l'ID est un nombre ou un UUID
+      const script = scripts.find(s => String(s.id) === val)
+      
       if (script) {
         setSelectedScriptId(script.id)
-        setScriptContent(script.content)
-        setScriptTitle(script.title)
+        setScriptContent(script.content || '') // Protection contre les null
+        setScriptTitle(script.title || '')     // Protection contre les null
       }
     }
   }
 
-  // Sauvegarder (Créer ou Mettre à jour)
+  // 4. Sauvegarde
   const handleSaveScript = async () => {
     if (!scriptTitle.trim()) {
         alert("Veuillez donner un titre à votre script")
@@ -147,12 +153,10 @@ export function CallsPage() {
 
         if (error) throw error
         
-        // Mettre à jour la liste locale
+        // Mise à jour locale
         setScripts(scripts.map(s => s.id === selectedScriptId ? { ...s, title: scriptTitle, content: scriptContent } : s))
       }
       
-      // On ne ferme pas forcément la modale, on montre juste que c'est sauvegardé (ou on ferme, au choix)
-      // setIsScriptModalOpen(false) 
       alert("Script sauvegardé !")
 
     } catch (error) {
@@ -163,7 +167,7 @@ export function CallsPage() {
     }
   }
 
-  // Supprimer un script
+  // 5. Suppression
   const handleDeleteScript = async () => {
     if (selectedScriptId === 'new') return
     if (!confirm("Voulez-vous vraiment supprimer ce script ?")) return
@@ -177,8 +181,8 @@ export function CallsPage() {
         
         if (newScripts.length > 0) {
             setSelectedScriptId(newScripts[0].id)
-            setScriptContent(newScripts[0].content)
-            setScriptTitle(newScripts[0].title)
+            setScriptContent(newScripts[0].content || '')
+            setScriptTitle(newScripts[0].title || '')
         } else {
             setSelectedScriptId('new')
             setScriptContent('')
@@ -189,6 +193,7 @@ export function CallsPage() {
     }
   }
 
+  // --- Helpers Call Page existants ---
   const getContactList = () => {
     if (callType === 'prospect') {
       return prospects.filter(p =>
@@ -207,7 +212,6 @@ export function CallsPage() {
     setSelectedContactSearch('')
   }
 
-  // --- ÉTAPE 1 : PRÉPARATION (Ouvre la modale Meet) ---
   const prepareCall = (contactId: number | null, type: 'prospect' | 'internal') => {
     if (contactId === null) {
         setSelectedContactId(null)
@@ -224,7 +228,6 @@ export function CallsPage() {
     window.open('https://meet.google.com/new', '_blank')
   }
 
-  // --- ÉTAPE 2 : DÉMARRAGE COCKPIT ---
   const startCockpit = async () => {
     let contactName = 'Appel Vidéo Rapide'
     let finalContactId = 0
@@ -257,7 +260,6 @@ export function CallsPage() {
     })
 
     let callDbId = Date.now();
-    
     if (newCall) {
         if (typeof newCall.id !== 'undefined') {
             callDbId = newCall.id;
@@ -406,6 +408,7 @@ export function CallsPage() {
                         <div className="flex-1">
                             <p className="font-semibold text-white">Lancer le Cockpit</p>
                             <p className="text-sm text-slate-400 mt-1">Accédez à votre script, prenez des notes et enregistrez l'écran.</p>
+                            
                             <div className="mt-3 relative">
                                 <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                                 <input 
@@ -416,6 +419,7 @@ export function CallsPage() {
                                     className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-9 pr-4 text-sm text-white focus:border-purple-500 focus:outline-none"
                                 />
                             </div>
+
                             <button onClick={startCockpit} className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-base font-bold text-white hover:bg-purple-500 shadow-lg">
                                 <Video className="h-5 w-5" /> 🚀 Lancer le Cockpit
                             </button>
@@ -427,7 +431,7 @@ export function CallsPage() {
         </div>
       )}
 
-      {/* --- MODALE SCRIPT (NOUVELLE VERSION MULTI-SCRIPTS) --- */}
+      {/* --- MODALE SCRIPT (MULTI-SCRIPTS) --- */}
       {isScriptModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl flex flex-col h-[80vh]">
@@ -502,7 +506,7 @@ export function CallsPage() {
         </div>
       )}
 
-      {/* --- MODAL NOUVEL APPEL --- */}
+      {/* --- MODAL NOUVEL APPEL (Selection Contact) --- */}
       {isNewCallModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleCloseNewCallModal} />
