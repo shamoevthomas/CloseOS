@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
-  Mic, MicOff, Monitor, PhoneOff, ChevronLeft, ChevronRight,
-  ExternalLink, FileText, Save, Clock
+  Monitor, PhoneOff, ChevronLeft, ChevronRight,
+  ExternalLink, FileText
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -112,13 +112,33 @@ export default function CallRoom() {
     }
   };
 
-  // --- 5. QUITTER ---
+  // --- 5. QUITTER ET REDIRIGER VERS LE FORMULAIRE ---
   const handleLeave = async () => {
+    // 1. Arrêter l'enregistrement si actif
     if (isRecording) {
       stopRecording();
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 2000)); // Attendre le téléchargement
     }
-    navigate(callId ? `/appels/${callId}` : '/');
+
+    // 2. Mettre à jour la durée dans Supabase (pour que le résumé ait la bonne durée)
+    if (callId) {
+        try {
+            await supabase.from('calls').update({
+                duration: formatDuration(callDuration),
+                // On pourrait aussi sauvegarder les notes partielles ici si besoin
+                // notes: notes 
+            }).eq('id', callId);
+        } catch (e) {
+            console.error("Erreur sauvegarde durée", e);
+        }
+    }
+
+    // 3. Redirection vers la page de Qualification (CallDetails)
+    if (callId) {
+        navigate(`/appels/${callId}`);
+    } else {
+        navigate('/'); // Fallback si pas d'ID
+    }
   };
 
   return (
