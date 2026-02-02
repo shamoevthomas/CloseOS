@@ -22,12 +22,41 @@ import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
 import { useCalls } from '../contexts/CallsContext'
 import { MaskedText } from '../components/MaskedText'
-import { VideoCallOverlay } from '../components/VideoCallOverlay'
+// On retire VideoCallOverlay car on utilise maintenant la page dédiée
+// import { VideoCallOverlay } from '../components/VideoCallOverlay' 
 import { CallSummaryModal, type CallSummaryData } from '../components/CallSummaryModal'
 import { NoAnswerModal } from '../components/NoAnswerModal'
 import { ProspectView } from '../components/ProspectView'
 import { InternalContactModal } from '../components/InternalContactModal'
 import { supabase } from '../lib/supabase'
+
+// Fonction utilitaire pour créer une room Daily
+const createDailyRoom = async () => {
+  try {
+    const response = await fetch('https://api.daily.co/v1/rooms', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Clé publique temporaire pour le MVP
+        'Authorization': `Bearer 17a63750d035422797669d05e073730592e3505499292376993526a57503723c` 
+      },
+      body: JSON.stringify({
+        properties: {
+          enable_chat: true,
+          enable_screenshare: true,
+          start_video_off: false,
+          start_audio_off: false,
+          exp: Math.round(Date.now() / 1000) + 3600 // Expire dans 1h
+        }
+      })
+    })
+    const data = await response.json()
+    return data.url
+  } catch (error) {
+    console.error('Erreur création room:', error)
+    return 'https://demo.daily.co/hello' // Fallback
+  }
+}
 
 export function CallsPage() {
   const navigate = useNavigate()
@@ -41,8 +70,7 @@ export function CallsPage() {
   const [selectedContactId, setSelectedContactId] = useState<number | null>(null)
   const [selectedContactSearch, setSelectedContactSearch] = useState('')
   
-  // Call overlay states
-  const [isCallActive, setIsCallActive] = useState(false)
+  // Call overlay states (Gardiens pour compatibilité, mais plus utilisés pour l'overlay)
   const [currentCall, setCurrentCall] = useState<{
     name: string
     avatar: string
@@ -51,7 +79,10 @@ export function CallsPage() {
     startTime: Date
   } | null>(null)
 
-  // Modale de préparation
+  // État de chargement pour le bouton
+  const [isStartingCall, setIsStartingCall] = useState(false)
+
+  // Modale de préparation (Plus utilisée avec la redirection directe, mais gardée si besoin)
   const [isMeetModalOpen, setIsMeetModalOpen] = useState(false)
   const [meetLinkInput, setMeetLinkInput] = useState('') 
 
@@ -147,117 +178,72 @@ export function CallsPage() {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
   }
 
-  // --- LOGIQUE D'APPEL ---
+  // --- NOUVELLE LOGIQUE : REDIRECTION VERS CALLROOM ---
+  const handleStartCall = async (contactId: number | null, type: 'prospect' | 'internal') => {
+    setIsStartingCall(true)
+    
+    try {
+      // 1. Créer la salle Daily
+      const roomUrl = await createDailyRoom()
+      
+      // 2. Préparer les infos
+      let contactName = 'Appel Vidéo Rapide'
+      let finalContactId = 0
 
-  const prepareCall = (contactId: number | null, type: 'prospect' | 'internal') => {
-    if (contactId === null) {
-        setSelectedContactId(null) // Appel rapide
-    } else {
-        setSelectedContactId(contactId) // Contact spécifique
-        setIsNewCallModalOpen(false) 
-    }
-    setIsMeetModalOpen(true)
-    setMeetLinkInput('')
-  }
-
-  const openMeetTab = () => {
-    window.open('https://meet.google.com/new', '_blank')
-  }
-
-  const startCockpit = () => {
-    let contactName = 'Appel Vidéo Rapide'
-    let contactAvatar = 'A'
-    let type: 'prospect' | 'internal' = 'internal'
-    let cId = 0
-
-    if (selectedContactId) {
-       if (callType === 'prospect') {
-          const p = prospects.find(x => x.id === selectedContactId)
+      if (contactId) {
+        if (type === 'prospect') {
+          const p = prospects.find(x => x.id === contactId)
           if (p) {
               contactName = p.contact
-              contactAvatar = p.contact.charAt(0)
-              type = 'prospect'
-              cId = p.id
+              finalContactId = p.id
           }
-       } else {
-          const c = internalContacts.find(x => x.id === selectedContactId)
+        } else {
+          const c = internalContacts.find(x => x.id === contactId)
           if (c) {
               contactName = c.name
-              contactAvatar = c.name.charAt(0)
-              type = 'internal'
-              cId = c.id
+              finalContactId = c.id
           }
-       }
-    }
-
-    setCurrentCall({
-      name: contactName,
-      avatar: contactAvatar,
-      type: type,
-      contactId: cId,
-      startTime: new Date()
-    })
-    
-    setIsMeetModalOpen(false)
-    setIsCallActive(true)
-  }
-
-  const handleStartQuickVideoCall = () => {
-    setCallType('internal')
-    prepareCall(null, 'internal')
-  }
-
-  const handleProceedToMeet = () => {
-    if (!selectedContactId) return
-    prepareCall(selectedContactId, callType)
-  }
-
-  // --- FIN APPEL & LOGS ---
-
-  const handleCallEnd = (wasAiActive: boolean, wasAnswered: boolean) => {
-    if (!currentCall) return
-
-    const duration = calculateDuration(currentCall.startTime)
-
-    addCallLog({
-      contactId: currentCall.contactId,
-      contactName: currentCall.name,
-      contactType: currentCall.type,
-      date: new Date().toISOString(),
-      duration,
-      isAi: wasAiActive,
-      answered: wasAnswered
-    })
-
-    setIsCallActive(false)
-
-    if (currentCall.type === 'prospect') {
-      if (!wasAnswered) {
-        setIsNoAnswerModalOpen(true)
-      } else if (wasAiActive) {
-        setShowAiAnalysisToast(true)
-        setTimeout(() => {
-          setShowAiAnalysisToast(false)
-          setCurrentCall(null)
-        }, 3000)
-      } else {
-        setIsCallSummaryModalOpen(true)
+        }
       }
-    } else {
-      setCurrentCall(null)
+
+      // 3. Créer l'entrée historique
+      const newCall = await addCallLog({
+        contactId: finalContactId,
+        contactName: contactName,
+        contactType: type,
+        date: new Date().toISOString(),
+        duration: 'En cours...',
+        isAi: false,
+        answered: true
+      })
+
+      const callDbId = newCall?.id || newCall?.data?.[0]?.id || Date.now()
+
+      // 4. FERMER LES MODALES ET REDIRIGER
+      setIsNewCallModalOpen(false)
+      setIsMeetModalOpen(false)
+      
+      // C'EST ICI LA CLÉ : On va vers la nouvelle page CallRoom
+      navigate(`/live-call?url=${encodeURIComponent(roomUrl)}&id=${callDbId}`)
+
+    } catch (error) {
+      console.error("Erreur lancement:", error)
+      alert("Impossible de créer la salle.")
+    } finally {
+      setIsStartingCall(false)
     }
   }
 
-  const handleCallSummarySubmit = (data: CallSummaryData) => {
-    console.log('Call Summary:', data)
-    setIsCallSummaryModalOpen(false)
+  // Fonctions de l'ancien système (gardées pour éviter les erreurs de ref si utilisées ailleurs, mais inactives)
+  const openMeetTab = () => { window.open('https://meet.google.com/new', '_blank') }
+  
+  // Fin de l'ancien système de logs post-appel (désormais géré dans CallRoom)
+  const handleCallEnd = (wasAiActive: boolean, wasAnswered: boolean) => {
+    // ... logique conservée si besoin de réutiliser les modales plus tard ...
     setCurrentCall(null)
   }
-
-  const handleNoAnswerAction = () => {
-    setIsNoAnswerModalOpen(false)
-    setCurrentCall(null)
-  }
+  const handleCallSummarySubmit = (data: CallSummaryData) => { setIsCallSummaryModalOpen(false); setCurrentCall(null) }
+  const handleNoAnswerAction = () => { setIsNoAnswerModalOpen(false); setCurrentCall(null) }
 
   const handleContactClick = (call: typeof callHistory[0]) => {
     if (call.contactType === 'prospect') {
@@ -270,6 +256,7 @@ export function CallsPage() {
   }
 
   const getStageColor = (stage: string) => {
+    /* ... code inchangé ... */
     const colors: Record<string, string> = {
       prospect: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
       qualified: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
@@ -280,6 +267,7 @@ export function CallsPage() {
   }
 
   const getStageLabel = (stage: string) => {
+    /* ... code inchangé ... */
     const labels: Record<string, string> = {
       prospect: 'Prospect',
       qualified: 'Qualifié',
@@ -290,6 +278,7 @@ export function CallsPage() {
   }
 
   const formatTimeAgo = (dateString: string) => {
+    /* ... code inchangé ... */
     const date = new Date(dateString)
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
@@ -330,12 +319,13 @@ export function CallsPage() {
               Script
             </button>
 
-            {/* BOUTON VISIO RAPIDE -> Déclenche prepareCall */}
+            {/* BOUTON VISIO RAPIDE -> Redirection directe */}
             <button
-              onClick={handleStartQuickVideoCall}
-              className="flex items-center gap-2 rounded-lg bg-purple-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600 shadow-lg shadow-purple-500/20"
+              onClick={() => handleStartCall(null, 'internal')}
+              disabled={isStartingCall}
+              className="flex items-center gap-2 rounded-lg bg-purple-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600 shadow-lg shadow-purple-500/20 disabled:opacity-50"
             >
-              <Video className="h-4 w-4" />
+              {isStartingCall ? <Loader2 className="h-4 w-4 animate-spin"/> : <Video className="h-4 w-4" />}
               🚀 Visio Rapide
             </button>
 
@@ -460,71 +450,7 @@ export function CallsPage() {
         </div>
       </div>
 
-      {/* --- MODALE PRÉPARATION APPEL (SALLE D'ATTENTE) --- */}
-      {isMeetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMeetModalOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800 animate-in fade-in zoom-in-95">
-             <div className="flex items-center justify-between border-b border-slate-800 p-6">
-                <h3 className="text-xl font-bold text-white">🎥 Préparer l'appel</h3>
-                <button onClick={() => setIsMeetModalOpen(false)} className="rounded p-2 text-slate-400 hover:text-white">
-                    <X className="h-5 w-5"/>
-                </button>
-             </div>
-             
-             <div className="p-6 space-y-6">
-                {/* Etape 1 : Générer */}
-                <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4">
-                    <div className="flex items-start gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white font-bold text-sm">1</div>
-                        <div className="flex-1">
-                            <p className="font-semibold text-white">Ouvrir la salle Google Meet</p>
-                            <p className="text-sm text-slate-400 mt-1">Cela ouvrira un nouvel onglet. Vous pourrez copier le lien de la réunion.</p>
-                            <button 
-                                onClick={openMeetTab}
-                                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
-                            >
-                                <ExternalLink className="h-4 w-4" /> Ouvrir Google Meet
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Etape 2 : Lancer le cockpit */}
-                <div className="rounded-lg bg-purple-500/10 border border-purple-500/20 p-4">
-                    <div className="flex items-start gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-500 text-white font-bold text-sm">2</div>
-                        <div className="flex-1">
-                            <p className="font-semibold text-white">Lancer le Cockpit de Vente</p>
-                            <p className="text-sm text-slate-400 mt-1">Démarrez l'interface CloseOS pour suivre votre script et prendre des notes.</p>
-                            
-                            {/* Champ pour coller le lien (pour archive future) */}
-                            <div className="mt-3 relative">
-                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                                <input 
-                                    type="text" 
-                                    value={meetLinkInput}
-                                    onChange={(e) => setMeetLinkInput(e.target.value)}
-                                    placeholder="Collez le lien Meet ici (optionnel)"
-                                    className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-9 pr-4 text-sm text-white focus:border-purple-500 focus:outline-none placeholder-slate-600"
-                                />
-                            </div>
-
-                            <button 
-                                onClick={startCockpit}
-                                className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-base font-bold text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20"
-                            >
-                                <Video className="h-5 w-5" /> 🚀 Démarrer le Cockpit
-                            </button>
-                        </div>
-                    </div>
-                </div>
-             </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL SCRIPT */}
+      {/* --- MODAL SCRIPT --- */}
       {isScriptModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
@@ -561,7 +487,7 @@ export function CallsPage() {
         </div>
       )}
 
-      {/* New Call Modal - Selection Contact */}
+      {/* --- MODAL NOUVEL APPEL --- */}
       {isNewCallModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleCloseNewCallModal} />
@@ -626,33 +552,26 @@ export function CallsPage() {
             </div>
 
             <div className="border-t border-slate-800 p-6">
-              {/* BOUTON PREPARER L'APPEL -> Ouvre la modale de préparation */}
+              {/* BOUTON LANCER L'APPEL -> Redirection directe */}
               <button
-                onClick={handleProceedToMeet}
-                disabled={!selectedContactId}
-                className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-500 px-6 py-3 text-base font-semibold text-white transition-all hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => handleStartCall(selectedContactId, callType)}
+                disabled={!selectedContactId || isStartingCall}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-6 py-3 text-base font-semibold text-white transition-all hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Video className="h-5 w-5" />
-                Préparer l'appel
+                {isStartingCall ? <Loader2 className="h-5 w-5 animate-spin" /> : <Phone className="h-5 w-5" />}
+                {isStartingCall ? 'Lancement...' : 'Lancer l\'appel'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* COCKPIT OVERLAY */}
-      {isCallActive && currentCall && (
-        <VideoCallOverlay
-          isOpen={isCallActive}
-          onClose={() => setIsCallActive(false)}
-          onCallEnd={handleCallEnd}
-          prospectName={currentCall.name}
-          prospectAvatar={currentCall.avatar}
-          initialAiEnabled={false}
-        />
-      )}
+      {/* IMPORTANT : J'ai retiré <VideoCallOverlay /> d'ici. 
+          C'est ce composant qui ouvrait l'ancienne fenêtre d'appel.
+          Maintenant, la fonction handleStartCall redirige vers /live-call
+      */}
 
-      {/* Post-Call Modals */}
+      {/* Post-Call Modals (Toujours présentes pour la gestion post-mortem si besoin) */}
       <NoAnswerModal
         isOpen={isNoAnswerModalOpen}
         onClose={() => setIsNoAnswerModalOpen(false)}
