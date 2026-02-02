@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom' // Ajout useLocation
+import { useParams, useNavigate, useLocation } from 'react-router-dom' 
 import { ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign, Calendar, Award, UserPlus, X, Tag, LayoutList, PenTool } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useCalls } from '../contexts/CallsContext'
@@ -181,35 +181,12 @@ export function CallDetails() {
     }
   }, [location.state]);
 
-  // Comprehensive debugging logs
-  useEffect(() => {
-    console.log('🔍 Call Details Debug:', {
-      callId: call?.id,
-      contactName: call?.contactName,
-      contactType: call?.contactType,
-      prospectFound: !!prospect,
-      prospectId: prospect?.id,
-      prospectOfferId: prospect?.offerId,
-      prospectOfferName: prospect?.offer,
-      offerFound: !!prospectOffer,
-      offerDetails: prospectOffer ? {
-        id: prospectOffer.id,
-        name: prospectOffer.name,
-        price: prospectOffer.price,
-        commission: prospectOffer.commission
-      } : null,
-      totalProspects: prospects.length,
-      totalOffers: offers.length
-    })
-  }, [call, prospect, prospectOffer, prospects.length, offers.length])
-
   // Auto-fill amount from offer when "Won" is selected
   useEffect(() => {
     if (selectedOutcome === 'won' && prospectOffer && amount === 0) {
       const offerPrice = parseOfferPrice(prospectOffer.price)
       if (offerPrice > 0) {
         setAmount(offerPrice)
-        console.log('💰 Auto-filled amount from offer:', offerPrice, '€')
       }
     }
   }, [selectedOutcome, prospectOffer, amount])
@@ -345,54 +322,56 @@ export function CallDetails() {
         noshow: 'noshow'
       }
 
-      // Build technical summary
-      let technicalSummary = `[${new Date().toLocaleDateString('fr-FR')}] Appel: ${selectedOutcome}`
+      // Build notes with call summary
+      let callNotes = `[${new Date().toLocaleDateString('fr-FR')}] Appel: ${selectedOutcome}`
 
       if (selectedOutcome === 'won') {
-        technicalSummary += `\n- Montant: ${amount}€ (${paymentType === 'comptant' ? 'Comptant' : `${installmentsCount}x`})`
-        technicalSummary += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/mois)` : ''}`
+        callNotes += `\n- Montant: ${amount}€ (${paymentType === 'comptant' ? 'Comptant' : `${installmentsCount}x`})`
+        callNotes += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/mois)` : ''}`
       }
 
       if (selectedOutcome === 'followup') {
         const reason = followupReason === 'Autre' ? followupReasonOther : followupReason
-        technicalSummary += `\n- Motif: ${reason}`
-        technicalSummary += `\n- Rappel: ${new Date(followupDate).toLocaleDateString('fr-FR')}`
+        callNotes += `\n- Motif: ${reason}`
+        callNotes += `\n- Rappel: ${new Date(followupDate).toLocaleDateString('fr-FR')}`
       }
 
       if (selectedOutcome === 'lost') {
         const reason = lostReason === 'Autre' ? lostReasonOther : lostReason
-        technicalSummary += `\n- Motif: ${reason}`
+        callNotes += `\n- Motif: ${reason}`
       }
 
-      // --- CORRECTION SAUVEGARDE : JSONB call_notes ---
-      
-      // On combine les notes de l'utilisateur avec le résumé technique
-      const finalNoteContent = notes ? `${notes}\n\n${technicalSummary}` : technicalSummary
+      // --- CORRECTION MAJEURE ICI ---
+      // On prépare la note qui sera ajoutée dans le tableau call_notes (JSONB)
+      const noteContent = notes 
+        ? `${notes}\n\n--- Résumé Technique ---\n${callNotes}` 
+        : callNotes
 
-      // Création de l'objet Note
-      const newCallNoteEntry = {
+      const newCallNote = {
         id: crypto.randomUUID(),
         date: new Date().toISOString(),
-        content: finalNoteContent,
+        content: noteContent,
         type: 'call',
         call_id: id,
-        author: 'Closer'
+        author: 'Closer' // Ou récupérer le nom de l'user si dispo
       }
 
-      // Récupération des notes existantes (si call_notes existe déjà)
+      // On récupère les notes existantes (sécurité si undefined)
+      // Note: On caste en any[] car TS ne connait pas forcément la structure call_notes sur Prospect
       const currentCallNotes = Array.isArray((prospect as any).call_notes) ? (prospect as any).call_notes : []
-      const updatedCallNotes = [...currentCallNotes, newCallNoteEntry]
+      const updatedCallNotes = [...currentCallNotes, newCallNote]
 
       const updates: any = {
         stage: stageMap[selectedOutcome!],
-        call_notes: updatedCallNotes, // C'EST ICI QU'ON SAUVEGARDE DANS call_notes (JSONB)
+        // ON NE TOUCHE PLUS A "notes" (Interne), ON UPDATE "call_notes"
+        call_notes: updatedCallNotes, 
         lastContact: new Date()
       }
 
       // Update amount and payment details if won
       if (selectedOutcome === 'won' && amount > 0) {
         updates.value = amount
-        // --- FIX : AJOUT SAUVEGARDE TYPE PAIEMENT ET MENSUALITES ---
+        // --- AJOUT: SAUVEGARDE DU MODE DE PAIEMENT ---
         updates.payment_type = paymentType
         if (paymentType === 'installments') {
             updates.installments = installmentsCount
@@ -402,26 +381,16 @@ export function CallDetails() {
       }
 
       // Update follow up date if applicable
-      // NOTE: On ne touche PAS à la colonne "notes" (interne) ici.
+      if (selectedOutcome === 'followup' && followupDate) {
+        // Optionnel : on peut aussi mettre un rappel dans les notes internes pour pas le rater
+        // updates.notes = (prospect.notes || '') + `\n[RAPPEL: ${followupDate}]` 
+      }
 
       // 🔄 C'EST ICI QUE LA MAGIE OPÈRE : ON POUSSE DANS SUPABASE
       if (updateProspect) {
         await updateProspect(prospect.id, updates)
       }
 
-      // Log to console for KPI tracking
-      console.log('📊 KPI Data:', {
-        outcome: selectedOutcome,
-        amount: selectedOutcome === 'won' ? amount : 0,
-        commission: selectedOutcome === 'won' ? totalCommission : 0,
-        paymentType: selectedOutcome === 'won' ? paymentType : null,
-        installments: selectedOutcome === 'won' && paymentType === 'installments' ? installmentsCount : null,
-        objection: selectedOutcome === 'followup' || selectedOutcome === 'lost'
-          ? (selectedOutcome === 'followup' ? followupReason : lostReason)
-          : null
-      })
-
-      // Wait a bit to ensure save completes
       await new Promise(resolve => setTimeout(resolve, 500))
 
       // Redirect to Dashboard (Cockpit)
@@ -472,51 +441,6 @@ export function CallDetails() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* DEBUG PANEL - Shows data linking status */}
-        <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4">
-          <h3 className="text-sm font-semibold text-purple-400 mb-3">🔍 Debug: Data Linking</h3>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="rounded-lg bg-gray-800 p-3">
-              <p className="text-gray-500 mb-1">Prospect trouvé</p>
-              <p className={prospect ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                {prospect ? `✓ ${prospect.contact}` : '✗ Non trouvé'}
-              </p>
-              {prospect && (
-                <p className="text-gray-400 mt-1">ID: {prospect.id} | offerId: {prospect.offerId || 'N/A'}</p>
-              )}
-            </div>
-            <div className="rounded-lg bg-gray-800 p-3">
-              <p className="text-gray-500 mb-1">Offre liée</p>
-              <p className={prospectOffer ? 'text-green-400 font-semibold' : 'text-yellow-400 font-semibold'}>
-                {prospectOffer ? `✓ ${prospectOffer.name}` : '✗ Non trouvée'}
-              </p>
-              {prospectOffer && (
-                <p className="text-gray-400 mt-1">Prix: {prospectOffer.price} | Commission: {prospectOffer.commission}</p>
-              )}
-            </div>
-          </div>
-          {!prospect && (
-            <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/30 p-3">
-              <p className="text-sm text-red-400">
-                ⚠️ Prospect non trouvé avec le nom: <span className="font-semibold">{call.contactName}</span>
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Vérifiez que le prospect existe dans ProspectsContext
-              </p>
-            </div>
-          )}
-          {prospect && !prospectOffer && (
-            <div className="mt-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3">
-              <p className="text-sm text-yellow-400">
-                ⚠️ Prospect trouvé mais aucune offre liée
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                offerId: {prospect.offerId || 'null'} | offer: {prospect.offer || 'null'}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* --- TABS --- */}
@@ -570,312 +494,315 @@ export function CallDetails() {
           )}
 
           {/* Form Content - Apply blur if no prospect */}
-          <div className={cn("space-y-6 transition-all duration-500", !prospect ? "opacity-50 pointer-events-none blur-[2px]" : "opacity-100")}>
+          <div className={cn("transition-all duration-500", !prospect ? "opacity-50 pointer-events-none blur-[2px]" : "opacity-100")}>
             
+            {/* ONGLET 1: QUALIFICATION */}
             {activeTab === 'qualification' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
-            {/* Outcome Selection */}
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
-                <label className="mb-4 block text-sm font-semibold text-white">
-                Résultat de l'appel <span className="text-red-400">*</span>
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {outcomes.map((outcome) => {
-                    const Icon = outcome.icon
-                    const isSelected = selectedOutcome === outcome.id
+                <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+                    {/* Outcome Selection */}
+                    <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+                        <label className="mb-4 block text-sm font-semibold text-white">
+                        Résultat de l'appel <span className="text-red-400">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {outcomes.map((outcome) => {
+                            const Icon = outcome.icon
+                            const isSelected = selectedOutcome === outcome.id
 
-                    return (
-                    <button
-                        key={outcome.id}
-                        onClick={() => setSelectedOutcome(outcome.id)}
-                        className={cn(
-                        'group relative flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all',
-                        isSelected
-                            ? `${outcome.bgColor} ${outcome.borderColor} shadow-lg`
-                            : 'border-gray-800 bg-gray-800/30 hover:border-gray-700 hover:bg-gray-800/50'
-                        )}
-                    >
-                        <div className={cn(
-                        'flex h-12 w-12 items-center justify-center rounded-full transition-all',
-                        isSelected
-                            ? outcome.bgColor
-                            : 'bg-gray-700/50 group-hover:bg-gray-700'
-                        )}>
-                        <Icon className={cn(
-                            'h-6 w-6 transition-colors',
-                            isSelected
-                            ? outcome.textColor
-                            : 'text-gray-400 group-hover:text-gray-300'
-                        )} />
-                        </div>
-                        <div className="text-center">
-                        <p className={cn(
-                            'text-sm font-semibold transition-colors',
-                            isSelected ? outcome.textColor : 'text-gray-300 group-hover:text-white'
-                        )}>
-                            {outcome.label}
-                        </p>
-                        <p className="mt-1 text-xs text-gray-500">
-                            {outcome.description}
-                        </p>
-                        </div>
+                            return (
+                            <button
+                                key={outcome.id}
+                                onClick={() => setSelectedOutcome(outcome.id)}
+                                className={cn(
+                                'group relative flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all',
+                                isSelected
+                                    ? `${outcome.bgColor} ${outcome.borderColor} shadow-lg`
+                                    : 'border-gray-800 bg-gray-800/30 hover:border-gray-700 hover:bg-gray-800/50'
+                                )}
+                            >
+                                <div className={cn(
+                                'flex h-12 w-12 items-center justify-center rounded-full transition-all',
+                                isSelected
+                                    ? outcome.bgColor
+                                    : 'bg-gray-700/50 group-hover:bg-gray-700'
+                                )}>
+                                <Icon className={cn(
+                                    'h-6 w-6 transition-colors',
+                                    isSelected
+                                    ? outcome.textColor
+                                    : 'text-gray-400 group-hover:text-gray-300'
+                                )} />
+                                </div>
+                                <div className="text-center">
+                                <p className={cn(
+                                    'text-sm font-semibold transition-colors',
+                                    isSelected ? outcome.textColor : 'text-gray-300 group-hover:text-white'
+                                )}>
+                                    {outcome.label}
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500">
+                                    {outcome.description}
+                                </p>
+                                </div>
 
-                        {/* Selected indicator */}
-                        {isSelected && (
-                        <div className="absolute -top-2 -right-2">
-                            <div className={cn('rounded-full p-1', outcome.bgColor, outcome.borderColor, 'border-2')}>
-                            <CheckCircle2 className={cn('h-4 w-4', outcome.textColor)} />
+                                {/* Selected indicator */}
+                                {isSelected && (
+                                <div className="absolute -top-2 -right-2">
+                                    <div className={cn('rounded-full p-1', outcome.bgColor, outcome.borderColor, 'border-2')}>
+                                    <CheckCircle2 className={cn('h-4 w-4', outcome.textColor)} />
+                                    </div>
+                                </div>
+                                )}
+                            </button>
+                            )
+                        })}
+                        </div>
+                    </div>
+
+                    {/* Won: Payment Terms & Commission */}
+                    {selectedOutcome === 'won' && (
+                        <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 animate-in slide-in-from-top-2">
+                        <h3 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
+                            <DollarSign className="h-4 w-4" />
+                            Détails de la vente
+                        </h3>
+
+                        {/* Amount Input */}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-white">
+                            Montant de la vente <span className="text-red-400">*</span>
+                            </label>
+                            <div className="relative">
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={amount || ''}
+                                onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+                                placeholder="Ex: 5000"
+                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 pr-12 text-lg text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                            />
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
+                                €
+                            </div>
                             </div>
                         </div>
+
+                        {/* Payment Type Toggle */}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-white">
+                            Mode de paiement
+                            </label>
+                            <div className="flex gap-2">
+                            <button
+                                onClick={() => setPaymentType('comptant')}
+                                className={cn(
+                                'flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
+                                paymentType === 'comptant'
+                                    ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                                    : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                                )}
+                            >
+                                Comptant
+                            </button>
+                            <button
+                                onClick={() => setPaymentType('installments')}
+                                className={cn(
+                                'flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
+                                paymentType === 'installments'
+                                    ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                                    : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                                )}
+                            >
+                                Plusieurs fois
+                            </button>
+                            </div>
+                        </div>
+
+                        {/* Installments Count */}
+                        {paymentType === 'installments' && (
+                            <div>
+                            <label className="mb-2 block text-sm font-medium text-white">
+                                Nombre de mensualités
+                            </label>
+                            <select
+                                value={installmentsCount}
+                                onChange={(e) => setInstallmentsCount(parseInt(e.target.value))}
+                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                            >
+                                {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
+                                <option key={num} value={num}>{num} mois</option>
+                                ))}
+                            </select>
+                            <p className="mt-2 text-sm text-gray-400">
+                                Montant par mois: <span className="text-emerald-400 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
+                            </p>
+                            </div>
                         )}
-                    </button>
-                    )
-                })}
-                </div>
-            </div>
 
-            {/* Won: Payment Terms & Commission */}
-            {selectedOutcome === 'won' && (
-                <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6">
-                <h3 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Détails de la vente
-                </h3>
-
-                {/* Amount Input */}
-                <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                    Montant de la vente <span className="text-red-400">*</span>
-                    </label>
-                    <div className="relative">
-                    <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={amount || ''}
-                        onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                        placeholder="Ex: 5000"
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 pr-12 text-lg text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
-                        €
-                    </div>
-                    </div>
-                </div>
-
-                {/* Payment Type Toggle */}
-                <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                    Mode de paiement
-                    </label>
-                    <div className="flex gap-2">
-                    <button
-                        onClick={() => setPaymentType('comptant')}
-                        className={cn(
-                        'flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
-                        paymentType === 'comptant'
-                            ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                            : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                        {/* Commission Display */}
+                        {amount > 0 && (
+                            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Award className="h-4 w-4 text-emerald-400" />
+                                <h4 className="text-sm font-semibold text-emerald-400">Ta Commission</h4>
+                            </div>
+                            <p className="text-2xl font-bold text-emerald-400">
+                                {totalCommission.toFixed(2)} €
+                            </p>
+                            {paymentType === 'installments' && (
+                                <p className="mt-1 text-sm text-gray-300">
+                                Tu recevras: <span className="font-semibold text-emerald-400">{monthlyCommission.toFixed(2)}€/mois</span>
+                                </p>
+                            )}
+                            <p className="mt-2 text-xs text-gray-500">
+                                Taux de commission: {commissionRate}%
+                            </p>
+                            </div>
                         )}
-                    >
-                        Comptant
-                    </button>
-                    <button
-                        onClick={() => setPaymentType('installments')}
-                        className={cn(
-                        'flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
-                        paymentType === 'installments'
-                            ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                            : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
-                        )}
-                    >
-                        Plusieurs fois
-                    </button>
-                    </div>
-                </div>
-
-                {/* Installments Count */}
-                {paymentType === 'installments' && (
-                    <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                        Nombre de mensualités
-                    </label>
-                    <select
-                        value={installmentsCount}
-                        onChange={(e) => setInstallmentsCount(parseInt(e.target.value))}
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                    >
-                        {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
-                        <option key={num} value={num}>{num} mois</option>
-                        ))}
-                    </select>
-                    <p className="mt-2 text-sm text-gray-400">
-                        Montant par mois: <span className="text-emerald-400 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
-                    </p>
-                    </div>
-                )}
-
-                {/* Commission Display */}
-                {amount > 0 && (
-                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Award className="h-4 w-4 text-emerald-400" />
-                        <h4 className="text-sm font-semibold text-emerald-400">Ta Commission</h4>
-                    </div>
-                    <p className="text-2xl font-bold text-emerald-400">
-                        {totalCommission.toFixed(2)} €
-                    </p>
-                    {paymentType === 'installments' && (
-                        <p className="mt-1 text-sm text-gray-300">
-                        Tu recevras: <span className="font-semibold text-emerald-400">{monthlyCommission.toFixed(2)}€/mois</span>
-                        </p>
+                        </div>
                     )}
-                    <p className="mt-2 text-xs text-gray-500">
-                        Taux de commission: {commissionRate}%
-                    </p>
-                    </div>
-                )}
-                </div>
-            )}
 
-            {/* Follow up: Reschedule & Objection Tracking */}
-            {selectedOutcome === 'followup' && (
-                <div className="space-y-4 rounded-xl border border-orange-500/30 bg-orange-500/5 p-6 animate-in slide-in-from-top-2">
-                <h3 className="text-sm font-semibold text-orange-400 flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Informations de suivi
-                </h3>
+                    {/* Follow up: Reschedule & Objection Tracking */}
+                    {selectedOutcome === 'followup' && (
+                        <div className="space-y-4 rounded-xl border border-orange-500/30 bg-orange-500/5 p-6 animate-in slide-in-from-top-2">
+                        <h3 className="text-sm font-semibold text-orange-400 flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            Informations de suivi
+                        </h3>
 
-                {/* Reschedule Date */}
-                <div>
-                    <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
-                    <Calendar className="h-4 w-4" />
-                    Date de reprogrammation <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                    type="datetime-local"
-                    value={followupDate}
-                    onChange={(e) => setFollowupDate(e.target.value)}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
-                    />
-                </div>
+                        {/* Reschedule Date */}
+                        <div>
+                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                            <Calendar className="h-4 w-4" />
+                            Date de reprogrammation <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                            type="datetime-local"
+                            value={followupDate}
+                            onChange={(e) => setFollowupDate(e.target.value)}
+                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                            />
+                        </div>
 
-                {/* Reason Selector */}
-                <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                    Motif du report <span className="text-red-400">*</span>
-                    </label>
-                    <select
-                    value={followupReason}
-                    onChange={(e) => {
-                        setFollowupReason(e.target.value)
-                        if (e.target.value !== 'Autre') {
-                        setFollowupReasonOther('')
-                        }
-                    }}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
-                    >
-                    <option value="">Sélectionnez un motif</option>
-                    {objectionReasons.map((reason) => (
-                        <option key={reason} value={reason}>
-                        {reason}
-                        </option>
-                    ))}
-                    </select>
+                        {/* Reason Selector */}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-white">
+                            Motif du report <span className="text-red-400">*</span>
+                            </label>
+                            <select
+                            value={followupReason}
+                            onChange={(e) => {
+                                setFollowupReason(e.target.value)
+                                if (e.target.value !== 'Autre') {
+                                setFollowupReasonOther('')
+                                }
+                            }}
+                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                            >
+                            <option value="">Sélectionnez un motif</option>
+                            {objectionReasons.map((reason) => (
+                                <option key={reason} value={reason}>
+                                {reason}
+                                </option>
+                            ))}
+                            </select>
 
-                    {/* Conditional "Autre" textarea */}
-                    {followupReason === 'Autre' && (
-                    <div className="mt-3">
-                        <label className="mb-2 block text-sm font-medium text-white">
-                        Précisez le motif <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                        type="text"
-                        value={followupReasonOther}
-                        onChange={(e) => setFollowupReasonOther(e.target.value)}
-                        placeholder="Ex: Indisponibilité exceptionnelle..."
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
-                        />
-                    </div>
+                            {/* Conditional "Autre" textarea */}
+                            {followupReason === 'Autre' && (
+                            <div className="mt-3">
+                                <label className="mb-2 block text-sm font-medium text-white">
+                                Précisez le motif <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                type="text"
+                                value={followupReasonOther}
+                                onChange={(e) => setFollowupReasonOther(e.target.value)}
+                                placeholder="Ex: Indisponibilité exceptionnelle..."
+                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                                />
+                            </div>
+                            )}
+                        </div>
+                        </div>
                     )}
-                </div>
-                </div>
-            )}
 
-            {/* Lost: Objection Tracking */}
-            {selectedOutcome === 'lost' && (
-                <div className="space-y-4 rounded-xl border border-red-500/30 bg-red-500/5 p-6 animate-in slide-in-from-top-2">
-                <h3 className="text-sm font-semibold text-red-400 flex items-center gap-2">
-                    <XCircle className="h-4 w-4" />
-                    Raison de la perte
-                </h3>
+                    {/* Lost: Objection Tracking */}
+                    {selectedOutcome === 'lost' && (
+                        <div className="space-y-4 rounded-xl border border-red-500/30 bg-red-500/5 p-6 animate-in slide-in-from-top-2">
+                        <h3 className="text-sm font-semibold text-red-400 flex items-center gap-2">
+                            <XCircle className="h-4 w-4" />
+                            Raison de la perte
+                        </h3>
 
-                {/* Reason Selector */}
-                <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                    Motif <span className="text-red-400">*</span>
-                    </label>
-                    <select
-                    value={lostReason}
-                    onChange={(e) => {
-                        setLostReason(e.target.value)
-                        if (e.target.value !== 'Autre') {
-                        setLostReasonOther('')
-                        }
-                    }}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
-                    >
-                    <option value="">Sélectionnez un motif</option>
-                    {objectionReasons.map((reason) => (
-                        <option key={reason} value={reason}>
-                        {reason}
-                        </option>
-                    ))}
-                    </select>
+                        {/* Reason Selector */}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-white">
+                            Motif <span className="text-red-400">*</span>
+                            </label>
+                            <select
+                            value={lostReason}
+                            onChange={(e) => {
+                                setLostReason(e.target.value)
+                                if (e.target.value !== 'Autre') {
+                                setLostReasonOther('')
+                                }
+                            }}
+                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
+                            >
+                            <option value="">Sélectionnez un motif</option>
+                            {objectionReasons.map((reason) => (
+                                <option key={reason} value={reason}>
+                                {reason}
+                                </option>
+                            ))}
+                            </select>
 
-                    {/* Conditional "Autre" textarea */}
-                    {lostReason === 'Autre' && (
-                    <div className="mt-3">
-                        <label className="mb-2 block text-sm font-medium text-white">
-                        Précisez le motif <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                        type="text"
-                        value={lostReasonOther}
-                        onChange={(e) => setLostReasonOther(e.target.value)}
-                        placeholder="Ex: Prix trop élevé..."
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
-                        />
-                    </div>
+                            {/* Conditional "Autre" textarea */}
+                            {lostReason === 'Autre' && (
+                            <div className="mt-3">
+                                <label className="mb-2 block text-sm font-medium text-white">
+                                Précisez le motif <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                type="text"
+                                value={lostReasonOther}
+                                onChange={(e) => setLostReasonOther(e.target.value)}
+                                placeholder="Ex: Prix trop élevé..."
+                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
+                                />
+                            </div>
+                            )}
+                        </div>
+                        </div>
                     )}
                 </div>
-                </div>
-            )}
-            </div>
             )}
 
-            {/* ONGLET 2: NOTES D'APPEL */}
+            {/* ONGLET 2: NOTES */}
             {activeTab === 'notes' && (
-                <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 h-[500px] flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
-                    <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-                        <FileText className="h-4 w-4" />
-                        Historique et Notes de l'appel
-                    </label>
-                    <textarea
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
-                        className="flex-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-base text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none leading-relaxed"
-                    />
-                    <p className="mt-3 text-xs text-gray-500 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Ces notes s'ajouteront à l'historique des appels du prospect.
-                    </p>
+                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 h-[500px] flex flex-col">
+                        <label className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+                            <FileText className="h-4 w-4 text-blue-400" />
+                            Historique et Notes de l'appel
+                        </label>
+                        <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
+                            className="flex-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-4 text-base text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none resize-none leading-relaxed"
+                        />
+                        <p className="mt-3 text-xs text-gray-500 flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Ces notes s'ajouteront à l'historique des appels du prospect.
+                        </p>
+                    </div>
                 </div>
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between gap-4 pt-4">
+            <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-800 mt-6">
                 <button
                 onClick={() => navigate('/')}
                 className="rounded-lg border border-gray-700 bg-gray-800 px-6 py-3 text-sm font-semibold text-gray-300 transition-all hover:bg-gray-700"
@@ -892,7 +819,7 @@ export function CallDetails() {
                     : 'bg-gray-700 cursor-not-allowed opacity-50'
                 )}
                 >
-                {isSaving ? 'Enregistrement...' : 'Enregistrer et retourner au Cockpit'}
+                {isSaving ? 'Enregistrement...' : 'Tout Enregistrer'}
                 </button>
             </div>
           </div>
