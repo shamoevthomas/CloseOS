@@ -25,8 +25,8 @@ import { Contacts } from './pages/Contacts'
 import { Offers } from './pages/Offers'
 import { Agenda } from './pages/Agenda'
 import { CallsPage } from './pages/CallsPage'
-// ✅ CORRECTION ICI : On importe la nouvelle page de détails
-import { CallDetailsPage } from './pages/CallDetailsPage' 
+// IMPORTANT : On importe bien le formulaire CallDetails
+import { CallDetails } from './pages/CallDetails'
 import { TelephonyPage } from './pages/TelephonyPage'
 import { AICoachPage } from './pages/AICoachPage'
 import { InvoicesPage } from './pages/InvoicesPage'
@@ -66,12 +66,12 @@ function AuthenticatedApp() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 1. ROUTES PUBLIQUES (SANS AUTH) */}
+        {/* 1. ROUTES PUBLIQUES */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
 
-        {/* 2. ROUTE PLEIN ÉCRAN (SANS SIDEBAR) */}
+        {/* 2. ROUTE PLEIN ÉCRAN (COCKPIT D'APPEL) */}
         <Route 
           path="/live-call" 
           element={
@@ -104,8 +104,8 @@ function AuthenticatedApp() {
           />
           <Route path="calls" element={<CallsPage />} />
           
-          {/* ✅ CORRECTION ICI : La route pointe vers CallDetailsPage */}
-          <Route path="appels/:id" element={<CallDetailsPage />} />
+          {/* C'EST ICI : La route doit pointer vers le Formulaire */}
+          <Route path="appels/:id" element={<CallDetails />} />
           
           <Route path="telephony" element={<TelephonyPage />} />
           <Route path="ai-coach" element={<AICoachPage />} />
@@ -119,7 +119,6 @@ function AuthenticatedApp() {
         </Route>
       </Routes>
 
-      {/* Les modales ne s'affichent QUE si l'utilisateur est connecté */}
       {user && (
         <>
           <OnboardingModal 
