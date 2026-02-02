@@ -392,7 +392,7 @@ export function CallDetails() {
       // Update amount and payment details if won
       if (selectedOutcome === 'won' && amount > 0) {
         updates.value = amount
-        // --- AJOUT IMPORTANT : ON ENVOIE LES DETAILS DE PAIEMENT ---
+        // --- FIX : AJOUT SAUVEGARDE TYPE PAIEMENT ET MENSUALITES ---
         updates.payment_type = paymentType
         if (paymentType === 'installments') {
             updates.installments = installmentsCount
@@ -475,7 +475,7 @@ export function CallDetails() {
         </div>
 
         {/* DEBUG PANEL - Shows data linking status */}
-        <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4">
+        <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4 mb-10">
           <h3 className="text-sm font-semibold text-purple-400 mb-3">🔍 Debug: Data Linking</h3>
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="rounded-lg bg-gray-800 p-3">
@@ -636,7 +636,7 @@ export function CallDetails() {
 
             {/* Won: Payment Terms & Commission */}
             {selectedOutcome === 'won' && (
-                <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6">
+                <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 animate-in slide-in-from-top-2">
                 <h3 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
                     Détails de la vente
@@ -875,7 +875,7 @@ export function CallDetails() {
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between gap-4 pt-4">
+            <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-800 mt-6">
                 <button
                 onClick={() => navigate('/')}
                 className="rounded-lg border border-gray-700 bg-gray-800 px-6 py-3 text-sm font-semibold text-gray-300 transition-all hover:bg-gray-700"
@@ -892,7 +892,7 @@ export function CallDetails() {
                     : 'bg-gray-700 cursor-not-allowed opacity-50'
                 )}
                 >
-                {isSaving ? 'Enregistrement...' : 'Enregistrer et retourner au Cockpit'}
+                {isSaving ? 'Enregistrement...' : 'Tout Enregistrer'}
                 </button>
             </div>
           </div>

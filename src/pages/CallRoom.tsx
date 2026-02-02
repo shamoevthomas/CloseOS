@@ -120,13 +120,14 @@ export default function CallRoom() {
       await new Promise(r => setTimeout(r, 2000)); // Attendre le téléchargement
     }
 
-    // 2. Mettre à jour la durée ET le statut dans Supabase
+    // 2. Mettre à jour la durée dans Supabase (Table call_history)
     if (callId) {
         try {
-            await supabase.from('calls').update({
+            // CORRECTION ICI : On vise 'call_history' au lieu de 'calls'
+            await supabase.from('call_history').update({
                 duration: formatDuration(callDuration),
-                status: 'completed', // AJOUT CRITIQUE : Marquer l'appel comme terminé
-                ended_at: new Date().toISOString()
+                // On peut ajouter ended_at si votre table l'accepte, sinon on laisse juste la duration
+                // ended_at: new Date().toISOString() 
             }).eq('id', callId);
         } catch (e) {
             console.error("Erreur sauvegarde durée", e);
