@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom' // AJOUT useLocation
 import { 
   ArrowLeft, CheckCircle2, XCircle, Clock, FileText, 
   DollarSign, Calendar, Award, UserPlus, X, Tag,
-  LayoutList, PenTool 
+  LayoutList, PenTool // AJOUT icones onglets
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useCalls } from '../contexts/CallsContext'
@@ -87,6 +87,7 @@ const outcomes = [
 export function CallDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation() // AJOUT : Pour récupérer les notes envoyées depuis CallRoom
   const { callHistory } = useCalls()
   // AJOUT: récupération de addProspect pour mettre à jour la liste globale
   const { prospects, updateProspect, addProspect } = useProspects()
@@ -175,12 +176,44 @@ export function CallDetails() {
       })()
     : null
 
+  // --- RECUPERATION DES NOTES LIVE ---
+  useEffect(() => {
+    // Si des notes sont passées depuis CallRoom, on les charge et on ouvre l'onglet notes
+    if (location.state && location.state.liveNotes) {
+      setNotes(location.state.liveNotes)
+      setActiveTab('notes')
+    }
+  }, [location.state])
+
+  // Comprehensive debugging logs
+  useEffect(() => {
+    console.log('🔍 Call Details Debug:', {
+      callId: call?.id,
+      contactName: call?.contactName,
+      contactType: call?.contactType,
+      prospectFound: !!prospect,
+      prospectId: prospect?.id,
+      prospectOfferId: prospect?.offerId,
+      prospectOfferName: prospect?.offer,
+      offerFound: !!prospectOffer,
+      offerDetails: prospectOffer ? {
+        id: prospectOffer.id,
+        name: prospectOffer.name,
+        price: prospectOffer.price,
+        commission: prospectOffer.commission
+      } : null,
+      totalProspects: prospects.length,
+      totalOffers: offers.length
+    })
+  }, [call, prospect, prospectOffer, prospects.length, offers.length])
+
   // Auto-fill amount from offer when "Won" is selected
   useEffect(() => {
     if (selectedOutcome === 'won' && prospectOffer && amount === 0) {
       const offerPrice = parseOfferPrice(prospectOffer.price)
       if (offerPrice > 0) {
         setAmount(offerPrice)
+        console.log('💰 Auto-filled amount from offer:', offerPrice, '€')
       }
     }
   }, [selectedOutcome, prospectOffer, amount])
@@ -335,30 +368,30 @@ export function CallDetails() {
         callNotes += `\n- Motif: ${reason}`
       }
 
-      // --- CORRECTION MAJEURE ICI ---
-      // On prépare la note qui sera ajoutée dans le tableau call_notes (JSONB)
-      const noteContent = notes 
-        ? `${notes}\n\n--- Résumé Technique ---\n${callNotes}` 
+      // --- CORRECTION SAUVEGARDE NOTES (JSONB call_notes) ---
+      // On récupère le contenu des notes (saisi dans l'onglet notes ou vide)
+      // On y ajoute le résumé technique de l'appel pour la traçabilité
+      const fullNoteContent = notes 
+        ? `${notes}\n\n--- Résumé Technique ---\n${callNotes}`
         : callNotes
 
-      const newCallNote = {
+      // Création de l'objet note structuré
+      const newCallNoteEntry = {
         id: crypto.randomUUID(),
         date: new Date().toISOString(),
-        content: noteContent,
+        content: fullNoteContent,
         type: 'call',
         call_id: id,
-        author: 'Closer' // Ou récupérer le nom de l'user si dispo
+        author: 'Closer' // Idéalement l'ID ou nom de l'user courant
       }
 
-      // On récupère les notes existantes (sécurité si undefined)
-      // Note: On caste en any[] car TS ne connait pas forcément la structure call_notes sur Prospect
+      // Récupération sécurisée du tableau existant call_notes
       const currentCallNotes = Array.isArray((prospect as any).call_notes) ? (prospect as any).call_notes : []
-      const updatedCallNotes = [...currentCallNotes, newCallNote]
+      const updatedCallNotes = [...currentCallNotes, newCallNoteEntry]
 
       const updates: any = {
         stage: stageMap[selectedOutcome!],
-        // ON NE TOUCHE PLUS A "notes" (Interne), ON UPDATE "call_notes"
-        call_notes: updatedCallNotes, 
+        call_notes: updatedCallNotes, // Sauvegarde dans la colonne JSONB
         lastContact: new Date()
       }
 
@@ -369,7 +402,7 @@ export function CallDetails() {
 
       // Update follow up date if applicable
       if (selectedOutcome === 'followup' && followupDate) {
-        // Optionnel : on peut aussi mettre un rappel dans les notes internes pour pas le rater
+        // Optionnel : ajouter un rappel dans les notes internes si besoin
         // updates.notes = (prospect.notes || '') + `\n[RAPPEL: ${followupDate}]` 
       }
 
@@ -378,6 +411,19 @@ export function CallDetails() {
         await updateProspect(prospect.id, updates)
       }
 
+      // Log to console for KPI tracking
+      console.log('📊 KPI Data:', {
+        outcome: selectedOutcome,
+        amount: selectedOutcome === 'won' ? amount : 0,
+        commission: selectedOutcome === 'won' ? totalCommission : 0,
+        paymentType: selectedOutcome === 'won' ? paymentType : null,
+        installments: selectedOutcome === 'won' && paymentType === 'installments' ? installmentsCount : null,
+        objection: selectedOutcome === 'followup' || selectedOutcome === 'lost'
+          ? (selectedOutcome === 'followup' ? followupReason : lostReason)
+          : null
+      })
+
+      // Wait a bit to ensure save completes
       await new Promise(resolve => setTimeout(resolve, 500))
 
       // Redirect to Dashboard (Cockpit)
@@ -430,7 +476,7 @@ export function CallDetails() {
           </div>
         </div>
 
-        {/* --- TABS --- */}
+        {/* --- ONGLETS (TABS) --- */}
         <div className="flex gap-4 mb-6 border-b border-gray-800">
             <button 
                 onClick={() => setActiveTab('qualification')}
@@ -483,7 +529,7 @@ export function CallDetails() {
           {/* Form Content - Apply blur if no prospect */}
           <div className={cn("transition-all duration-500", !prospect ? "opacity-50 pointer-events-none blur-[2px]" : "opacity-100")}>
             
-            {/* ONGLET 1: QUALIFICATION */}
+            {/* --- ONGLET 1: QUALIFICATION --- */}
             {activeTab === 'qualification' && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
                     {/* Outcome Selection */}
@@ -766,25 +812,23 @@ export function CallDetails() {
                 </div>
             )}
 
-            {/* ONGLET 2: NOTES */}
+            {/* --- ONGLET 2: NOTES D'APPEL --- */}
             {activeTab === 'notes' && (
-                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 h-[500px] flex flex-col">
-                        <label className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
-                            <FileText className="h-4 w-4 text-blue-400" />
-                            Historique et Notes de l'appel
-                        </label>
-                        <textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
-                            className="flex-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-4 text-base text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none resize-none leading-relaxed"
-                        />
-                        <p className="mt-3 text-xs text-gray-500 flex items-center gap-1">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Ces notes s'ajouteront à l'historique des appels du prospect.
-                        </p>
-                    </div>
+                <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 h-[500px] flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
+                    <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
+                        <FileText className="h-4 w-4" />
+                        Historique et Notes de l'appel
+                    </label>
+                    <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
+                        className="flex-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-base text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none leading-relaxed"
+                    />
+                    <p className="mt-3 text-xs text-gray-500 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Ces notes s'ajouteront à l'historique des appels du prospect.
+                    </p>
                 </div>
             )}
 
