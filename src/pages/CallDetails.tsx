@@ -18,7 +18,7 @@ const objectionReasons = [
   'Je dois y réfléchir',
   'Manque de budget',
   'Doit en parler',
-  'C\'est pas le moment',
+  "C'est pas le moment",
   'Autre'
 ]
 
@@ -100,25 +100,19 @@ export function CallDetails() {
   // Enhanced prospect lookup with multiple matching strategies
   const prospect = call && call.contactType === 'prospect'
     ? prospects.find(p => {
-        // Try exact contact name match
         if (p.contact === call.contactName) return true
-        // Try email match
         if (p.email === call.contactName) return true
-        // Try case-insensitive contact match
         if (p.contact?.toLowerCase() === call.contactName?.toLowerCase()) return true
-        // Try matching by company
         if (p.company === call.contactName) return true
-        // Try matching firstName + lastName
         const fullName = `${p.firstName} ${p.lastName}`.trim()
         if (fullName === call.contactName) return true
         return false
       })
     : null
 
-  // Enhanced offer lookup with multiple fallback strategies
+  // Enhanced offer lookup
   const prospectOffer = prospect
     ? (() => {
-        // Strategy 1: Find by offerId
         if (prospect.offerId) {
           const offerById = offers.find(o =>
             o.id === prospect.offerId ||
@@ -127,8 +121,6 @@ export function CallDetails() {
           )
           if (offerById) return offerById
         }
-
-        // Strategy 2: Find by offer name (fallback)
         if (prospect.offer) {
           const offerByName = offers.find(o =>
             o.name.toLowerCase() === prospect.offer?.toLowerCase() ||
@@ -137,32 +129,9 @@ export function CallDetails() {
           )
           if (offerByName) return offerByName
         }
-
         return null
       })()
     : null
-
-  // Comprehensive debugging logs
-  useEffect(() => {
-    console.log('🔍 Call Details Debug:', {
-      callId: call?.id,
-      contactName: call?.contactName,
-      contactType: call?.contactType,
-      prospectFound: !!prospect,
-      prospectId: prospect?.id,
-      prospectOfferId: prospect?.offerId,
-      prospectOfferName: prospect?.offer,
-      offerFound: !!prospectOffer,
-      offerDetails: prospectOffer ? {
-        id: prospectOffer.id,
-        name: prospectOffer.name,
-        price: prospectOffer.price,
-        commission: prospectOffer.commission
-      } : null,
-      totalProspects: prospects.length,
-      totalOffers: offers.length
-    })
-  }, [call, prospect, prospectOffer, prospects.length, offers.length])
 
   // Auto-fill amount from offer when "Won" is selected
   useEffect(() => {
@@ -170,7 +139,6 @@ export function CallDetails() {
       const offerPrice = parseOfferPrice(prospectOffer.price)
       if (offerPrice > 0) {
         setAmount(offerPrice)
-        console.log('💰 Auto-filled amount from offer:', offerPrice, '€')
       }
     }
   }, [selectedOutcome, prospectOffer, amount])
@@ -194,15 +162,13 @@ export function CallDetails() {
     )
   }
 
-  // Parse commission rate from offer (e.g., "10%" -> 10)
+  // Parse commission rate
   const parseCommissionRate = (commissionStr: string): number => {
     const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
-    return match ? parseFloat(match[1]) : 10 // Default to 10% if not found
+    return match ? parseFloat(match[1]) : 10
   }
 
   const commissionRate = prospectOffer ? parseCommissionRate(prospectOffer.commission) : 10
-
-  // Commission calculations
   const totalCommission = amount > 0 ? (amount * commissionRate) / 100 : 0
   const monthlyCommission = paymentType === 'installments' && installmentsCount > 0
     ? totalCommission / installmentsCount
@@ -230,15 +196,13 @@ export function CallDetails() {
     setIsSaving(true)
 
     try {
-      // Map outcome to stage
       const stageMap = {
         won: 'won',
         lost: 'lost',
-        followup: 'qualified',
+        followup: 'qualified', // Peut être adapté selon votre pipeline
         noshow: 'noshow'
       }
 
-      // Build notes with call summary
       let callNotes = `[${new Date().toLocaleDateString('fr-FR')}] Appel: ${selectedOutcome}`
 
       if (selectedOutcome === 'won') {
@@ -267,38 +231,20 @@ export function CallDetails() {
         lastContact: new Date()
       }
 
-      // Update amount and payment details if won
       if (selectedOutcome === 'won' && amount > 0) {
         updates.value = amount
       }
 
-      // Update follow up date if applicable
       if (selectedOutcome === 'followup' && followupDate) {
         updates.notes = updates.notes + `\n[RAPPEL: ${followupDate}]`
       }
 
-      // 🔄 C'EST ICI QUE LA MAGIE OPÈRE : ON POUSSE DANS SUPABASE
       if (updateProspect) {
         await updateProspect(prospect.id, updates)
       }
 
-      // Log to console for KPI tracking
-      console.log('📊 KPI Data:', {
-        outcome: selectedOutcome,
-        amount: selectedOutcome === 'won' ? amount : 0,
-        commission: selectedOutcome === 'won' ? totalCommission : 0,
-        paymentType: selectedOutcome === 'won' ? paymentType : null,
-        installments: selectedOutcome === 'won' && paymentType === 'installments' ? installmentsCount : null,
-        objection: selectedOutcome === 'followup' || selectedOutcome === 'lost'
-          ? (selectedOutcome === 'followup' ? followupReason : lostReason)
-          : null
-      })
-
-      // Wait a bit to ensure save completes
       await new Promise(resolve => setTimeout(resolve, 500))
-
-      // Redirect to Dashboard (Cockpit)
-      navigate('/')
+      navigate('/') // Retour au Dashboard
     } catch (error) {
       console.error('Error saving call summary:', error)
       alert('Erreur lors de la sauvegarde')
@@ -345,51 +291,6 @@ export function CallDetails() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* DEBUG PANEL - Shows data linking status */}
-        <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4">
-          <h3 className="text-sm font-semibold text-purple-400 mb-3">🔍 Debug: Data Linking</h3>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="rounded-lg bg-gray-800 p-3">
-              <p className="text-gray-500 mb-1">Prospect trouvé</p>
-              <p className={prospect ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                {prospect ? `✓ ${prospect.contact}` : '✗ Non trouvé'}
-              </p>
-              {prospect && (
-                <p className="text-gray-400 mt-1">ID: {prospect.id} | offerId: {prospect.offerId || 'N/A'}</p>
-              )}
-            </div>
-            <div className="rounded-lg bg-gray-800 p-3">
-              <p className="text-gray-500 mb-1">Offre liée</p>
-              <p className={prospectOffer ? 'text-green-400 font-semibold' : 'text-yellow-400 font-semibold'}>
-                {prospectOffer ? `✓ ${prospectOffer.name}` : '✗ Non trouvée'}
-              </p>
-              {prospectOffer && (
-                <p className="text-gray-400 mt-1">Prix: {prospectOffer.price} | Commission: {prospectOffer.commission}</p>
-              )}
-            </div>
-          </div>
-          {!prospect && (
-            <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/30 p-3">
-              <p className="text-sm text-red-400">
-                ⚠️ Prospect non trouvé avec le nom: <span className="font-semibold">{call.contactName}</span>
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Vérifiez que le prospect existe dans ProspectsContext
-              </p>
-            </div>
-          )}
-          {prospect && !prospectOffer && (
-            <div className="mt-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3">
-              <p className="text-sm text-yellow-400">
-                ⚠️ Prospect trouvé mais aucune offre liée
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                offerId: {prospect.offerId || 'null'} | offer: {prospect.offer || 'null'}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Main Form */}
@@ -481,20 +382,6 @@ export function CallDetails() {
                     €
                   </div>
                 </div>
-                {prospectOffer && (
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    <div className="flex-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
-                      <span className="text-gray-400">Prix catalogue: </span>
-                      <span className="text-emerald-400 font-semibold">{prospectOffer.price}</span>
-                      <span className="ml-2 text-xs text-gray-500">(Auto-rempli)</span>
-                    </div>
-                  </div>
-                )}
-                {!prospectOffer && (
-                  <p className="mt-2 text-xs text-yellow-400">
-                    ⚠️ Aucune offre liée - Saisissez le montant manuellement
-                  </p>
-                )}
               </div>
 
               {/* Payment Type Toggle */}
