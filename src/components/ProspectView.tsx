@@ -52,6 +52,9 @@ interface ExtendedProspect extends Prospect {
     content: string
     author?: string
   }[]
+  // Ajout des types pour le paiement pour être sûr
+  payment_type?: 'cash' | 'installments' | 'comptant'
+  installments?: number
 }
 
 const ALL_STAGES = [
@@ -101,28 +104,6 @@ export function ProspectView({
   // GESTION DES ONGLETS
   const [activeTab, setActiveTab] = useState<'info' | 'notes'>('info')
 
-  useEffect(() => {
-    const loadedProspect = { ...prospect } as ExtendedProspect
-    
-    // Si on reçoit 'call_notes' de Supabase (snake_case)
-    // On remplit 'callNotes' (camelCase) pour l'affichage
-    if (loadedProspect.call_notes && (!loadedProspect.callNotes || loadedProspect.callNotes.length === 0)) {
-      loadedProspect.callNotes = loadedProspect.call_notes
-    }
-    
-    setLocalProspect(loadedProspect)
-    setTempNotes(prospect.notes || '')
-  }, [prospect])
-
-  const [editingNotes, setEditingNotes] = useState(false)
-  const [tempNotes, setTempNotes] = useState(prospect.notes || '')
-
-  const [editingClient, setEditingClient] = useState(false)
-  const [editedContact, setEditedContact] = useState(prospect.contact)
-  const [editedCompany, setEditedCompany] = useState(prospect.company)
-  const [editedEmail, setEditedEmail] = useState(prospect.email)
-  const [editedPhone, setEditedPhone] = useState(prospect.phone)
-
   // OFFER STATES
   const [editingOffer, setEditingOffer] = useState(false)
   const [editedOfferId, setEditedOfferId] = useState('')
@@ -135,6 +116,38 @@ export function ProspectView({
   const [paymentMode, setPaymentMode] = useState<'cash' | 'installments'>('cash')
   const [installments, setInstallments] = useState(1)
   const [commissionRate, setCommissionRate] = useState(10)
+
+  useEffect(() => {
+    const loadedProspect = { ...prospect } as ExtendedProspect
+    
+    // Si on reçoit 'call_notes' de Supabase (snake_case)
+    if (loadedProspect.call_notes && (!loadedProspect.callNotes || loadedProspect.callNotes.length === 0)) {
+      loadedProspect.callNotes = loadedProspect.call_notes
+    }
+    
+    setLocalProspect(loadedProspect)
+    setTempNotes(prospect.notes || '')
+
+    // --- CORRECTION : INITIALISATION DES ETATS DE PAIEMENT ---
+    if (loadedProspect.payment_type === 'installments') {
+        setPaymentMode('installments')
+        setInstallments(loadedProspect.installments || 1)
+    } else {
+        setPaymentMode('cash')
+        setInstallments(1)
+    }
+    setEditedValue(loadedProspect.value || 0)
+
+  }, [prospect])
+
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [tempNotes, setTempNotes] = useState(prospect.notes || '')
+
+  const [editingClient, setEditingClient] = useState(false)
+  const [editedContact, setEditedContact] = useState(prospect.contact)
+  const [editedCompany, setEditedCompany] = useState(prospect.company)
+  const [editedEmail, setEditedEmail] = useState(prospect.email)
+  const [editedPhone, setEditedPhone] = useState(prospect.phone)
 
   // CALL NOTES STATE
   const [isAddingNote, setIsAddingNote] = useState(false)
@@ -162,25 +175,13 @@ export function ProspectView({
     setTimeout(() => setErrorMessage(null), 3000)
   }
 
-  // --- CORRECTION MAJEURE ICI ---
   const handleOptimisticUpdate = (updates: Partial<ExtendedProspect>) => {
-    // 1. Mise à jour de l'UI locale instantanée
     setLocalProspect(prev => ({ ...prev, ...updates }))
-    
-    // 2. Préparation de l'objet pour Supabase
-    // On utilise 'any' pour pouvoir supprimer des propriétés dynamiquement sans erreur TS
     const dbUpdates: any = { ...updates }
-    
-    // Si on a mis à jour callNotes (format UI), on transfère vers call_notes (format DB)
     if (updates.callNotes) {
         dbUpdates.call_notes = updates.callNotes
     }
-
-    // ⛔️ NETTOYAGE OBLIGATOIRE : On supprime 'callNotes' car Supabase ne connait pas cette colonne
-    // Si on laisse ça, Supabase rejette silencieusement toute la requête
     delete dbUpdates.callNotes 
-
-    // 3. Envoi au contexte
     if (onUpdate) {
       onUpdate(prospect.id, dbUpdates)
     }
@@ -193,29 +194,23 @@ export function ProspectView({
 
   const handleAddManualNote = () => {
     if (!newNoteContent.trim()) return
-
     const newNote = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
       content: newNoteContent,
       author: 'Manuel'
     }
-
     const updatedNotes = [newNote, ...(localProspect.callNotes || [])]
-
     handleOptimisticUpdate({
       callNotes: updatedNotes
     })
-
     setNewNoteContent('')
     setIsAddingNote(false)
   }
 
   const handleDeleteNote = (noteId: string) => {
     if (!confirm("Voulez-vous vraiment supprimer cette note ?")) return
-
     const updatedNotes = (localProspect.callNotes || []).filter(n => n.id !== noteId)
-    
     handleOptimisticUpdate({
       callNotes: updatedNotes
     })
@@ -225,7 +220,6 @@ export function ProspectView({
     const nameParts = editedContact.trim().split(' ')
     const firstName = nameParts[0] || ''
     const lastName = nameParts.slice(1).join(' ') || ''
-
     handleOptimisticUpdate({
       contact: editedContact,
       firstName,
@@ -248,7 +242,6 @@ export function ProspectView({
   const handleOfferChange = (offerId: string) => {
     setEditedOfferId(offerId)
     setEditedFormulaId('')
-
     if (offerId) {
       const selectedOffer = availableOffers.find((o) => String(o.id) === offerId)
       if (selectedOffer) {
@@ -296,9 +289,12 @@ export function ProspectView({
     setEditingOffer(false)
   }
 
+  // --- CORRECTION SAUVEGARDE PAIEMENT ---
   const handleSavePayment = () => {
     handleOptimisticUpdate({
-      value: editedValue
+      value: editedValue,
+      payment_type: paymentMode,
+      installments: paymentMode === 'installments' ? installments : null
     })
     setEditingPayment(false)
   }
@@ -327,8 +323,15 @@ export function ProspectView({
     }
   }
 
+  // Calculs pour l'affichage (mode édition)
   const monthlyAmount = editedValue / (installments || 1)
   const commissionAmount = (editedValue * commissionRate) / 100
+
+  // Calculs pour l'affichage (mode lecture - basé sur le prospect sauvegardé)
+  const savedInstallments = localProspect.installments || 1
+  const savedCommission = (localProspect.value || 0) * (commissionRate / 100)
+  const savedMonthlyPayment = (localProspect.value || 0) / savedInstallments
+  const savedMonthlyCommission = savedCommission / savedInstallments
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -475,17 +478,35 @@ export function ProspectView({
                             <button onClick={handleSavePayment} className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500">Valider les détails</button>
                           </div>
                         ) : (
+                          // --- CORRECTION : AFFICHAGE MODE LECTURE DETAILLÉ ---
                           <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs text-slate-400">Montant Vente</span>
-                              <span className="text-sm font-bold text-white">{editedValue.toLocaleString()}€</span>
+                              <span className="text-sm font-bold text-white">{(localProspect.value || 0).toLocaleString()}€</span>
                             </div>
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs text-slate-400">Commission ({commissionRate}%)</span>
-                              <span className="text-sm font-bold text-emerald-400">+{commissionAmount.toFixed(2)}€</span>
+                              <span className="text-xs text-slate-400">Commission Totale ({commissionRate}%)</span>
+                              <span className="text-sm font-bold text-emerald-400">+{savedCommission.toFixed(2)}€</span>
                             </div>
-                            <div className="pt-2 border-t border-emerald-500/20 text-center">
-                              <span className="text-xs font-medium text-emerald-300">{paymentMode === 'cash' ? 'Paiement Comptant' : `Paiement en ${installments}x`}</span>
+                            
+                            {/* DETAILS MENSUELS SI PLUSIEURS FOIS */}
+                            {localProspect.payment_type === 'installments' && (
+                                <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs text-slate-300">Client paie (x{savedInstallments}) :</span>
+                                        <span className="text-sm font-semibold text-white">{savedMonthlyPayment.toFixed(2)}€ / mois</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs text-emerald-400/80">Tu reçois :</span>
+                                        <span className="text-sm font-bold text-emerald-400">{savedMonthlyCommission.toFixed(2)}€ / mois</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="pt-2 border-t border-emerald-500/20 text-center mt-2">
+                              <span className="text-[10px] font-medium text-emerald-300/60 uppercase tracking-wider">
+                                {localProspect.payment_type === 'installments' ? `Paiement en ${savedInstallments} fois` : 'Paiement Comptant'}
+                              </span>
                             </div>
                           </div>
                         )}
