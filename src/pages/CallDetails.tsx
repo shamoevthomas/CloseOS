@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign, Calendar, Award, UserPlus, X, Tag } from 'lucide-react'
+import { 
+  ArrowLeft, CheckCircle2, XCircle, Clock, FileText, 
+  DollarSign, Calendar, Award, UserPlus, X, Tag,
+  LayoutList, PenTool // Ajout des icônes pour les onglets
+} from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useCalls } from '../contexts/CallsContext'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
@@ -87,6 +91,9 @@ export function CallDetails() {
   // AJOUT: récupération de addProspect pour mettre à jour la liste globale
   const { prospects, updateProspect, addProspect } = useProspects()
   const { offers } = useOffers()
+
+  // --- NOUVEAU STATE POUR LES ONGLETS ---
+  const [activeTab, setActiveTab] = useState<'qualification' | 'notes'>('qualification')
 
   // Form state
   const [selectedOutcome, setSelectedOutcome] = useState<'won' | 'lost' | 'followup' | 'noshow' | null>(null)
@@ -189,6 +196,14 @@ export function CallDetails() {
       totalOffers: offers.length
     })
   }, [call, prospect, prospectOffer, prospects.length, offers.length])
+
+  // --- NOUVEAU : SYNCHRONISATION DES NOTES EXISTANTES ---
+  useEffect(() => {
+    if (prospect && prospect.notes && !notes) {
+      // On charge l'historique des notes si on n'a rien encore écrit
+      setNotes(prospect.notes)
+    }
+  }, [prospect])
 
   // Auto-fill amount from offer when "Won" is selected
   useEffect(() => {
@@ -332,32 +347,35 @@ export function CallDetails() {
         noshow: 'noshow'
       }
 
-      // Build notes with call summary
-      let callNotes = `[${new Date().toLocaleDateString('fr-FR')}] Appel: ${selectedOutcome}`
+      // Build technical summary for the call
+      let callSummary = `[${new Date().toLocaleDateString('fr-FR')}] Appel: ${selectedOutcome}`
 
       if (selectedOutcome === 'won') {
-        callNotes += `\n- Montant: ${amount}€ (${paymentType === 'comptant' ? 'Comptant' : `${installmentsCount}x`})`
-        callNotes += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/mois)` : ''}`
+        callSummary += `\n- Montant: ${amount}€ (${paymentType === 'comptant' ? 'Comptant' : `${installmentsCount}x`})`
+        callSummary += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/mois)` : ''}`
       }
 
       if (selectedOutcome === 'followup') {
         const reason = followupReason === 'Autre' ? followupReasonOther : followupReason
-        callNotes += `\n- Motif: ${reason}`
-        callNotes += `\n- Rappel: ${new Date(followupDate).toLocaleDateString('fr-FR')}`
+        callSummary += `\n- Motif: ${reason}`
+        callSummary += `\n- Rappel: ${new Date(followupDate).toLocaleDateString('fr-FR')}`
       }
 
       if (selectedOutcome === 'lost') {
         const reason = lostReason === 'Autre' ? lostReasonOther : lostReason
-        callNotes += `\n- Motif: ${reason}`
+        callSummary += `\n- Motif: ${reason}`
       }
 
-      if (notes) {
-        callNotes += `\n- Notes: ${notes}`
-      }
+      // --- LOGIQUE DE FUSION DES NOTES ---
+      // 'notes' contient maintenant tout ce qui est dans le textarea (historique + nouvelles notes)
+      // On va juste ajouter le résumé technique de cet appel spécifique à la fin pour garder une trace
+      const updatedNotes = notes 
+        ? `${notes}\n\n--- Qualification Automatique ---\n${callSummary}`
+        : callSummary;
 
       const updates: any = {
         stage: stageMap[selectedOutcome!],
-        notes: prospect.notes ? `${prospect.notes}\n\n${callNotes}` : callNotes,
+        notes: updatedNotes, 
         lastContact: new Date()
       }
 
@@ -486,7 +504,33 @@ export function CallDetails() {
           )}
         </div>
 
-        {/* Main Form */}
+        {/* --- NOUVEAU : SYSTÈME D'ONGLETS --- */}
+        <div className="flex gap-4 my-6 border-b border-gray-800">
+            <button 
+                onClick={() => setActiveTab('qualification')}
+                className={cn(
+                    "pb-3 px-2 text-sm font-medium flex items-center gap-2 transition-all relative",
+                    activeTab === 'qualification' ? "text-blue-400" : "text-gray-400 hover:text-gray-200"
+                )}
+            >
+                <LayoutList className="h-4 w-4" />
+                Qualification
+                {activeTab === 'qualification' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-400 rounded-t-full" />}
+            </button>
+            <button 
+                onClick={() => setActiveTab('notes')}
+                className={cn(
+                    "pb-3 px-2 text-sm font-medium flex items-center gap-2 transition-all relative",
+                    activeTab === 'notes' ? "text-blue-400" : "text-gray-400 hover:text-gray-200"
+                )}
+            >
+                <PenTool className="h-4 w-4" />
+                Notes d'appel
+                {activeTab === 'notes' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-400 rounded-t-full" />}
+            </button>
+        </div>
+
+        {/* Main Content */}
         <div className="space-y-6">
           
           {/* --- NOUVEAU BANDEAU DE CREATION --- */}
@@ -510,319 +554,314 @@ export function CallDetails() {
             </div>
           )}
 
-          {/* Warning if no prospect found - MODIFIED to rely on above banner logic visually but keeping structure */}
-          {/* Note: In previous code this was down below, but now we handle it with the banner above. */}
-          
           {/* Form Content - Apply blur if no prospect */}
-          <div className={cn("space-y-6 transition-all duration-500", !prospect ? "opacity-50 pointer-events-none blur-[2px]" : "opacity-100")}>
+          <div className={cn("transition-all duration-500", !prospect ? "opacity-50 pointer-events-none blur-[2px]" : "opacity-100")}>
             
-            {/* Outcome Selection */}
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
-                <label className="mb-4 block text-sm font-semibold text-white">
-                Résultat de l'appel <span className="text-red-400">*</span>
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {outcomes.map((outcome) => {
-                    const Icon = outcome.icon
-                    const isSelected = selectedOutcome === outcome.id
+            {/* ONGLET 1 : QUALIFICATION (Formulaire Complet) */}
+            {activeTab === 'qualification' && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+                    {/* Outcome Selection */}
+                    <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+                        <label className="mb-4 block text-sm font-semibold text-white">
+                        Résultat de l'appel <span className="text-red-400">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {outcomes.map((outcome) => {
+                            const Icon = outcome.icon
+                            const isSelected = selectedOutcome === outcome.id
 
-                    return (
-                    <button
-                        key={outcome.id}
-                        onClick={() => setSelectedOutcome(outcome.id)}
-                        className={cn(
-                        'group relative flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all',
-                        isSelected
-                            ? `${outcome.bgColor} ${outcome.borderColor} shadow-lg`
-                            : 'border-gray-800 bg-gray-800/30 hover:border-gray-700 hover:bg-gray-800/50'
-                        )}
-                    >
-                        <div className={cn(
-                        'flex h-12 w-12 items-center justify-center rounded-full transition-all',
-                        isSelected
-                            ? outcome.bgColor
-                            : 'bg-gray-700/50 group-hover:bg-gray-700'
-                        )}>
-                        <Icon className={cn(
-                            'h-6 w-6 transition-colors',
-                            isSelected
-                            ? outcome.textColor
-                            : 'text-gray-400 group-hover:text-gray-300'
-                        )} />
-                        </div>
-                        <div className="text-center">
-                        <p className={cn(
-                            'text-sm font-semibold transition-colors',
-                            isSelected ? outcome.textColor : 'text-gray-300 group-hover:text-white'
-                        )}>
-                            {outcome.label}
-                        </p>
-                        <p className="mt-1 text-xs text-gray-500">
-                            {outcome.description}
-                        </p>
-                        </div>
+                            return (
+                            <button
+                                key={outcome.id}
+                                onClick={() => setSelectedOutcome(outcome.id)}
+                                className={cn(
+                                'group relative flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all',
+                                isSelected
+                                    ? `${outcome.bgColor} ${outcome.borderColor} shadow-lg`
+                                    : 'border-gray-800 bg-gray-800/30 hover:border-gray-700 hover:bg-gray-800/50'
+                                )}
+                            >
+                                <div className={cn(
+                                'flex h-12 w-12 items-center justify-center rounded-full transition-all',
+                                isSelected
+                                    ? outcome.bgColor
+                                    : 'bg-gray-700/50 group-hover:bg-gray-700'
+                                )}>
+                                <Icon className={cn(
+                                    'h-6 w-6 transition-colors',
+                                    isSelected
+                                    ? outcome.textColor
+                                    : 'text-gray-400 group-hover:text-gray-300'
+                                )} />
+                                </div>
+                                <div className="text-center">
+                                <p className={cn(
+                                    'text-sm font-semibold transition-colors',
+                                    isSelected ? outcome.textColor : 'text-gray-300 group-hover:text-white'
+                                )}>
+                                    {outcome.label}
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500">
+                                    {outcome.description}
+                                </p>
+                                </div>
 
-                        {/* Selected indicator */}
-                        {isSelected && (
-                        <div className="absolute -top-2 -right-2">
-                            <div className={cn('rounded-full p-1', outcome.bgColor, outcome.borderColor, 'border-2')}>
-                            <CheckCircle2 className={cn('h-4 w-4', outcome.textColor)} />
+                                {/* Selected indicator */}
+                                {isSelected && (
+                                <div className="absolute -top-2 -right-2">
+                                    <div className={cn('rounded-full p-1', outcome.bgColor, outcome.borderColor, 'border-2')}>
+                                    <CheckCircle2 className={cn('h-4 w-4', outcome.textColor)} />
+                                    </div>
+                                </div>
+                                )}
+                            </button>
+                            )
+                        })}
+                        </div>
+                    </div>
+
+                    {/* Won: Payment Terms & Commission */}
+                    {selectedOutcome === 'won' && (
+                        <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6">
+                        <h3 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
+                            <DollarSign className="h-4 w-4" />
+                            Détails de la vente
+                        </h3>
+
+                        {/* Amount Input */}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-white">
+                            Montant de la vente <span className="text-red-400">*</span>
+                            </label>
+                            <div className="relative">
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={amount || ''}
+                                onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+                                placeholder="Ex: 5000"
+                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 pr-12 text-lg text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                            />
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
+                                €
+                            </div>
                             </div>
                         </div>
+
+                        {/* Payment Type Toggle */}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-white">
+                            Mode de paiement
+                            </label>
+                            <div className="flex gap-2">
+                            <button
+                                onClick={() => setPaymentType('comptant')}
+                                className={cn(
+                                'flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
+                                paymentType === 'comptant'
+                                    ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                                    : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                                )}
+                            >
+                                Comptant
+                            </button>
+                            <button
+                                onClick={() => setPaymentType('installments')}
+                                className={cn(
+                                'flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
+                                paymentType === 'installments'
+                                    ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                                    : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                                )}
+                            >
+                                Plusieurs fois
+                            </button>
+                            </div>
+                        </div>
+
+                        {/* Installments Count */}
+                        {paymentType === 'installments' && (
+                            <div>
+                            <label className="mb-2 block text-sm font-medium text-white">
+                                Nombre de mensualités
+                            </label>
+                            <select
+                                value={installmentsCount}
+                                onChange={(e) => setInstallmentsCount(parseInt(e.target.value))}
+                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                            >
+                                {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
+                                <option key={num} value={num}>{num} mois</option>
+                                ))}
+                            </select>
+                            <p className="mt-2 text-sm text-gray-400">
+                                Montant par mois: <span className="text-emerald-400 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
+                            </p>
+                            </div>
                         )}
-                    </button>
-                    )
-                })}
+
+                        {/* Commission Display */}
+                        {amount > 0 && (
+                            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Award className="h-4 w-4 text-emerald-400" />
+                                <h4 className="text-sm font-semibold text-emerald-400">Ta Commission</h4>
+                            </div>
+                            <p className="text-2xl font-bold text-emerald-400">
+                                {totalCommission.toFixed(2)} €
+                            </p>
+                            {paymentType === 'installments' && (
+                                <p className="mt-1 text-sm text-gray-300">
+                                Tu recevras: <span className="font-semibold text-emerald-400">{monthlyCommission.toFixed(2)}€/mois</span>
+                                </p>
+                            )}
+                            <p className="mt-2 text-xs text-gray-500">
+                                Taux de commission: {commissionRate}%
+                            </p>
+                            </div>
+                        )}
+                        </div>
+                    )}
+
+                    {/* Follow up: Reschedule & Objection Tracking */}
+                    {selectedOutcome === 'followup' && (
+                        <div className="space-y-4 rounded-xl border border-orange-500/30 bg-orange-500/5 p-6">
+                        <h3 className="text-sm font-semibold text-orange-400 flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            Informations de suivi
+                        </h3>
+
+                        {/* Reschedule Date */}
+                        <div>
+                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                            <Calendar className="h-4 w-4" />
+                            Date de reprogrammation <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                            type="datetime-local"
+                            value={followupDate}
+                            onChange={(e) => setFollowupDate(e.target.value)}
+                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                            />
+                        </div>
+
+                        {/* Reason Selector */}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-white">
+                            Motif du report <span className="text-red-400">*</span>
+                            </label>
+                            <select
+                            value={followupReason}
+                            onChange={(e) => {
+                                setFollowupReason(e.target.value)
+                                if (e.target.value !== 'Autre') {
+                                setFollowupReasonOther('')
+                                }
+                            }}
+                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                            >
+                            <option value="">Sélectionnez un motif</option>
+                            {objectionReasons.map((reason) => (
+                                <option key={reason} value={reason}>
+                                {reason}
+                                </option>
+                            ))}
+                            </select>
+
+                            {/* Conditional "Autre" textarea */}
+                            {followupReason === 'Autre' && (
+                            <div className="mt-3">
+                                <label className="mb-2 block text-sm font-medium text-white">
+                                Précisez le motif <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                type="text"
+                                value={followupReasonOther}
+                                onChange={(e) => setFollowupReasonOther(e.target.value)}
+                                placeholder="Ex: Indisponibilité exceptionnelle..."
+                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                                />
+                            </div>
+                            )}
+                        </div>
+                        </div>
+                    )}
+
+                    {/* Lost: Objection Tracking */}
+                    {selectedOutcome === 'lost' && (
+                        <div className="space-y-4 rounded-xl border border-red-500/30 bg-red-500/5 p-6">
+                        <h3 className="text-sm font-semibold text-red-400 flex items-center gap-2">
+                            <XCircle className="h-4 w-4" />
+                            Raison de la perte
+                        </h3>
+
+                        {/* Reason Selector */}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-white">
+                            Motif <span className="text-red-400">*</span>
+                            </label>
+                            <select
+                            value={lostReason}
+                            onChange={(e) => {
+                                setLostReason(e.target.value)
+                                if (e.target.value !== 'Autre') {
+                                setLostReasonOther('')
+                                }
+                            }}
+                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
+                            >
+                            <option value="">Sélectionnez un motif</option>
+                            {objectionReasons.map((reason) => (
+                                <option key={reason} value={reason}>
+                                {reason}
+                                </option>
+                            ))}
+                            </select>
+
+                            {/* Conditional "Autre" textarea */}
+                            {lostReason === 'Autre' && (
+                            <div className="mt-3">
+                                <label className="mb-2 block text-sm font-medium text-white">
+                                Précisez le motif <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                type="text"
+                                value={lostReasonOther}
+                                onChange={(e) => setLostReasonOther(e.target.value)}
+                                placeholder="Ex: Prix trop élevé..."
+                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
+                                />
+                            </div>
+                            )}
+                        </div>
+                        </div>
+                    )}
                 </div>
-            </div>
+            )}
 
-            {/* Won: Payment Terms & Commission */}
-            {selectedOutcome === 'won' && (
-                <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6">
-                <h3 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Détails de la vente
-                </h3>
-
-                {/* Amount Input */}
-                <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                    Montant de la vente <span className="text-red-400">*</span>
+            {/* ONGLET 2: NOTES (Le nouvel onglet demandé) */}
+            {activeTab === 'notes' && (
+                <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 h-[500px] flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
+                    <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
+                        <FileText className="h-4 w-4" />
+                        Historique et Notes de l'appel
                     </label>
-                    <div className="relative">
-                    <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={amount || ''}
-                        onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                        placeholder="Ex: 5000"
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 pr-12 text-lg text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Prenez vos notes ici. Elles seront enregistrées dans la fiche prospect..."
+                        className="flex-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-base text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none leading-relaxed"
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
-                        €
-                    </div>
-                    </div>
-                </div>
-
-                {/* Payment Type Toggle */}
-                <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                    Mode de paiement
-                    </label>
-                    <div className="flex gap-2">
-                    <button
-                        onClick={() => setPaymentType('comptant')}
-                        className={cn(
-                        'flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
-                        paymentType === 'comptant'
-                            ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                            : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
-                        )}
-                    >
-                        Comptant
-                    </button>
-                    <button
-                        onClick={() => setPaymentType('installments')}
-                        className={cn(
-                        'flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
-                        paymentType === 'installments'
-                            ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                            : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
-                        )}
-                    >
-                        Plusieurs fois
-                    </button>
-                    </div>
-                </div>
-
-                {/* Installments Count */}
-                {paymentType === 'installments' && (
-                    <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                        Nombre de mensualités
-                    </label>
-                    <select
-                        value={installmentsCount}
-                        onChange={(e) => setInstallmentsCount(parseInt(e.target.value))}
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                    >
-                        {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
-                        <option key={num} value={num}>{num} mois</option>
-                        ))}
-                    </select>
-                    <p className="mt-2 text-sm text-gray-400">
-                        Montant par mois: <span className="text-emerald-400 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
+                    <p className="mt-3 text-xs text-gray-500 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Toutes vos notes sont synchronisées avec le Pipeline.
                     </p>
-                    </div>
-                )}
-
-                {/* Commission Display */}
-                {amount > 0 && (
-                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Award className="h-4 w-4 text-emerald-400" />
-                        <h4 className="text-sm font-semibold text-emerald-400">Ta Commission</h4>
-                    </div>
-                    <p className="text-2xl font-bold text-emerald-400">
-                        {totalCommission.toFixed(2)} €
-                    </p>
-                    {paymentType === 'installments' && (
-                        <p className="mt-1 text-sm text-gray-300">
-                        Tu recevras: <span className="font-semibold text-emerald-400">{monthlyCommission.toFixed(2)}€/mois</span>
-                        </p>
-                    )}
-                    <p className="mt-2 text-xs text-gray-500">
-                        Taux de commission: {commissionRate}%
-                    </p>
-                    </div>
-                )}
-                </div>
-            )}
-
-            {/* Follow up: Reschedule & Objection Tracking */}
-            {selectedOutcome === 'followup' && (
-                <div className="space-y-4 rounded-xl border border-orange-500/30 bg-orange-500/5 p-6">
-                <h3 className="text-sm font-semibold text-orange-400 flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Informations de suivi
-                </h3>
-
-                {/* Reschedule Date */}
-                <div>
-                    <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
-                    <Calendar className="h-4 w-4" />
-                    Date de reprogrammation <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                    type="datetime-local"
-                    value={followupDate}
-                    onChange={(e) => setFollowupDate(e.target.value)}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
-                    />
-                </div>
-
-                {/* Reason Selector */}
-                <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                    Motif du report <span className="text-red-400">*</span>
-                    </label>
-                    <select
-                    value={followupReason}
-                    onChange={(e) => {
-                        setFollowupReason(e.target.value)
-                        if (e.target.value !== 'Autre') {
-                        setFollowupReasonOther('')
-                        }
-                    }}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
-                    >
-                    <option value="">Sélectionnez un motif</option>
-                    {objectionReasons.map((reason) => (
-                        <option key={reason} value={reason}>
-                        {reason}
-                        </option>
-                    ))}
-                    </select>
-
-                    {/* Conditional "Autre" textarea */}
-                    {followupReason === 'Autre' && (
-                    <div className="mt-3">
-                        <label className="mb-2 block text-sm font-medium text-white">
-                        Précisez le motif <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                        type="text"
-                        value={followupReasonOther}
-                        onChange={(e) => setFollowupReasonOther(e.target.value)}
-                        placeholder="Ex: Indisponibilité exceptionnelle..."
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
-                        />
-                    </div>
-                    )}
-                </div>
-                </div>
-            )}
-
-            {/* Lost: Objection Tracking */}
-            {selectedOutcome === 'lost' && (
-                <div className="space-y-4 rounded-xl border border-red-500/30 bg-red-500/5 p-6">
-                <h3 className="text-sm font-semibold text-red-400 flex items-center gap-2">
-                    <XCircle className="h-4 w-4" />
-                    Raison de la perte
-                </h3>
-
-                {/* Reason Selector */}
-                <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                    Motif <span className="text-red-400">*</span>
-                    </label>
-                    <select
-                    value={lostReason}
-                    onChange={(e) => {
-                        setLostReason(e.target.value)
-                        if (e.target.value !== 'Autre') {
-                        setLostReasonOther('')
-                        }
-                    }}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
-                    >
-                    <option value="">Sélectionnez un motif</option>
-                    {objectionReasons.map((reason) => (
-                        <option key={reason} value={reason}>
-                        {reason}
-                        </option>
-                    ))}
-                    </select>
-
-                    {/* Conditional "Autre" textarea */}
-                    {lostReason === 'Autre' && (
-                    <div className="mt-3">
-                        <label className="mb-2 block text-sm font-medium text-white">
-                        Précisez le motif <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                        type="text"
-                        value={lostReasonOther}
-                        onChange={(e) => setLostReasonOther(e.target.value)}
-                        placeholder="Ex: Prix trop élevé..."
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
-                        />
-                    </div>
-                    )}
-                </div>
-                </div>
-            )}
-
-            {/* Notes Section */}
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
-                <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-                <FileText className="h-4 w-4" />
-                Notes de l'appel
-                </label>
-                <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Résumez les points clés de votre conversation, les objections, les prochaines étapes..."
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
-                rows={6}
-                />
-                <p className="mt-2 text-xs text-gray-500">
-                Ces notes seront ajoutées à la fiche prospect dans le Pipeline
-                </p>
-            </div>
-
-            {/* Warning if no prospect found - GARDÉ mais masqué implicitement si on utilise le bandeau du haut, je le laisse comme demandé */}
-            {!prospect && (
-                <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
-                <p className="text-sm text-yellow-400">
-                    ⚠️ Aucun prospect trouvé pour cet appel. Les données ne pourront pas être sauvegardées dans le Pipeline.
-                </p>
                 </div>
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between gap-4 pt-4">
+            <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-800 mt-6">
                 <button
                 onClick={() => navigate('/')}
                 className="rounded-lg border border-gray-700 bg-gray-800 px-6 py-3 text-sm font-semibold text-gray-300 transition-all hover:bg-gray-700"
@@ -839,7 +878,7 @@ export function CallDetails() {
                     : 'bg-gray-700 cursor-not-allowed opacity-50'
                 )}
                 >
-                {isSaving ? 'Enregistrement...' : 'Enregistrer et retourner au Cockpit'}
+                {isSaving ? 'Enregistrement...' : 'Tout Enregistrer'}
                 </button>
             </div>
           </div>
