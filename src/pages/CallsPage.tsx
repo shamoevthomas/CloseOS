@@ -156,7 +156,21 @@ export function CallsPage() {
       answered: true
     })
 
-    const callDbId = newCall?.id || newCall?.data?.[0]?.id || Date.now()
+    // --- CORRECTION MAJEURE ICI ---
+    // Gestion robuste de l'ID selon ce que renvoie addCallLog (Objet, Tableau ou null)
+    let callDbId = Date.now(); // Fallback
+    
+    if (newCall) {
+        if (typeof newCall.id !== 'undefined') {
+            callDbId = newCall.id;
+        } else if (Array.isArray(newCall) && newCall.length > 0) {
+            callDbId = newCall[0].id;
+        } else if (newCall.data && Array.isArray(newCall.data) && newCall.data.length > 0) {
+            callDbId = newCall.data[0].id;
+        }
+    }
+
+    console.log("ID Appel généré:", callDbId); // Debug
 
     // Fermeture des modales
     setIsMeetModalOpen(false)
