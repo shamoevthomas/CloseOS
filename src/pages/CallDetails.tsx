@@ -23,7 +23,7 @@ const objectionReasons = [
   'Autre'
 ]
 
-// Ajout des sources pour le formulaire
+// Ajout des sources pour le formulaire de création
 const SOURCES = [
   'LinkedIn Ads',
   'Facebook Ads',
@@ -84,7 +84,8 @@ export function CallDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { callHistory } = useCalls()
-  const { prospects, updateProspect } = useProspects()
+  // AJOUT: récupération de addProspect pour mettre à jour la liste globale
+  const { prospects, updateProspect, addProspect } = useProspects()
   const { offers } = useOffers()
 
   // Form state
@@ -106,7 +107,7 @@ export function CallDetails() {
   const [lostReason, setLostReason] = useState('')
   const [lostReasonOther, setLostReasonOther] = useState('')
 
-  // --- NOUVEAU : ETATS POUR LA CREATION DE PROSPECT ---
+  // --- NOUVEAUX ETATS POUR LA CREATION DE PROSPECT ---
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [createdProspect, setCreatedProspect] = useState<Prospect | null>(null)
@@ -122,7 +123,7 @@ export function CallDetails() {
   const call = callHistory.find(c => c.id === Number(id))
 
   // Enhanced prospect lookup with multiple matching strategies
-  // Modification ici pour prendre en compte le prospect créé à la volée
+  // MODIFICATION: On regarde d'abord si un prospect vient d'être créé
   const prospect = createdProspect || (call && call.contactType === 'prospect'
     ? prospects.find(p => {
         // Try exact contact name match
@@ -167,6 +168,28 @@ export function CallDetails() {
       })()
     : null
 
+  // Comprehensive debugging logs
+  useEffect(() => {
+    console.log('🔍 Call Details Debug:', {
+      callId: call?.id,
+      contactName: call?.contactName,
+      contactType: call?.contactType,
+      prospectFound: !!prospect,
+      prospectId: prospect?.id,
+      prospectOfferId: prospect?.offerId,
+      prospectOfferName: prospect?.offer,
+      offerFound: !!prospectOffer,
+      offerDetails: prospectOffer ? {
+        id: prospectOffer.id,
+        name: prospectOffer.name,
+        price: prospectOffer.price,
+        commission: prospectOffer.commission
+      } : null,
+      totalProspects: prospects.length,
+      totalOffers: offers.length
+    })
+  }, [call, prospect, prospectOffer, prospects.length, offers.length])
+
   // Auto-fill amount from offer when "Won" is selected
   useEffect(() => {
     if (selectedOutcome === 'won' && prospectOffer && amount === 0) {
@@ -178,7 +201,7 @@ export function CallDetails() {
     }
   }, [selectedOutcome, prospectOffer, amount])
 
-  // --- NOUVEAU : FONCTION DE CREATION ---
+  // --- NOUVELLE FONCTION DE CREATION DE PROSPECT ---
   const handleCreateProspect = async () => {
     if (!newProspectForm.name) return
     setIsCreating(true)
@@ -228,6 +251,11 @@ export function CallDetails() {
             contact_type: 'prospect'
           })
           .eq('id', call.id)
+      }
+
+      // AJOUT CRITIQUE: Mise à jour du contexte pour l'affichage immédiat
+      if (addProspect) {
+        addProspect(insertedProspect as Prospect)
       }
 
       setCreatedProspect(insertedProspect as Prospect)
@@ -461,7 +489,7 @@ export function CallDetails() {
         {/* Main Form */}
         <div className="space-y-6">
           
-          {/* --- NOUVEAU : BANDEAU CREATION PROSPECT --- */}
+          {/* --- NOUVEAU BANDEAU DE CREATION --- */}
           {!prospect && (
             <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-6 flex items-center justify-between animate-in fade-in">
               <div className="flex items-center gap-4">
@@ -482,7 +510,12 @@ export function CallDetails() {
             </div>
           )}
 
+          {/* Warning if no prospect found - MODIFIED to rely on above banner logic visually but keeping structure */}
+          {/* Note: In previous code this was down below, but now we handle it with the banner above. */}
+          
+          {/* Form Content - Apply blur if no prospect */}
           <div className={cn("space-y-6 transition-all duration-500", !prospect ? "opacity-50 pointer-events-none blur-[2px]" : "opacity-100")}>
+            
             {/* Outcome Selection */}
             <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
                 <label className="mb-4 block text-sm font-semibold text-white">
@@ -779,7 +812,7 @@ export function CallDetails() {
                 </p>
             </div>
 
-            {/* Warning if no prospect found */}
+            {/* Warning if no prospect found - GARDÉ mais masqué implicitement si on utilise le bandeau du haut, je le laisse comme demandé */}
             {!prospect && (
                 <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
                 <p className="text-sm text-yellow-400">
