@@ -11,7 +11,9 @@ import {
   FileText,
   Save,
   ExternalLink,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Plus,
+  ChevronDown
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
@@ -20,8 +22,12 @@ import { useCalls } from '../contexts/CallsContext'
 import { MaskedText } from '../components/MaskedText'
 import { supabase } from '../lib/supabase'
 
-// Suppression des imports de l'ancien Overlay et des modales de fin d'appel (gérées ailleurs)
-// On garde juste la logique de liste et de lancement
+// Type pour les scripts
+interface Script {
+  id: number
+  title: string
+  content: string
+}
 
 export function CallsPage() {
   const navigate = useNavigate()
@@ -39,49 +45,147 @@ export function CallsPage() {
   const [isMeetModalOpen, setIsMeetModalOpen] = useState(false)
   const [meetLinkInput, setMeetLinkInput] = useState('') 
 
-  // Script Perso
+  // --- GESTION DES SCRIPTS MULTIPLES ---
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false)
-  const [userScript, setUserScript] = useState('')
+  const [scripts, setScripts] = useState<Script[]>([])
+  const [selectedScriptId, setSelectedScriptId] = useState<number | 'new'>('new')
+  const [scriptContent, setScriptContent] = useState('')
+  const [scriptTitle, setScriptTitle] = useState('') // Pour le nouveau script
   const [isSavingScript, setIsSavingScript] = useState(false)
 
   useEffect(() => {
-    fetchUserScript()
-  }, [])
+    if (isScriptModalOpen) {
+      fetchUserScripts()
+    }
+  }, [isScriptModalOpen])
 
-  const fetchUserScript = async () => {
+  // Charger la liste des scripts
+  const fetchUserScripts = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data } = await supabase
+
+      const { data, error } = await supabase
         .from('user_scripts')
-        .select('content')
+        .select('*')
         .eq('user_id', user.id)
-        .single()
-      if (data) setUserScript(data.content)
+        .order('id', { ascending: true })
+
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        setScripts(data)
+        // Sélectionner le premier script par défaut
+        setSelectedScriptId(data[0].id)
+        setScriptContent(data[0].content)
+        setScriptTitle(data[0].title || 'Mon Script')
+      } else {
+        // Aucun script, mode création par défaut
+        setScripts([])
+        setSelectedScriptId('new')
+        setScriptContent('')
+        setScriptTitle('Mon Script de Vente')
+      }
     } catch (error) {
-      console.error('Erreur chargement script:', error)
+      console.error('Erreur chargement scripts:', error)
     }
   }
 
+  // Changer de script via le menu déroulant
+  const handleScriptChange = (id: string) => {
+    if (id === 'new') {
+      setSelectedScriptId('new')
+      setScriptContent('')
+      setScriptTitle('')
+    } else {
+      const script = scripts.find(s => s.id === Number(id))
+      if (script) {
+        setSelectedScriptId(script.id)
+        setScriptContent(script.content)
+        setScriptTitle(script.title)
+      }
+    }
+  }
+
+  // Sauvegarder (Créer ou Mettre à jour)
   const handleSaveScript = async () => {
+    if (!scriptTitle.trim()) {
+        alert("Veuillez donner un titre à votre script")
+        return
+    }
+
     setIsSavingScript(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { error } = await supabase
-        .from('user_scripts')
-        .upsert({ 
-          user_id: user.id, 
-          content: userScript,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' })
 
-      if (error) throw error
-      setIsScriptModalOpen(false)
+      const scriptData = {
+        user_id: user.id,
+        title: scriptTitle,
+        content: scriptContent,
+        updated_at: new Date().toISOString()
+      }
+
+      if (selectedScriptId === 'new') {
+        // INSERT
+        const { data, error } = await supabase
+            .from('user_scripts')
+            .insert([scriptData])
+            .select()
+        
+        if (error) throw error
+        if (data) {
+            setScripts([...scripts, data[0]])
+            setSelectedScriptId(data[0].id)
+        }
+      } else {
+        // UPDATE
+        const { error } = await supabase
+            .from('user_scripts')
+            .update(scriptData)
+            .eq('id', selectedScriptId)
+
+        if (error) throw error
+        
+        // Mettre à jour la liste locale
+        setScripts(scripts.map(s => s.id === selectedScriptId ? { ...s, title: scriptTitle, content: scriptContent } : s))
+      }
+      
+      // On ne ferme pas forcément la modale, on montre juste que c'est sauvegardé (ou on ferme, au choix)
+      // setIsScriptModalOpen(false) 
+      alert("Script sauvegardé !")
+
     } catch (error) {
+      console.error(error)
       alert('Erreur sauvegarde script')
     } finally {
       setIsSavingScript(false)
+    }
+  }
+
+  // Supprimer un script
+  const handleDeleteScript = async () => {
+    if (selectedScriptId === 'new') return
+    if (!confirm("Voulez-vous vraiment supprimer ce script ?")) return
+
+    try {
+        const { error } = await supabase.from('user_scripts').delete().eq('id', selectedScriptId)
+        if (error) throw error
+
+        const newScripts = scripts.filter(s => s.id !== selectedScriptId)
+        setScripts(newScripts)
+        
+        if (newScripts.length > 0) {
+            setSelectedScriptId(newScripts[0].id)
+            setScriptContent(newScripts[0].content)
+            setScriptTitle(newScripts[0].title)
+        } else {
+            setSelectedScriptId('new')
+            setScriptContent('')
+            setScriptTitle('')
+        }
+    } catch (error) {
+        console.error("Erreur suppression", error)
     }
   }
 
@@ -105,14 +209,12 @@ export function CallsPage() {
 
   // --- ÉTAPE 1 : PRÉPARATION (Ouvre la modale Meet) ---
   const prepareCall = (contactId: number | null, type: 'prospect' | 'internal') => {
-    // On stocke la sélection
     if (contactId === null) {
         setSelectedContactId(null)
     } else {
         setSelectedContactId(contactId)
         setCallType(type)
     }
-    // On ferme la modale de sélection et on ouvre celle de Meet
     setIsNewCallModalOpen(false)
     setIsMeetModalOpen(true)
     setMeetLinkInput('')
@@ -122,13 +224,12 @@ export function CallsPage() {
     window.open('https://meet.google.com/new', '_blank')
   }
 
-  // --- ÉTAPE 2 : DÉMARRAGE COCKPIT (Redirection vers /live-call) ---
+  // --- ÉTAPE 2 : DÉMARRAGE COCKPIT ---
   const startCockpit = async () => {
     let contactName = 'Appel Vidéo Rapide'
     let finalContactId = 0
     let type = callType
 
-    // Récupération des infos du contact sélectionné
     if (selectedContactId) {
        if (callType === 'prospect') {
           const p = prospects.find(x => x.id === selectedContactId)
@@ -145,7 +246,6 @@ export function CallsPage() {
        }
     }
 
-    // Création de l'entrée dans l'historique
     const newCall = await addCallLog({
       contactId: finalContactId,
       contactName: contactName,
@@ -156,9 +256,7 @@ export function CallsPage() {
       answered: true
     })
 
-    // --- CORRECTION MAJEURE ICI ---
-    // Gestion robuste de l'ID selon ce que renvoie addCallLog (Objet, Tableau ou null)
-    let callDbId = Date.now(); // Fallback
+    let callDbId = Date.now();
     
     if (newCall) {
         if (typeof newCall.id !== 'undefined') {
@@ -170,17 +268,12 @@ export function CallsPage() {
         }
     }
 
-    console.log("ID Appel généré:", callDbId); // Debug
-
-    // Fermeture des modales
     setIsMeetModalOpen(false)
-    
-    // REDIRECTION VERS LA PAGE COCKPIT
     navigate(`/live-call?id=${callDbId}&name=${encodeURIComponent(contactName)}`)
   }
 
   const handleStartQuickVideoCall = () => {
-    setCallType('internal') // ou default
+    setCallType('internal')
     prepareCall(null, 'internal')
   }
 
@@ -225,7 +318,6 @@ export function CallsPage() {
               Script
             </button>
 
-            {/* BOUTON VISIO RAPIDE -> Ouvre la modale Meet */}
             <button
               onClick={handleStartQuickVideoCall}
               className="flex items-center gap-2 rounded-lg bg-purple-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600 shadow-lg shadow-purple-500/20"
@@ -295,7 +387,6 @@ export function CallsPage() {
              </div>
              
              <div className="space-y-6">
-                {/* Etape 1 */}
                 <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4">
                     <div className="flex items-start gap-3">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white font-bold text-sm">1</div>
@@ -309,14 +400,12 @@ export function CallsPage() {
                     </div>
                 </div>
 
-                {/* Etape 2 */}
                 <div className="rounded-lg bg-purple-500/10 border border-purple-500/20 p-4">
                     <div className="flex items-start gap-3">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-500 text-white font-bold text-sm">2</div>
                         <div className="flex-1">
                             <p className="font-semibold text-white">Lancer le Cockpit</p>
                             <p className="text-sm text-slate-400 mt-1">Accédez à votre script, prenez des notes et enregistrez l'écran.</p>
-                            
                             <div className="mt-3 relative">
                                 <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                                 <input 
@@ -327,7 +416,6 @@ export function CallsPage() {
                                     className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-9 pr-4 text-sm text-white focus:border-purple-500 focus:outline-none"
                                 />
                             </div>
-
                             <button onClick={startCockpit} className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-base font-bold text-white hover:bg-purple-500 shadow-lg">
                                 <Video className="h-5 w-5" /> 🚀 Lancer le Cockpit
                             </button>
@@ -339,31 +427,82 @@ export function CallsPage() {
         </div>
       )}
 
-      {/* --- MODAL SCRIPT --- */}
+      {/* --- MODALE SCRIPT (NOUVELLE VERSION MULTI-SCRIPTS) --- */}
       {isScriptModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-            <div className="mb-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">Mon Script de Vente</h2>
-              <button onClick={() => setIsScriptModalOpen(false)}><X className="h-6 w-6 text-slate-400"/></button>
+          <div className="w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl flex flex-col h-[80vh]">
+            
+            {/* Header avec Selecteur */}
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="p-2 bg-red-500/10 rounded-lg">
+                    <FileText className="h-6 w-6 text-red-500" />
+                </div>
+                <div className="flex-1">
+                    <label className="text-xs text-slate-500 block mb-1">Script sélectionné</label>
+                    <div className="flex gap-2">
+                        <div className="relative flex-1 max-w-xs">
+                            <select 
+                                value={selectedScriptId} 
+                                onChange={(e) => handleScriptChange(e.target.value)}
+                                className="w-full appearance-none bg-slate-950 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 pr-8 focus:outline-none focus:border-red-500"
+                            >
+                                <option value="new">+ Nouveau Script</option>
+                                {scripts.map(s => (
+                                    <option key={s.id} value={s.id}>{s.title}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                        </div>
+                        {selectedScriptId !== 'new' && (
+                            <button 
+                                onClick={handleDeleteScript}
+                                className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                title="Supprimer ce script"
+                            >
+                                <Trash2 className="h-5 w-5" />
+                            </button>
+                        )}
+                    </div>
+                </div>
+              </div>
+              <button onClick={() => setIsScriptModalOpen(false)} className="text-slate-400 hover:text-white self-start sm:self-center">
+                <X className="h-6 w-6" />
+              </button>
             </div>
-            <textarea
-              value={userScript}
-              onChange={(e) => setUserScript(e.target.value)}
-              className="mb-6 min-h-[400px] w-full rounded-xl border border-slate-800 bg-slate-950 p-4 text-slate-300 focus:border-red-400 focus:outline-none"
-              placeholder="Votre script ici..."
-            />
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setIsScriptModalOpen(false)} className="px-4 py-2 text-slate-400">Annuler</button>
-              <button onClick={handleSaveScript} disabled={isSavingScript} className="rounded-lg bg-red-500 px-6 py-2 text-white font-bold">
-                {isSavingScript ? '...' : 'Sauvegarder'}
+
+            {/* Corps du script (Titre + Contenu) */}
+            <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+                <div>
+                    <input 
+                        type="text" 
+                        value={scriptTitle}
+                        onChange={(e) => setScriptTitle(e.target.value)}
+                        placeholder="Titre du script (ex: Cold Call, Closing...)"
+                        className="w-full bg-transparent border-none text-xl font-bold text-white placeholder-slate-600 focus:outline-none focus:ring-0 px-0"
+                    />
+                </div>
+                <textarea
+                value={scriptContent}
+                onChange={(e) => setScriptContent(e.target.value)}
+                className="flex-1 w-full rounded-xl border border-slate-800 bg-slate-950 p-6 text-slate-300 focus:border-red-500/50 focus:outline-none resize-none leading-relaxed"
+                placeholder="Rédigez votre script ici..."
+                />
+            </div>
+
+            {/* Footer Actions */}
+            <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-800">
+              <button onClick={() => setIsScriptModalOpen(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Fermer</button>
+              <button onClick={handleSaveScript} disabled={isSavingScript} className="flex items-center gap-2 rounded-lg bg-red-500 px-6 py-2 text-white font-bold hover:bg-red-600 transition-all shadow-lg shadow-red-500/20">
+                <Save className="h-4 w-4" />
+                {isSavingScript ? 'Sauvegarde...' : 'Sauvegarder'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* --- MODAL NOUVEL APPEL (Selection Contact) --- */}
+      {/* --- MODAL NOUVEL APPEL --- */}
       {isNewCallModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleCloseNewCallModal} />
