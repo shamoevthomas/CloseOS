@@ -120,13 +120,13 @@ export default function CallRoom() {
       await new Promise(r => setTimeout(r, 2000)); // Attendre le téléchargement
     }
 
-    // 2. Mettre à jour la durée dans Supabase (pour que le résumé ait la bonne durée)
+    // 2. Mettre à jour la durée ET le statut dans Supabase
     if (callId) {
         try {
             await supabase.from('calls').update({
                 duration: formatDuration(callDuration),
-                // On pourrait aussi sauvegarder les notes partielles ici si besoin
-                // notes: notes 
+                status: 'completed', // AJOUT CRITIQUE : Marquer l'appel comme terminé
+                ended_at: new Date().toISOString()
             }).eq('id', callId);
         } catch (e) {
             console.error("Erreur sauvegarde durée", e);
@@ -135,7 +135,6 @@ export default function CallRoom() {
 
     // 3. Redirection vers la page de Qualification (CallDetails)
     if (callId) {
-        // --- MODIFICATION ICI : TRANSMISSION DES NOTES ---
         navigate(`/appels/${callId}`, { state: { liveNotes: notes } });
     } else {
         navigate('/'); // Fallback si pas d'ID
