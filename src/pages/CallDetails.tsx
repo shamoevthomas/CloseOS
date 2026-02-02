@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { 
   ArrowLeft, CheckCircle2, XCircle, Clock, FileText, 
   DollarSign, Calendar, Award, UserPlus, X, Tag,
-  LayoutList, PenTool // Ajout des icônes pour les onglets
+  LayoutList, PenTool 
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useCalls } from '../contexts/CallsContext'
@@ -175,43 +175,12 @@ export function CallDetails() {
       })()
     : null
 
-  // Comprehensive debugging logs
-  useEffect(() => {
-    console.log('🔍 Call Details Debug:', {
-      callId: call?.id,
-      contactName: call?.contactName,
-      contactType: call?.contactType,
-      prospectFound: !!prospect,
-      prospectId: prospect?.id,
-      prospectOfferId: prospect?.offerId,
-      prospectOfferName: prospect?.offer,
-      offerFound: !!prospectOffer,
-      offerDetails: prospectOffer ? {
-        id: prospectOffer.id,
-        name: prospectOffer.name,
-        price: prospectOffer.price,
-        commission: prospectOffer.commission
-      } : null,
-      totalProspects: prospects.length,
-      totalOffers: offers.length
-    })
-  }, [call, prospect, prospectOffer, prospects.length, offers.length])
-
-  // --- NOUVEAU : SYNCHRONISATION DES NOTES EXISTANTES ---
-  useEffect(() => {
-    if (prospect && prospect.notes && !notes) {
-      // On charge l'historique des notes si on n'a rien encore écrit
-      setNotes(prospect.notes)
-    }
-  }, [prospect])
-
   // Auto-fill amount from offer when "Won" is selected
   useEffect(() => {
     if (selectedOutcome === 'won' && prospectOffer && amount === 0) {
       const offerPrice = parseOfferPrice(prospectOffer.price)
       if (offerPrice > 0) {
         setAmount(offerPrice)
-        console.log('💰 Auto-filled amount from offer:', offerPrice, '€')
       }
     }
   }, [selectedOutcome, prospectOffer, amount])
@@ -347,35 +316,49 @@ export function CallDetails() {
         noshow: 'noshow'
       }
 
-      // Build technical summary for the call
-      let callSummary = `[${new Date().toLocaleDateString('fr-FR')}] Appel: ${selectedOutcome}`
+      // Build notes with call summary
+      let callNotes = `[${new Date().toLocaleDateString('fr-FR')}] Appel: ${selectedOutcome}`
 
       if (selectedOutcome === 'won') {
-        callSummary += `\n- Montant: ${amount}€ (${paymentType === 'comptant' ? 'Comptant' : `${installmentsCount}x`})`
-        callSummary += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/mois)` : ''}`
+        callNotes += `\n- Montant: ${amount}€ (${paymentType === 'comptant' ? 'Comptant' : `${installmentsCount}x`})`
+        callNotes += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/mois)` : ''}`
       }
 
       if (selectedOutcome === 'followup') {
         const reason = followupReason === 'Autre' ? followupReasonOther : followupReason
-        callSummary += `\n- Motif: ${reason}`
-        callSummary += `\n- Rappel: ${new Date(followupDate).toLocaleDateString('fr-FR')}`
+        callNotes += `\n- Motif: ${reason}`
+        callNotes += `\n- Rappel: ${new Date(followupDate).toLocaleDateString('fr-FR')}`
       }
 
       if (selectedOutcome === 'lost') {
         const reason = lostReason === 'Autre' ? lostReasonOther : lostReason
-        callSummary += `\n- Motif: ${reason}`
+        callNotes += `\n- Motif: ${reason}`
       }
 
-      // --- LOGIQUE DE FUSION DES NOTES ---
-      // 'notes' contient maintenant tout ce qui est dans le textarea (historique + nouvelles notes)
-      // On va juste ajouter le résumé technique de cet appel spécifique à la fin pour garder une trace
-      const updatedNotes = notes 
-        ? `${notes}\n\n--- Qualification Automatique ---\n${callSummary}`
-        : callSummary;
+      // --- CORRECTION MAJEURE ICI ---
+      // On prépare la note qui sera ajoutée dans le tableau call_notes (JSONB)
+      const noteContent = notes 
+        ? `${notes}\n\n--- Résumé Technique ---\n${callNotes}` 
+        : callNotes
+
+      const newCallNote = {
+        id: crypto.randomUUID(),
+        date: new Date().toISOString(),
+        content: noteContent,
+        type: 'call',
+        call_id: id,
+        author: 'Closer' // Ou récupérer le nom de l'user si dispo
+      }
+
+      // On récupère les notes existantes (sécurité si undefined)
+      // Note: On caste en any[] car TS ne connait pas forcément la structure call_notes sur Prospect
+      const currentCallNotes = Array.isArray((prospect as any).call_notes) ? (prospect as any).call_notes : []
+      const updatedCallNotes = [...currentCallNotes, newCallNote]
 
       const updates: any = {
         stage: stageMap[selectedOutcome!],
-        notes: updatedNotes, 
+        // ON NE TOUCHE PLUS A "notes" (Interne), ON UPDATE "call_notes"
+        call_notes: updatedCallNotes, 
         lastContact: new Date()
       }
 
@@ -386,7 +369,8 @@ export function CallDetails() {
 
       // Update follow up date if applicable
       if (selectedOutcome === 'followup' && followupDate) {
-        updates.notes = updates.notes + `\n[RAPPEL: ${followupDate}]`
+        // Optionnel : on peut aussi mettre un rappel dans les notes internes pour pas le rater
+        // updates.notes = (prospect.notes || '') + `\n[RAPPEL: ${followupDate}]` 
       }
 
       // 🔄 C'EST ICI QUE LA MAGIE OPÈRE : ON POUSSE DANS SUPABASE
@@ -394,19 +378,6 @@ export function CallDetails() {
         await updateProspect(prospect.id, updates)
       }
 
-      // Log to console for KPI tracking
-      console.log('📊 KPI Data:', {
-        outcome: selectedOutcome,
-        amount: selectedOutcome === 'won' ? amount : 0,
-        commission: selectedOutcome === 'won' ? totalCommission : 0,
-        paymentType: selectedOutcome === 'won' ? paymentType : null,
-        installments: selectedOutcome === 'won' && paymentType === 'installments' ? installmentsCount : null,
-        objection: selectedOutcome === 'followup' || selectedOutcome === 'lost'
-          ? (selectedOutcome === 'followup' ? followupReason : lostReason)
-          : null
-      })
-
-      // Wait a bit to ensure save completes
       await new Promise(resolve => setTimeout(resolve, 500))
 
       // Redirect to Dashboard (Cockpit)
@@ -459,53 +430,8 @@ export function CallDetails() {
           </div>
         </div>
 
-        {/* DEBUG PANEL - Shows data linking status */}
-        <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4">
-          <h3 className="text-sm font-semibold text-purple-400 mb-3">🔍 Debug: Data Linking</h3>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="rounded-lg bg-gray-800 p-3">
-              <p className="text-gray-500 mb-1">Prospect trouvé</p>
-              <p className={prospect ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                {prospect ? `✓ ${prospect.contact}` : '✗ Non trouvé'}
-              </p>
-              {prospect && (
-                <p className="text-gray-400 mt-1">ID: {prospect.id} | offerId: {prospect.offerId || 'N/A'}</p>
-              )}
-            </div>
-            <div className="rounded-lg bg-gray-800 p-3">
-              <p className="text-gray-500 mb-1">Offre liée</p>
-              <p className={prospectOffer ? 'text-green-400 font-semibold' : 'text-yellow-400 font-semibold'}>
-                {prospectOffer ? `✓ ${prospectOffer.name}` : '✗ Non trouvée'}
-              </p>
-              {prospectOffer && (
-                <p className="text-gray-400 mt-1">Prix: {prospectOffer.price} | Commission: {prospectOffer.commission}</p>
-              )}
-            </div>
-          </div>
-          {!prospect && (
-            <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/30 p-3">
-              <p className="text-sm text-red-400">
-                ⚠️ Prospect non trouvé avec le nom: <span className="font-semibold">{call.contactName}</span>
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Vérifiez que le prospect existe dans ProspectsContext
-              </p>
-            </div>
-          )}
-          {prospect && !prospectOffer && (
-            <div className="mt-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3">
-              <p className="text-sm text-yellow-400">
-                ⚠️ Prospect trouvé mais aucune offre liée
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                offerId: {prospect.offerId || 'null'} | offer: {prospect.offer || 'null'}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* --- NOUVEAU : SYSTÈME D'ONGLETS --- */}
-        <div className="flex gap-4 my-6 border-b border-gray-800">
+        {/* --- TABS --- */}
+        <div className="flex gap-4 mb-6 border-b border-gray-800">
             <button 
                 onClick={() => setActiveTab('qualification')}
                 className={cn(
@@ -530,7 +456,7 @@ export function CallDetails() {
             </button>
         </div>
 
-        {/* Main Content */}
+        {/* Main Form */}
         <div className="space-y-6">
           
           {/* --- NOUVEAU BANDEAU DE CREATION --- */}
@@ -557,7 +483,7 @@ export function CallDetails() {
           {/* Form Content - Apply blur if no prospect */}
           <div className={cn("transition-all duration-500", !prospect ? "opacity-50 pointer-events-none blur-[2px]" : "opacity-100")}>
             
-            {/* ONGLET 1 : QUALIFICATION (Formulaire Complet) */}
+            {/* ONGLET 1: QUALIFICATION */}
             {activeTab === 'qualification' && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
                     {/* Outcome Selection */}
@@ -622,7 +548,7 @@ export function CallDetails() {
 
                     {/* Won: Payment Terms & Commission */}
                     {selectedOutcome === 'won' && (
-                        <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6">
+                        <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 animate-in slide-in-from-top-2">
                         <h3 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
                             <DollarSign className="h-4 w-4" />
                             Détails de la vente
@@ -726,7 +652,7 @@ export function CallDetails() {
 
                     {/* Follow up: Reschedule & Objection Tracking */}
                     {selectedOutcome === 'followup' && (
-                        <div className="space-y-4 rounded-xl border border-orange-500/30 bg-orange-500/5 p-6">
+                        <div className="space-y-4 rounded-xl border border-orange-500/30 bg-orange-500/5 p-6 animate-in slide-in-from-top-2">
                         <h3 className="text-sm font-semibold text-orange-400 flex items-center gap-2">
                             <Clock className="h-4 w-4" />
                             Informations de suivi
@@ -790,7 +716,7 @@ export function CallDetails() {
 
                     {/* Lost: Objection Tracking */}
                     {selectedOutcome === 'lost' && (
-                        <div className="space-y-4 rounded-xl border border-red-500/30 bg-red-500/5 p-6">
+                        <div className="space-y-4 rounded-xl border border-red-500/30 bg-red-500/5 p-6 animate-in slide-in-from-top-2">
                         <h3 className="text-sm font-semibold text-red-400 flex items-center gap-2">
                             <XCircle className="h-4 w-4" />
                             Raison de la perte
@@ -840,23 +766,25 @@ export function CallDetails() {
                 </div>
             )}
 
-            {/* ONGLET 2: NOTES (Le nouvel onglet demandé) */}
+            {/* ONGLET 2: NOTES */}
             {activeTab === 'notes' && (
-                <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 h-[500px] flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
-                    <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-                        <FileText className="h-4 w-4" />
-                        Historique et Notes de l'appel
-                    </label>
-                    <textarea
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Prenez vos notes ici. Elles seront enregistrées dans la fiche prospect..."
-                        className="flex-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-base text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none leading-relaxed"
-                    />
-                    <p className="mt-3 text-xs text-gray-500 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Toutes vos notes sont synchronisées avec le Pipeline.
-                    </p>
+                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 h-[500px] flex flex-col">
+                        <label className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+                            <FileText className="h-4 w-4 text-blue-400" />
+                            Historique et Notes de l'appel
+                        </label>
+                        <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
+                            className="flex-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-4 text-base text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none resize-none leading-relaxed"
+                        />
+                        <p className="mt-3 text-xs text-gray-500 flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Ces notes s'ajouteront à l'historique des appels du prospect.
+                        </p>
+                    </div>
                 </div>
             )}
 
