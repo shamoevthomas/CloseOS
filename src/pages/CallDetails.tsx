@@ -109,7 +109,7 @@ export function CallDetails() {
   const [lostReason, setLostReason] = useState('')
   const [lostReasonOther, setLostReasonOther] = useState('')
 
-  // --- NOUVEAU : GESTION MODALE CRÉATION ---
+  // --- GESTION MODALE CRÉATION ---
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [newProspectForm, setNewProspectForm] = useState({
     name: '',
@@ -148,7 +148,7 @@ export function CallDetails() {
       })()
     : null
 
-  // Auto-fill amount from offer when "Won" is selected
+  // Auto-fill amount
   useEffect(() => {
     if (selectedOutcome === 'won' && prospectOffer && amount === 0) {
       const offerPrice = parseOfferPrice(prospectOffer.price)
@@ -167,12 +167,10 @@ export function CallDetails() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Non connecté")
 
-      // Récupérer le nom de l'offre
       const selectedOffer = offers.find(o => String(o.id) === newProspectForm.offerId)
       let offerName = selectedOffer ? selectedOffer.name : ''
-      
-      // Gestion des formules
       let finalValue = selectedOffer ? parseOfferPrice(selectedOffer.price) : 0
+      
       if (selectedOffer?.formulas && newProspectForm.formulaId) {
           const formula = selectedOffer.formulas.find(f => f.id === newProspectForm.formulaId)
           if (formula) {
@@ -181,33 +179,26 @@ export function CallDetails() {
           }
       }
 
-      // CORRECTION : On ne met PAS offerId dans l'insert pour éviter l'erreur 400
       const newProspectData = {
         user_id: user.id,
         contact: newProspectForm.name,
         email: newProspectForm.email,
         phone: newProspectForm.phone,
-        offer: offerName, // On stocke juste le nom (string)
-        // offerId: newProspectForm.offerId, // SUPPRIMÉ car cause l'erreur "column not found"
+        offer: offerName, 
         value: finalValue,
         source: newProspectForm.source,
         stage: 'prospect',
         created_at: new Date().toISOString()
       }
 
-      // 1. Création dans Supabase
       const { data: insertedProspect, error } = await supabase
         .from('prospects')
         .insert([newProspectData])
         .select()
         .single()
 
-      if (error) {
-        console.error("Supabase error:", error)
-        throw error
-      }
+      if (error) throw error
 
-      // 2. Mise à jour de l'appel pour le lier
       if (call) {
         await supabase
           .from('calls')
@@ -224,7 +215,7 @@ export function CallDetails() {
 
     } catch (error) {
       console.error("Erreur création", error)
-      alert("Erreur lors de la création du prospect. Vérifiez la console.")
+      alert("Erreur lors de la création du prospect.")
     } finally {
       setIsCreating(false)
     }
@@ -238,16 +229,21 @@ export function CallDetails() {
     )
   }
 
-  // Commission calculations
+  // CALCULS FINANCIERS
   const parseCommissionRate = (commissionStr: string): number => {
     const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
     return match ? parseFloat(match[1]) : 10
   }
 
   const commissionRate = prospectOffer ? parseCommissionRate(prospectOffer.commission) : 10
+  
+  // Calculs détaillés
   const totalCommission = amount > 0 ? (amount * commissionRate) / 100 : 0
   const monthlyCommission = paymentType === 'installments' && installmentsCount > 0
     ? totalCommission / installmentsCount
+    : 0
+  const clientMonthlyPayment = paymentType === 'installments' && installmentsCount > 0
+    ? amount / installmentsCount
     : 0
 
   // Validation
@@ -385,7 +381,7 @@ export function CallDetails() {
             </div>
           )}
 
-          {/* Formulaire Principal (Désactivé si pas de prospect) */}
+          {/* Formulaire Principal */}
           <div className={cn("space-y-6 transition-all duration-500", !prospect ? "opacity-50 pointer-events-none blur-[2px]" : "opacity-100")}>
             
             {/* Outcome Selection */}
@@ -479,11 +475,44 @@ export function CallDetails() {
                     </select>
                   </div>
                 )}
-                {/* Commission */}
+                
+                {/* Commission & Client Payment Summary */}
                 {amount > 0 && (
                   <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
-                    <p className="text-2xl font-bold text-emerald-400">{totalCommission.toFixed(2)} €</p>
-                    <p className="mt-2 text-xs text-gray-500">Taux: {commissionRate}%</p>
+                    <div className="flex items-center justify-between mb-2">
+                       <div className="flex items-center gap-2">
+                         <Award className="h-4 w-4 text-emerald-400" />
+                         <h4 className="text-sm font-semibold text-emerald-400">Récapitulatif</h4>
+                       </div>
+                       <span className="text-xs text-emerald-500/80 bg-emerald-500/10 px-2 py-1 rounded">Taux: {commissionRate}%</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                        {/* Total Commission */}
+                        <div>
+                            <p className="text-xs text-gray-400 mb-1">Commission Totale</p>
+                            <p className="text-2xl font-bold text-emerald-400">{totalCommission.toFixed(2)} €</p>
+                        </div>
+
+                        {/* If Installments */}
+                        {paymentType === 'installments' && (
+                            <div>
+                                <p className="text-xs text-gray-400 mb-1">Ta commission / mois</p>
+                                <p className="text-xl font-bold text-emerald-400">{monthlyCommission.toFixed(2)} €</p>
+                                <p className="text-[10px] text-gray-500 mt-1">pendant {installmentsCount} mois</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Client Payment Info */}
+                    {paymentType === 'installments' && (
+                        <div className="mt-3 pt-3 border-t border-emerald-500/20">
+                            <p className="text-sm text-gray-300 flex justify-between items-center">
+                                <span>Le client paiera :</span>
+                                <span className="font-bold text-white text-lg">{clientMonthlyPayment.toFixed(2)} € / mois</span>
+                            </p>
+                        </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -505,6 +534,20 @@ export function CallDetails() {
                   </select>
                 </div>
               </div>
+            )}
+
+            {/* Lost Section */}
+            {selectedOutcome === 'lost' && (
+                <div className="space-y-4 rounded-xl border border-red-500/30 bg-red-500/5 p-6 animate-in slide-in-from-top-2">
+                    <h3 className="text-sm font-semibold text-red-400 flex items-center gap-2"><XCircle className="h-4 w-4" /> Perdu</h3>
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-white">Raison</label>
+                        <select value={lostReason} onChange={(e) => setLostReason(e.target.value)} className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-red-500 focus:outline-none">
+                            <option value="">Sélectionner...</option>
+                            {objectionReasons.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                    </div>
+                </div>
             )}
 
             {/* Notes Section */}
@@ -531,7 +574,7 @@ export function CallDetails() {
         </div>
       </div>
 
-      {/* --- MODALE DE CRÉATION DE PROSPECT (POP-UP) --- */}
+      {/* --- MODALE DE CRÉATION DE PROSPECT --- */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
@@ -568,7 +611,7 @@ export function CallDetails() {
                 </select>
               </div>
 
-              {/* Formules (Si applicable) */}
+              {/* Formules */}
               {newProspectForm.offerId && (
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-blue-400 mb-1.5"><Tag className="h-3 w-3"/> Choix de la formule *</label>
