@@ -1,372 +1,297 @@
-import { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Link2, Copy, Check, Calendar, Clock, User, ExternalLink, X, Video, Phone, Settings, Loader2, History, Trash2, ChevronDown, Mail } from 'lucide-react'
-import { useMeetings } from '../contexts/MeetingsContext'
-import { usePrivacy } from '../contexts/PrivacyContext'
-import { useAuth } from '../contexts/AuthContext'
+import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
+import { Calendar, Clock, Check, Phone, User, ArrowRight, Smartphone } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { format, isValid, parseISO, isAfter, startOfDay } from 'date-fns'
+import { format, addDays, startOfToday, isSameDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { cn } from '../lib/utils'
-import { isDailyCoLink } from '../services/dailyService' // IMPORT AJOUTÉ
 
-export function RendezVous() {
-  const { user } = useAuth()
-  const navigate = useNavigate()
-  const { meetings, loading: meetingsLoading, refreshMeetings } = useMeetings()
-  const { isPrivacyEnabled, maskData } = usePrivacy()
+// Créneaux horaires statiques (à dynamiser plus tard si besoin)
+const TIME_SLOTS = [
+  '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'
+]
+
+export function BookingPage() {
+  const { slug } = useParams()
+  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [loading, setLoading] = useState(true)
+  const [hostData, setHostData] = useState<any>(null)
   
-  const [isCopied, setIsCopied] = useState(false)
-  const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
-  const [dbSlug, setDbSlug] = useState<string | null>(null)
-  const [slugLoading, setSlugLoading] = useState(true)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  // Selection States
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  
+  // Form States
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    notes: ''
+  })
 
-  // Récupération du slug réel depuis la table booking_settings
+  // Chargement des infos du Closer via le slug
   useEffect(() => {
-    async function fetchBookingSlug() {
-      if (!user?.id) return
-      try {
-        const { data } = await supabase
-          .from('booking_settings')
-          .select('slug')
-          .eq('user_id', user.id)
-          .single()
-        
-        if (data?.slug) {
-          setDbSlug(data.slug)
-        }
-      } catch (err) {
-        console.error("Erreur lors de la récupération du slug:", err)
-      } finally {
-        setSlugLoading(false)
-      }
-    }
-    fetchBookingSlug()
-  }, [user?.id])
-
-  const bookingLink = useMemo(() => {
-    const finalSlug = dbSlug || user?.user_metadata?.booking_slug || user?.id;
-    return `${window.location.origin}/book/${finalSlug}`;
-  }, [user, dbSlug]);
-
-  // SÉPARATION DES RENDEZ-VOUS : À VENIR VS PASSÉS
-  const { upcomingMeetings, pastMeetings } = useMemo(() => {
-    const now = new Date();
-    const today = startOfDay(now);
-
-    return meetings.reduce(
-      (acc: any, m: any) => {
-        const meetingDate = parseISO(m.date);
-        if (isAfter(meetingDate, today) || m.date === format(now, 'yyyy-MM-dd')) {
-          acc.upcomingMeetings.push(m);
-        } else {
-          acc.pastMeetings.push(m);
-        }
-        return acc;
-      },
-      { upcomingMeetings: [], pastMeetings: [] }
-    );
-  }, [meetings]);
-
-  const handleUpdateStatus = async (newStatus: string) => {
-    if (!selectedMeeting) return;
-    setIsUpdatingStatus(true);
-    try {
-      const { error } = await supabase
-        .from('meetings')
-        .update({ status: newStatus })
-        .eq('id', selectedMeeting.id);
-
-      if (error) throw error;
+    async function loadHost() {
+      if (!slug) return
       
-      setSelectedMeeting({ ...selectedMeeting, status: newStatus });
-      if (refreshMeetings) refreshMeetings(); 
-    } catch (err) {
-      alert("Erreur lors de la mise à jour du statut");
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
+      const { data } = await supabase
+        .from('booking_settings')
+        .select('user_id, slug')
+        .eq('slug', slug)
+        .single()
 
-  const handleDeleteAllPast = async () => {
-    if (!window.confirm("Voulez-vous vraiment supprimer tout l'historique des rendez-vous passés ?")) return;
-    
-    setIsDeleting(true);
+      if (data) {
+        setHostData(data)
+      }
+      setLoading(false)
+    }
+    loadHost()
+  }, [slug])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedDate || !selectedTime || !hostData) return
+
+    setLoading(true)
+
     try {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const { error } = await supabase
-        .from('meetings')
-        .delete()
-        .eq('user_id', user?.id)
-        .lt('date', today);
+      const meetingDate = format(selectedDate, 'yyyy-MM-dd')
+      
+      const { error } = await supabase.from('meetings').insert([
+        {
+          user_id: hostData.user_id,
+          contact: formData.name,
+          date: meetingDate,
+          time: selectedTime,
+          duration: 45,
+          type: 'phone', // On force le type téléphone
+          status: 'upcoming',
+          location: 'Contact par le Closer', // Lieu explicite pour le tableau de bord
+          description: `Email: ${formData.email}\nTéléphone: ${formData.phone}\nNote: ${formData.notes}`
+        }
+      ])
 
-      if (error) throw error;
-      if (refreshMeetings) refreshMeetings();
+      if (error) throw error
+
+      setStep(3) // Succès
     } catch (err) {
-      console.error("Erreur lors de la suppression:", err);
-      alert("Une erreur est survenue lors de la suppression.");
+      console.error(err)
+      alert("Une erreur est survenue lors de la réservation.")
     } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(bookingLink)
-    setIsCopied(true)
-    setTimeout(() => setIsCopied(false), 2000)
-  }
-
-  const safeFormat = (dateStr: string, formatStr: string) => {
-    if (!dateStr) return 'N/A'
-    try {
-      const date = parseISO(dateStr)
-      if (!isValid(date)) return 'N/A'
-      return format(date, formatStr, { locale: fr })
-    } catch {
-      return 'N/A'
+      setLoading(false)
     }
   }
 
-  const getStatusStyle = (status: string) => {
-    const s = status?.toLowerCase()
-    if (s === 'upcoming' || s === 'confirmé' || s === 'confirmed') 
-      return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-    if (s === 'annulé' || s === 'cancelled')
-      return 'bg-red-500/20 text-red-400 border-red-500/30'
-    if (s === 'terminé' || s === 'completed')
-      return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-    return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+  // Génération des 14 prochains jours
+  const dates = Array.from({ length: 14 }).map((_, i) => addDays(startOfToday(), i))
+
+  if (loading && !hostData) {
+    return <div className="flex h-screen items-center justify-center bg-slate-950 text-white">Chargement...</div>
   }
 
-  const MeetingTable = ({ data, title, icon: Icon, emptyText, showDeleteAction }: { data: any[], title: string, icon: any, emptyText: string, showDeleteAction?: boolean }) => (
-    <div className="mb-12">
-      <div className="mb-4 flex items-center justify-between px-2">
-        <div className="flex items-center gap-2">
-          <Icon className="h-5 w-5 text-blue-500" />
-          <h2 className="text-xl font-bold text-white">{title}</h2>
-          <span className="ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-xs font-bold text-slate-400">
-            {data.length}
-          </span>
-        </div>
-        
-        {showDeleteAction && data.length > 0 && (
-          <button
-            onClick={handleDeleteAllPast}
-            disabled={isDeleting}
-            className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
-          >
-            {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-            Tout supprimer
-          </button>
-        )}
-      </div>
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden shadow-xl">
-        <table className="w-full">
-          <thead className="bg-slate-800/50">
-            <tr className="border-b border-slate-800 text-xs font-bold uppercase tracking-widest text-slate-500 text-left">
-              <th className="px-6 py-4">Date & Heure</th>
-              <th className="px-6 py-4">Prospect</th>
-              <th className="px-6 py-4 text-center">Type</th>
-              <th className="px-6 py-4">Statut</th>
-              <th className="px-6 py-4 text-right">Détails</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {data.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium italic">
-                  {emptyText}
-                </td>
-              </tr>
-            ) : (
-              data.map((m: any) => (
-                <tr key={m.id} onClick={() => setSelectedMeeting(m)} className="cursor-pointer hover:bg-slate-800/40 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3 text-white">
-                      <div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg bg-slate-800 border border-slate-700 font-bold">
-                         <span className="text-[10px] text-blue-500 uppercase">{safeFormat(m.date, 'MMM')}</span>
-                         <span className="text-sm">{safeFormat(m.date, 'dd')}</span>
-                      </div>
-                      <div>
-                        <div className="font-bold">{safeFormat(m.date, 'eeee d MMMM')}</div>
-                        <div className="text-xs text-slate-500">{m.time}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-bold text-slate-200">{maskData(m.contact || 'Prospect', 'name')}</td>
-                  <td className="px-6 py-4 text-center">
-                    {m.type === 'video' ? <Video className="h-4 w-4 mx-auto text-blue-400" /> : <Phone className="h-4 w-4 mx-auto text-emerald-400" />}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(m.status)}`}>
-                      {m.status === 'upcoming' ? 'Confirmé' : m.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <ExternalLink className="h-4 w-4 text-slate-600 ml-auto" />
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-
-  if (meetingsLoading || slugLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-950">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-      </div>
-    )
+  if (!hostData && !loading) {
+    return <div className="flex h-screen items-center justify-center bg-slate-950 text-white">Lien de réservation invalide.</div>
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-950 p-8 text-left">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Gestion des Rendez-vous</h1>
-            <p className="text-slate-400">Gérez vos liens de réservation et vos appels</p>
-          </div>
-        </div>
-
-        {/* Section Lien de réservation stable avec bouton Personnaliser */}
-        <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <Link2 className="h-5 w-5 text-blue-500" />
-            <h2 className="text-xl font-bold text-white">Mon lien de réservation</h2>
-          </div>
-          <div className="flex gap-3">
-            <div className="flex-1 rounded-xl border border-slate-800 bg-black/40 px-4 py-3 flex items-center overflow-hidden">
-              <span className="text-blue-400 font-medium truncate">{bookingLink}</span>
+    <div className="min-h-screen bg-slate-950 p-4 md:p-8 flex items-center justify-center">
+      <div className="w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl flex flex-col md:flex-row min-h-[600px]">
+        
+        {/* COLONNE GAUCHE : RECAPITULATIF */}
+        <div className="w-full md:w-1/3 bg-slate-950 p-8 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col">
+          <div className="mb-8">
+            <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center mb-4">
+              <Phone className="text-white h-6 w-6" />
             </div>
-            <button
-              onClick={handleCopyLink}
-              className={`flex items-center gap-2 rounded-xl px-6 py-3 font-bold text-white transition-all ${
-                isCopied ? 'bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'
-              }`}
-            >
-              {isCopied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-              {isCopied ? 'Copié !' : 'Copier'}
-            </button>
-            <button
-              onClick={() => navigate('/settings/booking')}
-              className="flex items-center gap-2 rounded-xl px-6 py-3 font-bold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all"
-            >
-              <Settings className="h-5 w-5" />
-              Personnaliser
-            </button>
+            <h2 className="text-2xl font-bold text-white mb-2">Session Stratégique</h2>
+            <p className="text-slate-400">Bilan personnalisé & Plan d'action</p>
+          </div>
+
+          <div className="space-y-4 text-sm text-slate-300 flex-1">
+            <div className="flex items-center gap-3">
+              <Clock className="h-4 w-4 text-slate-500" />
+              <span>45 minutes</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Smartphone className="h-4 w-4 text-slate-500" />
+              <span>Appel Téléphonique</span>
+            </div>
+            
+            {selectedDate && (
+              <div className="mt-8 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 animate-in fade-in slide-in-from-left-4">
+                <p className="font-semibold text-blue-400 mb-1">Votre sélection :</p>
+                <p className="text-white flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  {format(selectedDate, 'eeee d MMMM', { locale: fr })}
+                </p>
+                {selectedTime && (
+                  <p className="text-white flex items-center gap-2 mt-1">
+                    <Clock className="h-4 w-4" />
+                    {selectedTime}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* TABLEAUX SÉPARÉS */}
-        <MeetingTable 
-          data={upcomingMeetings} 
-          title="Rendez-vous à venir" 
-          icon={Calendar} 
-          emptyText="Aucun rendez-vous à venir."
-        />
+        {/* COLONNE DROITE : CONTENU DYNAMIQUE */}
+        <div className="w-full md:w-2/3 p-8 bg-slate-900">
+          
+          {/* ETAPE 1 : CHOIX DATE & HEURE */}
+          {step === 1 && (
+            <div className="h-full flex flex-col animate-in fade-in">
+              <h3 className="text-xl font-bold text-white mb-6">Sélectionnez un créneau</h3>
+              
+              <div className="flex flex-col md:flex-row gap-8 h-full">
+                {/* Calendrier simplifié */}
+                <div className="flex-1 space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                  {dates.map((date) => (
+                    <button
+                      key={date.toString()}
+                      onClick={() => { setSelectedDate(date); setSelectedTime(null); }}
+                      className={`w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between group ${
+                        selectedDate && isSameDay(date, selectedDate)
+                          ? 'bg-blue-600 border-blue-500 text-white'
+                          : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
+                      }`}
+                    >
+                      <span className="font-medium capitalize">{format(date, 'eeee d MMMM', { locale: fr })}</span>
+                      <ArrowRight className={`h-4 w-4 transition-opacity ${selectedDate && isSameDay(date, selectedDate) ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
+                    </button>
+                  ))}
+                </div>
 
-        <MeetingTable 
-          data={pastMeetings} 
-          title="Historique des rendez-vous" 
-          icon={History} 
-          emptyText="Aucun historique disponible."
-          showDeleteAction={true}
-        />
-      </div>
+                {/* Heures */}
+                <div className="w-full md:w-40 space-y-2">
+                  {selectedDate ? (
+                    <div className="animate-in slide-in-from-right-4 fade-in">
+                      <p className="text-xs font-semibold text-slate-500 uppercase mb-3 text-center">Heures dispo</p>
+                      {TIME_SLOTS.map(time => (
+                        <button
+                          key={time}
+                          onClick={() => { setSelectedTime(time); setStep(2); }}
+                          className="w-full py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all text-sm font-medium"
+                        >
+                          {time}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-slate-600 text-sm text-center px-4 border-l border-slate-800">
+                      <p>Choisissez une date pour voir les horaires</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
-      {/* Modal Détails avec INFOS PROSPECT */}
-      {selectedMeeting && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-left">
-          <div className="w-full max-w-xl rounded-3xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
-            <div className="mb-8 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">Détails de l'appel</h2>
-              <button onClick={() => setSelectedMeeting(null)} className="rounded-full p-2 hover:bg-slate-800 text-slate-400">
-                <X className="h-6 w-6" />
+          {/* ETAPE 2 : FORMULAIRE */}
+          {step === 2 && (
+            <form onSubmit={handleSubmit} className="max-w-md mx-auto animate-in fade-in slide-in-from-right-8">
+              <button 
+                type="button" 
+                onClick={() => setStep(1)}
+                className="text-sm text-slate-500 hover:text-white mb-6 flex items-center gap-1"
+              >
+                ← Retour au calendrier
+              </button>
+
+              <h3 className="text-xl font-bold text-white mb-6">Vos informations</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase">Nom complet</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={formData.name}
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase">Email professionnel</label>
+                  <input 
+                    required
+                    type="email" 
+                    value={formData.email}
+                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    placeholder="john@company.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase">Téléphone (Mobile)</label>
+                  <input 
+                    required
+                    type="tel" 
+                    value={formData.phone}
+                    onChange={e => setFormData({...formData, phone: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    placeholder="+33 6 12 34 56 78"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase">Notes (Optionnel)</label>
+                  <textarea 
+                    rows={3}
+                    value={formData.notes}
+                    onChange={e => setFormData({...formData, notes: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                    placeholder="Contexte du projet..."
+                  />
+                </div>
+
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all mt-4 flex items-center justify-center gap-2"
+                >
+                  {loading ? 'Validation...' : 'Confirmer le rendez-vous'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* ETAPE 3 : CONFIRMATION (NOUVELLE VERSION) */}
+          {step === 3 && (
+            <div className="h-full flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-300">
+              <div className="h-20 w-20 bg-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
+                <Check className="h-10 w-10 text-white" />
+              </div>
+              
+              <h2 className="text-3xl font-bold text-white mb-2">C'est confirmé !</h2>
+              <p className="text-slate-400 mb-8 max-w-md">
+                Votre créneau du <span className="text-white font-semibold">{format(selectedDate!, 'd MMMM', { locale: fr })}</span> à <span className="text-white font-semibold">{selectedTime}</span> a bien été réservé.
+              </p>
+
+              <div className="w-full max-w-md bg-blue-900/20 border border-blue-500/30 rounded-xl p-6 mb-8">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="bg-blue-500/20 p-3 rounded-full">
+                    <Phone className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-blue-100 mb-1">Prochaine étape</h3>
+                    <p className="text-sm text-blue-200/80 leading-relaxed">
+                      Notre expert (le Closer) va prendre contact avec vous directement via le numéro que vous avez fourni.
+                    </p>
+                    <p className="text-xs text-blue-300 mt-2 font-medium">
+                      Merci de garder votre téléphone à portée de main à l'heure du rendez-vous.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition-colors">
+                Ajouter à mon agenda
               </button>
             </div>
-            <div className="space-y-6">
-              <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50 flex items-center justify-between">
-                 <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center text-xl font-bold text-white">{selectedMeeting.contact?.charAt(0)}</div>
-                    <div>
-                      <p className="text-lg font-bold text-white">{maskData(selectedMeeting.contact, 'name')}</p>
-                      <p className="text-sm text-slate-500">Session de closing</p>
-                    </div>
-                 </div>
-                 <div className="relative">
-                    <select 
-                      disabled={isUpdatingStatus}
-                      value={selectedMeeting.status}
-                      onChange={(e) => handleUpdateStatus(e.target.value)}
-                      className={cn(
-                        "appearance-none pl-4 pr-10 py-2 rounded-xl border text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer transition-all",
-                        getStatusStyle(selectedMeeting.status)
-                      )}
-                    >
-                      <option value="Confirmé">Confirmé</option>
-                      <option value="Terminé">Terminé</option>
-                      <option value="Annulé">Annulé</option>
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none opacity-50" />
-                 </div>
-              </div>
+          )}
 
-              {/* SECTION : INFORMATIONS DU PROSPECT (EXTRACTION DE DESCRIPTION) */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Mail size={10} /> Email</p>
-                  <p className="text-white font-bold truncate">
-                    {maskData(selectedMeeting.description?.match(/Email:\s*([^\n\r]*)/)?.[1] || 'Non renseigné', 'email')}
-                  </p>
-                </div>
-                <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Phone size={10} /> Téléphone</p>
-                  <p className="text-white font-bold">
-                    {maskData(selectedMeeting.description?.match(/Téléphone:\s*([^\n\r]*)/)?.[1] || 'Non renseigné', 'phone')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Calendar size={10} /> Date</p>
-                  <p className="text-white font-bold">{safeFormat(selectedMeeting.date, 'dd MMMM yyyy')}</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Clock size={10} /> Heure</p>
-                  <p className="text-white font-bold">{selectedMeeting.time}</p>
-                </div>
-              </div>
-            </div>
-            <div className="mt-8 flex flex-col gap-3">
-               {/* MODIFIÉ : LOGIQUE DE BOUTON INTELLIGENTE */}
-               {selectedMeeting.location && (
-                 <button 
-                   onClick={() => {
-                     const locationUrl = selectedMeeting.location;
-                     if (isDailyCoLink(locationUrl)) {
-                       const url = `/live-call?url=${encodeURIComponent(locationUrl)}&from=/rendez-vous`;
-                       navigate(url);
-                     } else {
-                       window.open(locationUrl, '_blank', 'noopener,noreferrer');
-                     }
-                   }} 
-                   className="w-full flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"
-                 >
-                   <Video className="h-5 w-5" /> Rejoindre l'appel
-                 </button>
-               )}
-               <button onClick={() => setSelectedMeeting(null)} className="w-full rounded-2xl border border-slate-800 bg-slate-800/50 py-4 font-bold text-slate-300 hover:bg-slate-800">Fermer</button>
-            </div>
-          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
