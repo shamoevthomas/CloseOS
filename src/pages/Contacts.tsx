@@ -105,11 +105,8 @@ export function Contacts() {
     name: '',
     role: '',
     email: '',
-    phone: '',
-    linkedOfferId: undefined as string | undefined,
-    isBillingContact: false,
-    billingAddress: undefined as string | undefined,
-    siret: undefined as string | undefined
+    phone: ''
+    // SUPPRESSION DES CHAMPS DE FACTURATION ICI
   })
 
   // Helper to get status color
@@ -154,11 +151,7 @@ export function Contacts() {
       name: '',
       role: '',
       email: '',
-      phone: '',
-      linkedOfferId: undefined,
-      isBillingContact: false,
-      billingAddress: undefined,
-      siret: undefined
+      phone: ''
     })
     setIsAddContactModalOpen(false)
   }
@@ -559,100 +552,7 @@ export function Contacts() {
                 />
               </div>
 
-              {/* Offer Selection */}
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-400">Offre affiliée</label>
-                <select
-                  value={newContact.linkedOfferId || ''}
-                  onChange={(e) =>
-                    setNewContact({
-                      ...newContact,
-                      linkedOfferId: e.target.value || undefined,
-                      // Reset billing contact if no offer is selected
-                      isBillingContact: e.target.value ? newContact.isBillingContact : false,
-                    })
-                  }
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
-                >
-                  <option value="">Affilié à aucune offre</option>
-                  {offers
-                    .filter((offer) => offer.status === 'active')
-                    .map((offer) => (
-                      <option key={offer.id} value={offer.id.toString()}>
-                        {offer.name} ({offer.company})
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              {/* Conditional Billing Contact Toggle */}
-              {newContact.linkedOfferId && (
-                <div className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-                  <label className="flex cursor-pointer items-start gap-3">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={newContact.isBillingContact}
-                        onChange={(e) =>
-                          setNewContact({
-                            ...newContact,
-                            isBillingContact: e.target.checked,
-                            // Clear billing fields when unchecking
-                            billingAddress: e.target.checked ? newContact.billingAddress : undefined,
-                            siret: e.target.checked ? newContact.siret : undefined,
-                          })
-                        }
-                        className="peer sr-only"
-                      />
-                      <div className="h-6 w-11 rounded-full bg-slate-700 peer-checked:bg-purple-500 peer-focus:ring-2 peer-focus:ring-purple-500/50"></div>
-                      <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold text-white">
-                        Les factures seront adressées à cette personne
-                      </div>
-                      <div className="mt-1 text-xs text-slate-400">
-                        Cette personne recevra les factures de commissions pour cette offre.
-                      </div>
-                    </div>
-                  </label>
-
-                  {/* Conditional Billing Details Fields */}
-                  {newContact.isBillingContact && (
-                    <div className="space-y-3 border-t border-slate-700 pt-4">
-                      {/* Billing Address */}
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-400">
-                          Adresse de facturation
-                        </label>
-                        <textarea
-                          value={newContact.billingAddress || ''}
-                          onChange={(e) =>
-                            setNewContact({ ...newContact, billingAddress: e.target.value })
-                          }
-                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                          rows={3}
-                          placeholder="Ex: 123 Rue de la République, 75001 Paris, France"
-                        />
-                      </div>
-
-                      {/* SIRET */}
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-400">
-                          Numéro SIRET
-                        </label>
-                        <input
-                          type="text"
-                          value={newContact.siret || ''}
-                          onChange={(e) => setNewContact({ ...newContact, siret: e.target.value })}
-                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                          placeholder="Ex: 123 456 789 00012"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* SUPPRESSION DE TOUTE LA PARTIE OFFRE AFFILIÉE ET FACTURATION ICI */}
 
               <div className="flex gap-3 pt-4">
                 <button

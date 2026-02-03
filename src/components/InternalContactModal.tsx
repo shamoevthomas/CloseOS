@@ -158,104 +158,7 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
                   />
                 </div>
 
-                {/* Editing Mode - Offer Selection */}
-                <div>
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Offre affiliée
-                  </label>
-                  <select
-                    value={editedContact.linkedOfferId || ''}
-                    onChange={(e) =>
-                      setEditedContact({
-                        ...editedContact,
-                        linkedOfferId: e.target.value || undefined,
-                        // Reset billing contact if no offer is selected
-                        isBillingContact: e.target.value ? editedContact.isBillingContact : false,
-                      })
-                    }
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
-                  >
-                    <option value="">Affilié à aucune offre</option>
-                    {offers
-                      .filter((offer) => offer.status === 'active')
-                      .map((offer) => (
-                        <option key={offer.id} value={offer.id.toString()}>
-                          {offer.name} ({offer.company})
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                {/* Conditional Billing Contact Toggle */}
-                {editedContact.linkedOfferId && (
-                  <div className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-                    <label className="flex cursor-pointer items-start gap-3">
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={editedContact.isBillingContact || false}
-                          onChange={(e) =>
-                            setEditedContact({
-                              ...editedContact,
-                              isBillingContact: e.target.checked,
-                              // Clear billing fields when unchecking
-                              billingAddress: e.target.checked ? editedContact.billingAddress : undefined,
-                              siret: e.target.checked ? editedContact.siret : undefined,
-                            })
-                          }
-                          className="peer sr-only"
-                        />
-                        <div className="h-6 w-11 rounded-full bg-slate-700 peer-checked:bg-purple-500 peer-focus:ring-2 peer-focus:ring-purple-500/50"></div>
-                        <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-white">
-                          Les factures seront adressées à cette personne
-                        </div>
-                        <div className="mt-1 text-xs text-slate-400">
-                          Cette personne recevra les factures de commissions pour cette offre.
-                        </div>
-                      </div>
-                    </label>
-
-                    {/* Conditional Billing Details Fields */}
-                    {editedContact.isBillingContact && (
-                      <div className="space-y-3 border-t border-slate-700 pt-4">
-                        {/* Billing Address */}
-                        <div>
-                          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                            Adresse de facturation
-                          </label>
-                          <textarea
-                            value={editedContact.billingAddress || ''}
-                            onChange={(e) =>
-                              setEditedContact({ ...editedContact, billingAddress: e.target.value })
-                            }
-                            className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                            rows={3}
-                            placeholder="Ex: 123 Rue de la République, 75001 Paris, France"
-                          />
-                        </div>
-
-                        {/* SIRET */}
-                        <div>
-                          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                            Numéro SIRET
-                          </label>
-                          <input
-                            type="text"
-                            value={editedContact.siret || ''}
-                            onChange={(e) =>
-                              setEditedContact({ ...editedContact, siret: e.target.value })
-                            }
-                            className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                            placeholder="Ex: 123 456 789 00012"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* SUPPRESSION DE LA PARTIE OFFRE/FACTURATION EN ÉDITION */}
               </>
             ) : (
               <>
@@ -295,47 +198,7 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
                   </div>
                 )}
 
-                {/* View Mode - Linked Offer */}
-                {contact.linkedOfferId && (
-                  <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Offre affiliée
-                    </div>
-                    <p className="text-sm text-slate-300">
-                      {offers.find((o) => o.id.toString() === contact.linkedOfferId)?.name || 'Offre inconnue'}
-                    </p>
-                    {contact.isBillingContact && (
-                      <>
-                        <div className="mt-2 flex items-center gap-2 rounded bg-purple-500/10 px-2 py-1">
-                          <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-                          <span className="text-xs font-medium text-purple-300">Contact de facturation</span>
-                        </div>
-
-                        {/* Billing Details */}
-                        {(contact.billingAddress || contact.siret) && (
-                          <div className="mt-3 space-y-2 border-t border-slate-700 pt-3">
-                            {contact.billingAddress && (
-                              <div>
-                                <p className="mb-1 text-xs font-semibold text-slate-500">
-                                  Adresse de facturation
-                                </p>
-                                <p className="text-sm leading-relaxed text-slate-300">
-                                  {contact.billingAddress}
-                                </p>
-                              </div>
-                            )}
-                            {contact.siret && (
-                              <div>
-                                <p className="mb-1 text-xs font-semibold text-slate-500">SIRET</p>
-                                <p className="text-sm text-slate-300">{contact.siret}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
+                {/* SUPPRESSION DE LA PARTIE OFFRE/FACTURATION EN AFFICHAGE */}
               </>
             )}
           </div>
