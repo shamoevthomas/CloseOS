@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Mail, ChevronRight as ChevronRightIcon, Calendar as CalendarIcon, Copy, Video, AlertCircle, Loader2 } from 'lucide-react'
+import { createDailyRoom } from '../services/dailyService'
 import { supabase } from '../lib/supabase'
 import { format, addHours, isAfter, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -21,6 +22,7 @@ export function PublicBooking() {
   
   // Data
   const [bookingType, setBookingType] = useState<any>(null)
+  const [settings, setSettings] = useState<any>(null)
   const [availability, setAvailability] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -29,15 +31,15 @@ export function PublicBooking() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [step, setStep] = useState<BookingStep>('time')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [existingMeetings, setExistingMeetings] = useState<any[]>([])
-  
   const [bookingData, setBookingData] = useState<BookingData>({
     firstName: '',
     lastName: '',
     email: '',
     phone: ''
   })
+  const [meetingLink, setMeetingLink] = useState<string>('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [existingMeetings, setExistingMeetings] = useState<any[]>([])
 
   // 1. CHARGEMENT HYBRIDE (Type de RDV + Disponibilités Globales)
   useEffect(() => {
@@ -46,24 +48,45 @@ export function PublicBooking() {
         setLoading(true)
         
         // A. Récupérer le TYPE d'événement via le slug (titre, durée...)
-        const { data: typeData, error: typeError } = await supabase
+        // On essaie d'abord via la nouvelle table booking_types
+        let typeData = null;
+        let settingsData = null;
+
+        const { data: bookingTypeData, error: typeError } = await supabase
           .from('booking_types')
           .select('*')
           .eq('slug', slug)
           .single()
 
-        if (typeError || !typeData) throw new Error('Ce lien de réservation est invalide ou a expiré.')
-        setBookingType(typeData)
+        if (bookingTypeData) {
+           typeData = bookingTypeData;
+           // B. Récupérer les paramètres globaux (dispos) via user_id
+           const { data: globalSettings } = await supabase
+            .from('booking_settings')
+            .select('*')
+            .eq('user_id', bookingTypeData.user_id)
+            .single()
+            
+           settingsData = globalSettings;
+        } else {
+           // Fallback: Ancien système via booking_settings direct
+           const { data: legacySettings, error: legacyError } = await supabase
+            .from('booking_settings')
+            .select('*')
+            .eq('slug', slug)
+            .single()
+            
+           if (legacyError || !legacySettings) throw new Error('Ce lien de réservation est invalide ou a expiré.')
+           
+           typeData = legacySettings; // On utilise settings comme type
+           settingsData = legacySettings;
+        }
 
-        // B. Récupérer les DISPONIBILITÉS globales du Closer (via son user_id)
-        const { data: settingsData } = await supabase
-          .from('booking_settings')
-          .select('availability, min_lead_time')
-          .eq('user_id', typeData.user_id)
-          .single()
+        setBookingType(typeData)
+        setSettings(settingsData) // Important pour les emails et dispos
         
         // Valeurs par défaut si pas de settings
-        setAvailability(settingsData || { availability: {}, min_lead_time: 2 })
+        setAvailability(settingsData?.availability || {})
 
         // C. Récupérer les conflits (déjà réservé)
         const { data: meetingsData } = await supabase
@@ -87,46 +110,45 @@ export function PublicBooking() {
 
   // 2. Calcul des dates disponibles
   const availableDates = useMemo(() => {
-    if (!availability) return []
+    if (!settings || !settings.availability) return []
     const dates = []
     const now = new Date()
-    const minLeadDate = addHours(now, availability.min_lead_time || 2)
+    const minLeadDate = addHours(now, settings.min_lead_time || 0)
 
     for (let i = 0; i < 30; i++) { // Fenêtre de 30 jours
       const date = new Date()
       date.setDate(now.getDate() + i)
       
       const dayNameEn = format(date, 'eeee', { locale: undefined }).toLowerCase()
-      const dayConfig = availability.availability?.[dayNameEn]
+      const dayConfig = settings.availability[dayNameEn]
 
       if (dayConfig?.enabled && dayConfig.slots?.[0]) {
         dates.push(date)
       }
     }
     return dates
-  }, [availability])
+  }, [settings])
 
   // 3. Calcul des créneaux horaires
   const timeSlots = useMemo(() => {
-    if (!selectedDate || !availability || !bookingType) return []
+    if (!selectedDate || !settings || !bookingType) return []
     
     const dayNameEn = format(selectedDate, 'eeee', { locale: undefined }).toLowerCase()
-    const dayConfig = availability.availability?.[dayNameEn]
+    const dayConfig = settings.availability?.[dayNameEn]
     
     if (!dayConfig || !dayConfig.slots || dayConfig.slots.length === 0) return []
 
     const slots = []
-    const { start, end } = dayConfig.slots[0]
-    const [startH, startM] = start.split(':').map(Number)
-    const [endH, endM] = end.split(':').map(Number)
-    const slotDuration = bookingType.duration
+    const [startH, startM] = dayConfig.slots[0].start.split(':').map(Number)
+    const [endH, endM] = dayConfig.slots[0].end.split(':').map(Number)
+    const slotDuration = bookingType.duration || settings.duration || 30
 
     let current = startH * 60 + startM
     const totalEnd = endH * 60 + endM
 
     const formattedSelectedDate = format(selectedDate, 'yyyy-MM-dd')
     const now = new Date()
-    const minTime = addHours(now, availability.min_lead_time || 2)
+    const minTime = addHours(now, settings.min_lead_time || 0)
 
     while (current + slotDuration <= totalEnd) {
       const slotStart = current
@@ -166,44 +188,55 @@ export function PublicBooking() {
       current += slotDuration
     }
     return slots
-  }, [selectedDate, availability, bookingType, existingMeetings])
+  }, [selectedDate, settings, bookingType, existingMeetings])
 
   const handleSubmitBooking = async () => {
     if (!selectedDate || !selectedTime || !bookingType) return
     setIsSubmitting(true)
 
     try {
+      // Génération lien Daily
+      const room = await createDailyRoom()
+      const generatedLink = typeof room === 'string' ? room : (room?.url || '')
+      if (!generatedLink) throw new Error("Le lien de réunion n'a pas pu être généré.")
+      setMeetingLink(generatedLink)
+
       const formattedDate = format(selectedDate, 'yyyy-MM-dd')
       const [hours, minutes] = selectedTime.split(':').map(Number)
-      const duration = bookingType.duration
+      const duration = bookingType.duration || 30
       
       // Calcul heure fin
       const endTotal = hours * 60 + minutes + duration
       const formattedEndTime = `${Math.floor(endTotal / 60).toString().padStart(2, '0')}:${(endTotal % 60).toString().padStart(2, '0')}`
       const fullTimeRange = `${selectedTime} - ${formattedEndTime}`
 
-      const locationText = "À définir avec le Closer"
+      const locationText = generatedLink
+
+      // --- CORRECTION CRUCIALE ---
+      // On injecte "Type: TitreDuLien" pour que la page RendezVous puisse le lire
+      const meetingDescription = `Type: ${bookingType.title}\nEmail: ${bookingData.email}\nTéléphone: ${bookingData.phone}`
 
       // Sauvegarde DB
       const { error: dbError } = await supabase
         .from('meetings')
         .insert([{
           user_id: bookingType.user_id,
-          title: `${bookingType.title} - ${bookingData.firstName}`,
+          title: `${bookingType.title} - ${bookingData.firstName} ${bookingData.lastName}`,
           contact: `${bookingData.firstName} ${bookingData.lastName}`,
           date: formattedDate,
           time: fullTimeRange,
-          type: 'phone',
-          status: 'upcoming',
+          type: 'video',
+          status: 'scheduled',
           location: locationText,
-          description: `Type: ${bookingType.title}\nEmail: ${bookingData.email}\nTéléphone: ${bookingData.phone}`
+          description: meetingDescription // C'est ici que la magie opère
         }])
 
       if (dbError) throw dbError
 
       // Envoi Email
+      // On récupère l'email de l'agent si dispo
       const { data: profile } = await supabase.from('profiles').select('email').eq('id', bookingType.user_id).single()
-      const agentEmail = profile?.email || 'contact@closer-os.com'
+      const agentEmail = settings?.agentEmail || profile?.email || 'contact@closer-os.com'
 
       await sendBookingEmails({
         prospectEmail: bookingData.email,
@@ -218,7 +251,7 @@ export function PublicBooking() {
       setStep('success')
     } catch (error) {
       console.error('Erreur:', error)
-      alert('Une erreur est survenue.')
+      alert('Une erreur est survenue lors de la réservation.')
     } finally {
       setIsSubmitting(false)
     }
@@ -232,14 +265,14 @@ export function PublicBooking() {
     
     const startIso = `${dateStr}T${h.toString().padStart(2, '0')}${m.toString().padStart(2, '0')}00Z`
     
-    const endTotal = h * 60 + m + bookingType.duration
+    const endTotal = h * 60 + m + (bookingType.duration || 30)
     const endH = Math.floor(endTotal / 60).toString().padStart(2, '0')
     const endM = (endTotal % 60).toString().padStart(2, '0')
     const endIso = `${dateStr}T${endH}${endM}00Z`
 
-    const detailsText = "Le Closer prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités."
+    const detailsText = `Lien de visioconférence : ${meetingLink}`
 
-    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(bookingType.title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent(detailsText)}&location=${encodeURIComponent("À définir")}`
+    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(bookingType.title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent(detailsText)}&location=${encodeURIComponent(meetingLink)}`
   }
 
   if (loading) return (
@@ -269,10 +302,10 @@ export function PublicBooking() {
                 <CalendarIcon className="text-white w-8 h-8" />
               </div>
               <h1 className="text-3xl font-black text-white mb-4 tracking-tight">
-                {bookingType.title}
+                {bookingType?.title || 'Réserver un appel'}
               </h1>
               <p className="text-slate-400 leading-relaxed text-lg">
-                {bookingType.description || 'Sélectionnez un créneau pour échanger avec notre expert.'}
+                {bookingType?.description || 'Sélectionnez un créneau pour échanger avec notre expert.'}
               </p>
 
               <div className="mt-10 space-y-4">
@@ -280,13 +313,13 @@ export function PublicBooking() {
                   <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
                     <Clock className="w-5 h-5 text-blue-500" />
                   </div>
-                  <span className="font-semibold">{bookingType.duration} minutes</span>
+                  <span className="font-semibold">{bookingType?.duration || 30} minutes</span>
                 </div>
                 <div className="flex items-center gap-4 text-slate-300">
                   <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
-                    <Phone className="w-5 h-5 text-blue-500" />
+                    <Video className="w-5 h-5 text-blue-500" />
                   </div>
-                  <span className="font-semibold">Appel Téléphonique</span>
+                  <span className="font-semibold">Visioconférence</span>
                 </div>
               </div>
             </div>
@@ -429,17 +462,19 @@ export function PublicBooking() {
                   
                   <div className="space-y-6 max-w-md mx-auto mb-10">
                     <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 flex items-center gap-4 text-left">
-                      <div className="bg-blue-500/10 p-3 rounded-xl"><Phone className="text-blue-500 w-6 h-6" /></div>
-                      <div>
-                        <p className="text-white font-bold text-lg mb-1">Prise de contact</p>
-                        <p className="text-slate-400 text-sm">Le Closer prendra contact avec vous au plus vite.</p>
+                      <div className="bg-blue-500/10 p-3 rounded-xl"><Video className="text-blue-500 w-6 h-6" /></div>
+                      <div className="flex-1 overflow-hidden">
+                        <p className="text-white font-bold text-lg mb-1">Lien de visioconférence</p>
+                        <a href={meetingLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 text-sm hover:underline truncate block">{meetingLink}</a>
                       </div>
+                      <button onClick={() => { navigator.clipboard.writeText(meetingLink); alert('Copié !'); }} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white"><Copy size={16} /></button>
                     </div>
 
                     <a href={getGoogleCalendarUrl()} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-3 bg-white text-slate-950 py-4 rounded-2xl font-black hover:bg-slate-100 transition-all shadow-xl">
                       <CalendarIcon className="h-5 w-5" /> Ajouter à mon agenda
                     </a>
                   </div>
+                  <button onClick={() => window.location.reload()} className="text-blue-500 font-black hover:text-blue-400 uppercase tracking-widest text-sm">Nouveau créneau</button>
                 </div>
               )}
             </div>

@@ -5,7 +5,7 @@ import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { format, isValid, parseISO, isAfter, startOfDay } from 'date-fns'
+import { format, isValid, parseISO, isAfter, startOfDay, compareAsc, compareDesc } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '../lib/utils'
 import { isDailyCoLink } from '../services/dailyService'
@@ -50,23 +50,39 @@ export function RendezVous() {
     fetchBookingTypes()
   }, [user?.id])
 
-  // 2. Séparation des rendez-vous (À venir vs Passés)
+  // 2. Séparation et Tri des rendez-vous (À venir vs Passés)
   const { upcomingMeetings, pastMeetings } = useMemo(() => {
     const now = new Date();
     const today = startOfDay(now);
+    const allMeetings = meetings || [];
 
-    return (meetings || []).reduce(
-      (acc: any, m: any) => {
-        const meetingDate = parseISO(m.date);
-        if (isAfter(meetingDate, today) || m.date === format(now, 'yyyy-MM-dd')) {
-          acc.upcomingMeetings.push(m);
-        } else {
-          acc.pastMeetings.push(m);
-        }
-        return acc;
-      },
-      { upcomingMeetings: [], pastMeetings: [] }
-    );
+    const upcoming = [];
+    const past = [];
+
+    for (const m of allMeetings) {
+      const meetingDate = parseISO(m.date);
+      if (isAfter(meetingDate, today) || m.date === format(now, 'yyyy-MM-dd')) {
+        upcoming.push(m);
+      } else {
+        past.push(m);
+      }
+    }
+
+    // Tri : Plus proche d'abord pour le futur
+    upcoming.sort((a, b) => {
+      const dateA = parseISO(a.date + 'T' + (a.time.split(' - ')[0] || '00:00'))
+      const dateB = parseISO(b.date + 'T' + (b.time.split(' - ')[0] || '00:00'))
+      return compareAsc(dateA, dateB)
+    })
+
+    // Tri : Plus récent d'abord pour le passé
+    past.sort((a, b) => {
+      const dateA = parseISO(a.date + 'T' + (a.time.split(' - ')[0] || '00:00'))
+      const dateB = parseISO(b.date + 'T' + (b.time.split(' - ')[0] || '00:00'))
+      return compareDesc(dateA, dateB)
+    })
+
+    return { upcomingMeetings: upcoming, pastMeetings: past };
   }, [meetings]);
 
   const handleUpdateStatus = async (newStatus: string) => {
@@ -131,16 +147,16 @@ export function RendezVous() {
 
   const getStatusStyle = (status: string) => {
     const s = status?.toLowerCase()
-    if (s === 'upcoming' || s === 'confirmé' || s === 'confirmed' || s === 'scheduled') 
+    if (['upcoming', 'confirmé', 'confirmed', 'scheduled'].includes(s)) 
       return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-    if (s === 'annulé' || s === 'cancelled')
+    if (['annulé', 'cancelled'].includes(s))
       return 'bg-red-500/20 text-red-400 border-red-500/30'
-    if (s === 'terminé' || s === 'completed')
+    if (['terminé', 'completed'].includes(s))
       return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
     return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
   }
 
-  // --- CORRECTION : FONCTION SÉCURISÉE ---
+  // --- FONCTION DE RÉCUPÉRATION DE LA SOURCE ---
   const getMeetingSource = (meeting: any) => {
     if (!meeting) return 'Réservation';
 
@@ -156,11 +172,9 @@ export function RendezVous() {
         return meeting.title.split(' - ')[0];
       }
     } catch (e) {
-      // En cas d'erreur de parsing, ne rien casser
       return 'Appel';
     }
 
-    // 3. Fallback final
     return 'Appel';
   }
 
@@ -221,7 +235,7 @@ export function RendezVous() {
                   </td>
                   <td className="px-6 py-4 font-bold text-slate-200">{maskData(m.contact || 'Prospect', 'name')}</td>
                   
-                  {/* --- APPEL DE LA FONCTION SÉCURISÉE --- */}
+                  {/* COLONNE PROVENANCE */}
                   <td className="px-6 py-4 text-sm text-blue-400 font-medium">
                     {getMeetingSource(m)}
                   </td>
@@ -364,7 +378,7 @@ export function RendezVous() {
                     <div>
                       <p className="text-lg font-bold text-white">{maskData(selectedMeeting.contact, 'name')}</p>
                       
-                      {/* --- APPEL DE LA FONCTION SÉCURISÉE DANS LE MODAL --- */}
+                      {/* PROVENANCE DANS LE MODAL */}
                       <p className="text-sm text-slate-500">{getMeetingSource(selectedMeeting)}</p>
                     </div>
                  </div>
@@ -386,7 +400,7 @@ export function RendezVous() {
                  </div>
               </div>
 
-              {/* SECTION : INFORMATIONS DU PROSPECT (EXTRACTION DE DESCRIPTION) */}
+              {/* SECTION : INFORMATIONS DU PROSPECT */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50">
                   <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Mail size={10} /> Email</p>
@@ -414,12 +428,16 @@ export function RendezVous() {
               </div>
             </div>
             <div className="mt-8 flex flex-col gap-3">
-               {selectedMeeting.location && isDailyCoLink(selectedMeeting.location) && (
+               {selectedMeeting.location && (
                  <button 
                    onClick={() => {
                      const locationUrl = selectedMeeting.location;
-                     const url = `/live-call?url=${encodeURIComponent(locationUrl)}&from=/rendez-vous`;
-                     navigate(url);
+                     if (isDailyCoLink(locationUrl)) {
+                       const url = `/live-call?url=${encodeURIComponent(locationUrl)}&from=/rendez-vous`;
+                       navigate(url);
+                     } else {
+                       window.open(locationUrl, '_blank', 'noopener,noreferrer');
+                     }
                    }} 
                    className="w-full flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"
                  >
