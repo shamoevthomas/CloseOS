@@ -15,7 +15,8 @@ import {
   Building2,
   Tag,
   UserPlus, // AJOUT : Icône pour le bouton
-  Check     // AJOUT : Icône pour valider
+  Check,     // AJOUT : Icône pour valider
+  Receipt   // AJOUT : Icône pour la facturation
 } from 'lucide-react'
 import { ContactSelector } from './ContactSelector'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
@@ -56,6 +57,10 @@ export interface Offer {
   contacts: OfferContact[]
   formulas?: OfferFormula[] // NOUVEAU
   notes?: string
+  // NOUVEAUX CHAMPS FACTURATION
+  billingContactId?: number
+  billingAddress?: string
+  siret?: string
 }
 
 interface OfferDetailModalProps {
@@ -272,6 +277,9 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
       return dateString
     }
   }
+
+  // Récupération du contact de facturation pour l'affichage (mode lecture)
+  const billingContact = globalContacts.find(c => c.id === Number(offer.billingContactId))
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -629,6 +637,68 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 )}
               </div>
             )}
+          </div>
+
+          {/* --- NOUVELLE SECTION : CONFIGURATION FACTURATION --- */}
+          <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+              <Receipt className="h-4 w-4" /> Configuration Facturation
+            </h3>
+            
+            <div className="space-y-4">
+              {/* Contact de Facturation */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Contact Référent (Facturation)</label>
+                {isEditing ? (
+                  <select 
+                    value={editedOffer.billingContactId || ''}
+                    onChange={(e) => setEditedOffer({...editedOffer, billingContactId: Number(e.target.value) || undefined})}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">-- Aucun --</option>
+                    {globalContacts.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.role})</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm text-slate-300">
+                    {billingContact ? `${billingContact.name} - ${billingContact.role}` : 'Non défini'}
+                  </p>
+                )}
+              </div>
+
+              {/* Adresse de Facturation */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Adresse de Facturation</label>
+                {isEditing ? (
+                  <textarea
+                    value={editedOffer.billingAddress || ''}
+                    onChange={(e) => setEditedOffer({...editedOffer, billingAddress: e.target.value})}
+                    placeholder="Adresse complète du siège social..."
+                    rows={2}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                  />
+                ) : (
+                  <p className="text-sm text-slate-300 whitespace-pre-wrap">{offer.billingAddress || 'Non définie'}</p>
+                )}
+              </div>
+
+              {/* SIRET */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">SIRET</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedOffer.siret || ''}
+                    onChange={(e) => setEditedOffer({...editedOffer, siret: e.target.value})}
+                    placeholder="123 456 789 00012"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                  />
+                ) : (
+                  <p className="text-sm text-slate-300 font-mono">{offer.siret || 'Non défini'}</p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Zone D - Resources */}
