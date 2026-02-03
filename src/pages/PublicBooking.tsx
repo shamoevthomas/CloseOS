@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Mail, ChevronRight as ChevronRightIcon, Calendar as CalendarIcon, Copy, Video, AlertCircle, Loader2 } from 'lucide-react'
-import { createDailyRoom } from '../services/dailyService'
 import { supabase } from '../lib/supabase'
 import { format, addHours, isAfter, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -37,22 +36,20 @@ export function PublicBooking() {
     email: '',
     phone: ''
   })
-  const [meetingLink, setMeetingLink] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [existingMeetings, setExistingMeetings] = useState<any[]>([])
 
-  // 1. CHARGEMENT HYBRIDE (Type de RDV + Disponibilités Globales)
+  // 1. CHARGEMENT HYBRIDE
   useEffect(() => {
     const fetchBookingData = async () => {
       try {
         setLoading(true)
         
-        // A. Récupérer le TYPE d'événement via le slug (titre, durée...)
-        // On essaie d'abord via la nouvelle table booking_types
+        // A. Récupérer le TYPE d'événement via le slug
         let typeData = null;
         let settingsData = null;
 
-        const { data: bookingTypeData, error: typeError } = await supabase
+        const { data: bookingTypeData } = await supabase
           .from('booking_types')
           .select('*')
           .eq('slug', slug)
@@ -69,7 +66,7 @@ export function PublicBooking() {
             
            settingsData = globalSettings;
         } else {
-           // Fallback: Ancien système via booking_settings direct
+           // Fallback: Ancien système
            const { data: legacySettings, error: legacyError } = await supabase
             .from('booking_settings')
             .select('*')
@@ -78,22 +75,20 @@ export function PublicBooking() {
             
            if (legacyError || !legacySettings) throw new Error('Ce lien de réservation est invalide ou a expiré.')
            
-           typeData = legacySettings; // On utilise settings comme type
+           typeData = legacySettings;
            settingsData = legacySettings;
         }
 
         setBookingType(typeData)
-        setSettings(settingsData) // Important pour les emails et dispos
-        
-        // Valeurs par défaut si pas de settings
+        setSettings(settingsData)
         setAvailability(settingsData?.availability || {})
 
-        // C. Récupérer les conflits (déjà réservé)
+        // C. Récupérer les conflits
         const { data: meetingsData } = await supabase
           .from('meetings')
           .select('date, time')
           .eq('user_id', typeData.user_id)
-          .neq('status', 'cancelled') // On ignore les annulés
+          .neq('status', 'cancelled')
         
         if (meetingsData) setExistingMeetings(meetingsData)
 
@@ -115,7 +110,7 @@ export function PublicBooking() {
     const now = new Date()
     const minLeadDate = addHours(now, settings.min_lead_time || 0)
 
-    for (let i = 0; i < 30; i++) { // Fenêtre de 30 jours
+    for (let i = 0; i < 30; i++) {
       const date = new Date()
       date.setDate(now.getDate() + i)
       
@@ -123,7 +118,14 @@ export function PublicBooking() {
       const dayConfig = settings.availability[dayNameEn]
 
       if (dayConfig?.enabled && dayConfig.slots?.[0]) {
-        dates.push(date)
+        const [endH, endM] = dayConfig.slots[0].end.split(':').map(Number)
+        const endOfWorkingDay = new Date(date)
+        endOfWorkingDay.setHours(endH, endM, 0, 0)
+        
+        const isFutureDay = isAfter(startOfDay(date), startOfDay(minLeadDate))
+        const isTodayWithAvailableSlots = format(date, 'yyyy-MM-dd') === format(minLeadDate, 'yyyy-MM-dd') && isAfter(endOfWorkingDay, minLeadDate)
+
+        if (isFutureDay || isTodayWithAvailableSlots) dates.push(date)
       }
     }
     return dates
@@ -145,7 +147,6 @@ export function PublicBooking() {
 
     let current = startH * 60 + startM
     const totalEnd = endH * 60 + endM
-
     const formattedSelectedDate = format(selectedDate, 'yyyy-MM-dd')
     const now = new Date()
     const minTime = addHours(now, settings.min_lead_time || 0)
@@ -153,38 +154,28 @@ export function PublicBooking() {
     while (current + slotDuration <= totalEnd) {
       const slotStart = current
       const slotEnd = current + slotDuration
-      
       const h = Math.floor(current / 60)
       const m = current % 60
       const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
       
-      // Vérification temporelle (pas dans le passé)
-      const slotDateObj = new Date(selectedDate)
-      slotDateObj.setHours(h, m, 0, 0)
+      const slotDate = new Date(selectedDate)
+      slotDate.setHours(h, m, 0, 0)
 
-      // Vérification des conflits (meetings existants)
       const isBusy = existingMeetings.some(m => {
-        if (m.date !== formattedSelectedDate) return false
-        if (!m.time || typeof m.time !== 'string') return false
-
+        if (m.date !== formattedSelectedDate || !m.time || typeof m.time !== 'string') return false
         const parts = m.time.split(' - ')
         if (parts.length < 2) return false
-
         const [mStart, mEnd] = parts
         const [mStartH, mStartM] = mStart.split(':').map(Number)
         const [mEndH, mEndM] = mEnd.split(':').map(Number)
-        
-        const busyStart = mStartH * 60 + mStartM
-        const busyEnd = mEndH * 60 + mEndM
-
-        // Collision : (Start1 < End2) et (End1 > Start2)
-        return slotStart < busyEnd && slotEnd > busyStart
+        const existingStart = mStartH * 60 + mStartM
+        const existingEnd = mEndH * 60 + mEndM
+        return slotStart < existingEnd && slotEnd > existingStart
       })
 
-      if (!isBusy && isAfter(slotDateObj, minTime)) {
+      if (!isBusy && isAfter(slotDate, minTime)) {
         slots.push(timeStr)
       }
-      
       current += slotDuration
     }
     return slots
@@ -195,25 +186,18 @@ export function PublicBooking() {
     setIsSubmitting(true)
 
     try {
-      // Génération lien Daily
-      const room = await createDailyRoom()
-      const generatedLink = typeof room === 'string' ? room : (room?.url || '')
-      if (!generatedLink) throw new Error("Le lien de réunion n'a pas pu être généré.")
-      setMeetingLink(generatedLink)
-
       const formattedDate = format(selectedDate, 'yyyy-MM-dd')
       const [hours, minutes] = selectedTime.split(':').map(Number)
       const duration = bookingType.duration || 30
       
-      // Calcul heure fin
       const endTotal = hours * 60 + minutes + duration
       const formattedEndTime = `${Math.floor(endTotal / 60).toString().padStart(2, '0')}:${(endTotal % 60).toString().padStart(2, '0')}`
       const fullTimeRange = `${selectedTime} - ${formattedEndTime}`
 
-      const locationText = generatedLink
+      // PAS DE DAILY - Message statique pour le lieu
+      const locationText = "À définir avec le Closer"
 
-      // --- CORRECTION CRUCIALE ---
-      // On injecte "Type: TitreDuLien" pour que la page RendezVous puisse le lire
+      // IMPORTANT : Injection du "Type: ..." pour que RendezVous.tsx puisse lire la provenance
       const meetingDescription = `Type: ${bookingType.title}\nEmail: ${bookingData.email}\nTéléphone: ${bookingData.phone}`
 
       // Sauvegarde DB
@@ -225,16 +209,15 @@ export function PublicBooking() {
           contact: `${bookingData.firstName} ${bookingData.lastName}`,
           date: formattedDate,
           time: fullTimeRange,
-          type: 'video',
+          type: 'phone', // On force le type téléphone car pas de vidéo auto
           status: 'scheduled',
           location: locationText,
-          description: meetingDescription // C'est ici que la magie opère
+          description: meetingDescription 
         }])
 
       if (dbError) throw dbError
 
       // Envoi Email
-      // On récupère l'email de l'agent si dispo
       const { data: profile } = await supabase.from('profiles').select('email').eq('id', bookingType.user_id).single()
       const agentEmail = settings?.agentEmail || profile?.email || 'contact@closer-os.com'
 
@@ -270,9 +253,10 @@ export function PublicBooking() {
     const endM = (endTotal % 60).toString().padStart(2, '0')
     const endIso = `${dateStr}T${endH}${endM}00Z`
 
-    const detailsText = `Lien de visioconférence : ${meetingLink}`
+    const locationText = "À définir avec le Closer"
+    const detailsText = "Le Closer prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités."
 
-    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(bookingType.title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent(detailsText)}&location=${encodeURIComponent(meetingLink)}`
+    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(bookingType.title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent(detailsText)}&location=${encodeURIComponent(locationText)}`
   }
 
   if (loading) return (
@@ -317,9 +301,9 @@ export function PublicBooking() {
                 </div>
                 <div className="flex items-center gap-4 text-slate-300">
                   <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
-                    <Video className="w-5 h-5 text-blue-500" />
+                    <Phone className="w-5 h-5 text-blue-500" />
                   </div>
-                  <span className="font-semibold">Visioconférence</span>
+                  <span className="font-semibold">Appel Téléphonique</span>
                 </div>
               </div>
             </div>
@@ -462,12 +446,11 @@ export function PublicBooking() {
                   
                   <div className="space-y-6 max-w-md mx-auto mb-10">
                     <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 flex items-center gap-4 text-left">
-                      <div className="bg-blue-500/10 p-3 rounded-xl"><Video className="text-blue-500 w-6 h-6" /></div>
-                      <div className="flex-1 overflow-hidden">
-                        <p className="text-white font-bold text-lg mb-1">Lien de visioconférence</p>
-                        <a href={meetingLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 text-sm hover:underline truncate block">{meetingLink}</a>
+                      <div className="bg-blue-500/10 p-3 rounded-xl"><Phone className="text-blue-500 w-6 h-6" /></div>
+                      <div>
+                        <p className="text-white font-bold text-lg mb-1">Prise de contact</p>
+                        <p className="text-slate-400 text-sm">Le Closer prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités.</p>
                       </div>
-                      <button onClick={() => { navigator.clipboard.writeText(meetingLink); alert('Copié !'); }} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white"><Copy size={16} /></button>
                     </div>
 
                     <a href={getGoogleCalendarUrl()} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-3 bg-white text-slate-950 py-4 rounded-2xl font-black hover:bg-slate-100 transition-all shadow-xl">
