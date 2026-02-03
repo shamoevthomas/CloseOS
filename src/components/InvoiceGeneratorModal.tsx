@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { X, ChevronLeft, Download } from 'lucide-react'
 import type { Offer } from './OfferDetailModal'
 import type { Prospect } from '../contexts/ProspectsContext'
-import { useInternalContacts } from '../contexts/InternalContactsContext'
 import type { PaymentMethod as SavedPaymentMethod } from './PaymentMethodsModal'
 import type { IssuerProfile } from './IssuerProfilesModal'
 import { supabase } from '../lib/supabase'
@@ -31,7 +30,7 @@ export function InvoiceGeneratorModal({
   endDate,
   onClose,
 }: InvoiceGeneratorModalProps) {
-  const { contacts } = useInternalContacts()
+  // SUPPRESSION: On n'utilise plus les contacts internes ici
   const invoiceRef = useRef<HTMLDivElement>(null)
 
   // Saved payment methods
@@ -70,6 +69,59 @@ export function InvoiceGeneratorModal({
   const [invoiceNumber, setInvoiceNumber] = useState(
     `FAC-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
   )
+
+  // --- LOGIQUE DE REGROUPEMENT DES LIGNES (DÉTAIL FACTURE) ---
+  const lineItems = useMemo(() => {
+    const groups: Record<string, { description: string; count: number; total: number; unitPrice: number }> = {}
+
+    deals.forEach((deal) => {
+      // 1. Déterminer si c'est un paiement échelonné
+      const isInstallment = deal.payment_type === 'installments' || (deal.installments && deal.installments > 1)
+      
+      // 2. Construire le label (Nom offre/formule + Type paiement)
+      // deal.offer contient déjà "Offre - Formule" si une formule a été choisie
+      const formulaName = deal.offer || offer.name
+      const paymentLabel = isInstallment 
+        ? `Mensualité (Paiement en ${deal.installments}x)` 
+        : 'Paiement Comptant'
+      
+      const key = `${formulaName}-${paymentLabel}`
+      
+      // 3. Calculer la part de commission pour ce deal sur la période
+      const fullValue = deal.value || 0
+      const amountInPeriod = isInstallment ? fullValue / (deal.installments || 1) : fullValue
+      
+      let rate = 0.10
+      const commissionStr = String(offer.commission || '10')
+      const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
+      if (match) rate = parseFloat(match[1]) / 100
+      
+      const dealCommission = amountInPeriod * rate
+
+      // 4. Agréger les lignes identiques
+      if (!groups[key]) {
+        groups[key] = {
+          description: `${formulaName} - ${paymentLabel}`,
+          count: 0,
+          total: 0,
+          unitPrice: dealCommission // Prix unitaire moyen estimé pour ce groupe
+        }
+      }
+
+      groups[key].count++
+      groups[key].total += dealCommission
+    })
+
+    return Object.values(groups)
+  }, [deals, offer])
+
+  // Recalcul du total HT basé sur les lignes détaillées (plus précis)
+  const commissionHT = lineItems.reduce((acc, item) => acc + item.total, 0)
+  
+  // Calculate TVA if applicable
+  const tvaRate = 0.2 // 20% TVA
+  const tvaAmount = tvaApplicable ? commissionHT * tvaRate : 0
+  const totalTTC = commissionHT + tvaAmount
 
   // Load saved payment methods
   useEffect(() => {
@@ -182,17 +234,6 @@ export function InvoiceGeneratorModal({
     }
   }
 
-  // Find billing contact for this offer
-  const billingContact = contacts.find(
-    (c) => c.linkedOfferId === offer.id.toString() && c.isBillingContact
-  )
-
-  // Calculate TVA if applicable
-  const tvaRate = 0.2 // 20% TVA
-  const commissionHT = commission
-  const tvaAmount = tvaApplicable ? commissionHT * tvaRate : 0
-  const totalTTC = commissionHT + tvaAmount
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -269,7 +310,7 @@ export function InvoiceGeneratorModal({
         {
           invoice_number: invoiceNumber,
           offer_name: offer.name,
-          client_name: offer.company,
+          client_name: offer.billingName || offer.company, // UPDATED: Use billing name if available
           amount_ht: commissionHT,
           amount_ttc: totalTTC,
           status: 'générée',
@@ -720,42 +761,44 @@ export function InvoiceGeneratorModal({
                     </div>
                   </div>
 
-                  {/* Destinataire (Right) */}
+                  {/* Destinataire (Right) - MODIFIÉ POUR UTILISER LES INFOS DE L'OFFRE */}
                   <div className="space-y-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Destinataire
                     </p>
                     <div className="space-y-1 text-sm text-slate-900">
-                      <p className="font-bold">{offer.company}</p>
-                      <p className="text-slate-700">{offer.name}</p>
-                      {/* Find billing contact for this offer */}
-                      {billingContact && (
-                        <>
-                          <p className="mt-2 text-slate-700">
-                            <span className="font-medium">Contact:</span> {billingContact.name}
-                          </p>
-                          {billingContact.billingAddress && (
-                            <p className="text-slate-700 whitespace-pre-line">
-                              {billingContact.billingAddress}
+                      {/* Raison Sociale / Nom Facturation */}
+                      <p className="font-bold">{offer.billingName || offer.company}</p>
+                      
+                      {/* Nom de l'offre (Pour le contexte) */}
+                      <p className="text-slate-700 font-medium">{offer.name}</p>
+
+                      {/* Adresse de Facturation */}
+                      {(offer.billingAddress || offer.billingZip || offer.billingCity || offer.billingCountry) && (
+                        <div className="text-slate-700 mt-2">
+                          {offer.billingAddress && <p className="whitespace-pre-line">{offer.billingAddress}</p>}
+                          {(offer.billingZip || offer.billingCity) && (
+                            <p>
+                              {offer.billingZip ? `${offer.billingZip} ` : ''}
+                              {offer.billingCity}
                             </p>
                           )}
-                          {billingContact.siret && (
-                            <p className="text-slate-700">
-                              <span className="font-medium">SIRET:</span> {billingContact.siret}
-                            </p>
-                          )}
-                          {billingContact.email && (
-                            <p className="text-slate-700">
-                              <span className="font-medium">Email:</span> {billingContact.email}
-                            </p>
-                          )}
-                          {billingContact.phone && (
-                            <p className="text-slate-700">
-                              <span className="font-medium">Tél:</span> {billingContact.phone}
-                            </p>
-                          )}
-                        </>
+                          {offer.billingCountry && <p>{offer.billingCountry}</p>}
+                        </div>
                       )}
+
+                      {/* Autres détails (SIRET, Email, Tel) */}
+                      <div className="text-slate-700 mt-2 space-y-0.5">
+                        {offer.siret && (
+                          <p><span className="font-medium">SIRET:</span> {offer.siret}</p>
+                        )}
+                        {offer.billingEmail && (
+                          <p><span className="font-medium">Email:</span> {offer.billingEmail}</p>
+                        )}
+                        {offer.billingPhone && (
+                          <p><span className="font-medium">Tél:</span> {offer.billingPhone}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -769,7 +812,7 @@ export function InvoiceGeneratorModal({
                   </p>
                 </div>
 
-                {/* Line Items Table - French Standard */}
+                {/* LIGNES DE FACTURE DÉTAILLÉES (NOUVEAU TABLEAU) */}
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b-2 border-slate-800 bg-slate-50">
@@ -788,25 +831,22 @@ export function InvoiceGeneratorModal({
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-slate-200">
-                      <td className="px-4 py-4 text-sm text-slate-900">
-                        <p className="font-medium">Commissions sur ventes - {offer.name}</p>
-                        <p className="mt-1 text-xs text-slate-600">
-                          Période: {new Date(startDate).toLocaleDateString('fr-FR')} au{' '}
-                          {new Date(endDate).toLocaleDateString('fr-FR')}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-600">
-                          {deals.length} vente(s) réalisée(s)
-                        </p>
-                      </td>
-                      <td className="px-4 py-4 text-center text-sm text-slate-900">1</td>
-                      <td className="px-4 py-4 text-right text-sm text-slate-900">
-                        {formatCurrency(commissionHT)}
-                      </td>
-                      <td className="px-4 py-4 text-right text-sm font-semibold text-slate-900">
-                        {formatCurrency(commissionHT)}
-                      </td>
-                    </tr>
+                    {/* Boucle sur les lignes regroupées */}
+                    {lineItems.map((item, idx) => (
+                      <tr key={idx} className="border-b border-slate-200">
+                        <td className="px-4 py-4 text-sm text-slate-900">
+                          <p className="font-medium">{item.description}</p>
+                          <p className="mt-1 text-xs text-slate-600">Commission sur {item.count} vente(s)</p>
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm text-slate-900">{item.count}</td>
+                        <td className="px-4 py-4 text-right text-sm text-slate-900">
+                          {formatCurrency(item.unitPrice / item.count)}
+                        </td>
+                        <td className="px-4 py-4 text-right text-sm font-semibold text-slate-900">
+                          {formatCurrency(item.total)}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
 
