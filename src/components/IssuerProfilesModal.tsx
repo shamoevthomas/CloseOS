@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Edit2, Trash2, Building2, Check, Loader2 } from 'lucide-react' // Ajout de Loader2 pour le feedback
-import { cn } from '../lib/utils'
-import { supabase } from '../lib/supabase' // Importation de supabase
+import { X, Plus, Edit2, Trash2, Building2, Check, Loader2 } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 export interface IssuerProfile {
   id: string
@@ -22,13 +21,11 @@ interface IssuerProfilesModalProps {
   onClose: () => void
 }
 
-// MODIFIÉ : Retrait de STORAGE_KEY car on utilise Supabase maintenant
-
 export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProps) {
   const [profiles, setProfiles] = useState<IssuerProfile[]>([])
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false) // State pour le chargement
+  const [isLoading, setIsLoading] = useState(false)
 
   // Form state
   const [formName, setFormName] = useState('')
@@ -41,13 +38,17 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
   const [formEmail, setFormEmail] = useState('')
   const [formPhone, setFormPhone] = useState('')
 
-  // MODIFIÉ : Chargement depuis Supabase avec mapping des colonnes
+  // Chargement depuis Supabase (Filtré par USER)
   const fetchProfiles = async () => {
     setIsLoading(true)
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
       const { data, error } = await supabase
         .from('issuer_profiles')
         .select('*')
+        .eq('user_id', user.id) // Sécurité : seulement mes profils
         .order('created_at', { ascending: true })
 
       if (error) throw error
@@ -56,15 +57,15 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
         const mapped = data.map(p => ({
           id: p.id,
           name: p.name,
-          companyName: p.company_name, // Mapping snake_case -> camelCase
-          address: p.address,
-          city: p.city,
-          zip: p.zip,
-          country: p.country,
-          siret: p.siret,
-          email: p.email,
-          phone: p.phone,
-          isDefault: p.is_default // Mapping snake_case -> camelCase
+          companyName: p.company_name,
+          address: p.address || '',
+          city: p.city || '',
+          zip: p.zip || '',
+          country: p.country || 'France',
+          siret: p.siret || '',
+          email: p.email || '',
+          phone: p.phone || '',
+          isDefault: p.is_default
         }))
         setProfiles(mapped)
       }
@@ -81,12 +82,15 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
     }
   }, [isOpen])
 
-  // MODIFIÉ : Sauvegarde dans Supabase
+  // Sauvegarde (Avec user_id)
   const saveProfile = async (profile: any) => {
     setIsLoading(true)
     try {
-      // Préparation des données pour SQL (snake_case)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
       const dbData = {
+        user_id: user.id, // Important pour le RLS
         name: profile.name,
         company_name: profile.companyName,
         address: profile.address,
@@ -114,7 +118,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
     }
   }
 
-  // MODIFIÉ : Suppression dans Supabase
+  // Suppression
   const deleteProfile = async (id: string) => {
     try {
       await supabase.from('issuer_profiles').delete().eq('id', id)
@@ -124,13 +128,23 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
     }
   }
 
-  // MODIFIÉ : Gestion du profil par défaut dans Supabase
+  // Définir par défaut (Sécurisé par user_id)
   const setDefault = async (id: string) => {
     try {
-      // 1. On retire le défaut à tout le monde
-      await supabase.from('issuer_profiles').update({ is_default: false }).neq('id', id)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // 1. On retire le défaut à TOUS les profils DE CET UTILISATEUR
+      await supabase.from('issuer_profiles')
+        .update({ is_default: false })
+        .eq('user_id', user.id)
+        .neq('id', id)
+      
       // 2. On met le nouveau par défaut
-      await supabase.from('issuer_profiles').update({ is_default: true }).eq('id', id)
+      await supabase.from('issuer_profiles')
+        .update({ is_default: true })
+        .eq('id', id)
+        
       await fetchProfiles()
     } catch (err) {
       console.error('Erreur profil par défaut:', err)
@@ -193,10 +207,8 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
       <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 p-6 flex-shrink-0">
@@ -235,7 +247,6 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
               </h3>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Profile Name */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-400">
                     Nom du profil
@@ -250,7 +261,6 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                   />
                 </div>
 
-                {/* Company Name */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-400">
                     Raison sociale
@@ -265,7 +275,6 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                   />
                 </div>
 
-                {/* Address */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-400">Adresse</label>
                   <input
@@ -277,7 +286,6 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                   />
                 </div>
 
-                {/* City, Zip, Country */}
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-400">Ville</label>
@@ -313,7 +321,6 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                   </div>
                 </div>
 
-                {/* SIRET */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-400">
                     SIRET / N° TVA
@@ -327,7 +334,6 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                   />
                 </div>
 
-                {/* Email & Phone */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-400">Email</label>
@@ -353,7 +359,6 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -365,7 +370,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="flex-1 rounded-lg bg-purple-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600 flex justify-center"
+                    className="flex-1 rounded-lg bg-purple-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600 flex justify-center items-center"
                   >
                     {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingId ? 'Enregistrer' : 'Ajouter')}
                   </button>
@@ -407,7 +412,6 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                       </div>
                       <p className="mt-1 text-sm font-medium text-slate-300">{profile.companyName}</p>
 
-                      {/* Details */}
                       <div className="mt-2 space-y-1 text-xs text-slate-500">
                         {profile.address && (
                           <p>
@@ -425,7 +429,6 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                       </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                       {!profile.isDefault && (
                         <button

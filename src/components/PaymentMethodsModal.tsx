@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Plus, Edit2, Trash2, CreditCard, Building, Repeat, DollarSign, Check, Loader2 } from 'lucide-react'
 import { cn } from '../lib/utils'
-import { supabase } from '../lib/supabase' // Importation de supabase
+import { supabase } from '../lib/supabase'
 
 export type PaymentMethodType = 'VIREMENT' | 'PAYPAL' | 'REVOLUT' | 'STRIPE'
 
@@ -27,13 +27,11 @@ interface PaymentMethodsModalProps {
   onClose: () => void
 }
 
-// MODIFIÉ : Retrait de STORAGE_KEY pour passer sur le Cloud
-
 export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProps) {
   const [methods, setMethods] = useState<PaymentMethod[]>([])
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false) // State pour le feedback de chargement
+  const [isLoading, setIsLoading] = useState(false)
 
   // Form state
   const [formType, setFormType] = useState<PaymentMethodType>('VIREMENT')
@@ -45,24 +43,27 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
   const [formIdentifier, setFormIdentifier] = useState('')
   const [formPaymentLink, setFormPaymentLink] = useState('')
 
-  // MODIFIÉ : Chargement depuis Supabase
+  // Chargement depuis Supabase (Filtré par USER)
   const fetchMethods = async () => {
     setIsLoading(true)
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
       const { data, error } = await supabase
         .from('payment_methods')
         .select('*')
+        .eq('user_id', user.id) // Sécurité : seulement mes méthodes
         .order('created_at', { ascending: true })
 
       if (error) throw error
 
       if (data) {
-        // Mapping SQL (snake_case) -> Interface (camelCase)
         const mapped = data.map(m => ({
           id: m.id,
           type: m.type,
           name: m.name,
-          isDefault: m.is_default,
+          isDefault: m.is_default, // Mapping snake_case
           details: m.details || {}
         }))
         setMethods(mapped)
@@ -80,11 +81,15 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
     }
   }, [isOpen])
 
-  // MODIFIÉ : Sauvegarde dans Supabase
+  // Sauvegarde (Avec user_id)
   const saveMethod = async (method: PaymentMethod) => {
     setIsLoading(true)
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
       const dbData = {
+        user_id: user.id, // Important pour le RLS
         name: method.name,
         type: method.type,
         is_default: method.isDefault,
@@ -106,7 +111,7 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
     }
   }
 
-  // MODIFIÉ : Suppression dans Supabase
+  // Suppression
   const deleteMethod = async (id: string) => {
     try {
       await supabase.from('payment_methods').delete().eq('id', id)
@@ -116,13 +121,23 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
     }
   }
 
-  // MODIFIÉ : Gestion du défaut dans Supabase
+  // Définir par défaut (Sécurisé par user_id)
   const setDefault = async (id: string) => {
     try {
-      // 1. Désactiver tous les autres
-      await supabase.from('payment_methods').update({ is_default: false }).neq('id', id)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // 1. Désactiver tous les autres pour cet utilisateur
+      await supabase.from('payment_methods')
+        .update({ is_default: false })
+        .eq('user_id', user.id)
+        .neq('id', id)
+      
       // 2. Activer celui-ci
-      await supabase.from('payment_methods').update({ is_default: true }).eq('id', id)
+      await supabase.from('payment_methods')
+        .update({ is_default: true })
+        .eq('id', id)
+        
       await fetchMethods()
     } catch (err) {
       console.error('Erreur changement défaut:', err)
@@ -164,7 +179,7 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
     }
 
     const method: PaymentMethod = {
-      id: editingId || '', // Géré par Supabase
+      id: editingId || '', 
       type: formType,
       name: formName,
       isDefault: methods.length === 0,
@@ -207,27 +222,19 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
 
   const getIcon = (type: PaymentMethodType) => {
     switch (type) {
-      case 'VIREMENT':
-        return <Building className="h-5 w-5" />
-      case 'PAYPAL':
-        return <CreditCard className="h-5 w-5" />
-      case 'REVOLUT':
-        return <Repeat className="h-5 w-5" />
-      case 'STRIPE':
-        return <DollarSign className="h-5 w-5" />
+      case 'VIREMENT': return <Building className="h-5 w-5" />
+      case 'PAYPAL': return <CreditCard className="h-5 w-5" />
+      case 'REVOLUT': return <Repeat className="h-5 w-5" />
+      case 'STRIPE': return <DollarSign className="h-5 w-5" />
     }
   }
 
   const getColor = (type: PaymentMethodType) => {
     switch (type) {
-      case 'VIREMENT':
-        return 'blue'
-      case 'PAYPAL':
-        return 'indigo'
-      case 'REVOLUT':
-        return 'purple'
-      case 'STRIPE':
-        return 'emerald'
+      case 'VIREMENT': return 'blue'
+      case 'PAYPAL': return 'indigo'
+      case 'REVOLUT': return 'purple'
+      case 'STRIPE': return 'emerald'
     }
   }
 
@@ -235,12 +242,9 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
       <div className="relative w-full max-w-3xl max-h-[85vh] flex flex-col rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 p-6 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-white">Moyens de Paiement</h2>
@@ -256,9 +260,7 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-          {/* Add New Button */}
           {!isAdding && (
             <button
               onClick={() => setIsAdding(true)}
@@ -269,7 +271,6 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
             </button>
           )}
 
-          {/* Add/Edit Form */}
           {isAdding && (
             <div className="mb-6 rounded-xl border border-slate-800 bg-slate-800/50 p-6">
               <h3 className="mb-4 text-lg font-bold text-white">
@@ -277,7 +278,6 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
               </h3>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Name */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-400">
                     Nom du moyen de paiement
@@ -292,7 +292,6 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
                   />
                 </div>
 
-                {/* Type */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-400">Type</label>
                   <div className="grid grid-cols-2 gap-2">
@@ -317,7 +316,6 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
                   </div>
                 </div>
 
-                {/* Dynamic Fields */}
                 {formType === 'VIREMENT' && (
                   <>
                     <div>
@@ -416,7 +414,6 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -437,7 +434,6 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
             </div>
           )}
 
-          {/* List of Methods */}
           {methods.length === 0 && !isAdding ? (
             <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-12 text-center">
               <CreditCard className="mx-auto mb-4 h-12 w-12 text-slate-600" />
@@ -477,7 +473,6 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
                         </div>
                         <p className="mt-1 text-sm text-slate-400">{method.type}</p>
 
-                        {/* Details */}
                         <div className="mt-2 space-y-1 text-xs text-slate-500">
                           {method.type === 'VIREMENT' && (
                             <>
@@ -495,7 +490,6 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
                         </div>
                       </div>
 
-                      {/* Actions */}
                       <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                         {!method.isDefault && (
                           <button
