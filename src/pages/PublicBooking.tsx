@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Mail, ChevronRight as ChevronRightIcon, Calendar as CalendarIcon, Copy, Video, AlertCircle, Loader2 } from 'lucide-react'
-// ON RETIRE L'IMPORT DE DAILY CAR ON NE L'UTILISE PLUS
 import { supabase } from '../lib/supabase'
 import { format, addHours, isAfter, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -19,99 +18,100 @@ interface BookingData {
 
 export function PublicBooking() {
   const { slug } = useParams<{ slug: string }>()
-  const [settings, setSettings] = useState<any>(null)
+  
+  // Data
+  const [bookingType, setBookingType] = useState<any>(null)
+  const [availability, setAvailability] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  // UI States
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [step, setStep] = useState<BookingStep>('time')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [existingMeetings, setExistingMeetings] = useState<any[]>([])
+  
   const [bookingData, setBookingData] = useState<BookingData>({
     firstName: '',
     lastName: '',
     email: '',
     phone: ''
   })
-  // PLUS BESOIN DE STATE POUR MEETING LINK
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const [existingMeetings, setExistingMeetings] = useState<any[]>([])
-
-  // 1. Chargement des réglages
+  // 1. CHARGEMENT HYBRIDE (Type de RDV + Disponibilités Globales)
   useEffect(() => {
-    const fetchSettings = async () => {
+    const fetchBookingData = async () => {
       try {
         setLoading(true)
-        const { data, error } = await supabase
-          .from('booking_settings')
-          .select('*, user_id')
+        
+        // A. Récupérer le TYPE d'événement via le slug (titre, durée...)
+        const { data: typeData, error: typeError } = await supabase
+          .from('booking_types')
+          .select('*')
           .eq('slug', slug)
           .single()
 
-        if (error || !data) throw new Error('Page de réservation introuvable')
+        if (typeError || !typeData) throw new Error('Ce lien de réservation est invalide ou a expiré.')
+        setBookingType(typeData)
+
+        // B. Récupérer les DISPONIBILITÉS globales du Closer (via son user_id)
+        const { data: settingsData } = await supabase
+          .from('booking_settings')
+          .select('availability, min_lead_time')
+          .eq('user_id', typeData.user_id)
+          .single()
         
+        // Valeurs par défaut si pas de settings
+        setAvailability(settingsData || { availability: {}, min_lead_time: 2 })
+
+        // C. Récupérer les conflits (déjà réservé)
         const { data: meetingsData } = await supabase
           .from('meetings')
           .select('date, time')
-          .eq('user_id', data.user_id)
+          .eq('user_id', typeData.user_id)
+          .neq('status', 'cancelled') // On ignore les annulés
         
         if (meetingsData) setExistingMeetings(meetingsData)
 
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('id', data.user_id)
-          .single()
-
-        setSettings({ ...data, agentEmail: profileData?.email || 'contact@closer-os.com' })
       } catch (err: any) {
+        console.error(err)
         setError(err.message)
       } finally {
         setLoading(false)
       }
     }
 
-    if (slug) fetchSettings()
+    if (slug) fetchBookingData()
   }, [slug])
 
   // 2. Calcul des dates disponibles
   const availableDates = useMemo(() => {
-    if (!settings) return []
+    if (!availability) return []
     const dates = []
     const now = new Date()
-    const minLeadDate = addHours(now, settings.min_lead_time || 0)
+    const minLeadDate = addHours(now, availability.min_lead_time || 2)
 
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 30; i++) { // Fenêtre de 30 jours
       const date = new Date()
       date.setDate(now.getDate() + i)
       
       const dayNameEn = format(date, 'eeee', { locale: undefined }).toLowerCase()
-      const dayConfig = settings.availability[dayNameEn]
+      const dayConfig = availability.availability?.[dayNameEn]
 
       if (dayConfig?.enabled && dayConfig.slots?.[0]) {
-        const [endH, endM] = dayConfig.slots[0].end.split(':').map(Number)
-        const endOfWorkingDay = new Date(date)
-        endOfWorkingDay.setHours(endH, endM, 0, 0)
-
-        const isFutureDay = isAfter(startOfDay(date), startOfDay(minLeadDate))
-        const isTodayWithAvailableSlots = format(date, 'yyyy-MM-dd') === format(minLeadDate, 'yyyy-MM-dd') && isAfter(endOfWorkingDay, minLeadDate)
-
-        if (isFutureDay || isTodayWithAvailableSlots) {
-          dates.push(date)
-        }
+        dates.push(date)
       }
-      if (dates.length >= 12) break
     }
     return dates
-  }, [settings])
+  }, [availability])
 
   // 3. Calcul des créneaux horaires
   const timeSlots = useMemo(() => {
-    if (!selectedDate || !settings) return []
+    if (!selectedDate || !availability || !bookingType) return []
     
     const dayNameEn = format(selectedDate, 'eeee', { locale: undefined }).toLowerCase()
-    const dayConfig = settings.availability[dayNameEn]
+    const dayConfig = availability.availability?.[dayNameEn]
     
     if (!dayConfig || !dayConfig.slots || dayConfig.slots.length === 0) return []
 
@@ -119,119 +119,127 @@ export function PublicBooking() {
     const { start, end } = dayConfig.slots[0]
     const [startH, startM] = start.split(':').map(Number)
     const [endH, endM] = end.split(':').map(Number)
-    const slotDuration = settings.duration || 30
+    const slotDuration = bookingType.duration
 
     let current = startH * 60 + startM
     const totalEnd = endH * 60 + endM
 
     const formattedSelectedDate = format(selectedDate, 'yyyy-MM-dd')
+    const now = new Date()
+    const minTime = addHours(now, availability.min_lead_time || 2)
 
     while (current + slotDuration <= totalEnd) {
-      const slotStart = current;
-      const slotEnd = current + slotDuration;
+      const slotStart = current
+      const slotEnd = current + slotDuration
       
       const h = Math.floor(current / 60)
       const m = current % 60
       const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
       
-      const slotDate = new Date(selectedDate)
-      slotDate.setHours(h, m, 0, 0)
+      // Vérification temporelle (pas dans le passé)
+      const slotDateObj = new Date(selectedDate)
+      slotDateObj.setHours(h, m, 0, 0)
 
+      // Vérification des conflits (meetings existants)
       const isBusy = existingMeetings.some(m => {
-        if (m.date !== formattedSelectedDate) return false;
-        if (!m.time || typeof m.time !== 'string') return false; 
+        if (m.date !== formattedSelectedDate) return false
+        if (!m.time || typeof m.time !== 'string') return false
 
-        const parts = m.time.split(' - ');
-        if (parts.length < 2) return false; 
+        const parts = m.time.split(' - ')
+        if (parts.length < 2) return false
 
-        const [mStart, mEnd] = parts;
-        if (!mStart.includes(':') || !mEnd.includes(':')) return false;
-
-        const [mStartH, mStartM] = mStart.split(':').map(Number);
-        const [mEndH, mEndM] = mEnd.split(':').map(Number);
+        const [mStart, mEnd] = parts
+        const [mStartH, mStartM] = mStart.split(':').map(Number)
+        const [mEndH, mEndM] = mEnd.split(':').map(Number)
         
-        const existingStart = mStartH * 60 + mStartM;
-        const existingEnd = mEndH * 60 + mEndM;
+        const busyStart = mStartH * 60 + mStartM
+        const busyEnd = mEndH * 60 + mEndM
 
-        return slotStart < existingEnd && slotEnd > existingStart;
-      });
+        // Collision : (Start1 < End2) et (End1 > Start2)
+        return slotStart < busyEnd && slotEnd > busyStart
+      })
 
-      if (!isBusy && isAfter(slotDate, addHours(new Date(), settings.min_lead_time || 0))) {
+      if (!isBusy && isAfter(slotDateObj, minTime)) {
         slots.push(timeStr)
       }
       
       current += slotDuration
     }
     return slots
-  }, [selectedDate, settings, existingMeetings])
+  }, [selectedDate, availability, bookingType, existingMeetings])
 
   const handleSubmitBooking = async () => {
-    if (!selectedDate || !selectedTime || !settings) return
+    if (!selectedDate || !selectedTime || !bookingType) return
     setIsSubmitting(true)
 
     try {
-      // PAS DE CRÉATION DE SALLE DAILY ICI
-      
       const formattedDate = format(selectedDate, 'yyyy-MM-dd')
       const [hours, minutes] = selectedTime.split(':').map(Number)
-      const duration = settings.duration || 30
+      const duration = bookingType.duration
+      
+      // Calcul heure fin
       const endTotal = hours * 60 + minutes + duration
       const formattedEndTime = `${Math.floor(endTotal / 60).toString().padStart(2, '0')}:${(endTotal % 60).toString().padStart(2, '0')}`
       const fullTimeRange = `${selectedTime} - ${formattedEndTime}`
 
+      const locationText = "À définir avec le Closer"
+
+      // Sauvegarde DB
       const { error: dbError } = await supabase
         .from('meetings')
         .insert([{
-          user_id: settings.user_id,
-          title: `Appel - ${bookingData.firstName} ${bookingData.lastName}`,
+          user_id: bookingType.user_id,
+          title: `${bookingType.title} - ${bookingData.firstName}`,
           contact: `${bookingData.firstName} ${bookingData.lastName}`,
           date: formattedDate,
           time: fullTimeRange,
-          type: 'phone', // CHANGÉ EN PHONE
-          status: 'scheduled',
-          location: 'À définir', // TEXTE STATIQUE
-          description: `Email: ${bookingData.email}\nTéléphone: ${bookingData.phone}`
+          type: 'phone',
+          status: 'upcoming',
+          location: locationText,
+          description: `Type: ${bookingType.title}\nEmail: ${bookingData.email}\nTéléphone: ${bookingData.phone}`
         }])
 
       if (dbError) throw dbError
 
+      // Envoi Email
+      const { data: profile } = await supabase.from('profiles').select('email').eq('id', bookingType.user_id).single()
+      const agentEmail = profile?.email || 'contact@closer-os.com'
+
       await sendBookingEmails({
         prospectEmail: bookingData.email,
         prospectName: bookingData.firstName,
-        agentEmail: settings.agentEmail,
+        agentEmail: agentEmail,
         date: formattedDate,
         time: selectedTime,
-        meetingLink: 'À définir', // ON PASSE CE TEXTE AU LIEU D'UNE URL
-        duration: settings.duration || 30
+        meetingLink: locationText,
+        duration: duration
       })
 
       setStep('success')
     } catch (error) {
-      console.error('Erreur lors de la réservation:', error)
-      alert('Une erreur est survenue lors de la réservation.')
+      console.error('Erreur:', error)
+      alert('Une erreur est survenue.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  // URL Google Agenda Helper
   const getGoogleCalendarUrl = () => {
-    if (!selectedDate || !selectedTime) return ''
+    if (!selectedDate || !selectedTime || !bookingType) return ''
     const dateStr = format(selectedDate, 'yyyyMMdd')
     const [h, m] = selectedTime.split(':').map(Number)
-    const duration = settings?.duration || 30
     
     const startIso = `${dateStr}T${h.toString().padStart(2, '0')}${m.toString().padStart(2, '0')}00Z`
     
-    const endTotal = h * 60 + m + duration
+    const endTotal = h * 60 + m + bookingType.duration
     const endH = Math.floor(endTotal / 60).toString().padStart(2, '0')
     const endM = (endTotal % 60).toString().padStart(2, '0')
     const endIso = `${dateStr}T${endH}${endM}00Z`
 
-    // URL GOOGLE AGENDA ADAPTÉE SANS LIEN
-    const locationText = "À définir"
-    const detailsText = "L'expert prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités."
+    const detailsText = "Le Closer prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités."
 
-    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Session de Closing - ' + (settings?.title || 'Appel'))}&dates=${startIso}/${endIso}&details=${encodeURIComponent(detailsText)}&location=${encodeURIComponent(locationText)}`
+    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(bookingType.title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent(detailsText)}&location=${encodeURIComponent("À définir")}`
   }
 
   if (loading) return (
@@ -254,17 +262,17 @@ export function PublicBooking() {
       <div className="max-w-6xl mx-auto px-4 py-12 md:py-20">
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           
-          {/* COLONNE GAUCHE : INFO */}
+          {/* INFO GAUCHE */}
           <div className="lg:col-span-4 space-y-8">
             <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl backdrop-blur-xl">
               <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-blue-600/20">
-                <Video className="text-white w-8 h-8" />
+                <CalendarIcon className="text-white w-8 h-8" />
               </div>
               <h1 className="text-3xl font-black text-white mb-4 tracking-tight">
-                {settings?.title || 'Réserver un appel'}
+                {bookingType.title}
               </h1>
               <p className="text-slate-400 leading-relaxed text-lg">
-                {settings?.description || 'Choisissez une date sur le calendrier pour votre session.'}
+                {bookingType.description || 'Sélectionnez un créneau pour échanger avec notre expert.'}
               </p>
 
               <div className="mt-10 space-y-4">
@@ -272,23 +280,23 @@ export function PublicBooking() {
                   <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
                     <Clock className="w-5 h-5 text-blue-500" />
                   </div>
-                  <span className="font-semibold">{settings?.duration || 30} minutes</span>
+                  <span className="font-semibold">{bookingType.duration} minutes</span>
                 </div>
                 <div className="flex items-center gap-4 text-slate-300">
                   <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
-                    <Video className="w-5 h-5 text-blue-500" />
+                    <Phone className="w-5 h-5 text-blue-500" />
                   </div>
-                  <span className="font-semibold">Visioconférence</span>
+                  <span className="font-semibold">Appel Téléphonique</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* COLONNE DROITE : PROCESSUS */}
+          {/* PROCESSUS DROITE */}
           <div className="lg:col-span-8">
             <div className="bg-slate-900 border border-slate-800 rounded-[32px] overflow-hidden shadow-2xl">
               
-              {/* ÉTAPE : SÉLECTION DE L'HEURE */}
+              {/* 1. CALENDRIER */}
               {step === 'time' && (
                 <div className="animate-in fade-in duration-500">
                   <div className="p-8 md:p-12">
@@ -296,16 +304,13 @@ export function PublicBooking() {
                       <div>
                         <h2 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
                           <Calendar className="text-blue-500 w-6 h-6" />
-                          Sélectionnez la date
+                          Date
                         </h2>
                         <div className="grid grid-cols-4 gap-3">
                           {availableDates.map((date) => (
                             <button
                               key={date.toISOString()}
-                              onClick={() => {
-                                setSelectedDate(date)
-                                setSelectedTime(null)
-                              }}
+                              onClick={() => { setSelectedDate(date); setSelectedTime(null); }}
                               className={cn(
                                 "flex flex-col items-center py-4 rounded-2xl border transition-all duration-300",
                                 selectedDate && format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
@@ -325,7 +330,7 @@ export function PublicBooking() {
                       <div>
                         <h2 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
                           <Clock className="text-blue-500 w-6 h-6" />
-                          Heure de début
+                          Heure
                         </h2>
                         {selectedDate ? (
                           <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -347,7 +352,7 @@ export function PublicBooking() {
                         ) : (
                           <div className="h-full flex flex-col items-center justify-center text-slate-500 border-2 border-dashed border-slate-800 rounded-3xl p-8">
                             <Calendar className="w-12 h-12 mb-4 opacity-20" />
-                            <p className="text-center font-medium">Choisissez une date pour voir les créneaux</p>
+                            <p className="text-center font-medium">Choisissez une date</p>
                           </div>
                         )}
                       </div>
@@ -358,10 +363,10 @@ export function PublicBooking() {
                     <div className="text-sm">
                       {selectedDate && selectedTime ? (
                         <p className="text-slate-400">
-                          Sélectionné : <span className="text-white font-bold">{format(selectedDate, 'd MMMM', { locale: fr })} à {selectedTime}</span>
+                          <span className="text-white font-bold">{format(selectedDate, 'd MMMM', { locale: fr })} à {selectedTime}</span>
                         </p>
                       ) : (
-                        <p className="text-slate-500">Veuillez choisir un créneau</p>
+                        <p className="text-slate-500">Sélectionnez un créneau</p>
                       )}
                     </div>
                     <button
@@ -369,140 +374,72 @@ export function PublicBooking() {
                       onClick={() => setStep('form')}
                       className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:bg-blue-500 transition-all disabled:opacity-30 disabled:grayscale flex items-center gap-2 group shadow-lg shadow-blue-600/20"
                     >
-                      Suivant
-                      <ChevronRightIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      Suivant <ChevronRightIcon className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* ÉTAPE : FORMULAIRE */}
+              {/* 2. FORMULAIRE */}
               {step === 'form' && (
                 <div className="p-8 md:p-12 animate-in slide-in-from-right duration-500">
-                  <button 
-                    onClick={() => setStep('time')}
-                    className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-10 font-bold"
-                  >
+                  <button onClick={() => setStep('time')} className="flex items-center gap-2 text-slate-400 hover:text-white mb-10 font-bold">
                     <ChevronLeft className="w-5 h-5" /> Retour
                   </button>
 
-                  <h2 className="text-3xl font-black text-white mb-2">Dernière étape</h2>
-                  <p className="text-slate-400 mb-10">Complétez vos informations pour confirmer le rendez-vous.</p>
+                  <h2 className="text-3xl font-black text-white mb-8">Vos informations</h2>
 
                   <div className="space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Prénom</label>
-                        <input 
-                          className="w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none transition-all font-medium" 
-                          placeholder="Ex: Jean"
-                          value={bookingData.firstName}
-                          onChange={e => setBookingData({...bookingData, firstName: e.target.value})}
-                        />
+                        <label className="text-xs font-black uppercase text-slate-500 ml-1">Prénom</label>
+                        <input className="w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none" placeholder="Jean" value={bookingData.firstName} onChange={e => setBookingData({...bookingData, firstName: e.target.value})} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Nom</label>
-                        <input 
-                          className="w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none transition-all font-medium" 
-                          placeholder="Ex: Dupont"
-                          value={bookingData.lastName}
-                          onChange={e => setBookingData({...bookingData, lastName: e.target.value})}
-                        />
+                        <label className="text-xs font-black uppercase text-slate-500 ml-1">Nom</label>
+                        <input className="w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none" placeholder="Dupont" value={bookingData.lastName} onChange={e => setBookingData({...bookingData, lastName: e.target.value})} />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Email professionnel</label>
-                      <input 
-                        type="email"
-                        className="w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none transition-all font-medium" 
-                        placeholder="jean@entreprise.com"
-                        value={bookingData.email}
-                        onChange={e => setBookingData({...bookingData, email: e.target.value})}
-                      />
+                      <label className="text-xs font-black uppercase text-slate-500 ml-1">Email</label>
+                      <input type="email" className="w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none" placeholder="jean@exemple.com" value={bookingData.email} onChange={e => setBookingData({...bookingData, email: e.target.value})} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Téléphone</label>
-                      <input 
-                        className="w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none transition-all font-medium" 
-                        placeholder="+33 6 00 00 00 00"
-                        value={bookingData.phone}
-                        onChange={e => setBookingData({...bookingData, phone: e.target.value})}
-                      />
+                      <label className="text-xs font-black uppercase text-slate-500 ml-1">Téléphone</label>
+                      <input className="w-full bg-slate-950 border border-slate-800 p-5 rounded-2xl text-white focus:border-blue-500 outline-none" placeholder="06 12 34 56 78" value={bookingData.phone} onChange={e => setBookingData({...bookingData, phone: e.target.value})} />
                     </div>
 
-                    <button 
-                      disabled={isSubmitting || !bookingData.firstName || !bookingData.lastName || !bookingData.email}
-                      onClick={handleSubmitBooking}
-                      className="w-full bg-blue-600 py-6 rounded-2xl font-black text-white hover:bg-blue-500 transition-all mt-6 disabled:opacity-30 flex items-center justify-center gap-3 shadow-xl shadow-blue-600/20"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="w-6 h-6 animate-spin" />
-                          Confirmation en cours...
-                        </>
-                      ) : (
-                        'Confirmer mon rendez-vous'
-                      )}
+                    <button disabled={isSubmitting || !bookingData.email} onClick={handleSubmitBooking} className="w-full bg-blue-600 py-6 rounded-2xl font-black text-white hover:bg-blue-500 transition-all mt-6 disabled:opacity-30 flex items-center justify-center gap-3">
+                      {isSubmitting ? <Loader2 className="animate-spin" /> : 'Confirmer mon rendez-vous'}
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* ÉTAPE : SUCCÈS */}
+              {/* 3. SUCCÈS */}
               {step === 'success' && (
-                <div className="p-12 md:p-20 text-center animate-in zoom-in duration-500">
+                <div className="p-12 text-center animate-in zoom-in duration-500">
                   <div className="w-24 h-24 bg-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-emerald-500/20 rotate-12">
                     <Check className="text-white w-12 h-12 stroke-[4px]" />
                   </div>
                   <h2 className="text-4xl font-black text-white mb-6">C'est confirmé !</h2>
-                  <p className="text-xl text-slate-400 mb-12 max-w-md mx-auto">
-                    Votre rendez-vous est programmé pour le <span className="text-white font-bold">{format(selectedDate!, 'd MMMM', { locale: fr })} à {selectedTime}</span>.
+                  <p className="text-xl text-slate-400 mb-12">
+                    Rendez-vous le <span className="text-white font-bold">{format(selectedDate!, 'd MMMM', { locale: fr })} à {selectedTime}</span>.
                   </p>
                   
-                  {/* ACTIONS ET MESSAGE DE CONFIRMATION */}
                   <div className="space-y-6 max-w-md mx-auto mb-10">
-                    {/* Message de contact */}
-                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 flex flex-col gap-3">
-                      <div className="flex items-center gap-4 text-left">
-                        <div className="bg-blue-500/10 p-3 rounded-xl">
-                          <Phone className="text-blue-500 w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="text-white font-bold text-lg mb-1">Prise de contact</p>
-                          <p className="text-slate-400 text-sm leading-relaxed">
-                            L'expert prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités.
-                          </p>
-                        </div>
+                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 flex items-center gap-4 text-left">
+                      <div className="bg-blue-500/10 p-3 rounded-xl"><Phone className="text-blue-500 w-6 h-6" /></div>
+                      <div>
+                        <p className="text-white font-bold text-lg mb-1">Prise de contact</p>
+                        <p className="text-slate-400 text-sm">Le Closer prendra contact avec vous au plus vite.</p>
                       </div>
                     </div>
 
-                    {/* Bouton Calendrier */}
-                    <a 
-                      href={getGoogleCalendarUrl()} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="w-full flex items-center justify-center gap-3 bg-white text-slate-950 py-4 rounded-2xl font-black hover:bg-slate-100 transition-all shadow-xl"
-                    >
-                      <CalendarIcon className="h-5 w-5" />
-                      Ajouter à mon agenda
+                    <a href={getGoogleCalendarUrl()} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-3 bg-white text-slate-950 py-4 rounded-2xl font-black hover:bg-slate-100 transition-all shadow-xl">
+                      <CalendarIcon className="h-5 w-5" /> Ajouter à mon agenda
                     </a>
-                    
-                    {/* Contact en cas de modification */}
-                    <div className="p-4 border border-slate-800 rounded-2xl bg-slate-800/20 text-sm text-slate-400">
-                      <p className="mb-3">Un empêchement ? Merci de prévenir par email :</p>
-                      <div className="flex items-center justify-center gap-2 text-white font-bold bg-slate-950 p-2.5 rounded-lg border border-slate-800/50">
-                        <Mail className="h-4 w-4 text-blue-400" />
-                        {settings?.agentEmail}
-                      </div>
-                    </div>
                   </div>
-
-                  <button 
-                    onClick={() => window.location.reload()}
-                    className="text-blue-500 font-black hover:text-blue-400 transition-colors uppercase tracking-widest text-sm"
-                  >
-                    Réserver un autre créneau
-                  </button>
                 </div>
               )}
             </div>
