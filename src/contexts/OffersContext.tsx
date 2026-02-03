@@ -15,7 +15,6 @@ export interface OfferContact {
   role: string
 }
 
-// NOUVEAU : Définition d'une formule de prix
 export interface OfferFormula {
   id: string
   name: string
@@ -29,15 +28,25 @@ export interface Offer {
   name: string
   company: string
   status: 'active' | 'archived'
+  target: 'B2B' | 'B2C'
   startDate: string
   endDate?: string
-  price: string // Prix "par défaut" (pour l'affichage carte)
-  commission: string // Commission "par défaut"
+  price: string
+  commission: string
   description: string
   resources: OfferResource[]
   contacts: OfferContact[]
-  formulas?: OfferFormula[] // NOUVEAU : Liste des formules
-  notes: string
+  formulas?: OfferFormula[]
+  notes?: string
+  // NOUVEAUX CHAMPS DE FACTURATION
+  billingName?: string
+  billingAddress?: string
+  billingCity?: string
+  billingZip?: string
+  billingCountry?: string
+  siret?: string
+  billingEmail?: string
+  billingPhone?: string
 }
 
 interface OffersContextType {
@@ -56,7 +65,67 @@ export function OffersProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-  // 1. Charger les offres depuis Supabase
+  // --- HELPER: Conversion DB (snake_case) -> App (camelCase) ---
+  const mapFromDb = (data: any[]): Offer[] => {
+    return data.map(offer => ({
+      id: offer.id,
+      user_id: offer.user_id,
+      name: offer.name,
+      company: offer.company,
+      status: offer.status,
+      target: offer.target,
+      startDate: offer.start_date || offer.startDate, // Support des deux formats au cas où
+      endDate: offer.end_date || offer.endDate,
+      price: offer.price,
+      commission: offer.commission,
+      description: offer.description,
+      resources: offer.resources || [],
+      contacts: offer.contacts || [],
+      formulas: offer.formulas || [],
+      notes: offer.notes,
+      // Mapping Facturation
+      billingName: offer.billing_name,
+      billingAddress: offer.billing_address,
+      billingCity: offer.billing_city,
+      billingZip: offer.billing_zip,
+      billingCountry: offer.billing_country,
+      siret: offer.siret,
+      billingEmail: offer.billing_email,
+      billingPhone: offer.billing_phone
+    }))
+  }
+
+  // --- HELPER: Conversion App (camelCase) -> DB (snake_case) ---
+  const mapToDb = (offer: Partial<Offer>) => {
+    const dbData: any = { ...offer }
+
+    // Conversion explicite
+    if (offer.startDate) dbData.start_date = offer.startDate
+    if (offer.endDate) dbData.end_date = offer.endDate
+    if (offer.billingName) dbData.billing_name = offer.billingName
+    if (offer.billingAddress) dbData.billing_address = offer.billingAddress
+    if (offer.billingCity) dbData.billing_city = offer.billingCity
+    if (offer.billingZip) dbData.billing_zip = offer.billingZip
+    if (offer.billingCountry) dbData.billing_country = offer.billingCountry
+    if (offer.billingEmail) dbData.billing_email = offer.billingEmail
+    if (offer.billingPhone) dbData.billing_phone = offer.billingPhone
+    // siret reste siret
+
+    // Nettoyage des clés camelCase qui feraient planter Supabase
+    delete dbData.startDate
+    delete dbData.endDate
+    delete dbData.billingName
+    delete dbData.billingAddress
+    delete dbData.billingCity
+    delete dbData.billingZip
+    delete dbData.billingCountry
+    delete dbData.billingEmail
+    delete dbData.billingPhone
+
+    return dbData
+  }
+
+  // 1. Charger les offres
   const fetchOffers = async () => {
     if (!user) {
       setOffers([])
@@ -74,13 +143,8 @@ export function OffersProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error
       
-      // Adaptation des données si le champ formulas n'existe pas encore
-      const adaptedOffers = (data || []).map(offer => ({
-        ...offer,
-        formulas: offer.formulas || [] // Garantir que formulas est un tableau
-      }))
-
-      setOffers(adaptedOffers)
+      // Utilisation du mapper
+      setOffers(mapFromDb(data || []))
     } catch (error) {
       console.error('Erreur lors du chargement des offres:', error)
     } finally {
@@ -97,20 +161,23 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     if (!user) return { data: null, error: 'Non authentifié' }
 
     try {
+      // Conversion avant envoi
+      const dbPayload = mapToDb({ ...offerData, user_id: user.id } as Offer)
+
       const { data, error } = await supabase
         .from('offers')
-        .insert([
-          {
-            ...offerData,
-            user_id: user.id,
-          },
-        ])
+        .insert([dbPayload])
         .select()
 
       if (error) throw error
-      if (data) setOffers((prev) => [...prev, data[0]])
       
-      return { data, error: null }
+      if (data) {
+        // Re-conversion du retour pour l'affichage local immédiat
+        const newOffer = mapFromDb(data)[0]
+        setOffers((prev) => [...prev, newOffer])
+        return { data: [newOffer], error: null }
+      }
+      return { data: null, error: null }
     } catch (error) {
       return { data: null, error }
     }
@@ -121,9 +188,12 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     if (!user) return { error: 'Non authentifié' }
 
     try {
+      // Conversion avant envoi
+      const dbPayload = mapToDb(updates)
+
       const { error } = await supabase
         .from('offers')
-        .update(updates)
+        .update(dbPayload)
         .eq('id', id)
         .eq('user_id', user.id)
 
