@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Edit2, Trash2, Building2, Check, Loader2 } from 'lucide-react'
+import { X, Plus, Edit2, Trash2, Building2, Check, Loader2, Star } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export interface IssuerProfile {
@@ -38,7 +38,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
   const [formEmail, setFormEmail] = useState('')
   const [formPhone, setFormPhone] = useState('')
 
-  // Chargement depuis Supabase (Filtré par USER)
+  // Chargement depuis Supabase
   const fetchProfiles = async () => {
     setIsLoading(true)
     try {
@@ -48,7 +48,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
       const { data, error } = await supabase
         .from('issuer_profiles')
         .select('*')
-        .eq('user_id', user.id) // Sécurité : seulement mes profils
+        .eq('user_id', user.id)
         .order('created_at', { ascending: true })
 
       if (error) throw error
@@ -57,7 +57,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
         const mapped = data.map(p => ({
           id: p.id,
           name: p.name,
-          companyName: p.company_name,
+          companyName: p.company_name, // Mapping DB -> State
           address: p.address || '',
           city: p.city || '',
           zip: p.zip || '',
@@ -65,7 +65,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
           siret: p.siret || '',
           email: p.email || '',
           phone: p.phone || '',
-          isDefault: p.is_default
+          isDefault: p.is_default // Mapping DB -> State
         }))
         setProfiles(mapped)
       }
@@ -82,37 +82,44 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
     }
   }, [isOpen])
 
-  // Sauvegarde (Avec user_id)
-  const saveProfile = async (profile: any) => {
+  // Sauvegarde
+  const saveProfile = async (profileData: any) => {
     setIsLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        alert("Session expirée, veuillez vous reconnecter.")
+        return
+      }
 
+      // Mapping State -> DB
       const dbData = {
-        user_id: user.id, // Important pour le RLS
-        name: profile.name,
-        company_name: profile.companyName,
-        address: profile.address,
-        city: profile.city,
-        zip: profile.zip,
-        country: profile.country,
-        siret: profile.siret,
-        email: profile.email,
-        phone: profile.phone,
-        is_default: profile.isDefault
+        user_id: user.id,
+        name: profileData.name,
+        company_name: profileData.companyName,
+        address: profileData.address,
+        city: profileData.city,
+        zip: profileData.zip,
+        country: profileData.country,
+        siret: profileData.siret,
+        email: profileData.email,
+        phone: profileData.phone,
+        is_default: profileData.isDefault
       }
 
       if (editingId) {
-        await supabase.from('issuer_profiles').update(dbData).eq('id', editingId)
+        const { error } = await supabase.from('issuer_profiles').update(dbData).eq('id', editingId)
+        if (error) throw error
       } else {
-        await supabase.from('issuer_profiles').insert([dbData])
+        const { error } = await supabase.from('issuer_profiles').insert([dbData])
+        if (error) throw error
       }
 
       await fetchProfiles()
       resetForm()
     } catch (err) {
       console.error('Erreur sauvegarde profil:', err)
+      alert("Erreur lors de la sauvegarde. Vérifiez votre connexion.")
     } finally {
       setIsLoading(false)
     }
@@ -121,33 +128,33 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
   // Suppression
   const deleteProfile = async (id: string) => {
     try {
-      await supabase.from('issuer_profiles').delete().eq('id', id)
+      const { error } = await supabase.from('issuer_profiles').delete().eq('id', id)
+      if (error) throw error
       await fetchProfiles()
     } catch (err) {
-      console.error('Erreur suppression profil:', err)
+      console.error('Erreur suppression:', err)
     }
   }
 
-  // Définir par défaut (Sécurisé par user_id)
+  // Définir par défaut
   const setDefault = async (id: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // 1. On retire le défaut à TOUS les profils DE CET UTILISATEUR
+      // 1. Reset tous les profils de l'utilisateur
       await supabase.from('issuer_profiles')
         .update({ is_default: false })
         .eq('user_id', user.id)
-        .neq('id', id)
       
-      // 2. On met le nouveau par défaut
+      // 2. Set le nouveau
       await supabase.from('issuer_profiles')
         .update({ is_default: true })
         .eq('id', id)
         
       await fetchProfiles()
     } catch (err) {
-      console.error('Erreur profil par défaut:', err)
+      console.error('Erreur défaut:', err)
     }
   }
 
@@ -181,13 +188,12 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!formName.trim() || !formCompanyName.trim()) {
       alert('Veuillez entrer au moins un nom de profil et un nom de société')
       return
     }
 
-    const profile = {
+    const profileData = {
       name: formName,
       companyName: formCompanyName,
       address: formAddress,
@@ -197,10 +203,10 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
       siret: formSiret,
       email: formEmail,
       phone: formPhone,
-      isDefault: profiles.length === 0, // Premier profil devient défaut
+      isDefault: profiles.length === 0 // Premier profil = défaut auto
     }
 
-    saveProfile(profile)
+    saveProfile(profileData)
   }
 
   if (!isOpen) return null
@@ -208,170 +214,59 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-
       <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 p-6 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-white">Profils Émetteur</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Gérez vos informations d'entreprise pour accélérer la création de factures
-            </p>
+            <p className="mt-1 text-sm text-slate-400">Gérez vos informations d'entreprise</p>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
-          >
+          <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-          {/* Add New Button */}
           {!isAdding && (
             <button
               onClick={() => setIsAdding(true)}
               className="mb-6 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-700 bg-slate-800/50 px-4 py-4 text-sm font-semibold text-slate-300 transition-all hover:border-slate-600 hover:bg-slate-800"
             >
-              <Plus className="h-4 w-4" />
-              Ajouter un profil émetteur
+              <Plus className="h-4 w-4" /> Ajouter un profil émetteur
             </button>
           )}
 
-          {/* Add/Edit Form */}
           {isAdding && (
-            <div className="mb-6 rounded-xl border border-slate-800 bg-slate-800/50 p-6">
-              <h3 className="mb-4 text-lg font-bold text-white">
-                {editingId ? 'Modifier' : 'Nouveau'} profil émetteur
-              </h3>
-
+            <div className="mb-6 rounded-xl border border-slate-800 bg-slate-800/50 p-6 animate-in fade-in slide-in-from-bottom-2">
+              <h3 className="mb-4 text-lg font-bold text-white">{editingId ? 'Modifier' : 'Nouveau'} profil</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-400">
-                    Nom du profil
-                  </label>
-                  <input
-                    type="text"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder="Ex: Entreprise Principale, Freelance..."
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                    required
-                  />
+                  <label className="mb-2 block text-sm font-medium text-slate-400">Nom du profil (ex: Ma Boîte)</label>
+                  <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" required />
                 </div>
-
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-400">
-                    Raison sociale
-                  </label>
-                  <input
-                    type="text"
-                    value={formCompanyName}
-                    onChange={(e) => setFormCompanyName(e.target.value)}
-                    placeholder="Ex: ACME SARL, Jean Dupont EI..."
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                    required
-                  />
+                  <label className="mb-2 block text-sm font-medium text-slate-400">Raison sociale</label>
+                  <input type="text" value={formCompanyName} onChange={(e) => setFormCompanyName(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" required />
                 </div>
-
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-400">Adresse</label>
-                  <input
-                    type="text"
-                    value={formAddress}
-                    onChange={(e) => setFormAddress(e.target.value)}
-                    placeholder="Ex: 123 Rue de la Paix"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                  />
+                  <input type="text" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
                 </div>
-
                 <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-400">Ville</label>
-                    <input
-                      type="text"
-                      value={formCity}
-                      onChange={(e) => setFormCity(e.target.value)}
-                      placeholder="Paris"
-                      className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-400">
-                      Code Postal
-                    </label>
-                    <input
-                      type="text"
-                      value={formZip}
-                      onChange={(e) => setFormZip(e.target.value)}
-                      placeholder="75001"
-                      className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-400">Pays</label>
-                    <input
-                      type="text"
-                      value={formCountry}
-                      onChange={(e) => setFormCountry(e.target.value)}
-                      placeholder="France"
-                      className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                    />
-                  </div>
+                  <div><label className="mb-2 block text-sm font-medium text-slate-400">Ville</label><input type="text" value={formCity} onChange={(e) => setFormCity(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" /></div>
+                  <div><label className="mb-2 block text-sm font-medium text-slate-400">Code Postal</label><input type="text" value={formZip} onChange={(e) => setFormZip(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" /></div>
+                  <div><label className="mb-2 block text-sm font-medium text-slate-400">Pays</label><input type="text" value={formCountry} onChange={(e) => setFormCountry(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" /></div>
                 </div>
-
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-400">
-                    SIRET / N° TVA
-                  </label>
-                  <input
-                    type="text"
-                    value={formSiret}
-                    onChange={(e) => setFormSiret(e.target.value)}
-                    placeholder="123 456 789 00012"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                  />
+                  <label className="mb-2 block text-sm font-medium text-slate-400">SIRET</label>
+                  <input type="text" value={formSiret} onChange={(e) => setFormSiret(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-400">Email</label>
-                    <input
-                      type="email"
-                      value={formEmail}
-                      onChange={(e) => setFormEmail(e.target.value)}
-                      placeholder="contact@entreprise.com"
-                      className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-400">
-                      Téléphone
-                    </label>
-                    <input
-                      type="tel"
-                      value={formPhone}
-                      onChange={(e) => setFormPhone(e.target.value)}
-                      placeholder="+33 1 23 45 67 89"
-                      className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                    />
-                  </div>
+                  <div><label className="mb-2 block text-sm font-medium text-slate-400">Email</label><input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" /></div>
+                  <div><label className="mb-2 block text-sm font-medium text-slate-400">Téléphone</label><input type="tel" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" /></div>
                 </div>
-
                 <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="flex-1 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-all hover:bg-slate-800"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="flex-1 rounded-lg bg-purple-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600 flex justify-center items-center"
-                  >
+                  <button type="button" onClick={resetForm} className="flex-1 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800">Annuler</button>
+                  <button type="submit" disabled={isLoading} className="flex-1 rounded-lg bg-purple-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-600 flex justify-center items-center">
                     {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingId ? 'Enregistrer' : 'Ajouter')}
                   </button>
                 </div>
@@ -379,82 +274,35 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
             </div>
           )}
 
-          {/* List of Profiles */}
           {profiles.length === 0 && !isAdding ? (
             <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-12 text-center">
               <Building2 className="mx-auto mb-4 h-12 w-12 text-slate-600" />
-              <p className="text-lg font-semibold text-slate-400">Aucun profil émetteur</p>
-              <p className="mt-2 text-sm text-slate-500">
-                Ajoutez vos informations d'entreprise pour accélérer la création de factures
-              </p>
+              <p className="text-slate-400">Aucun profil enregistré.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {profiles.map((profile) => (
-                <div
-                  key={profile.id}
-                  className="group relative rounded-lg border border-slate-800 bg-slate-800/30 p-4 transition-all hover:border-slate-700 hover:bg-slate-800/50"
-                >
+                <div key={profile.id} className="group relative rounded-lg border border-slate-800 bg-slate-800/30 p-4 transition-all hover:bg-slate-800/50">
                   <div className="flex items-start gap-4">
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
                       <Building2 className="h-5 w-5" />
                     </div>
-
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h4 className="font-semibold text-white">{profile.name}</h4>
-                        {profile.isDefault && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-semibold text-purple-400">
-                            <Check className="h-3 w-3" />
-                            Par défaut
-                          </span>
-                        )}
+                        {profile.isDefault && <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-semibold text-purple-400"><Check className="h-3 w-3" /> Défaut</span>}
                       </div>
-                      <p className="mt-1 text-sm font-medium text-slate-300">{profile.companyName}</p>
-
-                      <div className="mt-2 space-y-1 text-xs text-slate-500">
-                        {profile.address && (
-                          <p>
-                            {profile.address}
-                            {profile.city && `, ${profile.city}`}
-                            {profile.zip && ` ${profile.zip}`}
-                            {profile.country && `, ${profile.country}`}
-                          </p>
-                        )}
-                        {profile.siret && <p>SIRET: {profile.siret}</p>}
-                        <div className="flex gap-4">
-                          {profile.email && <p>📧 {profile.email}</p>}
-                          {profile.phone && <p>📱 {profile.phone}</p>}
-                        </div>
+                      <p className="mt-1 text-sm text-slate-300">{profile.companyName}</p>
+                      <div className="mt-2 text-xs text-slate-500">
+                        {profile.siret && <span>SIRET: {profile.siret}</span>}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="flex items-center gap-2">
                       {!profile.isDefault && (
-                        <button
-                          onClick={() => setDefault(profile.id)}
-                          className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-purple-400"
-                          title="Définir par défaut"
-                        >
-                          <Check className="h-4 w-4" />
-                        </button>
+                        <button onClick={() => setDefault(profile.id)} className="p-2 text-slate-400 hover:text-yellow-400"><Star className="h-4 w-4" /></button>
                       )}
-                      <button
-                        onClick={() => handleEdit(profile)}
-                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-blue-400"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm('Êtes-vous sûr de vouloir supprimer ce profil émetteur ?')) {
-                            deleteProfile(profile.id)
-                          }
-                        }}
-                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-red-400"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <button onClick={() => handleEdit(profile)} className="p-2 text-slate-400 hover:text-blue-400"><Edit2 className="h-4 w-4" /></button>
+                      <button onClick={() => confirm('Supprimer ?') && deleteProfile(profile.id)} className="p-2 text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </div>
                 </div>
