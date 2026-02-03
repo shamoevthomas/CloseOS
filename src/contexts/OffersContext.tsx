@@ -38,7 +38,7 @@ export interface Offer {
   contacts: OfferContact[]
   formulas?: OfferFormula[]
   notes?: string
-  // CHAMPS DE FACTURATION
+  // CHAMPS DE FACTURATION (Côté Application en camelCase)
   billingName?: string
   billingAddress?: string
   billingCity?: string
@@ -65,7 +65,8 @@ export function OffersProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-  // --- 1. Traduction DB (snake_case) -> App (camelCase) ---
+  // --- TRADUCTEUR 1 : Base de données (snake_case) VERS Application (camelCase) ---
+  // Permet d'afficher les données quand on ouvre la modale
   const mapFromDb = (data: any[]): Offer[] => {
     return data.map(offer => ({
       id: offer.id,
@@ -74,8 +75,10 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       company: offer.company,
       status: offer.status,
       target: offer.target,
+      // Dates : support des deux formats au cas où
       startDate: offer.start_date || offer.startDate,
       endDate: offer.end_date || offer.endDate,
+      
       price: offer.price,
       commission: offer.commission,
       description: offer.description,
@@ -83,25 +86,29 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       contacts: offer.contacts || [],
       formulas: offer.formulas || [],
       notes: offer.notes,
-      // Mapping Facturation
+      
+      // Mapping Facturation : On récupère les colonnes snake_case
       billingName: offer.billing_name,
       billingAddress: offer.billing_address,
       billingCity: offer.billing_city,
       billingZip: offer.billing_zip,
       billingCountry: offer.billing_country,
-      siret: offer.siret,
+      siret: offer.siret, // Lui ne change pas
       billingEmail: offer.billing_email,
       billingPhone: offer.billing_phone
     }))
   }
 
-  // --- 2. Traduction App (camelCase) -> DB (snake_case) ---
+  // --- TRADUCTEUR 2 : Application (camelCase) VERS Base de données (snake_case) ---
+  // Permet de sauvegarder sans erreur 400
   const mapToDb = (offer: Partial<Offer>) => {
     const dbData: any = { ...offer }
 
-    // On traduit les champs pour Supabase
+    // On traduit les clés pour que Supabase comprenne
     if (offer.startDate) dbData.start_date = offer.startDate
     if (offer.endDate) dbData.end_date = offer.endDate
+    
+    // Mapping Facturation pour l'écriture
     if (offer.billingName !== undefined) dbData.billing_name = offer.billingName
     if (offer.billingAddress !== undefined) dbData.billing_address = offer.billingAddress
     if (offer.billingCity !== undefined) dbData.billing_city = offer.billingCity
@@ -109,9 +116,8 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     if (offer.billingCountry !== undefined) dbData.billing_country = offer.billingCountry
     if (offer.billingEmail !== undefined) dbData.billing_email = offer.billingEmail
     if (offer.billingPhone !== undefined) dbData.billing_phone = offer.billingPhone
-    // siret reste siret
-
-    // On retire les champs que Supabase ne connait pas
+    
+    // On nettoie les clés camelCase qui feraient planter Supabase (Erreur 400)
     delete dbData.startDate
     delete dbData.endDate
     delete dbData.billingName
@@ -125,7 +131,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     return dbData
   }
 
-  // Charger les offres
+  // 1. Charger les offres
   const fetchOffers = async () => {
     if (!user) {
       setOffers([])
@@ -143,7 +149,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error
       
-      // On utilise le mappeur ici
+      // On traduit les données reçues pour l'affichage
       setOffers(mapFromDb(data || []))
     } catch (error) {
       console.error('Erreur lors du chargement des offres:', error)
@@ -156,7 +162,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     fetchOffers()
   }, [user])
 
-  // Ajouter une offre
+  // 2. Ajouter une offre
   const addOffer = async (offerData: Omit<Offer, 'id' | 'user_id'>) => {
     if (!user) return { data: null, error: 'Non authentifié' }
 
@@ -172,6 +178,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       if (error) throw error
       
       if (data) {
+        // On traduit le retour pour l'affichage immédiat
         const newOffer = mapFromDb(data)[0]
         setOffers((prev) => [...prev, newOffer])
         return { data: [newOffer], error: null }
@@ -182,12 +189,13 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Modifier une offre
+  // 3. Modifier une offre
   const updateOffer = async (id: number, updates: Partial<Offer>) => {
     if (!user) return { error: 'Non authentifié' }
 
     try {
-      // Conversion avant envoi : C'est ici que le fix opère !
+      // C'EST ICI LE FIX CRITIQUE POUR L'ERREUR 400
+      // On traduit les mises à jour en format DB
       const dbPayload = mapToDb(updates)
 
       const { error } = await supabase
@@ -203,11 +211,12 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       )
       return { error: null }
     } catch (error) {
+      console.error("Erreur update:", error)
       return { error }
     }
   }
 
-  // Supprimer une offre
+  // 4. Supprimer une offre
   const deleteOffer = async (id: number) => {
     if (!user) return { error: 'Non authentifié' }
 
