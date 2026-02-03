@@ -189,7 +189,7 @@ export function PublicBooking() {
           time: fullTimeRange,
           type: 'phone', // CHANGÉ EN PHONE
           status: 'scheduled',
-          location: 'À définir avec le Closer', // TEXTE STATIQUE
+          location: 'À définir', // TEXTE STATIQUE
           description: `Email: ${bookingData.email}\nTéléphone: ${bookingData.phone}`
         }])
 
@@ -201,7 +201,7 @@ export function PublicBooking() {
         agentEmail: settings.agentEmail,
         date: formattedDate,
         time: selectedTime,
-        meetingLink: 'À définir avec le Closer', // ON PASSE CE TEXTE AU LIEU D'UNE URL
+        meetingLink: 'À définir', // ON PASSE CE TEXTE AU LIEU D'UNE URL
         duration: settings.duration || 30
       })
 
@@ -228,8 +228,8 @@ export function PublicBooking() {
     const endIso = `${dateStr}T${endH}${endM}00Z`
 
     // URL GOOGLE AGENDA ADAPTÉE SANS LIEN
-    const locationText = "À définir avec le Closer"
-    const detailsText = "Le Closer prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités."
+    const locationText = "À définir"
+    const detailsText = "L'expert prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités."
 
     return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Session de Closing - ' + (settings?.title || 'Appel'))}&dates=${startIso}/${endIso}&details=${encodeURIComponent(detailsText)}&location=${encodeURIComponent(locationText)}`
   }
@@ -470,7 +470,7 @@ export function PublicBooking() {
                         <div>
                           <p className="text-white font-bold text-lg mb-1">Prise de contact</p>
                           <p className="text-slate-400 text-sm leading-relaxed">
-                            Le Closer prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités.
+                            L'expert prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités.
                           </p>
                         </div>
                       </div>

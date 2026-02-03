@@ -39,9 +39,9 @@ export async function sendBookingEmails(data: {
   
   // --- 1. MISE À JOUR DU LIEN GOOGLE AGENDA ---
   const eventTitle = `Session Stratégique x ${data.prospectName}`;
-  const eventLocation = "À définir avec le Closer"; // Plus générique
+  const eventLocation = "À définir"; // Plus générique
   // Votre phrase exacte ici pour la description de l'agenda
-  const eventDetails = "Le Closer prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités.";
+  const eventDetails = "L'expert prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités.";
 
   const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startTime}/${endTime}&details=${encodeURIComponent(eventDetails)}&location=${encodeURIComponent(eventLocation)}`;
 
@@ -85,12 +85,12 @@ export async function sendBookingEmails(data: {
         <p style="margin: 5px 0;"><strong>📅 Date :</strong> ${data.date}</p>
         <p style="margin: 5px 0;"><strong>⏰ Heure :</strong> ${data.time}</p>
         <p style="margin: 5px 0;"><strong>⏳ Durée :</strong> ${data.duration} minutes</p>
-        <p style="margin: 5px 0; color: #2563eb;"><strong>📍 Lieu :</strong> À définir avec le Closer</p>
+        <p style="margin: 5px 0; color: #2563eb;"><strong>📍 Lieu :</strong> À définir avec l'expert</p>
       </div>
 
       ${!isAgent ? `
         <div style="text-align: center; margin: 30px 0; padding: 15px; background-color: #eff6ff; border-radius: 8px; color: #1e40af;">
-          <strong>👉 Le Closer prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous.</strong><br>
+          <strong>👉 L'expert prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous.</strong><br>
           <span style="font-size: 13px;">Surveillez vos emails et votre téléphone.</span>
         </div>
       ` : `
