@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Mail, ChevronRight as ChevronRightIcon, Calendar as CalendarIcon, Copy, Video, AlertCircle, Loader2 } from 'lucide-react'
-import { createDailyRoom } from '../services/dailyService'
+// ON RETIRE L'IMPORT DE DAILY CAR ON NE L'UTILISE PLUS
 import { supabase } from '../lib/supabase'
 import { format, addHours, isAfter, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { sendBookingEmails } from '../services/emailService'
-// CORRECTION : Chemin d'accès pour le build Vercel
 import { cn } from '../lib/utils'
 
 type BookingStep = 'time' | 'form' | 'success'
@@ -34,13 +33,12 @@ export function PublicBooking() {
     email: '',
     phone: ''
   })
-  const [meetingLink, setMeetingLink] = useState<string>('')
+  // PLUS BESOIN DE STATE POUR MEETING LINK
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // AJOUT : État pour stocker les rendez-vous existants afin d'éviter les doublons
   const [existingMeetings, setExistingMeetings] = useState<any[]>([])
 
-  // 1. Chargement des réglages personnalisés selon le slug
+  // 1. Chargement des réglages
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -53,7 +51,6 @@ export function PublicBooking() {
 
         if (error || !data) throw new Error('Page de réservation introuvable')
         
-        // AJOUT : Récupération des rendez-vous déjà réservés pour ce Closer
         const { data: meetingsData } = await supabase
           .from('meetings')
           .select('date, time')
@@ -78,7 +75,7 @@ export function PublicBooking() {
     if (slug) fetchSettings()
   }, [slug])
 
-  // 2. Calcul des dates disponibles (Respect du délai min et des jours activés)
+  // 2. Calcul des dates disponibles
   const availableDates = useMemo(() => {
     if (!settings) return []
     const dates = []
@@ -92,7 +89,6 @@ export function PublicBooking() {
       const dayNameEn = format(date, 'eeee', { locale: undefined }).toLowerCase()
       const dayConfig = settings.availability[dayNameEn]
 
-      // MODIFICATION : On vérifie si la fin de la journée est après le délai minimum pour afficher le jour
       if (dayConfig?.enabled && dayConfig.slots?.[0]) {
         const [endH, endM] = dayConfig.slots[0].end.split(':').map(Number)
         const endOfWorkingDay = new Date(date)
@@ -110,7 +106,7 @@ export function PublicBooking() {
     return dates
   }, [settings])
 
-  // 3. Calcul des créneaux horaires (Respect des plages horaires, de la durée et des disponibilités réelles)
+  // 3. Calcul des créneaux horaires
   const timeSlots = useMemo(() => {
     if (!selectedDate || !settings) return []
     
@@ -123,14 +119,13 @@ export function PublicBooking() {
     const { start, end } = dayConfig.slots[0]
     const [startH, startM] = start.split(':').map(Number)
     const [endH, endM] = end.split(':').map(Number)
-    const slotDuration = settings.duration || 30 // MODIFICATION : Utilisation de la durée personnalisée
+    const slotDuration = settings.duration || 30
 
     let current = startH * 60 + startM
     const totalEnd = endH * 60 + endM
 
     const formattedSelectedDate = format(selectedDate, 'yyyy-MM-dd')
 
-    // MODIFICATION : Logique de détection de collision améliorée
     while (current + slotDuration <= totalEnd) {
       const slotStart = current;
       const slotEnd = current + slotDuration;
@@ -142,19 +137,14 @@ export function PublicBooking() {
       const slotDate = new Date(selectedDate)
       slotDate.setHours(h, m, 0, 0)
 
-      // AJOUT : Vérification de chevauchement sur toute la durée avec sécurité split
       const isBusy = existingMeetings.some(m => {
         if (m.date !== formattedSelectedDate) return false;
-        
-        // SÉCURITÉ : Empêche le crash si le champ time est vide ou n'est pas une chaîne
         if (!m.time || typeof m.time !== 'string') return false; 
 
-        // On parse la plage horaire du meeting existant (ex: "10:00 - 10:45")
         const parts = m.time.split(' - ');
         if (parts.length < 2) return false; 
 
         const [mStart, mEnd] = parts;
-        
         if (!mStart.includes(':') || !mEnd.includes(':')) return false;
 
         const [mStartH, mStartM] = mStart.split(':').map(Number);
@@ -163,8 +153,6 @@ export function PublicBooking() {
         const existingStart = mStartH * 60 + mStartM;
         const existingEnd = mEndH * 60 + mEndM;
 
-        // Il y a collision si le nouveau créneau commence avant la fin de l'ancien 
-        // ET finit après le début de l'ancien
         return slotStart < existingEnd && slotEnd > existingStart;
       });
 
@@ -172,7 +160,7 @@ export function PublicBooking() {
         slots.push(timeStr)
       }
       
-      current += slotDuration // MODIFICATION : Incrémentation par la durée
+      current += slotDuration
     }
     return slots
   }, [selectedDate, settings, existingMeetings])
@@ -182,16 +170,11 @@ export function PublicBooking() {
     setIsSubmitting(true)
 
     try {
-      const room = await createDailyRoom()
-      const generatedLink = typeof room === 'string' ? room : (room?.url || '')
+      // PAS DE CRÉATION DE SALLE DAILY ICI
       
-      if (!generatedLink) throw new Error("Le lien de réunion n'a pas pu être généré.")
-      
-      setMeetingLink(generatedLink)
-
       const formattedDate = format(selectedDate, 'yyyy-MM-dd')
       const [hours, minutes] = selectedTime.split(':').map(Number)
-      const duration = settings.duration || 30 // MODIFICATION : Calcul dynamique
+      const duration = settings.duration || 30
       const endTotal = hours * 60 + minutes + duration
       const formattedEndTime = `${Math.floor(endTotal / 60).toString().padStart(2, '0')}:${(endTotal % 60).toString().padStart(2, '0')}`
       const fullTimeRange = `${selectedTime} - ${formattedEndTime}`
@@ -204,9 +187,9 @@ export function PublicBooking() {
           contact: `${bookingData.firstName} ${bookingData.lastName}`,
           date: formattedDate,
           time: fullTimeRange,
-          type: 'video',
+          type: 'phone', // CHANGÉ EN PHONE
           status: 'scheduled',
-          location: generatedLink,
+          location: 'À définir avec le Closer', // TEXTE STATIQUE
           description: `Email: ${bookingData.email}\nTéléphone: ${bookingData.phone}`
         }])
 
@@ -218,8 +201,8 @@ export function PublicBooking() {
         agentEmail: settings.agentEmail,
         date: formattedDate,
         time: selectedTime,
-        meetingLink: generatedLink,
-        duration: settings.duration || 30 // MODIFICATION : Envoi de la durée au service email
+        meetingLink: 'À définir avec le Closer', // ON PASSE CE TEXTE AU LIEU D'UNE URL
+        duration: settings.duration || 30
       })
 
       setStep('success')
@@ -234,19 +217,21 @@ export function PublicBooking() {
   const getGoogleCalendarUrl = () => {
     if (!selectedDate || !selectedTime) return ''
     const dateStr = format(selectedDate, 'yyyyMMdd')
-    const [h, m] = selectedTime.split(':').map(Number) // MODIFICATION : Conversion en nombre
+    const [h, m] = selectedTime.split(':').map(Number)
     const duration = settings?.duration || 30
     
-    // CORRECTION : Format UTC (Z) requis par Google
     const startIso = `${dateStr}T${h.toString().padStart(2, '0')}${m.toString().padStart(2, '0')}00Z`
     
-    // MODIFICATION : Calcul dynamique de la fin de l'événement Google
     const endTotal = h * 60 + m + duration
     const endH = Math.floor(endTotal / 60).toString().padStart(2, '0')
     const endM = (endTotal % 60).toString().padStart(2, '0')
     const endIso = `${dateStr}T${endH}${endM}00Z`
 
-    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Session de Closing - ' + (settings?.title || 'Appel'))}&dates=${startIso}/${endIso}&details=${encodeURIComponent('Lien de la réunion : ' + meetingLink)}&location=${encodeURIComponent(meetingLink)}`
+    // URL GOOGLE AGENDA ADAPTÉE SANS LIEN
+    const locationText = "À définir avec le Closer"
+    const detailsText = "Le Closer prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités."
+
+    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Session de Closing - ' + (settings?.title || 'Appel'))}&dates=${startIso}/${endIso}&details=${encodeURIComponent(detailsText)}&location=${encodeURIComponent(locationText)}`
   }
 
   if (loading) return (
@@ -287,7 +272,6 @@ export function PublicBooking() {
                   <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
                     <Clock className="w-5 h-5 text-blue-500" />
                   </div>
-                  {/* MODIFICATION : Affichage de la durée dynamique */}
                   <span className="font-semibold">{settings?.duration || 30} minutes</span>
                 </div>
                 <div className="flex items-center gap-4 text-slate-300">
@@ -475,28 +459,20 @@ export function PublicBooking() {
                     Votre rendez-vous est programmé pour le <span className="text-white font-bold">{format(selectedDate!, 'd MMMM', { locale: fr })} à {selectedTime}</span>.
                   </p>
                   
-                  {/* ACTIONS ET LIEN */}
+                  {/* ACTIONS ET MESSAGE DE CONFIRMATION */}
                   <div className="space-y-6 max-w-md mx-auto mb-10">
-                    {/* Cellule interactive du lien */}
-                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 overflow-hidden text-left">
-                          <Video className="text-blue-500 w-5 h-5 flex-shrink-0" />
-                          <a 
-                            href={meetingLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-sm font-bold text-blue-400 truncate hover:underline underline-offset-4"
-                          >
-                            {meetingLink}
-                          </a>
+                    {/* Message de contact */}
+                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 flex flex-col gap-3">
+                      <div className="flex items-center gap-4 text-left">
+                        <div className="bg-blue-500/10 p-3 rounded-xl">
+                          <Phone className="text-blue-500 w-6 h-6" />
                         </div>
-                        <button 
-                          onClick={() => { navigator.clipboard.writeText(meetingLink); alert('Lien copié !'); }}
-                          className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
-                        >
-                          <Copy size={16} />
-                        </button>
+                        <div>
+                          <p className="text-white font-bold text-lg mb-1">Prise de contact</p>
+                          <p className="text-slate-400 text-sm leading-relaxed">
+                            Le Closer prendra contact avec vous au plus vite ou quelques temps avant le rendez-vous pour préciser les modalités.
+                          </p>
+                        </div>
                       </div>
                     </div>
 
