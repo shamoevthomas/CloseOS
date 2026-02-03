@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Link2, Copy, Check, Calendar, Clock, User, ExternalLink, X, Video, Phone, Settings, Loader2, History, Trash2, ChevronDown, Mail } from 'lucide-react'
+import { Link2, Copy, Check, Calendar, Clock, User, ExternalLink, X, Video, Phone, Settings, Loader2, History, Trash2, ChevronDown, Mail, Plus, Edit2 } from 'lucide-react'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase'
 import { format, isValid, parseISO, isAfter, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '../lib/utils'
-import { isDailyCoLink } from '../services/dailyService' // IMPORT AJOUTÉ
+import { isDailyCoLink } from '../services/dailyService'
 
 export function RendezVous() {
   const { user } = useAuth()
@@ -16,42 +16,41 @@ export function RendezVous() {
   const { meetings, loading: meetingsLoading, refreshMeetings } = useMeetings()
   const { isPrivacyEnabled, maskData } = usePrivacy()
   
-  const [isCopied, setIsCopied] = useState(false)
+  // États pour les liens multiples
+  const [bookingTypes, setBookingTypes] = useState<any[]>([])
+  const [typesLoading, setTypesLoading] = useState(true)
+  const [copiedSlug, setCopiedSlug] = useState<string | null>(null)
+
+  // États pour la gestion des meetings
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
-  const [dbSlug, setDbSlug] = useState<string | null>(null)
-  const [slugLoading, setSlugLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
-  // Récupération du slug réel depuis la table booking_settings
+  // 1. Récupération des TYPES de rendez-vous (Multi-liens)
   useEffect(() => {
-    async function fetchBookingSlug() {
+    async function fetchBookingTypes() {
       if (!user?.id) return
       try {
         const { data } = await supabase
-          .from('booking_settings')
-          .select('slug')
+          .from('booking_types')
+          .select('*')
           .eq('user_id', user.id)
-          .single()
+          .eq('is_active', true)
+          .order('created_at', { ascending: true })
         
-        if (data?.slug) {
-          setDbSlug(data.slug)
+        if (data) {
+          setBookingTypes(data)
         }
       } catch (err) {
-        console.error("Erreur lors de la récupération du slug:", err)
+        console.error("Erreur chargement types:", err)
       } finally {
-        setSlugLoading(false)
+        setTypesLoading(false)
       }
     }
-    fetchBookingSlug()
+    fetchBookingTypes()
   }, [user?.id])
 
-  const bookingLink = useMemo(() => {
-    const finalSlug = dbSlug || user?.user_metadata?.booking_slug || user?.id;
-    return `${window.location.origin}/book/${finalSlug}`;
-  }, [user, dbSlug]);
-
-  // SÉPARATION DES RENDEZ-VOUS : À VENIR VS PASSÉS
+  // 2. Séparation des rendez-vous (À venir vs Passés)
   const { upcomingMeetings, pastMeetings } = useMemo(() => {
     const now = new Date();
     const today = startOfDay(now);
@@ -112,10 +111,11 @@ export function RendezVous() {
     }
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(bookingLink)
-    setIsCopied(true)
-    setTimeout(() => setIsCopied(false), 2000)
+  const handleCopyLink = (slug: string) => {
+    const link = `${window.location.origin}/book/${slug}`
+    navigator.clipboard.writeText(link)
+    setCopiedSlug(slug)
+    setTimeout(() => setCopiedSlug(null), 2000)
   }
 
   const safeFormat = (dateStr: string, formatStr: string) => {
@@ -216,7 +216,7 @@ export function RendezVous() {
     </div>
   )
 
-  if (meetingsLoading || slugLoading) {
+  if (meetingsLoading || typesLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-950">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
@@ -230,40 +230,80 @@ export function RendezVous() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Gestion des Rendez-vous</h1>
-            <p className="text-slate-400">Gérez vos liens de réservation et vos appels</p>
+            <p className="text-slate-400">Gérez vos liens de réservation et votre agenda</p>
           </div>
         </div>
 
-        {/* Section Lien de réservation stable avec bouton Personnaliser */}
-        <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <Link2 className="h-5 w-5 text-blue-500" />
-            <h2 className="text-xl font-bold text-white">Mon lien de réservation</h2>
-          </div>
-          <div className="flex gap-3">
-            <div className="flex-1 rounded-xl border border-slate-800 bg-black/40 px-4 py-3 flex items-center overflow-hidden">
-              <span className="text-blue-400 font-medium truncate">{bookingLink}</span>
-            </div>
-            <button
-              onClick={handleCopyLink}
-              className={`flex items-center gap-2 rounded-xl px-6 py-3 font-bold text-white transition-all ${
-                isCopied ? 'bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'
-              }`}
+        {/* --- SECTION MES LIENS (GRILLE) --- */}
+        <div className="mb-12">
+          <div className="mb-4 flex items-center justify-between px-2">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-blue-500" />
+              Mes liens de réservation
+            </h2>
+            <button 
+              onClick={() => navigate('/settings/booking')}
+              className="text-sm font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1"
             >
-              {isCopied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-              {isCopied ? 'Copié !' : 'Copier'}
+              <Settings className="h-4 w-4" /> Gérer
             </button>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* CARTE AJOUTER */}
             <button
               onClick={() => navigate('/settings/booking')}
-              className="flex items-center gap-2 rounded-xl px-6 py-3 font-bold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all"
+              className="group flex h-32 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-800 bg-slate-900/30 hover:border-blue-500 hover:bg-slate-900 transition-all"
             >
-              <Settings className="h-5 w-5" />
-              Personnaliser
+              <div className="mb-2 rounded-full bg-blue-500/10 p-3 transition-transform group-hover:scale-110">
+                <Plus className="h-6 w-6 text-blue-500" />
+              </div>
+              <span className="font-bold text-white text-sm">Nouveau lien</span>
             </button>
+
+            {/* CARTES DES LIENS EXISTANTS */}
+            {bookingTypes.map((type) => (
+              <div key={type.id} className="relative flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900 p-5 transition-all hover:border-slate-700 hover:shadow-lg">
+                <div className="mb-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-bold text-lg text-white line-clamp-1">{type.title}</h3>
+                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-400 px-2 py-1 rounded">
+                      <Clock className="h-3 w-3" /> {type.duration} min
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 overflow-hidden">
+                    <Link2 className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">.../book/{type.slug}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mt-auto">
+                  <button
+                    onClick={() => handleCopyLink(type.slug)}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-bold transition-all",
+                      copiedSlug === type.slug 
+                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                        : "bg-slate-800 text-white hover:bg-slate-700"
+                    )}
+                  >
+                    {copiedSlug === type.slug ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    {copiedSlug === type.slug ? 'Copié !' : 'Copier'}
+                  </button>
+                  <button
+                    onClick={() => navigate('/settings/booking')}
+                    className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
+                    title="Modifier"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* TABLEAUX SÉPARÉS */}
+        {/* --- TABLEAUX DES RENDEZ-VOUS --- */}
         <MeetingTable 
           data={upcomingMeetings} 
           title="Rendez-vous à venir" 
