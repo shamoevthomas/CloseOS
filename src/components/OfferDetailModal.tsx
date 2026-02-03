@@ -57,10 +57,15 @@ export interface Offer {
   contacts: OfferContact[]
   formulas?: OfferFormula[] // NOUVEAU
   notes?: string
-  // NOUVEAUX CHAMPS FACTURATION
-  billingContactId?: number
+  // NOUVEAUX CHAMPS FACTURATION (PROFIL ÉMETTEUR)
+  billingName?: string // Raison Sociale
   billingAddress?: string
+  billingCity?: string
+  billingZip?: string
+  billingCountry?: string
   siret?: string
+  billingEmail?: string
+  billingPhone?: string
 }
 
 interface OfferDetailModalProps {
@@ -277,9 +282,6 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
       return dateString
     }
   }
-
-  // Récupération du contact de facturation pour l'affichage (mode lecture)
-  const billingContact = globalContacts.find(c => c.id === Number(offer.billingContactId))
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -646,46 +648,84 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             </h3>
             
             <div className="space-y-4">
-              {/* Contact de Facturation */}
+              {/* Raison Sociale */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Contact Référent (Facturation)</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Raison Sociale</label>
                 {isEditing ? (
-                  <select 
-                    value={editedOffer.billingContactId || ''}
-                    onChange={(e) => setEditedOffer({...editedOffer, billingContactId: Number(e.target.value) || undefined})}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="">-- Aucun --</option>
-                    {globalContacts.map(c => (
-                      <option key={c.id} value={c.id}>{c.name} ({c.role})</option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="text-sm text-slate-300">
-                    {billingContact ? `${billingContact.name} - ${billingContact.role}` : 'Non défini'}
-                  </p>
-                )}
-              </div>
-
-              {/* Adresse de Facturation */}
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Adresse de Facturation</label>
-                {isEditing ? (
-                  <textarea
-                    value={editedOffer.billingAddress || ''}
-                    onChange={(e) => setEditedOffer({...editedOffer, billingAddress: e.target.value})}
-                    placeholder="Adresse complète du siège social..."
-                    rows={2}
+                  <input
+                    type="text"
+                    value={editedOffer.billingName || ''}
+                    onChange={(e) => setEditedOffer({...editedOffer, billingName: e.target.value})}
+                    placeholder="Ex: ACME SAS"
                     className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
                   />
                 ) : (
-                  <p className="text-sm text-slate-300 whitespace-pre-wrap">{offer.billingAddress || 'Non définie'}</p>
+                  <p className="text-sm text-slate-300">{offer.billingName || 'Non définie'}</p>
                 )}
+              </div>
+
+              {/* Adresse */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Adresse</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedOffer.billingAddress || ''}
+                    onChange={(e) => setEditedOffer({...editedOffer, billingAddress: e.target.value})}
+                    placeholder="Ex: 123 Rue de la Paix"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                  />
+                ) : (
+                  <p className="text-sm text-slate-300">{offer.billingAddress || 'Non définie'}</p>
+                )}
+              </div>
+
+              {/* Ville / CP / Pays */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Ville</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedOffer.billingCity || ''}
+                      onChange={(e) => setEditedOffer({...editedOffer, billingCity: e.target.value})}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-300">{offer.billingCity || '-'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Code Postal</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedOffer.billingZip || ''}
+                      onChange={(e) => setEditedOffer({...editedOffer, billingZip: e.target.value})}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-300">{offer.billingZip || '-'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Pays</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedOffer.billingCountry || ''}
+                      onChange={(e) => setEditedOffer({...editedOffer, billingCountry: e.target.value})}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-300">{offer.billingCountry || '-'}</p>
+                  )}
+                </div>
               </div>
 
               {/* SIRET */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">SIRET</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">SIRET / TVA</label>
                 {isEditing ? (
                   <input
                     type="text"
@@ -697,6 +737,36 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 ) : (
                   <p className="text-sm text-slate-300 font-mono">{offer.siret || 'Non défini'}</p>
                 )}
+              </div>
+
+              {/* Email / Tel */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Email Facturation</label>
+                  {isEditing ? (
+                    <input
+                      type="email"
+                      value={editedOffer.billingEmail || ''}
+                      onChange={(e) => setEditedOffer({...editedOffer, billingEmail: e.target.value})}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-300">{offer.billingEmail || '-'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Téléphone</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedOffer.billingPhone || ''}
+                      onChange={(e) => setEditedOffer({...editedOffer, billingPhone: e.target.value})}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-300">{offer.billingPhone || '-'}</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
