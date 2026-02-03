@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, Plus, User, Phone, Mail, Edit2, Trash2, UserPlus, X } from 'lucide-react'
+import { ChevronDown, Plus, User, Phone, Mail, Edit2, Trash2, UserPlus, X, Search, Filter } from 'lucide-react'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
 import { useOffers } from '../contexts/OffersContext'
@@ -22,6 +22,8 @@ interface LocalProspect {
   dateAdded?: string | Date
   email: string
   phone: string
+  offer?: string // Ajout pour le typage local
+  offerId?: number // Ajout pour le typage local
 }
 
 export function Contacts() {
@@ -50,7 +52,8 @@ export function Contacts() {
       lastInteraction: '2024-01-15',
       dateAdded: '2024-01-01',
       email: 'sarah@techinno.com',
-      phone: '+33 6 12 34 56 78'
+      phone: '+33 6 12 34 56 78',
+      offer: 'Genix'
     },
     {
       id: 2,
@@ -63,7 +66,8 @@ export function Contacts() {
       lastInteraction: '2024-01-20',
       dateAdded: '2024-01-05',
       email: 'marc@digitalvent.io',
-      phone: '+33 7 98 76 54 32'
+      phone: '+33 7 98 76 54 32',
+      offer: 'Bodymind'
     },
     {
       id: 3,
@@ -76,7 +80,8 @@ export function Contacts() {
       lastInteraction: '2024-01-18',
       dateAdded: '2024-01-10',
       email: 'emma@globalsol.com',
-      phone: '+33 6 45 67 89 01'
+      phone: '+33 6 45 67 89 01',
+      offer: 'Genix'
     }
   ])
 
@@ -100,6 +105,11 @@ export function Contacts() {
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null)
   const [selectedContact, setSelectedContact] = useState<InternalContact | null>(null)
 
+  // --- NOUVEAU : États pour la recherche et le filtre ---
+  const [prospectSearch, setProspectSearch] = useState('')
+  const [selectedOfferFilter, setSelectedOfferFilter] = useState<string>('all')
+  const [internalSearch, setInternalSearch] = useState('')
+
   // Form state
   const [newContact, setNewContact] = useState({
     name: '',
@@ -107,6 +117,42 @@ export function Contacts() {
     email: '',
     phone: ''
     // SUPPRESSION DES CHAMPS DE FACTURATION ICI
+  })
+
+  // --- NOUVEAU : Logique de filtrage des Prospects ---
+  const filteredProspects = displayProspects.filter((prospect) => {
+    // 1. Filtre Recherche
+    const searchLower = prospectSearch.toLowerCase()
+    const fullName = prospect.name || `${prospect.firstName || ''} ${prospect.lastName || ''}`
+    const matchesSearch =
+      fullName.toLowerCase().includes(searchLower) ||
+      (prospect.company || '').toLowerCase().includes(searchLower) ||
+      (prospect.email || '').toLowerCase().includes(searchLower)
+
+    // 2. Filtre Offre
+    let matchesOffer = true
+    if (selectedOfferFilter !== 'all') {
+      // On compare soit l'ID de l'offre, soit le nom de l'offre stocké dans le prospect
+      const offerIdMatch = prospect.offerId?.toString() === selectedOfferFilter
+      const offerNameMatch = prospect.offer === selectedOfferFilter // Si le nom est stocké directement
+      // Pour les offres venant du contexte, on essaie de matcher le nom si l'ID correspond
+      const selectedOfferObj = offers.find(o => o.id.toString() === selectedOfferFilter)
+      const offerNameFromIdMatch = selectedOfferObj && prospect.offer === selectedOfferObj.name
+
+      matchesOffer = offerIdMatch || offerNameMatch || !!offerNameFromIdMatch
+    }
+
+    return matchesSearch && matchesOffer
+  })
+
+  // --- NOUVEAU : Logique de filtrage des Contacts Internes ---
+  const filteredInternalContacts = internalContacts.filter((contact) => {
+    const searchLower = internalSearch.toLowerCase()
+    return (
+      contact.name.toLowerCase().includes(searchLower) ||
+      contact.role.toLowerCase().includes(searchLower) ||
+      contact.email.toLowerCase().includes(searchLower)
+    )
   })
 
   // Helper to get status color
@@ -241,9 +287,9 @@ export function Contacts() {
         {/* SECTION A: Mes Prospects */}
         <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
           {/* Header */}
-          <button
+          <div
             onClick={() => setProspectsExpanded(!prospectsExpanded)}
-            className="flex w-full items-center justify-between border-b border-slate-800 bg-slate-950 px-6 py-4 transition-colors hover:bg-slate-900/50"
+            className="flex w-full items-center justify-between cursor-pointer border-b border-slate-800 bg-slate-950 px-6 py-4 transition-colors hover:bg-slate-900/50"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20">
@@ -251,25 +297,52 @@ export function Contacts() {
               </div>
               <div className="text-left">
                 <h2 className="text-lg font-bold text-white">Mes Prospects</h2>
-                <p className="text-sm text-slate-400">{displayProspects.length} contacts</p>
+                <p className="text-sm text-slate-400">{filteredProspects.length} contact(s)</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            
+            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+              {/* BARRE DE RECHERCHE PROSPECTS */}
+              <div className="relative hidden md:block">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Rechercher..."
+                  value={prospectSearch}
+                  onChange={(e) => setProspectSearch(e.target.value)}
+                  className="h-10 w-64 rounded-lg border border-slate-700 bg-slate-800 pl-10 pr-4 text-sm text-white focus:border-blue-500 focus:outline-none placeholder-slate-500"
+                />
+              </div>
+
+              {/* FILTRE PAR OFFRE */}
+              <div className="relative hidden md:block">
+                <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <select
+                  value={selectedOfferFilter}
+                  onChange={(e) => setSelectedOfferFilter(e.target.value)}
+                  className="h-10 rounded-lg border border-slate-700 bg-slate-800 pl-10 pr-4 text-sm text-white focus:border-blue-500 focus:outline-none appearance-none cursor-pointer hover:bg-slate-700"
+                >
+                  <option value="all">Toutes les offres</option>
+                  {offers.filter(o => o.status === 'active').map(offer => (
+                    <option key={offer.id} value={offer.id.toString()}>
+                      {offer.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setIsNewProspectModalOpen(true)
-                }}
+                onClick={() => setIsNewProspectModalOpen(true)}
                 className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-blue-600"
               >
                 <Plus className="h-4 w-4" />
-                Nouveau Prospect
+                Nouveau
               </button>
               <ChevronDown
                 className={`h-5 w-5 text-slate-400 transition-transform ${prospectsExpanded ? 'rotate-180' : ''}`}
               />
             </div>
-          </button>
+          </div>
 
           {/* Content */}
           {prospectsExpanded && (
@@ -279,6 +352,9 @@ export function Contacts() {
                   <tr className="border-b border-slate-800 bg-slate-950">
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Nom & Entreprise
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      Offre
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Statut
@@ -295,80 +371,93 @@ export function Contacts() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {displayProspects.map((prospect) => {
-                    // Safe field extraction with fallbacks
-                    const firstName = prospect.firstName || ''
-                    const lastName = prospect.lastName || ''
-                    const fullName = prospect.name || `${firstName} ${lastName}`.trim() || 'N/A'
-                    
-                    // MODIFICATION ICI: Si l'entreprise est vide ou N/A, on met une chaîne vide
-                    const rawCompany = prospect.company || ''
-                    const company = rawCompany === 'N/A' ? '' : rawCompany
-                    
-                    const status = prospect.stage || prospect.status || 'prospect'
-                    const lastContact = prospect.lastContact || prospect.lastInteraction
-                    const dateAdded = prospect.dateAdded
-                    const email = prospect.email || ''
+                  {filteredProspects.length > 0 ? (
+                    filteredProspects.map((prospect) => {
+                      // Safe field extraction with fallbacks
+                      const firstName = prospect.firstName || ''
+                      const lastName = prospect.lastName || ''
+                      const fullName = prospect.name || `${firstName} ${lastName}`.trim() || 'N/A'
+                      
+                      // MODIFICATION ICI: Si l'entreprise est vide ou N/A, on met une chaîne vide
+                      const rawCompany = prospect.company || ''
+                      const company = rawCompany === 'N/A' ? '' : rawCompany
+                      
+                      const status = prospect.stage || prospect.status || 'prospect'
+                      const lastContact = prospect.lastContact || prospect.lastInteraction
+                      const dateAdded = prospect.dateAdded
+                      const email = prospect.email || ''
 
-                    return (
-                      <tr
-                        key={prospect.id}
-                        onClick={() => setSelectedProspect(prospect)}
-                        className="cursor-pointer transition-colors hover:bg-slate-800/50"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20">
-                              <User className="h-5 w-5 text-blue-400" />
+                      return (
+                        <tr
+                          key={prospect.id}
+                          onClick={() => setSelectedProspect(prospect)}
+                          className="cursor-pointer transition-colors hover:bg-slate-800/50"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20">
+                                <User className="h-5 w-5 text-blue-400" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-white">{fullName}</p>
+                                {/* Rendu conditionnel : on n'affiche la ligne que si company n'est pas vide */}
+                                {company && <p className="text-sm text-slate-400">{company}</p>}
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-semibold text-white">{fullName}</p>
-                              {/* Rendu conditionnel : on n'affiche la ligne que si company n'est pas vide */}
-                              {company && <p className="text-sm text-slate-400">{company}</p>}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-slate-300">
+                              {prospect.offer || '-'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(status)}`}>
+                              {getStatusName(status)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-sm text-slate-300">{formatRelativeTime(lastContact)}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-sm text-slate-300">{formatDate(dateAdded)}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-center gap-2">
+                              {/* BOUTON GMAIL RÉPARÉ */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (email) {
+                                    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank')
+                                  } else {
+                                    alert('Pas d\'email renseigné')
+                                  }
+                                }}
+                                className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
+                                title="Envoyer un email (Gmail)"
+                              >
+                                <Mail className="h-4 w-4" />
+                              </button>
+                              {/* MODIFICATION : Le bouton d'appel a été retiré d'ici */}
+                              <button
+                                onClick={(e) => handleDeleteProspect(e, prospect.id)}
+                                className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(status)}`}>
-                            {getStatusName(status)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm text-slate-300">{formatRelativeTime(lastContact)}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm text-slate-300">{formatDate(dateAdded)}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-2">
-                            {/* BOUTON GMAIL RÉPARÉ */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (email) {
-                                  window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank')
-                                } else {
-                                  alert('Pas d\'email renseigné')
-                                }
-                              }}
-                              className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
-                              title="Envoyer un email (Gmail)"
-                            >
-                              <Mail className="h-4 w-4" />
-                            </button>
-                            {/* MODIFICATION : Le bouton d'appel a été retiré d'ici */}
-                            <button
-                              onClick={(e) => handleDeleteProspect(e, prospect.id)}
-                              className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-slate-500 italic">
+                        Aucun prospect trouvé pour cette recherche.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -378,9 +467,9 @@ export function Contacts() {
         {/* SECTION B: Contacts Internes */}
         <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
           {/* Header */}
-          <button
+          <div
             onClick={() => setInternalsExpanded(!internalsExpanded)}
-            className="flex w-full items-center justify-between border-b border-slate-800 bg-slate-950 px-6 py-4 transition-colors hover:bg-slate-900/50"
+            className="flex w-full items-center justify-between cursor-pointer border-b border-slate-800 bg-slate-950 px-6 py-4 transition-colors hover:bg-slate-900/50"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-500/20">
@@ -388,25 +477,34 @@ export function Contacts() {
               </div>
               <div className="text-left">
                 <h2 className="text-lg font-bold text-white">Contacts Internes</h2>
-                <p className="text-sm text-slate-400">{internalContacts.length} contacts</p>
+                <p className="text-sm text-slate-400">{filteredInternalContacts.length} contact(s)</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+              {/* BARRE DE RECHERCHE CONTACTS INTERNES */}
+              <div className="relative hidden md:block">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Rechercher..."
+                  value={internalSearch}
+                  onChange={(e) => setInternalSearch(e.target.value)}
+                  className="h-10 w-64 rounded-lg border border-slate-700 bg-slate-800 pl-10 pr-4 text-sm text-white focus:border-purple-500 focus:outline-none placeholder-slate-500"
+                />
+              </div>
+
               <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setIsAddContactModalOpen(true)
-                }}
+                onClick={() => setIsAddContactModalOpen(true)}
                 className="flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-purple-600"
               >
                 <Plus className="h-4 w-4" />
-                Nouveau Contact
+                Nouveau
               </button>
               <ChevronDown
                 className={`h-5 w-5 text-slate-400 transition-transform ${internalsExpanded ? 'rotate-180' : ''}`}
               />
             </div>
-          </button>
+          </div>
 
           {/* Content */}
           {internalsExpanded && (
@@ -432,52 +530,60 @@ export function Contacts() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {internalContacts.map((contact) => (
-                    <tr
-                      key={contact.id}
-                      onClick={() => setSelectedContact(contact)}
-                      className="cursor-pointer transition-colors hover:bg-slate-800/50"
-                    >
-                      <td className="px-6 py-4">
-                        <p className="font-semibold text-white">{contact.name}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-slate-300">{contact.role}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-slate-300">{contact.email}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-slate-300">{contact.phone}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedContact(contact)
-                            }}
-                            className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
-                            title="Voir détails"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (confirm(`Êtes-vous sûr de vouloir supprimer ${contact.name} ?`)) {
-                                handleDeleteContact(contact.id)
-                              }
-                            }}
-                            className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                  {filteredInternalContacts.length > 0 ? (
+                    filteredInternalContacts.map((contact) => (
+                      <tr
+                        key={contact.id}
+                        onClick={() => setSelectedContact(contact)}
+                        className="cursor-pointer transition-colors hover:bg-slate-800/50"
+                      >
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-white">{contact.name}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm text-slate-300">{contact.role}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm text-slate-300">{contact.email}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm text-slate-300">{contact.phone}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedContact(contact)
+                              }}
+                              className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
+                              title="Voir détails"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (confirm(`Êtes-vous sûr de vouloir supprimer ${contact.name} ?`)) {
+                                  handleDeleteContact(contact.id)
+                                }
+                              }}
+                              className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-slate-500 italic">
+                        Aucun contact interne trouvé pour cette recherche.
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
