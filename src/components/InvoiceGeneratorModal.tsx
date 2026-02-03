@@ -19,9 +19,6 @@ interface InvoiceGeneratorModalProps {
 
 type PaymentMethod = 'paypal' | 'virement' | 'revolut' | 'stripe'
 
-const STORAGE_KEY = 'closeros_payment_methods'
-const ISSUER_STORAGE_KEY = 'closeros_issuer_profiles'
-
 export function InvoiceGeneratorModal({
   offer,
   deals,
@@ -30,15 +27,14 @@ export function InvoiceGeneratorModal({
   endDate,
   onClose,
 }: InvoiceGeneratorModalProps) {
-  // SUPPRESSION: On n'utilise plus les contacts internes ici
   const invoiceRef = useRef<HTMLDivElement>(null)
 
-  // Saved payment methods
+  // Saved payment methods & profiles (fetched from DB)
   const [savedMethods, setSavedMethods] = useState<SavedPaymentMethod[]>([])
-  const [selectedMethodId, setSelectedMethodId] = useState<string>('custom')
-
-  // Saved issuer profiles
   const [savedProfiles, setSavedProfiles] = useState<IssuerProfile[]>([])
+  
+  // Selection states
+  const [selectedMethodId, setSelectedMethodId] = useState<string>('custom')
   const [selectedProfileId, setSelectedProfileId] = useState<string>('custom')
 
   // Issuer profile fields
@@ -70,6 +66,92 @@ export function InvoiceGeneratorModal({
     `FAC-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
   )
 
+  // --- 1. CHARGEMENT DES PROFILS ÉMETTEURS DEPUIS SUPABASE ---
+  useEffect(() => {
+    const loadProfiles = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data, error } = await supabase
+          .from('issuer_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('is_default', { ascending: false }) // Les défauts en premier
+
+        if (error) throw error
+
+        if (data) {
+          const mappedProfiles: IssuerProfile[] = data.map(p => ({
+            id: p.id,
+            name: p.name,
+            companyName: p.company_name,
+            address: p.address || '',
+            city: p.city || '',
+            zip: p.zip || '',
+            country: p.country || 'France',
+            siret: p.siret || '',
+            email: p.email || '',
+            phone: p.phone || '',
+            isDefault: p.is_default
+          }))
+          
+          setSavedProfiles(mappedProfiles)
+
+          // Appliquer le profil par défaut s'il existe
+          const defaultProfile = mappedProfiles.find(p => p.isDefault)
+          if (defaultProfile) {
+            setSelectedProfileId(defaultProfile.id)
+            applyIssuerProfile(defaultProfile)
+          }
+        }
+      } catch (err) {
+        console.error('Erreur chargement profils:', err)
+      }
+    }
+    loadProfiles()
+  }, [])
+
+  // --- 2. CHARGEMENT DES MOYENS DE PAIEMENT DEPUIS SUPABASE ---
+  useEffect(() => {
+    const loadMethods = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data, error } = await supabase
+          .from('payment_methods')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('is_default', { ascending: false })
+
+        if (error) throw error
+
+        if (data) {
+          const mappedMethods: SavedPaymentMethod[] = data.map(m => ({
+            id: m.id,
+            type: m.type,
+            name: m.name,
+            isDefault: m.is_default,
+            details: m.details || {}
+          }))
+
+          setSavedMethods(mappedMethods)
+
+          // Appliquer la méthode par défaut si elle existe
+          const defaultMethod = mappedMethods.find(m => m.isDefault)
+          if (defaultMethod) {
+            setSelectedMethodId(defaultMethod.id)
+            applyPaymentMethod(defaultMethod)
+          }
+        }
+      } catch (err) {
+        console.error('Erreur chargement méthodes:', err)
+      }
+    }
+    loadMethods()
+  }, [])
+
   // --- LOGIQUE DE REGROUPEMENT DES LIGNES (DÉTAIL FACTURE) ---
   const lineItems = useMemo(() => {
     const groups: Record<string, { description: string; count: number; total: number; unitPrice: number }> = {}
@@ -79,7 +161,6 @@ export function InvoiceGeneratorModal({
       const isInstallment = deal.payment_type === 'installments' || (deal.installments && deal.installments > 1)
       
       // 2. Construire le label (Nom offre/formule + Type paiement)
-      // deal.offer contient déjà "Offre - Formule" si une formule a été choisie
       const formulaName = deal.offer || offer.name
       const paymentLabel = isInstallment 
         ? `Mensualité (Paiement en ${deal.installments}x)` 
@@ -123,38 +204,6 @@ export function InvoiceGeneratorModal({
   const tvaAmount = tvaApplicable ? commissionHT * tvaRate : 0
   const totalTTC = commissionHT + tvaAmount
 
-  // Load saved payment methods
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      const methods: SavedPaymentMethod[] = JSON.parse(saved)
-      setSavedMethods(methods)
-
-      // Auto-select default method if exists
-      const defaultMethod = methods.find(m => m.isDefault)
-      if (defaultMethod) {
-        setSelectedMethodId(defaultMethod.id)
-        applyPaymentMethod(defaultMethod)
-      }
-    }
-  }, [])
-
-  // Load saved issuer profiles
-  useEffect(() => {
-    const saved = localStorage.getItem(ISSUER_STORAGE_KEY)
-    if (saved) {
-      const profiles: IssuerProfile[] = JSON.parse(saved)
-      setSavedProfiles(profiles)
-
-      // Auto-select default profile if exists
-      const defaultProfile = profiles.find(p => p.isDefault)
-      if (defaultProfile) {
-        setSelectedProfileId(defaultProfile.id)
-        applyIssuerProfile(defaultProfile)
-      }
-    }
-  }, [])
-
   // Apply issuer profile details
   const applyIssuerProfile = (profile: IssuerProfile) => {
     setIssuerName(profile.name)
@@ -192,7 +241,6 @@ export function InvoiceGeneratorModal({
 
   // Apply payment method details
   const applyPaymentMethod = (method: SavedPaymentMethod) => {
-    // Map PaymentMethodType to PaymentMethod
     const typeMap: Record<string, PaymentMethod> = {
       'VIREMENT': 'virement',
       'PAYPAL': 'paypal',
@@ -218,7 +266,6 @@ export function InvoiceGeneratorModal({
   const handleMethodSelect = (methodId: string) => {
     setSelectedMethodId(methodId)
     if (methodId === 'custom') {
-      // Reset to empty/custom
       setPaymentMethod('virement')
       setIban('')
       setBic('')
@@ -242,7 +289,6 @@ export function InvoiceGeneratorModal({
   }
 
   const handlePreview = () => {
-    // Validate fields based on payment method
     if (paymentMethod === 'paypal' && !paypalEmail) {
       alert('Veuillez renseigner votre email PayPal')
       return
@@ -289,10 +335,10 @@ export function InvoiceGeneratorModal({
         }
       }
 
-      // 1. Générer le PDF en Blob pour le stockage
+      // 1. Générer le PDF en Blob
       const pdfBlob = await html2pdf().set(opt).from(element).output('blob')
 
-      // 2. Upload sur Supabase Storage (bucket: invoice)
+      // 2. Upload sur Supabase Storage
       const fileName = `${Date.now()}-${invoiceNumber}.pdf`
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('invoice')
@@ -300,17 +346,17 @@ export function InvoiceGeneratorModal({
 
       if (uploadError) throw uploadError
 
-      // 3. Récupérer l'URL publique du fichier stocké
+      // 3. Récupérer l'URL publique
       const { data: { publicUrl } } = supabase.storage
         .from('invoice')
         .getPublicUrl(fileName)
 
-      // 4. Sauvegarde dans la table SQL incluant le pdf_url
+      // 4. Sauvegarde dans la table SQL
       const { error } = await supabase.from('invoices').insert([
         {
           invoice_number: invoiceNumber,
           offer_name: offer.name,
-          client_name: offer.billingName || offer.company, // UPDATED: Use billing name if available
+          client_name: offer.billingName || offer.company,
           amount_ht: commissionHT,
           amount_ttc: totalTTC,
           status: 'générée',
@@ -320,7 +366,7 @@ export function InvoiceGeneratorModal({
 
       if (error) throw error
 
-      // 5. Téléchargement local final pour l'utilisateur
+      // 5. Téléchargement local
       const link = document.createElement('a')
       link.href = URL.createObjectURL(pdfBlob)
       link.download = `${invoiceNumber}.pdf`
@@ -379,7 +425,7 @@ export function InvoiceGeneratorModal({
                 />
               </div>
 
-              {/* Saved Issuer Profiles */}
+              {/* Saved Issuer Profiles (FROM DB) */}
               {savedProfiles.length > 0 && (
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-400">
@@ -530,7 +576,7 @@ export function InvoiceGeneratorModal({
                 </label>
               </div>
 
-              {/* Saved Payment Methods */}
+              {/* Saved Payment Methods (FROM DB) */}
               {savedMethods.length > 0 && (
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-400">
