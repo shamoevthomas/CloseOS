@@ -22,8 +22,8 @@ interface LocalProspect {
   dateAdded?: string | Date
   email: string
   phone: string
-  offer?: string // Ajout pour le typage local
-  offerId?: number // Ajout pour le typage local
+  offer?: string
+  offerId?: number
 }
 
 export function Contacts() {
@@ -105,10 +105,10 @@ export function Contacts() {
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null)
   const [selectedContact, setSelectedContact] = useState<InternalContact | null>(null)
 
-  // --- NOUVEAU : États pour la recherche et le filtre ---
+  // --- NOUVEAU : États pour la recherche et le filtrage ---
   const [prospectSearch, setProspectSearch] = useState('')
-  const [selectedOfferFilter, setSelectedOfferFilter] = useState<string>('all')
   const [internalSearch, setInternalSearch] = useState('')
+  const [selectedOfferFilter, setSelectedOfferFilter] = useState<string>('all')
 
   // Form state
   const [newContact, setNewContact] = useState({
@@ -119,39 +119,42 @@ export function Contacts() {
     // SUPPRESSION DES CHAMPS DE FACTURATION ICI
   })
 
-  // --- NOUVEAU : Logique de filtrage des Prospects ---
-  const filteredProspects = displayProspects.filter((prospect) => {
-    // 1. Filtre Recherche
-    const searchLower = prospectSearch.toLowerCase()
+  // --- LOGIQUE DE FILTRAGE DES PROSPECTS (AJOUTÉE) ---
+  const filteredProspects = displayProspects.filter(prospect => {
+    // 1. Filtre par recherche textuelle (Nom, Entreprise, Email)
+    const term = prospectSearch.toLowerCase()
     const fullName = prospect.name || `${prospect.firstName || ''} ${prospect.lastName || ''}`
-    const matchesSearch =
-      fullName.toLowerCase().includes(searchLower) ||
-      (prospect.company || '').toLowerCase().includes(searchLower) ||
-      (prospect.email || '').toLowerCase().includes(searchLower)
+    const matchesSearch = 
+      fullName.toLowerCase().includes(term) ||
+      (prospect.company || '').toLowerCase().includes(term) ||
+      (prospect.email || '').toLowerCase().includes(term)
 
-    // 2. Filtre Offre
+    // 2. Filtre par Offre
     let matchesOffer = true
     if (selectedOfferFilter !== 'all') {
-      // On compare soit l'ID de l'offre, soit le nom de l'offre stocké dans le prospect
-      const offerIdMatch = prospect.offerId?.toString() === selectedOfferFilter
-      const offerNameMatch = prospect.offer === selectedOfferFilter // Si le nom est stocké directement
-      // Pour les offres venant du contexte, on essaie de matcher le nom si l'ID correspond
+      // On cherche l'objet offre correspondant à l'ID sélectionné
       const selectedOfferObj = offers.find(o => o.id.toString() === selectedOfferFilter)
-      const offerNameFromIdMatch = selectedOfferObj && prospect.offer === selectedOfferObj.name
-
-      matchesOffer = offerIdMatch || offerNameMatch || !!offerNameFromIdMatch
+      
+      if (selectedOfferObj) {
+        // On compare soit avec l'ID, soit avec le NOM de l'offre (plus robuste)
+        const offerNameMatch = (prospect.offer || '').trim() === selectedOfferObj.name.trim()
+        const offerIdMatch = prospect.offerId?.toString() === selectedOfferFilter
+        matchesOffer = offerNameMatch || offerIdMatch
+      } else {
+        matchesOffer = false
+      }
     }
 
     return matchesSearch && matchesOffer
   })
 
-  // --- NOUVEAU : Logique de filtrage des Contacts Internes ---
-  const filteredInternalContacts = internalContacts.filter((contact) => {
-    const searchLower = internalSearch.toLowerCase()
+  // --- LOGIQUE DE FILTRAGE DES CONTACTS INTERNES (AJOUTÉE) ---
+  const filteredInternalContacts = internalContacts.filter(contact => {
+    const term = internalSearch.toLowerCase()
     return (
-      contact.name.toLowerCase().includes(searchLower) ||
-      contact.role.toLowerCase().includes(searchLower) ||
-      contact.email.toLowerCase().includes(searchLower)
+      contact.name.toLowerCase().includes(term) ||
+      contact.role.toLowerCase().includes(term) ||
+      contact.email.toLowerCase().includes(term)
     )
   })
 
@@ -405,6 +408,7 @@ export function Contacts() {
                               </div>
                             </div>
                           </td>
+                          {/* NOUVELLE COLONNE OFFRE */}
                           <td className="px-6 py-4">
                             <span className="text-sm text-slate-300">
                               {prospect.offer || '-'}
@@ -454,7 +458,7 @@ export function Contacts() {
                   ) : (
                     <tr>
                       <td colSpan={6} className="px-6 py-8 text-center text-slate-500 italic">
-                        Aucun prospect trouvé pour cette recherche.
+                        Aucun prospect ne correspond à ces critères.
                       </td>
                     </tr>
                   )}
