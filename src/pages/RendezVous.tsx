@@ -55,7 +55,7 @@ export function RendezVous() {
     const now = new Date();
     const today = startOfDay(now);
 
-    return meetings.reduce(
+    return (meetings || []).reduce(
       (acc: any, m: any) => {
         const meetingDate = parseISO(m.date);
         if (isAfter(meetingDate, today) || m.date === format(now, 'yyyy-MM-dd')) {
@@ -131,7 +131,7 @@ export function RendezVous() {
 
   const getStatusStyle = (status: string) => {
     const s = status?.toLowerCase()
-    if (s === 'upcoming' || s === 'confirmé' || s === 'confirmed') 
+    if (s === 'upcoming' || s === 'confirmé' || s === 'confirmed' || s === 'scheduled') 
       return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
     if (s === 'annulé' || s === 'cancelled')
       return 'bg-red-500/20 text-red-400 border-red-500/30'
@@ -140,18 +140,28 @@ export function RendezVous() {
     return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
   }
 
-  // Fonction utilitaire pour extraire le titre du type de booking
+  // --- CORRECTION : FONCTION SÉCURISÉE ---
   const getMeetingSource = (meeting: any) => {
-    // 1. Essayer de trouver "Type: Titre" dans la description (format PublicBooking)
-    const typeMatch = meeting.description?.match(/Type:\s*([^\n]+)/);
-    if (typeMatch && typeMatch[1]) return typeMatch[1].trim();
+    if (!meeting) return 'Réservation';
 
-    // 2. Fallback : Essayer de parser le titre "Titre - Nom Client"
-    if (meeting.title && meeting.title.includes(' - ')) {
-      return meeting.title.split(' - ')[0];
+    try {
+      // 1. Essayer de trouver "Type: Titre" dans la description
+      if (meeting.description) {
+        const typeMatch = meeting.description.match(/Type:\s*([^\n\r]+)/);
+        if (typeMatch && typeMatch[1]) return typeMatch[1].trim();
+      }
+
+      // 2. Fallback : Parser le titre si format "Titre - Client"
+      if (meeting.title && meeting.title.includes(' - ')) {
+        return meeting.title.split(' - ')[0];
+      }
+    } catch (e) {
+      // En cas d'erreur de parsing, ne rien casser
+      return 'Appel';
     }
 
-    return 'Réservation Directe';
+    // 3. Fallback final
+    return 'Appel';
   }
 
   const MeetingTable = ({ data, title, icon: Icon, emptyText, showDeleteAction }: { data: any[], title: string, icon: any, emptyText: string, showDeleteAction?: boolean }) => (
@@ -182,7 +192,6 @@ export function RendezVous() {
             <tr className="border-b border-slate-800 text-xs font-bold uppercase tracking-widest text-slate-500 text-left">
               <th className="px-6 py-4">Date & Heure</th>
               <th className="px-6 py-4">Prospect</th>
-              {/* MODIFICATION : Colonne Provenance au lieu de Type */}
               <th className="px-6 py-4">Provenance</th>
               <th className="px-6 py-4">Statut</th>
               <th className="px-6 py-4 text-right">Détails</th>
@@ -212,14 +221,14 @@ export function RendezVous() {
                   </td>
                   <td className="px-6 py-4 font-bold text-slate-200">{maskData(m.contact || 'Prospect', 'name')}</td>
                   
-                  {/* MODIFICATION : Affichage de la provenance (Titre du lien) */}
+                  {/* --- APPEL DE LA FONCTION SÉCURISÉE --- */}
                   <td className="px-6 py-4 text-sm text-blue-400 font-medium">
                     {getMeetingSource(m)}
                   </td>
 
                   <td className="px-6 py-4">
                     <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(m.status)}`}>
-                      {m.status === 'upcoming' ? 'Confirmé' : m.status}
+                      {m.status === 'scheduled' || m.status === 'upcoming' ? 'Confirmé' : m.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -354,7 +363,8 @@ export function RendezVous() {
                     <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center text-xl font-bold text-white">{selectedMeeting.contact?.charAt(0)}</div>
                     <div>
                       <p className="text-lg font-bold text-white">{maskData(selectedMeeting.contact, 'name')}</p>
-                      {/* Affichage de la provenance ici aussi */}
+                      
+                      {/* --- APPEL DE LA FONCTION SÉCURISÉE DANS LE MODAL --- */}
                       <p className="text-sm text-slate-500">{getMeetingSource(selectedMeeting)}</p>
                     </div>
                  </div>
@@ -404,17 +414,12 @@ export function RendezVous() {
               </div>
             </div>
             <div className="mt-8 flex flex-col gap-3">
-               {/* MODIFIÉ : LOGIQUE DE BOUTON INTELLIGENTE */}
-               {selectedMeeting.location && (
+               {selectedMeeting.location && isDailyCoLink(selectedMeeting.location) && (
                  <button 
                    onClick={() => {
                      const locationUrl = selectedMeeting.location;
-                     if (isDailyCoLink(locationUrl)) {
-                       const url = `/live-call?url=${encodeURIComponent(locationUrl)}&from=/rendez-vous`;
-                       navigate(url);
-                     } else {
-                       window.open(locationUrl, '_blank', 'noopener,noreferrer');
-                     }
+                     const url = `/live-call?url=${encodeURIComponent(locationUrl)}&from=/rendez-vous`;
+                     navigate(url);
                    }} 
                    className="w-full flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"
                  >
