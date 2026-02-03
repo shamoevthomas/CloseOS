@@ -63,58 +63,97 @@ export function InvoicesPage() {
     const end = new Date(endDate)
     end.setHours(23, 59, 59, 999) 
 
-    // Filter prospects
-    const wonProspects = prospects.filter((prospect) => {
+    // Filter prospects qui ont une activité financière dans la période
+    const activeDealsInPeriod = prospects.filter((prospect) => {
       if (prospect.stage !== 'won') return false
 
-      if (prospect.lastContact) {
-        const closeDate = new Date(prospect.lastContact)
-        if (closeDate < start || closeDate > end) return false
-      } else {
-        return false 
+      // Vérification de l'offre
+      const isCorrectOffer = prospect.offerId === selectedOffer.id ||
+                             String(prospect.offerId) === String(selectedOffer.id) ||
+                             prospect.offer === selectedOffer.name ||
+                             prospect.title?.includes(selectedOffer.name)
+
+      if (!isCorrectOffer) return false
+
+      const dealDate = new Date(prospect.lastContact || prospect.dateAdded)
+      
+      // LOGIQUE INTELLIGENTE :
+      // 1. Si c'est comptant : il doit être dans la période de signature
+      if (prospect.payment_type !== 'installments' && (!prospect.installments || prospect.installments <= 1)) {
+        return dealDate >= start && dealDate <= end
       }
 
-      if (
-        prospect.offerId === selectedOffer.id ||
-        String(prospect.offerId) === String(selectedOffer.id) ||
-        prospect.offer === selectedOffer.name ||
-        prospect.title?.includes(selectedOffer.name)
-      ) {
-        return true
-      }
+      // 2. Si c'est plusieurs fois : il est actif de sa date de début jusqu'à X mois plus tard
+      const months = prospect.installments || 1
+      const endDateDeal = new Date(dealDate)
+      endDateDeal.setMonth(endDateDeal.getMonth() + (months - 1)) // Date de la dernière mensualité
 
-      return false
+      // Un deal échelonné est "actif" dans la vue si la période sélectionnée 
+      // chevauche n'importe quelle mensualité du deal
+      return (dealDate <= end && endDateDeal >= start)
     })
 
-    // Séparation Comptant / Plusieurs fois
-    const cashDeals = wonProspects.filter(p => p.payment_type !== 'installments' && (!p.installments || p.installments <= 1))
-    const installmentDeals = wonProspects.filter(p => p.payment_type === 'installments' || (p.installments && p.installments > 1))
+    // Séparation pour l'affichage dans les tooltips
+    const cashDeals = activeDealsInPeriod.filter(p => p.payment_type !== 'installments' && (!p.installments || p.installments <= 1))
+    const installmentDeals = activeDealsInPeriod.filter(p => p.payment_type === 'installments' || (p.installments && p.installments > 1))
 
-    const revenue = wonProspects.reduce((sum, prospect) => sum + (prospect.value || 0), 0)
+    // CALCUL DU REVENU RÉEL POUR LA PÉRIODE SÉLECTIONNÉE
+    const revenue = activeDealsInPeriod.reduce((sum, prospect) => {
+      const fullValue = prospect.value || 0
+      
+      if (prospect.payment_type !== 'installments' && (!prospect.installments || prospect.installments <= 1)) {
+        return sum + fullValue
+      } else {
+        // Pour les paiements en plusieurs fois, on ne compte que la mensualité 
+        // si elle tombe dans l'intervalle sélectionné
+        const monthlyValue = fullValue / (prospect.installments || 1)
+        
+        let installmentsInPeriod = 0
+        const dealDate = new Date(prospect.lastContact || prospect.dateAdded)
+        
+        for (let i = 0; i < (prospect.installments || 1); i++) {
+          const installmentDate = new Date(dealDate)
+          installmentDate.setMonth(installmentDate.getMonth() + i)
+          if (installmentDate >= start && installmentDate <= end) {
+            installmentsInPeriod++
+          }
+        }
+        return sum + (monthlyValue * installmentsInPeriod)
+      }
+    }, 0)
 
-    const totalCommission = wonProspects.reduce((sum, deal) => {
-      const amount = deal.value || 0
-      let rate = 0.10 
-      if (selectedOffer?.commission) {
-        const commissionStr = String(selectedOffer.commission)
-        if (commissionStr.includes('%')) {
-          const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
-          if (match) rate = parseFloat(match[1]) / 100
-        } else if (commissionStr.includes('€')) {
-          return sum + parseFloat(commissionStr.replace('€', ''))
-        } else {
-          const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
-          if (match) rate = parseFloat(match[1]) / 100
+    // Commission calculée sur le revenu réel de la période
+    const totalCommission = activeDealsInPeriod.reduce((sum, deal) => {
+      let amountInPeriod = 0
+      const fullValue = deal.value || 0
+
+      if (deal.payment_type !== 'installments' && (!deal.installments || deal.installments <= 1)) {
+        amountInPeriod = fullValue
+      } else {
+        const monthlyValue = fullValue / (deal.installments || 1)
+        const dealDate = new Date(deal.lastContact || deal.dateAdded)
+        for (let i = 0; i < (deal.installments || 1); i++) {
+          const installmentDate = new Date(dealDate)
+          installmentDate.setMonth(installmentDate.getMonth() + i)
+          if (installmentDate >= start && installmentDate <= end) {
+            amountInPeriod += monthlyValue
+          }
         }
       }
-      return sum + (amount * rate)
+      
+      let rate = 0.10 
+      const commissionStr = String(selectedOffer?.commission || "10")
+      const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
+      if (match) rate = parseFloat(match[1]) / 100
+
+      return sum + (amountInPeriod * rate)
     }, 0)
 
     return {
       revenue,
       commission: totalCommission,
-      dealsCount: wonProspects.length,
-      deals: wonProspects,
+      dealsCount: activeDealsInPeriod.length,
+      deals: activeDealsInPeriod,
       cashDeals,
       installmentDeals
     }
@@ -131,7 +170,7 @@ export function InvoicesPage() {
   const getInstallmentEndDate = (startDateStr: string | Date, months: number) => {
     if (!startDateStr) return 'N/A'
     const d = new Date(startDateStr)
-    d.setMonth(d.getMonth() + months)
+    d.setMonth(d.getMonth() + (months - 1))
     return d.toLocaleDateString('fr-FR')
   }
 
@@ -217,11 +256,11 @@ export function InvoicesPage() {
                   <TrendingUp className="h-6 w-6 text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-400">CA Généré</p>
+                  <p className="text-sm font-medium text-slate-400">CA Généré (Période)</p>
                   <p className="text-2xl font-bold text-white">{formatCurrency(stats.revenue)}</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-500">{stats.dealsCount} deal(s) gagné(s)</p>
+              <p className="text-xs text-slate-500">{stats.dealsCount} deal(s) actif(s) / mensualité(s)</p>
             </div>
 
             {/* Commission Card */}
@@ -253,11 +292,11 @@ export function InvoicesPage() {
                   </p>
                 </div>
               </div>
-              <p className="text-xs text-slate-500">Par deal fermé</p>
+              <p className="text-xs text-slate-500">Par deal/mensualité</p>
             </div>
           </div>
 
-          {/* --- SECTION DÉTAILS DE FACTURE (NOUVEAU) --- */}
+          {/* --- SECTION DÉTAILS DE FACTURE --- */}
           <div className="mb-8 rounded-xl border border-slate-800 bg-slate-900/50 p-6">
             <h3 className="text-lg font-bold text-white mb-6">Détails de facture</h3>
             
@@ -269,7 +308,6 @@ export function InvoicesPage() {
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
                     <h4 className="font-semibold text-slate-200">Paiement Comptant</h4>
-                    {/* BOUTON INFO */}
                     <div className="relative">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'cash' ? null : 'cash'); }}
@@ -278,7 +316,6 @@ export function InvoicesPage() {
                         <Info className="h-4 w-4" />
                       </button>
                       
-                      {/* TOOLTIP CASH */}
                       {activeTooltip === 'cash' && (
                         <div className="absolute left-0 top-6 z-50 w-72 rounded-xl border border-slate-700 bg-slate-800 p-4 shadow-2xl">
                           <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Liste des clients (Comptant)</h5>
@@ -320,7 +357,6 @@ export function InvoicesPage() {
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                     <h4 className="font-semibold text-slate-200">Paiement en plusieurs fois</h4>
-                    {/* BOUTON INFO */}
                     <div className="relative">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'installments' ? null : 'installments'); }}
@@ -329,7 +365,6 @@ export function InvoicesPage() {
                         <Info className="h-4 w-4" />
                       </button>
 
-                      {/* TOOLTIP INSTALLMENTS */}
                       {activeTooltip === 'installments' && (
                         <div className="absolute right-0 top-6 z-50 w-80 rounded-xl border border-slate-700 bg-slate-800 p-4 shadow-2xl">
                           <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Liste des clients (Échelonné)</h5>
@@ -343,7 +378,7 @@ export function InvoicesPage() {
                                       {deal.installments}x
                                     </span>
                                   </div>
-                                  <p className="text-xs text-blue-400 font-medium">Total: {formatCurrency(deal.value || 0)}</p>
+                                  <p className="text-xs text-blue-400 font-medium">Contrat total: {formatCurrency(deal.value || 0)}</p>
                                   <div className="flex justify-between mt-1">
                                     <p className="text-[10px] text-slate-500">
                                       Début : {new Date(deal.lastContact || deal.dateAdded).toLocaleDateString('fr-FR')}
@@ -356,7 +391,7 @@ export function InvoicesPage() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-xs text-slate-500 italic">Aucun paiement échelonné sur cette période.</p>
+                            <p className="text-xs text-slate-500 italic">Aucun paiement échelonné actif sur cette période.</p>
                           )}
                         </div>
                       )}
@@ -371,7 +406,7 @@ export function InvoicesPage() {
                   ></div>
                 </div>
                 <p className="text-xs text-slate-500 mt-2 text-right">
-                  Total : {formatCurrency(stats.installmentDeals.reduce((sum, d) => sum + (d.value || 0), 0))}
+                  Part mensuelle période : {formatCurrency(stats.revenue - stats.cashDeals.reduce((sum, d) => sum + (d.value || 0), 0))}
                 </p>
               </div>
 
@@ -472,9 +507,9 @@ export function InvoicesPage() {
       {selectedOffer && stats.dealsCount === 0 && (
         <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-12 text-center mt-6">
           <FileText className="mx-auto mb-4 h-12 w-12 text-slate-600" />
-          <p className="text-lg font-semibold text-slate-400">Aucun deal gagné</p>
+          <p className="text-lg font-semibold text-slate-400">Aucun deal actif</p>
           <p className="mt-2 text-sm text-slate-500">
-            Fermez des deals pour générer des factures dans cette période
+            Fermez des deals ou attendez les prochaines échéances pour voir des statistiques ici.
           </p>
         </div>
       )}
