@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Link2, Copy, Check, Calendar, Clock, User, ExternalLink, X, Video, Phone, Settings, Loader2, History, Trash2, ChevronDown, Mail, Plus, Edit2 } from 'lucide-react'
+import { Link2, Copy, Check, Calendar, Clock, ExternalLink, X, Video, Phone, Settings, Loader2, History, Trash2, ChevronDown, Mail, Plus, Edit2 } from 'lucide-react'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -140,6 +140,20 @@ export function RendezVous() {
     return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
   }
 
+  // Fonction utilitaire pour extraire le titre du type de booking
+  const getMeetingSource = (meeting: any) => {
+    // 1. Essayer de trouver "Type: Titre" dans la description (format PublicBooking)
+    const typeMatch = meeting.description?.match(/Type:\s*([^\n]+)/);
+    if (typeMatch && typeMatch[1]) return typeMatch[1].trim();
+
+    // 2. Fallback : Essayer de parser le titre "Titre - Nom Client"
+    if (meeting.title && meeting.title.includes(' - ')) {
+      return meeting.title.split(' - ')[0];
+    }
+
+    return 'Réservation Directe';
+  }
+
   const MeetingTable = ({ data, title, icon: Icon, emptyText, showDeleteAction }: { data: any[], title: string, icon: any, emptyText: string, showDeleteAction?: boolean }) => (
     <div className="mb-12">
       <div className="mb-4 flex items-center justify-between px-2">
@@ -168,7 +182,8 @@ export function RendezVous() {
             <tr className="border-b border-slate-800 text-xs font-bold uppercase tracking-widest text-slate-500 text-left">
               <th className="px-6 py-4">Date & Heure</th>
               <th className="px-6 py-4">Prospect</th>
-              <th className="px-6 py-4 text-center">Type</th>
+              {/* MODIFICATION : Colonne Provenance au lieu de Type */}
+              <th className="px-6 py-4">Provenance</th>
               <th className="px-6 py-4">Statut</th>
               <th className="px-6 py-4 text-right">Détails</th>
             </tr>
@@ -196,9 +211,12 @@ export function RendezVous() {
                     </div>
                   </td>
                   <td className="px-6 py-4 font-bold text-slate-200">{maskData(m.contact || 'Prospect', 'name')}</td>
-                  <td className="px-6 py-4 text-center">
-                    {m.type === 'video' ? <Video className="h-4 w-4 mx-auto text-blue-400" /> : <Phone className="h-4 w-4 mx-auto text-emerald-400" />}
+                  
+                  {/* MODIFICATION : Affichage de la provenance (Titre du lien) */}
+                  <td className="px-6 py-4 text-sm text-blue-400 font-medium">
+                    {getMeetingSource(m)}
                   </td>
+
                   <td className="px-6 py-4">
                     <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(m.status)}`}>
                       {m.status === 'upcoming' ? 'Confirmé' : m.status}
@@ -336,7 +354,8 @@ export function RendezVous() {
                     <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center text-xl font-bold text-white">{selectedMeeting.contact?.charAt(0)}</div>
                     <div>
                       <p className="text-lg font-bold text-white">{maskData(selectedMeeting.contact, 'name')}</p>
-                      <p className="text-sm text-slate-500">Session de closing</p>
+                      {/* Affichage de la provenance ici aussi */}
+                      <p className="text-sm text-slate-500">{getMeetingSource(selectedMeeting)}</p>
                     </div>
                  </div>
                  <div className="relative">
