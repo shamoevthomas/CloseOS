@@ -105,10 +105,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const [isCreatingContact, setIsCreatingContact] = useState(false)
   const [newContactData, setNewContactData] = useState({ name: '', role: '', email: '', phone: '' })
 
-  // --- CALCUL DE L'URL WEBHOOK ---
-  // On récupère l'URL du projet et on ajoute l'ID de l'offre
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://[PROJECT_ID].supabase.co"
-  const webhookUrl = `${supabaseUrl}/rest/v1/rpc/receive_native_webhook?offer_id=${offer.id}`
+  // --- CALCUL DE L'URL WEBHOOK (Version Vercel) ---
+  // On construit un lien propre qui pointe vers ta nouvelle fonction
+  const baseUrl = window.location.origin.includes('localhost') 
+    ? 'https://close-os.vercel.app' // En local, on pointe vers la prod pour tester
+    : window.location.origin
+    
+  const webhookUrl = `${baseUrl}/api/webhook?offer_id=${offer.id}`
 
   const [editedOffer, setEditedOffer] = useState<Offer>(() => {
     if (!offer.formulas || offer.formulas.length === 0) {

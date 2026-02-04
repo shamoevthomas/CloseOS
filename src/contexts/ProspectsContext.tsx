@@ -6,17 +6,19 @@ export interface Prospect {
   id: number
   user_id: string
   company: string
-  contact: string // Nom complet (concaténation)
-  firstName?: string // Nouveau
-  lastName?: string  // Nouveau
+  contact: string      // Ancien champ (gardé pour compatibilité)
+  firstName?: string   // ✅ NOUVEAU
+  lastName?: string    // ✅ NOUVEAU
   email: string
   phone: string
   value?: number
+  offer?: string       // ✅ Ajouté pour être sûr
   stage: string
   notes?: string
   created_at?: string
+  dateAdded?: string   // Compatibilité
   last_contact?: string
-  // Suppression de source
+  lastContact?: string // Compatibilité
   call_notes?: {
     id: string
     date: string
@@ -53,7 +55,6 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      // On mappe les données si besoin, mais Supabase renvoie déjà les colonnes correctes
       setProspects(data || [])
     } catch (error) {
       console.error('Erreur chargement:', error)
@@ -79,13 +80,19 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
   const updateProspect = async (id: number, updates: Partial<Prospect>) => {
     try {
+      console.log("💾 Envoi à Supabase...", { id, updates })
+
       const { data, error } = await supabase
         .from('prospects')
         .update(updates)
         .eq('id', id)
         .select()
 
-      if (error) throw error
+      if (error) {
+        console.error("❌ Erreur Supabase:", error.message)
+        throw error
+      }
+
       setProspects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
     } catch (error) {
       console.error('Erreur update:', error)
