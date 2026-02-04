@@ -1,5 +1,6 @@
 // api/webhook.ts
 export default async function handler(request: any, response: any) {
+  // Gestion CORS
   response.setHeader('Access-Control-Allow-Credentials', true)
   response.setHeader('Access-Control-Allow-Origin', '*')
   response.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT')
@@ -14,37 +15,32 @@ export default async function handler(request: any, response: any) {
 
   try {
     const { offer_id } = request.query
-    
-    // --- LE MOUCHARD EST ICI ---
-    console.log("🟢 1. Webhook reçu pour Offre ID:", offer_id)
-    console.log("📦 2. Contenu BRUT reçu d'iClosed:", JSON.stringify(request.body))
-    // ---------------------------
+    console.log("🟢 Webhook reçu pour Offre:", offer_id)
 
-    if (!offer_id) throw new Error("ID de l'offre manquant")
+    if (!offer_id) throw new Error("ID Offre manquant")
 
+    // 1. Récupération et nettoyage de la structure (Tableau vs Objet)
     let rawBody = request.body
     if (Array.isArray(rawBody) && rawBody.length > 0) {
       rawBody = rawBody[0]
     }
 
-    // Traduction des champs
+    // 2. FILTRAGE STRICT (C'est ici qu'on résout l'erreur PGRST202)
+    // On ne garde QUE les champs que Supabase connait. On jette le reste.
     const cleanBody = {
-      ...rawBody,
-      first_name: rawBody.firstName || rawBody.first_name,
-      last_name: rawBody.lastName || rawBody.last_name,
-      phone: rawBody.phoneNumber || rawBody.phone,
-      email: rawBody.email,
+      first_name: rawBody.firstName || rawBody.first_name || "Inconnu",
+      last_name: rawBody.lastName || rawBody.last_name || "",
+      email: rawBody.email || "pas-d-email@erreur.com",
+      phone: rawBody.phoneNumber || rawBody.phone || "",
+      status: rawBody.status || "new_lead",
       offer_id: Number(offer_id)
     }
 
-    console.log("✨ 3. Données nettoyées envoyées à Supabase:", JSON.stringify(cleanBody))
+    console.log("✨ Données nettoyées :", JSON.stringify(cleanBody))
 
+    // 3. Envoi à Supabase
     const supabaseUrl = process.env.VITE_SUPABASE_URL
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Configuration Supabase manquante")
-    }
 
     const result = await fetch(`${supabaseUrl}/rest/v1/rpc/receive_native_webhook`, {
       method: 'POST',
@@ -53,16 +49,16 @@ export default async function handler(request: any, response: any) {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`
       },
-      body: JSON.stringify(cleanBody)
+      body: JSON.stringify(cleanBody) // On envoie uniquement l'objet propre
     })
 
     const data = await result.json()
-    console.log("✅ 4. Réponse Supabase:", JSON.stringify(data)) // On verra si Supabase accepte ou refuse
+    console.log("✅ Réponse Supabase:", JSON.stringify(data))
 
     return response.status(200).json(data)
 
   } catch (error: any) {
-    console.error("❌ Erreur Webhook:", error)
+    console.error("❌ Erreur:", error)
     return response.status(500).json({ error: error.message })
   }
 }
