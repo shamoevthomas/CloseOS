@@ -60,8 +60,8 @@ const DEFAULT_MOCK_DATA: Prospect[] = [
     offer: 'Pack Enterprise Premium', // Exemple d'offre A
     firstName: 'Sarah',
     lastName: 'Johnson',
-    dateAdded: new Date('2025-11-01'),
-    lastContact: new Date('2025-12-14T10:30:00'),
+    dateAdded: new Date('2025-11-01').toISOString(), // ISO String pour compatibilité
+    lastContact: new Date('2025-12-14T10:30:00').toISOString(),
   },
   {
     id: 2,
@@ -77,8 +77,8 @@ const DEFAULT_MOCK_DATA: Prospect[] = [
     offer: 'SaaS Annuel', // Exemple d'offre B
     firstName: 'Emma',
     lastName: 'Williams',
-    dateAdded: new Date('2025-10-15'),
-    lastContact: new Date('2025-12-15T09:15:00'),
+    dateAdded: new Date('2025-10-15').toISOString(),
+    lastContact: new Date('2025-12-15T09:15:00').toISOString(),
   },
 ]
 
@@ -137,15 +137,26 @@ export function Pipeline() {
     setCollapsedColumns(newCollapsed)
   }
 
+  // --- 🛠️ HELPER NOM SÉCURISÉ (AJOUT) ---
+  const getDisplayName = (deal: Prospect) => {
+    if (deal.firstName || deal.lastName) {
+      return `${deal.firstName || ''} ${deal.lastName || ''}`.trim()
+    }
+    return deal.contact || 'Prospect sans nom'
+  }
+
   // --- FILTRAGE PRINCIPAL ---
   const getFilteredDeals = () => {
     return (pipelineDeals || []).filter(deal => {
       // 1. Filtre par Onglet Offre (Le CRM actif)
       const matchesOfferTab = currentOfferTab === 'global' || deal.offer === currentOfferTab
 
+      // Nom complet pour la recherche
+      const fullName = getDisplayName(deal)
+
       // 2. Filtre Recherche textuelle
       const matchesSearch = searchQuery === '' ||
-        deal.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         deal.company?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (deal.offer && deal.offer.toLowerCase().includes(searchQuery.toLowerCase()))
 
@@ -154,8 +165,9 @@ export function Pipeline() {
 
       // 4. Filtre par Date
       const matchesDate = filterDate === 'all' || (() => {
-        if (!deal.dateAdded) return false
-        const dealDate = new Date(deal.dateAdded)
+        const dateStr = deal.created_at || deal.dateAdded
+        if (!dateStr) return false
+        const dealDate = new Date(dateStr)
         const dealYearMonth = `${dealDate.getFullYear()}-${String(dealDate.getMonth() + 1).padStart(2, '0')}`
         return dealYearMonth === filterDate
       })()
@@ -183,8 +195,9 @@ export function Pipeline() {
       'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
     ]
     ;(pipelineDeals || []).forEach(deal => {
-      if (deal.dateAdded) {
-        const date = new Date(deal.dateAdded)
+      const dateStr = deal.created_at || deal.dateAdded
+      if (dateStr) {
+        const date = new Date(dateStr)
         const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
         monthsSet.add(value)
       }
@@ -439,8 +452,9 @@ export function Pipeline() {
                         {stageDeals.map((deal) => {
                           // Détecter B2B pour l'affichage
                           const isB2B = deal.company && deal.company !== 'N/A'
-                          const mainTitle = isB2B ? deal.company : deal.contact
-                          const subTitle = isB2B ? deal.contact : deal.offer
+                          const displayName = getDisplayName(deal) // ✅ FIX: Utilisation du helper
+                          const mainTitle = isB2B ? deal.company : displayName
+                          const subTitle = isB2B ? displayName : deal.offer
 
                           return (
                             <div
@@ -524,7 +538,7 @@ export function Pipeline() {
                       <div className="space-y-2 p-2 max-h-[300px] overflow-y-auto">
                          {stageDeals.map((deal) => (
                            <div key={deal.id} onClick={() => handleOpenDeal(deal)} className="cursor-pointer rounded border border-slate-800/30 bg-slate-900/40 p-2 opacity-60 hover:opacity-100">
-                             <p className="text-sm text-slate-400"><MaskedText value={deal.contact} type="name" /></p>
+                             <p className="text-sm text-slate-400"><MaskedText value={getDisplayName(deal)} type="name" /></p>
                            </div>
                          ))}
                       </div>
@@ -561,7 +575,7 @@ export function Pipeline() {
                             {deal.company ? <Building2 className="h-4 w-4"/> : <User className="h-4 w-4"/>}
                           </div>
                           <div>
-                            <p className="font-medium text-white"><MaskedText value={deal.contact} type="name" /></p>
+                            <p className="font-medium text-white"><MaskedText value={getDisplayName(deal)} type="name" /></p>
                             {deal.company && <p className="text-xs text-slate-500">{deal.company}</p>}
                           </div>
                         </div>
@@ -634,8 +648,9 @@ export function Pipeline() {
         isOpen={isVideoCallOpen}
         onClose={() => setIsVideoCallOpen(false)}
         onCallEnd={handleCallEnd}
-        prospectName={selectedDeal?.contact || ''}
-        prospectAvatar={selectedDeal?.contact.charAt(0)}
+        // ✅ FIX CRASH : Utilisation de getDisplayName et protection sur charAt
+        prospectName={selectedDeal ? getDisplayName(selectedDeal) : ''}
+        prospectAvatar={selectedDeal ? getDisplayName(selectedDeal).charAt(0) : '?'}
         initialAiEnabled={callModeWithAi}
       />
 
@@ -643,7 +658,8 @@ export function Pipeline() {
         isOpen={isCallSummaryModalOpen}
         onClose={() => setIsCallSummaryModalOpen(false)}
         onSubmit={handleCallSummarySubmit}
-        prospectName={selectedDeal?.contact || ''}
+        // ✅ FIX DISPLAY NAME
+        prospectName={selectedDeal ? getDisplayName(selectedDeal) : ''}
         offerPrice={selectedDeal?.value || 1500}
       />
 
@@ -651,14 +667,16 @@ export function Pipeline() {
         isOpen={isNoAnswerModalOpen}
         onClose={() => setIsNoAnswerModalOpen(false)}
         onMarkAsNoShow={handleMarkAsNoShow}
-        prospectName={selectedDeal?.contact || ''}
+        // ✅ FIX DISPLAY NAME
+        prospectName={selectedDeal ? getDisplayName(selectedDeal) : ''}
       />
 
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
         prospectId={selectedDeal?.id}
-        prospectName={selectedDeal?.contact}
+        // ✅ FIX DISPLAY NAME
+        prospectName={selectedDeal ? getDisplayName(selectedDeal) : ''}
       />
 
       {showAiToast && (
