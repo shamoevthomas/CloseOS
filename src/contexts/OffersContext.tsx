@@ -22,6 +22,16 @@ export interface OfferFormula {
   commission: string
 }
 
+// NOUVEAU TYPE POUR LE MAPPING CRM
+export interface CrmMapping {
+  prospect?: string
+  qualified?: string
+  won?: string
+  lost?: string
+  noshow?: string
+  [key: string]: string | undefined
+}
+
 export interface Offer {
   id: number
   user_id: string
@@ -47,6 +57,10 @@ export interface Offer {
   siret?: string
   billingEmail?: string
   billingPhone?: string
+  // NOUVEAUX CHAMPS CRM
+  crmProvider?: 'iclosed' | 'hubspot' | 'other'
+  crmApiKey?: string
+  crmMapping?: CrmMapping
 }
 
 interface OffersContextType {
@@ -95,7 +109,12 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       billingCountry: offer.billing_country,
       siret: offer.siret, // Reste identique
       billingEmail: offer.billing_email,
-      billingPhone: offer.billing_phone
+      billingPhone: offer.billing_phone,
+
+      // Mapping CRM (Nouveaux champs)
+      crmProvider: offer.crm_provider || 'iclosed',
+      crmApiKey: offer.crm_api_key,
+      crmMapping: offer.crm_mapping || {}
     }))
   }
 
@@ -104,9 +123,8 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     const dbData: any = { ...offer }
 
     // CORRECTION : On ne touche PAS aux dates (elles restent en startDate/endDate comme dans votre DB actuelle)
-    // On ne fait PAS : dbData.start_date = offer.startDate
     
-    // Par contre, on traduit les NOUVEAUX champs de facturation vers snake_case
+    // Mapping Facturation vers snake_case
     if (offer.billingName !== undefined) dbData.billing_name = offer.billingName
     if (offer.billingAddress !== undefined) dbData.billing_address = offer.billingAddress
     if (offer.billingCity !== undefined) dbData.billing_city = offer.billingCity
@@ -114,15 +132,19 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     if (offer.billingCountry !== undefined) dbData.billing_country = offer.billingCountry
     if (offer.billingEmail !== undefined) dbData.billing_email = offer.billingEmail
     if (offer.billingPhone !== undefined) dbData.billing_phone = offer.billingPhone
+
+    // Mapping CRM vers snake_case
+    if (offer.crmProvider !== undefined) dbData.crm_provider = offer.crmProvider
+    if (offer.crmApiKey !== undefined) dbData.crm_api_key = offer.crmApiKey
+    if (offer.crmMapping !== undefined) dbData.crm_mapping = offer.crmMapping
     
-    // On nettoie les clés camelCase de facturation pour ne pas polluer/planter
-    delete dbData.billingName
-    delete dbData.billingAddress
-    delete dbData.billingCity
-    delete dbData.billingZip
-    delete dbData.billingCountry
-    delete dbData.billingEmail
-    delete dbData.billingPhone
+    // Nettoyage des clés camelCase pour ne pas polluer/planter
+    const keysToRemove = [
+      'billingName', 'billingAddress', 'billingCity', 'billingZip', 
+      'billingCountry', 'billingEmail', 'billingPhone',
+      'crmProvider', 'crmApiKey', 'crmMapping'
+    ]
+    keysToRemove.forEach(k => delete dbData[k])
 
     return dbData
   }

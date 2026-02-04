@@ -14,9 +14,12 @@ import {
   User,
   Building2,
   Tag,
-  UserPlus, // AJOUT : Icône pour le bouton
-  Check,     // AJOUT : Icône pour valider
-  Receipt   // AJOUT : Icône pour la facturation
+  UserPlus,
+  Check,
+  Receipt,
+  Link,       // AJOUT : Icône pour le CRM
+  ArrowRight, // AJOUT : Icône pour le mapping
+  Info        // AJOUT : Icône info
 } from 'lucide-react'
 import { ContactSelector } from './ContactSelector'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
@@ -34,7 +37,6 @@ export interface OfferResource {
   type: 'script' | 'payment' | 'drive' | 'other'
 }
 
-// NOUVEAU
 export interface OfferFormula {
   id: string
   name: string
@@ -55,10 +57,10 @@ export interface Offer {
   description: string
   resources: OfferResource[]
   contacts: OfferContact[]
-  formulas?: OfferFormula[] // NOUVEAU
+  formulas?: OfferFormula[]
   notes?: string
-  // NOUVEAUX CHAMPS FACTURATION (PROFIL ÉMETTEUR)
-  billingName?: string // Raison Sociale
+  // CHAMPS DE FACTURATION
+  billingName?: string
   billingAddress?: string
   billingCity?: string
   billingZip?: string
@@ -66,6 +68,10 @@ export interface Offer {
   siret?: string
   billingEmail?: string
   billingPhone?: string
+  // NOUVEAUX CHAMPS CRM
+  crmProvider?: 'iclosed' | 'hubspot' | 'other'
+  crmApiKey?: string
+  crmMapping?: { [key: string]: string | undefined }
 }
 
 interface OfferDetailModalProps {
@@ -92,16 +98,13 @@ const calculateCommission = (price: string, commission: string): number => {
 }
 
 export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDetailModalProps) {
-  // MODIFICATION : On récupère addContact ici
   const { contacts: globalContacts, addContact } = useInternalContacts()
   
   const [isEditing, setIsEditing] = useState(false)
   
-  // MODIFICATION : États pour la création de contact
   const [isCreatingContact, setIsCreatingContact] = useState(false)
   const [newContactData, setNewContactData] = useState({ name: '', role: '', email: '', phone: '' })
 
-  // Initialisation intelligente : si pas de formules, on crée une "Standard" avec le prix actuel
   const [editedOffer, setEditedOffer] = useState<Offer>(() => {
     if (!offer.formulas || offer.formulas.length === 0) {
       return {
@@ -117,18 +120,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     return offer
   })
 
-  // State for new resource inputs
   const [tempResName, setTempResName] = useState('')
   const [tempResLink, setTempResLink] = useState('')
 
-  // Update edited offer when prop changes
   useEffect(() => {
-    // CORRECTION PRÉCÉDENTE : On garde le useEffect simple pour forcer la sync visuelle
     setEditedOffer(offer)
   }, [offer])
 
   const handleSave = () => {
-    // Mettre à jour le prix "principal" avec celui de la première formule pour l'affichage carte
     const mainFormula = editedOffer.formulas && editedOffer.formulas.length > 0 
       ? editedOffer.formulas[0] 
       : { price: '0', commission: '0' }
@@ -146,7 +145,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const handleCancel = () => {
     setEditedOffer(offer)
     setIsEditing(false)
-    setIsCreatingContact(false) // Reset
+    setIsCreatingContact(false)
   }
 
   const handleDelete = () => {
@@ -158,7 +157,6 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     }
   }
 
-  // --- NOUVEAU : Logique de création et attachement du contact ---
   const handleCreateAndAttachContact = async () => {
     if (!newContactData.name || !newContactData.email) {
       alert("Le nom et l'email sont requis.")
@@ -166,10 +164,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     }
 
     try {
-      // 1. Sauvegarder dans la base de données globale
       const result = await addContact(newContactData)
-      
-      // On récupère le contact créé (ou on simule un ID si l'API ne renvoie rien directement, pour l'UX immédiate)
       const createdId = result?.data?.[0]?.id || Date.now()
       
       const contactToAdd: OfferContact = {
@@ -178,13 +173,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
         role: newContactData.role
       }
 
-      // 2. L'ajouter à la liste des contacts de l'offre en cours d'édition
       setEditedOffer(prev => ({
         ...prev,
         contacts: [...prev.contacts, contactToAdd]
       }))
 
-      // 3. Nettoyage
       setNewContactData({ name: '', role: '', email: '', phone: '' })
       setIsCreatingContact(false)
 
@@ -281,6 +274,17 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     } catch {
       return dateString
     }
+  }
+
+  // --- NOUVELLE FONCTION POUR LE MAPPING CRM ---
+  const handleUpdateMapping = (stage: string, value: string) => {
+    setEditedOffer({
+      ...editedOffer,
+      crmMapping: {
+        ...(editedOffer.crmMapping || {}),
+        [stage]: value
+      }
+    })
   }
 
   return (
@@ -561,7 +565,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             )}
           </div>
 
-          {/* Zone C - Contacts Rattachés - MODIFIÉ AVEC CRÉATION */}
+          {/* Zone C - Contacts Rattachés */}
           <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
@@ -641,7 +645,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             )}
           </div>
 
-          {/* --- NOUVELLE SECTION : CONFIGURATION FACTURATION --- */}
+          {/* Configuration Facturation */}
           <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
               <Receipt className="h-4 w-4" /> Configuration Facturation
@@ -768,6 +772,98 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* --- NOUVEAU : ZONE F - CONFIGURATION CRM (MAPPING) --- */}
+          <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+              <Link className="h-4 w-4" /> Synchronisation CRM
+            </h3>
+
+            {/* 1. Sélection du CRM */}
+            <div className="mb-6">
+              <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">CRM Externe</label>
+              {isEditing ? (
+                <div className="flex gap-2">
+                  <select
+                    value={editedOffer.crmProvider || 'iclosed'}
+                    onChange={(e) => setEditedOffer({ ...editedOffer, crmProvider: e.target.value as any })}
+                    className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="iclosed">iClosed</option>
+                    <option value="hubspot" disabled>HubSpot (Bientôt)</option>
+                    <option value="other" disabled>Autre / Webhook Custom</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${offer.crmProvider === 'iclosed' ? 'bg-purple-500' : 'bg-slate-500'}`} />
+                  <p className="text-sm font-medium text-white capitalize">{offer.crmProvider || 'iClosed'}</p>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Webhook Info (Helper) */}
+            <div className="mb-6 rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-400 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-blue-100">Configuration Webhook</h4>
+                  <p className="mt-1 text-xs text-blue-300/80 leading-relaxed">
+                    Pour recevoir les prospects de cette offre, assurez-vous que votre CRM envoie les données vers votre URL Webhook Supabase/Make.
+                  </p>
+                  {!isEditing && (
+                    <div className="mt-2 text-xs font-mono bg-slate-950 p-2 rounded border border-blue-500/10 text-slate-400 overflow-x-auto">
+                      {/* Placeholder URL - à remplacer par la vraie URL du user si on l'a dans le context plus tard */}
+                      https://[PROJECT_ID].supabase.co/rest/v1/rpc/receive_raw_webhook
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Mapping des Statuts */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span className="text-xs font-semibold text-slate-500 uppercase">Étape CloseOS</span>
+                <span className="text-xs font-semibold text-slate-500 uppercase">Statut correspondant sur iClosed</span>
+              </div>
+
+              {[
+                { key: 'prospect', label: 'Prospect (Nouveau)', color: 'text-blue-400' },
+                { key: 'qualified', label: 'Qualifié', color: 'text-purple-400' },
+                { key: 'won', label: 'Gagné (Closing)', color: 'text-emerald-400' },
+                { key: 'lost', label: 'Perdu', color: 'text-red-400' },
+                { key: 'noshow', label: 'No Show', color: 'text-orange-400' }
+              ].map((stage) => (
+                <div key={stage.key} className="flex items-center gap-4">
+                  {/* CloseOS Side */}
+                  <div className="w-1/3 flex items-center gap-2">
+                    <span className={`text-sm font-medium ${stage.color}`}>{stage.label}</span>
+                  </div>
+
+                  {/* Arrow */}
+                  <ArrowRight className="h-4 w-4 text-slate-600" />
+
+                  {/* iClosed Side */}
+                  <div className="flex-1">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        placeholder={`Ex: ${stage.key === 'won' ? 'Signed' : stage.key === 'prospect' ? 'New Lead' : '...'}`}
+                        value={editedOffer.crmMapping?.[stage.key] || ''}
+                        onChange={(e) => handleUpdateMapping(stage.key, e.target.value)}
+                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                      />
+                    ) : (
+                      <div className="rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm text-slate-300">
+                        {offer.crmMapping?.[stage.key] || <span className="text-slate-600 italic">Non configuré</span>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
