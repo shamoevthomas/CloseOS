@@ -1,9 +1,5 @@
 // api/webhook.ts
-// Ce fichier est une "Serverless Function" hébergée par Vercel
-// Elle remplace l'Edge Function de Supabase sans prise de tête
-
 export default async function handler(request: any, response: any) {
-  // 1. Gérer la sécurité (CORS) pour qu'iClosed puisse nous parler
   response.setHeader('Access-Control-Allow-Credentials', true)
   response.setHeader('Access-Control-Allow-Origin', '*')
   response.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT')
@@ -12,32 +8,44 @@ export default async function handler(request: any, response: any) {
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   )
 
-  // Si c'est juste un test de connexion (OPTIONS), on dit "OK"
   if (request.method === 'OPTIONS') {
     return response.status(200).end()
   }
 
   try {
-    // 2. Récupérer l'ID de l'offre dans l'URL (ex: ...?offer_id=4)
     const { offer_id } = request.query
     
-    if (!offer_id) {
-      throw new Error("ID de l'offre manquant dans l'URL (?offer_id=...)")
+    // --- LE MOUCHARD EST ICI ---
+    console.log("🟢 1. Webhook reçu pour Offre ID:", offer_id)
+    console.log("📦 2. Contenu BRUT reçu d'iClosed:", JSON.stringify(request.body))
+    // ---------------------------
+
+    if (!offer_id) throw new Error("ID de l'offre manquant")
+
+    let rawBody = request.body
+    if (Array.isArray(rawBody) && rawBody.length > 0) {
+      rawBody = rawBody[0]
     }
 
-    // 3. Récupérer les données envoyées par iClosed (le corps du message)
-    const body = request.body
+    // Traduction des champs
+    const cleanBody = {
+      ...rawBody,
+      first_name: rawBody.firstName || rawBody.first_name,
+      last_name: rawBody.lastName || rawBody.last_name,
+      phone: rawBody.phoneNumber || rawBody.phone,
+      email: rawBody.email,
+      offer_id: Number(offer_id)
+    }
 
-    // 4. Envoyer tout ça à ta base de données Supabase
-    // On utilise tes variables d'environnement Vercel existantes
+    console.log("✨ 3. Données nettoyées envoyées à Supabase:", JSON.stringify(cleanBody))
+
     const supabaseUrl = process.env.VITE_SUPABASE_URL
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
 
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Configuration Supabase manquante sur Vercel")
+      throw new Error("Configuration Supabase manquante")
     }
 
-    // On appelle ta fonction SQL "receive_native_webhook"
     const result = await fetch(`${supabaseUrl}/rest/v1/rpc/receive_native_webhook`, {
       method: 'POST',
       headers: {
@@ -45,20 +53,16 @@ export default async function handler(request: any, response: any) {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`
       },
-      // On fusionne les données d'iClosed avec l'ID de l'offre forcé
-      body: JSON.stringify({
-        ...body,
-        offer_id: Number(offer_id)
-      })
+      body: JSON.stringify(cleanBody)
     })
 
     const data = await result.json()
+    console.log("✅ 4. Réponse Supabase:", JSON.stringify(data)) // On verra si Supabase accepte ou refuse
 
-    // 5. Répondre succès à iClosed
     return response.status(200).json(data)
 
   } catch (error: any) {
-    console.error("Erreur Webhook:", error)
+    console.error("❌ Erreur Webhook:", error)
     return response.status(500).json({ error: error.message })
   }
 }
