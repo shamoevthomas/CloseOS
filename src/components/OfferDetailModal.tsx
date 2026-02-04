@@ -105,6 +105,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const [isCreatingContact, setIsCreatingContact] = useState(false)
   const [newContactData, setNewContactData] = useState({ name: '', role: '', email: '', phone: '' })
 
+  // --- CALCUL DE L'URL WEBHOOK ---
+  // On récupère l'URL du projet et on ajoute l'ID de l'offre
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://[PROJECT_ID].supabase.co"
+  const webhookUrl = `${supabaseUrl}/rest/v1/rpc/receive_native_webhook?offer_id=${offer.id}`
+
   const [editedOffer, setEditedOffer] = useState<Offer>(() => {
     if (!offer.formulas || offer.formulas.length === 0) {
       return {
@@ -565,7 +570,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             )}
           </div>
 
-          {/* Zone C - Contacts Rattachés */}
+          {/* Zone C - Contacts Rattachés - MODIFIÉ AVEC CRÉATION */}
           <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
@@ -815,8 +820,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   </p>
                   {!isEditing && (
                     <div className="mt-2 text-xs font-mono bg-slate-950 p-2 rounded border border-blue-500/10 text-slate-400 overflow-x-auto">
-                      {/* Placeholder URL - à remplacer par la vraie URL du user si on l'a dans le context plus tard */}
-                      https://[PROJECT_ID].supabase.co/rest/v1/rpc/receive_raw_webhook
+                      {webhookUrl}
                     </div>
                   )}
                 </div>
