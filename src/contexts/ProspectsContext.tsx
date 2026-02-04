@@ -6,7 +6,9 @@ export interface Prospect {
   id: number
   user_id: string
   company: string
-  contact: string
+  contact: string // Nom complet (concaténation)
+  firstName?: string // Nouveau
+  lastName?: string  // Nouveau
   email: string
   phone: string
   value?: number
@@ -14,6 +16,7 @@ export interface Prospect {
   notes?: string
   created_at?: string
   last_contact?: string
+  // Suppression de source
   call_notes?: {
     id: string
     date: string
@@ -47,11 +50,10 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('prospects')
         .select('*')
-        // On retire le filtre user_id temporairement pour voir tous les prospects
-        // .eq('user_id', user.id) 
         .order('created_at', { ascending: false })
 
       if (error) throw error
+      // On mappe les données si besoin, mais Supabase renvoie déjà les colonnes correctes
       setProspects(data || [])
     } catch (error) {
       console.error('Erreur chargement:', error)
@@ -77,27 +79,13 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
   const updateProspect = async (id: number, updates: Partial<Prospect>) => {
     try {
-      console.log("💾 Envoi à Supabase...", { id, updates })
-
-      // MODIFICATION CRITIQUE : On a retiré .eq('user_id', user.id) pour autoriser la modif
-      // même si le prospect n'a pas encore de user_id associé (vieux prospects)
       const { data, error } = await supabase
         .from('prospects')
         .update(updates)
         .eq('id', id)
         .select()
 
-      if (error) {
-        console.error("❌ Erreur Supabase:", error.message)
-        throw error
-      }
-
-      if (data && data.length === 0) {
-        console.warn("⚠️ Aucune ligne mise à jour ! L'ID n'existe peut-être pas.")
-      } else {
-        console.log("✅ Mise à jour réussie !", data)
-      }
-
+      if (error) throw error
       setProspects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
     } catch (error) {
       console.error('Erreur update:', error)

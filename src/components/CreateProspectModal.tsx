@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Building2, Tag } from 'lucide-react'
 import { useOffers, type Offer } from '../contexts/OffersContext'
 
-// Helper to parse price from string like "2 500€" to number 2500
+// Helper to parse price
 const parsePrice = (priceString: string): number => {
   if (!priceString) return 0
   const cleaned = priceString.toString().replace(/[^\d.,]/g, '')
@@ -16,15 +16,14 @@ interface CreateProspectModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (prospect: {
-    contact: string
     firstName: string
     lastName: string
+    contact: string // On garde le champ complet pour compatibilité affichage
     email: string
     phone: string
     company: string
     offer: string
     value: number
-    source: string
     stage: string
   }) => void
 }
@@ -32,7 +31,7 @@ interface CreateProspectModalProps {
 export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspectModalProps) {
   const { offers } = useOffers()
 
-  // 1. LOGIQUE DE FILTRAGE (Offres actives ET non expirées)
+  // Filtre offres actives
   const isExpired = (offer: Offer) => {
     if (!offer.endDate) return false
     const today = new Date()
@@ -43,44 +42,37 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
 
   const activeOffers = offers.filter((o) => o.status === 'active' && !isExpired(o))
 
+  // NOUVEAU STATE : Prénom et Nom séparés, plus de source
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     company: '',
     offerId: '',
-    source: 'LinkedIn Ads',
   })
 
-  // État pour la formule sélectionnée
   const [selectedFormulaId, setSelectedFormulaId] = useState<string>('')
   const [selectedOfferPrice, setSelectedOfferPrice] = useState(0)
 
-  // Get the selected offer object
   const selectedOffer = formData.offerId
     ? activeOffers.find((o) => String(o.id) === formData.offerId)
     : null
 
-  // Check if selected offer is B2B
   const isB2B = selectedOffer?.target === 'B2B'
-  
-  // Check if selected offer has formulas
   const hasFormulas = selectedOffer?.formulas && selectedOffer.formulas.length > 0
 
-  // Handle offer selection
   const handleOfferChange = (offerId: string) => {
     setFormData({ ...formData, offerId })
-    setSelectedFormulaId('') // Reset formula when offer changes
+    setSelectedFormulaId('')
 
     if (offerId) {
       const offer = activeOffers.find((o) => String(o.id) === offerId)
       if (offer) {
-        // Si l'offre n'a pas de formules, on prend le prix de base
         if (!offer.formulas || offer.formulas.length === 0) {
           const price = parsePrice(offer.price)
           setSelectedOfferPrice(price)
         } else {
-          // Si formules, on attend la sélection (prix à 0 ou par défaut)
           setSelectedOfferPrice(0)
         }
       }
@@ -89,7 +81,6 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
     }
   }
 
-  // Handle formula selection
   const handleFormulaChange = (formulaId: string) => {
     setSelectedFormulaId(formulaId)
     if (selectedOffer && selectedOffer.formulas) {
@@ -103,8 +94,8 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.name) {
-      alert('Veuillez entrer au moins un nom pour le prospect')
+    if (!formData.lastName) {
+      alert('Le nom est requis')
       return
     }
 
@@ -113,17 +104,14 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
       return
     }
 
-    // Validation formule obligatoire si l'offre en a
     if (hasFormulas && !selectedFormulaId) {
-      alert('Veuillez sélectionner une formule pour cette offre')
+      alert('Veuillez sélectionner une formule')
       return
     }
 
-    const nameParts = formData.name.trim().split(' ')
-    const firstName = nameParts[0] || ''
-    const lastName = nameParts.slice(1).join(' ') || ''
+    // On construit le nom complet pour l'affichage
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim()
 
-    // Construire le nom de l'offre (Ajouter le nom de la formule si présente)
     let finalOfferName = selectedOffer ? selectedOffer.name : 'N/A'
     if (hasFormulas && selectedFormulaId) {
       const formula = selectedOffer?.formulas?.find(f => f.id === selectedFormulaId)
@@ -133,26 +121,25 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
     }
 
     onSubmit({
-      contact: formData.name,
-      firstName,
-      lastName,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      contact: fullName, // On garde la compatibilité
       email: formData.email,
       phone: formData.phone,
       company: isB2B ? formData.company : 'N/A',
       offer: finalOfferName,
       value: selectedOfferPrice,
-      source: formData.source,
       stage: 'prospect',
     })
 
-    // Reset form
+    // Reset
     setFormData({
-      name: '',
+      firstName: '',
+      lastName: '',
       email: '',
       phone: '',
       company: '',
       offerId: '',
-      source: 'LinkedIn Ads',
     })
     setSelectedFormulaId('')
     setSelectedOfferPrice(0)
@@ -163,10 +150,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
       <div className="relative w-full max-w-lg rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
         <div className="flex items-start justify-between">
@@ -174,27 +158,36 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
             <h2 className="text-xl font-bold text-white">Nouveau Prospect</h2>
             <p className="mt-1 text-sm text-slate-400">Ajouter un nouveau prospect au pipeline</p>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
-          >
+          <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">
-              Nom & Prénom *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Ex: Jean Dupont"
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-              required
-            />
+          
+          {/* NOUVEAU : Prénom et Nom séparés */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">Prénom</label>
+              <input
+                type="text"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                placeholder="Ex: Jean"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">Nom *</label>
+              <input
+                type="text"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                placeholder="Ex: Dupont"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                required
+              />
+            </div>
           </div>
 
           <div>
@@ -236,7 +229,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
             </select>
           </div>
 
-          {/* SÉLECTEUR DE FORMULE (CONDITIONNEL) */}
+          {/* SÉLECTEUR DE FORMULE */}
           {hasFormulas && (
             <div className="animate-in fade-in slide-in-from-top-2">
               <label className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-400">
@@ -259,7 +252,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
             </div>
           )}
 
-          {/* AFFICHAGE DU PRIX AUTOMATIQUE */}
+          {/* PRIX */}
           {selectedOfferPrice > 0 && (
             <div className="flex justify-end">
               <p className="text-xs font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">
@@ -268,7 +261,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
             </div>
           )}
 
-          {/* Conditional company field for B2B offers */}
+          {/* B2B COMPANY */}
           {isB2B && (
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-300">
@@ -283,28 +276,8 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
                 className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                 required={isB2B}
               />
-              <p className="mt-1 text-xs text-slate-500">
-                Requis pour les offres B2B
-              </p>
             </div>
           )}
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Source</label>
-            <select
-              value={formData.source}
-              onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-            >
-              <option>LinkedIn Ads</option>
-              <option>Pub Facebook</option>
-              <option>Webinaire</option>
-              <option>Référencement Google</option>
-              <option>Youtube</option>
-              <option>Bouche à oreille</option>
-              <option>Salon professionnel</option>
-            </select>
-          </div>
 
           <div className="mt-6 flex gap-3">
             <button
