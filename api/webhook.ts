@@ -14,7 +14,8 @@ export default async function handler(request: any, response: any) {
   }
 
   try {
-    const { offer_id } = request.query
+    // MODIFICATION ICI : On récupère aussi formula_id de l'URL
+    const { offer_id, formula_id } = request.query
     
     // On garde le log pour le debug au cas où
     console.log("📦 BRUT:", JSON.stringify(request.body))
@@ -28,8 +29,6 @@ export default async function handler(request: any, response: any) {
     }
 
     // 2. EXTRACTION INTELLIGENTE DU STATUT
-    // C'est ici qu'on applique ta découverte !
-    
     let realStatus = rawBody.status; // Valeur par défaut (ex: STRATEGY_CALL_BOOKED)
 
     // PRIORITY 1 : On regarde dans "contactFields" (C'est là que se cache "Customer")
@@ -55,7 +54,8 @@ export default async function handler(request: any, response: any) {
       email: rawBody.email || "pas-d-email@erreur.com",
       phone: rawBody.phoneNumber || rawBody.phone || "",
       status: realStatus, // On utilise le VRAI statut (ex: Customer)
-      offer_id: Number(offer_id)
+      offer_id: Number(offer_id),
+      formula_id: formula_id ? String(formula_id) : null // MODIFICATION ICI : On l'ajoute au paquet
     }
 
     console.log("✨ STATUS RETENU:", cleanBody.status)
