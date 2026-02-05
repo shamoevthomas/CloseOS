@@ -55,7 +55,8 @@ export default async function handler(request: any, response: any) {
       phone: rawBody.phoneNumber || rawBody.phone || "",
       status: realStatus, // On utilise le VRAI statut (ex: Customer)
       offer_id: Number(offer_id),
-      formula_id: formula_id ? String(formula_id) : null // MODIFICATION ICI : On l'ajoute au paquet
+      formula_id: formula_id ? String(formula_id) : null,
+      notes: rawBody.notes || rawBody.description || rawBody.comment || null // ✅ SEULE MODIF : On attrape les notes
     }
 
     console.log("✨ STATUS RETENU:", cleanBody.status)
