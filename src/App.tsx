@@ -19,13 +19,13 @@ import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 
 // Imports des Pages
+import { LandingPage } from './pages/LandingPage' // ✅ NOUVEAU
 import { Dashboard } from './pages/Dashboard'
 import { Pipeline } from './pages/Pipeline'
 import { Contacts } from './pages/Contacts'
 import { Offers } from './pages/Offers'
 import { Agenda } from './pages/Agenda'
 import { CallsPage } from './pages/CallsPage'
-// IMPORTANT : On importe bien le formulaire CallDetails
 import { CallDetails } from './pages/CallDetails'
 import { TelephonyPage } from './pages/TelephonyPage'
 import { AICoachPage } from './pages/AICoachPage'
@@ -67,6 +67,7 @@ function AuthenticatedApp() {
     <BrowserRouter>
       <Routes>
         {/* 1. ROUTES PUBLIQUES */}
+        <Route path="/" element={<LandingPage />} /> {/* ✅ LANDING PAGE EN PRIORITÉ */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
@@ -81,16 +82,19 @@ function AuthenticatedApp() {
           } 
         />
 
-        {/* 3. TOUTES LES AUTRES ROUTES (AVEC SIDEBAR) */}
+        {/* 3. APPLICATION PROTÉGÉE (LAYOUT GLOBAL) */}
+        {/* On retire le path="/" ici pour laisser la place à la Landing Page */}
         <Route
-          path="/"
           element={
             <ProtectedRoute>
               <Layout onOpenSettings={() => setIsSettingsOpen(true)} />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Dashboard />} />
+          {/* ✅ Le Dashboard est déplacé sur /dashboard */}
+          <Route path="dashboard" element={<Dashboard />} />
+          
+          {/* Les autres routes restent accessibles directement (ex: /pipeline) */}
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="contacts" element={<Contacts />} />
           <Route path="offers" element={<Offers />} />
@@ -103,10 +107,7 @@ function AuthenticatedApp() {
             }
           />
           <Route path="calls" element={<CallsPage />} />
-          
-          {/* C'EST ICI : La route doit pointer vers le Formulaire */}
           <Route path="appels/:id" element={<CallDetails />} />
-          
           <Route path="telephony" element={<TelephonyPage />} />
           <Route path="ai-coach" element={<AICoachPage />} />
           <Route path="invoices" element={<InvoicesPage />} />
@@ -115,7 +116,8 @@ function AuthenticatedApp() {
           <Route path="messages" element={<MessagesPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
           
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Redirection par défaut : si route inconnue -> Dashboard */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
 
