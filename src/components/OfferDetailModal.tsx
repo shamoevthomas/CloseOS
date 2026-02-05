@@ -17,9 +17,9 @@ import {
   UserPlus,
   Check,
   Receipt,
-  Link,       // AJOUT : Icône pour le CRM
-  ArrowRight, // AJOUT : Icône pour le mapping
-  Info        // AJOUT : Icône info
+  Link,       // Icône pour le CRM
+  Info,       // Icône info
+  Copy        // AJOUT : Icône pour copier
 } from 'lucide-react'
 import { ContactSelector } from './ContactSelector'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
@@ -104,9 +104,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   
   const [isCreatingContact, setIsCreatingContact] = useState(false)
   const [newContactData, setNewContactData] = useState({ name: '', role: '', email: '', phone: '' })
+  
+  // État pour le feedback de copie
+  const [hasCopied, setHasCopied] = useState(false)
 
   // --- CALCUL DE L'URL WEBHOOK (Version Vercel) ---
-  // On construit un lien propre qui pointe vers ta nouvelle fonction
   const baseUrl = window.location.origin.includes('localhost') 
     ? 'https://close-os.vercel.app' // En local, on pointe vers la prod pour tester
     : window.location.origin
@@ -193,6 +195,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
       console.error("Erreur création contact", error)
       alert("Impossible de créer le contact.")
     }
+  }
+
+  // --- GESTION DU COPIER WEBHOOK ---
+  const handleCopyWebhook = () => {
+    navigator.clipboard.writeText(webhookUrl)
+    setHasCopied(true)
+    setTimeout(() => setHasCopied(false), 2000)
   }
 
   // --- GESTION DES FORMULES ---
@@ -282,17 +291,6 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     } catch {
       return dateString
     }
-  }
-
-  // --- NOUVELLE FONCTION POUR LE MAPPING CRM ---
-  const handleUpdateMapping = (stage: string, value: string) => {
-    setEditedOffer({
-      ...editedOffer,
-      crmMapping: {
-        ...(editedOffer.crmMapping || {}),
-        [stage]: value
-      }
-    })
   }
 
   return (
@@ -783,7 +781,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             </div>
           </div>
 
-          {/* --- NOUVEAU : ZONE F - CONFIGURATION CRM (MAPPING) --- */}
+          {/* --- CONFIGURATION CRM (SIMPLIFIÉE) --- */}
           <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
               <Link className="h-4 w-4" /> Synchronisation CRM
@@ -812,8 +810,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               )}
             </div>
 
-            {/* 2. Webhook Info (Helper) */}
-            <div className="mb-6 rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
+            {/* 2. Webhook Info (Helper) - AVEC BOUTON COPIER */}
+            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
               <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-blue-400 mt-0.5" />
                 <div className="flex-1">
@@ -821,57 +819,26 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <p className="mt-1 text-xs text-blue-300/80 leading-relaxed">
                     Pour recevoir les prospects de cette offre, assurez-vous que votre CRM envoie les données vers votre URL Webhook Supabase/Make.
                   </p>
-                  {!isEditing && (
-                    <div className="mt-2 text-xs font-mono bg-slate-950 p-2 rounded border border-blue-500/10 text-slate-400 overflow-x-auto">
+                  
+                  {/* URL + COPY BUTTON */}
+                  <div className="mt-3 flex items-center gap-2">
+                    <div className="flex-1 rounded border border-blue-500/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
                       {webhookUrl}
                     </div>
-                  )}
+                    <button
+                      onClick={handleCopyWebhook}
+                      className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                      title="Copier l'URL"
+                    >
+                      {hasCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                    </button>
+                  </div>
+
                 </div>
               </div>
             </div>
-
-            {/* 3. Mapping des Statuts */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <span className="text-xs font-semibold text-slate-500 uppercase">Étape CloseOS</span>
-                <span className="text-xs font-semibold text-slate-500 uppercase">Statut correspondant sur iClosed</span>
-              </div>
-
-              {[
-                { key: 'prospect', label: 'Prospect (Nouveau)', color: 'text-blue-400' },
-                { key: 'qualified', label: 'Qualifié', color: 'text-purple-400' },
-                { key: 'won', label: 'Gagné (Closing)', color: 'text-emerald-400' },
-                { key: 'lost', label: 'Perdu', color: 'text-red-400' },
-                { key: 'noshow', label: 'No Show', color: 'text-orange-400' }
-              ].map((stage) => (
-                <div key={stage.key} className="flex items-center gap-4">
-                  {/* CloseOS Side */}
-                  <div className="w-1/3 flex items-center gap-2">
-                    <span className={`text-sm font-medium ${stage.color}`}>{stage.label}</span>
-                  </div>
-
-                  {/* Arrow */}
-                  <ArrowRight className="h-4 w-4 text-slate-600" />
-
-                  {/* iClosed Side */}
-                  <div className="flex-1">
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        placeholder={`Ex: ${stage.key === 'won' ? 'Signed' : stage.key === 'prospect' ? 'New Lead' : '...'}`}
-                        value={editedOffer.crmMapping?.[stage.key] || ''}
-                        onChange={(e) => handleUpdateMapping(stage.key, e.target.value)}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
-                      />
-                    ) : (
-                      <div className="rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm text-slate-300">
-                        {offer.crmMapping?.[stage.key] || <span className="text-slate-600 italic">Non configuré</span>}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+            
+            {/* SECTION MAPPING SUPPRIMÉE ICI */}
           </div>
 
           {/* Zone D - Resources */}
