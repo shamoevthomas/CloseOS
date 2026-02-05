@@ -82,6 +82,16 @@ const DEFAULT_MOCK_DATA: Prospect[] = [
   },
 ]
 
+// AJOUT : Helper pour nettoyer le prix (nécessaire pour le calcul)
+const parsePrice = (priceString: string): number => {
+  if (!priceString) return 0
+  const cleaned = priceString.toString().replace(/[^\d.,]/g, '')
+  const normalized = cleaned.replace(/,/g, '.')
+  const withoutSpaces = normalized.replace(/\s/g, '')
+  const parsed = parseFloat(withoutSpaces)
+  return isNaN(parsed) ? 0 : parsed
+}
+
 type ViewMode = 'pipeline' | 'list'
 
 export function Pipeline() {
@@ -183,8 +193,20 @@ export function Pipeline() {
     return filteredDeals.filter(deal => deal.stage === stageId)
   }
 
+  // MODIFICATION : Calcul intelligent du total (prend le prix de la formule si value = 0)
+  const getSmartValue = (deal: Prospect) => {
+    if ((!deal.value || deal.value === 0) && deal.formula_id) {
+       const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
+       if (parentOffer && parentOffer.formulas) {
+          const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
+          if (formula) return parsePrice(formula.price)
+       }
+    }
+    return deal.value || 0
+  }
+
   const getTotalForStage = (stageId: string) => {
-    return getDealsForStage(stageId).reduce((sum, deal) => sum + (deal.value || 0), 0)
+    return getDealsForStage(stageId).reduce((sum, deal) => sum + getSmartValue(deal), 0)
   }
 
   // Helper pour les mois disponibles
@@ -454,7 +476,25 @@ export function Pipeline() {
                           const isB2B = deal.company && deal.company !== 'N/A'
                           const displayName = getDisplayName(deal) // ✅ FIX: Utilisation du helper
                           const mainTitle = isB2B ? deal.company : displayName
-                          const subTitle = isB2B ? displayName : deal.offer
+                          
+                          // --- MODIFICATION ICI : CALCUL DE L'AFFICHAGE ---
+                          let displayValue = deal.value || 0
+                          let displayOfferName = deal.offer
+
+                          // Si 0 et formule, on cherche le vrai prix dans le catalogue
+                          if ((displayValue === 0) && deal.formula_id) {
+                             const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
+                             if (parentOffer && parentOffer.formulas) {
+                                const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
+                                if (formula) {
+                                   displayValue = parsePrice(formula.price)
+                                   displayOfferName = `${parentOffer.name} - ${formula.name}`
+                                }
+                             }
+                          }
+                          // ------------------------------------------------
+
+                          const subTitle = isB2B ? displayName : displayOfferName
 
                           return (
                             <div
@@ -479,13 +519,13 @@ export function Pipeline() {
 
                                 <div className="mt-3 flex items-center justify-between border-t border-slate-700/50 pt-2">
                                   <span className="text-xs font-semibold text-blue-400">
-                                    <MaskedText value={`${(deal.value || 0).toLocaleString()}€`} type="number" />
+                                    <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
                                   </span>
                                   
                                   {/* Petit badge Offre si on est en vue globale */}
-                                  {currentOfferTab === 'global' && deal.offer && (
+                                  {currentOfferTab === 'global' && displayOfferName && (
                                     <span className="max-w-[80px] truncate rounded bg-slate-950 px-1.5 py-0.5 text-[10px] text-slate-500">
-                                      {deal.offer}
+                                      {displayOfferName}
                                     </span>
                                   )}
                                 </div>
@@ -567,6 +607,22 @@ export function Pipeline() {
               <tbody className="divide-y divide-slate-800 text-slate-300">
                 {filteredDeals.map((deal) => {
                    const stageInfo = getStageInfo(deal.stage)
+                   
+                   // MODIFICATION ICI AUSSI (Vue Liste)
+                   let displayValue = deal.value || 0
+                   let displayOfferName = deal.offer
+
+                   if ((displayValue === 0) && deal.formula_id) {
+                      const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
+                      if (parentOffer && parentOffer.formulas) {
+                         const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
+                         if (formula) {
+                            displayValue = parsePrice(formula.price)
+                            displayOfferName = `${parentOffer.name} - ${formula.name}`
+                         }
+                      }
+                   }
+
                    return (
                     <tr key={deal.id} onClick={() => handleOpenDeal(deal)} className="group cursor-pointer hover:bg-slate-800/50">
                       <td className="px-6 py-4">
@@ -580,9 +636,9 @@ export function Pipeline() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-slate-400">{deal.offer || '-'}</td>
+                      <td className="px-6 py-4 text-slate-400">{displayOfferName || '-'}</td>
                       <td className="px-6 py-4 font-mono font-medium text-blue-400">
-                        <MaskedText value={`${(deal.value || 0).toLocaleString()}€`} type="number" />
+                        <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
                       </td>
                       <td className="px-6 py-4">
                         {stageInfo && (
