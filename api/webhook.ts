@@ -15,30 +15,48 @@ export default async function handler(request: any, response: any) {
 
   try {
     const { offer_id } = request.query
-    console.log("🟢 Webhook reçu pour Offre:", offer_id)
+    
+    // On garde le log BRUT pour vérifier si on a gagné
+    console.log("📦 BRUT:", JSON.stringify(request.body))
 
     if (!offer_id) throw new Error("ID Offre manquant")
 
-    // 1. Récupération et nettoyage de la structure (Tableau vs Objet)
+    // 1. Nettoyage Tableau
     let rawBody = request.body
     if (Array.isArray(rawBody) && rawBody.length > 0) {
       rawBody = rawBody[0]
     }
 
-    // 2. FILTRAGE STRICT (C'est ici qu'on résout l'erreur PGRST202)
-    // On ne garde QUE les champs que Supabase connait. On jette le reste.
+    // 2. LA MAGIE : On chasse la vraie étape (Contact Stage)
+    // iClosed la cache parfois dans un sous-objet ou sous un autre nom
+    let realStatus = rawBody.status; // Valeur par défaut (ex: STRATEGY_CALL_BOOKED)
+
+    // Cas 1 : Champ "contactStage" (souvent un objet { id, name: "Customer" })
+    if (rawBody.contactStage) {
+       if (typeof rawBody.contactStage === 'string') {
+         realStatus = rawBody.contactStage;
+       } else if (rawBody.contactStage.name) {
+         realStatus = rawBody.contactStage.name;
+       }
+    } 
+    // Cas 2 : Champ "stage" direct
+    else if (rawBody.stage) {
+       realStatus = rawBody.stage;
+    }
+
+    // 3. Construction de l'objet final
     const cleanBody = {
       first_name: rawBody.firstName || rawBody.first_name || "Inconnu",
       last_name: rawBody.lastName || rawBody.last_name || "",
       email: rawBody.email || "pas-d-email@erreur.com",
       phone: rawBody.phoneNumber || rawBody.phone || "",
-      status: rawBody.status || "new_lead",
+      status: realStatus, // On utilise notre statut intelligent
       offer_id: Number(offer_id)
     }
 
-    console.log("✨ Données nettoyées :", JSON.stringify(cleanBody))
+    console.log("✨ STATUS RETENU:", cleanBody.status)
 
-    // 3. Envoi à Supabase
+    // 4. Envoi à Supabase
     const supabaseUrl = process.env.VITE_SUPABASE_URL
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
 
@@ -49,12 +67,10 @@ export default async function handler(request: any, response: any) {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`
       },
-      body: JSON.stringify(cleanBody) // On envoie uniquement l'objet propre
+      body: JSON.stringify(cleanBody)
     })
 
     const data = await result.json()
-    console.log("✅ Réponse Supabase:", JSON.stringify(data))
-
     return response.status(200).json(data)
 
   } catch (error: any) {
