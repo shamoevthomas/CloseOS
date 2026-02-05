@@ -25,7 +25,7 @@ export default function Login() {
         setError(result.error.message || "Email ou mot de passe incorrect");
         setLoading(false);
       } else {
-        navigate('/');
+        navigate('/dashboard'); // ✅ CORRECTION ICI
       }
     } catch (err) {
       setError("Une erreur est survenue.");

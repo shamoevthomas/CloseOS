@@ -59,11 +59,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AuthenticatedApp() {
-  const { user, loading } = useAuth() // On récupère l'info "loading" aussi
+  const { user, loading } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(true)
 
-  // Petit loader pendant qu'on vérifie si l'utilisateur est connecté au démarrage
+  // Loader global pendant la vérification de l'authentification
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -75,19 +75,18 @@ function AuthenticatedApp() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 1. ROUTES PUBLIQUES */}
-        
-        {/* 🔥 LA CORRECTION EST ICI : Si user existe -> Dashboard, Sinon -> Landing Page */}
+        {/* 1. ROUTE RACINE : Le carrefour intelligent */}
         <Route 
           path="/" 
           element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
         />
         
+        {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
 
-        {/* 2. ROUTE PLEIN ÉCRAN */}
+        {/* Route Appel Plein Écran */}
         <Route 
           path="/live-call" 
           element={
@@ -97,7 +96,7 @@ function AuthenticatedApp() {
           } 
         />
 
-        {/* 3. APPLICATION PROTÉGÉE */}
+        {/* 2. APPLICATION PROTÉGÉE (LAYOUT) */}
         <Route
           element={
             <ProtectedRoute>
@@ -105,18 +104,12 @@ function AuthenticatedApp() {
             </ProtectedRoute>
           }
         >
+          {/* Toutes tes pages internes */}
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="contacts" element={<Contacts />} />
           <Route path="offers" element={<Offers />} />
-          <Route
-            path="agenda"
-            element={
-              <AgendaErrorBoundary>
-                <Agenda />
-              </AgendaErrorBoundary>
-            }
-          />
+          <Route path="agenda" element={<AgendaErrorBoundary><Agenda /></AgendaErrorBoundary>} />
           <Route path="calls" element={<CallsPage />} />
           <Route path="appels/:id" element={<CallDetails />} />
           <Route path="telephony" element={<TelephonyPage />} />
@@ -127,6 +120,7 @@ function AuthenticatedApp() {
           <Route path="messages" element={<MessagesPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
           
+          {/* Toute autre adresse inconnue redirige vers le dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>

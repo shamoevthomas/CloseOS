@@ -25,7 +25,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 
 const navigation = [
-  { name: 'Cockpit', href: '/', icon: LayoutDashboard },
+  { name: 'Cockpit', href: '/dashboard', icon: LayoutDashboard }, // ✅ CORRECTION ICI
   { name: 'Pipeline', href: '/pipeline', icon: GitBranch },
   { name: 'Contacts', href: '/contacts', icon: Users },
   { name: 'Offres', href: '/offers', icon: Briefcase },
