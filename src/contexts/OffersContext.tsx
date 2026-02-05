@@ -22,7 +22,6 @@ export interface OfferFormula {
   commission: string
 }
 
-// NOUVEAU TYPE POUR LE MAPPING CRM
 export interface CrmMapping {
   prospect?: string
   qualified?: string
@@ -61,6 +60,7 @@ export interface Offer {
   crmProvider?: 'iclosed' | 'hubspot' | 'other'
   crmApiKey?: string
   crmMapping?: CrmMapping
+  defaultFormulaId?: string // AJOUT : Déclaration du champ dans le type
 }
 
 interface OffersContextType {
@@ -89,7 +89,6 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       status: offer.status,
       target: offer.target,
       
-      // HYBRIDE : On accepte le camelCase (existant) ou le snake_case (standard)
       startDate: offer.startDate || offer.start_date,
       endDate: offer.endDate || offer.end_date,
       
@@ -101,20 +100,23 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       formulas: offer.formulas || [],
       notes: offer.notes,
       
-      // Mapping Facturation (Snake case vers Camel case)
+      // Mapping Facturation
       billingName: offer.billing_name,
       billingAddress: offer.billing_address,
       billingCity: offer.billing_city,
       billingZip: offer.billing_zip,
       billingCountry: offer.billing_country,
-      siret: offer.siret, // Reste identique
+      siret: offer.siret,
       billingEmail: offer.billing_email,
       billingPhone: offer.billing_phone,
 
-      // Mapping CRM (Nouveaux champs)
+      // Mapping CRM
       crmProvider: offer.crm_provider || 'iclosed',
       crmApiKey: offer.crm_api_key,
-      crmMapping: offer.crm_mapping || {}
+      crmMapping: offer.crm_mapping || {},
+      
+      // AJOUT : Lecture de la formule par défaut
+      defaultFormulaId: offer.default_formula_id 
     }))
   }
 
@@ -122,8 +124,6 @@ export function OffersProvider({ children }: { children: ReactNode }) {
   const mapToDb = (offer: Partial<Offer>) => {
     const dbData: any = { ...offer }
 
-    // CORRECTION : On ne touche PAS aux dates (elles restent en startDate/endDate comme dans votre DB actuelle)
-    
     // Mapping Facturation vers snake_case
     if (offer.billingName !== undefined) dbData.billing_name = offer.billingName
     if (offer.billingAddress !== undefined) dbData.billing_address = offer.billingAddress
@@ -138,11 +138,15 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     if (offer.crmApiKey !== undefined) dbData.crm_api_key = offer.crmApiKey
     if (offer.crmMapping !== undefined) dbData.crm_mapping = offer.crmMapping
     
-    // Nettoyage des clés camelCase pour ne pas polluer/planter
+    // AJOUT : Mapping Formule par défaut vers snake_case
+    if (offer.defaultFormulaId !== undefined) dbData.default_formula_id = offer.defaultFormulaId
+    
+    // Nettoyage des clés camelCase pour ne pas polluer
     const keysToRemove = [
       'billingName', 'billingAddress', 'billingCity', 'billingZip', 
       'billingCountry', 'billingEmail', 'billingPhone',
-      'crmProvider', 'crmApiKey', 'crmMapping'
+      'crmProvider', 'crmApiKey', 'crmMapping',
+      'defaultFormulaId' // AJOUT : On nettoie la clé camelCase
     ]
     keysToRemove.forEach(k => delete dbData[k])
 
