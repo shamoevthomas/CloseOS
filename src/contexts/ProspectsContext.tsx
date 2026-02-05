@@ -6,19 +6,22 @@ export interface Prospect {
   id: number
   user_id: string
   company: string
-  contact: string      // Ancien champ (gardé pour compatibilité)
-  firstName?: string   // ✅ NOUVEAU
-  lastName?: string    // ✅ NOUVEAU
+  contact: string      
+  firstName?: string   
+  lastName?: string    
   email: string
   phone: string
   value?: number
-  offer?: string       // ✅ Ajouté pour être sûr
+  offer?: string       
   stage: string
   notes?: string
   created_at?: string
-  dateAdded?: string   // Compatibilité
+  dateAdded?: string   
   last_contact?: string
-  lastContact?: string // Compatibilité
+  lastContact?: string 
+  // AJOUT ICI : La nouvelle colonne
+  formula_id?: string
+  
   call_notes?: {
     id: string
     date: string

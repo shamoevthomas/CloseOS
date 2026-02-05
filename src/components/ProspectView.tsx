@@ -52,9 +52,9 @@ interface ExtendedProspect extends Prospect {
     content: string
     author?: string
   }[]
-  // Ajout des types pour le paiement pour être sûr
   payment_type?: 'cash' | 'installments' | 'comptant'
   installments?: number
+  formula_id?: string // ✅ AJOUT : Support de la formule
 }
 
 const ALL_STAGES = [
@@ -87,7 +87,6 @@ export function ProspectView({
 }: ProspectViewProps) {
   const { offers } = useOffers()
 
-  // Filtre anti-expiration
   const isExpired = (offer: Offer) => {
     if (!offer.endDate) return false
     const today = new Date()
@@ -101,35 +100,52 @@ export function ProspectView({
   const [localProspect, setLocalProspect] = useState<ExtendedProspect>(prospect)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // GESTION DES ONGLETS
   const [activeTab, setActiveTab] = useState<'info' | 'notes'>('info')
 
-  // OFFER STATES
   const [editingOffer, setEditingOffer] = useState(false)
   const [editedOfferId, setEditedOfferId] = useState('')
-  const [editedFormulaId, setEditedFormulaId] = useState('')
+  const [editedFormulaId, setEditedFormulaId] = useState(prospect.formula_id || '') // ✅ INIT AVEC LA FORMULE
   const [editedOfferName, setEditedOfferName] = useState(prospect.offer || '')
   const [editedValue, setEditedValue] = useState(prospect.value || 0)
 
-  // PAYMENT STATES
   const [editingPayment, setEditingPayment] = useState(false)
   const [paymentMode, setPaymentMode] = useState<'cash' | 'installments'>('cash')
   const [installments, setInstallments] = useState(1)
   const [commissionRate, setCommissionRate] = useState(10)
 
+  // --- LOGIQUE INTELLIGENTE DE DÉTECTION DU PRIX ---
   useEffect(() => {
     const loadedProspect = { ...prospect } as ExtendedProspect
     
-    // Si on reçoit 'call_notes' de Supabase (snake_case)
+    // Normalisation notes
     if (loadedProspect.call_notes && (!loadedProspect.callNotes || loadedProspect.callNotes.length === 0)) {
       loadedProspect.callNotes = loadedProspect.call_notes
     }
-    
+
+    // ⚡ MAGIE ICI : Si valeur = 0 et qu'on a une formule, on répare tout seul !
+    if ((!loadedProspect.value || loadedProspect.value === 0) && loadedProspect.formula_id) {
+        const relatedOffer = offers.find(o => o.name === (loadedProspect.offer || '').split(' - ')[0])
+        if (relatedOffer && relatedOffer.formulas) {
+            const formula = relatedOffer.formulas.find(f => f.id === loadedProspect.formula_id)
+            if (formula) {
+                // On met à jour l'affichage local immédiatement
+                loadedProspect.value = parsePrice(formula.price)
+                loadedProspect.offer = `${relatedOffer.name} - ${formula.name}`
+                
+                // On prépare aussi les champs d'édition
+                setEditedFormulaId(formula.id)
+                setEditedValue(parsePrice(formula.price))
+                setEditedOfferName(loadedProspect.offer)
+            }
+        }
+    } else {
+        setEditedValue(loadedProspect.value || 0)
+    }
+
     setLocalProspect(loadedProspect)
     setTempNotes(prospect.notes || '')
+    setEditedFormulaId(loadedProspect.formula_id || '')
 
-    // --- CORRECTION : INITIALISATION DES ETATS DE PAIEMENT ---
-    // On vérifie si c'est 'installments' OU si le nombre d'installments est > 1 (sécurité)
     const isInstallments = loadedProspect.payment_type === 'installments' || (loadedProspect.installments && loadedProspect.installments > 1);
 
     if (isInstallments) {
@@ -139,9 +155,9 @@ export function ProspectView({
         setPaymentMode('cash')
         setInstallments(1)
     }
-    setEditedValue(loadedProspect.value || 0)
 
-  }, [prospect])
+  }, [prospect, offers])
+  // --------------------------------------------------
 
   const [editingNotes, setEditingNotes] = useState(false)
   const [tempNotes, setTempNotes] = useState(prospect.notes || '')
@@ -152,7 +168,6 @@ export function ProspectView({
   const [editedEmail, setEditedEmail] = useState(prospect.email)
   const [editedPhone, setEditedPhone] = useState(prospect.phone)
 
-  // CALL NOTES STATE
   const [isAddingNote, setIsAddingNote] = useState(false)
   const [newNoteContent, setNewNoteContent] = useState('')
 
@@ -277,22 +292,23 @@ export function ProspectView({
       alert("Veuillez sélectionner une formule pour cette offre.")
       return
     }
+    // ✅ SAUVEGARDE DE LA FORMULE ET DU MONTANT
     handleOptimisticUpdate({
       offer: editedOfferName,
       value: editedValue,
+      formula_id: editedFormulaId
     })
     setEditingOffer(false)
   }
 
   const handleCancelOffer = () => {
     setEditedOfferId('')
-    setEditedFormulaId('')
+    setEditedFormulaId(localProspect.formula_id || '')
     setEditedOfferName(localProspect.offer || '')
     setEditedValue(localProspect.value || 0)
     setEditingOffer(false)
   }
 
-  // --- CORRECTION SAUVEGARDE PAIEMENT ---
   const handleSavePayment = () => {
     handleOptimisticUpdate({
       value: editedValue,
@@ -326,18 +342,14 @@ export function ProspectView({
     }
   }
 
-  // Calculs pour l'affichage (mode édition)
   const monthlyAmount = editedValue / (installments || 1)
   const commissionAmount = (editedValue * commissionRate) / 100
 
-  // Calculs pour l'affichage (mode lecture - basé sur le prospect sauvegardé)
-  // On sécurise pour être sûr d'avoir les bonnes valeurs
   const savedInstallments = localProspect.installments || 1
   const savedCommission = (localProspect.value || 0) * (commissionRate / 100)
   const savedMonthlyPayment = (localProspect.value || 0) / savedInstallments
   const savedMonthlyCommission = savedCommission / savedInstallments
   
-  // Vérification robuste du mode de paiement pour l'affichage
   const isPayingInInstallments = localProspect.payment_type === 'installments' || (savedInstallments > 1);
 
   return (
@@ -485,7 +497,6 @@ export function ProspectView({
                             <button onClick={handleSavePayment} className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500">Valider les détails</button>
                           </div>
                         ) : (
-                          // --- CORRECTION : AFFICHAGE MODE LECTURE DETAILLÉ ---
                           <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs text-slate-400">Montant Vente</span>
@@ -496,7 +507,6 @@ export function ProspectView({
                               <span className="text-sm font-bold text-emerald-400">+{savedCommission.toFixed(2)}€</span>
                             </div>
                             
-                            {/* DETAILS MENSUELS SI PLUSIEURS FOIS */}
                             {isPayingInInstallments && (
                                 <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-2">
                                     <div className="flex justify-between items-center">
@@ -688,7 +698,7 @@ export function ProspectView({
 
                     <div className="h-px bg-slate-800 my-4" />
 
-                    {/* LISTE DES NOTES (Cellules Déroulantes) */}
+                    {/* LISTE DES NOTES */}
                     <div className="space-y-3">
                       {localProspect.callNotes && localProspect.callNotes.length > 0 ? (
                         localProspect.callNotes.map((note) => (
