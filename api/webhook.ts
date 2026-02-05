@@ -16,41 +16,45 @@ export default async function handler(request: any, response: any) {
   try {
     const { offer_id } = request.query
     
-    // On garde le log BRUT pour vérifier si on a gagné
+    // On garde le log pour le debug au cas où
     console.log("📦 BRUT:", JSON.stringify(request.body))
 
     if (!offer_id) throw new Error("ID Offre manquant")
 
-    // 1. Nettoyage Tableau
+    // 1. Nettoyage Tableau (Si c'est une liste, on prend le premier)
     let rawBody = request.body
     if (Array.isArray(rawBody) && rawBody.length > 0) {
       rawBody = rawBody[0]
     }
 
-    // 2. LA MAGIE : On chasse la vraie étape (Contact Stage)
-    // iClosed la cache parfois dans un sous-objet ou sous un autre nom
+    // 2. EXTRACTION INTELLIGENTE DU STATUT
+    // C'est ici qu'on applique ta découverte !
+    
     let realStatus = rawBody.status; // Valeur par défaut (ex: STRATEGY_CALL_BOOKED)
 
-    // Cas 1 : Champ "contactStage" (souvent un objet { id, name: "Customer" })
-    if (rawBody.contactStage) {
+    // PRIORITY 1 : On regarde dans "contactFields" (C'est là que se cache "Customer")
+    if (rawBody.contactFields && rawBody.contactFields.contact_stage) {
+        realStatus = rawBody.contactFields.contact_stage;
+    }
+    // PRIORITY 2 : On regarde les anciens emplacements (au cas où ça change)
+    else if (rawBody.contactStage) {
        if (typeof rawBody.contactStage === 'string') {
          realStatus = rawBody.contactStage;
        } else if (rawBody.contactStage.name) {
          realStatus = rawBody.contactStage.name;
        }
     } 
-    // Cas 2 : Champ "stage" direct
     else if (rawBody.stage) {
        realStatus = rawBody.stage;
     }
 
-    // 3. Construction de l'objet final
+    // 3. Construction de l'objet final propre
     const cleanBody = {
       first_name: rawBody.firstName || rawBody.first_name || "Inconnu",
       last_name: rawBody.lastName || rawBody.last_name || "",
       email: rawBody.email || "pas-d-email@erreur.com",
       phone: rawBody.phoneNumber || rawBody.phone || "",
-      status: realStatus, // On utilise notre statut intelligent
+      status: realStatus, // On utilise le VRAI statut (ex: Customer)
       offer_id: Number(offer_id)
     }
 
