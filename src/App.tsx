@@ -19,7 +19,7 @@ import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 
 // Imports des Pages
-import { LandingPage } from './pages/LandingPage' // ✅ NOUVEAU
+import { LandingPage } from './pages/LandingPage'
 import { Dashboard } from './pages/Dashboard'
 import { Pipeline } from './pages/Pipeline'
 import { Contacts } from './pages/Contacts'
@@ -59,20 +59,35 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AuthenticatedApp() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth() // On récupère l'info "loading" aussi
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(true)
+
+  // Petit loader pendant qu'on vérifie si l'utilisateur est connecté au démarrage
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
 
   return (
     <BrowserRouter>
       <Routes>
         {/* 1. ROUTES PUBLIQUES */}
-        <Route path="/" element={<LandingPage />} /> {/* ✅ LANDING PAGE EN PRIORITÉ */}
+        
+        {/* 🔥 LA CORRECTION EST ICI : Si user existe -> Dashboard, Sinon -> Landing Page */}
+        <Route 
+          path="/" 
+          element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
+        />
+        
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
 
-        {/* 2. ROUTE PLEIN ÉCRAN (COCKPIT D'APPEL) */}
+        {/* 2. ROUTE PLEIN ÉCRAN */}
         <Route 
           path="/live-call" 
           element={
@@ -82,8 +97,7 @@ function AuthenticatedApp() {
           } 
         />
 
-        {/* 3. APPLICATION PROTÉGÉE (LAYOUT GLOBAL) */}
-        {/* On retire le path="/" ici pour laisser la place à la Landing Page */}
+        {/* 3. APPLICATION PROTÉGÉE */}
         <Route
           element={
             <ProtectedRoute>
@@ -91,10 +105,7 @@ function AuthenticatedApp() {
             </ProtectedRoute>
           }
         >
-          {/* ✅ Le Dashboard est déplacé sur /dashboard */}
           <Route path="dashboard" element={<Dashboard />} />
-          
-          {/* Les autres routes restent accessibles directement (ex: /pipeline) */}
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="contacts" element={<Contacts />} />
           <Route path="offers" element={<Offers />} />
@@ -116,7 +127,6 @@ function AuthenticatedApp() {
           <Route path="messages" element={<MessagesPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
           
-          {/* Redirection par défaut : si route inconnue -> Dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
