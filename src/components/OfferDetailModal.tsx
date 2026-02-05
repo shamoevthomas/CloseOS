@@ -19,7 +19,8 @@ import {
   Receipt,
   Link,       // Icône pour le CRM
   Info,       // Icône info
-  Copy        // AJOUT : Icône pour copier
+  Copy,       // Icône pour copier
+  BoxSelect   // Icône pour la sélection de formule
 } from 'lucide-react'
 import { ContactSelector } from './ContactSelector'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
@@ -72,6 +73,7 @@ export interface Offer {
   crmProvider?: 'iclosed' | 'hubspot' | 'other'
   crmApiKey?: string
   crmMapping?: { [key: string]: string | undefined }
+  defaultFormulaId?: string // NOUVEAU CHAMP : ID de la formule par défaut
 }
 
 interface OfferDetailModalProps {
@@ -108,13 +110,6 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   // État pour le feedback de copie
   const [hasCopied, setHasCopied] = useState(false)
 
-  // --- CALCUL DE L'URL WEBHOOK (Version Vercel) ---
-  const baseUrl = window.location.origin.includes('localhost') 
-    ? 'https://close-os.vercel.app' // En local, on pointe vers la prod pour tester
-    : window.location.origin
-    
-  const webhookUrl = `${baseUrl}/api/webhook?offer_id=${offer.id}`
-
   const [editedOffer, setEditedOffer] = useState<Offer>(() => {
     if (!offer.formulas || offer.formulas.length === 0) {
       return {
@@ -129,6 +124,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     }
     return offer
   })
+
+  // --- CALCUL DE L'URL WEBHOOK INTELLIGENTE ---
+  const baseUrl = window.location.origin.includes('localhost') 
+    ? 'https://close-os.vercel.app' 
+    : window.location.origin
+    
+  // On ajoute &formula_id=XYZ si une formule par défaut est sélectionnée
+  const webhookUrl = `${baseUrl}/api/webhook?offer_id=${offer.id}${editedOffer.defaultFormulaId ? `&formula_id=${editedOffer.defaultFormulaId}` : ''}`
 
   const [tempResName, setTempResName] = useState('')
   const [tempResLink, setTempResLink] = useState('')
@@ -781,7 +784,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             </div>
           </div>
 
-          {/* --- CONFIGURATION CRM (SIMPLIFIÉE) --- */}
+          {/* --- CONFIGURATION CRM (SIMPLIFIÉE AVEC FORMULE PAR DÉFAUT) --- */}
           <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
               <Link className="h-4 w-4" /> Synchronisation CRM
@@ -810,7 +813,38 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               )}
             </div>
 
-            {/* 2. Webhook Info (Helper) - AVEC BOUTON COPIER */}
+            {/* 2. SÉLECTION DE LA FORMULE PAR DÉFAUT (NOUVEAU) */}
+            <div className="mb-6">
+               <label className="mb-1.5 flex items-center gap-2 text-xs font-medium text-slate-500 uppercase">
+                 <BoxSelect className="h-3 w-3" /> Formule par défaut (Prospects Entrants)
+               </label>
+               {isEditing ? (
+                 <select
+                   value={editedOffer.defaultFormulaId || ''}
+                   onChange={(e) => setEditedOffer({ ...editedOffer, defaultFormulaId: e.target.value })}
+                   className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                 >
+                   <option value="">-- Aucune formule (ou 1ère par défaut) --</option>
+                   {(editedOffer.formulas || []).map((f) => (
+                     <option key={f.id} value={f.id}>
+                       {f.name} ({parseFloat(f.price).toLocaleString()}€)
+                     </option>
+                   ))}
+                 </select>
+               ) : (
+                 <div className="rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm text-slate-300">
+                   {editedOffer.defaultFormulaId 
+                     ? (editedOffer.formulas?.find(f => f.id === editedOffer.defaultFormulaId)?.name || 'Formule introuvable')
+                     : <span className="text-slate-500 italic">Aucune sélectionnée (par défaut)</span>
+                   }
+                 </div>
+               )}
+               <p className="mt-1.5 text-[10px] text-slate-500">
+                 Cette formule sera automatiquement assignée aux prospects arrivant via le Webhook ci-dessous.
+               </p>
+            </div>
+
+            {/* 3. Webhook Info (Helper) - AVEC BOUTON COPIER */}
             <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
               <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-blue-400 mt-0.5" />
@@ -833,12 +867,15 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       {hasCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                     </button>
                   </div>
+                   {editedOffer.defaultFormulaId && (
+                     <p className="mt-2 text-[10px] text-emerald-400/80 flex items-center gap-1">
+                       <Check className="h-3 w-3" /> L'ID de la formule a été ajouté à l'URL.
+                     </p>
+                   )}
 
                 </div>
               </div>
             </div>
-            
-            {/* SECTION MAPPING SUPPRIMÉE ICI */}
           </div>
 
           {/* Zone D - Resources */}
