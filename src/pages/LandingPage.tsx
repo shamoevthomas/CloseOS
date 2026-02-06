@@ -4,22 +4,20 @@ import {
   CheckCircle2,
   TrendingUp,
   Zap,
-  Shield,
   BarChart3,
-  PieChart,
   Target,
-  Trophy,
   ChevronRight,
   Play,
   XCircle,
   LogIn,
   MessageSquare,
-  Video,
   FileText,
   Smartphone,
   BrainCircuit,
   CalendarCheck,
-  LayoutDashboard
+  LayoutDashboard,
+  Phone,
+  Bot
 } from 'lucide-react'
 
 export function LandingPage() {
@@ -81,7 +79,7 @@ export function LandingPage() {
           </h1>
 
           <p className="mx-auto max-w-2xl text-lg text-slate-400 mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 leading-relaxed">
-            CRM, Agenda, Booking, WhatsApp, Facturation, Visio, KPIs...<br/>
+            CRM, Agenda, Booking, VoIP, Facturation, Visio, KPIs...<br/>
             <strong className="text-white">CloseOS</strong> réunit TOUT ce dont vous avez besoin pour closer dans une seule interface.
           </p>
 
@@ -120,14 +118,16 @@ export function LandingPage() {
           <p className="text-xs font-bold text-slate-500 mb-8 uppercase tracking-widest">
             Synchronisation native avec vos outils préférés
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-x-16 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
-             <div className="flex items-center gap-2 font-bold text-2xl text-white"><span className="text-[#25D366]">WhatsApp</span></div>
-             <div className="flex items-center gap-2 font-bold text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
-             <div className="flex items-center gap-2 font-bold text-2xl text-white">iClosed</div>
-             <div className="flex items-center gap-2 font-bold text-2xl text-white">Cal.com</div>
-             <div className="flex items-center gap-2 font-bold text-2xl text-white">Calendly</div>
-             <div className="flex items-center gap-2 font-bold text-2xl text-white">Hubspot</div>
-             <div className="flex items-center gap-2 font-bold text-2xl text-white">Pipedrive</div>
+          <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
+             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#25D366]">WhatsApp</span></div>
+             {/* AJOUT DE TWILIO ICI */}
+             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
+             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
+             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
+             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Cal.com</div>
+             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Calendly</div>
+             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Hubspot</div>
+             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Pipedrive</div>
              <div className="flex items-center gap-2 cursor-pointer group">
                 <ArrowRight className="h-6 w-6 text-blue-500 group-hover:translate-x-1 transition-transform" />
              </div>
@@ -169,17 +169,17 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* 2. WHATSAPP */}
+            {/* 2. WHATSAPP & VOIP */}
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#25D366]/30 transition-all duration-500 group hover:bg-slate-900/80 relative overflow-hidden">
                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
                   <MessageSquare className="w-32 h-32 text-[#25D366]" />
                </div>
               <div className="h-12 w-12 rounded-lg bg-[#25D366]/20 flex items-center justify-center mb-6 ring-1 ring-[#25D366]/30">
-                <MessageSquare className="h-6 w-6 text-[#25D366]" />
+                <Phone className="h-6 w-6 text-[#25D366]" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">WhatsApp Intégré</h3>
+              <h3 className="text-xl font-bold text-white mb-3">WhatsApp & VoIP Intégrés</h3>
               <p className="text-slate-400 text-sm leading-relaxed mb-4">
-                Envoyez et recevez vos messages sans toucher à votre téléphone. Chaque conversation est liée au prospect. Zéro perte d'info.
+                Passez vos appels et envoyez vos messages directement depuis le CRM. Tout est enregistré et lié au prospect. Zéro perte d'info.
               </p>
             </div>
 
@@ -246,69 +246,93 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* --- COMPARISON SECTION --- */}
+      {/* --- COMPARISON SECTION (REFONTE COMPLÈTE) --- */}
       <section id="comparison" className="py-24 bg-slate-900/30 border-y border-white/5 relative">
         <div className="mx-auto max-w-6xl px-6 relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-white">L'ancienne méthode vs CloseOS</h2>
-            <p className="text-slate-400 mt-4">La différence entre un Amateur et un Pro se joue sur l'organisation.</p>
+            <p className="text-slate-400 mt-4">La différence entre un Amateur et un Pro se joue sur l'organisation (et le coût).</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 items-start">
-            {/* The Old Way */}
-            <div className="rounded-2xl border border-red-900/20 bg-red-950/5 p-8 opacity-75 hover:opacity-100 transition-opacity">
+          <div className="grid md:grid-cols-2 gap-8 items-stretch">
+            {/* The Old Way (Red) */}
+            <div className="rounded-2xl border border-red-900/30 bg-red-950/10 p-8 opacity-90 hover:opacity-100 transition-opacity flex flex-col">
               <h3 className="text-xl font-bold text-red-400 mb-6 flex items-center gap-2">
-                <XCircle className="h-6 w-6" /> L'Enfer des Outils
+                <XCircle className="h-6 w-6" /> L'Enfer des Abonnements
               </h3>
-              <div className="space-y-4 text-sm text-slate-400">
-                 <div className="flex items-center justify-between p-3 bg-red-900/10 rounded-lg">
-                    <span>CRM & Suivi</span>
-                    <span className="text-red-300">Salesforce / Excel</span>
+              <div className="space-y-3 text-sm text-slate-300 flex-1">
+                 <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
+                    <span className="font-medium">CRM Séparé</span>
+                    <span className="text-red-300 font-bold">Pipedrive ($$)</span>
                  </div>
-                 <div className="flex items-center justify-between p-3 bg-red-900/10 rounded-lg">
-                    <span>Agenda</span>
-                    <span className="text-red-300">Google Calendar</span>
+                 <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-red-500/5 animate-pulse pointer-events-none"></div>
+                    <span className="font-medium flex items-center gap-2"><Phone className="h-4 w-4"/> Téléphonie VoIP</span>
+                    <span className="text-red-300 font-bold">Aircall (~40€/mois)</span>
                  </div>
-                 <div className="flex items-center justify-between p-3 bg-red-900/10 rounded-lg">
-                    <span>Booking</span>
-                    <span className="text-red-300">Calendly ($12/mois)</span>
+                 <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
+                    <span className="font-medium">Booking</span>
+                    <span className="text-red-300 font-bold">Calendly ($12/mois)</span>
                  </div>
-                 <div className="flex items-center justify-between p-3 bg-red-900/10 rounded-lg">
-                    <span>Communication</span>
-                    <span className="text-red-300">WhatsApp Téléphone</span>
+                 <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
+                    <span className="font-medium flex items-center gap-2"><Bot className="h-4 w-4"/> Automatisation</span>
+                    <span className="text-red-300 font-bold">Zapier ($25/mois)</span>
                  </div>
-                 <div className="flex items-center justify-between p-3 bg-red-900/10 rounded-lg">
-                    <span>Visio</span>
-                    <span className="text-red-300">Zoom / Meet</span>
-                 </div>
-                 <div className="flex items-center justify-between p-3 bg-red-900/10 rounded-lg">
-                    <span>Qualification</span>
-                    <span className="text-red-300">iClosed</span>
+                 <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
+                    <span className="font-medium">Visio</span>
+                    <span className="text-red-300 font-bold">Zoom ($15/mois)</span>
                  </div>
               </div>
-              <p className="mt-6 text-center text-red-400 font-medium text-sm">
-                = 6+ onglets ouverts, perte de temps, infos perdues.
+              <p className="mt-8 text-center text-red-400 font-bold text-base bg-red-950/30 p-4 rounded-xl border border-red-900/50">
+                Total : >120€/mois par closer.<br/>Et un chaos administratif.
               </p>
             </div>
 
-            {/* The CloseOS Way */}
-            <div className="rounded-2xl border border-blue-500/20 bg-blue-950/10 p-8 shadow-2xl shadow-blue-900/10 ring-1 ring-blue-500/20 relative overflow-hidden">
+            {/* The CloseOS Way (Blue - Stacked) */}
+            <div className="rounded-2xl border border-blue-500/30 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/20 ring-1 ring-blue-500/20 relative overflow-hidden flex flex-col">
                <div className="absolute inset-0 bg-blue-500/5 animate-pulse pointer-events-none"></div>
               <h3 className="text-xl font-bold text-blue-400 mb-6 flex items-center gap-2 relative z-10">
-                <CheckCircle2 className="h-6 w-6" /> CloseOS : All-in-One
+                <CheckCircle2 className="h-6 w-6" /> CloseOS : La Machine de Guerre
               </h3>
-              <div className="space-y-4 text-sm text-white relative z-10">
-                 <div className="flex items-center justify-center p-8 bg-blue-600/20 border border-blue-500/30 rounded-xl">
-                    <div className="text-center">
-                       <Target className="h-12 w-12 text-blue-400 mx-auto mb-3" />
-                       <span className="text-lg font-bold">TOUT EST LÀ.</span>
-                       <p className="text-blue-200 text-xs mt-2">CRM + Agenda + Booking + WhatsApp + Visio + Factures + KPIs</p>
+              
+              <div className="flex-1 relative z-10 flex flex-col gap-3">
+                {/* Stacked Blocks */}
+                <div className="p-5 bg-blue-600/20 border border-blue-500/40 rounded-xl flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-lg bg-blue-500/30 flex items-center justify-center">
+                        <Target className="h-6 w-6 text-blue-300" />
                     </div>
-                 </div>
+                    <div>
+                        <h4 className="font-bold text-white text-lg">CRM & Pipeline Centralisé</h4>
+                        <p className="text-blue-200 text-xs">Plus besoin de Salesforce ou Pipedrive.</p>
+                    </div>
+                </div>
+                
+                <div className="p-5 bg-blue-600/30 border border-blue-500/50 rounded-xl flex items-center gap-4 relative overflow-hidden shadow-lg shadow-blue-500/10">
+                    <div className="absolute inset-0 bg-blue-400/10 animate-pulse pointer-events-none"></div>
+                    <div className="h-10 w-10 rounded-lg bg-blue-500/40 flex items-center justify-center">
+                        <Phone className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-white text-lg">VoIP Natif & WhatsApp</h4>
+                        <p className="text-blue-100 text-xs font-semibold">Appels illimités inclus*. Bye bye Aircall.</p>
+                    </div>
+                </div>
+
+                <div className="p-5 bg-blue-600/20 border border-blue-500/40 rounded-xl flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-lg bg-blue-500/30 flex items-center justify-center">
+                        <Zap className="h-6 w-6 text-blue-300" />
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-white text-lg">Automatisations & Booking</h4>
+                        <p className="text-blue-200 text-xs">Système intégré. Oubliez Zapier et Calendly.</p>
+                    </div>
+                </div>
               </div>
-              <p className="mt-6 text-center text-blue-400 font-medium text-sm relative z-10">
-                = 1 seul onglet. Focus total. Closing maximum.
+
+              <p className="mt-8 text-center text-blue-300 font-bold text-xl bg-blue-900/30 p-4 rounded-xl border border-blue-500/50 relative z-10">
+                = 1 seul abonnement.<br/>Zéro friction. Focus total.
               </p>
+              <p className="text-center text-blue-400/60 text-xs mt-2">*Selon le forfait choisi.</p>
             </div>
           </div>
         </div>
@@ -318,22 +342,22 @@ export function LandingPage() {
       <section className="py-20 bg-[#0B1121]">
          <div className="mx-auto max-w-4xl px-6 text-center">
             <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-400 uppercase tracking-widest">
-               Bientôt Disponible
+               Prochainement
             </span>
             <h2 className="text-3xl font-bold text-white mt-6 mb-12">Le Futur du Closing</h2>
             <div className="grid md:grid-cols-2 gap-6">
-               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left">
-                  <div className="p-3 rounded-lg bg-indigo-500/20"><BrainCircuit className="h-6 w-6 text-indigo-400"/></div>
+               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
+                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><BrainCircuit className="h-6 w-6 text-indigo-400"/></div>
                   <div>
-                     <h3 className="font-bold text-white mb-1">Coach IA</h3>
-                     <p className="text-sm text-slate-400">Analyse vos appels, détecte vos tics de langage et vous donne des conseils stratégiques pour closer plus.</p>
+                     <h3 className="font-bold text-white mb-1">Coach IA en Temps Réel</h3>
+                     <p className="text-sm text-slate-400">Analyse vos appels en direct, détecte les objections et vous suggère les meilleures réponses pour closer.</p>
                   </div>
                </div>
-               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left">
-                  <div className="p-3 rounded-lg bg-indigo-500/20"><Smartphone className="h-6 w-6 text-indigo-400"/></div>
+               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
+                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Smartphone className="h-6 w-6 text-indigo-400"/></div>
                   <div>
-                     <h3 className="font-bold text-white mb-1">Téléphonie Pro</h3>
-                     <p className="text-sm text-slate-400">Numéro dédié, Power Dialer pour enchaîner les appels, et enregistrement automatique.</p>
+                     <h3 className="font-bold text-white mb-1">Application Mobile Native</h3>
+                     <p className="text-sm text-slate-400">Gérez votre pipeline, recevez vos notifs et passez vos appels depuis votre poche. iOS & Android.</p>
                   </div>
                </div>
             </div>
@@ -346,10 +370,10 @@ export function LandingPage() {
         
         <div className="relative mx-auto max-w-4xl px-6 text-center z-10">
           <h2 className="text-4xl font-bold text-white mb-6">
-            Arrêtez de bricoler.<br/>Commencez à industrialiser.
+            Arrêtez de payer pour 10 outils.<br/>Commencez à closer.
           </h2>
           <p className="text-xl text-slate-300 mb-10">
-            Rejoignez l'élite des closers qui utilisent CloseOS.
+            Rejoignez l'élite des closers qui utilisent le système tout-en-un CloseOS.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link 
@@ -361,7 +385,7 @@ export function LandingPage() {
             </Link>
           </div>
           <p className="mt-6 text-sm text-slate-500">
-            Pas de carte bancaire requise. Annulation à tout moment.
+            Pas de carte bancaire requise pour démarrer.
           </p>
         </div>
       </section>
