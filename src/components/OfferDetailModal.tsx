@@ -20,7 +20,8 @@ import {
   Link,       // Icône pour le CRM
   Info,       // Icône info
   Copy,       // Icône pour copier
-  BoxSelect   // Icône pour la sélection de formule
+  BoxSelect,   // Icône pour la sélection de formule
+  AlertTriangle // Icône pour l'avertissement
 } from 'lucide-react'
 import { ContactSelector } from './ContactSelector'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
@@ -849,10 +850,21 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-blue-400 mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-blue-100">Configuration Webhook</h4>
+                  <h4 className="text-sm font-semibold text-blue-100">Configuration Webhook iClosed</h4>
+                  
+                  {/* --- TEXTE SPÉCIFIQUE ICLOSED --- */}
                   <p className="mt-1 text-xs text-blue-300/80 leading-relaxed">
-                    Pour recevoir les prospects de cette offre, assurez-vous que votre CRM envoie les données vers votre URL Webhook Supabase/Make.
+                    Allez dans <strong>iClosed &gt; Paramètres &gt; Développeur &gt; Webhooks</strong> et collez l'URL ci-dessous.
                   </p>
+                  
+                  {/* --- ALERTE PROPRIÉTAIRE --- */}
+                  <div className="mt-2 flex items-start gap-2 rounded border border-orange-500/20 bg-orange-500/10 p-2 text-[11px] text-orange-300">
+                    <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                    <span>
+                      <strong>Attention :</strong> Si le menu "Développeur" n'apparaît pas, c'est que vous n'avez pas les droits. 
+                      Seul le <strong>Propriétaire</strong> de l'organisation iClosed peut configurer les Webhooks.
+                    </span>
+                  </div>
                   
                   {/* URL + COPY BUTTON */}
                   <div className="mt-3 flex items-center gap-2">
@@ -873,14 +885,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                      </p>
                    )}
 
-                   {/* INTEGRATION SUPADEMO ICLOSED (MODIFIÉ AVEC LOOP & AUTOPLAY) */}
-                   {(editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
+                   {/* INTEGRATION SUPADEMO ICLOSED (VISIBLE SEULEMENT EN ÉDITION) */}
+                   {isEditing && (editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
                      <div className="mt-4 rounded-lg border border-blue-500/20 overflow-hidden bg-slate-900/50">
                         <div style={{ position: 'relative', boxSizing: 'content-box', width: '100%', aspectRatio: '1.86' }}>
                           <iframe 
                             src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1" 
                             loading="lazy" 
-                            title="Set Up Webhook Integration for Contact Events" 
+                            title="Configurer le Webhook iClosed" 
                             allow="clipboard-write" 
                             frameBorder="0" 
                             webkitAllowFullScreen 
