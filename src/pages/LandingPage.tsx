@@ -19,7 +19,9 @@ import {
   Phone,
   Bot,
   Star,
-  ShieldCheck
+  ShieldCheck,
+  Database, // Ajouté pour le logo CRM
+  Video     // Ajouté pour le logo Visio
 } from 'lucide-react'
 
 export function LandingPage() {
@@ -188,8 +190,6 @@ export function LandingPage() {
               <div className="h-12 w-12 rounded-lg bg-[#25D366]/20 flex items-center justify-center mb-6 ring-1 ring-[#25D366]/30">
                 <Phone className="h-6 w-6 text-[#25D366]" />
               </div>
-              
-              {/* 👇 TEXTE MODIFIÉ POUR ÊTRE HONNÊTE 👇 */}
               <h3 className="text-xl font-bold text-white mb-3">Téléphonie VoIP & Click-to-WhatsApp</h3>
               <p className="text-slate-400 text-sm leading-relaxed mb-4">
                 Appelez vos prospects en un clic via Twilio (appels enregistrés). 
@@ -220,14 +220,16 @@ export function LandingPage() {
                 <div className="h-12 w-12 rounded-lg bg-purple-500/20 flex items-center justify-center mb-6 ring-1 ring-purple-500/30">
                   <CalendarCheck className="h-6 w-6 text-purple-400" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-3">Agenda & Booking (Bye bye Calendly)</h3>
+                {/* 👇 MODIFICATION : Titre changé pour Cal.com & Calendly */}
+                <h3 className="text-2xl font-bold text-white mb-3">Agenda & Booking (Cal.com & Calendly)</h3>
                 <p className="text-slate-400 mb-6 max-w-md leading-relaxed">
-                  Créez vos liens de réservation, synchronisez tout avec Google Calendar. Quand un prospect réserve, il arrive direct dans votre Pipeline et votre Agenda.
+                  {/* 👇 MODIFICATION : Texte adapté pour l'intégration */}
+                  Connectez vos outils existants. Vos rendez-vous Cal.com et Calendly remontent automatiquement dans votre Pipeline et votre Agenda CloseOS.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Sync Google Calendar</span>
-                  <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Liens de booking personnalisés</span>
-                  <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Rappels automatiques</span>
+                  <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Sync Bi-directionnelle</span>
+                  <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Intégration native</span>
+                  <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Centralisation</span>
                 </div>
               </div>
             </div>
@@ -239,7 +241,8 @@ export function LandingPage() {
               </div>
               <h3 className="text-xl font-bold text-white mb-3">Facturation Auto</h3>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Générez vos factures de commissions en un clic. Suivez les paiements, exportez en PDF. Comptable-ready.
+                {/* 👇 MODIFICATION : Suppression de "Comptable-ready" */}
+                Générez vos factures de commissions en un clic. Suivez les paiements, exportez en PDF.
               </p>
             </div>
              
@@ -252,7 +255,8 @@ export function LandingPage() {
                  <div className="h-12 w-12 rounded-lg bg-[#E11D48]/20 flex items-center justify-center mb-6 ring-1 ring-[#E11D48]/30">
                    <Zap className="h-6 w-6 text-[#E11D48]" />
                  </div>
-                 <h3 className="text-2xl font-bold text-white mb-3">Sync CRM (HubSpot, Pipedrive) & iClosed</h3>
+                 {/* 👇 MODIFICATION : Ajout de iClosed */}
+                 <h3 className="text-2xl font-bold text-white mb-3">Sync CRM (HubSpot, Pipedrive, iClosed)</h3>
                  <p className="text-slate-400 mb-6 max-w-lg leading-relaxed">
                    Synchronisation native avec iClosed, HubSpot et Pipedrive. Vos leads et vos deals circulent en temps réel. Oubliez la double saisie manuelle et automatisez 100% de votre suivi.
                  </p>
@@ -276,9 +280,10 @@ export function LandingPage() {
               <h3 className="text-xl font-bold text-red-400 mb-6 flex items-center gap-2">
                 <XCircle className="h-6 w-6" /> L'Enfer des Abonnements
               </h3>
+              {/* 👇 MODIFICATION : Ajout des icônes pour chaque ligne */}
               <div className="space-y-3 text-sm text-slate-300 flex-1">
                  <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
-                    <span className="font-medium">CRM Séparé</span>
+                    <span className="font-medium flex items-center gap-2"><Database className="h-4 w-4"/> CRM Séparé</span>
                     <span className="text-red-300 font-bold">Pipedrive ($$)</span>
                  </div>
                  <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30 relative overflow-hidden">
@@ -287,7 +292,7 @@ export function LandingPage() {
                     <span className="text-red-300 font-bold">Aircall (~40€/mois)</span>
                  </div>
                  <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
-                    <span className="font-medium">Booking</span>
+                    <span className="font-medium flex items-center gap-2"><CalendarCheck className="h-4 w-4"/> Booking</span>
                     <span className="text-red-300 font-bold">Calendly ($12/mois)</span>
                  </div>
                  <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
@@ -295,7 +300,7 @@ export function LandingPage() {
                     <span className="text-red-300 font-bold">Zapier ($25/mois)</span>
                  </div>
                  <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
-                    <span className="font-medium">Visio</span>
+                    <span className="font-medium flex items-center gap-2"><Video className="h-4 w-4"/> Visio</span>
                     <span className="text-red-300 font-bold">Zoom ($15/mois)</span>
                  </div>
               </div>
@@ -311,14 +316,15 @@ export function LandingPage() {
                 <CheckCircle2 className="h-6 w-6" /> CloseOS : La Machine de Guerre
               </h3>
               
+              {/* 👇 MODIFICATION : Réécriture complète pour l'automatisation */}
               <div className="flex-1 relative z-10 flex flex-col gap-3">
                 <div className="p-5 bg-blue-600/20 border border-blue-500/40 rounded-xl flex items-center gap-4">
                     <div className="h-10 w-10 rounded-lg bg-blue-500/30 flex items-center justify-center">
                         <Target className="h-6 w-6 text-blue-300" />
                     </div>
                     <div>
-                        <h4 className="font-bold text-white text-lg">CRM & Pipeline Centralisé</h4>
-                        <p className="text-blue-200 text-xs">Plus besoin de Salesforce ou Pipedrive.</p>
+                        <h4 className="font-bold text-white text-lg">Centralisation Totale</h4>
+                        <p className="text-blue-200 text-xs">Un seul endroit pour tout gérer. Fini les onglets.</p>
                     </div>
                 </div>
                 
@@ -328,8 +334,8 @@ export function LandingPage() {
                         <Phone className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                        <h4 className="font-bold text-white text-lg">VoIP Natif & WhatsApp</h4>
-                        <p className="text-blue-100 text-xs font-semibold">Appels illimités inclus*. Bye bye Aircall.</p>
+                        <h4 className="font-bold text-white text-lg">VoIP & WhatsApp Natifs</h4>
+                        <p className="text-blue-100 text-xs font-semibold">Zéro latence. Vos appels partent d'ici.</p>
                     </div>
                 </div>
 
@@ -338,8 +344,11 @@ export function LandingPage() {
                         <Zap className="h-6 w-6 text-blue-300" />
                     </div>
                     <div>
-                        <h4 className="font-bold text-white text-lg">Automatisations & Booking</h4>
-                        <p className="text-blue-200 text-xs">Système intégré. Oubliez Zapier et Calendly.</p>
+                        <h4 className="font-bold text-white text-lg">Tout est Automatisé</h4>
+                        <p className="text-blue-200 text-xs">
+                          Un RDV Calendly ? Il crée le deal. <br/>
+                          Un appel Twilio ? Il met à jour le statut.
+                        </p>
                     </div>
                 </div>
               </div>
