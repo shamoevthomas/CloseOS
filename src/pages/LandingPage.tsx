@@ -168,7 +168,7 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* 2. WHATSAPP & VOIP */}
+            {/* 2. WHATSAPP & VOIP (TWILIO) */}
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#25D366]/30 transition-all duration-500 group hover:bg-slate-900/80 relative overflow-hidden">
                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
                   <MessageSquare className="w-32 h-32 text-[#25D366]" />
@@ -176,9 +176,9 @@ export function LandingPage() {
               <div className="h-12 w-12 rounded-lg bg-[#25D366]/20 flex items-center justify-center mb-6 ring-1 ring-[#25D366]/30">
                 <Phone className="h-6 w-6 text-[#25D366]" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">WhatsApp & VoIP Intégrés</h3>
+              <h3 className="text-xl font-bold text-white mb-3">Téléphonie VoIP & WhatsApp</h3>
               <p className="text-slate-400 text-sm leading-relaxed mb-4">
-                Passez vos appels et envoyez vos messages directement depuis le CRM. Tout est enregistré et lié au prospect. Zéro perte d'info.
+                Appelez vos prospects via Twilio et gérez vos échanges WhatsApp directement dans CloseOS. Enregistrement automatique des appels et historique 100% centralisé.
               </p>
             </div>
 
@@ -225,7 +225,7 @@ export function LandingPage() {
               </p>
             </div>
              
-             {/* 6. ICLOSED SYNC */}
+             {/* 6. SYNC CRM & AUTOMATISATIONS */}
              <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#E11D48]/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500">
                 <Zap className="w-64 h-64 text-[#E11D48]" />
@@ -234,9 +234,9 @@ export function LandingPage() {
                  <div className="h-12 w-12 rounded-lg bg-[#E11D48]/20 flex items-center justify-center mb-6 ring-1 ring-[#E11D48]/30">
                    <Zap className="h-6 w-6 text-[#E11D48]" />
                  </div>
-                 <h3 className="text-2xl font-bold text-white mb-3">iClosed Sync : L'Automatisation Ultime</h3>
+                 <h3 className="text-2xl font-bold text-white mb-3">Sync CRM (HubSpot, Pipedrive) & iClosed</h3>
                  <p className="text-slate-400 mb-6 max-w-lg leading-relaxed">
-                   Quand un lead arrive sur iClosed, il est créé instantanément dans CloseOS. Quand il change de statut, CloseOS se met à jour. Quand vous closez, les notes remontent. <br/><span className="text-white font-medium">Zéro saisie manuelle.</span>
+                   Synchronisation native avec iClosed, HubSpot et Pipedrive. Vos leads et vos deals circulent en temps réel. Oubliez la double saisie manuelle et automatisez 100% de votre suivi.
                  </p>
                </div>
              </div>
@@ -295,7 +295,6 @@ export function LandingPage() {
               </h3>
               
               <div className="flex-1 relative z-10 flex flex-col gap-3">
-                {/* Stacked Blocks */}
                 <div className="p-5 bg-blue-600/20 border border-blue-500/40 rounded-xl flex items-center gap-4">
                     <div className="h-10 w-10 rounded-lg bg-blue-500/30 flex items-center justify-center">
                         <Target className="h-6 w-6 text-blue-300" />
