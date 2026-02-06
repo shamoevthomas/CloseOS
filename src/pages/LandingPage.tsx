@@ -433,10 +433,15 @@ export function LandingPage() {
                   <span>Badge "Membre Fondateur"</span>
                 </li>
               </ul>
-              {/* target="_blank" ajouté ici aussi */}
-              <a href={STRIPE_LINK_FOUNDER} target="_blank" rel="noopener noreferrer" className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40">
+              
+              {/* 👇👇👇 MODIFICATION ICI 👇👇👇 */}
+              <Link 
+                to="/checkout" 
+                className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
+              >
                 Sécuriser ma place à 19€
-              </a>
+              </Link>
+              
               <p className="mt-4 text-xs text-center text-slate-500">
                 Carte bancaire requise. <strong>Aucun prélèvement avant le lancement officiel</strong> + 7 jours d'essai offerts.
               </p>

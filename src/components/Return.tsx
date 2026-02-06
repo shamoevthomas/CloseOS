@@ -21,6 +21,16 @@ export function Return() {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
     const sessionId = urlParams.get('session_id');
+    
+    // 👇👇👇 LA PORTE DÉROBÉE DU FONDATEUR 👇👇👇
+    // Si l'URL contient ?admin_bypass=true, on simule un succès immédiat
+    if (urlParams.get('admin_bypass') === 'true') {
+      setStatus('complete');
+      setCustomerEmail('admin@closeos.fr'); // Email par défaut pour le test
+      setLoadingStripe(false);
+      return; // On arrête là, pas besoin d'appeler l'API Stripe
+    }
+    // 👆👆👆 FIN DE LA PORTE DÉROBÉE 👆👆👆
 
     if (sessionId) {
       fetch(`/api/session-status?session_id=${sessionId}`)
@@ -43,14 +53,12 @@ export function Return() {
     setAuthLoading(true);
 
     try {
-      // On utilise l'email de Stripe (customerEmail) pour l'inscription
       const result = await register({ 
         email: customerEmail, 
         password,
         options: {
           data: { 
             full_name: name,
-            // 👇 C'EST ICI QUE LA MAGIE OPÈRE : ON ACTIVE LE BADGE FOUNDER
             is_founder: true 
           }
         }
@@ -60,7 +68,6 @@ export function Return() {
         setError(result.error.message);
         setAuthLoading(false);
       } else {
-        // Succès : on redirige vers le dashboard
         navigate('/');
       }
     } catch (err: any) {
@@ -69,7 +76,6 @@ export function Return() {
     }
   };
 
-  // Gestion de l'inscription Google
   const handleGoogleLogin = async () => {
     setAuthLoading(true);
     try {
@@ -82,7 +88,6 @@ export function Return() {
     }
   };
 
-  // Redirections
   if (!loadingStripe && status === 'open') {
     return <Navigate to="/checkout" />;
   }
@@ -90,7 +95,6 @@ export function Return() {
     return <Navigate to="/" />;
   }
 
-  // Loader
   if (loadingStripe) {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center">
@@ -106,7 +110,6 @@ export function Return() {
     <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4">
       <div className="w-full max-w-lg bg-slate-900 border border-emerald-500/20 rounded-3xl p-8 shadow-2xl shadow-emerald-900/10">
         
-        {/* Header Succès */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center p-3 bg-emerald-500/10 rounded-full mb-4 ring-1 ring-emerald-500/20">
             <CheckCircle2 className="w-10 h-10 text-emerald-500" />
@@ -117,7 +120,6 @@ export function Return() {
           </p>
         </div>
 
-        {/* Onglets */}
         <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl mb-6">
           <button
             onClick={() => setActiveTab('password')}
@@ -147,7 +149,6 @@ export function Return() {
           </div>
         )}
 
-        {/* Contenu Onglet Mot de passe */}
         {activeTab === 'password' && (
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
@@ -157,8 +158,11 @@ export function Return() {
                 <input
                   type="email"
                   value={customerEmail}
-                  disabled
-                  className="w-full bg-slate-950/50 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-slate-400 cursor-not-allowed focus:outline-none"
+                  // 👇 J'ai retiré le "disabled" temporairement si c'est l'admin bypass
+                  // pour que tu puisses changer l'email de test si tu veux
+                  disabled={customerEmail !== 'admin@closeos.fr'}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  className={`w-full bg-slate-950/50 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-slate-400 focus:outline-none ${customerEmail === 'admin@closeos.fr' ? 'cursor-text text-white' : 'cursor-not-allowed'}`}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   <Lock className="h-4 w-4 text-emerald-500" />
@@ -208,7 +212,6 @@ export function Return() {
           </form>
         )}
 
-        {/* Contenu Onglet Google */}
         {activeTab === 'google' && (
           <div className="text-center py-4">
             <p className="text-slate-400 mb-6 text-sm">
