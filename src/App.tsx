@@ -17,6 +17,9 @@ import { SettingsModal } from './components/settings/SettingsModal'
 import { OnboardingModal } from './components/OnboardingModal'
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
+// 👇 NOUVEAUX IMPORTS POUR LE PAIEMENT 👇
+import { CheckoutForm } from './components/CheckoutForm'
+import { Return } from './components/Return'
 
 // Imports des Pages
 import { LandingPage } from './pages/LandingPage'
@@ -85,6 +88,10 @@ function AuthenticatedApp() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
+
+        {/* 👇 ROUTES DE PAIEMENT STRIPE (ACCESSIBLES SANS LOGIN) 👇 */}
+        <Route path="/checkout" element={<CheckoutForm />} />
+        <Route path="/return" element={<Return />} />
 
         {/* Route Appel Plein Écran */}
         <Route 
