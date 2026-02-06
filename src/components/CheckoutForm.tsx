@@ -124,15 +124,7 @@ export const CheckoutForm = () => {
                 stripe={stripePromise}
                 options={{
                   clientSecret,
-                  appearance: {
-                    theme: 'night',
-                    variables: {
-                      colorPrimary: '#2563eb',
-                      colorBackground: '#0F172A',
-                      colorText: '#f1f5f9',
-                      borderRadius: '16px',
-                    },
-                  },
+                  // L'objet 'appearance' a été retiré pour corriger l'erreur d'intégration
                 }}
               >
                 <EmbeddedCheckout />
