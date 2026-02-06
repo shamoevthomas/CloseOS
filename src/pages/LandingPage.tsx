@@ -120,7 +120,6 @@ export function LandingPage() {
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#25D366]">WhatsApp</span></div>
-             {/* AJOUT DE TWILIO ICI */}
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
@@ -246,7 +245,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* --- COMPARISON SECTION (REFONTE COMPLÈTE) --- */}
+      {/* --- COMPARISON SECTION --- */}
       <section id="comparison" className="py-24 bg-slate-900/30 border-y border-white/5 relative">
         <div className="mx-auto max-w-6xl px-6 relative z-10">
           <div className="text-center mb-16">
@@ -284,7 +283,7 @@ export function LandingPage() {
                  </div>
               </div>
               <p className="mt-8 text-center text-red-400 font-bold text-base bg-red-950/30 p-4 rounded-xl border border-red-900/50">
-                Total : >120€/mois par closer.<br/>Et un chaos administratif.
+                Total : {'>'}120€/mois par closer.<br/>Et un chaos administratif.
               </p>
             </div>
 
@@ -357,7 +356,7 @@ export function LandingPage() {
                   <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Smartphone className="h-6 w-6 text-indigo-400"/></div>
                   <div>
                      <h3 className="font-bold text-white mb-1">Application Mobile Native</h3>
-                     <p className="text-sm text-slate-400">Gérez votre pipeline, recevez vos notifs et passez vos appels depuis votre poche. iOS & Android.</p>
+                     <p className="text-sm text-slate-400">Gérez votre pipeline, recevez vos notifs et passez vos appels depuis votre poche. iOS {'&'} Android.</p>
                   </div>
                </div>
             </div>
