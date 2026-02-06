@@ -25,6 +25,8 @@ import {
 export function LandingPage() {
   
   // 👇 COLLE TES LIENS STRIPE ICI 👇
+  // Pour l'instant, on utilise les pages hébergées Stripe car c'est le plus sécurisé pour gérer
+  // les empreintes bancaires (Setup Intents) sans coder de backend complexe.
   const STRIPE_LINK_FOUNDER = "https://buy.stripe.com/TON_LIEN_FOUNDER_19EUROS"; 
   const STRIPE_LINK_STARTER = "https://buy.stripe.com/TON_LIEN_STARTER_30EUROS";
 
@@ -33,7 +35,7 @@ export function LandingPage() {
       
       {/* --- BANDEAU OFFRE PRÉLANCEMENT --- */}
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
-        🚀 OFFRE DE PRÉLANCEMENT : Rejoignez les Founders pour 19€/mois à VIE (au lieu de 30€). 
+        🚀 OFFRE DE PRÉLANCEMENT : Rejoignez les Founders pour 19€/mois à VIE (au lieu de 69€). 
         <span className="hidden sm:inline"> L'essai gratuit débutera au lancement officiel.</span>
       </div>
 
@@ -383,7 +385,8 @@ export function LandingPage() {
                   <span>Support standard par email</span>
                 </li>
               </ul>
-              <a href={STRIPE_LINK_STARTER} className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+              {/* Le target="_blank" permet d'ouvrir Stripe dans un nouvel onglet pour ne pas perdre le visiteur */}
+              <a href={STRIPE_LINK_STARTER} target="_blank" rel="noopener noreferrer" className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
                 Démarrer Starter
               </a>
             </div>
@@ -403,7 +406,8 @@ export function LandingPage() {
                 <p className="mt-2 text-blue-200 text-sm">Accès complet à vie au tarif préférentiel.</p>
                 <div className="mt-4 flex items-baseline gap-2">
                   <span className="text-5xl font-extrabold text-white">19€</span>
-                  <span className="text-slate-400 line-through text-lg">30€</span>
+                  {/* PRIX MODIFIÉ ICI : 30€ -> 69€ */}
+                  <span className="text-slate-400 line-through text-lg">69€</span>
                   <span className="text-slate-500">/mois à vie</span>
                 </div>
               </div>
@@ -429,7 +433,8 @@ export function LandingPage() {
                   <span>Badge "Membre Fondateur"</span>
                 </li>
               </ul>
-              <a href={STRIPE_LINK_FOUNDER} className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40">
+              {/* target="_blank" ajouté ici aussi */}
+              <a href={STRIPE_LINK_FOUNDER} target="_blank" rel="noopener noreferrer" className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40">
                 Sécuriser ma place à 19€
               </a>
               <p className="mt-4 text-xs text-center text-slate-500">
