@@ -21,7 +21,9 @@ import {
   Star,
   ShieldCheck,
   Database, // Ajouté pour le logo CRM
-  Video     // Ajouté pour le logo Visio
+  Video,    // Ajouté pour le logo Visio
+  Users,    // Ajouté pour Agency
+  Building2 // Ajouté pour Entreprise
 } from 'lucide-react'
 
 export function LandingPage() {
@@ -518,6 +520,25 @@ export function LandingPage() {
                      <p className="text-sm text-slate-400">Gérez votre pipeline, recevez vos notifs et passez vos appels depuis votre poche. iOS {'&'} Android.</p>
                   </div>
                </div>
+               
+               {/* 👇 NOUVEAU BLOC : AGENCY 👇 */}
+               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
+                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Users className="h-6 w-6 text-indigo-400"/></div>
+                  <div>
+                     <h3 className="font-bold text-white mb-1">Interface Agency</h3>
+                     <p className="text-sm text-slate-400">Dédiée aux agences de closing. Pilotez plusieurs équipes, gérez l'attribution des leads et analysez la rentabilité de chaque closer en temps réel.</p>
+                  </div>
+               </div>
+
+               {/* 👇 NOUVEAU BLOC : ENTREPRISE 👇 */}
+               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
+                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Building2 className="h-6 w-6 text-indigo-400"/></div>
+                  <div>
+                     <h3 className="font-bold text-white mb-1">Solution Entreprise & Infopreneur</h3>
+                     <p className="text-sm text-slate-400">Pour les business qui scalent. Management d'équipe centralisé, attribution auto des leads et messagerie interne pour un pilotage à 360°.</p>
+                  </div>
+               </div>
+
             </div>
          </div>
       </section>
