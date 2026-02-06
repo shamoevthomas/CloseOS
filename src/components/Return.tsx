@@ -11,7 +11,7 @@ export function Return() {
   // États pour l'inscription
   const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'password' | 'google'>('password'); // 'password' par défaut car c'est souvent ce que les gens attendent après un paiement CB
+  const [activeTab, setActiveTab] = useState<'password' | 'google'>('password');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
@@ -48,7 +48,11 @@ export function Return() {
         email: customerEmail, 
         password,
         options: {
-          data: { full_name: name }
+          data: { 
+            full_name: name,
+            // 👇 C'EST ICI QUE LA MAGIE OPÈRE : ON ACTIVE LE BADGE FOUNDER
+            is_founder: true 
+          }
         }
       });
 
@@ -78,7 +82,7 @@ export function Return() {
     }
   };
 
-  // Redirections si pas de session ou paiement incomplet
+  // Redirections
   if (!loadingStripe && status === 'open') {
     return <Navigate to="/checkout" />;
   }
@@ -86,7 +90,7 @@ export function Return() {
     return <Navigate to="/" />;
   }
 
-  // Affichage du loader pendant la vérification Stripe
+  // Loader
   if (loadingStripe) {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center">
