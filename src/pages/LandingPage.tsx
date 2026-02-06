@@ -25,8 +25,6 @@ import {
 export function LandingPage() {
   
   // 👇 COLLE TES LIENS STRIPE ICI 👇
-  // Pour l'instant, on utilise les pages hébergées Stripe car c'est le plus sécurisé pour gérer
-  // les empreintes bancaires (Setup Intents) sans coder de backend complexe.
   const STRIPE_LINK_FOUNDER = "https://buy.stripe.com/TON_LIEN_FOUNDER_19EUROS"; 
   const STRIPE_LINK_STARTER = "https://buy.stripe.com/TON_LIEN_STARTER_30EUROS";
 
@@ -91,6 +89,9 @@ export function LandingPage() {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400 animate-gradient-x">
               c'est terminé.
             </span>
+            <br />
+            {/* 👇 AJOUT DE LA PHRASE ICI 👇 */}
+            Reprenez 1h de closing par jour.
           </h1>
 
           <p className="mx-auto max-w-2xl text-lg text-slate-400 mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 leading-relaxed">
@@ -406,7 +407,6 @@ export function LandingPage() {
                 <p className="mt-2 text-blue-200 text-sm">Accès complet à vie au tarif préférentiel.</p>
                 <div className="mt-4 flex items-baseline gap-2">
                   <span className="text-5xl font-extrabold text-white">19€</span>
-                  {/* PRIX MODIFIÉ ICI : 30€ -> 69€ */}
                   <span className="text-slate-400 line-through text-lg">69€</span>
                   <span className="text-slate-500">/mois à vie</span>
                 </div>
@@ -434,7 +434,6 @@ export function LandingPage() {
                 </li>
               </ul>
               
-              {/* 👇👇👇 MODIFICATION ICI 👇👇👇 */}
               <Link 
                 to="/checkout" 
                 className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
