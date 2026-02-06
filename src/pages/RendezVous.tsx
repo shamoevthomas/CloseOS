@@ -17,7 +17,8 @@ import {
   Globe,
   Webhook,
   Copy,
-  Check
+  Check,
+  Link as LinkIcon // On renomme pour éviter les confusions
 } from 'lucide-react'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
@@ -39,20 +40,27 @@ export function RendezVous() {
   const [isSavingCal, setIsSavingCal] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [webhookCopied, setWebhookCopied] = useState(false)
+  const [publicLinkCopied, setPublicLinkCopied] = useState(false)
 
   // États pour la gestion des meetings
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
-  // Construction de l'URL Webhook
+  // Construction de l'URL de base
   const baseUrl = window.location.origin.includes('localhost') 
-    ? 'https://close-os.vercel.app' // En prod, mettre la vraie URL
-    : window.location.origin
+    ? 'http://localhost:5173' 
+    : 'https://close-os.vercel.app'
   
+  // URL du Webhook (Pour Cal.com)
   const webhookUrl = user?.id 
     ? `${baseUrl}/api/cal-webhook?user_id=${user.id}`
     : 'Chargement...'
+
+  // URL Publique (À envoyer aux clients)
+  const publicBookingUrl = calUsername 
+    ? `${baseUrl}/book/${calUsername}`
+    : ''
 
   // 1. Charger le pseudo Cal.com au démarrage
   useEffect(() => {
@@ -70,6 +78,8 @@ export function RendezVous() {
     try {
       let cleanUsername = calUsername.trim()
       cleanUsername = cleanUsername.replace('https://', '').replace('http://', '').replace('cal.com/', '')
+      // Enlever les slashes éventuels à la fin
+      cleanUsername = cleanUsername.replace(/\/$/, "")
       
       const { error } = await supabase.auth.updateUser({
         data: { calcom_username: cleanUsername }
@@ -94,8 +104,12 @@ export function RendezVous() {
     setTimeout(() => setWebhookCopied(false), 2000)
   }
 
-  // ... (Le reste des fonctions de tri/formatage reste identique)
-  // ... (Je garde les fonctions useMemo, handleUpdateStatus, etc. pour ne pas alourdir la réponse ici, elles sont dans ton fichier précédent)
+  const handleCopyPublicLink = () => {
+    navigator.clipboard.writeText(publicBookingUrl)
+    setPublicLinkCopied(true)
+    setTimeout(() => setPublicLinkCopied(false), 2000)
+  }
+
   const { upcomingMeetings, pastMeetings } = useMemo(() => {
     const now = new Date();
     const today = startOfDay(now);
@@ -234,8 +248,8 @@ export function RendezVous() {
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-black font-bold text-xl">C</div>
               <div>
-                <h2 className="text-xl font-bold text-white">1. Votre lien Cal.com</h2>
-                <p className="text-sm text-slate-400 mt-1 max-w-lg">Renseignez votre pseudo pour générer vos liens de réservation.</p>
+                <h2 className="text-xl font-bold text-white">1. Connexion Cal.com</h2>
+                <p className="text-sm text-slate-400 mt-1 max-w-lg">Renseignez votre pseudo Cal.com pour activer l'intégration.</p>
               </div>
             </div>
             <div className="flex flex-col gap-2 w-full md:w-auto">
@@ -248,17 +262,55 @@ export function RendezVous() {
                   {isSavingCal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {saveSuccess ? 'Sauvegardé' : 'Enregistrer'}
                 </button>
               </div>
-              {calUsername && (<a href={`https://cal.com/${calUsername}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-400 hover:underline pl-1"><Globe className="h-3 w-3" />Tester : cal.com/{calUsername}</a>)}
             </div>
           </div>
 
-          {/* Étape 2 : Le Webhook (Affiché seulement si pseudo connecté) */}
+          {/* Étape 2 : Le Lien Public (VISIBLE UNIQUEMENT SI CONNECTÉ) */}
+          {calUsername && (
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 border-t border-slate-800 pt-8">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 font-bold text-xl">
+                  <LinkIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">2. Votre lien de réservation</h2>
+                  <p className="text-sm text-slate-400 mt-1 max-w-lg">
+                    Envoyez ce lien à vos prospects. Ils verront votre agenda intégré dans CloseOS.
+                  </p>
+                </div>
+              </div>
+              <div className="w-full md:w-auto">
+                <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg p-2 pl-4">
+                  <code className="text-sm font-mono text-blue-300 truncate max-w-[250px] md:max-w-md select-all">
+                    {publicBookingUrl}
+                  </code>
+                  <button 
+                    onClick={handleCopyPublicLink} 
+                    className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                    title="Copier le lien"
+                  >
+                    {publicLinkCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+                <a 
+                  href={publicBookingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer" 
+                  className="mt-2 inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-blue-400 transition-colors uppercase tracking-wider font-bold"
+                >
+                  <ExternalLink className="h-3 w-3" /> Tester le lien
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Étape 3 : Le Webhook (VISIBLE UNIQUEMENT SI CONNECTÉ) */}
           {calUsername && (
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 border-t border-slate-800 pt-8">
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-600/20 text-purple-400 font-bold text-xl"><Webhook className="h-6 w-6" /></div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">2. Synchronisation (Webhook)</h2>
+                  <h2 className="text-xl font-bold text-white">3. Synchronisation (Webhook)</h2>
                   <p className="text-sm text-slate-400 mt-1 max-w-lg">
                     Indispensable pour voir vos rendez-vous dans le Cockpit. <br/>
                     Allez dans <strong>Cal.com {'>'} Settings {'>'} Developer {'>'} Webhooks</strong> et collez cette URL.
@@ -266,8 +318,8 @@ export function RendezVous() {
                 </div>
               </div>
               <div className="w-full md:w-auto">
-                <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg p-1 pl-3">
-                  <code className="text-xs font-mono text-purple-300 truncate max-w-[250px] md:max-w-md">{webhookUrl}</code>
+                <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg p-2 pl-4">
+                  <code className="text-xs font-mono text-purple-300 truncate max-w-[250px] md:max-w-md select-all">{webhookUrl}</code>
                   <button 
                     onClick={handleCopyWebhook} 
                     className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
