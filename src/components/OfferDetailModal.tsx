@@ -873,12 +873,12 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                      </p>
                    )}
 
-                   {/* INTEGRATION SUPADEMO ICLOSED (AJOUT DU CODE) */}
+                   {/* INTEGRATION SUPADEMO ICLOSED (MODIFIÉ AVEC LOOP & AUTOPLAY) */}
                    {(editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
                      <div className="mt-4 rounded-lg border border-blue-500/20 overflow-hidden bg-slate-900/50">
                         <div style={{ position: 'relative', boxSizing: 'content-box', width: '100%', aspectRatio: '1.86' }}>
                           <iframe 
-                            src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed" 
+                            src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1" 
                             loading="lazy" 
                             title="Set Up Webhook Integration for Contact Events" 
                             allow="clipboard-write" 
