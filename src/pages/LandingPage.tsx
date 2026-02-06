@@ -90,7 +90,6 @@ export function LandingPage() {
               c'est terminé.
             </span>
             <br />
-            {/* 👇 AJOUT DE LA PHRASE ICI 👇 */}
             Reprenez 1h de closing par jour.
           </h1>
 
@@ -189,9 +188,15 @@ export function LandingPage() {
               <div className="h-12 w-12 rounded-lg bg-[#25D366]/20 flex items-center justify-center mb-6 ring-1 ring-[#25D366]/30">
                 <Phone className="h-6 w-6 text-[#25D366]" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Téléphonie VoIP & WhatsApp</h3>
+              
+              {/* 👇 TEXTE MODIFIÉ POUR ÊTRE HONNÊTE 👇 */}
+              <h3 className="text-xl font-bold text-white mb-3">Téléphonie VoIP & Click-to-WhatsApp</h3>
               <p className="text-slate-400 text-sm leading-relaxed mb-4">
-                Appelez vos prospects via Twilio et gérez vos échanges WhatsApp directement dans CloseOS. Enregistrement automatique des appels et historique 100% centralisé.
+                Appelez vos prospects en un clic via Twilio (appels enregistrés). 
+                Lancez vos conversations WhatsApp instantanément sans enregistrer le numéro.
+                <span className="block mt-2 text-[#25D366] text-xs font-bold uppercase tracking-wide">
+                    🚀 Zéro friction au quotidien
+                </span>
               </p>
             </div>
 
