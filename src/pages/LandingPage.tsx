@@ -103,7 +103,6 @@ export function LandingPage() {
           <div className="mt-20 relative mx-auto max-w-6xl animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500 group">
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 rounded-2xl opacity-20 blur-lg group-hover:opacity-40 transition-opacity duration-1000"></div>
             <div className="relative rounded-xl border border-slate-800 bg-[#0B1121] shadow-2xl overflow-hidden ring-1 ring-white/10">
-               {/* PLACEHOLDER IMAGE */}
                <img 
                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2670&auto=format&fit=crop" 
                  alt="Dashboard CloseOS" 
@@ -125,8 +124,13 @@ export function LandingPage() {
              <div className="flex items-center gap-2 font-bold text-2xl text-white"><span className="text-[#25D366]">WhatsApp</span></div>
              <div className="flex items-center gap-2 font-bold text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
              <div className="flex items-center gap-2 font-bold text-2xl text-white">iClosed</div>
-             <div className="flex items-center gap-2 font-bold text-2xl text-white"><span className="text-[#0061FF]">Zoom</span></div>
-             <div className="flex items-center gap-2 font-bold text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
+             <div className="flex items-center gap-2 font-bold text-2xl text-white">Cal.com</div>
+             <div className="flex items-center gap-2 font-bold text-2xl text-white">Calendly</div>
+             <div className="flex items-center gap-2 font-bold text-2xl text-white">Hubspot</div>
+             <div className="flex items-center gap-2 font-bold text-2xl text-white">Pipedrive</div>
+             <div className="flex items-center gap-2 cursor-pointer group">
+                <ArrowRight className="h-6 w-6 text-blue-500 group-hover:translate-x-1 transition-transform" />
+             </div>
           </div>
         </div>
       </section>
