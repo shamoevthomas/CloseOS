@@ -17,15 +17,28 @@ import {
   CalendarCheck,
   LayoutDashboard,
   Phone,
-  Bot
+  Bot,
+  Star,
+  ShieldCheck
 } from 'lucide-react'
 
 export function LandingPage() {
+  
+  // 👇 COLLE TES LIENS STRIPE ICI 👇
+  const STRIPE_LINK_FOUNDER = "https://buy.stripe.com/TON_LIEN_FOUNDER_19EUROS"; 
+  const STRIPE_LINK_STARTER = "https://buy.stripe.com/TON_LIEN_STARTER_30EUROS";
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 overflow-x-hidden">
       
+      {/* --- BANDEAU OFFRE PRÉLANCEMENT --- */}
+      <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
+        🚀 OFFRE DE PRÉLANCEMENT : Rejoignez les Founders pour 19€/mois à VIE (au lieu de 30€). 
+        <span className="hidden sm:inline"> L'essai gratuit débutera au lancement officiel.</span>
+      </div>
+
       {/* --- NAVBAR --- */}
-      <nav className="fixed top-0 z-50 w-full border-b border-white/5 bg-[#020617]/80 backdrop-blur-md">
+      <nav className="fixed top-[40px] z-50 w-full border-b border-white/5 bg-[#020617]/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-blue-600 to-purple-600 shadow-lg shadow-blue-500/20">
@@ -36,7 +49,7 @@ export function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Fonctionnalités</a>
             <a href="#comparison" className="hover:text-white transition-colors">Comparatif</a>
-            <a href="#integrations" className="hover:text-white transition-colors">Intégrations</a>
+            <a href="#pricing" className="text-white font-semibold transition-colors">Tarifs</a>
           </div>
           <div className="flex items-center gap-4">
             <Link 
@@ -44,21 +57,21 @@ export function LandingPage() {
               className="group flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
             >
               <LogIn className="h-4 w-4 text-slate-500 group-hover:text-white transition-colors" />
-              Se connecter
+              <span className="hidden sm:inline">Se connecter</span>
             </Link>
-            <Link 
-              to="/signup" 
+            <a 
+              href="#pricing" 
               className="hidden sm:flex group items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-950 transition-all hover:bg-blue-50 hover:scale-105 active:scale-95"
             >
-              Essayer Gratuitement
+              Devenir Founder
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
+            </a>
           </div>
         </div>
       </nav>
 
       {/* --- HERO SECTION --- */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
+      <section className="relative pt-40 pb-20 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/20 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
         <div className="absolute bottom-0 right-0 w-[800px] h-[600px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
         
@@ -84,13 +97,13 @@ export function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-            <Link 
-              to="/signup" 
+            <a 
+              href="#pricing" 
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-blue-600 text-white font-bold text-lg hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-1 flex items-center justify-center gap-2"
             >
               <Zap className="h-5 w-5 fill-current" />
-              Centraliser mon business
-            </Link>
+              Profiter de l'offre Founder
+            </a>
             <Link to="/login" className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 font-semibold text-lg hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center gap-2 backdrop-blur-sm">
               <Play className="h-5 w-5" />
               Voir la démo
@@ -127,9 +140,6 @@ export function LandingPage() {
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Calendly</div>
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Hubspot</div>
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Pipedrive</div>
-             <div className="flex items-center gap-2 cursor-pointer group">
-                <ArrowRight className="h-6 w-6 text-blue-500 group-hover:translate-x-1 transition-transform" />
-             </div>
           </div>
         </div>
       </section>
@@ -240,7 +250,6 @@ export function LandingPage() {
                  </p>
                </div>
              </div>
-
           </div>
         </div>
       </section>
@@ -336,6 +345,134 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* --- PRICING SECTION (NEW) --- */}
+      <section id="pricing" className="py-32 relative bg-slate-950">
+        <div className="mx-auto max-w-7xl px-6 relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-white sm:text-5xl">Rejoignez l'Élite.</h2>
+            <p className="text-slate-400 mt-4 text-lg">Choisissez l'outil qui va doubler votre taux de closing.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+            
+            {/* PLAN STARTER */}
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 flex flex-col h-full opacity-80 hover:opacity-100 transition-opacity">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-white">STARTER</h3>
+                <p className="mt-2 text-slate-400 text-sm">Pour les closers qui débutent ou font moins de 5k€/mois.</p>
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-white">30€</span>
+                  <span className="text-slate-500">/mois</span>
+                </div>
+              </div>
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span>Pipeline de vente illimité</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span>Agenda & Booking intégré</span>
+                </li>
+                 <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span>Facturation automatisée</span>
+                </li>
+                 <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span>Support standard par email</span>
+                </li>
+              </ul>
+              <a href={STRIPE_LINK_STARTER} className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+                Démarrer Starter
+              </a>
+            </div>
+
+            {/* PLAN FOUNDER (HERO) */}
+            <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 scale-105 relative z-10 flex flex-col h-full">
+              <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                  OFFRE PRÉLANCEMENT
+                </span>
+              </div>
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                   <h3 className="text-2xl font-bold text-white">FOUNDER</h3>
+                   <Star className="h-5 w-5 text-yellow-400 fill-yellow-400 animate-pulse" />
+                </div>
+                <p className="mt-2 text-blue-200 text-sm">Accès complet à vie au tarif préférentiel.</p>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-5xl font-extrabold text-white">19€</span>
+                  <span className="text-slate-400 line-through text-lg">30€</span>
+                  <span className="text-slate-500">/mois à vie</span>
+                </div>
+              </div>
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span>Toutes les fonctionnalités Starter</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span>Appels VoIP & Enregistrements</span>
+                </li>
+                 <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span>Synchronisation CRM (HubSpot, etc.)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span>Accès prioritaire aux futures IA</span>
+                </li>
+                 <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span>Badge "Membre Fondateur"</span>
+                </li>
+              </ul>
+              <a href={STRIPE_LINK_FOUNDER} className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40">
+                Sécuriser ma place à 19€
+              </a>
+              <p className="mt-4 text-xs text-center text-slate-500">
+                Carte bancaire requise. <strong>Aucun prélèvement avant le lancement officiel</strong> + 7 jours d'essai offerts.
+              </p>
+            </div>
+
+            {/* PLAN AGENCY (CONTACT) */}
+             <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 flex flex-col h-full opacity-80 hover:opacity-100 transition-opacity">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-white">AGENCY</h3>
+                <p className="mt-2 text-slate-400 text-sm">Pour les équipes de vente et les réseaux.</p>
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-white">Sur devis</span>
+                </div>
+              </div>
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-slate-500 shrink-0" />
+                  <span>Tout l'illimité pour vos équipes</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-slate-500 shrink-0" />
+                  <span>Dashboard Manager & Admin</span>
+                </li>
+                 <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-slate-500 shrink-0" />
+                  <span>Onboarding personnalisé</span>
+                </li>
+                 <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-slate-500 shrink-0" />
+                  <span>API dédiée</span>
+                </li>
+              </ul>
+              <a href="mailto:support@closeos.fr" className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+                Contacter l'équipe
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
       {/* --- COMING SOON --- */}
       <section className="py-20 bg-[#0B1121]">
          <div className="mx-auto max-w-4xl px-6 text-center">
@@ -374,16 +511,16 @@ export function LandingPage() {
             Rejoignez l'élite des closers qui utilisent le système tout-en-un CloseOS.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link 
-              to="/signup" 
+            <a 
+              href="#pricing" 
               className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-slate-950 font-bold text-lg hover:bg-blue-50 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/10"
             >
-              Créer mon compte gratuitement
+              Profiter de l'offre Founder (19€/mois)
               <ChevronRight className="h-5 w-5" />
-            </Link>
+            </a>
           </div>
           <p className="mt-6 text-sm text-slate-500">
-            Pas de carte bancaire requise pour démarrer.
+            7 jours d'essai gratuit. Pas de prélèvement immédiat.
           </p>
         </div>
       </section>
@@ -395,15 +532,15 @@ export function LandingPage() {
             <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-600">
                <Target className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="text-lg font-bold text-white">CloseOS</span>
+            <span className="text-lg font-bold text-white">CloseOS.fr</span>
           </div>
           <div className="text-slate-500 text-sm">
-            © 2026 CloseOS. Fait avec ❤️ pour les closers.
+            © 2026 CloseOS.fr. Fait avec ❤️ pour les closers.
           </div>
           <div className="flex gap-6">
             <a href="#" className="text-slate-500 hover:text-white transition-colors">Twitter</a>
             <a href="#" className="text-slate-500 hover:text-white transition-colors">LinkedIn</a>
-            <a href="mailto:support@closeos.com" className="text-slate-500 hover:text-white transition-colors">Contact</a>
+            <a href="mailto:support@closeos.fr" className="text-slate-500 hover:text-white transition-colors">support@closeos.fr</a>
           </div>
         </div>
       </footer>
