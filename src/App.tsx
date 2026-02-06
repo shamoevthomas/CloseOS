@@ -41,6 +41,7 @@ import { BookingSettings } from './pages/BookingSettings'
 import CallRoom from './pages/CallRoom'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import { Legal } from './pages/Legal' // 👈 IMPORT AJOUTÉ
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -88,6 +89,7 @@ function AuthenticatedApp() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
+        <Route path="/mentions-legales" element={<Legal />} /> {/* 👈 ROUTE AJOUTÉE */}
 
         {/* 👇 ROUTES DE PAIEMENT STRIPE (ACCESSIBLES SANS LOGIN) 👇 */}
         <Route path="/checkout" element={<CheckoutForm />} />

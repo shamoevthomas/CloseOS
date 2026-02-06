@@ -558,7 +558,7 @@ export function LandingPage() {
             <span className="text-lg font-bold text-white">CloseOS.fr</span>
           </div>
           <div className="text-slate-500 text-sm">
-            © 2026 CloseOS.fr. Fait avec ❤️ pour les closers.
+            © 2026 CloseOS.fr • <Link to="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
           </div>
           <div className="flex gap-6">
             <a href="#" className="text-slate-500 hover:text-white transition-colors">Twitter</a>
