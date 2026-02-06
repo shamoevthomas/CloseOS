@@ -93,6 +93,15 @@ export default function Landing() {
               Se connecter
             </button>
           </div>
+
+          {/* Integrations Section */}
+          <div className="mt-20 flex flex-wrap items-center justify-center gap-x-12 gap-y-6 opacity-30 grayscale transition-all hover:opacity-100 hover:grayscale-0">
+             <span className="text-lg font-bold">Cal.com</span>
+             <span className="text-lg font-bold">Calendly</span>
+             <span className="text-lg font-bold">Hubspot</span>
+             <span className="text-lg font-bold">Pipedrive</span>
+             <ArrowRight className="h-5 w-5 text-orange-500 cursor-pointer hover:translate-x-1 transition-transform" />
+          </div>
         </div>
       </section>
 
