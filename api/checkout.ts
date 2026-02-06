@@ -1,13 +1,15 @@
 import Stripe from 'stripe';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// On force le typage "string" pour éviter que TS râle si la clé est undefined
+// On force le typage "string" pour éviter que TS râle
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     try {
       const { priceId } = req.body;
+      
+      console.log("Tentative de création de session pour le prix:", priceId);
 
       // Création de la session
       const session = await stripe.checkout.sessions.create({
@@ -19,7 +21,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           },
         ],
         mode: 'subscription',
-        payment_method_collection: 'if_required',
+        // 👇 CHANGEMENT CRUCIAL ICI :
+        // 'always' oblige le client à rentrer sa CB même pour un essai gratuit.
+        // Cela permet de créer l'abonnement qui démarrera automatiquement dans 7 jours.
+        payment_method_collection: 'always', 
+        
         // Important: {CHECKOUT_SESSION_ID} est remplacé automatiquement par Stripe
         return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}`,
         subscription_data: {
@@ -30,6 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // On renvoie le secret au frontend
       res.status(200).json({ clientSecret: session.client_secret });
     } catch (err: any) {
+      console.error("ERREUR STRIPE:", err.message);
       res.status(err.statusCode || 500).json(err.message);
     }
   } else {
