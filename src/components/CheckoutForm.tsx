@@ -7,7 +7,7 @@ import {
 import { CheckCircle2, ShieldCheck, Sparkles, Target, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// Initialise Stripe avec ta clé publique
+// Initialise Stripe avec ta clé publique (Vérifie bien qu'elle est sur ton Dashboard Vercel)
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export const CheckoutForm = () => {
@@ -19,9 +19,8 @@ export const CheckoutForm = () => {
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // ⚠️ REMPLACE "TON_ID_DE_PRIX" par l'ID qui commence par price_... 
-      // que tu trouveras dans l'onglet "Tarification" de ton produit prod_TvmtlnOb0baT20
-      body: JSON.stringify({ priceId: "TON_ID_DE_PRIX_ICI" }), 
+      // Utilisation de ton ID de prix réel
+      body: JSON.stringify({ priceId: "price_1SxvJz33xpuYLywqrtHgWAQl" }), 
     })
       .then(async (res) => {
         if (!res.ok) throw new Error('Erreur API');
@@ -73,7 +72,6 @@ export const CheckoutForm = () => {
       <main className="flex-1 py-12 px-6 lg:py-20">
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-start">
           
-          {/* --- PARTIE GAUCHE : DÉTAILS --- */}
           <div className="space-y-10">
             <div>
               <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-bold bg-blue-500/10 text-blue-300 border border-blue-500/20 mb-6">
@@ -114,7 +112,6 @@ export const CheckoutForm = () => {
             </div>
           </div>
 
-          {/* --- PARTIE DROITE : STRIPE --- */}
           <div className="relative bg-[#0F172A] rounded-[2.5rem] border border-slate-800 shadow-2xl overflow-hidden p-2 sm:p-4">
             <div className="absolute -inset-4 bg-blue-600/10 blur-[60px] rounded-full pointer-events-none" />
             {loading ? (
