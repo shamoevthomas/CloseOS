@@ -127,7 +127,8 @@ export const CheckoutForm = () => {
                   // L'objet 'appearance' a été retiré pour corriger l'erreur d'intégration
                 }}
               >
-                <EmbeddedCheckout />
+                {/* 👇 MODIFICATION : Ajout de la classe pour arrondir le formulaire */}
+                <EmbeddedCheckout className="rounded-2xl h-full w-full" />
               </EmbeddedCheckoutProvider>
             )}
           </div>
