@@ -7,7 +7,7 @@ import {
 import { CheckCircle2, ShieldCheck, Sparkles, Target, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// Initialise Stripe avec ta clé publique (Vérifie bien qu'elle est sur ton Dashboard Vercel)
+// Initialise Stripe avec ta clé publique
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export const CheckoutForm = () => {
@@ -19,7 +19,7 @@ export const CheckoutForm = () => {
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // Utilisation de ton ID de prix réel
+      // Ton ID de prix
       body: JSON.stringify({ priceId: "price_1SxvJz33xpuYLywqrtHgWAQl" }), 
     })
       .then(async (res) => {
@@ -112,7 +112,8 @@ export const CheckoutForm = () => {
             </div>
           </div>
 
-          <div className="relative bg-[#0F172A] rounded-[2.5rem] border border-slate-800 shadow-2xl overflow-hidden p-2 sm:p-4">
+          {/* 👇 MODIFICATION ICI : rounded-[2.5rem] devient rounded-2xl pour faire plus carré */}
+          <div className="relative bg-[#0F172A] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden p-2 sm:p-4">
             <div className="absolute -inset-4 bg-blue-600/10 blur-[60px] rounded-full pointer-events-none" />
             {loading ? (
               <div className="flex flex-col items-center justify-center py-40">
@@ -122,13 +123,10 @@ export const CheckoutForm = () => {
             ) : clientSecret && (
               <EmbeddedCheckoutProvider
                 stripe={stripePromise}
-                options={{
-                  clientSecret,
-                  // L'objet 'appearance' a été retiré pour corriger l'erreur d'intégration
-                }}
+                options={{ clientSecret }}
               >
-                {/* 👇 MODIFICATION : Ajout de la classe pour arrondir le formulaire */}
-                <EmbeddedCheckout className="rounded-2xl h-full w-full" />
+                {/* On laisse Stripe gérer l'intérieur proprement */}
+                <EmbeddedCheckout />
               </EmbeddedCheckoutProvider>
             )}
           </div>
