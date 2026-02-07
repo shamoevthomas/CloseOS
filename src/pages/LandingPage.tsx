@@ -25,7 +25,8 @@ import {
   Database,
   Video,
   Users,
-  Building2
+  Building2,
+  PlusCircle // AJOUTÉ : Pour l'icône de l'option VoIP
 } from 'lucide-react'
 
 export function LandingPage() {
@@ -38,24 +39,24 @@ export function LandingPage() {
     })();
   }, [])
 
-  const STRIPE_LINK_FOUNDER = "https://buy.stripe.com/TON_LIEN_FOUNDER_19EUROS"; 
-  const STRIPE_LINK_STARTER = "https://buy.stripe.com/TON_LIEN_STARTER_30EUROS";
+  const STRIPE_LINK_FOUNDER = "https://buy.stripe.com/TON_LIEN_FOUNDER_29EUROS"; 
+  const STRIPE_LINK_STARTER = "https://buy.stripe.com/TON_LIEN_STARTER_39EUROS";
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 overflow-x-hidden">
       
       {/* --- BANDEAU OFFRE PRÉLANCEMENT --- */}
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
-        🚀 OFFRE DE PRÉLANCEMENT : Rejoignez les Founders pour 19€/mois à VIE (au lieu de 69€). 
+        {/* 👇 MODIFICATION : PRIX PASSÉ À 29€ */}
+        🚀 OFFRE DE PRÉLANCEMENT : Rejoignez les Founders pour 29€/mois à VIE (au lieu de 69€). 
         <span className="hidden sm:inline"> L'essai gratuit débutera au lancement officiel.</span>
       </div>
 
       {/* --- NAVBAR --- */}
       <nav className="fixed top-[40px] z-50 w-full border-b border-white/5 bg-[#020617]/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+        <div className="mx-auto flex h-32 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-2">
-            {/* 👇 MODIFICATION : LOGO IMAGE */}
-            <img src="/logo.PNG" alt="CloseOS Logo" className="h-8 w-auto" />
+            <img src="/logo.PNG" alt="CloseOS Logo" className="h-28 w-auto" />
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Fonctionnalités</a>
@@ -148,7 +149,6 @@ export function LandingPage() {
             Synchronisation native avec vos outils préférés
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
-             {/* 👇 MODIFICATION : WhatsApp supprimé ici */}
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
@@ -462,13 +462,14 @@ export function LandingPage() {
             
             {pricingTab === 'closer' && (
               <>
-                {/* PLAN STARTER */}
+                {/* PLAN STARTER (LEURRE) */}
                 <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 flex flex-col h-full opacity-80 hover:opacity-100 transition-opacity animate-in fade-in zoom-in duration-300">
                   <div className="mb-6">
                     <h3 className="text-xl font-bold text-white">STARTER</h3>
                     <p className="mt-2 text-slate-400 text-sm">Pour les closers qui débutent ou font moins de 5k€/mois.</p>
                     <div className="mt-4 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-white">30€</span>
+                      {/* 👇 MODIFICATION : PRIX STARTER 39€ */}
+                      <span className="text-4xl font-bold text-white">39€</span>
                       <span className="text-slate-500">/mois</span>
                     </div>
                   </div>
@@ -509,20 +510,18 @@ export function LandingPage() {
                     </div>
                     <p className="mt-2 text-blue-200 text-sm">Accès complet à vie au tarif préférentiel.</p>
                     <div className="mt-4 flex items-baseline gap-2">
-                      <span className="text-5xl font-extrabold text-white">19€</span>
+                      {/* 👇 MODIFICATION : PRIX FOUNDER 29€ */}
+                      <span className="text-5xl font-extrabold text-white">29€</span>
                       <span className="text-slate-400 line-through text-lg">69€</span>
                       <span className="text-slate-500">/mois à vie</span>
                     </div>
                   </div>
-                  <ul className="space-y-4 mb-8 flex-1">
+                  <ul className="space-y-4 mb-4 flex-1">
                     <li className="flex gap-3 text-sm text-white font-medium">
                       <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
                       <span>Toutes les fonctionnalités Starter</span>
                     </li>
-                    <li className="flex gap-3 text-sm text-white font-medium">
-                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span>Appels VoIP & Enregistrements</span>
-                    </li>
+                    {/* 👇 MODIFICATION : "Appels VoIP" RETIRÉ de la liste principale */}
                      <li className="flex gap-3 text-sm text-white font-medium">
                       <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
                       <span>Synchronisation CRM (HubSpot, etc.)</span>
@@ -536,12 +535,21 @@ export function LandingPage() {
                       <span>Badge "Membre Fondateur"</span>
                     </li>
                   </ul>
+
+                  {/* 👇 AJOUT : ENCART OPTION VOIP */}
+                  <div className="mt-2 mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                     <div className="flex items-center gap-2 text-blue-300 font-bold text-sm mb-1">
+                        <PlusCircle className="h-4 w-4" />
+                        Option VoIP & Enregistrements
+                     </div>
+                     <p className="text-xs text-blue-400">Appels illimités & recording (+5€/mois)</p>
+                  </div>
                   
                   <Link 
                     to="/checkout" 
                     className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
                   >
-                    Sécuriser ma place à 19€
+                    Sécuriser ma place à 29€
                   </Link>
                   
                   <p className="mt-4 text-xs text-center text-slate-500">
@@ -678,7 +686,8 @@ export function LandingPage() {
               href="#pricing" 
               className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-slate-950 font-bold text-lg hover:bg-blue-50 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/10"
             >
-              Profiter de l'offre Founder (19€/mois)
+              {/* 👇 MODIFICATION : PRIX CTA 29€ */}
+              Profiter de l'offre Founder (29€/mois)
               <ChevronRight className="h-5 w-5" />
             </a>
           </div>
@@ -692,8 +701,7 @@ export function LandingPage() {
       <footer className="border-t border-white/5 bg-[#020617] py-12">
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            {/* 👇 MODIFICATION : LOGO IMAGE */}
-            <img src="/logo.PNG" alt="CloseOS Logo" className="h-6 w-auto" />
+            <img src="/logo.PNG" alt="CloseOS Logo" className="h-32 w-auto" />
           </div>
           <div className="text-slate-500 text-sm">
             © 2026 CloseOS.fr • <Link to="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
