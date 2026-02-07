@@ -678,8 +678,14 @@ export function LandingPage() {
             © 2026 CloseOS.fr • <Link to="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
           </div>
           <div className="flex gap-6">
-            <a href="#" className="text-slate-500 hover:text-white transition-colors">Twitter</a>
-            <a href="#" className="text-slate-500 hover:text-white transition-colors">LinkedIn</a>
+            <a 
+              href="https://www.linkedin.com/in/thomas-shamoev-570885237/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-slate-500 hover:text-white transition-colors"
+            >
+              LinkedIn
+            </a>
             <a href="mailto:support@closeos.fr" className="text-slate-500 hover:text-white transition-colors">support@closeos.fr</a>
           </div>
         </div>
