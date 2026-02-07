@@ -58,7 +58,6 @@ export function LandingPage() {
           <div className="flex items-center gap-2">
             <img src="/logo.PNG" alt="CloseOS Logo" className="h-8 w-auto" />
           </div>
-          {/* 👇 MODIFICATION : AJOUT DES LIENS MANQUANTS */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Fonctionnalités</a>
             <a href="#integrations" className="hover:text-white transition-colors">Intégrations</a>
@@ -153,6 +152,8 @@ export function LandingPage() {
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
+             {/* 👇 MODIFICATION : AJOUT DE STRIPE */}
+             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Cal.com</div>
