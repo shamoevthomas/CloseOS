@@ -55,7 +55,7 @@ export function LandingPage() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-2">
             {/* 👇 MODIFICATION : LOGO IMAGE */}
-            <img src="/logo.png" alt="CloseOS Logo" className="h-8 w-auto" />
+            <img src="/logo.PNG" alt="CloseOS Logo" className="h-8 w-auto" />
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Fonctionnalités</a>
@@ -693,7 +693,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             {/* 👇 MODIFICATION : LOGO IMAGE */}
-            <img src="/logo.png" alt="CloseOS Logo" className="h-6 w-auto" />
+            <img src="/logo.PNG" alt="CloseOS Logo" className="h-6 w-auto" />
           </div>
           <div className="text-slate-500 text-sm">
             © 2026 CloseOS.fr • <Link to="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
