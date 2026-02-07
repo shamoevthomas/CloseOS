@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { useState } from 'react' // AJOUTÉ : Import de useState
+import { useState, useEffect } from 'react' // AJOUTÉ : Import de useEffect
+import Cal, { getCalApi } from "@calcom/embed-react"; // AJOUTÉ : Import Cal.com
 import {
   ArrowRight,
   CheckCircle2,
@@ -31,6 +32,14 @@ export function LandingPage() {
   // AJOUTÉ : État pour gérer l'onglet actif du pricing
   const [pricingTab, setPricingTab] = useState<'closer' | 'agency' | 'enterprise'>('closer');
   
+  // AJOUTÉ : Configuration Cal.com au chargement
+  useEffect(() => {
+    (async function () {
+      const cal = await getCalApi({"namespace":"demo-closeos-decouvrez-la-plateforme"});
+      cal("ui", {"theme":"dark","hideEventTypeDetails":false,"layout":"month_view"});
+    })();
+  }, [])
+
   // 👇 COLLE TES LIENS STRIPE ICI 👇
   const STRIPE_LINK_FOUNDER = "https://buy.stripe.com/TON_LIEN_FOUNDER_19EUROS"; 
   const STRIPE_LINK_STARTER = "https://buy.stripe.com/TON_LIEN_STARTER_30EUROS";
@@ -113,10 +122,14 @@ export function LandingPage() {
               <Zap className="h-5 w-5 fill-current" />
               Profiter de l'offre Founder
             </a>
-            <Link to="/login" className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 font-semibold text-lg hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center gap-2 backdrop-blur-sm">
+            {/* 👇 MODIFICATION : Lien vers l'ancre #demo */}
+            <a 
+              href="#demo" 
+              className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 font-semibold text-lg hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
+            >
               <Play className="h-5 w-5" />
               Voir la démo
-            </Link>
+            </a>
           </div>
 
           {/* DASHBOARD PREVIEW */}
@@ -637,6 +650,36 @@ export function LandingPage() {
 
             </div>
          </div>
+      </section>
+
+      {/* --- SECTION DEMO / CAL.COM (AJOUTÉE) --- */}
+      <section id="demo" className="py-32 relative bg-slate-900/20 border-t border-white/5">
+        <div className="mx-auto max-w-4xl px-6 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-sm font-medium text-blue-300 mb-6">
+            <Video className="h-4 w-4" />
+            Démo Personnalisée
+          </div>
+          <h2 className="text-3xl font-bold text-white sm:text-5xl mb-6">
+            Voyez la machine en action.
+          </h2>
+          <p className="text-lg text-slate-400 mb-12 max-w-2xl mx-auto">
+            Vous avez des doutes ? Prenez 15 min avec moi pour une démo en direct et on regarde ensemble comment CloseOS peut booster votre business.
+          </p>
+
+          <div className="rounded-3xl border border-slate-800 bg-[#020617] overflow-hidden shadow-2xl shadow-blue-500/10 h-[700px]">
+            {/* Composant Cal.com intégré */}
+            <Cal
+                namespace="demo-closeos-decouvrez-la-plateforme"
+                calLink="thomas-sh-ipdmni/demo-closeos-decouvrez-la-plateforme"
+                style={{width:"100%",height:"100%",overflow:"scroll"}}
+                config={{"layout":"month_view","useSlotsViewOnSmallScreen":"true","theme":"dark"}}
+            />
+          </div>
+          
+          <p className="mt-8 text-sm text-slate-500">
+            Garanti 0% pression commerciale. 100% valeur ajoutée.
+          </p>
+        </div>
       </section>
 
       {/* --- CTA FINAL --- */}
