@@ -54,10 +54,8 @@ export function LandingPage() {
       <nav className="fixed top-[40px] z-50 w-full border-b border-white/5 bg-[#020617]/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-blue-600 to-purple-600 shadow-lg shadow-blue-500/20">
-              <Target className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white">CloseOS</span>
+            {/* 👇 MODIFICATION : LOGO IMAGE */}
+            <img src="/logo.png" alt="CloseOS Logo" className="h-8 w-auto" />
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Fonctionnalités</a>
@@ -694,10 +692,8 @@ export function LandingPage() {
       <footer className="border-t border-white/5 bg-[#020617] py-12">
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-600">
-               <Target className="h-3.5 w-3.5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-white">CloseOS.fr</span>
+            {/* 👇 MODIFICATION : LOGO IMAGE */}
+            <img src="/logo.png" alt="CloseOS Logo" className="h-6 w-auto" />
           </div>
           <div className="text-slate-500 text-sm">
             © 2026 CloseOS.fr • <Link to="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
