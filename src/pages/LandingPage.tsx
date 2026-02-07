@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { useState, useEffect } from 'react' // AJOUTÉ : Import de useEffect
-import Cal, { getCalApi } from "@calcom/embed-react"; // AJOUTÉ : Import Cal.com
+import { useState, useEffect } from 'react'
+import Cal, { getCalApi } from "@calcom/embed-react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -29,10 +29,8 @@ import {
 } from 'lucide-react'
 
 export function LandingPage() {
-  // AJOUTÉ : État pour gérer l'onglet actif du pricing
   const [pricingTab, setPricingTab] = useState<'closer' | 'agency' | 'enterprise'>('closer');
   
-  // AJOUTÉ : Configuration Cal.com au chargement
   useEffect(() => {
     (async function () {
       const cal = await getCalApi({"namespace":"demo-closeos-decouvrez-la-plateforme"});
@@ -40,7 +38,6 @@ export function LandingPage() {
     })();
   }, [])
 
-  // 👇 COLLE TES LIENS STRIPE ICI 👇
   const STRIPE_LINK_FOUNDER = "https://buy.stripe.com/TON_LIEN_FOUNDER_19EUROS"; 
   const STRIPE_LINK_STARTER = "https://buy.stripe.com/TON_LIEN_STARTER_30EUROS";
 
@@ -122,7 +119,6 @@ export function LandingPage() {
               <Zap className="h-5 w-5 fill-current" />
               Profiter de l'offre Founder
             </a>
-            {/* 👇 MODIFICATION : Lien vers l'ancre #demo */}
             <a 
               href="#demo" 
               className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 font-semibold text-lg hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
@@ -238,10 +234,8 @@ export function LandingPage() {
                 <div className="h-12 w-12 rounded-lg bg-purple-500/20 flex items-center justify-center mb-6 ring-1 ring-purple-500/30">
                   <CalendarCheck className="h-6 w-6 text-purple-400" />
                 </div>
-                {/* 👇 MODIFICATION : Titre changé pour Cal.com & Calendly */}
                 <h3 className="text-2xl font-bold text-white mb-3">Agenda & Booking (Cal.com & Calendly)</h3>
                 <p className="text-slate-400 mb-6 max-w-md leading-relaxed">
-                  {/* 👇 MODIFICATION : Texte adapté pour l'intégration */}
                   Connectez vos outils existants. Vos rendez-vous Cal.com et Calendly remontent automatiquement dans votre Pipeline et votre Agenda CloseOS.
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -259,7 +253,6 @@ export function LandingPage() {
               </div>
               <h3 className="text-xl font-bold text-white mb-3">Facturation Auto</h3>
               <p className="text-slate-400 text-sm leading-relaxed">
-                {/* 👇 MODIFICATION : Suppression de "Comptable-ready" */}
                 Générez vos factures de commissions en un clic. Suivez les paiements, exportez en PDF.
               </p>
             </div>
@@ -273,7 +266,6 @@ export function LandingPage() {
                  <div className="h-12 w-12 rounded-lg bg-[#E11D48]/20 flex items-center justify-center mb-6 ring-1 ring-[#E11D48]/30">
                    <Zap className="h-6 w-6 text-[#E11D48]" />
                  </div>
-                 {/* 👇 MODIFICATION : Ajout de iClosed */}
                  <h3 className="text-2xl font-bold text-white mb-3">Sync CRM (HubSpot, Pipedrive, iClosed)</h3>
                  <p className="text-slate-400 mb-6 max-w-lg leading-relaxed">
                    Synchronisation native avec iClosed, HubSpot et Pipedrive. Vos leads et vos deals circulent en temps réel. Oubliez la double saisie manuelle et automatisez 100% de votre suivi.
@@ -282,6 +274,51 @@ export function LandingPage() {
              </div>
           </div>
         </div>
+      </section>
+
+      {/* --- COMING SOON (DÉPLACÉ ICI) --- */}
+      <section className="py-20 bg-[#0B1121] border-t border-white/5">
+         <div className="mx-auto max-w-4xl px-6 text-center">
+            <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-400 uppercase tracking-widest">
+               Prochainement
+            </span>
+            <h2 className="text-3xl font-bold text-white mt-6 mb-12">Le Futur du Closing</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
+                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><BrainCircuit className="h-6 w-6 text-indigo-400"/></div>
+                  <div>
+                     <h3 className="font-bold text-white mb-1">Coach IA en Temps Réel</h3>
+                     <p className="text-sm text-slate-400">Analyse vos appels en direct, détecte les objections et vous suggère les meilleures réponses pour closer.</p>
+                  </div>
+               </div>
+               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
+                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Smartphone className="h-6 w-6 text-indigo-400"/></div>
+                  <div>
+                     <h3 className="font-bold text-white mb-1">Application Mobile Native</h3>
+                     <p className="text-sm text-slate-400">Gérez votre pipeline, recevez vos notifs et passez vos appels depuis votre poche. iOS {'&'} Android.</p>
+                  </div>
+               </div>
+               
+               {/* BLOC AGENCY */}
+               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
+                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Users className="h-6 w-6 text-indigo-400"/></div>
+                  <div>
+                     <h3 className="font-bold text-white mb-1">Interface Agency</h3>
+                     <p className="text-sm text-slate-400">Dédiée aux agences de closing. Pilotez plusieurs équipes, gérez l'attribution des leads et analysez la rentabilité de chaque closer en temps réel.</p>
+                  </div>
+               </div>
+
+               {/* BLOC ENTREPRISE */}
+               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
+                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Building2 className="h-6 w-6 text-indigo-400"/></div>
+                  <div>
+                     <h3 className="font-bold text-white mb-1">Solution Entreprise & Infopreneur</h3>
+                     <p className="text-sm text-slate-400">Pour les business qui scalent. Management d'équipe centralisé, attribution auto des leads et messagerie interne pour un pilotage à 360°.</p>
+                  </div>
+               </div>
+
+            </div>
+         </div>
       </section>
 
       {/* --- COMPARISON SECTION --- */}
@@ -298,7 +335,6 @@ export function LandingPage() {
               <h3 className="text-xl font-bold text-red-400 mb-6 flex items-center gap-2">
                 <XCircle className="h-6 w-6" /> L'Enfer des Abonnements
               </h3>
-              {/* 👇 MODIFICATION : Ajout des icônes pour chaque ligne */}
               <div className="space-y-3 text-sm text-slate-300 flex-1">
                  <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
                     <span className="font-medium flex items-center gap-2"><Database className="h-4 w-4"/> CRM Séparé</span>
@@ -334,7 +370,6 @@ export function LandingPage() {
                 <CheckCircle2 className="h-6 w-6" /> CloseOS : La Machine de Guerre
               </h3>
               
-              {/* 👇 MODIFICATION : Réécriture complète pour l'automatisation */}
               <div className="flex-1 relative z-10 flex flex-col gap-3">
                 <div className="p-5 bg-blue-600/20 border border-blue-500/40 rounded-xl flex items-center gap-4">
                     <div className="h-10 w-10 rounded-lg bg-blue-500/30 flex items-center justify-center">
@@ -388,7 +423,7 @@ export function LandingPage() {
             <p className="text-slate-400 mt-4 text-lg">Choisissez l'outil qui va doubler votre taux de closing.</p>
           </div>
 
-          {/* 👇 SELECTEUR D'ONGLETS 👇 */}
+          {/* SELECTEUR D'ONGLETS */}
           <div className="flex justify-center mb-12">
             <div className="inline-flex p-1 bg-slate-900 rounded-xl border border-slate-800">
               <button 
@@ -424,10 +459,9 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* 👇 CONTENU DES ONGLETS 👇 */}
+          {/* CONTENU DES ONGLETS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start max-w-5xl mx-auto">
             
-            {/* --- ONGLET CLOSER (CONTENU ACTUEL) --- */}
             {pricingTab === 'closer' && (
               <>
                 {/* PLAN STARTER */}
@@ -463,7 +497,7 @@ export function LandingPage() {
                   </a>
                 </div>
 
-                {/* PLAN FOUNDER (HERO) */}
+                {/* PLAN FOUNDER */}
                 <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 scale-105 relative z-10 flex flex-col h-full animate-in fade-in zoom-in duration-300 delay-75">
                   <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
                     <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
@@ -519,10 +553,8 @@ export function LandingPage() {
               </>
             )}
 
-            {/* --- ONGLET AGENCY --- */}
             {pricingTab === 'agency' && (
               <div className="col-span-1 md:col-span-2 rounded-3xl border border-indigo-500/30 bg-indigo-950/10 p-10 flex flex-col items-center text-center animate-in fade-in zoom-in duration-300 relative group overflow-hidden">
-                {/* 👇 OVERLAY PROCHAINEMENT AU SURVOL 👇 */}
                 <div className="absolute inset-0 bg-red-600/80 backdrop-blur-[2px] z-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <span className="text-white text-2xl font-bold uppercase tracking-widest border-2 border-white/50 px-6 py-3 rounded-xl bg-red-950/50 -rotate-2">
                     Prochainement
@@ -533,7 +565,6 @@ export function LandingPage() {
                   <Users className="h-8 w-8 text-indigo-400" />
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4">Offre Agence & Réseaux</h3>
-                {/* 👇 DESCRIPTION MISE À JOUR 👇 */}
                 <p className="text-slate-300 max-w-lg mb-8">
                   Dédiée aux agences de closing. Pilotez plusieurs équipes, gérez l'attribution des leads et analysez la rentabilité de chaque closer en temps réel.
                 </p>
@@ -561,10 +592,8 @@ export function LandingPage() {
               </div>
             )}
 
-            {/* --- ONGLET ENTREPRISE --- */}
             {pricingTab === 'enterprise' && (
                <div className="col-span-1 md:col-span-2 rounded-3xl border border-emerald-500/30 bg-emerald-950/10 p-10 flex flex-col items-center text-center animate-in fade-in zoom-in duration-300 relative group overflow-hidden">
-                {/* 👇 OVERLAY PROCHAINEMENT AU SURVOL 👇 */}
                 <div className="absolute inset-0 bg-red-600/80 backdrop-blur-[2px] z-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <span className="text-white text-2xl font-bold uppercase tracking-widest border-2 border-white/50 px-6 py-3 rounded-xl bg-red-950/50 -rotate-2">
                     Prochainement
@@ -575,7 +604,6 @@ export function LandingPage() {
                   <Building2 className="h-8 w-8 text-emerald-400" />
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4">Pour Infopreneurs & Entreprises</h3>
-                {/* 👇 DESCRIPTION MISE À JOUR 👇 */}
                 <p className="text-slate-300 max-w-lg mb-8">
                   Pour les business qui scalent. Management d'équipe centralisé, attribution auto des leads et messagerie interne pour un pilotage à 360°.
                 </p>
@@ -607,52 +635,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* --- COMING SOON --- */}
-      <section className="py-20 bg-[#0B1121]">
-         <div className="mx-auto max-w-4xl px-6 text-center">
-            <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-400 uppercase tracking-widest">
-               Prochainement
-            </span>
-            <h2 className="text-3xl font-bold text-white mt-6 mb-12">Le Futur du Closing</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
-                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><BrainCircuit className="h-6 w-6 text-indigo-400"/></div>
-                  <div>
-                     <h3 className="font-bold text-white mb-1">Coach IA en Temps Réel</h3>
-                     <p className="text-sm text-slate-400">Analyse vos appels en direct, détecte les objections et vous suggère les meilleures réponses pour closer.</p>
-                  </div>
-               </div>
-               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
-                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Smartphone className="h-6 w-6 text-indigo-400"/></div>
-                  <div>
-                     <h3 className="font-bold text-white mb-1">Application Mobile Native</h3>
-                     <p className="text-sm text-slate-400">Gérez votre pipeline, recevez vos notifs et passez vos appels depuis votre poche. iOS {'&'} Android.</p>
-                  </div>
-               </div>
-               
-               {/* 👇 NOUVEAU BLOC : AGENCY 👇 */}
-               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
-                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Users className="h-6 w-6 text-indigo-400"/></div>
-                  <div>
-                     <h3 className="font-bold text-white mb-1">Interface Agency</h3>
-                     <p className="text-sm text-slate-400">Dédiée aux agences de closing. Pilotez plusieurs équipes, gérez l'attribution des leads et analysez la rentabilité de chaque closer en temps réel.</p>
-                  </div>
-               </div>
-
-               {/* 👇 NOUVEAU BLOC : ENTREPRISE 👇 */}
-               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
-                  <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Building2 className="h-6 w-6 text-indigo-400"/></div>
-                  <div>
-                     <h3 className="font-bold text-white mb-1">Solution Entreprise & Infopreneur</h3>
-                     <p className="text-sm text-slate-400">Pour les business qui scalent. Management d'équipe centralisé, attribution auto des leads et messagerie interne pour un pilotage à 360°.</p>
-                  </div>
-               </div>
-
-            </div>
-         </div>
-      </section>
-
-      {/* --- SECTION DEMO / CAL.COM (AJOUTÉE) --- */}
+      {/* --- SECTION DEMO / CAL.COM --- */}
       <section id="demo" className="py-32 relative bg-slate-900/20 border-t border-white/5">
         <div className="mx-auto max-w-4xl px-6 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-sm font-medium text-blue-300 mb-6">
@@ -667,7 +650,6 @@ export function LandingPage() {
           </p>
 
           <div className="rounded-3xl border border-slate-800 bg-[#020617] overflow-hidden shadow-2xl shadow-blue-500/10 h-[700px]">
-            {/* Composant Cal.com intégré */}
             <Cal
                 namespace="demo-closeos-decouvrez-la-plateforme"
                 calLink="thomas-sh-ipdmni/demo-closeos-decouvrez-la-plateforme"
