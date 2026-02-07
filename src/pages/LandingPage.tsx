@@ -58,10 +58,13 @@ export function LandingPage() {
           <div className="flex items-center gap-2">
             <img src="/logo.PNG" alt="CloseOS Logo" className="h-8 w-auto" />
           </div>
+          {/* 👇 MODIFICATION : AJOUT DES LIENS MANQUANTS */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Fonctionnalités</a>
+            <a href="#integrations" className="hover:text-white transition-colors">Intégrations</a>
             <a href="#comparison" className="hover:text-white transition-colors">Comparatif</a>
             <a href="#pricing" className="text-white font-semibold transition-colors">Tarifs</a>
+            <a href="#demo" className="hover:text-white transition-colors">Démo</a>
           </div>
           <div className="flex items-center gap-4">
             <Link 
@@ -468,7 +471,6 @@ export function LandingPage() {
                     <h3 className="text-xl font-bold text-white">STARTER</h3>
                     <p className="mt-2 text-slate-400 text-sm">Pour les closers qui débutent ou font moins de 5k€/mois.</p>
                     <div className="mt-4 flex items-baseline gap-1">
-                      {/* MODIF : 39€ */}
                       <span className="text-4xl font-bold text-white">39€</span>
                       <span className="text-slate-500">/mois</span>
                     </div>
@@ -510,7 +512,6 @@ export function LandingPage() {
                     </div>
                     <p className="mt-2 text-blue-200 text-sm">Accès complet à vie au tarif préférentiel.</p>
                     <div className="mt-4 flex items-baseline gap-2">
-                      {/* MODIF : 29€ */}
                       <span className="text-5xl font-extrabold text-white">29€</span>
                       <span className="text-slate-400 line-through text-lg">69€</span>
                       <span className="text-slate-500">/mois à vie</span>
@@ -521,7 +522,6 @@ export function LandingPage() {
                       <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
                       <span>Toutes les fonctionnalités Starter</span>
                     </li>
-                    {/* SUPPRESSION : Ligne Appels VoIP retirée ici */}
                      <li className="flex gap-3 text-sm text-white font-medium">
                       <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
                       <span>Synchronisation CRM (HubSpot, etc.)</span>
@@ -535,14 +535,11 @@ export function LandingPage() {
                       <span>Badge "Membre Fondateur"</span>
                     </li>
                   </ul>
-
-                  {/* SUPPRESSION : L'ENCART VOIP ÉTAIT ICI, IL EST DÉPLACÉ PLUS BAS */}
                   
                   <Link 
                     to="/checkout" 
                     className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
                   >
-                    {/* MODIF : 29€ */}
                     Sécuriser ma place à 29€
                   </Link>
                   
@@ -694,7 +691,6 @@ export function LandingPage() {
               href="#pricing" 
               className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-slate-950 font-bold text-lg hover:bg-blue-50 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/10"
             >
-              {/* MODIF : 29€ */}
               Profiter de l'offre Founder (29€/mois)
               <ChevronRight className="h-5 w-5" />
             </a>
