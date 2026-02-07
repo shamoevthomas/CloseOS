@@ -508,13 +508,21 @@ export function LandingPage() {
 
             {/* --- ONGLET AGENCY --- */}
             {pricingTab === 'agency' && (
-              <div className="col-span-1 md:col-span-2 rounded-3xl border border-indigo-500/30 bg-indigo-950/10 p-10 flex flex-col items-center text-center animate-in fade-in zoom-in duration-300">
+              <div className="col-span-1 md:col-span-2 rounded-3xl border border-indigo-500/30 bg-indigo-950/10 p-10 flex flex-col items-center text-center animate-in fade-in zoom-in duration-300 relative group overflow-hidden">
+                {/* 👇 OVERLAY PROCHAINEMENT AU SURVOL 👇 */}
+                <div className="absolute inset-0 bg-red-600/80 backdrop-blur-[2px] z-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <span className="text-white text-2xl font-bold uppercase tracking-widest border-2 border-white/50 px-6 py-3 rounded-xl bg-red-950/50 -rotate-2">
+                    Prochainement
+                  </span>
+                </div>
+
                 <div className="h-16 w-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center mb-6">
                   <Users className="h-8 w-8 text-indigo-400" />
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4">Offre Agence & Réseaux</h3>
+                {/* 👇 DESCRIPTION MISE À JOUR 👇 */}
                 <p className="text-slate-300 max-w-lg mb-8">
-                  Équipez vos closers avec la meilleure technologie du marché. Suivez leurs performances en temps réel via un Dashboard Manager unifié.
+                  Dédiée aux agences de closing. Pilotez plusieurs équipes, gérez l'attribution des leads et analysez la rentabilité de chaque closer en temps réel.
                 </p>
                 <div className="grid md:grid-cols-2 gap-6 w-full max-w-2xl mb-10 text-left">
                   <div className="flex gap-3">
@@ -542,13 +550,21 @@ export function LandingPage() {
 
             {/* --- ONGLET ENTREPRISE --- */}
             {pricingTab === 'enterprise' && (
-               <div className="col-span-1 md:col-span-2 rounded-3xl border border-emerald-500/30 bg-emerald-950/10 p-10 flex flex-col items-center text-center animate-in fade-in zoom-in duration-300">
+               <div className="col-span-1 md:col-span-2 rounded-3xl border border-emerald-500/30 bg-emerald-950/10 p-10 flex flex-col items-center text-center animate-in fade-in zoom-in duration-300 relative group overflow-hidden">
+                {/* 👇 OVERLAY PROCHAINEMENT AU SURVOL 👇 */}
+                <div className="absolute inset-0 bg-red-600/80 backdrop-blur-[2px] z-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <span className="text-white text-2xl font-bold uppercase tracking-widest border-2 border-white/50 px-6 py-3 rounded-xl bg-red-950/50 -rotate-2">
+                    Prochainement
+                  </span>
+                </div>
+
                 <div className="h-16 w-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center mb-6">
                   <Building2 className="h-8 w-8 text-emerald-400" />
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4">Pour Infopreneurs & Entreprises</h3>
+                {/* 👇 DESCRIPTION MISE À JOUR 👇 */}
                 <p className="text-slate-300 max-w-lg mb-8">
-                  Une solution sur-mesure pour internaliser votre pôle de vente. Intégrations CRM avancées, API dédiée et accompagnement stratégique.
+                  Pour les business qui scalent. Management d'équipe centralisé, attribution auto des leads et messagerie interne pour un pilotage à 360°.
                 </p>
                 <div className="grid md:grid-cols-2 gap-6 w-full max-w-2xl mb-10 text-left">
                   <div className="flex gap-3">
