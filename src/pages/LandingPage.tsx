@@ -26,7 +26,7 @@ import {
   Video,
   Users,
   Building2,
-  PlusCircle // AJOUT : Icône pour l'option VoIP
+  PlusCircle 
 } from 'lucide-react'
 
 export function LandingPage() {
@@ -48,7 +48,6 @@ export function LandingPage() {
       
       {/* --- BANDEAU OFFRE PRÉLANCEMENT --- */}
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
-        {/* MODIF : 29€ */}
         🚀 OFFRE DE PRÉLANCEMENT : Rejoignez les Founders pour 29€/mois à VIE (au lieu de 69€). 
         <span className="hidden sm:inline"> L'essai gratuit débutera au lancement officiel.</span>
       </div>
@@ -537,14 +536,7 @@ export function LandingPage() {
                     </li>
                   </ul>
 
-                  {/* AJOUT : ENCART OPTION VOIP */}
-                  <div className="mt-2 mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                     <div className="flex items-center gap-2 text-blue-300 font-bold text-sm mb-1">
-                        <PlusCircle className="h-4 w-4" />
-                        Option VoIP & Enregistrements
-                     </div>
-                     <p className="text-xs text-blue-400">Appels illimités & recording (+5€/mois)</p>
-                  </div>
+                  {/* SUPPRESSION : L'ENCART VOIP ÉTAIT ICI, IL EST DÉPLACÉ PLUS BAS */}
                   
                   <Link 
                     to="/checkout" 
@@ -640,6 +632,20 @@ export function LandingPage() {
             )}
 
           </div>
+
+          {/* AJOUT : ENCART OPTION VOIP CENTRÉ EN BAS */}
+          <div className="mt-8 flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-900/20 border border-blue-500/30 shadow-lg shadow-blue-500/5">
+              <div className="p-2 rounded-lg bg-blue-500/20">
+                <PlusCircle className="h-5 w-5 text-blue-400" />
+              </div>
+              <div className="text-left">
+                  <p className="text-sm font-bold text-white">Option VoIP & Enregistrements</p>
+                  <p className="text-xs text-blue-300">Ajoutez la téléphonie à votre plan pour <span className="text-white font-bold">+5€/mois</span></p>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
