@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 
 // Imports des Contextes
@@ -42,7 +42,7 @@ import CallRoom from './pages/CallRoom'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import { Legal } from './pages/Legal' 
-import { WelcomeFounder } from './pages/WelcomeFounder' // 👈 AJOUT 1 : Import
+import { WelcomeFounder } from './pages/WelcomeFounder' 
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -61,6 +61,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>
+}
+
+// 👇 NOUVEAU COMPOSANT : Il empêche l'onboarding de s'ouvrir sur la page Welcome
+function OnboardingWrapper({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+  const location = useLocation()
+  
+  // Liste des pages où l'onboarding ne doit JAMAIS s'afficher
+  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return'];
+
+  if (hiddenPaths.includes(location.pathname)) {
+    return null;
+  }
+  
+  return <OnboardingModal isOpen={isOpen} onClose={onClose} />;
 }
 
 function AuthenticatedApp() {
@@ -94,7 +108,7 @@ function AuthenticatedApp() {
         <Route path="/checkout" element={<CheckoutForm />} />
         <Route path="/checkout-starter" element={<CheckoutStarter />} />
         <Route path="/return" element={<Return />} />
-        <Route path="/welcome-founder" element={<WelcomeFounder />} /> {/* 👈 AJOUT 2 : Route */}
+        <Route path="/welcome-founder" element={<WelcomeFounder />} />
 
         {/* Route Appel Plein Écran */}
         <Route 
@@ -135,7 +149,8 @@ function AuthenticatedApp() {
 
       {user && (
         <>
-          <OnboardingModal 
+          {/* 👇 REMPLACEMENT ICI : On utilise le Wrapper au lieu du Modal direct */}
+          <OnboardingWrapper 
             isOpen={isOnboardingOpen} 
             onClose={() => setIsOnboardingOpen(false)} 
           />
