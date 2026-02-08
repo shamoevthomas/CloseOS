@@ -7,29 +7,24 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     try {
-      const { priceId } = req.body;
+      // 👇 MODIFICATION : On récupère "lineItems" (la liste) au lieu de "priceId"
+      const { lineItems } = req.body;
       
-      console.log("Tentative de création de session pour le prix:", priceId);
+      console.log("Tentative de création de session pour les items:", lineItems);
 
       // Création de la session
       const session = await stripe.checkout.sessions.create({
         ui_mode: 'embedded',
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
+        // 👇 MODIFICATION : On passe directement le tableau reçu du frontend
+        line_items: lineItems,
         mode: 'subscription',
-        // 👇 CHANGEMENT CRUCIAL ICI :
         // 'always' oblige le client à rentrer sa CB même pour un essai gratuit.
-        // Cela permet de créer l'abonnement qui démarrera automatiquement dans 7 jours.
         payment_method_collection: 'always', 
         
         // Important: {CHECKOUT_SESSION_ID} est remplacé automatiquement par Stripe
         return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}`,
         subscription_data: {
-          trial_period_days: 7, // Ton essai gratuit
+          trial_period_days: 7, // Ton essai gratuit s'applique à tout le panier
         },
       });
 
