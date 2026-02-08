@@ -1,14 +1,26 @@
-import { Link } from 'react-router-dom';
-import { Target, MessageCircle, LogOut, Volume2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Target, MessageCircle, LogOut } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext'; // Import nécessaire pour la déconnexion
 
 export function WelcomeFounder() {
-  
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
   // 👇 TON LIEN WHATSAPP OFFICIEL
   const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s";
 
-  // 👇 TON LIEN YOUTUBE (ID: ewsQesgvs1w)
-  // Configuré pour : Autoplay + Muet (obligatoire) + Contrôles activés + Pas de suggestions à la fin
+  // 👇 TON LIEN YOUTUBE
   const YOUTUBE_URL = "https://www.youtube.com/embed/ewsQesgvs1w?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1";
+
+  // Fonction pour gérer la vraie déconnexion
+  const handleLogout = async () => {
+    try {
+      await logout(); // On détruit la session
+      navigate('/');  // On renvoie vers la landing page publique
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 flex flex-col">
@@ -16,15 +28,20 @@ export function WelcomeFounder() {
       {/* HEADER SIMPLE */}
       <nav className="border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-white text-lg">
-             <img src="/logo.PNG" alt="CloseOS" className="h-6 w-auto" />
-             <span>CloseOS</span>
-          </div>
-          {/* Bouton pour se déconnecter/revenir à l'accueil */}
-          <Link to="/" className="text-slate-500 hover:text-white transition-colors flex items-center gap-2 text-sm">
+          
+          {/* MODIF 1 : Logo seul (sans texte en double) et cliquable vers l'accueil */}
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+             <img src="/logo.PNG" alt="CloseOS" className="h-8 w-auto" />
+          </Link>
+
+          {/* MODIF 2 : Vraie déconnexion */}
+          <button 
+            onClick={handleLogout}
+            className="text-slate-500 hover:text-white transition-colors flex items-center gap-2 text-sm bg-transparent border-none cursor-pointer"
+          >
             <LogOut className="h-4 w-4" />
             <span>Déconnexion</span>
-          </Link>
+          </button>
         </div>
       </nav>
 
@@ -47,7 +64,6 @@ export function WelcomeFounder() {
 
           {/* LECTEUR YOUTUBE */}
           <div className="relative rounded-2xl overflow-hidden border border-slate-800 shadow-2xl shadow-blue-900/20 bg-slate-900 aspect-video animate-in fade-in zoom-in duration-700 delay-100 group">
-             
              <iframe 
                 src={YOUTUBE_URL} 
                 className="absolute top-0 left-0 w-full h-full"
@@ -56,20 +72,7 @@ export function WelcomeFounder() {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
              ></iframe>
-
-             {/* INDICATEUR "ACTIVEZ LE SON" (Optionnel pour YouTube, mais utile pour rappeler que c'est muet) */}
-             <div className="absolute top-6 right-6 pointer-events-none transition-opacity duration-500 group-hover:opacity-0">
-                <div className="bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex items-center gap-3">
-                  <div className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
-                  </div>
-                  <span className="text-xs font-bold text-white flex items-center gap-2">
-                    <Volume2 className="h-3 w-3" />
-                    CLIQUEZ POUR LE SON
-                  </span>
-                </div>
-             </div>
+             {/* MODIF 3 : Suppression de l'indicateur sonore "Cliquez pour le son" */}
           </div>
 
           {/* INSTRUCTIONS & WHATSAPP */}
@@ -79,7 +82,8 @@ export function WelcomeFounder() {
               <ul className="space-y-4 text-slate-400">
                 <li className="flex gap-4 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold border border-blue-600/30 mt-0.5">1</span>
-                  <span><strong>Onboarding :</strong> L'accès au logiciel ouvrira officiellement dans quelques jours. Tu recevras tes identifiants par email.</span>
+                  {/* MODIF 4 : Phrase raccourcie */}
+                  <span><strong>Onboarding :</strong> L'accès au logiciel ouvrira officiellement dans quelques jours.</span>
                 </li>
                 <li className="flex gap-4 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold border border-blue-600/30 mt-0.5">2</span>
