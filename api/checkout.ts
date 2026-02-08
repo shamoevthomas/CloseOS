@@ -19,7 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         line_items: lineItems,
         mode: 'subscription',
         // 'always' oblige le client à rentrer sa CB même pour un essai gratuit.
-        payment_method_collection: 'always', 
+        payment_method_collection: 'if_required', 
         
         // Important: {CHECKOUT_SESSION_ID} est remplacé automatiquement par Stripe
         return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}`,

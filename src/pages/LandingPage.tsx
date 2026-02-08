@@ -39,9 +39,9 @@ export function LandingPage() {
     })();
   }, [])
 
-  // 👇 PENSE À METTRE À JOUR TES LIENS STRIPE SI NÉCESSAIRE 👇
+  // 👇 Le lien Founder reste ici (ou sera remplacé par /checkout plus tard)
   const STRIPE_LINK_FOUNDER = "https://buy.stripe.com/TON_LIEN_FOUNDER_29EUROS"; 
-  const STRIPE_LINK_STARTER = "https://buy.stripe.com/TON_LIEN_STARTER_39EUROS";
+  // Le lien Starter n'est plus utilisé ici car on passe par la page interne
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 overflow-x-hidden">
@@ -152,7 +152,6 @@ export function LandingPage() {
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
-             {/* 👇 MODIFICATION : AJOUT DE STRIPE */}
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
              <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
@@ -494,9 +493,10 @@ export function LandingPage() {
                       <span>Support standard par email</span>
                     </li>
                   </ul>
-                  <a href={STRIPE_LINK_STARTER} target="_blank" rel="noopener noreferrer" className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+                  {/* 👇 LIEN MODIFIÉ VERS LA PAGE INTERNE */}
+                  <Link to="/checkout-starter" className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
                     Démarrer Starter
-                  </a>
+                  </Link>
                 </div>
 
                 {/* PLAN FOUNDER */}

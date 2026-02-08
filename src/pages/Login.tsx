@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2, LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase'; // AJOUT : Import direct pour gérer la redirection
+import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // On ne récupère plus loginWithGoogle ici car on le fait manuellement
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,7 @@ export default function Login() {
         setError(result.error.message || "Email ou mot de passe incorrect");
         setLoading(false);
       } else {
-        navigate('/dashboard'); // ✅ CORRECTION ICI
+        navigate('/dashboard');
       }
     } catch (err) {
       setError("Une erreur est survenue.");
@@ -36,11 +36,9 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
-      // MODIFIÉ : On appelle supabase directement pour contrôler l'URL de retour
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          // C'est cette ligne qui corrige votre problème
           redirectTo: window.location.origin 
         }
       });
@@ -54,25 +52,27 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-950 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#020617] px-4 selection:bg-blue-500/30 font-sans">
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Link to="/" className="inline-block">
-            <h1 className="text-3xl font-bold">
-              <span className="text-blue-500">Closer</span>
-              <span className="text-white">OS</span>
-            </h1>
+        
+        {/* LOGO EN-TÊTE */}
+        <div className="mb-10 text-center flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <Link to="/" className="inline-block transition-transform hover:scale-105">
+            <img src="/logo.PNG" alt="CloseOS Logo" className="h-12 w-auto" />
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8 shadow-xl">
+        <div className="rounded-2xl border border-slate-800 bg-[#0B1121] p-8 shadow-2xl shadow-blue-900/10 animate-in fade-in zoom-in duration-500">
           <div className="mb-8">
-            <h2 className="mb-2 text-2xl font-bold text-white">Bienvenue !</h2>
-            <p className="text-gray-400">Connectez-vous à votre compte</p>
+            <h2 className="mb-2 text-2xl font-bold text-white flex items-center gap-2">
+              <LogIn className="h-6 w-6 text-blue-500" />
+              Connexion
+            </h2>
+            <p className="text-slate-400">Accédez à votre espace Founder.</p>
           </div>
 
           {error && (
-            <div className="mb-6 rounded-lg bg-red-500/10 p-3 text-sm text-red-500 border border-red-500/20">
+            <div className="mb-6 rounded-lg bg-red-500/10 p-3 text-sm text-red-400 border border-red-500/20">
               {error}
             </div>
           )}
@@ -81,10 +81,10 @@ export default function Login() {
           <button
             onClick={handleGoogleLogin}
             disabled={googleLoading}
-            className="mb-6 flex w-full items-center justify-center gap-3 rounded-lg border border-gray-700 bg-gray-800 py-3 font-medium text-white transition-all hover:bg-gray-750 disabled:opacity-50"
+            className="mb-6 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-700 bg-slate-800 py-3 font-medium text-white transition-all hover:bg-slate-700 hover:border-slate-600 disabled:opacity-50"
           >
             {googleLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
             ) : (
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="h-5 w-5" alt="Google" />
             )}
@@ -92,20 +92,20 @@ export default function Login() {
           </button>
 
           <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-800"></div></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-gray-900 px-2 text-gray-500">Ou avec email</span></div>
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#0B1121] px-2 text-slate-500 font-bold">Ou avec email</span></div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-300 text-left">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+              <label className="mb-2 block text-sm font-bold text-slate-300 text-left">Email</label>
+              <div className="relative group">
+                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 py-3 pl-10 pr-4 text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900/50 py-3 pl-10 pr-4 text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
                   placeholder="votre@email.com"
                   required
                 />
@@ -113,34 +113,41 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-300 text-left">Mot de passe</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+              <div className="flex justify-between items-center mb-2">
+                 <label className="block text-sm font-bold text-slate-300">Mot de passe</label>
+                 <a href="#" className="text-xs text-blue-400 hover:text-blue-300">Oublié ?</a>
+              </div>
+              <div className="relative group">
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 py-3 pl-10 pr-4 text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900/50 py-3 pl-10 pr-4 text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
                   placeholder="••••••••"
                   required
                 />
               </div>
             </div>
 
+            {/* BOUTON SE CONNECTER (BLEU) */}
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 py-3 font-semibold text-white transition-all hover:bg-orange-600 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 font-bold text-white transition-all hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Se connecter"}
               {!loading && <ArrowRight className="h-5 w-5" />}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-400">
+          <div className="mt-8 text-center border-t border-slate-800 pt-6">
+            <p className="text-slate-400 text-sm">
               Pas encore de compte ?{' '}
-              <Link to="/register" className="font-semibold text-orange-500 hover:text-orange-400">Créer un compte</Link>
+              {/* LIEN VERS LE PRICING */}
+              <a href="/#pricing" className="font-bold text-blue-500 hover:text-blue-400 hover:underline transition-all">
+                Devenir Founder
+              </a>
             </p>
           </div>
         </div>

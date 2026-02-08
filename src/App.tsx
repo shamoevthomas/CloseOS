@@ -17,8 +17,8 @@ import { SettingsModal } from './components/settings/SettingsModal'
 import { OnboardingModal } from './components/OnboardingModal'
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
-// 👇 NOUVEAUX IMPORTS POUR LE PAIEMENT 👇
 import { CheckoutForm } from './components/CheckoutForm'
+import { CheckoutStarter } from './components/CheckoutStarter'
 import { Return } from './components/Return'
 
 // Imports des Pages
@@ -41,7 +41,8 @@ import { BookingSettings } from './pages/BookingSettings'
 import CallRoom from './pages/CallRoom'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import { Legal } from './pages/Legal' // 👈 IMPORT AJOUTÉ
+import { Legal } from './pages/Legal' 
+import { WelcomeFounder } from './pages/WelcomeFounder' // 👈 AJOUT 1 : Import
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -67,7 +68,6 @@ function AuthenticatedApp() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(true)
 
-  // Loader global pendant la vérification de l'authentification
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -79,7 +79,6 @@ function AuthenticatedApp() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 1. ROUTE RACINE : Le carrefour intelligent */}
         <Route 
           path="/" 
           element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
@@ -89,11 +88,13 @@ function AuthenticatedApp() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
-        <Route path="/mentions-legales" element={<Legal />} /> {/* 👈 ROUTE AJOUTÉE */}
+        <Route path="/mentions-legales" element={<Legal />} />
 
-        {/* 👇 ROUTES DE PAIEMENT STRIPE (ACCESSIBLES SANS LOGIN) 👇 */}
+        {/* Routes Paiement & Onboarding */}
         <Route path="/checkout" element={<CheckoutForm />} />
+        <Route path="/checkout-starter" element={<CheckoutStarter />} />
         <Route path="/return" element={<Return />} />
+        <Route path="/welcome-founder" element={<WelcomeFounder />} /> {/* 👈 AJOUT 2 : Route */}
 
         {/* Route Appel Plein Écran */}
         <Route 
@@ -105,7 +106,7 @@ function AuthenticatedApp() {
           } 
         />
 
-        {/* 2. APPLICATION PROTÉGÉE (LAYOUT) */}
+        {/* APPLICATION PROTÉGÉE */}
         <Route
           element={
             <ProtectedRoute>
@@ -113,7 +114,6 @@ function AuthenticatedApp() {
             </ProtectedRoute>
           }
         >
-          {/* Toutes tes pages internes */}
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="contacts" element={<Contacts />} />
@@ -129,7 +129,6 @@ function AuthenticatedApp() {
           <Route path="messages" element={<MessagesPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
           
-          {/* Toute autre adresse inconnue redirige vers le dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>

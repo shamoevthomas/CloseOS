@@ -23,12 +23,11 @@ export function Return() {
     const sessionId = urlParams.get('session_id');
     
     // 👇👇👇 LA PORTE DÉROBÉE DU FONDATEUR 👇👇👇
-    // Si l'URL contient ?admin_bypass=true, on simule un succès immédiat
     if (urlParams.get('admin_bypass') === 'true') {
       setStatus('complete');
-      setCustomerEmail('admin@closeos.fr'); // Email par défaut pour le test
+      setCustomerEmail('admin@closeos.fr'); 
       setLoadingStripe(false);
-      return; // On arrête là, pas besoin d'appeler l'API Stripe
+      return; 
     }
     // 👆👆👆 FIN DE LA PORTE DÉROBÉE 👆👆👆
 
@@ -68,7 +67,9 @@ export function Return() {
         setError(result.error.message);
         setAuthLoading(false);
       } else {
-        navigate('/');
+        // 👇 C'EST ICI LA MODIFICATION IMPORTANTE 👇
+        // Au lieu de l'accueil ('/'), on redirige vers la vidéo de bienvenue
+        navigate('/welcome-founder');
       }
     } catch (err: any) {
       setError("Une erreur est survenue lors de la création du compte.");
@@ -81,6 +82,8 @@ export function Return() {
     try {
       const { error } = await loginWithGoogle();
       if (error) setError(error.message);
+      // Note : Pour Google, la redirection dépend de la configuration Supabase, 
+      // mais pour le mot de passe, c'est géré juste au-dessus.
     } catch (err) {
       setError("Impossible de lancer la connexion Google.");
     } finally {
@@ -107,11 +110,11 @@ export function Return() {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-slate-900 border border-emerald-500/20 rounded-3xl p-8 shadow-2xl shadow-emerald-900/10">
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4 font-sans selection:bg-blue-500/30">
+      <div className="w-full max-w-lg bg-[#0B1121] border border-emerald-500/20 rounded-3xl p-8 shadow-2xl shadow-emerald-900/10 animate-in fade-in zoom-in duration-500">
         
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 bg-emerald-500/10 rounded-full mb-4 ring-1 ring-emerald-500/20">
+          <div className="inline-flex items-center justify-center p-3 bg-emerald-500/10 rounded-full mb-4 ring-1 ring-emerald-500/20 shadow-lg shadow-emerald-500/10">
             <CheckCircle2 className="w-10 h-10 text-emerald-500" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Paiement réussi !</h1>
@@ -123,20 +126,20 @@ export function Return() {
         <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl mb-6">
           <button
             onClick={() => setActiveTab('password')}
-            className={`py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+            className={`py-2.5 px-4 rounded-lg text-sm font-bold transition-all ${
               activeTab === 'password'
-                ? 'bg-slate-800 text-white shadow-lg'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-slate-800 text-white shadow-lg border border-slate-700'
+                : 'text-slate-500 hover:text-slate-300'
             }`}
           >
             Mot de passe
           </button>
           <button
             onClick={() => setActiveTab('google')}
-            className={`py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+            className={`py-2.5 px-4 rounded-lg text-sm font-bold transition-all ${
               activeTab === 'google'
-                ? 'bg-slate-800 text-white shadow-lg'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-slate-800 text-white shadow-lg border border-slate-700'
+                : 'text-slate-500 hover:text-slate-300'
             }`}
           >
             Google
@@ -158,11 +161,9 @@ export function Return() {
                 <input
                   type="email"
                   value={customerEmail}
-                  // 👇 J'ai retiré le "disabled" temporairement si c'est l'admin bypass
-                  // pour que tu puisses changer l'email de test si tu veux
                   disabled={customerEmail !== 'admin@closeos.fr'}
                   onChange={(e) => setCustomerEmail(e.target.value)}
-                  className={`w-full bg-slate-950/50 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-slate-400 focus:outline-none ${customerEmail === 'admin@closeos.fr' ? 'cursor-text text-white' : 'cursor-not-allowed'}`}
+                  className={`w-full bg-slate-900/50 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-slate-300 focus:outline-none ${customerEmail === 'admin@closeos.fr' ? 'cursor-text text-white border-blue-500' : 'cursor-not-allowed opacity-70'}`}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   <Lock className="h-4 w-4 text-emerald-500" />
@@ -180,7 +181,7 @@ export function Return() {
                   onChange={(e) => setName(e.target.value)}
                   required
                   placeholder="Ex: Thomas Shelby"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
                 />
               </div>
             </div>
@@ -196,7 +197,7 @@ export function Return() {
                   required
                   minLength={8}
                   placeholder="••••••••"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
                 />
               </div>
             </div>
@@ -204,7 +205,7 @@ export function Return() {
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {authLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Activer mon compte"}
               {!authLoading && <LayoutDashboard className="h-4 w-4" />}
