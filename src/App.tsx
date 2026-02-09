@@ -43,7 +43,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import { Legal } from './pages/Legal' 
 import { WelcomeFounder } from './pages/WelcomeFounder' 
-import { ComingSoon } from './pages/ComingSoon' // 👈 AJOUT DE L'IMPORT
+import { ComingSoon } from './pages/ComingSoon' 
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -64,12 +64,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-// 👇 NOUVEAU COMPOSANT : Il empêche l'onboarding de s'ouvrir sur la page Welcome
+// Wrapper pour cacher l'onboarding sur certaines pages
 function OnboardingWrapper({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const location = useLocation()
   
-  // Liste des pages où l'onboarding ne doit JAMAIS s'afficher
-  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return'];
+  // 👇 AJOUT de '/coming-soon' pour que l'onboarding ne s'ouvre pas dessus
+  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/coming-soon'];
 
   if (hiddenPaths.includes(location.pathname)) {
     return null;
@@ -94,9 +94,10 @@ function AuthenticatedApp() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* 👇 REDIRECTION PRINCIPALE : Si connecté, on va sur /coming-soon au lieu de /dashboard */}
         <Route 
           path="/" 
-          element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
+          element={user ? <Navigate to="/coming-soon" replace /> : <LandingPage />} 
         />
         
         {/* Routes Publiques */}
@@ -111,6 +112,16 @@ function AuthenticatedApp() {
         <Route path="/return" element={<Return />} />
         <Route path="/welcome-founder" element={<WelcomeFounder />} />
 
+        {/* 👇 NOUVELLE ROUTE SÉPARÉE : Coming Soon (Hors du Layout) */}
+        <Route 
+          path="/coming-soon" 
+          element={
+            <ProtectedRoute>
+              <ComingSoon />
+            </ProtectedRoute>
+          } 
+        />
+
         {/* Route Appel Plein Écran */}
         <Route 
           path="/live-call" 
@@ -121,7 +132,7 @@ function AuthenticatedApp() {
           } 
         />
 
-        {/* APPLICATION PROTÉGÉE */}
+        {/* APPLICATION PROTÉGÉE (AVEC MENU LATÉRAL) */}
         <Route
           element={
             <ProtectedRoute>
@@ -129,9 +140,8 @@ function AuthenticatedApp() {
             </ProtectedRoute>
           }
         >
-          {/* 👇 MODIFICATION ICI : On remplace le Dashboard par ComingSoon */}
-          {/* <Route path="dashboard" element={<Dashboard />} /> */}
-          <Route path="dashboard" element={<ComingSoon />} />
+          {/* 👇 J'AI REMIS LE DASHBOARD ICI */}
+          <Route path="dashboard" element={<Dashboard />} />
           
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="contacts" element={<Contacts />} />
@@ -147,13 +157,13 @@ function AuthenticatedApp() {
           <Route path="messages" element={<MessagesPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
           
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* Si page inconnue, on renvoie vers coming-soon pour l'instant */}
+          <Route path="*" element={<Navigate to="/coming-soon" replace />} />
         </Route>
       </Routes>
 
       {user && (
         <>
-          {/* 👇 REMPLACEMENT ICI : On utilise le Wrapper au lieu du Modal direct */}
           <OnboardingWrapper 
             isOpen={isOnboardingOpen} 
             onClose={() => setIsOnboardingOpen(false)} 
