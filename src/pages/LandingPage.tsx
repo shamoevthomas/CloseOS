@@ -381,7 +381,7 @@ export function LandingPage() {
                     <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1">PERTE ESTIMÉE</p>
                     {/* MODIFICATION 2 : 35H + SOUS-TITRE */}
                     <div className="text-4xl font-black text-white">
-                      35h<span className="text-lg text-slate-500 font-medium">/mois</span>
+                      35h<span className="text-lg text-slate-500 font-medium">/semaine</span>
                     </div>
                     <p className="text-slate-400 text-sm mt-3 font-semibold">
                       Presque 2 mois par an perdus en administration.
