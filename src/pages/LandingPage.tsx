@@ -26,7 +26,9 @@ import {
   Video,
   Users,
   Building2,
-  PlusCircle 
+  PlusCircle,
+  Sheet,
+  Mic 
 } from 'lucide-react'
 
 export function LandingPage() {
@@ -339,48 +341,54 @@ export function LandingPage() {
                     <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
                       <XCircle className="w-6 h-6 text-red-500" />
                     </div>
-                    <h3 className="text-2xl font-bold text-white">L'Enfer du "Multi-Outils"</h3>
+                    <h3 className="text-2xl font-bold text-white">Le Chaos Administratif</h3>
                 </div>
 
                 <div className="space-y-4 flex-1">
                     <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
                       <div className="flex items-center gap-3 text-red-200">
-                          <Database className="w-4 h-4" /> CRM (Pipedrive)
+                          <Database className="w-4 h-4" /> Jongler entre 3 CRM (HubSpot...)
+                      </div>
+                      <span className="font-bold text-slate-400">Chronophage</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
+                      <div className="flex items-center gap-3 text-red-200">
+                          <Phone className="w-4 h-4" /> Téléphonie (Aircall/Onoff)
                       </div>
                       <span className="font-bold text-white">~30€</span>
                     </div>
                     <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
                       <div className="flex items-center gap-3 text-red-200">
-                          <Phone className="w-4 h-4" /> VoIP (Aircall)
-                      </div>
-                      <span className="font-bold text-white">~40€</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
-                      <div className="flex items-center gap-3 text-red-200">
-                          <CalendarCheck className="w-4 h-4" /> Booking (Calendly)
+                          <Mic className="w-4 h-4" /> Enregistrement + Analyse
                       </div>
                       <span className="font-bold text-white">~15€</span>
                     </div>
                     <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
                       <div className="flex items-center gap-3 text-red-200">
-                          <Bot className="w-4 h-4" /> Automation (Zapier)
+                          <Zap className="w-4 h-4" /> Automatisation (Zapier)
                       </div>
-                      <span className="font-bold text-white">~25€</span>
+                      <span className="font-bold text-white">~20€</span>
                     </div>
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm opacity-60">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
                       <div className="flex items-center gap-3 text-red-200">
-                          <Video className="w-4 h-4" /> Visio (Zoom)
+                          <Video className="w-4 h-4" /> Visio (Google Meet)
                       </div>
-                      <span className="font-bold text-white">~15€</span>
+                      <span className="font-bold text-white">~10€</span>
+                    </div>
+                     <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm opacity-80">
+                      <div className="flex items-center gap-3 text-red-200">
+                          <Sheet className="w-4 h-4" /> Factures & KPIs (Excel)
+                      </div>
+                      <span className="font-bold text-slate-400">Manuel</span>
                     </div>
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-red-900/30 text-center">
                     <p className="text-red-400 text-sm font-medium uppercase tracking-widest mb-1">Coût mensuel estimé</p>
                     <div className="text-4xl font-black text-white">
-                      ~125€<span className="text-lg text-slate-500 font-medium">/mois</span>
+                      ~75€<span className="text-lg text-slate-500 font-medium">/mois</span>
                     </div>
-                    <p className="text-slate-500 text-xs mt-2">+ La fatigue mentale de gérer 5 factures.</p>
+                    <p className="text-slate-500 text-xs mt-2">+ La fatigue de tout mettre à jour manuellement.</p>
                 </div>
               </div>
             </div>
@@ -418,7 +426,7 @@ export function LandingPage() {
                       </div>
                       <div>
                           <h4 className="font-bold text-white">Automatisations Natives</h4>
-                          <p className="text-sm text-slate-400">Plus besoin de Zapier. Tout se parle en interne.</p>
+                          <p className="text-sm text-slate-400">Plus besoin de Zapier. Les CRMs externes se mettent à jour seuls.</p>
                       </div>
                     </div>
 
@@ -428,7 +436,7 @@ export function LandingPage() {
                       </div>
                       <div>
                           <h4 className="font-bold text-white">Focus Total</h4>
-                          <p className="text-sm text-slate-400">Une seule interface à ouvrir le matin. C'est tout.</p>
+                          <p className="text-sm text-slate-400">Fini la double saisie et les 10 onglets. Tout est centralisé.</p>
                       </div>
                     </div>
                 </div>
