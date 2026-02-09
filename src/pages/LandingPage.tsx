@@ -28,7 +28,8 @@ import {
   Building2,
   PlusCircle,
   Sheet,
-  Mic 
+  Mic,
+  Clock 
 } from 'lucide-react'
 
 export function LandingPage() {
@@ -347,7 +348,7 @@ export function LandingPage() {
                 <div className="space-y-4 flex-1">
                     <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
                       <div className="flex items-center gap-3 text-red-200">
-                          <Database className="w-4 h-4" /> Jonglage entre 2 ou 3 CRM (HubSpot...)
+                          <Database className="w-4 h-4" /> Jonglage entre CRMs (HubSpot...)
                       </div>
                       <span className="font-bold text-red-400">Charge mentale</span>
                     </div>
@@ -359,31 +360,31 @@ export function LandingPage() {
                     </div>
                     <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
                       <div className="flex items-center gap-3 text-red-200">
-                          <Phone className="w-4 h-4" /> Onoff / Aircall / Analyse
+                          <Phone className="w-4 h-4" /> Analyse d'appels / VoIP
                       </div>
-                      <span className="font-bold text-white">~45€</span>
+                      <span className="font-bold text-red-400">Données dispersées</span>
                     </div>
                     <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
                       <div className="flex items-center gap-3 text-red-200">
-                          <Zap className="w-4 h-4" /> Automatisation Zapier (si setup)
+                          <FileText className="w-4 h-4" /> Facturation des commissions
                       </div>
-                      <span className="font-bold text-white">~20€</span>
+                      <span className="font-bold text-red-400">Retards & Oublis</span>
                     </div>
                     <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm opacity-80">
                       <div className="flex items-center gap-3 text-red-200">
-                          <Video className="w-4 h-4" /> Google Meet / Calendly
+                          <Clock className="w-4 h-4" /> Temps de gestion hebdo
                       </div>
-                      <span className="font-bold text-white">~20€</span>
+                      <span className="font-bold text-red-400">~5h perdues</span>
                     </div>
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-red-900/30 text-center">
-                    <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1">Le coût réel</p>
+                    <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1">PERTE ESTIMÉE</p>
                     <div className="text-4xl font-black text-white">
-                      ~85€<span className="text-lg text-slate-500 font-medium">/mois</span>
+                      5h<span className="text-lg text-slate-500 font-medium">/semaine</span>
                     </div>
                     <p className="text-slate-400 text-sm mt-3 font-semibold">
-                      + 5h perdues par semaine en "bureaucratie".
+                      Consacrées à de la paperasse, pas du closing.
                     </p>
                 </div>
               </div>
@@ -421,7 +422,7 @@ export function LandingPage() {
                       </div>
                       <div>
                           <h4 className="font-bold text-white">Cerveau Libéré</h4>
-                          <p className="text-sm text-slate-400">Zéro saisie manuelle. Tout se synchronise avec les CRMs infopreneurs en tâche de fond.</p>
+                          <p className="text-sm text-slate-400">Zéro saisie. CRM, KPIs et Factures se mettent à jour automatiquement après chaque appel.</p>
                       </div>
                     </div>
 
