@@ -43,6 +43,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import { Legal } from './pages/Legal' 
 import { WelcomeFounder } from './pages/WelcomeFounder' 
+import { ComingSoon } from './pages/ComingSoon' // 👈 AJOUT DE L'IMPORT
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -128,7 +129,10 @@ function AuthenticatedApp() {
             </ProtectedRoute>
           }
         >
-          <Route path="dashboard" element={<Dashboard />} />
+          {/* 👇 MODIFICATION ICI : On remplace le Dashboard par ComingSoon */}
+          {/* <Route path="dashboard" element={<Dashboard />} /> */}
+          <Route path="dashboard" element={<ComingSoon />} />
+          
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="contacts" element={<Contacts />} />
           <Route path="offers" element={<Offers />} />

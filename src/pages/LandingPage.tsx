@@ -539,7 +539,7 @@ export function LandingPage() {
                   
                   <Link 
                     to="/checkout" 
-                    className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
+                    className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-50 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
                   >
                     Sécuriser ma place à 29€
                   </Link>
@@ -688,13 +688,13 @@ export function LandingPage() {
             Rejoignez l'élite des closers qui utilisent le système tout-en-un CloseOS.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a 
-              href="#pricing" 
+            <Link 
+              to="/checkout" // 👈 Modification ici
               className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-slate-950 font-bold text-lg hover:bg-blue-50 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/10"
             >
               Profiter de l'offre Founder (29€/mois)
               <ChevronRight className="h-5 w-5" />
-            </a>
+            </Link>
           </div>
           <p className="mt-6 text-sm text-slate-500">
             7 jours d'essai gratuit. Pas de prélèvement immédiat.
