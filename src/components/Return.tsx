@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Loader2, Lock, User, Mail, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -8,6 +8,10 @@ export function Return() {
   const [customerEmail, setCustomerEmail] = useState('');
   const [loadingStripe, setLoadingStripe] = useState(true);
   
+  // 👇 On récupère le paramètre "plan" de l'URL (envoyé par Stripe)
+  const [searchParams] = useSearchParams();
+  const plan = searchParams.get('plan'); 
+
   // États pour l'inscription
   const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -18,12 +22,10 @@ export function Return() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const queryString = window.location.search;
-    const urlParams = new URLSearchParams(queryString);
-    const sessionId = urlParams.get('session_id');
+    const sessionId = searchParams.get('session_id');
     
     // 👇👇👇 LA PORTE DÉROBÉE DU FONDATEUR 👇👇👇
-    if (urlParams.get('admin_bypass') === 'true') {
+    if (searchParams.get('admin_bypass') === 'true') {
       setStatus('complete');
       setCustomerEmail('admin@closeos.fr'); 
       setLoadingStripe(false);
@@ -43,7 +45,7 @@ export function Return() {
     } else {
       setLoadingStripe(false);
     }
-  }, []);
+  }, [searchParams]);
 
   // Gestion de l'inscription par Email/Mot de passe
   const handleRegister = async (e: React.FormEvent) => {
@@ -58,7 +60,8 @@ export function Return() {
         options: {
           data: { 
             full_name: name,
-            is_founder: true 
+            // 👇 LOGIQUE : Si le plan est 'starter', il n'est pas founder
+            is_founder: plan !== 'starter' 
           }
         }
       });
@@ -67,9 +70,8 @@ export function Return() {
         setError(result.error.message);
         setAuthLoading(false);
       } else {
-        // 👇 C'EST ICI LA MODIFICATION IMPORTANTE 👇
-        // Au lieu de l'accueil ('/'), on redirige vers la vidéo de bienvenue
-        navigate('/welcome-founder');
+        // 👇 REDIRECTION : On transmet le plan à la page suivante
+        navigate(plan === 'starter' ? '/welcome-founder?plan=starter' : '/welcome-founder');
       }
     } catch (err: any) {
       setError("Une erreur est survenue lors de la création du compte.");
@@ -119,7 +121,8 @@ export function Return() {
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Paiement réussi !</h1>
           <p className="text-slate-400">
-            Bienvenue dans l'Élite. Finalisez votre compte pour accéder à votre espace.
+             {/* Texte dynamique selon le plan */}
+             {plan === 'starter' ? "Bienvenue membre Starter." : "Bienvenue dans l'Élite."} Finalisez votre compte pour accéder à votre espace.
           </p>
         </div>
 

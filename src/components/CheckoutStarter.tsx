@@ -33,7 +33,8 @@ export const CheckoutStarter = () => {
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lineItems }), 
+      // 👇 AJOUT DE plan: 'starter' ICI
+      body: JSON.stringify({ lineItems, plan: 'starter' }), 
     })
       .then(async (res) => {
         if (!res.ok) throw new Error('Erreur API');

@@ -72,7 +72,7 @@ export function ComingSoon() {
                 </a>
 
                 <a 
-                    href="https://www.linkedin.com/in/thomas-shamoev-092265263/" // 👈 METS TON LIEN LINKEDIN ICI
+                    href="https://www.linkedin.com/in/thomas-shamoev-570885237/" // 👈 METS TON LIEN LINKEDIN ICI
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-[#0A66C2]/10 text-[#0A66C2] border border-[#0A66C2]/20 hover:bg-[#0A66C2]/20 transition-all font-bold"

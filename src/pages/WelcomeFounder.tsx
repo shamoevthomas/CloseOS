@@ -1,16 +1,24 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Target, MessageCircle, LogOut } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext'; // Import nécessaire pour la déconnexion
+import { useAuth } from '../contexts/AuthContext'; 
 
 export function WelcomeFounder() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  
+  // 👇 DÉTECTION DU PLAN (Starter ou Founder)
+  const [searchParams] = useSearchParams();
+  const isStarter = searchParams.get('plan') === 'starter';
 
   // 👇 TON LIEN WHATSAPP OFFICIEL
   const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s";
 
-  // 👇 TON LIEN YOUTUBE
-  const YOUTUBE_URL = "https://www.youtube.com/embed/ewsQesgvs1w?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1";
+  // 👇 CONFIG VIDEOS
+  const VIDEO_ID_FOUNDER = "ewsQesgvs1w";
+  const VIDEO_ID_STARTER = "Ra3NYhU9z94"; // Vidéo Starter
+
+  const activeVideoId = isStarter ? VIDEO_ID_STARTER : VIDEO_ID_FOUNDER;
+  const YOUTUBE_URL = `https://www.youtube.com/embed/${activeVideoId}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1`;
 
   // Fonction pour gérer la vraie déconnexion
   const handleLogout = async () => {
@@ -29,12 +37,12 @@ export function WelcomeFounder() {
       <nav className="border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           
-          {/* MODIF 1 : Logo seul (sans texte en double) et cliquable vers l'accueil */}
+          {/* Logo seul (sans texte en double) et cliquable vers l'accueil */}
           <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
              <img src="/logo.PNG" alt="CloseOS" className="h-8 w-auto" />
           </Link>
 
-          {/* MODIF 2 : Vraie déconnexion */}
+          {/* Vraie déconnexion */}
           <button 
             onClick={handleLogout}
             className="text-slate-500 hover:text-white transition-colors flex items-center gap-2 text-sm bg-transparent border-none cursor-pointer"
@@ -48,31 +56,42 @@ export function WelcomeFounder() {
       <main className="flex-1 flex flex-col items-center justify-start pt-12 px-6 pb-20">
         <div className="max-w-3xl w-full text-center space-y-8">
           
-          {/* TITRE & CONFIRMATION */}
+          {/* TITRE & CONFIRMATION DYNAMIQUE */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-widest mb-6">
-              <Target className="h-3 w-3" /> Place Founder Sécurisée
+            {/* BADGE QUI CHANGE DE COULEUR ET DE TEXTE */}
+            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-widest mb-6 ${
+              isStarter 
+                ? "bg-blue-500/10 border-blue-500/20 text-blue-400" 
+                : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+            }`}>
+              <Target className="h-3 w-3" /> 
+              {isStarter ? "Espace Starter Activé" : "Place Founder Sécurisée"}
             </span>
+            
             <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
-              Bienvenue dans l'Élite.
+              {isStarter ? "Bienvenue sur CloseOS." : "Bienvenue dans l'Élite."}
             </h1>
+            
             <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
-              Félicitations. Ton abonnement à vie est verrouillé. <br/>
+              {isStarter 
+                ? "Félicitations. Ton abonnement Starter est actif."
+                : "Félicitations. Ton abonnement à vie est verrouillé."
+              } 
+              <br/>
               Regarde cette courte vidéo pour comprendre la suite.
             </p>
           </div>
 
-          {/* LECTEUR YOUTUBE */}
+          {/* LECTEUR YOUTUBE DYNAMIQUE */}
           <div className="relative rounded-2xl overflow-hidden border border-slate-800 shadow-2xl shadow-blue-900/20 bg-slate-900 aspect-video animate-in fade-in zoom-in duration-700 delay-100 group">
              <iframe 
                 src={YOUTUBE_URL} 
                 className="absolute top-0 left-0 w-full h-full"
-                title="Bienvenue Founder"
+                title="Bienvenue"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
              ></iframe>
-             {/* MODIF 3 : Suppression de l'indicateur sonore "Cliquez pour le son" */}
           </div>
 
           {/* INSTRUCTIONS & WHATSAPP */}
@@ -82,12 +101,11 @@ export function WelcomeFounder() {
               <ul className="space-y-4 text-slate-400">
                 <li className="flex gap-4 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold border border-blue-600/30 mt-0.5">1</span>
-                  {/* MODIF 4 : Phrase raccourcie */}
                   <span><strong>Onboarding :</strong> L'accès au logiciel ouvrira officiellement dans quelques jours.</span>
                 </li>
                 <li className="flex gap-4 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold border border-blue-600/30 mt-0.5">2</span>
-                  <span><strong>Communication :</strong> Toutes les annonces importantes passent par le canal WhatsApp privé des Founders.</span>
+                  <span><strong>Communication :</strong> Toutes les annonces importantes passent par le canal WhatsApp.</span>
                 </li>
               </ul>
             </div>
