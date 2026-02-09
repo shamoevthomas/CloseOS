@@ -573,7 +573,11 @@ export function LandingPage() {
                       <span>Support standard par email</span>
                     </li>
                   </ul>
-                  <Link to="/checkout-starter" className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+                  {/* 👇 LIEN MODIFIÉ ICI POUR LE STARTER */}
+                  <Link 
+                    to={`/checkout-starter?billing=${billingCycle}`}
+                    className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors block"
+                  >
                     Démarrer en Starter
                   </Link>
                 </div>
@@ -619,7 +623,7 @@ export function LandingPage() {
                     </li>
                   </ul>
                   
-                  {/* 👇 LIEN MODIFIÉ ICI POUR INCLURE LE PARAMÈTRE BILLING */}
+                  {/* 👇 LIEN FOUNDER */}
                   <Link 
                     to={`/checkout?billing=${billingCycle}`}
                     className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-50 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
@@ -771,7 +775,6 @@ export function LandingPage() {
             Rejoignez l'élite des closers qui utilisent le système tout-en-un CloseOS.
           </p>
           <div className="flex flex-col items-center justify-center gap-4">
-            {/* 👇 LIEN MODIFIÉ ICI POUR INCLURE LE PARAMÈTRE BILLING */}
             <Link 
               to={`/checkout?billing=${billingCycle}`} 
               className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-slate-950 font-bold text-lg hover:bg-blue-50 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/10"
@@ -779,8 +782,11 @@ export function LandingPage() {
               Profiter de l'offre Founder ({calculatePrice(29)}€/mois)
               <ChevronRight className="h-5 w-5" />
             </Link>
-            {/* 👇 AJOUT : Lien secondaire pour l'offre Starter */}
-            <Link to="/checkout-starter" className="text-slate-500 hover:text-white text-sm underline transition-colors mt-2">
+            {/* 👇 LIEN MODIFIÉ POUR LE STARTER EN BAS DE PAGE */}
+            <Link 
+              to={`/checkout-starter?billing=${billingCycle}`}
+              className="text-slate-500 hover:text-white text-sm underline transition-colors mt-2"
+            >
                Ou démarrer avec le Pack Starter (39€/mois)
             </Link>
           </div>

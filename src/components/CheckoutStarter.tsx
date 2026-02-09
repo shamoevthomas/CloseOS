@@ -5,7 +5,7 @@ import {
   EmbeddedCheckout
 } from '@stripe/react-stripe-js';
 import { CheckCircle2, ShieldCheck, Target, ArrowLeft, Rocket } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 // Initialise Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
@@ -16,24 +16,32 @@ export const CheckoutStarter = () => {
   const [error, setError] = useState('');
   const [isVoipSelected, setIsVoipSelected] = useState(false);
 
-  // 👇 TES NOUVEAUX IDS
-  const PRICE_STARTER_39 = "price_1SyYFA33xpuYLywqHtV34VGE"; 
-  const PRICE_VOIP_5 = "price_1SyYGp33xpuYLywqxEJKYtUC";
+  // 👇 Récupération du cycle de facturation via l'URL (?billing=yearly)
+  const [searchParams] = useSearchParams();
+  const isYearly = searchParams.get('billing') === 'yearly';
+
+  // 👇 CONFIGURATION DES PRIX (Mensuel vs Annuel)
+  const PRICE_STARTER = isYearly 
+    ? "price_1Sz1Cj33xpuYLywq7Lkx6GKp" // Annuel
+    : "price_1SyYFA33xpuYLywqHtV34VGE"; // Mensuel
+
+  const PRICE_VOIP = isYearly 
+    ? "price_1Sz1Hv33xpuYLywqyPFLWC2x" // Annuel
+    : "price_1SyYGp33xpuYLywqxEJKYtUC"; // Mensuel
 
   const fetchClientSecret = () => {
     setLoading(true);
     // On met le produit de base
-    const lineItems = [{ price: PRICE_STARTER_39, quantity: 1 }];
+    const lineItems = [{ price: PRICE_STARTER, quantity: 1 }];
     
     // Si l'option VoIP est cochée, on l'ajoute à la liste
     if (isVoipSelected) {
-      lineItems.push({ price: PRICE_VOIP_5, quantity: 1 });
+      lineItems.push({ price: PRICE_VOIP, quantity: 1 });
     }
 
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // 👇 AJOUT DE plan: 'starter' ICI
       body: JSON.stringify({ lineItems, plan: 'starter' }), 
     })
       .then(async (res) => {
@@ -51,10 +59,10 @@ export const CheckoutStarter = () => {
       });
   };
 
-  // Recharger le checkout quand l'option change
+  // Recharger le checkout quand l'option change ou le cycle change
   useEffect(() => {
     fetchClientSecret();
-  }, [isVoipSelected]);
+  }, [isVoipSelected, isYearly]);
 
   if (error) {
     return (
@@ -94,7 +102,7 @@ export const CheckoutStarter = () => {
           <div className="space-y-8">
             <div>
               <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 mb-6">
-                <Rocket className="w-3 h-3" /> Offre Standard
+                <Rocket className="w-3 h-3" /> Offre Standard {isYearly && "(Annuel)"}
               </span>
               <h1 className="text-4xl font-extrabold text-white mb-4">Pack Starter</h1>
               <p className="text-slate-400 text-lg">
@@ -104,8 +112,12 @@ export const CheckoutStarter = () => {
 
             <div className="bg-slate-900/40 rounded-3xl p-8 border border-slate-800 relative overflow-hidden">
               <div className="flex items-baseline gap-3 mb-6">
-                <span className="text-6xl font-black text-white">39€</span>
-                <span className="text-slate-400 font-medium">/mois</span>
+                {/* 👇 AFFICHAGE PRIX DYNAMIQUE */}
+                <span className="text-6xl font-black text-white">{isYearly ? "33€" : "39€"}</span>
+                {isYearly && <span className="text-2xl text-slate-500 line-through">39€</span>}
+                <span className="text-slate-400 font-medium">
+                   {isYearly ? "/mois (facturé 396€/an)" : "/mois"}
+                </span>
               </div>
               <div className="space-y-4 mb-8">
                 {[
@@ -133,7 +145,10 @@ export const CheckoutStarter = () => {
                 <div className="flex-1">
                    <div className="flex justify-between items-center mb-1">
                       <span className={`font-bold text-sm ${isVoipSelected ? 'text-white' : 'text-slate-300'}`}>Ajouter l'option VoIP & Records</span>
-                      <span className="text-sm font-bold text-white">+5€<span className="text-slate-500 font-normal text-xs">/mois</span></span>
+                      <span className="text-sm font-bold text-white">
+                        {isYearly ? "+50€" : "+5€"}
+                        <span className="text-slate-500 font-normal text-xs">{isYearly ? "/an" : "/mois"}</span>
+                      </span>
                    </div>
                    <p className="text-xs text-slate-400">Appels illimités depuis la plateforme + enregistrement automatique.</p>
                 </div>
