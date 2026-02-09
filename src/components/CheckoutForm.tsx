@@ -20,13 +20,13 @@ export const CheckoutForm = () => {
   const [searchParams] = useSearchParams();
   const isYearly = searchParams.get('billing') === 'yearly';
 
-  // 👇 CONFIGURATION DES PRIX (Mensuel vs Annuel) - IDs CORRIGÉS
+  // 👇 CONFIGURATION DES PRIX (Mensuel vs Annuel)
   const PRICE_FOUNDER = isYearly 
-    ? "price_1Sz1Kg33xpuYLywqS5kHdnyU" // Annuel (Nouveau)
+    ? "price_1Sz1Kg33xpuYLywqS5kHdnyU" // Annuel
     : "price_1SyKgI33xpuYLywqfdB8YJTp"; // Mensuel
 
   const PRICE_VOIP = isYearly 
-    ? "price_1Sz1Kq33xpuYLywqW9VL0b3q" // Annuel (Nouveau)
+    ? "price_1Sz1nL33xpuYLywqIpP0io3V" // Annuel (ID Corrigé)
     : "price_1SyXw433xpuYLywqpvmyAueZ"; // Mensuel
 
   // Fonction pour récupérer le Client Secret
@@ -86,12 +86,12 @@ export const CheckoutForm = () => {
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Retour</span>
           </Link>
-          <div className="flex items-center gap-2 font-bold text-white text-sm">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-600">
-              <Target className="h-4 w-4 text-white" />
-            </div>
-            <span>CloseOS.fr</span>
+          
+          {/* 👇 LOGO REMPLACÉ ICI */}
+          <div className="flex items-center gap-2">
+            <img src="/logo.PNG" alt="CloseOS Logo" className="h-8 w-auto" />
           </div>
+
           <div className="w-10"></div>
         </div>
       </nav>

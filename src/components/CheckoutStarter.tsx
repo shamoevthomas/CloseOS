@@ -4,7 +4,7 @@ import {
   EmbeddedCheckoutProvider,
   EmbeddedCheckout
 } from '@stripe/react-stripe-js';
-import { CheckCircle2, ShieldCheck, Target, ArrowLeft, Rocket } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, ArrowLeft, Rocket } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 // Initialise Stripe
@@ -26,7 +26,7 @@ export const CheckoutStarter = () => {
     : "price_1SyYFA33xpuYLywqHtV34VGE"; // Mensuel
 
   const PRICE_VOIP = isYearly 
-    ? "price_1Sz1Hv33xpuYLywqyPFLWC2x" // Annuel
+    ? "price_1Sz1nL33xpuYLywqIpP0io3V" // Annuel (Nouveau ID corrigé)
     : "price_1SyYGp33xpuYLywqxEJKYtUC"; // Mensuel
 
   const fetchClientSecret = () => {
@@ -86,12 +86,12 @@ export const CheckoutStarter = () => {
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Retour</span>
           </Link>
-          <div className="flex items-center gap-2 font-bold text-white text-sm">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-600">
-              <Target className="h-4 w-4 text-white" />
-            </div>
-            <span>CloseOS.fr</span>
+          
+          {/* 👇 LOGO MODIFIÉ ICI */}
+          <div className="flex items-center gap-2">
+            <img src="/logo.PNG" alt="CloseOS Logo" className="h-8 w-auto" />
           </div>
+          
           <div className="w-10"></div>
         </div>
       </nav>
@@ -112,7 +112,7 @@ export const CheckoutStarter = () => {
 
             <div className="bg-slate-900/40 rounded-3xl p-8 border border-slate-800 relative overflow-hidden">
               <div className="flex items-baseline gap-3 mb-6">
-                {/* 👇 AFFICHAGE PRIX DYNAMIQUE */}
+                {/* PRIX DYNAMIQUE */}
                 <span className="text-6xl font-black text-white">{isYearly ? "33€" : "39€"}</span>
                 {isYearly && <span className="text-2xl text-slate-500 line-through">39€</span>}
                 <span className="text-slate-400 font-medium">
