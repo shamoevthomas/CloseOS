@@ -79,13 +79,13 @@ export function LandingPage() {
               <LogIn className="h-4 w-4 text-slate-500 group-hover:text-white transition-colors" />
               <span className="hidden sm:inline">Se connecter</span>
             </Link>
-            <a 
-              href="#pricing" 
+            <Link 
+              to={`/checkout?billing=${billingCycle}`}
               className="hidden sm:flex group items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-950 transition-all hover:bg-blue-50 hover:scale-105 active:scale-95"
             >
               Devenir Founder
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </a>
+            </Link>
           </div>
         </div>
       </nav>
@@ -119,13 +119,13 @@ export function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-            <a 
-              href="#pricing" 
+            <Link 
+              to={`/checkout?billing=${billingCycle}`}
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-blue-600 text-white font-bold text-lg hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-1 flex items-center justify-center gap-2"
             >
               <Zap className="h-5 w-5 fill-current" />
               Profiter de l'offre Founder
-            </a>
+            </Link>
             <a 
               href="#demo" 
               className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 font-semibold text-lg hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
@@ -619,8 +619,9 @@ export function LandingPage() {
                     </li>
                   </ul>
                   
+                  {/* 👇 LIEN MODIFIÉ ICI POUR INCLURE LE PARAMÈTRE BILLING */}
                   <Link 
-                    to="/checkout" 
+                    to={`/checkout?billing=${billingCycle}`}
                     className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-50 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
                   >
                     Sécuriser ma place à {calculatePrice(29)}€
@@ -770,11 +771,12 @@ export function LandingPage() {
             Rejoignez l'élite des closers qui utilisent le système tout-en-un CloseOS.
           </p>
           <div className="flex flex-col items-center justify-center gap-4">
+            {/* 👇 LIEN MODIFIÉ ICI POUR INCLURE LE PARAMÈTRE BILLING */}
             <Link 
-              to="/checkout" 
+              to={`/checkout?billing=${billingCycle}`} 
               className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-slate-950 font-bold text-lg hover:bg-blue-50 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/10"
             >
-              Profiter de l'offre Founder (29€/mois)
+              Profiter de l'offre Founder ({calculatePrice(29)}€/mois)
               <ChevronRight className="h-5 w-5" />
             </Link>
             {/* 👇 AJOUT : Lien secondaire pour l'offre Starter */}
