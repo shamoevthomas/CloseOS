@@ -318,96 +318,136 @@ export function LandingPage() {
          </div>
       </section>
 
-      {/* --- COMPARISON SECTION --- */}
-      <section id="comparison" className="py-24 bg-slate-900/30 border-y border-white/5 relative">
-        <div className="mx-auto max-w-6xl px-6 relative z-10">
+      {/* --- COMPARISON SECTION (REDESIGN) --- */}
+      <section id="comparison" className="py-24 bg-slate-950/50 border-y border-white/5 relative overflow-hidden">
+        <div className="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-96 bg-red-600/10 blur-[100px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 right-0 -translate-y-1/2 w-96 h-96 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none" />
+
+        <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white">L'ancienne méthode vs CloseOS</h2>
-            <p className="text-slate-400 mt-4">La différence entre un Amateur et un Pro se joue sur l'organisation (et le coût).</p>
+            <h2 className="text-3xl font-bold text-white sm:text-5xl">Le Choc des Réalités</h2>
+            <p className="text-slate-400 mt-4 text-lg">Pourquoi payer plus pour travailler plus ?</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 items-stretch">
-            {/* The Old Way (Red) */}
-            <div className="rounded-2xl border border-red-900/30 bg-red-950/10 p-8 opacity-90 hover:opacity-100 transition-opacity flex flex-col">
-              <h3 className="text-xl font-bold text-red-400 mb-6 flex items-center gap-2">
-                <XCircle className="h-6 w-6" /> L'Enfer des Abonnements
-              </h3>
-              <div className="space-y-3 text-sm text-slate-300 flex-1">
-                 <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
-                    <span className="font-medium flex items-center gap-2"><Database className="h-4 w-4"/> CRM Séparé</span>
-                    <span className="text-red-300 font-bold">Pipedrive ($$)</span>
-                 </div>
-                 <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-red-500/5 animate-pulse pointer-events-none"></div>
-                    <span className="font-medium flex items-center gap-2"><Phone className="h-4 w-4"/> Téléphonie VoIP</span>
-                    <span className="text-red-300 font-bold">Aircall (~40€/mois)</span>
-                 </div>
-                 <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
-                    <span className="font-medium flex items-center gap-2"><CalendarCheck className="h-4 w-4"/> Booking</span>
-                    <span className="text-red-300 font-bold">Calendly ($12/mois)</span>
-                 </div>
-                 <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
-                    <span className="font-medium flex items-center gap-2"><Bot className="h-4 w-4"/> Automatisation</span>
-                    <span className="text-red-300 font-bold">Zapier ($25/mois)</span>
-                 </div>
-                 <div className="flex items-center justify-between p-4 bg-red-900/20 rounded-xl border border-red-900/30">
-                    <span className="font-medium flex items-center gap-2"><Video className="h-4 w-4"/> Visio</span>
-                    <span className="text-red-300 font-bold">Zoom ($15/mois)</span>
-                 </div>
-              </div>
-              <p className="mt-8 text-center text-red-400 font-bold text-base bg-red-950/30 p-4 rounded-xl border border-red-900/50">
-                Total : {'>'}120€/mois par closer.<br/>Et un chaos administratif.
-              </p>
-            </div>
-
-            {/* The CloseOS Way (Blue - Stacked) */}
-            <div className="rounded-2xl border border-blue-500/30 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/20 ring-1 ring-blue-500/20 relative overflow-hidden flex flex-col">
-               <div className="absolute inset-0 bg-blue-500/5 animate-pulse pointer-events-none"></div>
-              <h3 className="text-xl font-bold text-blue-400 mb-6 flex items-center gap-2 relative z-10">
-                <CheckCircle2 className="h-6 w-6" /> CloseOS : La Machine de Guerre
-              </h3>
-              
-              <div className="flex-1 relative z-10 flex flex-col gap-3">
-                <div className="p-5 bg-blue-600/20 border border-blue-500/40 rounded-xl flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-blue-500/30 flex items-center justify-center">
-                        <Target className="h-6 w-6 text-blue-300" />
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            
+            {/* 🔴 L'ANCIENNE MÉTHODE */}
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-br from-red-500/20 to-transparent rounded-3xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+              <div className="relative rounded-3xl bg-[#0F0505] border border-red-900/30 p-8 h-full flex flex-col">
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                      <XCircle className="w-6 h-6 text-red-500" />
                     </div>
-                    <div>
-                        <h4 className="font-bold text-white text-lg">Centralisation Totale</h4>
-                        <p className="text-blue-200 text-xs">Un seul endroit pour tout gérer. Fini les onglets.</p>
-                    </div>
+                    <h3 className="text-2xl font-bold text-white">L'Enfer du "Multi-Outils"</h3>
                 </div>
-                
-                <div className="p-5 bg-blue-600/30 border border-blue-500/50 rounded-xl flex items-center gap-4 relative overflow-hidden shadow-lg shadow-blue-500/10">
-                    <div className="absolute inset-0 bg-blue-400/10 animate-pulse pointer-events-none"></div>
-                    <div className="h-10 w-10 rounded-lg bg-blue-500/40 flex items-center justify-center">
-                        <Phone className="h-6 w-6 text-white" />
+
+                <div className="space-y-4 flex-1">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
+                      <div className="flex items-center gap-3 text-red-200">
+                          <Database className="w-4 h-4" /> CRM (Pipedrive)
+                      </div>
+                      <span className="font-bold text-white">~30€</span>
                     </div>
-                    <div>
-                        <h4 className="font-bold text-white text-lg">VoIP & WhatsApp Natifs</h4>
-                        <p className="text-blue-100 text-xs font-semibold">Zéro latence. Vos appels partent d'ici.</p>
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
+                      <div className="flex items-center gap-3 text-red-200">
+                          <Phone className="w-4 h-4" /> VoIP (Aircall)
+                      </div>
+                      <span className="font-bold text-white">~40€</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
+                      <div className="flex items-center gap-3 text-red-200">
+                          <CalendarCheck className="w-4 h-4" /> Booking (Calendly)
+                      </div>
+                      <span className="font-bold text-white">~15€</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm">
+                      <div className="flex items-center gap-3 text-red-200">
+                          <Bot className="w-4 h-4" /> Automation (Zapier)
+                      </div>
+                      <span className="font-bold text-white">~25€</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-red-900/10 border border-red-900/20 text-sm opacity-60">
+                      <div className="flex items-center gap-3 text-red-200">
+                          <Video className="w-4 h-4" /> Visio (Zoom)
+                      </div>
+                      <span className="font-bold text-white">~15€</span>
                     </div>
                 </div>
 
-                <div className="p-5 bg-blue-600/20 border border-blue-500/40 rounded-xl flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-blue-500/30 flex items-center justify-center">
-                        <Zap className="h-6 w-6 text-blue-300" />
+                <div className="mt-8 pt-8 border-t border-red-900/30 text-center">
+                    <p className="text-red-400 text-sm font-medium uppercase tracking-widest mb-1">Coût mensuel estimé</p>
+                    <div className="text-4xl font-black text-white">
+                      ~125€<span className="text-lg text-slate-500 font-medium">/mois</span>
                     </div>
-                    <div>
-                        <h4 className="font-bold text-white text-lg">Tout est Automatisé</h4>
-                        <p className="text-blue-200 text-xs">
-                          Un RDV Calendly ? Il crée le deal. <br/>
-                          Un appel Twilio ? Il met à jour le statut.
-                        </p>
-                    </div>
+                    <p className="text-slate-500 text-xs mt-2">+ La fatigue mentale de gérer 5 factures.</p>
                 </div>
               </div>
-
-              <p className="mt-8 text-center text-blue-300 font-bold text-xl bg-blue-900/30 p-4 rounded-xl border border-blue-500/50 relative z-10">
-                = 1 seul abonnement.<br/>Zéro friction. Focus total.
-              </p>
-              <p className="text-center text-blue-400/60 text-xs mt-2">*Selon le forfait choisi.</p>
             </div>
+
+            {/* 🔵 CloseOS */}
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-bl from-blue-500/20 to-purple-500/20 rounded-3xl blur opacity-30 group-hover:opacity-60 transition-opacity"></div>
+              <div className="relative rounded-3xl bg-[#020617] border border-blue-500/30 p-8 h-full flex flex-col shadow-2xl shadow-blue-900/20">
+                  {/* BADGE */}
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full border border-blue-400 shadow-lg shadow-blue-600/50">
+                  RECOMMANDÉ PAR L'ÉLITE
+                </div>
+
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                      <CheckCircle2 className="w-6 h-6 text-blue-500" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white">L'Écosystème CloseOS</h3>
+                </div>
+
+                <div className="flex-1 bg-slate-900/50 rounded-2xl p-6 border border-white/5 space-y-6 flex flex-col justify-center">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                          <LayoutDashboard className="w-5 h-5" />
+                      </div>
+                      <div>
+                          <h4 className="font-bold text-white">Tout illimité</h4>
+                          <p className="text-sm text-slate-400">Pipeline, contacts, rendez-vous. Aucune limite artificielle.</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
+                          <Zap className="w-5 h-5" />
+                      </div>
+                      <div>
+                          <h4 className="font-bold text-white">Automatisations Natives</h4>
+                          <p className="text-sm text-slate-400">Plus besoin de Zapier. Tout se parle en interne.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+                          <Target className="w-5 h-5" />
+                      </div>
+                      <div>
+                          <h4 className="font-bold text-white">Focus Total</h4>
+                          <p className="text-sm text-slate-400">Une seule interface à ouvrir le matin. C'est tout.</p>
+                      </div>
+                    </div>
+                </div>
+
+                  {/* TOTAL BLUE */}
+                <div className="mt-8 pt-8 border-t border-blue-500/20 text-center relative overflow-hidden">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-blue-500/50 blur-[2px]"></div>
+                    <p className="text-blue-400 text-sm font-medium uppercase tracking-widest mb-1">Offre Founder</p>
+                    <div className="text-5xl font-black text-white tracking-tight">
+                      29€<span className="text-lg text-slate-500 font-medium">/mois</span>
+                    </div>
+                    <p className="text-emerald-400 text-xs font-bold mt-2 flex items-center justify-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Prix bloqué à vie
+                    </p>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
