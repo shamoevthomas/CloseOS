@@ -31,7 +31,7 @@ import {
 
 export function LandingPage() {
   const [pricingTab, setPricingTab] = useState<'closer' | 'agency' | 'enterprise'>('closer');
-  // --- NOUVEAU : État pour le cycle de facturation ---
+  // État pour le cycle de facturation
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   // Fonction pour calculer le prix (arrondi) avec -15% si annuel
@@ -52,13 +52,13 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 overflow-x-hidden">
       
-      {/* --- BANDEAU OFFRE PRÉLANCEMENT --- */}
+      {/* BANDEAU OFFRE */}
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
         🚀 OFFRE DE PRÉLANCEMENT : Rejoignez les Founders pour 29€/mois à VIE (au lieu de 69€). 
         <span className="hidden sm:inline"> L'essai gratuit débutera au lancement officiel.</span>
       </div>
 
-      {/* --- NAVBAR --- */}
+      {/* NAVBAR */}
       <nav className="fixed top-[40px] z-50 w-full border-b border-white/5 bg-[#020617]/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-2">
@@ -90,7 +90,7 @@ export function LandingPage() {
         </div>
       </nav>
 
-      {/* --- HERO SECTION --- */}
+      {/* HERO SECTION */}
       <section className="relative pt-40 pb-20 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/20 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
         <div className="absolute bottom-0 right-0 w-[800px] h-[600px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
@@ -150,7 +150,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* --- INTEGRATIONS BANNER --- */}
+      {/* INTEGRATIONS BANNER */}
       <section id="integrations" className="py-12 border-y border-white/5 bg-slate-950/50">
         <div className="mx-auto max-w-7xl px-6 text-center">
           <p className="text-xs font-bold text-slate-500 mb-8 uppercase tracking-widest">
@@ -169,7 +169,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* --- FEATURES GRID --- */}
+      {/* FEATURES GRID */}
       <section id="features" className="py-32 relative">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-20 text-center max-w-3xl mx-auto">
@@ -180,8 +180,6 @@ export function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* 1. COCKPIT & KPI */}
             <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-blue-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
                 <LayoutDashboard className="w-64 h-64 text-blue-500" />
@@ -203,7 +201,6 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* 2. WHATSAPP & VOIP (TWILIO) */}
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#25D366]/30 transition-all duration-500 group hover:bg-slate-900/80 relative overflow-hidden">
                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
                   <MessageSquare className="w-32 h-32 text-[#25D366]" />
@@ -221,7 +218,6 @@ export function LandingPage() {
               </p>
             </div>
 
-            {/* 3. PIPELINE & OFFRES */}
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-orange-500/30 transition-all duration-500 group hover:bg-slate-900/80">
               <div className="h-12 w-12 rounded-lg bg-orange-500/20 flex items-center justify-center mb-6 ring-1 ring-orange-500/30">
                 <TrendingUp className="h-6 w-6 text-orange-400" />
@@ -232,7 +228,6 @@ export function LandingPage() {
               </p>
             </div>
 
-            {/* 4. AGENDA & BOOKING */}
             <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-purple-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:rotate-12 group-hover:scale-110">
                 <CalendarCheck className="w-64 h-64 text-purple-500" />
@@ -253,7 +248,6 @@ export function LandingPage() {
               </div>
             </div>
 
-             {/* 5. FACTURATION */}
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-emerald-500/30 transition-all duration-500 group hover:bg-slate-900/80">
               <div className="h-12 w-12 rounded-lg bg-emerald-500/20 flex items-center justify-center mb-6 ring-1 ring-emerald-500/30">
                 <FileText className="h-6 w-6 text-emerald-400" />
@@ -264,7 +258,6 @@ export function LandingPage() {
               </p>
             </div>
              
-             {/* 6. SYNC CRM & AUTOMATISATIONS */}
              <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#E11D48]/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500">
                 <Zap className="w-64 h-64 text-[#E11D48]" />
@@ -283,7 +276,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* --- COMING SOON (DÉPLACÉ ICI) --- */}
+      {/* COMING SOON */}
       <section className="py-20 bg-[#0B1121] border-t border-white/5">
          <div className="mx-auto max-w-4xl px-6 text-center">
             <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-400 uppercase tracking-widest">
@@ -294,8 +287,9 @@ export function LandingPage() {
                <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
                   <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><BrainCircuit className="h-6 w-6 text-indigo-400"/></div>
                   <div>
-                     <h3 className="font-bold text-white mb-1">Coach IA en Temps Réel</h3>
-                     <p className="text-sm text-slate-400">Analyse vos appels en direct, détecte les objections et vous suggère les meilleures réponses pour closer.</p>
+                     {/* MODIFICATION 1 : TITRE ET TEXTE CHANGÉS */}
+                     <h3 className="font-bold text-white mb-1">Analyste de Performance</h3>
+                     <p className="text-sm text-slate-400">Obtenez un feedback objectif sur vos appels. Identifiez les objections non traitées et les moments clés pour améliorer votre taux de conversion.</p>
                   </div>
                </div>
                <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
@@ -306,7 +300,6 @@ export function LandingPage() {
                   </div>
                </div>
                
-               {/* BLOC AGENCY */}
                <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
                   <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Users className="h-6 w-6 text-indigo-400"/></div>
                   <div>
@@ -315,7 +308,6 @@ export function LandingPage() {
                   </div>
                </div>
 
-               {/* BLOC ENTREPRISE */}
                <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4 text-left group hover:border-indigo-500/30 transition-all">
                   <div className="p-3 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Building2 className="h-6 w-6 text-indigo-400"/></div>
                   <div>
@@ -328,7 +320,7 @@ export function LandingPage() {
          </div>
       </section>
 
-      {/* --- COMPARISON SECTION (REDESIGN - FOCUS LIBERTÉ & TEMPS) --- */}
+      {/* COMPARISON SECTION */}
       <section id="comparison" className="py-24 bg-slate-950/50 border-y border-white/5 relative overflow-hidden">
         <div className="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-96 bg-red-600/10 blur-[100px] rounded-full pointer-events-none" />
         <div className="absolute top-1/2 right-0 -translate-y-1/2 w-96 h-96 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none" />
@@ -341,7 +333,7 @@ export function LandingPage() {
 
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             
-            {/* 🔴 L'ANCIENNE MÉTHODE : LE MYTHE DE LA LIBERTÉ */}
+            {/* 🔴 ANCIENNE METHODE */}
             <div className="relative group">
               <div className="absolute -inset-1 bg-gradient-to-br from-red-500/20 to-transparent rounded-3xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
               <div className="relative rounded-3xl bg-[#0F0505] border border-red-900/30 p-8 h-full flex flex-col">
@@ -387,17 +379,18 @@ export function LandingPage() {
 
                 <div className="mt-8 pt-8 border-t border-red-900/30 text-center">
                     <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1">PERTE ESTIMÉE</p>
+                    {/* MODIFICATION 2 : 35H + SOUS-TITRE */}
                     <div className="text-4xl font-black text-white">
-                      5h<span className="text-lg text-slate-500 font-medium">/semaine</span>
+                      35h<span className="text-lg text-slate-500 font-medium">/mois</span>
                     </div>
                     <p className="text-slate-400 text-sm mt-3 font-semibold">
-                      Consacrées à de la paperasse, pas du closing.
+                      Presque 2 mois par an perdus en administration.
                     </p>
                 </div>
               </div>
             </div>
 
-            {/* 🔵 CloseOS : LA VRAIE LIBERTÉ */}
+            {/* 🔵 CloseOS */}
             <div className="relative group">
               <div className="absolute -inset-1 bg-gradient-to-bl from-blue-500/20 to-purple-500/20 rounded-3xl blur opacity-30 group-hover:opacity-60 transition-opacity"></div>
               <div className="relative rounded-3xl bg-[#020617] border border-blue-500/30 p-8 h-full flex flex-col shadow-2xl shadow-blue-900/20">
@@ -462,7 +455,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* --- PRICING SECTION (AVEC ONGLETS ET SWITCH MOIS/AN) --- */}
+      {/* PRICING SECTION */}
       <section id="pricing" className="py-32 relative bg-slate-950">
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-12">
@@ -470,7 +463,7 @@ export function LandingPage() {
             <p className="text-slate-400 mt-4 text-lg">Choisissez l'outil qui va doubler votre taux de closing.</p>
           </div>
 
-          {/* SELECTEUR D'ONGLETS */}
+          {/* SELECTEUR D'ONGLETS & SWITCH */}
           <div className="flex flex-col items-center mb-12">
             <div className="inline-flex p-1 bg-slate-900 rounded-xl border border-slate-800 mb-6">
               <button 
@@ -505,7 +498,7 @@ export function LandingPage() {
               </button>
             </div>
 
-            {/* --- NOUVEAU : SWITCH MOIS / ANNÉE --- */}
+            {/* SWITCH MOIS / ANNÉE */}
             <div className="flex items-center justify-center gap-4">
               <span 
                 className={`text-sm font-medium cursor-pointer transition-colors ${billingCycle === 'monthly' ? 'text-white' : 'text-slate-500'}`}
@@ -542,7 +535,7 @@ export function LandingPage() {
             
             {pricingTab === 'closer' && (
               <>
-                {/* PLAN STARTER - PRIX DYNAMIQUE */}
+                {/* PLAN STARTER */}
                 <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 flex flex-col h-full opacity-80 hover:opacity-100 transition-opacity animate-in fade-in zoom-in duration-300">
                   <div className="mb-6">
                     <h3 className="text-xl font-bold text-white">PACK STARTER</h3>
@@ -573,7 +566,6 @@ export function LandingPage() {
                       <span>Support standard par email</span>
                     </li>
                   </ul>
-                  {/* 👇 LIEN MODIFIÉ ICI POUR LE STARTER */}
                   <Link 
                     to={`/checkout-starter?billing=${billingCycle}`}
                     className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors block"
@@ -582,7 +574,7 @@ export function LandingPage() {
                   </Link>
                 </div>
 
-                {/* PLAN FOUNDER - PRIX DYNAMIQUE */}
+                {/* PLAN FOUNDER */}
                 <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 scale-105 relative z-10 flex flex-col h-full animate-in fade-in zoom-in duration-300 delay-75">
                   <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
                     <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
@@ -597,7 +589,8 @@ export function LandingPage() {
                     <p className="mt-2 text-blue-200 text-sm">L'expérience ultime. Accès à vie, IA et communauté privée.</p>
                     <div className="mt-4 flex items-baseline gap-2">
                       <span className="text-5xl font-extrabold text-white">{calculatePrice(29)}€</span>
-                      <span className="text-slate-400 line-through text-lg">{calculatePrice(69)}€</span>
+                      {/* MODIFICATION 3 : PRIX BARRÉ RESTE 69€ */}
+                      <span className="text-slate-400 line-through text-lg">69€</span>
                       <span className="text-slate-500">/mois à vie</span>
                     </div>
                     {billingCycle === 'yearly' && (
@@ -623,7 +616,6 @@ export function LandingPage() {
                     </li>
                   </ul>
                   
-                  {/* 👇 LIEN FOUNDER */}
                   <Link 
                     to={`/checkout?billing=${billingCycle}`}
                     className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-50 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
@@ -653,7 +645,8 @@ export function LandingPage() {
                 <p className="text-slate-300 max-w-lg mb-8">
                   Dédiée aux agences de closing. Pilotez plusieurs équipes, gérez l'attribution des leads et analysez la rentabilité de chaque closer en temps réel.
                 </p>
-                <div className="grid md:grid-cols-2 gap-6 w-full max-w-2xl mb-10 text-left">
+                {/* MODIFICATION 4 : GAP AUGMENTÉ */}
+                <div className="grid md:grid-cols-2 gap-10 w-full max-w-2xl mb-10 text-left">
                   <div className="flex gap-3">
                     <CheckCircle2 className="h-5 w-5 text-indigo-400 shrink-0" />
                     <span className="text-sm text-slate-300">Dashboard Superviseur</span>
@@ -692,7 +685,8 @@ export function LandingPage() {
                 <p className="text-slate-300 max-w-lg mb-8">
                   Pour les business qui scalent. Management d'équipe centralisé, attribution auto des leads et messagerie interne pour un pilotage à 360°.
                 </p>
-                <div className="grid md:grid-cols-2 gap-6 w-full max-w-2xl mb-10 text-left">
+                {/* MODIFICATION 4 : GAP AUGMENTÉ */}
+                <div className="grid md:grid-cols-2 gap-10 w-full max-w-2xl mb-10 text-left">
                   <div className="flex gap-3">
                     <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
                     <span className="text-sm text-slate-300">Intégration CRM sur-mesure</span>
@@ -718,18 +712,22 @@ export function LandingPage() {
 
           </div>
 
-          {/* AJOUT : ENCART OPTION VOIP CENTRÉ EN BAS */}
-          <div className="mt-8 flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-900/20 border border-blue-500/30 shadow-lg shadow-blue-500/5">
-              <div className="p-2 rounded-lg bg-blue-500/20">
-                <PlusCircle className="h-5 w-5 text-blue-400" />
-              </div>
-              <div className="text-left">
-                  <p className="text-sm font-bold text-white">Option VoIP & Enregistrements</p>
-                  <p className="text-xs text-blue-300">Ajoutez la téléphonie à votre plan pour <span className="text-white font-bold">+5€/mois</span></p>
+          {/* MODIFICATION 5 : ENCART OPTION VOIP CACHÉ SI PAS CLOSER + PRIX DYNAMIQUE */}
+          {pricingTab === 'closer' && (
+            <div className="mt-8 flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-900/20 border border-blue-500/30 shadow-lg shadow-blue-500/5">
+                <div className="p-2 rounded-lg bg-blue-500/20">
+                  <PlusCircle className="h-5 w-5 text-blue-400" />
+                </div>
+                <div className="text-left">
+                    <p className="text-sm font-bold text-white">Option VoIP & Enregistrements</p>
+                    <p className="text-xs text-blue-300">
+                      Ajoutez la téléphonie à votre plan pour <span className="text-white font-bold">+{billingCycle === 'yearly' ? '4' : '5'}€/mois</span>
+                    </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
         </div>
       </section>
@@ -782,7 +780,6 @@ export function LandingPage() {
               Profiter de l'offre Founder ({calculatePrice(29)}€/mois)
               <ChevronRight className="h-5 w-5" />
             </Link>
-            {/* 👇 LIEN MODIFIÉ POUR LE STARTER EN BAS DE PAGE */}
             <Link 
               to={`/checkout-starter?billing=${billingCycle}`}
               className="text-slate-500 hover:text-white text-sm underline transition-colors mt-2"

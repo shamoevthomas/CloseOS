@@ -26,7 +26,7 @@ export const CheckoutForm = () => {
     : "price_1SyKgI33xpuYLywqfdB8YJTp"; // Mensuel
 
   const PRICE_VOIP = isYearly 
-    ? "price_1Sz1nL33xpuYLywqIpP0io3V" // Annuel (ID Corrigé)
+    ? "price_1Sz1ud33xpuYLywq17cID0HX" // Annuel (ID Corrigé)
     : "price_1SyXw433xpuYLywqpvmyAueZ"; // Mensuel
 
   // Fonction pour récupérer le Client Secret
