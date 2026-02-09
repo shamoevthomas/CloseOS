@@ -7,7 +7,6 @@ import {
   TrendingUp,
   Zap,
   BarChart3,
-  Target,
   ChevronRight,
   Play,
   XCircle,
@@ -19,7 +18,6 @@ import {
   CalendarCheck,
   LayoutDashboard,
   Phone,
-  Bot,
   Star,
   ShieldCheck,
   Database,
@@ -28,13 +26,22 @@ import {
   Building2,
   PlusCircle,
   Sheet,
-  Mic,
   Clock 
 } from 'lucide-react'
 
 export function LandingPage() {
   const [pricingTab, setPricingTab] = useState<'closer' | 'agency' | 'enterprise'>('closer');
-  
+  // --- NOUVEAU : État pour le cycle de facturation ---
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  // Fonction pour calculer le prix (arrondi) avec -15% si annuel
+  const calculatePrice = (price: number) => {
+    if (billingCycle === 'yearly') {
+      return Math.round(price * 0.85);
+    }
+    return price;
+  };
+
   useEffect(() => {
     (async function () {
       const cal = await getCalApi({"namespace":"demo-closeos-decouvrez-la-plateforme"});
@@ -455,7 +462,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* --- PRICING SECTION (AVEC ONGLETS) --- */}
+      {/* --- PRICING SECTION (AVEC ONGLETS ET SWITCH MOIS/AN) --- */}
       <section id="pricing" className="py-32 relative bg-slate-950">
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-12">
@@ -464,8 +471,8 @@ export function LandingPage() {
           </div>
 
           {/* SELECTEUR D'ONGLETS */}
-          <div className="flex justify-center mb-12">
-            <div className="inline-flex p-1 bg-slate-900 rounded-xl border border-slate-800">
+          <div className="flex flex-col items-center mb-12">
+            <div className="inline-flex p-1 bg-slate-900 rounded-xl border border-slate-800 mb-6">
               <button 
                 onClick={() => setPricingTab('closer')}
                 className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
@@ -497,6 +504,37 @@ export function LandingPage() {
                 Entreprise / Infopreneur
               </button>
             </div>
+
+            {/* --- NOUVEAU : SWITCH MOIS / ANNÉE --- */}
+            <div className="flex items-center justify-center gap-4">
+              <span 
+                className={`text-sm font-medium cursor-pointer transition-colors ${billingCycle === 'monthly' ? 'text-white' : 'text-slate-500'}`}
+                onClick={() => setBillingCycle('monthly')}
+              >
+                Mensuel
+              </span>
+
+              <button
+                onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+                className="relative w-14 h-7 bg-slate-800 rounded-full p-1 transition-colors duration-200 focus:outline-none border border-slate-700"
+              >
+                <div
+                  className={`w-5 h-5 bg-blue-600 rounded-full shadow-md transform transition-transform duration-200 ${
+                    billingCycle === 'yearly' ? 'translate-x-7' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+
+              <span 
+                className={`text-sm font-medium cursor-pointer transition-colors flex items-center gap-2 ${billingCycle === 'yearly' ? 'text-white' : 'text-slate-500'}`}
+                onClick={() => setBillingCycle('yearly')}
+              >
+                Annuel
+                <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  -15%
+                </span>
+              </span>
+            </div>
           </div>
 
           {/* CONTENU DES ONGLETS */}
@@ -504,15 +542,18 @@ export function LandingPage() {
             
             {pricingTab === 'closer' && (
               <>
-                {/* PLAN STARTER - MISE À JOUR DU TITRE ET DESCRIPTION */}
+                {/* PLAN STARTER - PRIX DYNAMIQUE */}
                 <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 flex flex-col h-full opacity-80 hover:opacity-100 transition-opacity animate-in fade-in zoom-in duration-300">
                   <div className="mb-6">
                     <h3 className="text-xl font-bold text-white">PACK STARTER</h3>
                     <p className="mt-2 text-slate-400 text-sm">Le système complet pour organiser votre closing et encaisser vos premières commissions.</p>
                     <div className="mt-4 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-white">39€</span>
+                      <span className="text-4xl font-bold text-white">{calculatePrice(39)}€</span>
                       <span className="text-slate-500">/mois</span>
                     </div>
+                    {billingCycle === 'yearly' && (
+                      <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
+                    )}
                   </div>
                   <ul className="space-y-4 mb-8 flex-1">
                     <li className="flex gap-3 text-sm text-slate-300">
@@ -537,7 +578,7 @@ export function LandingPage() {
                   </Link>
                 </div>
 
-                {/* PLAN FOUNDER */}
+                {/* PLAN FOUNDER - PRIX DYNAMIQUE */}
                 <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 scale-105 relative z-10 flex flex-col h-full animate-in fade-in zoom-in duration-300 delay-75">
                   <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
                     <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
@@ -551,10 +592,13 @@ export function LandingPage() {
                     </div>
                     <p className="mt-2 text-blue-200 text-sm">L'expérience ultime. Accès à vie, IA et communauté privée.</p>
                     <div className="mt-4 flex items-baseline gap-2">
-                      <span className="text-5xl font-extrabold text-white">29€</span>
-                      <span className="text-slate-400 line-through text-lg">69€</span>
+                      <span className="text-5xl font-extrabold text-white">{calculatePrice(29)}€</span>
+                      <span className="text-slate-400 line-through text-lg">{calculatePrice(69)}€</span>
                       <span className="text-slate-500">/mois à vie</span>
                     </div>
+                    {billingCycle === 'yearly' && (
+                      <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
+                    )}
                   </div>
                   <ul className="space-y-4 mb-4 flex-1">
                     <li className="flex gap-3 text-sm text-white font-medium">
@@ -579,7 +623,7 @@ export function LandingPage() {
                     to="/checkout" 
                     className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-50 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
                   >
-                    Sécuriser ma place à 29€
+                    Sécuriser ma place à {calculatePrice(29)}€
                   </Link>
                   
                   <p className="mt-4 text-xs text-center text-slate-500">
