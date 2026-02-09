@@ -4,37 +4,44 @@ import {
   EmbeddedCheckoutProvider,
   EmbeddedCheckout
 } from '@stripe/react-stripe-js';
-import { CheckCircle2, ShieldCheck, Sparkles, Target, ArrowLeft, PlusCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { CheckCircle2, ShieldCheck, Sparkles, Target, ArrowLeft } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 
 // Initialise Stripe avec ta clé publique
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export const CheckoutForm = () => {
   const [clientSecret, setClientSecret] = useState('');
-  const [loading, setLoading] = useState(false); // On gère le loading au fetch
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isVoipSelected, setIsVoipSelected] = useState(false); // État pour la case VoIP
+  const [isVoipSelected, setIsVoipSelected] = useState(false);
 
-  // IDs des prix Stripe
-  const PRICE_FOUNDER_29 = "price_1SyKgI33xpuYLywqfdB8YJTp";
-  const PRICE_VOIP_5 = "price_1SyXw433xpuYLywqpvmyAueZ";
+  // 👇 Récupération du cycle de facturation via l'URL (?billing=yearly)
+  const [searchParams] = useSearchParams();
+  const isYearly = searchParams.get('billing') === 'yearly';
 
-  // Fonction pour récupérer le Client Secret (appelée au chargement et au changement de l'option)
+  // 👇 CONFIGURATION DES PRIX (Mensuel vs Annuel) - IDs CORRIGÉS
+  const PRICE_FOUNDER = isYearly 
+    ? "price_1Sz1Kg33xpuYLywqS5kHdnyU" // Annuel (Nouveau)
+    : "price_1SyKgI33xpuYLywqfdB8YJTp"; // Mensuel
+
+  const PRICE_VOIP = isYearly 
+    ? "price_1Sz1Kq33xpuYLywqW9VL0b3q" // Annuel (Nouveau)
+    : "price_1SyXw433xpuYLywqpvmyAueZ"; // Mensuel
+
+  // Fonction pour récupérer le Client Secret
   const fetchClientSecret = () => {
     setLoading(true);
-    // On construit la liste des items à acheter
-    const lineItems = [{ price: PRICE_FOUNDER_29, quantity: 1 }];
+    // On construit la liste des items à acheter avec les IDs dynamiques
+    const lineItems = [{ price: PRICE_FOUNDER, quantity: 1 }];
     
-    // Si l'option VoIP est cochée, on l'ajoute
     if (isVoipSelected) {
-      lineItems.push({ price: PRICE_VOIP_5, quantity: 1 });
+      lineItems.push({ price: PRICE_VOIP, quantity: 1 });
     }
 
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // On envoie le tableau lineItems au backend
       body: JSON.stringify({ lineItems }), 
     })
       .then(async (res) => {
@@ -52,10 +59,10 @@ export const CheckoutForm = () => {
       });
   };
 
-  // Recharger le checkout quand l'option change
+  // Recharger le checkout quand l'option VoIP ou le cycle change
   useEffect(() => {
     fetchClientSecret();
-  }, [isVoipSelected]);
+  }, [isVoipSelected, isYearly]);
 
   if (error) {
     return (
@@ -97,21 +104,24 @@ export const CheckoutForm = () => {
               <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-bold bg-blue-500/10 text-blue-300 border border-blue-500/20 mb-6">
                 <Sparkles className="w-3 h-3" /> Offre de Prélancement
               </span>
-              <h1 className="text-4xl font-extrabold text-white mb-4">Pack Founder</h1>
+              <h1 className="text-4xl font-extrabold text-white mb-4">Pack Founder {isYearly && "(Annuel)"}</h1>
               <p className="text-slate-400 text-lg">
-                {/* MODIF : 29€ */}
-                Rejoignez les premiers membres et sécurisez votre tarif de 29€/mois à VIE (au lieu de 69€).
+                Rejoignez les premiers membres et sécurisez votre tarif à VIE.
               </p>
             </div>
 
             <div className="bg-blue-600/5 rounded-3xl p-8 border border-blue-500/20 relative overflow-hidden">
                <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">OFFRE LIMITÉE</div>
+              
+              {/* 👇 AFFICHAGE DYNAMIQUE DU PRIX */}
               <div className="flex items-baseline gap-3 mb-6">
-                {/* MODIF : 29€ */}
-                <span className="text-6xl font-black text-white">29€</span>
-                <span className="text-2xl text-slate-500 line-through">69€</span>
-                <span className="text-slate-400 font-medium">/mois à vie</span>
+                <span className="text-6xl font-black text-white">{isYearly ? "25€" : "29€"}</span>
+                <span className="text-2xl text-slate-500 line-through">{isYearly ? "60€" : "69€"}</span>
+                <span className="text-slate-400 font-medium">
+                  {isYearly ? "/mois (facturé 300€/an)" : "/mois à vie"}
+                </span>
               </div>
+              
               <div className="space-y-4 mb-8">
                 {[
                   "7 jours d'essai gratuit au lancement",
@@ -126,7 +136,7 @@ export const CheckoutForm = () => {
                 ))}
               </div>
 
-              {/* 👇 AJOUT : SÉLECTEUR VOIP */}
+              {/* 👇 SÉLECTEUR VOIP ADAPTÉ */}
               <div 
                 className={`p-4 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${isVoipSelected ? 'bg-blue-500/20 border-blue-500' : 'bg-slate-900/50 border-slate-700 hover:border-slate-500'}`}
                 onClick={() => setIsVoipSelected(!isVoipSelected)}
@@ -137,7 +147,10 @@ export const CheckoutForm = () => {
                 <div className="flex-1">
                    <div className="flex justify-between items-center mb-1">
                       <span className={`font-bold text-sm ${isVoipSelected ? 'text-white' : 'text-slate-300'}`}>Ajouter l'option VoIP & Records</span>
-                      <span className="text-sm font-bold text-white">+5€<span className="text-slate-500 font-normal text-xs">/mois</span></span>
+                      <span className="text-sm font-bold text-white">
+                        {isYearly ? "+50€" : "+5€"}
+                        <span className="text-slate-500 font-normal text-xs">{isYearly ? "/an" : "/mois"}</span>
+                      </span>
                    </div>
                    <p className="text-xs text-slate-400">Appels illimités depuis la plateforme + enregistrement automatique des appels.</p>
                 </div>
