@@ -15,7 +15,8 @@ export function WelcomeFounder() {
 
   // 👇 CONFIG VIDEOS
   const VIDEO_ID_FOUNDER = "ewsQesgvs1w";
-  const VIDEO_ID_STARTER = "Ra3NYhU9z94"; // Vidéo Starter
+  // 👇 NOUVEL ID VIDEO STARTER ICI
+  const VIDEO_ID_STARTER = "6muxdUhyrxs"; 
 
   const activeVideoId = isStarter ? VIDEO_ID_STARTER : VIDEO_ID_FOUNDER;
   const YOUTUBE_URL = `https://www.youtube.com/embed/${activeVideoId}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1`;
