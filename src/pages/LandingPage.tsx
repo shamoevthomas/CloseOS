@@ -39,10 +39,6 @@ export function LandingPage() {
     })();
   }, [])
 
-  // 👇 Le lien Founder reste ici (ou sera remplacé par /checkout plus tard)
-  const STRIPE_LINK_FOUNDER = "https://buy.stripe.com/TON_LIEN_FOUNDER_29EUROS"; 
-  // Le lien Starter n'est plus utilisé ici car on passe par la page interne
-
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 overflow-x-hidden">
       
@@ -465,11 +461,11 @@ export function LandingPage() {
             
             {pricingTab === 'closer' && (
               <>
-                {/* PLAN STARTER */}
+                {/* PLAN STARTER - MISE À JOUR DU TITRE ET DESCRIPTION */}
                 <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 flex flex-col h-full opacity-80 hover:opacity-100 transition-opacity animate-in fade-in zoom-in duration-300">
                   <div className="mb-6">
-                    <h3 className="text-xl font-bold text-white">STARTER</h3>
-                    <p className="mt-2 text-slate-400 text-sm">Pour les closers qui débutent ou font moins de 5k€/mois.</p>
+                    <h3 className="text-xl font-bold text-white">PACK STARTER</h3>
+                    <p className="mt-2 text-slate-400 text-sm">Le système complet pour organiser votre closing et encaisser vos premières commissions.</p>
                     <div className="mt-4 flex items-baseline gap-1">
                       <span className="text-4xl font-bold text-white">39€</span>
                       <span className="text-slate-500">/mois</span>
@@ -493,9 +489,8 @@ export function LandingPage() {
                       <span>Support standard par email</span>
                     </li>
                   </ul>
-                  {/* 👇 LIEN MODIFIÉ VERS LA PAGE INTERNE */}
                   <Link to="/checkout-starter" className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
-                    Démarrer Starter
+                    Démarrer en Starter
                   </Link>
                 </div>
 
@@ -508,10 +503,10 @@ export function LandingPage() {
                   </div>
                   <div className="mb-6">
                     <div className="flex items-center gap-2 mb-2">
-                       <h3 className="text-2xl font-bold text-white">FOUNDER</h3>
+                       <h3 className="text-2xl font-bold text-white">PACK FOUNDER</h3>
                        <Star className="h-5 w-5 text-yellow-400 fill-yellow-400 animate-pulse" />
                     </div>
-                    <p className="mt-2 text-blue-200 text-sm">Accès complet à vie au tarif préférentiel.</p>
+                    <p className="mt-2 text-blue-200 text-sm">L'expérience ultime. Accès à vie, IA et communauté privée.</p>
                     <div className="mt-4 flex items-baseline gap-2">
                       <span className="text-5xl font-extrabold text-white">29€</span>
                       <span className="text-slate-400 line-through text-lg">69€</span>
@@ -687,13 +682,17 @@ export function LandingPage() {
           <p className="text-xl text-slate-300 mb-10">
             Rejoignez l'élite des closers qui utilisent le système tout-en-un CloseOS.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col items-center justify-center gap-4">
             <Link 
-              to="/checkout" // 👈 Modification ici
+              to="/checkout" 
               className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-slate-950 font-bold text-lg hover:bg-blue-50 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/10"
             >
               Profiter de l'offre Founder (29€/mois)
               <ChevronRight className="h-5 w-5" />
+            </Link>
+            {/* 👇 AJOUT : Lien secondaire pour l'offre Starter */}
+            <Link to="/checkout-starter" className="text-slate-500 hover:text-white text-sm underline transition-colors mt-2">
+               Ou démarrer avec le Pack Starter (39€/mois)
             </Link>
           </div>
           <p className="mt-6 text-sm text-slate-500">
