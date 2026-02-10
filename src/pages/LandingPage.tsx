@@ -144,18 +144,6 @@ export function LandingPage() {
             </a>
           </div>
 
-          {/* DASHBOARD PREVIEW */}
-          <div className="mt-20 relative mx-auto max-w-6xl animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500 group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 rounded-2xl opacity-20 blur-lg group-hover:opacity-40 transition-opacity duration-1000"></div>
-            <div className="relative rounded-xl border border-slate-800 bg-[#0B1121] shadow-2xl overflow-hidden ring-1 ring-white/10">
-               <img 
-                 src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2670&auto=format&fit=crop" 
-                 alt="Dashboard CloseOS" 
-                 className="w-full h-auto opacity-90 transition-opacity hover:opacity-100" 
-               />
-               <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-80"></div>
-            </div>
-          </div>
         </div>
       </section>
 
