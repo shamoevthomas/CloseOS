@@ -74,9 +74,57 @@ export function InvoiceGeneratorModal({
   // ------------------------------------
 
   // Invoice metadata
-  const [invoiceNumber, setInvoiceNumber] = useState(
-    `FAC-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
-  )
+  // MODIFICATION ICI : Initialisation vide, le useEffect va calculer le numéro
+  const [invoiceNumber, setInvoiceNumber] = useState('')
+
+  // --- 0. CALCUL AUTOMATIQUE DU NUMÉRO DE FACTURE (FAC-YYYY-XX) ---
+  useEffect(() => {
+    const fetchNextInvoiceNumber = async () => {
+      const year = new Date().getFullYear()
+      // Format par défaut si aucune facture trouvée : FAC-2026-01
+      const defaultNumber = `FAC-${year}-01`
+      
+      try {
+        // On récupère la dernière facture de l'année en cours
+        const { data, error } = await supabase
+          .from('invoices')
+          .select('invoice_number, created_at')
+          .ilike('invoice_number', `FAC-${year}-%`) // Filtre pour l'année courante
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        if (error) {
+          console.error('Erreur récupération numéro facture:', error)
+          setInvoiceNumber(defaultNumber)
+          return
+        }
+
+        if (data && data.length > 0) {
+          const lastInvoice = data[0].invoice_number
+          // On suppose le format FAC-YYYY-XX
+          const parts = lastInvoice.split('-')
+          if (parts.length === 3) {
+            const lastSequence = parseInt(parts[2], 10)
+            if (!isNaN(lastSequence)) {
+              // On incrémente et on ajoute le 0 devant si nécessaire (ex: 1 -> 01, 10 -> 10)
+              const nextSequence = String(lastSequence + 1).padStart(2, '0')
+              setInvoiceNumber(`FAC-${year}-${nextSequence}`)
+              return
+            }
+          }
+        }
+        
+        // Si c'est la toute première facture de l'année
+        setInvoiceNumber(defaultNumber)
+        
+      } catch (err) {
+        setInvoiceNumber(defaultNumber)
+      }
+    }
+
+    fetchNextInvoiceNumber()
+  }, [])
+  // -------------------------------------------------------------
 
   // --- AJOUT : VÉRIFICATION DU STATUT STRIPE ---
   useEffect(() => {
