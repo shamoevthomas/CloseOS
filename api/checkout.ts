@@ -3,11 +3,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
-// 👇 ICI : TA LISTE DE CODES (Tu en ajoutes autant que tu veux)
-// Format : "CODE_CLIENT": "ID_PROMO_STRIPE"
+// 👇 ICI : TA LISTE DE CODES
+// L'ID commence par 'promo_', c'est donc un Promotion Code.
 const PARTNER_CODES: Record<string, string> = {
-  'TEKA15': 'promo_1SzEOZ33xpuYLywqw0ns1FaJ', // Code Teka
-  // 'NEXTCODE': 'promo_xyz...',              // Tu pourras ajouter le suivant ici
+  'TEKA15': 'promo_1SzEOZ33xpuYLywqw0ns1FaJ', 
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -17,19 +16,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       console.log("Session pour:", plan, "| Code saisi:", referralCode);
 
-      // 👇 LOGIQUE SIMPLIFIÉE
+      // 👇 LOGIQUE CORRIGÉE
       const discounts = [];
       
       if (referralCode) {
-        // On nettoie le code (en majuscule + sans espaces)
         const cleanCode = referralCode.trim().toUpperCase();
-        
-        // On vérifie si le code existe dans ta liste
-        const couponId = PARTNER_CODES[cleanCode];
+        const promoId = PARTNER_CODES[cleanCode];
 
-        if (couponId) {
-           console.log("✅ Code trouvé ! Application de:", couponId);
-           discounts.push({ coupon: couponId });
+        if (promoId) {
+           console.log("✅ Code trouvé ! Application du code promo:", promoId);
+           // ⚠️ CHANGEMENT ICI : on utilise 'promotion_code' au lieu de 'coupon'
+           discounts.push({ promotion_code: promoId });
         } else {
            console.log("❌ Code inconnu");
         }
@@ -41,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         mode: 'subscription',
         payment_method_collection: 'if_required', 
         
-        // On applique la réduction si trouvée
+        // On applique la réduction
         discounts: discounts.length > 0 ? discounts : undefined,
 
         return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}&plan=${plan || 'founder'}`,
@@ -54,7 +51,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.status(200).json({ clientSecret: session.client_secret });
     } catch (err: any) {
       console.error("ERREUR STRIPE:", err.message);
-      res.status(err.statusCode || 500).json(err.message);
+      // On renvoie l'erreur exacte pour le débug
+      res.status(err.statusCode || 500).json({ error: err.message });
     }
   } else {
     res.setHeader('Allow', 'POST');
