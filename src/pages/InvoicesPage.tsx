@@ -5,6 +5,7 @@ import { useOffers } from '../contexts/OffersContext'
 import { InvoiceGeneratorModal } from '../components/InvoiceGeneratorModal'
 import { PaymentMethodsModal } from '../components/PaymentMethodsModal'
 import { IssuerProfilesModal } from '../components/IssuerProfilesModal'
+import { StripeConnectModal } from '../components/StripeConnectModal' // 👈 Import de la nouvelle modale
 import { supabase } from '../lib/supabase'
 
 export function InvoicesPage() {
@@ -25,6 +26,7 @@ export function InvoicesPage() {
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false)
   const [isPaymentMethodsOpen, setIsPaymentMethodsOpen] = useState(false)
   const [isIssuerProfilesOpen, setIsIssuerProfilesOpen] = useState(false)
+  const [isStripeConnectOpen, setIsStripeConnectOpen] = useState(false) // 👈 Nouvel état
 
   // State pour les tooltips (détails)
   const [activeTooltip, setActiveTooltip] = useState<'cash' | 'installments' | null>(null)
@@ -42,7 +44,7 @@ export function InvoicesPage() {
     fetchInvoices()
   }, [isGeneratorOpen]) 
 
-  // --- LOGIQUE DE FILTRAGE AJOUTÉE ---
+  // --- LOGIQUE DE FILTRAGE (Préservée) ---
   const isExpired = (offer: any) => {
     if (!offer.endDate) return false
     const today = new Date()
@@ -87,37 +89,29 @@ export function InvoicesPage() {
 
       const dealDate = new Date(prospect.lastContact || prospect.dateAdded)
       
-      // LOGIQUE INTELLIGENTE :
-      // 1. Si c'est comptant : il doit être dans la période de signature
+      // LOGIQUE INTELLIGENTE
       if (prospect.payment_type !== 'installments' && (!prospect.installments || prospect.installments <= 1)) {
         return dealDate >= start && dealDate <= end
       }
 
-      // 2. Si c'est plusieurs fois : il est actif de sa date de début jusqu'à X mois plus tard
       const months = prospect.installments || 1
       const endDateDeal = new Date(dealDate)
-      endDateDeal.setMonth(endDateDeal.getMonth() + (months - 1)) // Date de la dernière mensualité
+      endDateDeal.setMonth(endDateDeal.getMonth() + (months - 1))
 
-      // Un deal échelonné est "actif" dans la vue si la période sélectionnée 
-      // chevauche n'importe quelle mensualité du deal
       return (dealDate <= end && endDateDeal >= start)
     })
 
-    // Séparation pour l'affichage dans les tooltips
     const cashDeals = activeDealsInPeriod.filter(p => p.payment_type !== 'installments' && (!p.installments || p.installments <= 1))
     const installmentDeals = activeDealsInPeriod.filter(p => p.payment_type === 'installments' || (p.installments && p.installments > 1))
 
-    // CALCUL DU REVENU RÉEL POUR LA PÉRIODE SÉLECTIONNÉE
+    // CALCUL DU REVENU RÉEL
     const revenue = activeDealsInPeriod.reduce((sum, prospect) => {
       const fullValue = prospect.value || 0
       
       if (prospect.payment_type !== 'installments' && (!prospect.installments || prospect.installments <= 1)) {
         return sum + fullValue
       } else {
-        // Pour les paiements en plusieurs fois, on ne compte que la mensualité 
-        // si elle tombe dans l'intervalle sélectionné
         const monthlyValue = fullValue / (prospect.installments || 1)
-        
         let installmentsInPeriod = 0
         const dealDate = new Date(prospect.lastContact || prospect.dateAdded)
         
@@ -132,7 +126,7 @@ export function InvoicesPage() {
       }
     }, 0)
 
-    // Commission calculée sur le revenu réel de la période
+    // Commission calculée
     const totalCommission = activeDealsInPeriod.reduce((sum, deal) => {
       let amountInPeriod = 0
       const fullValue = deal.value || 0
@@ -176,7 +170,6 @@ export function InvoicesPage() {
     }).format(amount)
   }
 
-  // Helper pour calculer la date de fin
   const getInstallmentEndDate = (startDateStr: string | Date, months: number) => {
     if (!startDateStr) return 'N/A'
     const d = new Date(startDateStr)
@@ -193,6 +186,15 @@ export function InvoicesPage() {
           <p className="text-slate-400">Générez vos factures et suivez vos commissions</p>
         </div>
         <div className="flex gap-3">
+          {/* BOUTON STRIPE CONNECT (NOUVEAU) */}
+          <button
+            onClick={() => setIsStripeConnectOpen(true)}
+            className="flex items-center gap-2 rounded-lg bg-[#635BFF] px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#5349E0] hover:shadow-lg hover:shadow-[#635BFF]/20"
+          >
+            <CreditCard className="h-4 w-4" />
+            Connecter Stripe
+          </button>
+
           <button
             onClick={() => setIsIssuerProfilesOpen(true)}
             className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-all hover:bg-slate-800 hover:border-slate-600"
@@ -306,12 +308,10 @@ export function InvoicesPage() {
             </div>
           </div>
 
-          {/* --- SECTION DÉTAILS DE FACTURE --- */}
+          {/* Details Section */}
           <div className="mb-8 rounded-xl border border-slate-800 bg-slate-900/50 p-6">
             <h3 className="text-lg font-bold text-white mb-6">Détails de facture</h3>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              
               {/* Colonne 1 : Paiements Comptant */}
               <div className="relative">
                 <div className="flex items-center justify-between mb-4">
@@ -419,7 +419,6 @@ export function InvoicesPage() {
                   Part mensuelle période : {formatCurrency(stats.revenue - stats.cashDeals.reduce((sum, d) => sum + (d.value || 0), 0))}
                 </p>
               </div>
-
             </div>
           </div>
         </>
@@ -446,7 +445,7 @@ export function InvoicesPage() {
         </div>
       )}
 
-      {/* History Table Section */}
+      {/* History Table */}
       <div className="mt-12">
         <h2 className="mb-4 text-xl font-bold text-white">Historique des factures</h2>
         <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 shadow-lg">
@@ -484,7 +483,7 @@ export function InvoicesPage() {
                           target="_blank" 
                           rel="noreferrer"
                           className="text-slate-400 hover:text-purple-400 transition-colors"
-                          title="Voir la facture"
+                          title="Voir"
                         >
                           <Eye className="h-5 w-5" />
                         </a>
@@ -513,17 +512,6 @@ export function InvoicesPage() {
         </div>
       </div>
 
-      {/* No Deals Message */}
-      {selectedOffer && stats.dealsCount === 0 && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-12 text-center mt-6">
-          <FileText className="mx-auto mb-4 h-12 w-12 text-slate-600" />
-          <p className="text-lg font-semibold text-slate-400">Aucun deal actif</p>
-          <p className="mt-2 text-sm text-slate-500">
-            Fermez des deals ou attendez les prochaines échéances pour voir des statistiques ici.
-          </p>
-        </div>
-      )}
-
       {/* Invoice Generator Modal */}
       {isGeneratorOpen && selectedOffer && (
         <InvoiceGeneratorModal
@@ -546,6 +534,12 @@ export function InvoicesPage() {
       <IssuerProfilesModal
         isOpen={isIssuerProfilesOpen}
         onClose={() => setIsIssuerProfilesOpen(false)}
+      />
+
+      {/* STRIPE CONNECT MODAL (Nouveau) */}
+      <StripeConnectModal
+        isOpen={isStripeConnectOpen}
+        onClose={() => setIsStripeConnectOpen(false)}
       />
     </div>
   )
