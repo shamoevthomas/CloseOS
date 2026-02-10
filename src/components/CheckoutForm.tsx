@@ -32,10 +32,10 @@ export const CheckoutForm = () => {
   // CONFIGURATION DES PRIX
   const PRICE_FOUNDER = isYearly 
     ? "price_1Sz1Kg33xpuYLywqS5kHdnyU" 
-    : "price_1SyKgI33xpuYLywqfdB8YJTp"; 
+    : "price_1SzEPa33xpuYLywq3TKcBIji"; 
 
   const PRICE_VOIP = isYearly 
-    ? "price_1Sz1ud33xpuYLywq17cID0HX"
+    ? "price_1SzEPo33xpuYLywqhRb738Lv"
     : "price_1SyXw433xpuYLywqpvmyAueZ";
 
   // Fonction pour récupérer le Client Secret
@@ -204,7 +204,7 @@ export const CheckoutForm = () => {
               <div className="flex gap-3">
                 <input 
                   type="text" 
-                  placeholder="Ex: TEKA15" 
+                  placeholder="Ex: ADMIN15" 
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value)}
                   className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors uppercase placeholder:normal-case"
