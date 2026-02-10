@@ -3,13 +3,37 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
+// 👇 ICI : TA LISTE DE CODES (Tu en ajoutes autant que tu veux)
+// Format : "CODE_CLIENT": "ID_PROMO_STRIPE"
+const PARTNER_CODES: Record<string, string> = {
+  'TEKA15': 'promo_1SzEOZ33xpuYLywqw0ns1FaJ', // Code Teka
+  // 'NEXTCODE': 'promo_xyz...',              // Tu pourras ajouter le suivant ici
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     try {
-      // 👇 AJOUT : On récupère "plan" en plus de "lineItems"
-      const { lineItems, plan } = req.body;
+      const { lineItems, plan, referralCode } = req.body;
       
-      console.log("Création session pour:", plan, lineItems);
+      console.log("Session pour:", plan, "| Code saisi:", referralCode);
+
+      // 👇 LOGIQUE SIMPLIFIÉE
+      const discounts = [];
+      
+      if (referralCode) {
+        // On nettoie le code (en majuscule + sans espaces)
+        const cleanCode = referralCode.trim().toUpperCase();
+        
+        // On vérifie si le code existe dans ta liste
+        const couponId = PARTNER_CODES[cleanCode];
+
+        if (couponId) {
+           console.log("✅ Code trouvé ! Application de:", couponId);
+           discounts.push({ coupon: couponId });
+        } else {
+           console.log("❌ Code inconnu");
+        }
+      }
 
       const session = await stripe.checkout.sessions.create({
         ui_mode: 'embedded',
@@ -17,8 +41,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         mode: 'subscription',
         payment_method_collection: 'if_required', 
         
-        // 👇 MODIFICATION CRUCIALE : On ajoute le paramètre plan dans l'URL
-        // Si aucun plan n'est reçu, on met 'founder' par défaut
+        // On applique la réduction si trouvée
+        discounts: discounts.length > 0 ? discounts : undefined,
+
         return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}&plan=${plan || 'founder'}`,
         
         subscription_data: {

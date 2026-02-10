@@ -4,7 +4,7 @@ import {
   EmbeddedCheckoutProvider,
   EmbeddedCheckout
 } from '@stripe/react-stripe-js';
-import { CheckCircle2, ShieldCheck, ArrowLeft, Rocket, Square, CheckSquare, AlertCircle } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, ArrowLeft, Rocket, Square, CheckSquare, AlertCircle, TicketPercent, Loader2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 // Initialise Stripe
@@ -16,21 +16,26 @@ export const CheckoutStarter = () => {
   const [error, setError] = useState('');
   const [isVoipSelected, setIsVoipSelected] = useState(false);
 
-  // 👇 NOUVEAUX ÉTATS POUR LES CGV
+  // 👇 NOUVEAUX ÉTATS POUR LE CODE PROMO
+  const [referralCode, setReferralCode] = useState('');
+  const [appliedCode, setAppliedCode] = useState('');
+  const [isApplyingCode, setIsApplyingCode] = useState(false);
+
+  // ÉTATS POUR LES CGV
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [showTermsError, setShowTermsError] = useState(false);
 
-  // 👇 Récupération du cycle de facturation via l'URL (?billing=yearly)
+  // Récupération du cycle de facturation via l'URL (?billing=yearly)
   const [searchParams] = useSearchParams();
   const isYearly = searchParams.get('billing') === 'yearly';
 
-  // 👇 CONFIGURATION DES PRIX (Mensuel vs Annuel)
+  // CONFIGURATION DES PRIX (Mensuel vs Annuel)
   const PRICE_STARTER = isYearly 
     ? "price_1Sz1Cj33xpuYLywq7Lkx6GKp" // Annuel
     : "price_1SyYFA33xpuYLywqHtV34VGE"; // Mensuel
 
   const PRICE_VOIP = isYearly 
-    ? "price_1Sz1nL33xpuYLywqIpP0io3V" // Annuel (Nouveau ID corrigé)
+    ? "price_1Sz1nL33xpuYLywqIpP0io3V" // Annuel
     : "price_1SyYGp33xpuYLywqxEJKYtUC"; // Mensuel
 
   const fetchClientSecret = () => {
@@ -46,7 +51,12 @@ export const CheckoutStarter = () => {
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lineItems, plan: 'starter' }), 
+      // 👇 ON ENVOIE LE CODE APPLIQUÉ ICI
+      body: JSON.stringify({ 
+        lineItems, 
+        plan: 'starter',
+        referralCode: appliedCode 
+      }), 
     })
       .then(async (res) => {
         if (!res.ok) throw new Error('Erreur API');
@@ -55,18 +65,28 @@ export const CheckoutStarter = () => {
       .then((data) => {
         setClientSecret(data.clientSecret);
         setLoading(false);
+        setIsApplyingCode(false);
       })
       .catch((err) => {
         console.error(err);
         setError("Erreur de chargement du module de paiement.");
         setLoading(false);
+        setIsApplyingCode(false);
       });
   };
 
-  // Recharger le checkout quand l'option change ou le cycle change
+  // Recharger le checkout quand l'option, le cycle ou LE CODE change
   useEffect(() => {
     fetchClientSecret();
-  }, [isVoipSelected, isYearly]);
+  }, [isVoipSelected, isYearly, appliedCode]);
+
+  // Gestion du clic sur "Appliquer le code"
+  const handleApplyCode = () => {
+    if (referralCode.trim() !== appliedCode) {
+      setIsApplyingCode(true);
+      setAppliedCode(referralCode.trim());
+    }
+  };
 
   // Fonction de gestion du clic sur l'overlay de protection
   const handleOverlayClick = () => {
@@ -110,7 +130,6 @@ export const CheckoutStarter = () => {
             <span className="text-sm font-medium">Retour</span>
           </Link>
           
-          {/* 👇 LOGO MODIFIÉ ICI */}
           <div className="flex items-center gap-2">
             <img src="/logo.PNG" alt="CloseOS Logo" className="h-8 w-auto" />
           </div>
@@ -178,7 +197,37 @@ export const CheckoutStarter = () => {
               </div>
             </div>
 
-            {/* 👇 SECTION CGV / CGU OBLIGATOIRE */}
+            {/* 👇 NOUVELLE SECTION CODE PROMO */}
+            <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+              <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
+                <TicketPercent className="h-4 w-4 text-blue-400" />
+                <span className="font-semibold">Code de parrainage / Promo</span>
+              </div>
+              <div className="flex gap-3">
+                <input 
+                  type="text" 
+                  placeholder="Ex: TEKA15" 
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value)}
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors uppercase placeholder:normal-case"
+                />
+                <button 
+                  onClick={handleApplyCode}
+                  disabled={isApplyingCode || !referralCode}
+                  className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
+                >
+                  {isApplyingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Appliquer'}
+                </button>
+              </div>
+              {appliedCode && !isApplyingCode && (
+                <p className="text-xs text-emerald-400 mt-2 font-medium flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Code appliqué ! Vérifiez le montant total à droite.
+                </p>
+              )}
+            </div>
+
+            {/* SECTION CGV / CGU OBLIGATOIRE */}
             <div id="terms-checkbox" className={`p-4 rounded-2xl border transition-colors ${showTermsError ? 'bg-red-950/10 border-red-500/50' : 'bg-slate-900/50 border-slate-800'}`}>
               
               {showTermsError && (
@@ -224,7 +273,7 @@ export const CheckoutStarter = () => {
                   <EmbeddedCheckout className="h-full w-full" />
                 </EmbeddedCheckoutProvider>
 
-                 {/* 👇 LE BOUCLIER : Bloque les clics si CGV non acceptées */}
+                 {/* LE BOUCLIER : Bloque les clics si CGV non acceptées */}
                 {!isTermsAccepted && (
                   <div 
                     onClick={handleOverlayClick}
