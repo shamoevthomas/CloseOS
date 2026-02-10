@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,7 +12,11 @@ import {
   Briefcase,
   Calendar,
   Infinity,
-  UserX
+  UserX,
+  Filter,
+  Archive,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { useOffers } from '../contexts/OffersContext';
 import { useProspects } from '../contexts/ProspectsContext';
@@ -21,219 +25,77 @@ import { useProspects } from '../contexts/ProspectsContext';
 // UNIVERSAL DATA PARSING HELPERS (OMNIVORE MODE + KANBAN SUPPORT)
 // ============================================================================
 
-/**
- * INDESTRUCTIBLE KANBAN EXTRACTION: Parse ANY structure
- * Handles:
- * - Flat arrays: [deal1, deal2]
- * - Kanban objects: { col1: { items: [...] }, col2: { items: [...] } }
- * - Nested structures: { columns: { col1: { items: [...] } } }
- * - Direct arrays in values: { prospect: [...], gagne: [...] }
- */
 const extractDealsFromKanban = (data: any): any[] => {
-  if (!data) {
-    console.warn('⚠️ extractDealsFromKanban: No data provided');
-    return [];
-  }
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
 
-  // Case 1: Already a flat array (legacy format)
-  if (Array.isArray(data)) {
-    console.log('✅ Data is flat array:', data.length, 'items');
-    return data;
-  }
-
-  // Case 2: It's an object - need to extract recursively
   const allDeals: any[] = [];
-
   const recursiveExtract = (obj: any, parentKey: string = ''): void => {
     if (!obj || typeof obj !== 'object') return;
-
-    // Check if this object has a 'columns' property (nested Kanban)
     if (obj.columns && typeof obj.columns === 'object') {
-      console.log('📦 Found nested columns structure');
       recursiveExtract(obj.columns, 'columns');
       return;
     }
-
-    // Iterate over all keys
     Object.entries(obj).forEach(([key, value]: [string, any]) => {
       const columnKey = key.toLowerCase();
-
-      // Case A: Value is directly an array of deals
       if (Array.isArray(value)) {
-        console.log(`📋 Found array in key "${key}":`, value.length, 'items');
-
         value.forEach((item: any) => {
           if (!item || typeof item !== 'object') return;
-
           const deal = { ...item };
-
-          // Force status based on column/key name
-          if (
-            columnKey.includes('gagn') ||
-            columnKey.includes('won') ||
-            columnKey.includes('sign') ||
-            columnKey.includes('clos') ||
-            columnKey.includes('fermé')
-          ) {
-            deal.status = 'Gagné';
-            deal._sourceColumn = key;
-          } else if (columnKey.includes('perdu') || columnKey.includes('lost')) {
-            deal.status = 'Perdu';
-            deal._sourceColumn = key;
-          } else {
-            if (!deal.status && !deal.statut) {
-              deal.status = 'In Progress';
-            }
-            deal._sourceColumn = key;
-          }
-
+          if (columnKey.match(/gagn|won|sign|clos|fermé/)) deal.status = 'Gagné';
+          else if (columnKey.match(/perdu|lost/)) deal.status = 'Perdu';
+          else if (!deal.status) deal.status = 'In Progress';
           allDeals.push(deal);
         });
-      }
-      // Case B: Value is an object that might be a column
-      else if (value && typeof value === 'object') {
-        const columnTitle = (value.title || value.name || '').toLowerCase();
+      } else if (value && typeof value === 'object') {
         const items = value.items || value.deals || value.data || [];
-
-        // Case B1: It's a column with items
         if (Array.isArray(items) && items.length > 0) {
-          console.log(`📋 Found column "${key}" with items:`, items.length);
-
           items.forEach((item: any) => {
-            if (!item || typeof item !== 'object') return;
-
             const deal = { ...item };
-            const statusKey = (columnTitle || columnKey).toLowerCase();
-
-            // Force status based on column
-            if (
-              statusKey.includes('gagn') ||
-              statusKey.includes('won') ||
-              statusKey.includes('sign') ||
-              statusKey.includes('clos') ||
-              statusKey.includes('fermé')
-            ) {
-              deal.status = 'Gagné';
-              deal._sourceColumn = columnTitle || key;
-            } else if (statusKey.includes('perdu') || statusKey.includes('lost')) {
-              deal.status = 'Perdu';
-              deal._sourceColumn = columnTitle || key;
-            } else {
-              if (!deal.status && !deal.statut) {
-                deal.status = 'In Progress';
-              }
-              deal._sourceColumn = columnTitle || key;
-            }
-
+            const statusKey = (value.title || value.name || key).toLowerCase();
+            if (statusKey.match(/gagn|won|sign|clos|fermé/)) deal.status = 'Gagné';
+            else if (statusKey.match(/perdu|lost/)) deal.status = 'Perdu';
+            else if (!deal.status) deal.status = 'In Progress';
             allDeals.push(deal);
           });
-        }
-        // Case B2: Nested object - recurse
-        else {
+        } else {
           recursiveExtract(value, key);
         }
       }
     });
   };
-
   recursiveExtract(data);
-  console.log('✅ Total deals extracted:', allDeals.length);
   return allDeals;
 };
 
-/**
- * OMNIVORE: Extract amount from ANY possible field name
- * Tries: amount, price, prix, montant, value, total
- * Handles: "1 200 €", "1,200.50", 1500, etc.
- */
 const getDealAmount = (deal: any): number => {
-  // Try all possible field names
-  const possibleFields = [
-    deal.amount,
-    deal.price,
-    deal.prix,
-    deal.montant,
-    deal.value,
-    deal.total,
-    deal.Amount, // Try capitalized versions too
-    deal.Price,
-  ];
-
+  const possibleFields = [deal.amount, deal.price, deal.prix, deal.montant, deal.value, deal.total, deal.Amount, deal.Price];
   for (const value of possibleFields) {
     if (value !== undefined && value !== null && value !== '') {
-      // Parse the value
-      if (typeof value === 'number' && !isNaN(value)) {
-        return value > 0 ? value : 0;
-      }
-
+      if (typeof value === 'number' && !isNaN(value)) return value > 0 ? value : 0;
       try {
-        let str = String(value).trim();
-
-        // Step 1: Remove currency symbols and letter characters
-        str = str.replace(/[€$£A-Za-z]/g, '');
-
-        // Step 2: Remove spaces (used as thousand separators)
-        str = str.replace(/\s+/g, '');
-
-        // Step 3: Handle different decimal formats
-        if (/,\d{1,2}$/.test(str)) {
-          str = str.replace(',', '.');
-        } else {
-          str = str.replace(/,/g, '');
-        }
-
+        let str = String(value).replace(/[€$£A-Za-z]/g, '').replace(/\s+/g, '');
+        str = /,\d{1,2}$/.test(str) ? str.replace(',', '.') : str.replace(/,/g, '');
         const num = parseFloat(str);
-        if (!isNaN(num) && num > 0) {
-          return num;
-        }
-      } catch (e) {
-        // Continue to next field
-      }
+        if (!isNaN(num) && num > 0) return num;
+      } catch (e) {}
     }
   }
-
   return 0;
 };
 
-/**
- * OMNIVORE: Check if deal is WON (case-insensitive, multiple variations)
- */
 const isWonDeal = (deal: any): boolean => {
-  const status = deal.status || deal.statut || deal.state || '';
-  const s = String(status).toLowerCase();
-  return (
-    s.includes('gagn') ||
-    s.includes('won') ||
-    s.includes('sign') ||
-    s.includes('closed') ||
-    s.includes('clos') ||
-    s === 'won' ||
-    s === 'gagné' ||
-    s === 'gagne'
-  );
+  const s = String(deal.status || deal.statut || deal.state || '').toLowerCase();
+  return s.match(/gagn|won|sign|closed|clos/) !== null;
 };
 
-/**
- * OMNIVORE: Check if deal is LOST
- */
 const isLostDeal = (deal: any): boolean => {
-  const status = deal.status || deal.statut || deal.state || '';
-  const s = String(status).toLowerCase();
-  return s.includes('perdu') || s.includes('lost');
+  const s = String(deal.status || deal.statut || deal.state || '').toLowerCase();
+  return s.match(/perdu|lost/) !== null;
 };
 
-/**
- * OMNIVORE: Parse date from multiple possible fields
- */
 const getDealDate = (deal: any): Date => {
-  const possibleFields = [
-    deal.createdAt,
-    deal.date,
-    deal.creationDate,
-    deal.dateCreation,
-    deal.created_at,
-  ];
-
+  const possibleFields = [deal.createdAt, deal.date, deal.creationDate, deal.dateCreation, deal.created_at];
   for (const value of possibleFields) {
     if (value) {
       const d = new Date(value);
@@ -243,13 +105,8 @@ const getDealDate = (deal: any): Date => {
   return new Date();
 };
 
-/**
- * OMNIVORE: Get offer name from deal
- */
 const getDealOffer = (deal: any): string => {
-  return String(
-    deal.offer || deal.offerName || deal.offre || deal.offer_name || ''
-  ).toLowerCase();
+  return String(deal.offer || deal.offerName || deal.offre || deal.offer_name || '').toLowerCase();
 };
 
 // ============================================================================
@@ -259,16 +116,18 @@ const getDealOffer = (deal: any): string => {
 export function KPIPage() {
   const { offers: allOffers } = useOffers();
   const { prospects: allProspects } = useProspects();
-  const offers = allOffers.filter(offer => offer.status === 'active');
 
-  useEffect(() => {
-    console.log('🔗 KPI Page connected to OffersContext & ProspectsContext');
-  }, [allOffers, offers, allProspects]);
+  // Séparation des offres
+  const activeOffers = useMemo(() => allOffers.filter(o => o.status === 'active'), [allOffers]);
+  const inactiveOffers = useMemo(() => allOffers.filter(o => o.status === 'inactive'), [allOffers]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'all'>('all'); 
   const [activeTab, setActiveTab] = useState('global');
   const [deals, setDeals] = useState<any[]>([]);
+  
+  // 🚀 NOUVEAU : État pour inclure ou non les offres inactives dans le Global
+  const [includeInactiveInGlobal, setIncludeInactiveInGlobal] = useState(false);
 
   useEffect(() => {
     const loadData = () => {
@@ -276,8 +135,7 @@ export function KPIPage() {
         const pipelineData = localStorage.getItem('closeros_pipeline');
         if (pipelineData) {
           const parsed = JSON.parse(pipelineData);
-          const dealsArray = extractDealsFromKanban(parsed);
-          setDeals(dealsArray);
+          setDeals(extractDealsFromKanban(parsed));
         } else {
           setDeals([]);
         }
@@ -286,238 +144,353 @@ export function KPIPage() {
         setDeals([]);
       }
     };
-
     loadData();
     window.addEventListener('focus', loadData);
     return () => window.removeEventListener('focus', loadData);
   }, []);
 
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+
+  const formatCurrency = (value: number) => new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+  const formatPercent = (value: number) => value.toFixed(1);
+
+  // --- LOGIQUE DE FILTRAGE PRINCIPALE ---
+  
+  // Helper pour vérifier si un deal/prospect appartient à une offre active
+  const isActiveOffer = (itemName: string | undefined, itemId: string | number | undefined) => {
+    if (itemId) return activeOffers.some(o => String(o.id) === String(itemId));
+    if (itemName) return activeOffers.some(o => o.name.toLowerCase() === itemName.toLowerCase());
+    return false; // Si pas d'info, on considère inactif par sécurité ou on inclut par défaut selon la logique métier (ici strict)
   };
 
-  const prevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  };
-
-  const selectedOffer = activeTab !== 'global'
-    ? offers.find(o => o?.name?.toLowerCase() === activeTab?.toLowerCase())
-    : null;
-  const selectedOfferId = selectedOffer?.id;
-
+  // 1. Filtrage des Prospects (Context)
   const filteredProspects = allProspects.filter((prospect) => {
-    try {
-      if (activeTab !== 'global') {
-        if (prospect?.offerId) {
-          if (prospect.offerId !== selectedOfferId &&
-              String(prospect.offerId) !== String(selectedOfferId) &&
-              Number(prospect.offerId) !== Number(selectedOfferId)) {
-            return false;
-          }
-        } else if (prospect?.offer) {
-          const prospectOffer = prospect.offer.toLowerCase();
-          const tabName = activeTab.toLowerCase();
-          if (!prospectOffer.includes(tabName) && !tabName.includes(prospectOffer)) {
-            return false;
-          }
-        } else {
-          return false;
-        }
-      }
-
-      if (viewMode === 'month') {
-        const prospectDate = prospect?.dateAdded ? new Date(prospect.dateAdded) : new Date();
-        if (
-          prospectDate.getMonth() !== currentDate.getMonth() ||
-          prospectDate.getFullYear() !== currentDate.getFullYear()
-        ) {
-          return false;
-        }
-      }
-      return true;
-    } catch (error) {
-      return false;
-    }
-  });
-
-  const wonDeals = filteredProspects.filter(p => p?.stage === 'won') || [];
-  const lostDeals = filteredProspects.filter(p => p?.stage === 'lost') || [];
-
-  const followUpDeals = filteredProspects.filter(p => {
-    const s = (p?.status || p?.stage || '').toLowerCase();
-    return s.includes('follow') || s.includes('relance');
-  }) || [];
-
-  const noShowDeals = filteredProspects.filter(p => {
-    const s = (p?.status || p?.stage || '').toLowerCase();
-    return s.includes('no show') || s.includes('absent') || s.includes('noshow');
-  }) || [];
-
-  const activeDeals = filteredProspects.filter(p => p?.stage && p.stage !== 'won' && p.stage !== 'lost') || [];
-
-  const totalRevenue = wonDeals.reduce((sum, p) => sum + (p?.value || 0), 0) || 0;
-  const totalSales = wonDeals.length || 0;
-  const totalLeads = filteredProspects.length || 0;
-  const closedDeals = (wonDeals.length || 0) + (lostDeals.length || 0);
-  const conversionRate = closedDeals > 0 ? ((totalSales / closedDeals) * 100) || 0 : 0;
-  const avgBasket = totalSales > 0 ? (totalRevenue / totalSales) || 0 : 0;
-
-  const totalCallOutcomes = wonDeals.length + lostDeals.length + followUpDeals.length + noShowDeals.length;
-  const noShowRate = totalCallOutcomes > 0 ? ((noShowDeals.length / totalCallOutcomes) * 100) : 0;
-
-  const parseCommissionRate = (commissionStr?: string): number => {
-    if (!commissionStr) return 0.10
-    try {
-      const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
-      return match ? parseFloat(match[1]) / 100 : 0.10
-    } catch (error) {
-      return 0.10
-    }
-  }
-
-  const totalCommissions = wonDeals.reduce((sum, deal) => {
-    if (!deal?.value) return sum;
-    const dealOffer = offers.find(o =>
-      (deal.offerId && (String(o.id) === String(deal.offerId))) ||
-      (deal.offer && o.name.toLowerCase() === deal.offer.toLowerCase())
-    );
-    const rate = dealOffer?.commission ? parseCommissionRate(dealOffer.commission) : 0.10;
-    return sum + (deal.value * rate);
-  }, 0);
-
-  const avgCommission = totalSales > 0 ? (totalCommissions / totalSales) : 0;
-
-  const filteredDeals = deals.filter((deal) => {
-    if (viewMode === 'month') {
-      const dealDate = getDealDate(deal);
-      if (dealDate.getMonth() !== currentDate.getMonth() || dealDate.getFullYear() !== currentDate.getFullYear()) return false;
-    }
+    // A. Filtre par Onglet (Offre)
     if (activeTab !== 'global') {
-      const dealOffer = getDealOffer(deal);
       const tabName = activeTab.toLowerCase();
-      if (!dealOffer.includes(tabName) && !tabName.includes(dealOffer)) return false;
+      const pOffer = (prospect.offer || '').toLowerCase();
+      const pOfferId = String(prospect.offerId || '');
+      
+      // Chercher l'offre sélectionnée
+      const targetOffer = allOffers.find(o => o.name.toLowerCase() === tabName);
+      
+      const matchName = pOffer.includes(tabName) || tabName.includes(pOffer);
+      const matchId = targetOffer && pOfferId === String(targetOffer.id);
+
+      if (!matchName && !matchId) return false;
+    } else {
+      // B. Filtre Global : Gestion de la case à cocher "Inclure inactifs"
+      if (!includeInactiveInGlobal) {
+        // Si la case n'est PAS cochée, on ne garde que ce qui est lié à une offre ACTIVE
+        if (!isActiveOffer(prospect.offer, prospect.offerId)) return false;
+      }
+    }
+
+    // C. Filtre Date
+    if (viewMode === 'month') {
+      const pDate = prospect.dateAdded ? new Date(prospect.dateAdded) : new Date();
+      if (pDate.getMonth() !== currentDate.getMonth() || pDate.getFullYear() !== currentDate.getFullYear()) return false;
     }
     return true;
   });
 
-  const legacyWonDeals = filteredDeals.filter((deal) => isWonDeal(deal));
-  const legacyRevenue = legacyWonDeals.reduce((sum, deal) => sum + getDealAmount(deal), 0);
-  const legacyCommissions = legacyRevenue * 0.10
-  const hasLegacyData = deals.length > 0 && filteredDeals.length > 0;
-  const hasContextData = allProspects.length > 0 && filteredProspects.length > 0;
+  // 2. Filtrage des Deals (Kanban/Legacy)
+  const filteredDeals = deals.filter((deal) => {
+    // A. Filtre par Onglet
+    if (activeTab !== 'global') {
+      const dealOffer = getDealOffer(deal);
+      const tabName = activeTab.toLowerCase();
+      if (!dealOffer.includes(tabName) && !tabName.includes(dealOffer)) return false;
+    } else {
+      // B. Filtre Global : Gestion Inactifs
+      if (!includeInactiveInGlobal) {
+        // On checke si le nom de l'offre du deal correspond à une offre active
+        const dealOfferName = getDealOffer(deal);
+        const isLinkedToActive = activeOffers.some(o => o.name.toLowerCase().includes(dealOfferName) || dealOfferName.includes(o.name.toLowerCase()));
+        if (!isLinkedToActive) return false;
+      }
+    }
 
-  const finalRevenue = hasContextData ? totalRevenue : (hasLegacyData ? legacyRevenue : 0);
-  const finalSales = hasContextData ? totalSales : (hasLegacyData ? legacyWonDeals.length : 0);
-  const finalLeads = hasContextData ? totalLeads : (hasLegacyData ? filteredDeals.length : 0);
-  const finalConversion = hasContextData ? conversionRate : (hasLegacyData && filteredDeals.length > 0 ? (legacyWonDeals.length / filteredDeals.length) * 100 : 0);
-  const finalNoShowRate = hasContextData ? noShowRate : 0;
-  const finalCommissions = hasContextData ? totalCommissions : (hasLegacyData ? legacyCommissions : 0);
-  const finalAvgCommission = hasContextData ? avgCommission : (hasLegacyData && legacyWonDeals.length > 0 ? legacyCommissions / legacyWonDeals.length : 0);
-  const finalLostDeals = hasContextData ? lostDeals.length : (hasLegacyData ? legacyLostDeals.length : 0);
-  const finalActiveDeals = hasContextData ? activeDeals.length : 0;
+    // C. Filtre Date
+    if (viewMode === 'month') {
+      const dDate = getDealDate(deal);
+      if (dDate.getMonth() !== currentDate.getMonth() || dDate.getFullYear() !== currentDate.getFullYear()) return false;
+    }
+    return true;
+  });
 
-  const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+  // --- CALCULS KPI ---
+  const wonDeals = filteredProspects.filter(p => p?.stage === 'won');
+  const lostDeals = filteredProspects.filter(p => p?.stage === 'lost');
+  const followUpDeals = filteredProspects.filter(p => (p?.status || p?.stage || '').toLowerCase().match(/follow|relance/));
+  const noShowDeals = filteredProspects.filter(p => (p?.status || p?.stage || '').toLowerCase().match(/no show|absent|noshow/));
+  const activeDeals = filteredProspects.filter(p => p?.stage && p.stage !== 'won' && p.stage !== 'lost');
+
+  const totalRevenue = wonDeals.reduce((sum, p) => sum + (p?.value || 0), 0);
+  const totalSales = wonDeals.length;
+  const totalLeads = filteredProspects.length;
+  const closedDeals = wonDeals.length + lostDeals.length;
+  const conversionRate = closedDeals > 0 ? (totalSales / closedDeals) * 100 : 0;
+  
+  const totalCallOutcomes = wonDeals.length + lostDeals.length + followUpDeals.length + noShowDeals.length;
+  const noShowRate = totalCallOutcomes > 0 ? (noShowDeals.length / totalCallOutcomes) * 100 : 0;
+
+  const parseCommission = (str?: string) => {
+    if (!str) return 0.10;
+    const match = str.match(/(\d+(?:\.\d+)?)/);
+    return match ? parseFloat(match[1]) / 100 : 0.10;
   };
 
-  const formatPercent = (value: number): string => value.toFixed(1);
+  const totalCommissions = wonDeals.reduce((sum, deal) => {
+    if (!deal?.value) return sum;
+    const dealOffer = allOffers.find(o => (deal.offerId && String(o.id) === String(deal.offerId)) || (deal.offer && o.name.toLowerCase() === deal.offer.toLowerCase()));
+    const rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
+    return sum + (deal.value * rate);
+  }, 0);
+
+  const avgCommission = totalSales > 0 ? totalCommissions / totalSales : 0;
+
+  // Legacy fallback (si pas de prospects context)
+  const legacyWon = filteredDeals.filter(d => isWonDeal(d));
+  const legacyRev = legacyWon.reduce((s, d) => s + getDealAmount(d), 0);
+  const hasContextData = allProspects.length > 0;
+  const hasLegacyData = deals.length > 0;
+
+  // Valeurs finales à afficher
+  const finalRevenue = hasContextData ? totalRevenue : legacyRev;
+  const finalSales = hasContextData ? totalSales : legacyWon.length;
+  const finalLeads = hasContextData ? totalLeads : filteredDeals.length;
+  const finalConversion = hasContextData ? conversionRate : (hasLegacyData && filteredDeals.length > 0 ? (legacyWon.length / filteredDeals.length) * 100 : 0);
+  const finalCommissions = hasContextData ? totalCommissions : legacyRev * 0.10;
+  const finalNoShowRate = hasContextData ? noShowRate : 0;
+  const finalLost = hasContextData ? lostDeals.length : filteredDeals.filter(d => isLostDeal(d)).length;
+  const finalAvgComm = hasContextData ? avgCommission : (legacyWon.length > 0 ? (legacyRev * 0.10) / legacyWon.length : 0);
+  const finalActiveCount = hasContextData ? activeDeals.length : 0;
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6 md:p-8">
+    <div className="min-h-screen bg-slate-950 p-6 md:p-8 font-sans text-slate-100">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        
+        {/* HEADER MODERNE */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-slate-900/50 p-6 rounded-2xl border border-white/5 backdrop-blur-xl">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white">
-              KPI Dashboard
-            </h1>
-            <p className="text-gray-400 mt-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-600/20 rounded-lg border border-blue-500/30">
+                <TrendingUp className="w-6 h-6 text-blue-400" />
+              </div>
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                Performance
+              </h1>
+            </div>
+            <p className="text-slate-400 text-sm">
               {viewMode === 'month'
-                ? currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
-                : 'Depuis toujours'}
+                ? `Analyse détaillée pour ${currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`
+                : 'Analyse globale depuis le début de l\'activité'}
             </p>
           </div>
 
-          <div className="flex flex-col items-end gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {viewMode === 'month' && (
-              <div className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2 border border-gray-700">
-                <button onClick={prevMonth} className="p-1.5 hover:bg-gray-700 rounded transition-colors">
-                  <ChevronLeft className="w-5 h-5 text-gray-300" />
+              <div className="flex items-center bg-slate-800/80 rounded-xl p-1 border border-white/10">
+                <button onClick={prevMonth} className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-300">
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
-                <span className="text-white font-medium min-w-[140px] text-center capitalize">
+                <span className="px-4 text-sm font-semibold text-white capitalize min-w-[120px] text-center">
                   {currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
                 </span>
-                <button onClick={nextMonth} className="p-1.5 hover:bg-gray-700 rounded transition-colors">
-                  <ChevronRight className="w-5 h-5 text-gray-300" />
+                <button onClick={nextMonth} className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-300">
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             )}
-            <button onClick={() => setViewMode(viewMode === 'month' ? 'all' : 'month')} className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors">
-              {viewMode === 'month' ? <><Infinity className="w-4 h-4" />Voir depuis toujours</> : <><Calendar className="w-4 h-4" />Revenir au mois en cours</>}
+            
+            <button 
+              onClick={() => setViewMode(viewMode === 'month' ? 'all' : 'month')} 
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-white/10 text-sm font-medium transition-all text-slate-300 hover:text-white"
+            >
+              {viewMode === 'month' ? <Infinity className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
+              {viewMode === 'month' ? 'Vue Globale' : 'Vue Mensuelle'}
             </button>
           </div>
         </div>
 
-        {/* OFFER TABS */}
-        <div className="flex gap-2 overflow-x-auto pb-2 border-b border-gray-800">
-          <button onClick={() => setActiveTab('global')} className={`px-4 py-2 rounded-t-lg font-medium transition-all whitespace-nowrap ${activeTab === 'global' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Global</button>
-          {offers.map((offer) => (
-            <button key={offer.id} onClick={() => setActiveTab(offer.name)} className={`px-4 py-2 rounded-t-lg font-medium transition-all whitespace-nowrap ${activeTab === offer.name ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>{offer.name}</button>
-          ))}
-        </div>
+        {/* TABS & FILTERS BAR */}
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-4 border-b border-white/5 pb-1">
+          {/* Onglets Offres */}
+          <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-2 scrollbar-hide">
+            <button
+              onClick={() => setActiveTab('global')}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all border ${
+                activeTab === 'global'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-500/50 text-white shadow-lg shadow-blue-900/20'
+                  : 'bg-slate-800/30 border-transparent text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              Global
+            </button>
 
-        {offers.length === 0 && (
-          <div className="bg-yellow-900/20 border border-yellow-500/50 rounded-xl p-6 flex items-center gap-4">
-            <div className="text-yellow-500 text-3xl">ℹ️</div>
-            <div>
-              <h3 className="text-yellow-400 font-bold text-lg">Aucune offre active disponible</h3>
-              <p className="text-gray-300 text-sm mt-1">Créez une nouvelle offre dans la page <a href="/offers" className="underline text-blue-400 hover:text-blue-300">Offres</a> pour voir des onglets spécifiques ici.</p>
-            </div>
+            {/* Offres Actives */}
+            {activeOffers.map((offer) => (
+              <button
+                key={offer.id}
+                onClick={() => setActiveTab(offer.name)}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all border whitespace-nowrap ${
+                  activeTab === offer.name
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-500/50 text-white shadow-lg shadow-emerald-900/20'
+                    : 'bg-slate-800/30 border-transparent text-slate-400 hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                {offer.name}
+              </button>
+            ))}
+
+            {/* 🚀 Menu Déroulant Offres Inactives */}
+            {inactiveOffers.length > 0 && (
+              <div className="relative group">
+                <select
+                  value={inactiveOffers.some(o => o.name === activeTab) ? activeTab : "archives"}
+                  onChange={(e) => setActiveTab(e.target.value)}
+                  className={`appearance-none pl-10 pr-8 py-2.5 rounded-xl text-sm font-bold transition-all border cursor-pointer outline-none ${
+                    inactiveOffers.some(o => o.name === activeTab)
+                      ? 'bg-slate-700 border-slate-600 text-white'
+                      : 'bg-slate-800/30 border-transparent text-slate-500 hover:bg-slate-800 hover:text-slate-300'
+                  }`}
+                >
+                  <option value="archives" disabled hidden>Archives ({inactiveOffers.length})</option>
+                  {inactiveOffers.map(o => (
+                    <option key={o.id} value={o.name} className="bg-slate-900 text-slate-300">
+                      📦 {o.name}
+                    </option>
+                  ))}
+                </select>
+                <Archive className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${inactiveOffers.some(o => o.name === activeTab) ? 'text-white' : 'text-slate-500'}`} />
+              </div>
+            )}
           </div>
-        )}
+
+          {/* 🚀 Case à cocher "Inclure inactifs" (Visible seulement en Global) */}
+          {activeTab === 'global' && (
+            <button
+              onClick={() => setIncludeInactiveInGlobal(!includeInactiveInGlobal)}
+              className="flex items-center gap-2.5 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
+            >
+              <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${includeInactiveInGlobal ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 group-hover:border-slate-500'}`}>
+                {includeInactiveInGlobal && <CheckSquare className="w-3.5 h-3.5 text-white" />}
+              </div>
+              <span className={`text-sm font-medium transition-colors ${includeInactiveInGlobal ? 'text-white' : 'text-slate-400 group-hover:text-slate-300'}`}>
+                Inclure offres inactives
+              </span>
+            </button>
+          )}
+        </div>
 
         {/* KPI CARDS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all">
-            <div className="flex items-center gap-3 mb-4"><div className="p-3 bg-green-900/30 rounded-lg"><DollarSign className="w-6 h-6 text-green-500" /></div><h3 className="text-gray-400 text-sm font-medium">CA Généré</h3></div>
-            <p className="text-3xl md:text-4xl font-bold text-white">{formatCurrency(finalRevenue)} €</p>
-          </div>
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all">
-            <div className="flex items-center gap-3 mb-4"><div className="p-3 bg-blue-900/30 rounded-lg"><ShoppingCart className="w-6 h-6 text-blue-500" /></div><h3 className="text-gray-400 text-sm font-medium">Ventes</h3></div>
-            <p className="text-3xl md:text-4xl font-bold text-white">{finalSales}</p>
-          </div>
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all">
-            <div className="flex items-center gap-3 mb-4"><div className="p-3 bg-purple-900/30 rounded-lg"><Target className="w-6 h-6 text-purple-500" /></div><h3 className="text-gray-400 text-sm font-medium">Conversion</h3></div>
-            <p className="text-3xl md:text-4xl font-bold text-white">{formatPercent(finalConversion)} %</p>
-          </div>
-          <div className="bg-gray-800 rounded-xl p-6 border-2 border-blue-500 hover:border-blue-400 transition-all shadow-lg shadow-blue-500/20">
-            <div className="flex items-center gap-3 mb-4"><div className="p-3 bg-orange-900/30 rounded-lg"><Award className="w-6 h-6 text-orange-500" /></div><h3 className="text-gray-400 text-sm font-medium">Commissions</h3></div>
-            <p className="text-3xl md:text-4xl font-bold text-white">{formatCurrency(finalCommissions)} €</p>
-          </div>
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all">
-            <div className="flex items-center gap-3 mb-4"><div className="p-3 bg-red-900/30 rounded-lg"><UserX className="w-6 h-6 text-red-500" /></div><h3 className="text-gray-400 text-sm font-medium">Taux de No Show</h3></div>
-            <p className="text-3xl md:text-4xl font-bold text-white">{finalNoShowRate.toFixed(1)} %</p>
-          </div>
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all">
-            <div className="flex items-center gap-3 mb-4"><div className="p-3 bg-red-900/30 rounded-lg"><Ban className="w-6 h-6 text-red-500" /></div><h3 className="text-gray-400 text-sm font-medium">Deals Perdus</h3></div>
-            <p className="text-3xl md:text-4xl font-bold text-white">{finalLostDeals}</p>
-          </div>
+          <KpiCard 
+            title="CA Généré" 
+            value={`${formatCurrency(finalRevenue)} €`} 
+            icon={DollarSign} 
+            color="emerald" 
+            trend="+12%" 
+          />
+          <KpiCard 
+            title="Ventes Totales" 
+            value={finalSales.toString()} 
+            icon={ShoppingCart} 
+            color="blue" 
+          />
+          <KpiCard 
+            title="Taux de Conversion" 
+            value={`${formatPercent(finalConversion)} %`} 
+            icon={Target} 
+            color="purple" 
+          />
+          <KpiCard 
+            title="Mes Commissions" 
+            value={`${formatCurrency(finalCommissions)} €`} 
+            icon={Award} 
+            color="amber" 
+            glow 
+          />
+          <KpiCard 
+            title="Taux de No Show" 
+            value={`${finalNoShowRate.toFixed(1)} %`} 
+            icon={UserX} 
+            color="rose" 
+          />
+          <KpiCard 
+            title="Deals Perdus" 
+            value={finalLost.toString()} 
+            icon={Ban} 
+            color="slate" 
+          />
         </div>
 
         {/* PERFORMANCE SUMMARY */}
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700">
-          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Briefcase className="w-5 h-5 text-blue-500" />Résumé de Performance</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center gap-4"><div className="p-3 bg-indigo-900/30 rounded-lg"><Users className="w-6 h-6 text-indigo-400" /></div><div><p className="text-gray-400 text-sm">Total Leads</p><p className="text-2xl font-bold text-white">{finalLeads}</p></div></div>
-            <div className="flex items-center gap-4"><div className="p-3 bg-blue-900/30 rounded-lg"><Briefcase className="w-6 h-6 text-blue-400" /></div><div><p className="text-gray-400 text-sm">Deals en Pipeline</p><p className="text-2xl font-bold text-white">{finalActiveDeals}</p></div></div>
-            <div className="flex items-center gap-4"><div className="p-3 bg-yellow-900/30 rounded-lg"><Award className="w-6 h-6 text-yellow-400" /></div><div><p className="text-gray-400 text-sm">Commission Moyenne</p><p className="text-2xl font-bold text-white">{formatCurrency(finalAvgCommission)} €</p></div></div>
+        <div className="bg-slate-900/50 rounded-2xl p-8 border border-white/5 backdrop-blur-sm">
+          <h2 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+              <Briefcase className="w-5 h-5 text-indigo-400" />
+            </div>
+            Vue d'ensemble Pipeline
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <SummaryItem label="Total Leads Traités" value={finalLeads} icon={Users} color="indigo" />
+            <SummaryItem label="Deals en Cours" value={finalActiveCount} icon={Briefcase} color="cyan" />
+            <SummaryItem label="Commission Moyenne" value={`${formatCurrency(finalAvgComm)} €`} icon={Award} color="amber" />
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+// --- SUB-COMPONENTS FOR CLEANER CODE ---
+
+const KpiCard = ({ title, value, icon: Icon, color, glow, trend }: any) => {
+  const colors: any = {
+    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    blue: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+    purple: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    rose: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+    slate: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
+    indigo: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+    cyan: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
+  };
+
+  const style = colors[color] || colors.slate;
+
+  return (
+    <div className={`relative p-6 rounded-2xl bg-slate-800/40 border border-white/5 backdrop-blur-md transition-all hover:bg-slate-800/60 group ${glow ? 'shadow-lg shadow-amber-500/10 border-amber-500/30' : ''}`}>
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-3 rounded-xl ${style} group-hover:scale-110 transition-transform duration-300`}>
+          <Icon className="w-6 h-6" />
+        </div>
+        {trend && <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/20">{trend}</span>}
+      </div>
+      <h3 className="text-slate-400 text-sm font-medium mb-1">{title}</h3>
+      <p className="text-3xl font-bold text-white tracking-tight">{value}</p>
+    </div>
+  );
+};
+
+const SummaryItem = ({ label, value, icon: Icon, color }: any) => {
+  const colors: any = {
+    indigo: 'text-indigo-400 bg-indigo-500/10',
+    cyan: 'text-cyan-400 bg-cyan-500/10',
+    amber: 'text-amber-400 bg-amber-500/10',
+  };
+  return (
+    <div className="flex items-center gap-5 p-4 rounded-xl hover:bg-white/5 transition-colors">
+      <div className={`p-4 rounded-2xl ${colors[color]}`}>
+        <Icon className="w-8 h-8" />
+      </div>
+      <div>
+        <p className="text-slate-400 text-sm font-medium mb-1">{label}</p>
+        <p className="text-2xl font-bold text-white">{value}</p>
+      </div>
+    </div>
+  );
+};
