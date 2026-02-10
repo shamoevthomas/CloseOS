@@ -115,7 +115,7 @@ export function KPIPage() {
   const { offers: allOffers } = useOffers();
   const { prospects: allProspects } = useProspects();
 
-  // --- CORRECTION LOGIQUE OFFRES (Active vs Inactive) ---
+  // --- LOGIQUE OFFRES (Active vs Inactive) ---
   const isExpired = (offer: any) => {
     if (!offer.endDate) return false;
     const today = new Date();
@@ -166,12 +166,21 @@ export function KPIPage() {
 
   // --- LOGIQUE DE FILTRAGE PRINCIPALE ---
   
-  // Helper pour vérifier si un deal/prospect appartient à une offre active
+  // 🚀 CORRECTION : Matching plus souple pour le Global (comme dans les onglets)
   const isActiveOffer = (itemName: string | undefined, itemId: string | number | undefined) => {
-    // Si l'item a un ID d'offre, on vérifie s'il est dans la liste des activeOffers
-    if (itemId) return activeOffers.some(o => String(o.id) === String(itemId));
-    // Sinon on vérifie par le nom
-    if (itemName) return activeOffers.some(o => o.name.toLowerCase() === itemName.toLowerCase());
+    // 1. Vérification par ID
+    if (itemId) {
+      if (activeOffers.some(o => String(o.id) === String(itemId))) return true;
+    }
+    
+    // 2. Vérification par Nom (Contient ou Est Contenu)
+    if (itemName) {
+      const nameLower = itemName.toLowerCase().trim();
+      return activeOffers.some(o => {
+        const oName = o.name.toLowerCase().trim();
+        return nameLower.includes(oName) || oName.includes(nameLower);
+      });
+    }
     return false;
   };
 
@@ -183,7 +192,7 @@ export function KPIPage() {
       const pOffer = (prospect.offer || '').toLowerCase();
       const pOfferId = String(prospect.offerId || '');
       
-      // Chercher l'offre sélectionnée (qu'elle soit active ou inactive, car on peut sélectionner une archive)
+      // Chercher l'offre sélectionnée
       const targetOffer = allOffers.find(o => o.name.toLowerCase() === tabName);
       
       const matchName = pOffer.includes(tabName) || tabName.includes(pOffer);
@@ -193,7 +202,7 @@ export function KPIPage() {
     } else {
       // B. Filtre Global : Gestion de la case à cocher "Inclure inactifs"
       if (!includeInactiveInGlobal) {
-        // Si la case n'est PAS cochée, on ne garde que ce qui est lié à une offre ACTIVE
+        // Si la case n'est PAS cochée, on ne garde QUE les offres ACTIVES
         if (!isActiveOffer(prospect.offer, prospect.offerId)) return false;
       }
     }
@@ -216,9 +225,12 @@ export function KPIPage() {
     } else {
       // B. Filtre Global : Gestion Inactifs
       if (!includeInactiveInGlobal) {
+        // Même logique de matching souple pour les deals legacy
         const dealOfferName = getDealOffer(deal);
-        // On vérifie si le nom de l'offre correspond à une offre ACTIVE
-        const isLinkedToActive = activeOffers.some(o => o.name.toLowerCase().includes(dealOfferName) || dealOfferName.includes(o.name.toLowerCase()));
+        const isLinkedToActive = activeOffers.some(o => {
+          const oName = o.name.toLowerCase().trim();
+          return dealOfferName.includes(oName) || oName.includes(dealOfferName);
+        });
         if (!isLinkedToActive) return false;
       }
     }
