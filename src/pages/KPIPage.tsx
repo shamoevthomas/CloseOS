@@ -16,11 +16,22 @@ import {
   Archive,
   CheckSquare
 } from 'lucide-react';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  AreaChart,
+  Area 
+} from 'recharts';
 import { useOffers } from '../contexts/OffersContext';
 import { useProspects } from '../contexts/ProspectsContext';
 
 // ============================================================================
-// UNIVERSAL DATA PARSING HELPERS
+// HELPERS (Extraction de données)
 // ============================================================================
 
 const extractDealsFromKanban = (data: any): any[] => {
@@ -28,10 +39,10 @@ const extractDealsFromKanban = (data: any): any[] => {
   if (Array.isArray(data)) return data;
 
   const allDeals: any[] = [];
-  const recursiveExtract = (obj: any, parentKey: string = ''): void => {
+  const recursiveExtract = (obj: any) => {
     if (!obj || typeof obj !== 'object') return;
     if (obj.columns && typeof obj.columns === 'object') {
-      recursiveExtract(obj.columns, 'columns');
+      recursiveExtract(obj.columns);
       return;
     }
     Object.entries(obj).forEach(([key, value]: [string, any]) => {
@@ -57,7 +68,7 @@ const extractDealsFromKanban = (data: any): any[] => {
             allDeals.push(deal);
           });
         } else {
-          recursiveExtract(value, key);
+          recursiveExtract(value);
         }
       }
     });
@@ -67,7 +78,7 @@ const extractDealsFromKanban = (data: any): any[] => {
 };
 
 const getDealAmount = (deal: any): number => {
-  const possibleFields = [deal.amount, deal.price, deal.prix, deal.montant, deal.value, deal.total, deal.Amount, deal.Price];
+  const possibleFields = [deal.amount, deal.price, deal.prix, deal.montant, deal.value, deal.total];
   for (const value of possibleFields) {
     if (value !== undefined && value !== null && value !== '') {
       if (typeof value === 'number' && !isNaN(value)) return value > 0 ? value : 0;
@@ -93,7 +104,7 @@ const isLostDeal = (deal: any): boolean => {
 };
 
 const getDealDate = (deal: any): Date => {
-  const possibleFields = [deal.createdAt, deal.date, deal.creationDate, deal.dateCreation, deal.created_at, deal.dateAdded];
+  const possibleFields = [deal.createdAt, deal.date, deal.creationDate, deal.dateCreation, deal.created_at, deal.dateAdded, deal.lastContact];
   for (const value of possibleFields) {
     if (value) {
       const d = new Date(value);
@@ -108,14 +119,14 @@ const getDealOffer = (deal: any): string => {
 };
 
 // ============================================================================
-// MAIN COMPONENT
+// COMPOSANT PRINCIPAL
 // ============================================================================
 
 export function KPIPage() {
   const { offers: allOffers } = useOffers();
   const { prospects: allProspects } = useProspects();
 
-  // --- LOGIQUE OFFRES (Active vs Inactive) ---
+  // --- 1. Gestion des Offres (Active/Inactive) ---
   const isExpired = (offer: any) => {
     if (!offer.endDate) return false;
     const today = new Date();
@@ -124,56 +135,44 @@ export function KPIPage() {
     return end < today;
   };
 
-  // Active = Status Active ET Pas expiré
   const activeOffers = useMemo(() => allOffers.filter(o => o.status === 'active' && !isExpired(o)), [allOffers]);
-  
-  // Inactive = Status Inactive OU (Active mais Expiré)
   const inactiveOffers = useMemo(() => allOffers.filter(o => o.status === 'inactive' || (o.status === 'active' && isExpired(o))), [allOffers]);
 
+  // --- 2. États ---
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'all'>('all'); 
   const [activeTab, setActiveTab] = useState('global');
-  const [deals, setDeals] = useState<any[]>([]);
-  
-  // État pour inclure ou non les offres inactives dans le Global
+  const [legacyDeals, setLegacyDeals] = useState<any[]>([]);
   const [includeInactiveInGlobal, setIncludeInactiveInGlobal] = useState(false);
 
+  // Chargement LocalStorage (Legacy)
   useEffect(() => {
     const loadData = () => {
       try {
         const pipelineData = localStorage.getItem('closeros_pipeline');
         if (pipelineData) {
-          const parsed = JSON.parse(pipelineData);
-          setDeals(extractDealsFromKanban(parsed));
-        } else {
-          setDeals([]);
+          setLegacyDeals(extractDealsFromKanban(JSON.parse(pipelineData)));
         }
       } catch (error) {
-        console.error('❌ Error loading KPI data:', error);
-        setDeals([]);
+        console.error('Error loading legacy data', error);
       }
     };
     loadData();
-    window.addEventListener('focus', loadData);
-    return () => window.removeEventListener('focus', loadData);
   }, []);
 
+  // Navigation Date
   const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
 
-  const formatCurrency = (value: number) => new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
-  const formatPercent = (value: number) => value.toFixed(1);
+  // Formatters
+  const formatCurrency = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'decimal', maximumFractionDigits: 0 }).format(val);
+  const formatPercent = (val: number) => val.toFixed(1);
 
-  // --- LOGIQUE DE FILTRAGE PRINCIPALE ---
+  // --- 3. Filtrage Principal ---
   
-  // 🚀 CORRECTION : Matching plus souple pour le Global (comme dans les onglets)
+  // Fonction de matching souple pour lier un deal à une offre active
   const isActiveOffer = (itemName: string | undefined, itemId: string | number | undefined) => {
-    // 1. Vérification par ID
-    if (itemId) {
-      if (activeOffers.some(o => String(o.id) === String(itemId))) return true;
-    }
-    
-    // 2. Vérification par Nom (Contient ou Est Contenu)
+    if (itemId && activeOffers.some(o => String(o.id) === String(itemId))) return true;
     if (itemName) {
       const nameLower = itemName.toLowerCase().trim();
       return activeOffers.some(o => {
@@ -190,53 +189,40 @@ export function KPIPage() {
     return match ? parseFloat(match[1]) / 100 : 0.10;
   };
 
-  // --- PREPARATION DES DONNÉES ---
+  // Fusion des données (Prospects Context + Legacy Deals si context vide)
+  const sourceData = allProspects.length > 0 ? allProspects : legacyDeals;
 
-  // 1. Filtrage GLOBAL (sans filtre de date pour les graphiques)
-  const allFilteredItems = useMemo(() => {
-    const sourceData = allProspects.length > 0 ? allProspects : deals;
-    
+  // Filtrage global par onglet (indépendant de la date pour l'instant)
+  const filteredByTab = useMemo(() => {
     return sourceData.filter(item => {
-      // Filtre par Onglet (Offre)
+      // Filtre Onglet
       if (activeTab !== 'global') {
         const tabName = activeTab.toLowerCase();
-        const pOffer = (getDealOffer(item)).toLowerCase();
+        const pOffer = (item.offer || item.offerName || '').toLowerCase();
         const pOfferId = String(item.offerId || '');
-        
         const targetOffer = allOffers.find(o => o.name.toLowerCase() === tabName);
         
         const matchName = pOffer.includes(tabName) || tabName.includes(pOffer);
         const matchId = targetOffer && pOfferId === String(targetOffer.id);
-
+        
         if (!matchName && !matchId) return false;
       } else {
-        // Filtre Global : Gestion de la case à cocher "Inclure inactifs"
+        // Filtre Global : Exclusion des inactifs si case décochée
         if (!includeInactiveInGlobal) {
           if (!isActiveOffer(item.offer || item.offerName, item.offerId)) return false;
         }
       }
       return true;
     });
-  }, [activeTab, includeInactiveInGlobal, allProspects, deals, allOffers]);
+  }, [sourceData, activeTab, includeInactiveInGlobal, allOffers, activeOffers]);
 
-  // 2. Données pour les KPI (Filtre date appliqué si nécessaire)
-  const kpiData = useMemo(() => {
-    return allFilteredItems.filter(item => {
-      if (viewMode === 'month') {
-        const dDate = getDealDate(item);
-        if (dDate.getMonth() !== currentDate.getMonth() || dDate.getFullYear() !== currentDate.getFullYear()) return false;
-      }
-      return true;
-    });
-  }, [allFilteredItems, viewMode, currentDate]);
-
-  // 3. Données pour les GRAPHIQUES (Historique complet agrégé par mois)
+  // --- 4. Préparation des Données Graphiques (Historique) ---
   const chartData = useMemo(() => {
     const grouped: Record<string, { won: number; total: number; commission: number; date: Date }> = {};
 
-    allFilteredItems.forEach(item => {
+    filteredByTab.forEach(item => {
       const date = getDealDate(item);
-      // Clé de tri YYYY-MM
+      // Clé YYYY-MM pour regrouper par mois
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       if (!grouped[key]) {
@@ -251,39 +237,43 @@ export function KPIPage() {
         if (isWon) {
           grouped[key].won += 1;
           const val = item.value || getDealAmount(item);
-          // Recalcul commission si besoin
           let comm = 0;
           if (allProspects.length > 0) {
              const dealOffer = allOffers.find(o => (item.offerId && String(o.id) === String(item.offerId)) || (item.offer && o.name.toLowerCase() === item.offer.toLowerCase()));
              const rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
              comm = val * rate;
           } else {
-             comm = val * 0.10; // Legacy default
+             comm = val * 0.10;
           }
           grouped[key].commission += comm;
         }
       }
     });
 
-    // Transformer en tableau et trier par date
-    return Object.entries(grouped)
-      .map(([key, data]) => ({
-        label: data.date.toLocaleDateString('fr-FR', { month: 'short' }), // "janv."
-        fullDate: data.date,
-        closingRate: data.total > 0 ? (data.won / data.total) * 100 : 0,
-        commission: data.commission
-      }))
-      .sort((a, b) => a.fullDate.getTime() - b.fullDate.getTime())
-      // Garder les 6 derniers mois pour la lisibilité
-      .slice(-6); 
-  }, [allFilteredItems, allOffers]);
+    // Conversion en tableau + Tri
+    return Object.values(grouped)
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .map(d => ({
+        name: d.date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }), // Ex: "Jan 26"
+        closingRate: d.total > 0 ? parseFloat(((d.won / d.total) * 100).toFixed(1)) : 0,
+        commission: Math.round(d.commission)
+      }));
+  }, [filteredByTab, allOffers, allProspects]);
 
+  // --- 5. Calcul des KPI (Cartes) - Filtré par Date ---
+  const kpiData = useMemo(() => {
+    return filteredByTab.filter(item => {
+      if (viewMode === 'month') {
+        const dDate = getDealDate(item);
+        return dDate.getMonth() === currentDate.getMonth() && dDate.getFullYear() === currentDate.getFullYear();
+      }
+      return true;
+    });
+  }, [filteredByTab, viewMode, currentDate]);
 
-  // --- CALCULS KPI FINAUX (sur kpiData) ---
   const wonDeals = kpiData.filter(p => isWonDeal(p));
   const lostDeals = kpiData.filter(p => isLostDeal(p));
-  const followUpDeals = kpiData.filter(p => (p.status || p.stage || '').toLowerCase().match(/follow|relance/));
-  const noShowDeals = kpiData.filter(p => (p.status || p.stage || '').toLowerCase().match(/no show|absent|noshow/));
+  const noShowDeals = kpiData.filter(p => (p.status || p.stage || '').toLowerCase().match(/no show|absent/));
   const activeDeals = kpiData.filter(p => !isWonDeal(p) && !isLostDeal(p));
 
   const totalRevenue = wonDeals.reduce((sum, p) => sum + (p.value || getDealAmount(p)), 0);
@@ -291,24 +281,30 @@ export function KPIPage() {
   const totalLeads = kpiData.length;
   const closedDeals = wonDeals.length + lostDeals.length;
   const conversionRate = closedDeals > 0 ? (totalSales / closedDeals) * 100 : 0;
-  
-  const totalCallOutcomes = wonDeals.length + lostDeals.length + followUpDeals.length + noShowDeals.length;
-  const noShowRate = totalCallOutcomes > 0 ? (noShowDeals.length / totalCallOutcomes) * 100 : 0;
+  const totalOutcomes = wonDeals.length + lostDeals.length + noShowDeals.length;
+  const noShowRate = totalOutcomes > 0 ? (noShowDeals.length / totalOutcomes) * 100 : 0;
 
   const totalCommissions = wonDeals.reduce((sum, deal) => {
     const val = deal.value || getDealAmount(deal);
-    const dealOffer = allOffers.find(o => (deal.offerId && String(o.id) === String(deal.offerId)) || (deal.offer && o.name.toLowerCase() === deal.offer.toLowerCase()));
-    const rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
+    let rate = 0.10;
+    if (allProspects.length > 0) {
+      const dealOffer = allOffers.find(o => (deal.offerId && String(o.id) === String(deal.offerId)) || (deal.offer && o.name.toLowerCase() === deal.offer.toLowerCase()));
+      rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
+    }
     return sum + (val * rate);
   }, 0);
 
   const avgCommission = totalSales > 0 ? totalCommissions / totalSales : 0;
 
+  // ==========================================================================
+  // RENDU
+  // ==========================================================================
+
   return (
     <div className="min-h-screen bg-slate-950 p-6 md:p-8 font-sans text-slate-100">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* HEADER MODERNE */}
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-slate-900/50 p-6 rounded-2xl border border-white/5 backdrop-blur-xl">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -351,9 +347,8 @@ export function KPIPage() {
           </div>
         </div>
 
-        {/* TABS & FILTERS BAR */}
+        {/* ONGLETS & FILTRES */}
         <div className="flex flex-col lg:flex-row items-center justify-between gap-4 border-b border-white/5 pb-1">
-          {/* Onglets Offres */}
           <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-2 scrollbar-hide">
             <button
               onClick={() => setActiveTab('global')}
@@ -366,7 +361,6 @@ export function KPIPage() {
               Global
             </button>
 
-            {/* Offres Actives */}
             {activeOffers.map((offer) => (
               <button
                 key={offer.id}
@@ -381,7 +375,6 @@ export function KPIPage() {
               </button>
             ))}
 
-            {/* 🚀 Menu Déroulant Offres Inactives */}
             {inactiveOffers.length > 0 && (
               <div className="relative group">
                 <select
@@ -405,7 +398,6 @@ export function KPIPage() {
             )}
           </div>
 
-          {/* 🚀 Case à cocher "Inclure inactifs" (Visible seulement en Global) */}
           {activeTab === 'global' && (
             <button
               onClick={() => setIncludeInactiveInGlobal(!includeInactiveInGlobal)}
@@ -421,84 +413,79 @@ export function KPIPage() {
           )}
         </div>
 
-        {/* KPI CARDS GRID */}
+        {/* CARTES KPI */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <KpiCard 
-            title="CA Généré" 
-            value={`${formatCurrency(totalRevenue)} €`} 
-            icon={DollarSign} 
-            color="emerald" 
-            trend="+12%" 
-          />
-          <KpiCard 
-            title="Ventes Totales" 
-            value={totalSales.toString()} 
-            icon={ShoppingCart} 
-            color="blue" 
-          />
-          <KpiCard 
-            title="Taux de Conversion" 
-            value={`${formatPercent(conversionRate)} %`} 
-            icon={Target} 
-            color="purple" 
-          />
-          <KpiCard 
-            title="Mes Commissions" 
-            value={`${formatCurrency(totalCommissions)} €`} 
-            icon={Award} 
-            color="amber" 
-            glow 
-          />
-          <KpiCard 
-            title="Taux de No Show" 
-            value={`${noShowRate.toFixed(1)} %`} 
-            icon={UserX} 
-            color="rose" 
-          />
-          <KpiCard 
-            title="Deals Perdus" 
-            value={finalLost.toString()} 
-            icon={Ban} 
-            color="slate" 
-          />
+          <KpiCard title="CA Généré" value={`${formatCurrency(totalRevenue)} €`} icon={DollarSign} color="emerald" trend="+12%" />
+          <KpiCard title="Ventes Totales" value={totalSales.toString()} icon={ShoppingCart} color="blue" />
+          <KpiCard title="Taux de Conversion" value={`${formatPercent(conversionRate)} %`} icon={Target} color="purple" />
+          <KpiCard title="Mes Commissions" value={`${formatCurrency(totalCommissions)} €`} icon={Award} color="amber" glow />
+          <KpiCard title="Taux de No Show" value={`${noShowRate.toFixed(1)} %`} icon={UserX} color="rose" />
+          <KpiCard title="Deals Perdus" value={lostDeals.length.toString()} icon={Ban} color="slate" />
         </div>
 
-        {/* 🚀 NOUVEAU: SECTION GRAPHIQUES */}
+        {/* --- SECTION GRAPHIQUES AVEC RECHARTS --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Graphique Taux de Closing */}
+          
+          {/* Graphique 1: Taux de Closing (Courbe) */}
           <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <Target className="w-5 h-5 text-purple-400" />
-              Évolution Taux de Closing
+              Historique Taux de Closing
             </h3>
-            <div className="h-64">
-              <TrendChart 
-                data={chartData} 
-                dataKey="closingRate" 
-                color="#a855f7" // Purple
-                suffix="%" 
-              />
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorClosing" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} unit="%" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+                    itemStyle={{ color: '#a855f7' }}
+                  />
+                  <Area type="monotone" dataKey="closingRate" stroke="#a855f7" strokeWidth={3} fillOpacity={1} fill="url(#colorClosing)" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Graphique Commissions */}
+          {/* Graphique 2: Commissions (Courbe) */}
           <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <Award className="w-5 h-5 text-emerald-400" />
-              Évolution Commissions
+              Historique Commissions
             </h3>
-            <div className="h-64">
-              <TrendChart 
-                data={chartData} 
-                dataKey="commission" 
-                color="#10b981" // Emerald
-                suffix="€" 
-              />
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorCommissions" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+                    itemStyle={{ color: '#10b981' }}
+                    formatter={(value: number) => [`${value} €`, 'Commission']}
+                  />
+                  <Area type="monotone" dataKey="commission" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorCommissions)" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
+
         </div>
 
-        {/* PERFORMANCE SUMMARY */}
+        {/* RÉSUMÉ PIPELINE */}
         <div className="bg-slate-900/50 rounded-2xl p-8 border border-white/5 backdrop-blur-sm">
           <h2 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
@@ -517,90 +504,9 @@ export function KPIPage() {
   );
 }
 
-// --- NOUVEAU COMPOSANT GRAPHIQUE (SVG Custom) ---
-const TrendChart = ({ data, dataKey, color, suffix }: { data: any[], dataKey: string, color: string, suffix: string }) => {
-  if (!data || data.length === 0) {
-    return <div className="h-full flex items-center justify-center text-slate-500 text-sm">Pas assez de données pour l'historique</div>;
-  }
-
-  // Dimensions
-  const height = 200;
-  const width = 500; // viewBox width
-  const padding = 20;
-
-  // Calculs min/max
-  const values = data.map(d => d[dataKey]);
-  const min = 0;
-  const max = Math.max(...values, 10); // Au moins 10 pour éviter division par 0
-
-  // Fonction de mise à l'échelle Y (inversée car SVG commence en haut)
-  const getY = (val: number) => height - padding - ((val - min) / (max - min)) * (height - 2 * padding);
-  
-  // Fonction de mise à l'échelle X
-  const getX = (index: number) => padding + (index / (data.length - 1)) * (width - 2 * padding);
-
-  // Construction du chemin SVG (Line)
-  const pathData = data.length > 1 ? data.map((d, i) => 
-    `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(d[dataKey])}`
-  ).join(' ') : `M ${getX(0)} ${getY(values[0])} L ${getX(0) + 10} ${getY(values[0])}`; // Point seul si 1 donnée
-
-  // Construction de la zone remplie (Area) pour l'effet dégradé
-  const areaData = `${pathData} L ${getX(data.length - 1)} ${height} L ${getX(0)} ${height} Z`;
-
-  return (
-    <div className="w-full h-full">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
-        {/* Dégradé de remplissage */}
-        <defs>
-          <linearGradient id={`gradient-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-
-        {/* Lignes de grille horizontales */}
-        {[0, 0.25, 0.5, 0.75, 1].map(ratio => {
-          const y = height - padding - ratio * (height - 2 * padding);
-          return (
-            <g key={ratio}>
-              <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="rgba(255,255,255,0.05)" strokeDasharray="4" />
-              <text x={0} y={y + 3} fill="rgba(255,255,255,0.3)" fontSize="10" textAnchor="start">
-                {Math.round(min + ratio * (max - min))}{suffix === '%' ? '' : 'k' /* Simplification affichage */}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Zone remplie */}
-        <path d={areaData} fill={`url(#gradient-${dataKey})`} />
-
-        {/* Ligne de courbe */}
-        <path d={pathData} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-
-        {/* Points et Labels */}
-        {data.map((d, i) => (
-          <g key={i} className="group">
-            {/* Point */}
-            <circle cx={getX(i)} cy={getY(d[dataKey])} r="4" fill="#1e293b" stroke={color} strokeWidth="2" />
-            
-            {/* Tooltip au survol (CSS group-hover) */}
-            <g className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <rect x={getX(i) - 25} y={getY(d[dataKey]) - 35} width="50" height="25" rx="4" fill="#0f172a" stroke={color} />
-              <text x={getX(i)} y={getY(d[dataKey]) - 18} fill="white" fontSize="10" textAnchor="middle" fontWeight="bold">
-                {Math.round(d[dataKey])}{suffix}
-              </text>
-            </g>
-
-            {/* Label Mois (Axe X) */}
-            <text x={getX(i)} y={height} fill="rgba(255,255,255,0.5)" fontSize="10" textAnchor="middle">
-              {d.label}
-            </text>
-          </g>
-        ))}
-      </svg>
-    </div>
-  );
-};
+// ============================================================================
+// SOUS-COMPOSANTS UI
+// ============================================================================
 
 const KpiCard = ({ title, value, icon: Icon, color, glow, trend }: any) => {
   const colors: any = {
