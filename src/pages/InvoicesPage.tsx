@@ -42,8 +42,18 @@ export function InvoicesPage() {
     fetchInvoices()
   }, [isGeneratorOpen]) 
 
-  // Get active offers
-  const activeOffers = offers.filter((offer) => offer.status === 'active')
+  // --- LOGIQUE DE FILTRAGE AJOUTÉE ---
+  const isExpired = (offer: any) => {
+    if (!offer.endDate) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const end = new Date(offer.endDate)
+    return end < today
+  }
+
+  // Get active offers (Status 'active' AND Not Expired)
+  const activeOffers = offers.filter((offer) => offer.status === 'active' && !isExpired(offer))
+  // -----------------------------------
 
   // Set default selected offer
   if (selectedOfferId === null && activeOffers.length > 0) {
