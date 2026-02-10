@@ -16,7 +16,7 @@ export function WelcomeFounder() {
   // 👇 CONFIG VIDEOS
   const VIDEO_ID_FOUNDER = "ewsQesgvs1w";
   // 👇 NOUVEL ID VIDEO STARTER ICI
-  const VIDEO_ID_STARTER = "6muxdUhyrxs"; 
+  const VIDEO_ID_STARTER = "3IsO7V3-bnY"; 
 
   const activeVideoId = isStarter ? VIDEO_ID_STARTER : VIDEO_ID_FOUNDER;
   const YOUTUBE_URL = `https://www.youtube.com/embed/${activeVideoId}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1`;
@@ -102,7 +102,10 @@ export function WelcomeFounder() {
               <ul className="space-y-4 text-slate-400">
                 <li className="flex gap-4 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold border border-blue-600/30 mt-0.5">1</span>
-                  <span><strong>Onboarding :</strong> L'accès au logiciel ouvrira officiellement dans quelques jours.</span>
+                  <span>
+                    <strong>Onboarding :</strong> L'accès au logiciel ouvrira officiellement dans quelques jours.{" "}
+                    <span className="text-white font-medium">Vos jours d'essai ne commenceront qu'à partir du lancement de l'outil.</span>
+                  </span>
                 </li>
                 <li className="flex gap-4 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold border border-blue-600/30 mt-0.5">2</span>
