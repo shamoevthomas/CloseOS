@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom' // 👈 AJOUTÉ
+import { useSearchParams } from 'react-router-dom'
 import { CreditCard, TrendingUp, DollarSign, Calendar, FileText, Wallet, Building2, Eye, Download, Info } from 'lucide-react'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
@@ -7,19 +7,17 @@ import { InvoiceGeneratorModal } from '../components/InvoiceGeneratorModal'
 import { PaymentMethodsModal } from '../components/PaymentMethodsModal'
 import { IssuerProfilesModal } from '../components/IssuerProfilesModal'
 import { StripeConnectModal } from '../components/StripeConnectModal'
+import { InvoiceDetailModal } from '../components/InvoiceDetailModal' // 👈 AJOUT IMPORT
 import { supabase } from '../lib/supabase'
 
 export function InvoicesPage() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
   
-  // 👈 AJOUTÉ : Pour détecter le retour de Stripe
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // New state for table history
   const [savedInvoices, setSavedInvoices] = useState<any[]>([])
 
-  // Get current month as default date range
   const now = new Date()
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
@@ -32,10 +30,12 @@ export function InvoicesPage() {
   const [isIssuerProfilesOpen, setIsIssuerProfilesOpen] = useState(false)
   const [isStripeConnectOpen, setIsStripeConnectOpen] = useState(false)
 
-  // State pour les tooltips (détails)
+  // 👈 AJOUT : ÉTATS POUR LE NOUVEAU MODAL
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
+
   const [activeTooltip, setActiveTooltip] = useState<'cash' | 'installments' | null>(null)
 
-  // Fetch invoices from Supabase
   const fetchInvoices = async () => {
     const { data, error } = await supabase
       .from('invoices')
@@ -48,32 +48,26 @@ export function InvoicesPage() {
     fetchInvoices()
   }, [isGeneratorOpen]) 
 
-  // 👈 AJOUTÉ : Logique de retour de Stripe Connect
   useEffect(() => {
     if (searchParams.get('stripe_connected') === 'true') {
       const confirmConnection = async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-           // 1. On confirme le statut dans la DB
            await supabase
             .from('profiles')
             .update({ stripe_connected: true })
             .eq('id', user.id);
            
-           // 2. On nettoie l'URL (pour enlever le ?stripe_connected=true)
            const newUrl = window.location.pathname;
            window.history.replaceState({}, document.title, newUrl);
            
-           // 3. On ouvre la modale pour montrer le succès à l'utilisateur
            setIsStripeConnectOpen(true);
         }
       };
       confirmConnection();
     }
   }, [searchParams]);
-  // ----------------------------------------------------
 
-  // --- LOGIQUE DE FILTRAGE (Préservée) ---
   const isExpired = (offer: any) => {
     if (!offer.endDate) return false
     const today = new Date()
@@ -82,19 +76,14 @@ export function InvoicesPage() {
     return end < today
   }
 
-  // Get active offers (Status 'active' AND Not Expired)
   const activeOffers = offers.filter((offer) => offer.status === 'active' && !isExpired(offer))
-  // -----------------------------------
 
-  // Set default selected offer
   if (selectedOfferId === null && activeOffers.length > 0) {
     setSelectedOfferId(activeOffers[0].id)
   }
 
-  // Find selected offer
   const selectedOffer = activeOffers.find((offer) => offer.id === selectedOfferId)
 
-  // Calculate stats for selected offer and date range
   const stats = useMemo(() => {
     if (!selectedOffer) {
       return { revenue: 0, commission: 0, dealsCount: 0, deals: [], cashDeals: [], installmentDeals: [] }
@@ -104,11 +93,9 @@ export function InvoicesPage() {
     const end = new Date(endDate)
     end.setHours(23, 59, 59, 999) 
 
-    // Filter prospects qui ont une activité financière dans la période
     const activeDealsInPeriod = prospects.filter((prospect) => {
       if (prospect.stage !== 'won') return false
 
-      // Vérification de l'offre
       const isCorrectOffer = prospect.offerId === selectedOffer.id ||
                              String(prospect.offerId) === String(selectedOffer.id) ||
                              prospect.offer === selectedOffer.name ||
@@ -118,7 +105,6 @@ export function InvoicesPage() {
 
       const dealDate = new Date(prospect.lastContact || prospect.dateAdded)
       
-      // LOGIQUE INTELLIGENTE
       if (prospect.payment_type !== 'installments' && (!prospect.installments || prospect.installments <= 1)) {
         return dealDate >= start && dealDate <= end
       }
@@ -133,7 +119,6 @@ export function InvoicesPage() {
     const cashDeals = activeDealsInPeriod.filter(p => p.payment_type !== 'installments' && (!p.installments || p.installments <= 1))
     const installmentDeals = activeDealsInPeriod.filter(p => p.payment_type === 'installments' || (p.installments && p.installments > 1))
 
-    // CALCUL DU REVENU RÉEL
     const revenue = activeDealsInPeriod.reduce((sum, prospect) => {
       const fullValue = prospect.value || 0
       
@@ -155,7 +140,6 @@ export function InvoicesPage() {
       }
     }, 0)
 
-    // Commission calculée
     const totalCommission = activeDealsInPeriod.reduce((sum, deal) => {
       let amountInPeriod = 0
       const fullValue = deal.value || 0
@@ -206,16 +190,24 @@ export function InvoicesPage() {
     return d.toLocaleDateString('fr-FR')
   }
 
+  // Helper pour afficher la couleur du statut
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'payé': return 'bg-emerald-500/10 text-emerald-400';
+      case 'retard': return 'bg-rose-500/10 text-rose-400';
+      case 'en_attente': return 'bg-amber-500/10 text-amber-400';
+      default: return 'bg-slate-500/10 text-slate-400';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-black p-8" onClick={() => setActiveTooltip(null)}>
-      {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
           <h1 className="mb-2 text-3xl font-bold text-white">Factures & Commissions</h1>
           <p className="text-slate-400">Générez vos factures et suivez vos commissions</p>
         </div>
         <div className="flex gap-3">
-          {/* BOUTON STRIPE CONNECT */}
           <button
             onClick={() => setIsStripeConnectOpen(true)}
             className="flex items-center gap-2 rounded-lg bg-[#635BFF] px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#5349E0] hover:shadow-lg hover:shadow-[#635BFF]/20"
@@ -241,7 +233,6 @@ export function InvoicesPage() {
         </div>
       </div>
 
-      {/* Date Range Filter */}
       <div className="mb-6 flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
         <Calendar className="h-5 w-5 text-purple-400" />
         <div className="flex items-center gap-3">
@@ -267,7 +258,6 @@ export function InvoicesPage() {
         </div>
       </div>
 
-      {/* Offer Tabs */}
       {activeOffers.length > 0 && (
         <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
           {activeOffers.map((offer) => (
@@ -286,11 +276,9 @@ export function InvoicesPage() {
         </div>
       )}
 
-      {/* Stats Cards */}
       {selectedOffer ? (
         <>
           <div className="mb-8 grid gap-6 md:grid-cols-3">
-            {/* Revenue Card */}
             <div className="rounded-xl border border-slate-800 bg-gradient-to-br from-blue-500/10 to-blue-600/10 p-6">
               <div className="mb-4 flex items-center gap-3">
                 <div className="rounded-full bg-blue-500/20 p-3">
@@ -304,7 +292,6 @@ export function InvoicesPage() {
               <p className="text-xs text-slate-500">{stats.dealsCount} deal(s) actif(s) / mensualité(s)</p>
             </div>
 
-            {/* Commission Card */}
             <div className="rounded-xl border border-slate-800 bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 p-6">
               <div className="mb-4 flex items-center gap-3">
                 <div className="rounded-full bg-emerald-500/20 p-3">
@@ -318,7 +305,6 @@ export function InvoicesPage() {
               <p className="text-xs text-slate-500">Taux: {selectedOffer.commission}</p>
             </div>
 
-            {/* Quick Stats */}
             <div className="rounded-xl border border-slate-800 bg-gradient-to-br from-purple-500/10 to-purple-600/10 p-6">
               <div className="mb-4 flex items-center gap-3">
                 <div className="rounded-full bg-purple-500/20 p-3">
@@ -337,11 +323,9 @@ export function InvoicesPage() {
             </div>
           </div>
 
-          {/* Details Section */}
           <div className="mb-8 rounded-xl border border-slate-800 bg-slate-900/50 p-6">
             <h3 className="text-lg font-bold text-white mb-6">Détails de facture</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Colonne 1 : Paiements Comptant */}
               <div className="relative">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
@@ -390,7 +374,6 @@ export function InvoicesPage() {
                 </p>
               </div>
 
-              {/* Colonne 2 : Paiements Échelonnés */}
               <div className="relative">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
@@ -461,7 +444,6 @@ export function InvoicesPage() {
         </div>
       )}
 
-      {/* Generate Invoice Button */}
       {selectedOffer && stats.dealsCount > 0 && (
         <div className="flex justify-center mb-12">
           <button
@@ -474,7 +456,6 @@ export function InvoicesPage() {
         </div>
       )}
 
-      {/* History Table */}
       <div className="mt-12">
         <h2 className="mb-4 text-xl font-bold text-white">Historique des factures</h2>
         <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 shadow-lg">
@@ -491,7 +472,11 @@ export function InvoicesPage() {
             </thead>
             <tbody className="divide-y divide-slate-800">
               {savedInvoices.map((inv) => (
-                <tr key={inv.id} className="transition-colors hover:bg-slate-800/30">
+                <tr 
+                  key={inv.id} 
+                  onClick={() => { setSelectedInvoice(inv); setIsDetailOpen(true); }} // 👈 AJOUT CLICK
+                  className="transition-colors hover:bg-slate-800/30 cursor-pointer" // 👈 AJOUT CURSOR POINTER
+                >
                   <td className="px-6 py-4 font-mono font-medium text-purple-400">{inv.invoice_number}</td>
                   <td className="px-6 py-4">{new Date(inv.created_at).toLocaleDateString()}</td>
                   <td className="px-6 py-4">
@@ -500,11 +485,12 @@ export function InvoicesPage() {
                   </td>
                   <td className="px-6 py-4 font-bold text-white">{formatCurrency(inv.amount_ttc)}</td>
                   <td className="px-6 py-4">
-                    <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400">
+                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(inv.status)}`}>
                       {inv.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}> 
+                    {/* e.stopPropagation() évite d'ouvrir la modale si on clique juste sur les boutons de téléchargement */}
                     {inv.pdf_url && (
                       <div className="flex justify-end gap-3">
                         <a 
@@ -541,7 +527,6 @@ export function InvoicesPage() {
         </div>
       </div>
 
-      {/* Invoice Generator Modal */}
       {isGeneratorOpen && selectedOffer && (
         <InvoiceGeneratorModal
           offer={selectedOffer}
@@ -553,22 +538,27 @@ export function InvoicesPage() {
         />
       )}
 
-      {/* Payment Methods Modal */}
       <PaymentMethodsModal
         isOpen={isPaymentMethodsOpen}
         onClose={() => setIsPaymentMethodsOpen(false)}
       />
 
-      {/* Issuer Profiles Modal */}
       <IssuerProfilesModal
         isOpen={isIssuerProfilesOpen}
         onClose={() => setIsIssuerProfilesOpen(false)}
       />
 
-      {/* STRIPE CONNECT MODAL (Nouveau) */}
       <StripeConnectModal
         isOpen={isStripeConnectOpen}
         onClose={() => setIsStripeConnectOpen(false)}
+      />
+
+      {/* 👈 AJOUT MODAL DÉTAILS */}
+      <InvoiceDetailModal
+        invoice={selectedInvoice}
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        onUpdate={fetchInvoices}
       />
     </div>
   )
