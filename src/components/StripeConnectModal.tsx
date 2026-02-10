@@ -37,35 +37,57 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
     setLoading(false);
   }
 
+  // --- MODIFICATION : APPEL RÉEL AU BACKEND ---
   const handleConnectStripe = async () => {
+    if (!user) return;
     setConnecting(true);
-    
-    // SIMULATION BACKEND : On fera le vrai appel API plus tard
-    setTimeout(async () => {
-      if (user) {
-        await supabase
-          .from('profiles')
-          .update({ stripe_connected: true, stripe_account_id: 'acct_TEST123456' })
-          .eq('id', user.id);
-          
-        setStripeConnected(true);
-        setStripeAccountId('acct_TEST123456');
+
+    try {
+      // Appel à ton API Vercel (api/connect-stripe.ts)
+      const response = await fetch('/api/connect-stripe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        // Redirection vers Stripe
+        window.location.href = data.url;
+      } else {
+        console.error("Erreur API:", data);
+        alert("Erreur lors de l'initialisation de Stripe. Veuillez réessayer.");
+        setConnecting(false);
       }
+
+    } catch (error) {
+      console.error("Erreur connexion:", error);
+      alert("Impossible de contacter le serveur de paiement.");
       setConnecting(false);
-    }, 1500);
+    }
   };
+  // ---------------------------------------------
 
   const handleDisconnect = async () => {
     if (!confirm("Voulez-vous vraiment déconnecter votre compte Stripe ?")) return;
     
     setConnecting(true);
     if (user) {
+        // Idéalement, faire aussi un appel API pour révoquer le token chez Stripe
         await supabase
           .from('profiles')
-          .update({ stripe_connected: false, stripe_account_id: null })
+          .update({ stripe_connected: false })
           .eq('id', user.id);
+        
         setStripeConnected(false);
-        setStripeAccountId(null);
+        // On garde l'account ID en mémoire au cas où ils se reconnectent, 
+        // ou on le nullifie selon ta préférence. Ici on garde pour faciliter la reconnexion.
     }
     setConnecting(false);
   };

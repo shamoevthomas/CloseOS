@@ -1,16 +1,20 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom' // 👈 AJOUTÉ
 import { CreditCard, TrendingUp, DollarSign, Calendar, FileText, Wallet, Building2, Eye, Download, Info } from 'lucide-react'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { InvoiceGeneratorModal } from '../components/InvoiceGeneratorModal'
 import { PaymentMethodsModal } from '../components/PaymentMethodsModal'
 import { IssuerProfilesModal } from '../components/IssuerProfilesModal'
-import { StripeConnectModal } from '../components/StripeConnectModal' // 👈 Import de la nouvelle modale
+import { StripeConnectModal } from '../components/StripeConnectModal'
 import { supabase } from '../lib/supabase'
 
 export function InvoicesPage() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
+  
+  // 👈 AJOUTÉ : Pour détecter le retour de Stripe
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // New state for table history
   const [savedInvoices, setSavedInvoices] = useState<any[]>([])
@@ -26,7 +30,7 @@ export function InvoicesPage() {
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false)
   const [isPaymentMethodsOpen, setIsPaymentMethodsOpen] = useState(false)
   const [isIssuerProfilesOpen, setIsIssuerProfilesOpen] = useState(false)
-  const [isStripeConnectOpen, setIsStripeConnectOpen] = useState(false) // 👈 Nouvel état
+  const [isStripeConnectOpen, setIsStripeConnectOpen] = useState(false)
 
   // State pour les tooltips (détails)
   const [activeTooltip, setActiveTooltip] = useState<'cash' | 'installments' | null>(null)
@@ -43,6 +47,31 @@ export function InvoicesPage() {
   useEffect(() => {
     fetchInvoices()
   }, [isGeneratorOpen]) 
+
+  // 👈 AJOUTÉ : Logique de retour de Stripe Connect
+  useEffect(() => {
+    if (searchParams.get('stripe_connected') === 'true') {
+      const confirmConnection = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+           // 1. On confirme le statut dans la DB
+           await supabase
+            .from('profiles')
+            .update({ stripe_connected: true })
+            .eq('id', user.id);
+           
+           // 2. On nettoie l'URL (pour enlever le ?stripe_connected=true)
+           const newUrl = window.location.pathname;
+           window.history.replaceState({}, document.title, newUrl);
+           
+           // 3. On ouvre la modale pour montrer le succès à l'utilisateur
+           setIsStripeConnectOpen(true);
+        }
+      };
+      confirmConnection();
+    }
+  }, [searchParams]);
+  // ----------------------------------------------------
 
   // --- LOGIQUE DE FILTRAGE (Préservée) ---
   const isExpired = (offer: any) => {
@@ -186,7 +215,7 @@ export function InvoicesPage() {
           <p className="text-slate-400">Générez vos factures et suivez vos commissions</p>
         </div>
         <div className="flex gap-3">
-          {/* BOUTON STRIPE CONNECT (NOUVEAU) */}
+          {/* BOUTON STRIPE CONNECT */}
           <button
             onClick={() => setIsStripeConnectOpen(true)}
             className="flex items-center gap-2 rounded-lg bg-[#635BFF] px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#5349E0] hover:shadow-lg hover:shadow-[#635BFF]/20"
