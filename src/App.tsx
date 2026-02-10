@@ -44,7 +44,8 @@ import Register from './pages/Register'
 import { Legal } from './pages/Legal' 
 import { WelcomeFounder } from './pages/WelcomeFounder' 
 import { ComingSoon } from './pages/ComingSoon' 
-import { CGU } from './pages/CGU' // 👇 AJOUT IMPORT
+import { CGU } from './pages/CGU' 
+import { PrivacyPolicy } from './pages/PrivacyPolicy' // 👇 AJOUT IMPORT
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -106,7 +107,8 @@ function AuthenticatedApp() {
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
         <Route path="/mentions-legales" element={<Legal />} />
-        <Route path="/cgu" element={<CGU />} /> {/* 👇 AJOUT ROUTE CGU */}
+        <Route path="/cgu" element={<CGU />} />
+        <Route path="/confidentialite" element={<PrivacyPolicy />} /> {/* 👇 AJOUT ROUTE CONFIDENTIALITÉ */}
 
         {/* Routes Paiement & Onboarding */}
         <Route path="/checkout" element={<CheckoutForm />} />
