@@ -4,7 +4,7 @@ import {
   EmbeddedCheckoutProvider,
   EmbeddedCheckout
 } from '@stripe/react-stripe-js';
-import { CheckCircle2, ShieldCheck, ArrowLeft, Rocket } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, ArrowLeft, Rocket, Square, CheckSquare, AlertCircle } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 // Initialise Stripe
@@ -15,6 +15,10 @@ export const CheckoutStarter = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isVoipSelected, setIsVoipSelected] = useState(false);
+
+  // 👇 NOUVEAUX ÉTATS POUR LES CGV
+  const [isTermsAccepted, setIsTermsAccepted] = useState(false);
+  const [showTermsError, setShowTermsError] = useState(false);
 
   // 👇 Récupération du cycle de facturation via l'URL (?billing=yearly)
   const [searchParams] = useSearchParams();
@@ -63,6 +67,25 @@ export const CheckoutStarter = () => {
   useEffect(() => {
     fetchClientSecret();
   }, [isVoipSelected, isYearly]);
+
+  // Fonction de gestion du clic sur l'overlay de protection
+  const handleOverlayClick = () => {
+    if (!isTermsAccepted) {
+      setShowTermsError(true);
+      // Petit scroll vers l'erreur si besoin
+      const checkbox = document.getElementById('terms-checkbox');
+      checkbox?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  const toggleTerms = () => {
+    if (isTermsAccepted) {
+      setIsTermsAccepted(false);
+    } else {
+      setIsTermsAccepted(true);
+      setShowTermsError(false);
+    }
+  };
 
   if (error) {
     return (
@@ -153,7 +176,26 @@ export const CheckoutStarter = () => {
                    <p className="text-xs text-slate-400">Appels illimités depuis la plateforme + enregistrement automatique.</p>
                 </div>
               </div>
+            </div>
 
+            {/* 👇 SECTION CGV / CGU OBLIGATOIRE */}
+            <div id="terms-checkbox" className={`p-4 rounded-2xl border transition-colors ${showTermsError ? 'bg-red-950/10 border-red-500/50' : 'bg-slate-900/50 border-slate-800'}`}>
+              
+              {showTermsError && (
+                <div className="flex items-center gap-2 text-red-400 text-sm font-bold mb-3 animate-pulse">
+                  <AlertCircle className="h-4 w-4" />
+                  Vous devez accepter les conditions pour continuer
+                </div>
+              )}
+
+              <div className="flex items-start gap-3 cursor-pointer" onClick={toggleTerms}>
+                <div className={`mt-1 h-5 w-5 rounded border flex items-center justify-center transition-colors shrink-0 ${isTermsAccepted ? 'bg-blue-600 border-blue-600' : 'border-slate-500 hover:border-blue-400'}`}>
+                   {isTermsAccepted ? <CheckSquare className="h-3.5 w-3.5 text-white" /> : <Square className="h-3.5 w-3.5 text-transparent" />}
+                </div>
+                <div className="text-sm text-slate-300 leading-relaxed select-none">
+                  Je reconnais avoir pris connaissance et j'accepte les <Link to="/cgu" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Conditions Générales de Vente (CGV)</Link> et la <Link to="/confidentialite" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Politique de Confidentialité</Link>. Je renonce expressément à mon droit de rétractation pour accéder au service immédiatement.
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800">
@@ -167,18 +209,30 @@ export const CheckoutStarter = () => {
           <div className="relative bg-[#0F172A] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden p-2 sm:p-4 min-h-[600px]">
              {/* Halo moins lumineux pour le Starter */}
             <div className="absolute -inset-4 bg-slate-600/5 blur-[60px] rounded-full pointer-events-none" />
+            
             {loading || !clientSecret ? (
               <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-slate-500 mb-6"></div>
                 <p className="text-slate-400 font-medium text-sm">Chargement du module sécurisé...</p>
               </div>
             ) : (
-              <EmbeddedCheckoutProvider
-                stripe={stripePromise}
-                options={{ clientSecret }}
-              >
-                <EmbeddedCheckout className="h-full w-full" />
-              </EmbeddedCheckoutProvider>
+              <div className="relative h-full w-full">
+                <EmbeddedCheckoutProvider
+                  stripe={stripePromise}
+                  options={{ clientSecret }}
+                >
+                  <EmbeddedCheckout className="h-full w-full" />
+                </EmbeddedCheckoutProvider>
+
+                 {/* 👇 LE BOUCLIER : Bloque les clics si CGV non acceptées */}
+                {!isTermsAccepted && (
+                  <div 
+                    onClick={handleOverlayClick}
+                    className="absolute inset-0 z-50 bg-slate-950/10 backdrop-blur-[2px] flex items-center justify-center cursor-not-allowed transition-all duration-300"
+                  >
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
