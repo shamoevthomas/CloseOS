@@ -355,7 +355,7 @@ export function InvoiceGeneratorModal({
             currency: 'eur',
             title: `Facture ${invoiceNumber}`,
             connectedAccountId: stripeAccountId,
-            clientEmail: offer.billingEmail || undefined // 👈 MODIFICATION ICI: "undefined" au lieu de ""
+            clientEmail: offer.billingEmail || undefined 
           })
         })
         
@@ -476,7 +476,10 @@ export function InvoiceGeneratorModal({
 
       // 5. Préparation payload pour TON api/send-email.ts existant
       const emailPayload = {
-        sender: { name: issuerCompanyName || "CloseOS", email: issuerEmail || "no-reply@closeos.com" },
+        // L'expéditeur DOIT être ton email Brevo vérifié ou un domaine authentifié
+        sender: { name: "CloseOS Notification", email: "support@closeos.fr" }, 
+        // L'email du "vrai" émetteur est en Reply-To pour que le client réponde au bon endroit
+        replyTo: { email: issuerEmail || "support@closeos.fr", name: issuerCompanyName || "CloseOS" },
         to: [{ email: offer.billingEmail, name: offer.billingName || offer.company }],
         subject: `Votre facture ${invoiceNumber} est disponible`,
         htmlContent: `
