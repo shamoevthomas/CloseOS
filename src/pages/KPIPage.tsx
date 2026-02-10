@@ -13,16 +13,14 @@ import {
   Calendar,
   Infinity,
   UserX,
-  Filter,
   Archive,
-  CheckSquare,
-  Square
+  CheckSquare
 } from 'lucide-react';
 import { useOffers } from '../contexts/OffersContext';
 import { useProspects } from '../contexts/ProspectsContext';
 
 // ============================================================================
-// UNIVERSAL DATA PARSING HELPERS (OMNIVORE MODE + KANBAN SUPPORT)
+// UNIVERSAL DATA PARSING HELPERS
 // ============================================================================
 
 const extractDealsFromKanban = (data: any): any[] => {
@@ -117,16 +115,27 @@ export function KPIPage() {
   const { offers: allOffers } = useOffers();
   const { prospects: allProspects } = useProspects();
 
-  // Séparation des offres
-  const activeOffers = useMemo(() => allOffers.filter(o => o.status === 'active'), [allOffers]);
-  const inactiveOffers = useMemo(() => allOffers.filter(o => o.status === 'inactive'), [allOffers]);
+  // --- CORRECTION LOGIQUE OFFRES (Active vs Inactive) ---
+  const isExpired = (offer: any) => {
+    if (!offer.endDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = new Date(offer.endDate);
+    return end < today;
+  };
+
+  // Active = Status Active ET Pas expiré
+  const activeOffers = useMemo(() => allOffers.filter(o => o.status === 'active' && !isExpired(o)), [allOffers]);
+  
+  // Inactive = Status Inactive OU (Active mais Expiré)
+  const inactiveOffers = useMemo(() => allOffers.filter(o => o.status === 'inactive' || (o.status === 'active' && isExpired(o))), [allOffers]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'all'>('all'); 
   const [activeTab, setActiveTab] = useState('global');
   const [deals, setDeals] = useState<any[]>([]);
   
-  // 🚀 NOUVEAU : État pour inclure ou non les offres inactives dans le Global
+  // État pour inclure ou non les offres inactives dans le Global
   const [includeInactiveInGlobal, setIncludeInactiveInGlobal] = useState(false);
 
   useEffect(() => {
@@ -159,9 +168,11 @@ export function KPIPage() {
   
   // Helper pour vérifier si un deal/prospect appartient à une offre active
   const isActiveOffer = (itemName: string | undefined, itemId: string | number | undefined) => {
+    // Si l'item a un ID d'offre, on vérifie s'il est dans la liste des activeOffers
     if (itemId) return activeOffers.some(o => String(o.id) === String(itemId));
+    // Sinon on vérifie par le nom
     if (itemName) return activeOffers.some(o => o.name.toLowerCase() === itemName.toLowerCase());
-    return false; // Si pas d'info, on considère inactif par sécurité ou on inclut par défaut selon la logique métier (ici strict)
+    return false;
   };
 
   // 1. Filtrage des Prospects (Context)
@@ -172,7 +183,7 @@ export function KPIPage() {
       const pOffer = (prospect.offer || '').toLowerCase();
       const pOfferId = String(prospect.offerId || '');
       
-      // Chercher l'offre sélectionnée
+      // Chercher l'offre sélectionnée (qu'elle soit active ou inactive, car on peut sélectionner une archive)
       const targetOffer = allOffers.find(o => o.name.toLowerCase() === tabName);
       
       const matchName = pOffer.includes(tabName) || tabName.includes(pOffer);
@@ -205,8 +216,8 @@ export function KPIPage() {
     } else {
       // B. Filtre Global : Gestion Inactifs
       if (!includeInactiveInGlobal) {
-        // On checke si le nom de l'offre du deal correspond à une offre active
         const dealOfferName = getDealOffer(deal);
+        // On vérifie si le nom de l'offre correspond à une offre ACTIVE
         const isLinkedToActive = activeOffers.some(o => o.name.toLowerCase().includes(dealOfferName) || dealOfferName.includes(o.name.toLowerCase()));
         if (!isLinkedToActive) return false;
       }
