@@ -808,7 +808,7 @@ export function LandingPage() {
           <div className="flex items-center gap-2">
             <img src="/logo.PNG" alt="CloseOS Logo" className="h-6 w-auto" />
           </div>
-          {/* 👇 MODIFICATION : LIENS LÉGAUX AJOUTÉS ICI */}
+          
           <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-500">
             <span>© 2026 CloseOS.fr</span>
             <span className="hidden sm:inline">•</span>
@@ -818,6 +818,7 @@ export function LandingPage() {
             <span className="hidden sm:inline">•</span>
             <Link to="/confidentialite" className="hover:text-white transition-colors">Confidentialité</Link>
           </div>
+          
           <div className="flex gap-6">
             <a 
               href="https://www.linkedin.com/in/thomas-shamoev-570885237/" 
@@ -833,5 +834,4 @@ export function LandingPage() {
       </footer>
     </div>
   )
-}
 }
