@@ -7,7 +7,7 @@ import { InvoiceGeneratorModal } from '../components/InvoiceGeneratorModal'
 import { PaymentMethodsModal } from '../components/PaymentMethodsModal'
 import { IssuerProfilesModal } from '../components/IssuerProfilesModal'
 import { StripeConnectModal } from '../components/StripeConnectModal'
-import { InvoiceDetailModal } from '../components/InvoiceDetailModal' // 👈 AJOUT IMPORT
+import { InvoiceDetailModal } from '../components/InvoiceDetailModal'
 import { supabase } from '../lib/supabase'
 
 export function InvoicesPage() {
@@ -30,7 +30,7 @@ export function InvoicesPage() {
   const [isIssuerProfilesOpen, setIsIssuerProfilesOpen] = useState(false)
   const [isStripeConnectOpen, setIsStripeConnectOpen] = useState(false)
 
-  // 👈 AJOUT : ÉTATS POUR LE NOUVEAU MODAL
+  // ÉTATS POUR LE NOUVEAU MODAL
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
 
@@ -44,9 +44,10 @@ export function InvoicesPage() {
     if (data) setSavedInvoices(data)
   }
 
+  // MODIFICATION ICI : On recharge aussi quand le détail se ferme pour être sûr d'avoir le nouveau statut
   useEffect(() => {
     fetchInvoices()
-  }, [isGeneratorOpen]) 
+  }, [isGeneratorOpen, isDetailOpen]) 
 
   useEffect(() => {
     if (searchParams.get('stripe_connected') === 'true') {
@@ -190,10 +191,12 @@ export function InvoicesPage() {
     return d.toLocaleDateString('fr-FR')
   }
 
-  // Helper pour afficher la couleur du statut
+  // Helper pour afficher la couleur du statut (Ajout des anciens statuts pour compatibilité)
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'payé': return 'bg-emerald-500/10 text-emerald-400';
+      case 'envoyée': return 'bg-emerald-500/10 text-emerald-400'; // Compatible avec l'existant
+      case 'générée': return 'bg-cyan-500/10 text-cyan-400'; // Compatible avec l'existant
       case 'retard': return 'bg-rose-500/10 text-rose-400';
       case 'en_attente': return 'bg-amber-500/10 text-amber-400';
       default: return 'bg-slate-500/10 text-slate-400';
