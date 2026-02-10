@@ -7,7 +7,6 @@ import {
 import { CheckCircle2, ShieldCheck, Sparkles, ArrowLeft, Square, CheckSquare, AlertCircle, TicketPercent, Loader2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 
-// Initialise Stripe avec ta clé publique
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export const CheckoutForm = () => {
@@ -16,38 +15,35 @@ export const CheckoutForm = () => {
   const [error, setError] = useState('');
   const [isVoipSelected, setIsVoipSelected] = useState(false);
 
-  // 👇 NOUVEAUX ÉTATS POUR LE CODE PROMO & AFFICHAGE PRIX
+  // ÉTATS CODE PROMO
   const [referralCode, setReferralCode] = useState('');
   const [appliedCode, setAppliedCode] = useState('');
   const [isApplyingCode, setIsApplyingCode] = useState(false);
-  const [displayDiscount, setDisplayDiscount] = useState(0); // Pour stocker le % (ex: 15)
+  const [displayDiscount, setDisplayDiscount] = useState(0);
 
-  // ÉTATS POUR LES CGV
+  // ÉTATS CGV
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [showTermsError, setShowTermsError] = useState(false);
 
-  // Récupération du cycle de facturation via l'URL (?billing=yearly)
   const [searchParams] = useSearchParams();
   const isYearly = searchParams.get('billing') === 'yearly';
 
-  // CONFIGURATION DES PRIX
+  // CONFIGURATION DES PRIX (FOUNDER)
   const PRICE_FOUNDER = isYearly 
     ? "price_1Sz1Kg33xpuYLywqS5kHdnyU" 
-    : "price_1SzEPa33xpuYLywq3TKcBIji"; 
+    : "price_1SyKgI33xpuYLywqfdB8YJTp"; // Remis l'ID Founder standard
 
+  // ✅ TES NOUVEAUX IDS VOIP
   const PRICE_VOIP = isYearly 
-    ? "price_1SzEPo33xpuYLywqhRb738Lv"
-    : "price_1SyXw433xpuYLywqpvmyAueZ";
+    ? "price_1SzEPo33xpuYLywqhRb738Lv" // Ton ID VoIP Annuel
+    : "price_1SzEPa33xpuYLywq3TKcBIji"; // Ton ID VoIP Mensuel
 
-  // 👇 CALCUL DES PRIX D'AFFICHAGE (VISUEL UNIQUEMENT)
+  // CALCUL VISUEL
   const basePrice = isYearly ? 25 : 29;
-
-  // Calcul du prix final affiché (si réduction active)
   const finalPrice = displayDiscount > 0 
     ? (basePrice * (1 - displayDiscount / 100)).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
     : basePrice;
 
-  // Fonction pour récupérer le Client Secret
   const fetchClientSecret = () => {
     setLoading(true);
     const lineItems = [{ price: PRICE_FOUNDER, quantity: 1 }];
@@ -60,7 +56,8 @@ export const CheckoutForm = () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
-        lineItems, 
+        lineItems,
+        plan: 'founder',
         referralCode: appliedCode 
       }), 
     })
@@ -71,7 +68,7 @@ export const CheckoutForm = () => {
       .then((data) => {
         setClientSecret(data.clientSecret);
         setLoading(false);
-        setIsApplyingCode(false); // Fin du chargement code
+        setIsApplyingCode(false);
       })
       .catch((err) => {
         console.error(err);
@@ -81,25 +78,20 @@ export const CheckoutForm = () => {
       });
   };
 
-  // Recharger le checkout quand l'option VoIP, le cycle, OU LE CODE change
   useEffect(() => {
     fetchClientSecret();
   }, [isVoipSelected, isYearly, appliedCode]);
 
-  // 👇 CONFIGURATION DES CODES PROMO (POUR L'AFFICHAGE)
   const CODE_CONFIG: Record<string, number> = {
     'TEKA15': 15,
-    // 'SUPER20': 20, 
   };
 
-  // Gestion du clic sur "Appliquer le code"
   const handleApplyCode = () => {
     if (referralCode.trim() !== appliedCode) {
       setIsApplyingCode(true);
       const cleanCode = referralCode.trim().toUpperCase();
       setAppliedCode(cleanCode);
 
-      // 👇 LOGIQUE AUTOMATIQUE : Cherche le code dans la config
       if (CODE_CONFIG[cleanCode]) {
         setDisplayDiscount(CODE_CONFIG[cleanCode]);
       } else {
@@ -173,11 +165,9 @@ export const CheckoutForm = () => {
             <div className="bg-blue-600/5 rounded-3xl p-8 border border-blue-500/20 relative overflow-hidden">
                <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">OFFRE LIMITÉE</div>
               
-               {/* 👇 AFFICHAGE DU PRIX DYNAMIQUE */}
               <div className="flex items-baseline gap-3 mb-6 flex-wrap">
                 <span className="text-6xl font-black text-white">{finalPrice}€</span>
                 
-                {/* Cas normal Annuel sans code : on barre le prix de référence (60€ ou 69€) */}
                 {isYearly && displayDiscount === 0 && (
                   <span className="text-2xl text-slate-500 line-through">60€</span>
                 )}
@@ -185,12 +175,10 @@ export const CheckoutForm = () => {
                   <span className="text-2xl text-slate-500 line-through">69€</span>
                 )}
 
-                {/* Cas avec Code Promo : on barre le prix Founder de base */}
                 {displayDiscount > 0 && (
                    <span className="text-2xl text-slate-500 line-through">{basePrice}€</span>
                 )}
 
-                 {/* Bulle de réduction */}
                  {displayDiscount > 0 && (
                   <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30 self-center">
                     -{displayDiscount}%
@@ -216,7 +204,6 @@ export const CheckoutForm = () => {
                 ))}
               </div>
 
-              {/* OPTIONS VOIP */}
               <div 
                 className={`p-4 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${isVoipSelected ? 'bg-blue-500/20 border-blue-500' : 'bg-slate-900/50 border-slate-700 hover:border-slate-500'}`}
                 onClick={() => setIsVoipSelected(!isVoipSelected)}
@@ -237,7 +224,6 @@ export const CheckoutForm = () => {
               </div>
             </div>
 
-            {/* 👇 SECTION CODE PROMO */}
             <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
               <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
                 <TicketPercent className="h-4 w-4 text-blue-400" />
@@ -246,7 +232,7 @@ export const CheckoutForm = () => {
               <div className="flex gap-3">
                 <input 
                   type="text" 
-                  placeholder="Ex: ADMIN15" 
+                  placeholder="Ex: TEKA15" 
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value)}
                   className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors uppercase placeholder:normal-case"
@@ -267,7 +253,6 @@ export const CheckoutForm = () => {
               )}
             </div>
 
-            {/* SECTION CGV / CGU OBLIGATOIRE */}
             <div id="terms-checkbox" className={`p-4 rounded-2xl border transition-colors ${showTermsError ? 'bg-red-950/10 border-red-500/50' : 'bg-slate-900/50 border-slate-800'}`}>
               
               {showTermsError && (
@@ -295,7 +280,6 @@ export const CheckoutForm = () => {
             </div>
           </div>
 
-          {/* COLONNE DE DROITE AVEC PROTECTION */}
           <div className="relative bg-[#0F172A] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden p-2 sm:p-4 min-h-[600px]">
             <div className="absolute -inset-4 bg-blue-600/10 blur-[60px] rounded-full pointer-events-none" />
             
@@ -313,7 +297,6 @@ export const CheckoutForm = () => {
                   <EmbeddedCheckout className="h-full w-full" />
                 </EmbeddedCheckoutProvider>
 
-                {/* LE BOUCLIER : Bloque les clics si CGV non acceptées */}
                 {!isTermsAccepted && (
                   <div 
                     onClick={handleOverlayClick}
