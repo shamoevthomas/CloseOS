@@ -11,7 +11,6 @@ export function TelephonyPage() {
         'Numéro virtuel professionnel dédié',
         'Appels et SMS synchronisés avec le CRM',
         'Enregistrement automatique des conversations',
-        'Power Dialer pour enchaîner les appels',
       ]}
     />
   )

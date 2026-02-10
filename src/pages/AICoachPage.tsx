@@ -1,17 +1,17 @@
-import { Brain } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import { ComingSoon } from '../components/ComingSoon'
 
 export function AICoachPage() {
   return (
     <ComingSoon
-      icon={Brain}
-      title="Votre Coach de Vente IA"
-      description="L'intelligence artificielle analyse vos performances globales pour vous faire devenir un Top Closer."
+      icon={FileText}
+      title="Rapports de Performance IA"
+      description="L'IA écoute vos appels et génère un rapport ultra-précis pour chaque interaction : vos points de blocage, vos réussites et les axes d'amélioration immédiats."
       features={[
-        'Analyse émotionnelle et tonalité de voix',
-        'Détection des tics de langage',
-        'Recommandations stratégiques après chaque session',
-        'Comparaison avec les meilleurs closers du marché',
+        'Identification précise des moments où vous avez eu du mal',
+        'Mise en lumière de vos "Perfect Moments" et techniques réussies',
+        'Suggestions correctives pour vos prochains closings',
+        'Analyse objective de la structure de vos appels',
       ]}
     />
   )

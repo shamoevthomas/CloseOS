@@ -198,7 +198,7 @@ export function InvoicesPage() {
       case 'envoyée': return 'bg-emerald-500/10 text-emerald-400'; // Compatible avec l'existant
       case 'générée': return 'bg-cyan-500/10 text-cyan-400'; // Compatible avec l'existant
       case 'retard': return 'bg-rose-500/10 text-rose-400';
-      case 'en_attente': return 'bg-amber-500/10 text-amber-400';
+      case 'en attente': return 'bg-amber-500/10 text-amber-400';
       default: return 'bg-slate-500/10 text-slate-400';
     }
   };
