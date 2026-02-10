@@ -6,7 +6,7 @@ export function TelephonyPage() {
     <ComingSoon
       icon={Smartphone}
       title="Téléphonie & SMS Intégrés"
-      description="Plus besoin de votre téléphone personnel. Centralisez toutes vos communications directement dans CloserOS."
+      description="Plus besoin de votre téléphone personnel. Centralisez toutes vos communications directement dans CloseOS."
       features={[
         'Numéro virtuel professionnel dédié',
         'Appels et SMS synchronisés avec le CRM',

@@ -83,17 +83,17 @@ const getDealAmount = (deal: any): number => {
 };
 
 const isWonDeal = (deal: any): boolean => {
-  const s = String(deal.status || deal.statut || deal.state || '').toLowerCase();
+  const s = String(deal.status || deal.statut || deal.stage || '').toLowerCase();
   return s.match(/gagn|won|sign|closed|clos/) !== null;
 };
 
 const isLostDeal = (deal: any): boolean => {
-  const s = String(deal.status || deal.statut || deal.state || '').toLowerCase();
+  const s = String(deal.status || deal.statut || deal.stage || '').toLowerCase();
   return s.match(/perdu|lost/) !== null;
 };
 
 const getDealDate = (deal: any): Date => {
-  const possibleFields = [deal.createdAt, deal.date, deal.creationDate, deal.dateCreation, deal.created_at];
+  const possibleFields = [deal.createdAt, deal.date, deal.creationDate, deal.dateCreation, deal.created_at, deal.dateAdded];
   for (const value of possibleFields) {
     if (value) {
       const d = new Date(value);
@@ -184,112 +184,125 @@ export function KPIPage() {
     return false;
   };
 
-  // 1. Filtrage des Prospects (Context)
-  const filteredProspects = allProspects.filter((prospect) => {
-    // A. Filtre par Onglet (Offre)
-    if (activeTab !== 'global') {
-      const tabName = activeTab.toLowerCase();
-      const pOffer = (prospect.offer || '').toLowerCase();
-      const pOfferId = String(prospect.offerId || '');
-      
-      // Chercher l'offre sélectionnée
-      const targetOffer = allOffers.find(o => o.name.toLowerCase() === tabName);
-      
-      const matchName = pOffer.includes(tabName) || tabName.includes(pOffer);
-      const matchId = targetOffer && pOfferId === String(targetOffer.id);
-
-      if (!matchName && !matchId) return false;
-    } else {
-      // B. Filtre Global : Gestion de la case à cocher "Inclure inactifs"
-      if (!includeInactiveInGlobal) {
-        // Si la case n'est PAS cochée, on ne garde QUE les offres ACTIVES
-        if (!isActiveOffer(prospect.offer, prospect.offerId)) return false;
-      }
-    }
-
-    // C. Filtre Date
-    if (viewMode === 'month') {
-      const pDate = prospect.dateAdded ? new Date(prospect.dateAdded) : new Date();
-      if (pDate.getMonth() !== currentDate.getMonth() || pDate.getFullYear() !== currentDate.getFullYear()) return false;
-    }
-    return true;
-  });
-
-  // 2. Filtrage des Deals (Kanban/Legacy)
-  const filteredDeals = deals.filter((deal) => {
-    // A. Filtre par Onglet
-    if (activeTab !== 'global') {
-      const dealOffer = getDealOffer(deal);
-      const tabName = activeTab.toLowerCase();
-      if (!dealOffer.includes(tabName) && !tabName.includes(dealOffer)) return false;
-    } else {
-      // B. Filtre Global : Gestion Inactifs
-      if (!includeInactiveInGlobal) {
-        // Même logique de matching souple pour les deals legacy
-        const dealOfferName = getDealOffer(deal);
-        const isLinkedToActive = activeOffers.some(o => {
-          const oName = o.name.toLowerCase().trim();
-          return dealOfferName.includes(oName) || oName.includes(dealOfferName);
-        });
-        if (!isLinkedToActive) return false;
-      }
-    }
-
-    // C. Filtre Date
-    if (viewMode === 'month') {
-      const dDate = getDealDate(deal);
-      if (dDate.getMonth() !== currentDate.getMonth() || dDate.getFullYear() !== currentDate.getFullYear()) return false;
-    }
-    return true;
-  });
-
-  // --- CALCULS KPI ---
-  const wonDeals = filteredProspects.filter(p => p?.stage === 'won');
-  const lostDeals = filteredProspects.filter(p => p?.stage === 'lost');
-  const followUpDeals = filteredProspects.filter(p => (p?.status || p?.stage || '').toLowerCase().match(/follow|relance/));
-  const noShowDeals = filteredProspects.filter(p => (p?.status || p?.stage || '').toLowerCase().match(/no show|absent|noshow/));
-  const activeDeals = filteredProspects.filter(p => p?.stage && p.stage !== 'won' && p.stage !== 'lost');
-
-  const totalRevenue = wonDeals.reduce((sum, p) => sum + (p?.value || 0), 0);
-  const totalSales = wonDeals.length;
-  const totalLeads = filteredProspects.length;
-  const closedDeals = wonDeals.length + lostDeals.length;
-  const conversionRate = closedDeals > 0 ? (totalSales / closedDeals) * 100 : 0;
-  
-  const totalCallOutcomes = wonDeals.length + lostDeals.length + followUpDeals.length + noShowDeals.length;
-  const noShowRate = totalCallOutcomes > 0 ? (noShowDeals.length / totalCallOutcomes) * 100 : 0;
-
   const parseCommission = (str?: string) => {
     if (!str) return 0.10;
     const match = str.match(/(\d+(?:\.\d+)?)/);
     return match ? parseFloat(match[1]) / 100 : 0.10;
   };
 
+  // --- PREPARATION DES DONNÉES ---
+
+  // 1. Filtrage GLOBAL (sans filtre de date pour les graphiques)
+  const allFilteredItems = useMemo(() => {
+    const sourceData = allProspects.length > 0 ? allProspects : deals;
+    
+    return sourceData.filter(item => {
+      // Filtre par Onglet (Offre)
+      if (activeTab !== 'global') {
+        const tabName = activeTab.toLowerCase();
+        const pOffer = (getDealOffer(item)).toLowerCase();
+        const pOfferId = String(item.offerId || '');
+        
+        const targetOffer = allOffers.find(o => o.name.toLowerCase() === tabName);
+        
+        const matchName = pOffer.includes(tabName) || tabName.includes(pOffer);
+        const matchId = targetOffer && pOfferId === String(targetOffer.id);
+
+        if (!matchName && !matchId) return false;
+      } else {
+        // Filtre Global : Gestion de la case à cocher "Inclure inactifs"
+        if (!includeInactiveInGlobal) {
+          if (!isActiveOffer(item.offer || item.offerName, item.offerId)) return false;
+        }
+      }
+      return true;
+    });
+  }, [activeTab, includeInactiveInGlobal, allProspects, deals, allOffers]);
+
+  // 2. Données pour les KPI (Filtre date appliqué si nécessaire)
+  const kpiData = useMemo(() => {
+    return allFilteredItems.filter(item => {
+      if (viewMode === 'month') {
+        const dDate = getDealDate(item);
+        if (dDate.getMonth() !== currentDate.getMonth() || dDate.getFullYear() !== currentDate.getFullYear()) return false;
+      }
+      return true;
+    });
+  }, [allFilteredItems, viewMode, currentDate]);
+
+  // 3. Données pour les GRAPHIQUES (Historique complet agrégé par mois)
+  const chartData = useMemo(() => {
+    const grouped: Record<string, { won: number; total: number; commission: number; date: Date }> = {};
+
+    allFilteredItems.forEach(item => {
+      const date = getDealDate(item);
+      // Clé de tri YYYY-MM
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!grouped[key]) {
+        grouped[key] = { won: 0, total: 0, commission: 0, date };
+      }
+
+      const isWon = isWonDeal(item);
+      const isLost = isLostDeal(item);
+
+      if (isWon || isLost) {
+        grouped[key].total += 1;
+        if (isWon) {
+          grouped[key].won += 1;
+          const val = item.value || getDealAmount(item);
+          // Recalcul commission si besoin
+          let comm = 0;
+          if (allProspects.length > 0) {
+             const dealOffer = allOffers.find(o => (item.offerId && String(o.id) === String(item.offerId)) || (item.offer && o.name.toLowerCase() === item.offer.toLowerCase()));
+             const rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
+             comm = val * rate;
+          } else {
+             comm = val * 0.10; // Legacy default
+          }
+          grouped[key].commission += comm;
+        }
+      }
+    });
+
+    // Transformer en tableau et trier par date
+    return Object.entries(grouped)
+      .map(([key, data]) => ({
+        label: data.date.toLocaleDateString('fr-FR', { month: 'short' }), // "janv."
+        fullDate: data.date,
+        closingRate: data.total > 0 ? (data.won / data.total) * 100 : 0,
+        commission: data.commission
+      }))
+      .sort((a, b) => a.fullDate.getTime() - b.fullDate.getTime())
+      // Garder les 6 derniers mois pour la lisibilité
+      .slice(-6); 
+  }, [allFilteredItems, allOffers]);
+
+
+  // --- CALCULS KPI FINAUX (sur kpiData) ---
+  const wonDeals = kpiData.filter(p => isWonDeal(p));
+  const lostDeals = kpiData.filter(p => isLostDeal(p));
+  const followUpDeals = kpiData.filter(p => (p.status || p.stage || '').toLowerCase().match(/follow|relance/));
+  const noShowDeals = kpiData.filter(p => (p.status || p.stage || '').toLowerCase().match(/no show|absent|noshow/));
+  const activeDeals = kpiData.filter(p => !isWonDeal(p) && !isLostDeal(p));
+
+  const totalRevenue = wonDeals.reduce((sum, p) => sum + (p.value || getDealAmount(p)), 0);
+  const totalSales = wonDeals.length;
+  const totalLeads = kpiData.length;
+  const closedDeals = wonDeals.length + lostDeals.length;
+  const conversionRate = closedDeals > 0 ? (totalSales / closedDeals) * 100 : 0;
+  
+  const totalCallOutcomes = wonDeals.length + lostDeals.length + followUpDeals.length + noShowDeals.length;
+  const noShowRate = totalCallOutcomes > 0 ? (noShowDeals.length / totalCallOutcomes) * 100 : 0;
+
   const totalCommissions = wonDeals.reduce((sum, deal) => {
-    if (!deal?.value) return sum;
+    const val = deal.value || getDealAmount(deal);
     const dealOffer = allOffers.find(o => (deal.offerId && String(o.id) === String(deal.offerId)) || (deal.offer && o.name.toLowerCase() === deal.offer.toLowerCase()));
     const rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
-    return sum + (deal.value * rate);
+    return sum + (val * rate);
   }, 0);
 
   const avgCommission = totalSales > 0 ? totalCommissions / totalSales : 0;
-
-  // Legacy fallback (si pas de prospects context)
-  const legacyWon = filteredDeals.filter(d => isWonDeal(d));
-  const legacyRev = legacyWon.reduce((s, d) => s + getDealAmount(d), 0);
-  const hasContextData = allProspects.length > 0;
-  const hasLegacyData = deals.length > 0;
-
-  // Valeurs finales à afficher
-  const finalRevenue = hasContextData ? totalRevenue : legacyRev;
-  const finalSales = hasContextData ? totalSales : legacyWon.length;
-  const finalLeads = hasContextData ? totalLeads : filteredDeals.length;
-  const finalConversion = hasContextData ? conversionRate : (hasLegacyData && filteredDeals.length > 0 ? (legacyWon.length / filteredDeals.length) * 100 : 0);
-  const finalCommissions = hasContextData ? totalCommissions : legacyRev * 0.10;
-  const finalNoShowRate = hasContextData ? noShowRate : 0;
-  const finalLost = hasContextData ? lostDeals.length : filteredDeals.filter(d => isLostDeal(d)).length;
-  const finalAvgComm = hasContextData ? avgCommission : (legacyWon.length > 0 ? (legacyRev * 0.10) / legacyWon.length : 0);
-  const finalActiveCount = hasContextData ? activeDeals.length : 0;
 
   return (
     <div className="min-h-screen bg-slate-950 p-6 md:p-8 font-sans text-slate-100">
@@ -412,33 +425,33 @@ export function KPIPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <KpiCard 
             title="CA Généré" 
-            value={`${formatCurrency(finalRevenue)} €`} 
+            value={`${formatCurrency(totalRevenue)} €`} 
             icon={DollarSign} 
             color="emerald" 
             trend="+12%" 
           />
           <KpiCard 
             title="Ventes Totales" 
-            value={finalSales.toString()} 
+            value={totalSales.toString()} 
             icon={ShoppingCart} 
             color="blue" 
           />
           <KpiCard 
             title="Taux de Conversion" 
-            value={`${formatPercent(finalConversion)} %`} 
+            value={`${formatPercent(conversionRate)} %`} 
             icon={Target} 
             color="purple" 
           />
           <KpiCard 
             title="Mes Commissions" 
-            value={`${formatCurrency(finalCommissions)} €`} 
+            value={`${formatCurrency(totalCommissions)} €`} 
             icon={Award} 
             color="amber" 
             glow 
           />
           <KpiCard 
             title="Taux de No Show" 
-            value={`${finalNoShowRate.toFixed(1)} %`} 
+            value={`${noShowRate.toFixed(1)} %`} 
             icon={UserX} 
             color="rose" 
           />
@@ -450,6 +463,41 @@ export function KPIPage() {
           />
         </div>
 
+        {/* 🚀 NOUVEAU: SECTION GRAPHIQUES */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Graphique Taux de Closing */}
+          <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <Target className="w-5 h-5 text-purple-400" />
+              Évolution Taux de Closing
+            </h3>
+            <div className="h-64">
+              <TrendChart 
+                data={chartData} 
+                dataKey="closingRate" 
+                color="#a855f7" // Purple
+                suffix="%" 
+              />
+            </div>
+          </div>
+
+          {/* Graphique Commissions */}
+          <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <Award className="w-5 h-5 text-emerald-400" />
+              Évolution Commissions
+            </h3>
+            <div className="h-64">
+              <TrendChart 
+                data={chartData} 
+                dataKey="commission" 
+                color="#10b981" // Emerald
+                suffix="€" 
+              />
+            </div>
+          </div>
+        </div>
+
         {/* PERFORMANCE SUMMARY */}
         <div className="bg-slate-900/50 rounded-2xl p-8 border border-white/5 backdrop-blur-sm">
           <h2 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
@@ -459,9 +507,9 @@ export function KPIPage() {
             Vue d'ensemble Pipeline
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <SummaryItem label="Total Leads Traités" value={finalLeads} icon={Users} color="indigo" />
-            <SummaryItem label="Deals en Cours" value={finalActiveCount} icon={Briefcase} color="cyan" />
-            <SummaryItem label="Commission Moyenne" value={`${formatCurrency(finalAvgComm)} €`} icon={Award} color="amber" />
+            <SummaryItem label="Total Leads Traités" value={totalLeads} icon={Users} color="indigo" />
+            <SummaryItem label="Deals en Cours" value={activeDeals.length} icon={Briefcase} color="cyan" />
+            <SummaryItem label="Commission Moyenne" value={`${formatCurrency(avgCommission)} €`} icon={Award} color="amber" />
           </div>
         </div>
       </div>
@@ -469,7 +517,90 @@ export function KPIPage() {
   );
 }
 
-// --- SUB-COMPONENTS FOR CLEANER CODE ---
+// --- NOUVEAU COMPOSANT GRAPHIQUE (SVG Custom) ---
+const TrendChart = ({ data, dataKey, color, suffix }: { data: any[], dataKey: string, color: string, suffix: string }) => {
+  if (!data || data.length === 0) {
+    return <div className="h-full flex items-center justify-center text-slate-500 text-sm">Pas assez de données pour l'historique</div>;
+  }
+
+  // Dimensions
+  const height = 200;
+  const width = 500; // viewBox width
+  const padding = 20;
+
+  // Calculs min/max
+  const values = data.map(d => d[dataKey]);
+  const min = 0;
+  const max = Math.max(...values, 10); // Au moins 10 pour éviter division par 0
+
+  // Fonction de mise à l'échelle Y (inversée car SVG commence en haut)
+  const getY = (val: number) => height - padding - ((val - min) / (max - min)) * (height - 2 * padding);
+  
+  // Fonction de mise à l'échelle X
+  const getX = (index: number) => padding + (index / (data.length - 1)) * (width - 2 * padding);
+
+  // Construction du chemin SVG (Line)
+  const pathData = data.length > 1 ? data.map((d, i) => 
+    `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(d[dataKey])}`
+  ).join(' ') : `M ${getX(0)} ${getY(values[0])} L ${getX(0) + 10} ${getY(values[0])}`; // Point seul si 1 donnée
+
+  // Construction de la zone remplie (Area) pour l'effet dégradé
+  const areaData = `${pathData} L ${getX(data.length - 1)} ${height} L ${getX(0)} ${height} Z`;
+
+  return (
+    <div className="w-full h-full">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
+        {/* Dégradé de remplissage */}
+        <defs>
+          <linearGradient id={`gradient-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* Lignes de grille horizontales */}
+        {[0, 0.25, 0.5, 0.75, 1].map(ratio => {
+          const y = height - padding - ratio * (height - 2 * padding);
+          return (
+            <g key={ratio}>
+              <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="rgba(255,255,255,0.05)" strokeDasharray="4" />
+              <text x={0} y={y + 3} fill="rgba(255,255,255,0.3)" fontSize="10" textAnchor="start">
+                {Math.round(min + ratio * (max - min))}{suffix === '%' ? '' : 'k' /* Simplification affichage */}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Zone remplie */}
+        <path d={areaData} fill={`url(#gradient-${dataKey})`} />
+
+        {/* Ligne de courbe */}
+        <path d={pathData} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Points et Labels */}
+        {data.map((d, i) => (
+          <g key={i} className="group">
+            {/* Point */}
+            <circle cx={getX(i)} cy={getY(d[dataKey])} r="4" fill="#1e293b" stroke={color} strokeWidth="2" />
+            
+            {/* Tooltip au survol (CSS group-hover) */}
+            <g className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <rect x={getX(i) - 25} y={getY(d[dataKey]) - 35} width="50" height="25" rx="4" fill="#0f172a" stroke={color} />
+              <text x={getX(i)} y={getY(d[dataKey]) - 18} fill="white" fontSize="10" textAnchor="middle" fontWeight="bold">
+                {Math.round(d[dataKey])}{suffix}
+              </text>
+            </g>
+
+            {/* Label Mois (Axe X) */}
+            <text x={getX(i)} y={height} fill="rgba(255,255,255,0.5)" fontSize="10" textAnchor="middle">
+              {d.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+};
 
 const KpiCard = ({ title, value, icon: Icon, color, glow, trend }: any) => {
   const colors: any = {
