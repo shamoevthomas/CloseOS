@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { X, ChevronLeft, Download, Loader2 } from 'lucide-react' // 👈 AJOUT Loader2
+import { X, ChevronLeft, Download, Loader2, Mail } from 'lucide-react' // 👈 AJOUT IMPORT MAIL
 import type { Offer } from './OfferDetailModal'
 import type { Prospect } from '../contexts/ProspectsContext'
 import type { PaymentMethod as SavedPaymentMethod } from './PaymentMethodsModal'
@@ -68,6 +68,9 @@ export function InvoiceGeneratorModal({
   const [isGeneratingLink, setIsGeneratingLink] = useState(false)
   const [generatedLink, setGeneratedLink] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState('')
+  
+  // --- 🚀 AJOUT : ETAT ENVOI EMAIL ---
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
   // ------------------------------------
 
   // Invoice metadata
@@ -449,6 +452,84 @@ export function InvoiceGeneratorModal({
     }
   }
 
+  // --- 🚀 AJOUT : FONCTION D'ENVOI PAR EMAIL ---
+  const handleSendEmail = async () => {
+    const element = document.getElementById('invoice-preview-content')
+    if (!element || !offer.billingEmail) return 
+
+    setIsSendingEmail(true)
+    try {
+      // 1. Génération PDF (identique à l'export)
+      const opt = { margin: 0, filename: `${invoiceNumber}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }
+      const pdfBlob = await html2pdf().set(opt).from(element).output('blob')
+
+      // 2. Upload Supabase
+      const fileName = `${Date.now()}-${invoiceNumber}.pdf`
+      const { error: uploadError } = await supabase.storage.from('invoice').upload(fileName, pdfBlob)
+      if (uploadError) throw uploadError
+      
+      // 3. Récupération URL publique
+      const { data: { publicUrl } } = supabase.storage.from('invoice').getPublicUrl(fileName)
+
+      // 4. Enregistrement en base (status 'envoyée')
+      await supabase.from('invoices').insert([{ invoice_number: invoiceNumber, offer_name: offer.name, client_name: offer.billingName || offer.company, amount_ht: commissionHT, amount_ttc: totalTTC, status: 'envoyée', pdf_url: publicUrl }])
+
+      // 5. Préparation payload pour TON api/send-email.ts existant
+      const emailPayload = {
+        sender: { name: issuerCompanyName || "CloseOS", email: issuerEmail || "no-reply@closeos.com" },
+        to: [{ email: offer.billingEmail, name: offer.billingName || offer.company }],
+        subject: `Votre facture ${invoiceNumber} est disponible`,
+        htmlContent: `
+          <html>
+            <body>
+              <h1>Bonjour,</h1>
+              <p>Veuillez trouver ci-joint votre facture n° <strong>${invoiceNumber}</strong> correspondant à la période du ${new Date(startDate).toLocaleDateString('fr-FR')} au ${new Date(endDate).toLocaleDateString('fr-FR')}.</p>
+              
+              <p>Vous pouvez la télécharger directement via ce lien : <br>
+              <a href="${publicUrl}">👉 Télécharger ma facture (PDF)</a></p>
+              
+              ${generatedLink ? `
+                <br>
+                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                  <p style="margin: 0 0 10px 0;"><strong>💳 Règlement en ligne :</strong></p>
+                  <a href="${generatedLink}" style="background-color: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Payer par Carte Bancaire</a>
+                </div>
+              ` : ''}
+              
+              <br>
+              <p>Cordialement,<br>${issuerCompanyName || "L'équipe"}</p>
+            </body>
+          </html>
+        `,
+        attachment: [
+          {
+            url: publicUrl,
+            name: `${invoiceNumber}.pdf`
+          }
+        ]
+      }
+
+      // 6. Appel API existante
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(emailPayload)
+      })
+
+      if (!response.ok) throw new Error("Erreur lors de l'envoi de l'email")
+
+      alert(`Facture envoyée avec succès à ${offer.billingEmail} !`)
+      onClose()
+
+    } catch (err) {
+      console.error("Erreur envoi email:", err)
+      alert("Une erreur est survenue lors de l'envoi de l'email.")
+    } finally {
+      setIsSendingEmail(false)
+    }
+  }
+  // ---------------------------------------------
+
   const getPaymentMethodLabel = () => {
     const labels = {
       paypal: 'PayPal',
@@ -733,7 +814,7 @@ export function InvoiceGeneratorModal({
         {step === 2 && (
           <div className="p-8">
             {/* Actions */}
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 flex items-center justify-between gap-4">
               <button
                 onClick={() => setStep(1)}
                 className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-300 transition-all hover:bg-slate-700"
@@ -741,13 +822,32 @@ export function InvoiceGeneratorModal({
                 <ChevronLeft className="h-4 w-4" />
                 Modifier
               </button>
-              <button
-                onClick={handleExportPDF}
-                className="flex items-center gap-2 rounded-lg bg-purple-500 px-6 py-2 font-semibold text-white transition-all hover:bg-purple-600"
-              >
-                <Download className="h-4 w-4" />
-                Exporter PDF
-              </button>
+
+              {/* 🚀 AJOUT : BOUTONS ACTIONS */}
+              <div className="flex items-center gap-3">
+                {/* BOUTON EMAIL */}
+                <button
+                  onClick={handleSendEmail}
+                  disabled={!offer.billingEmail || isSendingEmail}
+                  className={`flex items-center gap-2 rounded-lg px-6 py-2 font-semibold text-white transition-all border ${
+                    !offer.billingEmail 
+                      ? 'bg-slate-800/50 border-slate-800 text-slate-500 cursor-not-allowed'
+                      : 'bg-indigo-500 border-indigo-500 hover:bg-indigo-600'
+                  }`}
+                  title={!offer.billingEmail ? "Aucun email client renseigné" : "Envoyer la facture par mail"}
+                >
+                  {isSendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  {isSendingEmail ? 'Envoi...' : 'Envoyer par mail'}
+                </button>
+
+                <button
+                  onClick={handleExportPDF}
+                  className="flex items-center gap-2 rounded-lg bg-purple-500 px-6 py-2 font-semibold text-white transition-all hover:bg-purple-600"
+                >
+                  <Download className="h-4 w-4" />
+                  Exporter PDF
+                </button>
+              </div>
             </div>
 
             {/* Invoice Preview (A4 ratio) */}
