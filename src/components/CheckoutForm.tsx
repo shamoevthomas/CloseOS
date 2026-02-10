@@ -16,10 +16,11 @@ export const CheckoutForm = () => {
   const [error, setError] = useState('');
   const [isVoipSelected, setIsVoipSelected] = useState(false);
 
-  // 👇 NOUVEAUX ÉTATS POUR LE CODE PROMO
-  const [referralCode, setReferralCode] = useState(''); // Ce que l'utilisateur tape
-  const [appliedCode, setAppliedCode] = useState('');   // Le code validé et envoyé
+  // 👇 NOUVEAUX ÉTATS POUR LE CODE PROMO & AFFICHAGE PRIX
+  const [referralCode, setReferralCode] = useState('');
+  const [appliedCode, setAppliedCode] = useState('');
   const [isApplyingCode, setIsApplyingCode] = useState(false);
+  const [displayDiscount, setDisplayDiscount] = useState(0); // Pour stocker le % (ex: 15)
 
   // ÉTATS POUR LES CGV
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
@@ -38,6 +39,14 @@ export const CheckoutForm = () => {
     ? "price_1SzEPo33xpuYLywqhRb738Lv"
     : "price_1SyXw433xpuYLywqpvmyAueZ";
 
+  // 👇 CALCUL DES PRIX D'AFFICHAGE (VISUEL UNIQUEMENT)
+  const basePrice = isYearly ? 25 : 29;
+
+  // Calcul du prix final affiché (si réduction active)
+  const finalPrice = displayDiscount > 0 
+    ? (basePrice * (1 - displayDiscount / 100)).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
+    : basePrice;
+
   // Fonction pour récupérer le Client Secret
   const fetchClientSecret = () => {
     setLoading(true);
@@ -50,7 +59,6 @@ export const CheckoutForm = () => {
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // 👇 ON ENVOIE LE CODE APPLIQUÉ ICI
       body: JSON.stringify({ 
         lineItems, 
         referralCode: appliedCode 
@@ -78,12 +86,25 @@ export const CheckoutForm = () => {
     fetchClientSecret();
   }, [isVoipSelected, isYearly, appliedCode]);
 
+  // 👇 CONFIGURATION DES CODES PROMO (POUR L'AFFICHAGE)
+  const CODE_CONFIG: Record<string, number> = {
+    'TEKA15': 15,
+    // 'SUPER20': 20, 
+  };
+
   // Gestion du clic sur "Appliquer le code"
   const handleApplyCode = () => {
     if (referralCode.trim() !== appliedCode) {
       setIsApplyingCode(true);
-      setAppliedCode(referralCode.trim());
-      // Le useEffect va détecter le changement de appliedCode et relancer fetchClientSecret
+      const cleanCode = referralCode.trim().toUpperCase();
+      setAppliedCode(cleanCode);
+
+      // 👇 LOGIQUE AUTOMATIQUE : Cherche le code dans la config
+      if (CODE_CONFIG[cleanCode]) {
+        setDisplayDiscount(CODE_CONFIG[cleanCode]);
+      } else {
+        setDisplayDiscount(0);
+      }
     }
   };
 
@@ -152,10 +173,31 @@ export const CheckoutForm = () => {
             <div className="bg-blue-600/5 rounded-3xl p-8 border border-blue-500/20 relative overflow-hidden">
                <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">OFFRE LIMITÉE</div>
               
-              <div className="flex items-baseline gap-3 mb-6">
-                <span className="text-6xl font-black text-white">{isYearly ? "25€" : "29€"}</span>
-                <span className="text-2xl text-slate-500 line-through">{isYearly ? "60€" : "69€"}</span>
-                <span className="text-slate-400 font-medium">
+               {/* 👇 AFFICHAGE DU PRIX DYNAMIQUE */}
+              <div className="flex items-baseline gap-3 mb-6 flex-wrap">
+                <span className="text-6xl font-black text-white">{finalPrice}€</span>
+                
+                {/* Cas normal Annuel sans code : on barre le prix de référence (60€ ou 69€) */}
+                {isYearly && displayDiscount === 0 && (
+                  <span className="text-2xl text-slate-500 line-through">60€</span>
+                )}
+                {!isYearly && displayDiscount === 0 && (
+                  <span className="text-2xl text-slate-500 line-through">69€</span>
+                )}
+
+                {/* Cas avec Code Promo : on barre le prix Founder de base */}
+                {displayDiscount > 0 && (
+                   <span className="text-2xl text-slate-500 line-through">{basePrice}€</span>
+                )}
+
+                 {/* Bulle de réduction */}
+                 {displayDiscount > 0 && (
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30 self-center">
+                    -{displayDiscount}%
+                  </span>
+                )}
+
+                <span className="text-slate-400 font-medium w-full sm:w-auto">
                   {isYearly ? "/mois (facturé 300€/an)" : "/mois à vie"}
                 </span>
               </div>
@@ -195,7 +237,7 @@ export const CheckoutForm = () => {
               </div>
             </div>
 
-            {/* 👇 NOUVELLE SECTION CODE PROMO */}
+            {/* 👇 SECTION CODE PROMO */}
             <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
               <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
                 <TicketPercent className="h-4 w-4 text-blue-400" />

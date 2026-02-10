@@ -243,7 +243,7 @@ export const CheckoutStarter = () => {
               <div className="flex gap-3">
                 <input 
                   type="text" 
-                  placeholder="Ex: TEKA15" 
+                  placeholder="Ex: ADMIN15" 
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value)}
                   className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors uppercase placeholder:normal-case"
