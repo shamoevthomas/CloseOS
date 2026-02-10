@@ -7,7 +7,7 @@ import type { IssuerProfile } from './IssuerProfilesModal'
 import { supabase } from '../lib/supabase'
 // @ts-ignore - html2pdf.js doesn't have types
 import html2pdf from 'html2pdf.js'
-import QRCode from 'qrcode' // 👈 AJOUT QRCode
+import QRCode from 'qrcode' // 👈 AJOUT IMPORT QRCODE
 
 interface InvoiceGeneratorModalProps {
   offer: Offer
@@ -334,13 +334,13 @@ export function InvoiceGeneratorModal({
       alert('Veuillez renseigner votre Revtag')
       return
     }
-    // Check Stripe Link manuel seulement si le mode Auto n'est pas utilisé
+    // On relâche la vérif si Stripe Auto est coché
     if (paymentMethod === 'stripe' && !stripeLink && !useStripePayment) {
       alert('Veuillez renseigner votre lien de paiement Stripe')
       return
     }
 
-    // GÉNÉRATION LIEN STRIPE AUTO (Appel Backend)
+    // 🚀 GÉNÉRATION LIEN STRIPE AUTO (Appel Backend)
     if (useStripePayment && stripeAccountId) {
       setIsGeneratingLink(true)
       try {
@@ -352,7 +352,7 @@ export function InvoiceGeneratorModal({
             currency: 'eur',
             title: `Facture ${invoiceNumber}`,
             connectedAccountId: stripeAccountId,
-            clientEmail: offer.billingEmail || ''
+            clientEmail: offer.billingEmail || undefined // 👈 MODIFICATION ICI: "undefined" au lieu de ""
           })
         })
         
