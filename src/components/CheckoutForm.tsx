@@ -25,8 +25,16 @@ export const CheckoutForm = () => {
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [showTermsError, setShowTermsError] = useState(false);
 
-  const [searchParams] = useSearchParams();
+  // 👇 MODIFICATION ICI : On récupère aussi la fonction pour changer l'URL
+  const [searchParams, setSearchParams] = useSearchParams();
   const isYearly = searchParams.get('billing') === 'yearly';
+
+  // Fonction pour basculer le cycle de facturation
+  const handleBillingSwitch = (mode: 'monthly' | 'yearly') => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('billing', mode);
+    setSearchParams(newParams);
+  };
 
   // CONFIGURATION DES PRIX (FOUNDER)
   const PRICE_FOUNDER = isYearly 
@@ -161,6 +169,29 @@ export const CheckoutForm = () => {
                 Rejoignez les premiers membres et sécurisez votre tarif à VIE.
               </p>
             </div>
+
+            {/* 👇 AJOUT DU SWITCH MENSUEL / ANNUEL ICI 👇 */}
+            <div className="flex justify-start">
+              <div className="bg-slate-900/50 p-1.5 rounded-xl border border-slate-800 flex items-center relative gap-1">
+                 <button
+                   onClick={() => handleBillingSwitch('monthly')}
+                   className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${!isYearly ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
+                 >
+                   Mensuel
+                 </button>
+                 <button
+                   onClick={() => handleBillingSwitch('yearly')}
+                   className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${isYearly ? 'bg-blue-600 text-white shadow-lg border border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}
+                 >
+                   Annuel
+                   {/* LA PETITE BULLE -15% */}
+                   <span className="bg-white text-blue-600 text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">
+                     -15%
+                   </span>
+                 </button>
+              </div>
+            </div>
+            {/* 👆 FIN DU SWITCH 👆 */}
 
             <div className="bg-blue-600/5 rounded-3xl p-8 border border-blue-500/20 relative overflow-hidden">
                <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">OFFRE LIMITÉE</div>
