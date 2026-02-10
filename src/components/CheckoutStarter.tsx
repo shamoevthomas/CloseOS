@@ -16,10 +16,11 @@ export const CheckoutStarter = () => {
   const [error, setError] = useState('');
   const [isVoipSelected, setIsVoipSelected] = useState(false);
 
-  // 👇 NOUVEAUX ÉTATS POUR LE CODE PROMO
+  // 👇 NOUVEAUX ÉTATS POUR LE CODE PROMO & AFFICHAGE PRIX
   const [referralCode, setReferralCode] = useState('');
   const [appliedCode, setAppliedCode] = useState('');
   const [isApplyingCode, setIsApplyingCode] = useState(false);
+  const [displayDiscount, setDisplayDiscount] = useState(0); // Pour stocker le % (ex: 15)
 
   // ÉTATS POUR LES CGV
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
@@ -29,21 +30,27 @@ export const CheckoutStarter = () => {
   const [searchParams] = useSearchParams();
   const isYearly = searchParams.get('billing') === 'yearly';
 
-  // CONFIGURATION DES PRIX (Mensuel vs Annuel)
+  // CONFIGURATION DES PRIX
   const PRICE_STARTER = isYearly 
-    ? "price_1Sz1Cj33xpuYLywq7Lkx6GKp" // Annuel
-    : "price_1SyYFA33xpuYLywqHtV34VGE"; // Mensuel
+    ? "price_1Sz1Cj33xpuYLywq7Lkx6GKp" 
+    : "price_1SyYFA33xpuYLywqHtV34VGE"; 
 
   const PRICE_VOIP = isYearly 
-    ? "price_1Sz1Kg33xpuYLywqS5kHdnyU" // Annuel
-    : "price_1SzEPa33xpuYLywq3TKcBIji"; // Mensuel
+    ? "price_1Sz1Kg33xpuYLywqS5kHdnyU" 
+    : "price_1SzEPa33xpuYLywq3TKcBIji"; 
+
+  // 👇 CALCUL DES PRIX D'AFFICHAGE (VISUEL UNIQUEMENT)
+  const basePrice = isYearly ? 33 : 39;
+  
+  // Calcul du prix final affiché (si réduction active)
+  const finalPrice = displayDiscount > 0 
+    ? (basePrice * (1 - displayDiscount / 100)).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
+    : basePrice;
 
   const fetchClientSecret = () => {
     setLoading(true);
-    // On met le produit de base
     const lineItems = [{ price: PRICE_STARTER, quantity: 1 }];
     
-    // Si l'option VoIP est cochée, on l'ajoute à la liste
     if (isVoipSelected) {
       lineItems.push({ price: PRICE_VOIP, quantity: 1 });
     }
@@ -51,7 +58,6 @@ export const CheckoutStarter = () => {
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // 👇 ON ENVOIE LE CODE APPLIQUÉ ICI
       body: JSON.stringify({ 
         lineItems, 
         plan: 'starter',
@@ -75,24 +81,36 @@ export const CheckoutStarter = () => {
       });
   };
 
-  // Recharger le checkout quand l'option, le cycle ou LE CODE change
   useEffect(() => {
     fetchClientSecret();
   }, [isVoipSelected, isYearly, appliedCode]);
+
+  // 👇 CONFIGURATION DES CODES PROMO (POUR L'AFFICHAGE)
+  // Ajoute tes futurs codes ici pour que le % s'affiche correctement
+  const CODE_CONFIG: Record<string, number> = {
+    'TEKA15': 15,
+    // 'SUPER20': 20, 
+  };
 
   // Gestion du clic sur "Appliquer le code"
   const handleApplyCode = () => {
     if (referralCode.trim() !== appliedCode) {
       setIsApplyingCode(true);
-      setAppliedCode(referralCode.trim());
+      const cleanCode = referralCode.trim().toUpperCase();
+      setAppliedCode(cleanCode);
+
+      // 👇 LOGIQUE AUTOMATIQUE : Cherche le code dans la config
+      if (CODE_CONFIG[cleanCode]) {
+        setDisplayDiscount(CODE_CONFIG[cleanCode]);
+      } else {
+        setDisplayDiscount(0);
+      }
     }
   };
 
-  // Fonction de gestion du clic sur l'overlay de protection
   const handleOverlayClick = () => {
     if (!isTermsAccepted) {
       setShowTermsError(true);
-      // Petit scroll vers l'erreur si besoin
       const checkbox = document.getElementById('terms-checkbox');
       checkbox?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -153,14 +171,33 @@ export const CheckoutStarter = () => {
             </div>
 
             <div className="bg-slate-900/40 rounded-3xl p-8 border border-slate-800 relative overflow-hidden">
-              <div className="flex items-baseline gap-3 mb-6">
-                {/* PRIX DYNAMIQUE */}
-                <span className="text-6xl font-black text-white">{isYearly ? "33€" : "39€"}</span>
-                {isYearly && <span className="text-2xl text-slate-500 line-through">39€</span>}
-                <span className="text-slate-400 font-medium">
-                   {isYearly ? "/mois (facturé 396€/an)" : "/mois"}
+              
+              {/* 👇 AFFICHAGE DU PRIX DYNAMIQUE */}
+              <div className="flex items-baseline gap-3 mb-6 flex-wrap">
+                <span className="text-6xl font-black text-white">{finalPrice}€</span>
+                
+                {/* Cas normal Annuel sans code : on barre le prix mensuel (39€) */}
+                {isYearly && displayDiscount === 0 && (
+                  <span className="text-2xl text-slate-500 line-through">39€</span>
+                )}
+
+                {/* Cas avec Code Promo : on barre le prix de base du cycle actuel */}
+                {displayDiscount > 0 && (
+                   <span className="text-2xl text-slate-500 line-through">{basePrice}€</span>
+                )}
+
+                {/* Bulle de réduction */}
+                {displayDiscount > 0 && (
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30 self-center">
+                    -{displayDiscount}%
+                  </span>
+                )}
+
+                <span className="text-slate-400 font-medium w-full sm:w-auto">
+                   {isYearly ? "/mois (facturé annuellement)" : "/mois"}
                 </span>
               </div>
+
               <div className="space-y-4 mb-8">
                 {[
                   "7 jours d'essai gratuit",
@@ -197,7 +234,7 @@ export const CheckoutStarter = () => {
               </div>
             </div>
 
-            {/* 👇 NOUVELLE SECTION CODE PROMO */}
+            {/* SECTION CODE PROMO */}
             <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
               <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
                 <TicketPercent className="h-4 w-4 text-blue-400" />
@@ -206,7 +243,7 @@ export const CheckoutStarter = () => {
               <div className="flex gap-3">
                 <input 
                   type="text" 
-                  placeholder="Ex: ADMIN15" 
+                  placeholder="Ex: TEKA15" 
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value)}
                   className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors uppercase placeholder:normal-case"
