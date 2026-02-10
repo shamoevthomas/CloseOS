@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import {
   User,
   ChevronDown,
-  ChevronRight,
   Phone,
   Mail,
   Calendar,
@@ -12,9 +12,8 @@ import {
   Filter,
   Plus,
   Edit2,
-  LayoutDashboard, // Nouvelle icône pour la vue Kanban
-  List,            // Nouvelle icône pour la vue Liste
-  Tag,
+  LayoutDashboard,
+  List,
   Briefcase
 } from 'lucide-react'
 import { cn } from '../lib/utils'
@@ -25,7 +24,6 @@ import { NoAnswerModal } from '../components/NoAnswerModal'
 import { CreateEventModal } from '../components/CreateEventModal'
 import { ProspectView } from '../components/ProspectView'
 import { CreateProspectModal } from '../components/CreateProspectModal'
-import { useMeetings } from '../contexts/MeetingsContext'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 
@@ -44,45 +42,7 @@ const INACTIVE_STAGES = [
 
 const ALL_STAGES = [...ACTIVE_STAGES, ...INACTIVE_STAGES]
 
-// 🔥 EMERGENCY FALLBACK: Hardcoded mock data
-const DEFAULT_MOCK_DATA: Prospect[] = [
-  {
-    id: 1,
-    title: 'Offre Entreprise - T1',
-    company: 'Tech Innovations Inc',
-    contact: 'Sarah Johnson',
-    email: 'sarah.j@techinno.com',
-    phone: '+33 6 12 34 56 78',
-    value: 15000,
-    stage: 'qualified',
-    probability: 80,
-    source: 'Pub Facebook',
-    offer: 'Pack Enterprise Premium', // Exemple d'offre A
-    firstName: 'Sarah',
-    lastName: 'Johnson',
-    dateAdded: new Date('2025-11-01').toISOString(), // ISO String pour compatibilité
-    lastContact: new Date('2025-12-14T10:30:00').toISOString(),
-  },
-  {
-    id: 2,
-    title: 'Abonnement SaaS',
-    company: 'Digital Ventures',
-    contact: 'Emma Williams',
-    email: 'e.williams@digitalvent.io',
-    phone: '+33 7 98 76 54 32',
-    value: 2200,
-    stage: 'won',
-    probability: 100,
-    source: 'Webinaire',
-    offer: 'SaaS Annuel', // Exemple d'offre B
-    firstName: 'Emma',
-    lastName: 'Williams',
-    dateAdded: new Date('2025-10-15').toISOString(),
-    lastContact: new Date('2025-12-15T09:15:00').toISOString(),
-  },
-]
-
-// AJOUT : Helper pour nettoyer le prix (nécessaire pour le calcul)
+// Helper pour nettoyer le prix
 const parsePrice = (priceString: string): number => {
   if (!priceString) return 0
   const cleaned = priceString.toString().replace(/[^\d.,]/g, '')
@@ -92,6 +52,15 @@ const parsePrice = (priceString: string): number => {
   return isNaN(parsed) ? 0 : parsed
 }
 
+// Helper pour vérifier l'expiration (Importé de la logique Offers)
+const isOfferExpired = (offer: any) => {
+  if (!offer.endDate) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const end = new Date(offer.endDate)
+  return end < today
+}
+
 type ViewMode = 'pipeline' | 'list'
 
 export function Pipeline() {
@@ -99,20 +68,17 @@ export function Pipeline() {
   const { prospects: pipelineDealsFromContext, updateProspect, addProspect, deleteProspect } = useProspects()
   const { offers } = useOffers()
 
-  // 🔥 EMERGENCY FALLBACK
-  const pipelineDeals = pipelineDealsFromContext || DEFAULT_MOCK_DATA
+  const pipelineDeals = pipelineDealsFromContext || []
 
-  // --- NOUVEAU STATE ---
-  const [currentOfferTab, setCurrentOfferTab] = useState<string>('global') // 'global' ou le nom de l'offre
-  const [viewMode, setViewMode] = useState<ViewMode>('pipeline') // Remplace activeTab
-  // ---------------------
-
+  const [currentOfferTab, setCurrentOfferTab] = useState<string>('global')
+  const [viewMode, setViewMode] = useState<ViewMode>('pipeline')
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set(['noshow', 'lost']))
   const [selectedDeal, setSelectedDeal] = useState<Prospect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [stageFilter, setStageFilter] = useState<string>('all')
-  // On supprime filterOffer car c'est géré par les onglets principaux
   const [filterDate, setFilterDate] = useState<string>('all')
+  
+  // Modals state
   const [isNewProspectModalOpen, setIsNewProspectModalOpen] = useState(false)
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false)
   const [isCallSummaryModalOpen, setIsCallSummaryModalOpen] = useState(false)
@@ -121,10 +87,10 @@ export function Pipeline() {
   const [callModeWithAi, setCallModeWithAi] = useState(false)
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
 
-  // Récupérer les offres actives pour les onglets
-  // Si context vide, on extrait les offres uniques des deals pour simuler
+  // --- LOGIQUE DE FILTRAGE DES OFFRES (Modifié) ---
+  // On ne garde que les offres actives et non expirées pour les onglets
   const activeOffers = offers.length > 0 
-    ? offers 
+    ? offers.filter(o => o.status === 'active' && !isOfferExpired(o))
     : Array.from(new Set(pipelineDeals.map(d => d.offer).filter(Boolean))).map(name => ({ id: name, name }))
 
   // Navigation automatique depuis l'agenda
@@ -137,6 +103,23 @@ export function Pipeline() {
     }
   }, [location.state, pipelineDeals])
 
+  // --- GESTION DU DRAG & DROP ---
+  const onDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result
+
+    // Pas de destination ou lâché au même endroit
+    if (!destination) return
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return
+
+    const prospectId = parseInt(draggableId)
+    const newStage = destination.droppableId
+
+    // Mise à jour optimiste via le contexte
+    if (updateProspect) {
+      updateProspect(prospectId, { stage: newStage })
+    }
+  }
+
   const toggleColumn = (stageId: string) => {
     const newCollapsed = new Set(collapsedColumns)
     if (newCollapsed.has(stageId)) {
@@ -147,7 +130,6 @@ export function Pipeline() {
     setCollapsedColumns(newCollapsed)
   }
 
-  // --- 🛠️ HELPER NOM SÉCURISÉ (AJOUT) ---
   const getDisplayName = (deal: Prospect) => {
     if (deal.firstName || deal.lastName) {
       return `${deal.firstName || ''} ${deal.lastName || ''}`.trim()
@@ -155,25 +137,15 @@ export function Pipeline() {
     return deal.contact || 'Prospect sans nom'
   }
 
-  // --- FILTRAGE PRINCIPAL ---
   const getFilteredDeals = () => {
     return (pipelineDeals || []).filter(deal => {
-      // 1. Filtre par Onglet Offre (Le CRM actif)
       const matchesOfferTab = currentOfferTab === 'global' || deal.offer === currentOfferTab
-
-      // Nom complet pour la recherche
       const fullName = getDisplayName(deal)
-
-      // 2. Filtre Recherche textuelle
       const matchesSearch = searchQuery === '' ||
         fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         deal.company?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (deal.offer && deal.offer.toLowerCase().includes(searchQuery.toLowerCase()))
-
-      // 3. Filtre par Stage (Dropdown)
       const matchesStage = stageFilter === 'all' || deal.stage === stageFilter
-
-      // 4. Filtre par Date
       const matchesDate = filterDate === 'all' || (() => {
         const dateStr = deal.created_at || deal.dateAdded
         if (!dateStr) return false
@@ -185,7 +157,6 @@ export function Pipeline() {
       return matchesOfferTab && matchesSearch && matchesStage && matchesDate
     })
   }
-  // --------------------------
 
   const filteredDeals = getFilteredDeals()
 
@@ -193,7 +164,6 @@ export function Pipeline() {
     return filteredDeals.filter(deal => deal.stage === stageId)
   }
 
-  // MODIFICATION : Calcul intelligent du total (prend le prix de la formule si value = 0)
   const getSmartValue = (deal: Prospect) => {
     if ((!deal.value || deal.value === 0) && deal.formula_id) {
        const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
@@ -209,7 +179,6 @@ export function Pipeline() {
     return getDealsForStage(stageId).reduce((sum, deal) => sum + getSmartValue(deal), 0)
   }
 
-  // Helper pour les mois disponibles
   const getAvailableMonths = () => {
     const monthsSet = new Set<string>()
     const monthNames = [
@@ -296,13 +265,12 @@ export function Pipeline() {
   return (
     <div className="flex h-full flex-col p-8">
       
-      {/* --- NOUVEAU HEADER (Onglets Offres & Switch Vue) --- */}
+      {/* HEADER */}
       <div className="mb-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           
-          {/* 1. Onglets des Offres (Les différents CRM) */}
+          {/* Onglets des Offres (Filtrés) */}
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
-            {/* Onglet Global */}
             <button
               onClick={() => setCurrentOfferTab('global')}
               className={cn(
@@ -316,7 +284,6 @@ export function Pipeline() {
               Vue Globale
             </button>
 
-            {/* Onglets par Offre Active */}
             {activeOffers.map((offer) => (
               <button
                 key={offer.name}
@@ -328,7 +295,6 @@ export function Pipeline() {
                     : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
                 )}
               >
-                {/* Petit point de couleur décoratif si tu veux, ou icône */}
                 <span>{offer.name}</span>
                 <span className="ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-950/30 px-1.5 text-xs">
                   {(pipelineDeals || []).filter(d => d.offer === offer.name).length}
@@ -337,10 +303,8 @@ export function Pipeline() {
             ))}
           </div>
 
-          {/* 2. Contrôles Secondaires (Filtres & Mode Vue) */}
+          {/* Contrôles Secondaires */}
           <div className="flex items-center gap-3">
-            
-            {/* Search */}
             <div className="relative hidden md:block w-64">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <input
@@ -352,7 +316,6 @@ export function Pipeline() {
               />
             </div>
 
-            {/* Switch Pipeline / Liste (Remplacement des anciens onglets) */}
             <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800 p-1">
               <button
                 onClick={() => setViewMode('pipeline')}
@@ -386,9 +349,8 @@ export function Pipeline() {
           </div>
         </div>
 
-        {/* Barre de filtres secondaires (Stage / Date) si besoin de plus de contrôle */}
+        {/* Filtres secondaires */}
         <div className="mt-4 flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
-          {/* Filtre Stage */}
           <div className="relative">
             <select
               value={stageFilter}
@@ -401,7 +363,6 @@ export function Pipeline() {
             <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500 pointer-events-none" />
           </div>
 
-          {/* Filtre Date */}
           <div className="relative">
             <select
               value={filterDate}
@@ -419,177 +380,196 @@ export function Pipeline() {
 
       {/* --- CONTENT AREA --- */}
       {viewMode === 'pipeline' ? (
-        <div className="flex-1 space-y-8 overflow-y-auto pr-2">
-          
-          {/* FLUX ACTIF */}
-          <div>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">Flux Actif</h2>
-              <span className="text-xs text-slate-500">
-                {ACTIVE_STAGES.reduce((sum, stage) => sum + getDealsForStage(stage.id).length, 0)} prospects
-              </span>
-            </div>
+        // WRAPPER DRAG & DROP
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="flex-1 space-y-8 overflow-y-auto pr-2">
+            
+            {/* FLUX ACTIF */}
+            <div>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">Flux Actif</h2>
+                <span className="text-xs text-slate-500">
+                  {ACTIVE_STAGES.reduce((sum, stage) => sum + getDealsForStage(stage.id).length, 0)} prospects
+                </span>
+              </div>
 
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {ACTIVE_STAGES.map((stage) => {
-                const stageDeals = getDealsForStage(stage.id)
-                const stageTotal = getTotalForStage(stage.id)
-                const isCollapsed = collapsedColumns.has(stage.id)
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                {ACTIVE_STAGES.map((stage) => {
+                  const stageDeals = getDealsForStage(stage.id)
+                  const stageTotal = getTotalForStage(stage.id)
+                  const isCollapsed = collapsedColumns.has(stage.id)
 
-                return (
-                  <div
-                    key={stage.id}
-                    className={cn(
-                      'flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 transition-all duration-300',
-                      isCollapsed ? 'w-16' : 'w-80 shrink-0'
-                    )}
-                  >
-                    {/* Header Colonne */}
-                    <div 
-                      onClick={() => toggleColumn(stage.id)}
-                      className="cursor-pointer border-b border-slate-800 p-3 hover:bg-slate-800/50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.color)} />
-                        {!isCollapsed && (
-                          <span className="text-xs font-semibold text-slate-500">
-                            {stageDeals.length}
-                          </span>
-                        )}
-                      </div>
-                      
-                      {!isCollapsed && (
-                        <div className="mt-2">
-                          <h3 className="font-semibold text-slate-200">{stage.name}</h3>
-                          <p className="text-xs font-medium text-blue-400 mt-0.5">
-                            <MaskedText value={`${stageTotal.toLocaleString()}€`} type="number" />
-                          </p>
-                        </div>
+                  return (
+                    <div
+                      key={stage.id}
+                      className={cn(
+                        'flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 transition-all duration-300',
+                        isCollapsed ? 'w-16' : 'w-80 shrink-0'
                       )}
-                    </div>
-
-                    {/* Cartes Prospects */}
-                    {!isCollapsed && (
-                      <div className="flex-1 space-y-3 overflow-y-auto p-3 min-h-[150px]">
-                        {stageDeals.map((deal) => {
-                          // Détecter B2B pour l'affichage
-                          const isB2B = deal.company && deal.company !== 'N/A'
-                          const displayName = getDisplayName(deal) // ✅ FIX: Utilisation du helper
-                          const mainTitle = isB2B ? deal.company : displayName
-                          
-                          // --- MODIFICATION ICI : CALCUL DE L'AFFICHAGE ---
-                          let displayValue = deal.value || 0
-                          let displayOfferName = deal.offer
-
-                          // Si 0 et formule, on cherche le vrai prix dans le catalogue
-                          if ((displayValue === 0) && deal.formula_id) {
-                             const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
-                             if (parentOffer && parentOffer.formulas) {
-                                const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
-                                if (formula) {
-                                   displayValue = parsePrice(formula.price)
-                                   displayOfferName = `${parentOffer.name} - ${formula.name}`
-                                }
-                             }
-                          }
-                          // ------------------------------------------------
-
-                          const subTitle = isB2B ? displayName : displayOfferName
-
-                          return (
-                            <div
-                              key={deal.id}
-                              onClick={() => handleOpenDeal(deal)}
-                              className="group relative cursor-pointer rounded-lg border border-slate-800 bg-slate-800/40 p-3 shadow-sm transition-all hover:border-blue-500/50 hover:bg-slate-800 hover:shadow-md hover:-translate-y-1"
-                            >
-                              {/* Barre latérale couleur stage (optionnel) */}
-                              <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-50", stage.color)}></div>
-
-                              <div className="pl-3">
-                                <h4 className="font-medium text-slate-200 group-hover:text-white truncate">
-                                  <MaskedText value={mainTitle || 'Sans nom'} type="name" />
-                                </h4>
-                                
-                                <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                                  {isB2B ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
-                                  <span className="truncate">
-                                     <MaskedText value={subTitle || ''} type="name" />
-                                  </span>
-                                </div>
-
-                                <div className="mt-3 flex items-center justify-between border-t border-slate-700/50 pt-2">
-                                  <span className="text-xs font-semibold text-blue-400">
-                                    <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
-                                  </span>
-                                  
-                                  {/* Petit badge Offre si on est en vue globale */}
-                                  {currentOfferTab === 'global' && displayOfferName && (
-                                    <span className="max-w-[80px] truncate rounded bg-slate-950 px-1.5 py-0.5 text-[10px] text-slate-500">
-                                      {displayOfferName}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                        {stageDeals.length === 0 && (
-                          <div className="flex h-20 items-center justify-center rounded border border-dashed border-slate-800/50 bg-slate-900/20">
-                            <span className="text-xs text-slate-600">Vide</span>
+                    >
+                      {/* Header Colonne */}
+                      <div 
+                        onClick={() => toggleColumn(stage.id)}
+                        className="cursor-pointer border-b border-slate-800 p-3 hover:bg-slate-800/50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.color)} />
+                          {!isCollapsed && (
+                            <span className="text-xs font-semibold text-slate-500">
+                              {stageDeals.length}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {!isCollapsed && (
+                          <div className="mt-2">
+                            <h3 className="font-semibold text-slate-200">{stage.name}</h3>
+                            <p className="text-xs font-medium text-blue-400 mt-0.5">
+                              <MaskedText value={`${stageTotal.toLocaleString()}€`} type="number" />
+                            </p>
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
 
-          {/* FLUX INACTIF (Design allégé) */}
-          <div className="pt-4 border-t border-slate-800/50">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-600">Flux Inactif</h2>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {INACTIVE_STAGES.map((stage) => {
-                const stageDeals = getDealsForStage(stage.id)
-                const isCollapsed = collapsedColumns.has(stage.id)
-                return (
-                  <div
-                    key={stage.id}
-                    className={cn(
-                      'flex flex-col rounded-xl border border-slate-800/30 bg-slate-900/20 transition-all',
-                      isCollapsed ? 'w-16' : 'w-72 shrink-0'
-                    )}
-                  >
-                     <div 
-                      onClick={() => toggleColumn(stage.id)}
-                      className="cursor-pointer border-b border-slate-800/30 p-3 hover:bg-slate-800/30"
-                    >
-                       <div className="flex items-center justify-between">
-                        <div className={cn('h-2 w-2 rounded-full opacity-50', stage.color)} />
-                        {!isCollapsed && <span className="text-xs text-slate-600">{stageDeals.length}</span>}
-                      </div>
-                      {!isCollapsed && <h3 className="mt-1 font-semibold text-slate-500">{stage.name}</h3>}
+                      {/* ZONE DROPPABLE */}
+                      {!isCollapsed && (
+                        <Droppable droppableId={stage.id}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className={cn(
+                                "flex-1 space-y-3 overflow-y-auto p-3 min-h-[150px] transition-colors",
+                                snapshot.isDraggingOver ? "bg-slate-800/30" : ""
+                              )}
+                            >
+                              {stageDeals.map((deal, index) => {
+                                const isB2B = deal.company && deal.company !== 'N/A'
+                                const displayName = getDisplayName(deal)
+                                const mainTitle = isB2B ? deal.company : displayName
+                                
+                                let displayValue = deal.value || 0
+                                let displayOfferName = deal.offer
+
+                                if ((displayValue === 0) && deal.formula_id) {
+                                   const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
+                                   if (parentOffer && parentOffer.formulas) {
+                                      const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
+                                      if (formula) {
+                                         displayValue = parsePrice(formula.price)
+                                         displayOfferName = `${parentOffer.name} - ${formula.name}`
+                                      }
+                                   }
+                                }
+
+                                const subTitle = isB2B ? displayName : displayOfferName
+
+                                return (
+                                  <Draggable key={deal.id} draggableId={deal.id.toString()} index={index}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        onClick={() => handleOpenDeal(deal)}
+                                        className={cn(
+                                          "group relative cursor-pointer rounded-lg border border-slate-800 bg-slate-800/40 p-3 shadow-sm transition-all hover:border-blue-500/50 hover:bg-slate-800 hover:shadow-md hover:-translate-y-1",
+                                          snapshot.isDragging ? "opacity-90 rotate-2 scale-105 z-50 shadow-2xl" : ""
+                                        )}
+                                        style={provided.draggableProps.style}
+                                      >
+                                        <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-50", stage.color)}></div>
+
+                                        <div className="pl-3">
+                                          <h4 className="font-medium text-slate-200 group-hover:text-white truncate">
+                                            <MaskedText value={mainTitle || 'Sans nom'} type="name" />
+                                          </h4>
+                                          
+                                          <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                            {isB2B ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                                            <span className="truncate">
+                                               <MaskedText value={subTitle || ''} type="name" />
+                                            </span>
+                                          </div>
+
+                                          <div className="mt-3 flex items-center justify-between border-t border-slate-700/50 pt-2">
+                                            <span className="text-xs font-semibold text-blue-400">
+                                              <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
+                                            </span>
+                                            
+                                            {currentOfferTab === 'global' && displayOfferName && (
+                                              <span className="max-w-[80px] truncate rounded bg-slate-950 px-1.5 py-0.5 text-[10px] text-slate-500">
+                                                {displayOfferName}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                )
+                              })}
+                              {provided.placeholder}
+                              {stageDeals.length === 0 && (
+                                <div className="flex h-20 items-center justify-center rounded border border-dashed border-slate-800/50 bg-slate-900/20">
+                                  <span className="text-xs text-slate-600">Vide</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </Droppable>
+                      )}
                     </div>
-
-                    {!isCollapsed && (
-                      <div className="space-y-2 p-2 max-h-[300px] overflow-y-auto">
-                         {stageDeals.map((deal) => (
-                           <div key={deal.id} onClick={() => handleOpenDeal(deal)} className="cursor-pointer rounded border border-slate-800/30 bg-slate-900/40 p-2 opacity-60 hover:opacity-100">
-                             <p className="text-sm text-slate-400"><MaskedText value={getDisplayName(deal)} type="name" /></p>
-                           </div>
-                         ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-          </div>
 
-        </div>
+            {/* FLUX INACTIF (Sans Drag & Drop pour l'instant, ou design allégé) */}
+            <div className="pt-4 border-t border-slate-800/50">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-600">Flux Inactif</h2>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                {INACTIVE_STAGES.map((stage) => {
+                  const stageDeals = getDealsForStage(stage.id)
+                  const isCollapsed = collapsedColumns.has(stage.id)
+                  return (
+                    <div
+                      key={stage.id}
+                      className={cn(
+                        'flex flex-col rounded-xl border border-slate-800/30 bg-slate-900/20 transition-all',
+                        isCollapsed ? 'w-16' : 'w-72 shrink-0'
+                      )}
+                    >
+                       <div 
+                        onClick={() => toggleColumn(stage.id)}
+                        className="cursor-pointer border-b border-slate-800/30 p-3 hover:bg-slate-800/30"
+                      >
+                         <div className="flex items-center justify-between">
+                          <div className={cn('h-2 w-2 rounded-full opacity-50', stage.color)} />
+                          {!isCollapsed && <span className="text-xs text-slate-600">{stageDeals.length}</span>}
+                        </div>
+                        {!isCollapsed && <h3 className="mt-1 font-semibold text-slate-500">{stage.name}</h3>}
+                      </div>
+
+                      {!isCollapsed && (
+                        <div className="space-y-2 p-2 max-h-[300px] overflow-y-auto">
+                           {stageDeals.map((deal) => (
+                             <div key={deal.id} onClick={() => handleOpenDeal(deal)} className="cursor-pointer rounded border border-slate-800/30 bg-slate-900/40 p-2 opacity-60 hover:opacity-100">
+                               <p className="text-sm text-slate-400"><MaskedText value={getDisplayName(deal)} type="name" /></p>
+                             </div>
+                           ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+          </div>
+        </DragDropContext>
       ) : (
         /* --- VUE LISTE (TABLEAU) --- */
         <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
@@ -608,7 +588,6 @@ export function Pipeline() {
                 {filteredDeals.map((deal) => {
                    const stageInfo = getStageInfo(deal.stage)
                    
-                   // MODIFICATION ICI AUSSI (Vue Liste)
                    let displayValue = deal.value || 0
                    let displayOfferName = deal.offer
 
@@ -671,7 +650,7 @@ export function Pipeline() {
         </div>
       )}
 
-      {/* --- MODALS & OVERLAYS (Inchangés) --- */}
+      {/* MODALS */}
       {selectedDeal && (
         <ProspectView
           prospect={selectedDeal}
@@ -694,7 +673,7 @@ export function Pipeline() {
             probability: 40,
             dateAdded: new Date(),
             lastContact: new Date(),
-            offer: currentOfferTab !== 'global' ? currentOfferTab : prospectData.offer // Pré-remplir l'offre si on est dans un onglet spécifique
+            offer: currentOfferTab !== 'global' ? currentOfferTab : prospectData.offer 
           })
           setIsNewProspectModalOpen(false)
         }}
@@ -704,7 +683,6 @@ export function Pipeline() {
         isOpen={isVideoCallOpen}
         onClose={() => setIsVideoCallOpen(false)}
         onCallEnd={handleCallEnd}
-        // ✅ FIX CRASH : Utilisation de getDisplayName et protection sur charAt
         prospectName={selectedDeal ? getDisplayName(selectedDeal) : ''}
         prospectAvatar={selectedDeal ? getDisplayName(selectedDeal).charAt(0) : '?'}
         initialAiEnabled={callModeWithAi}
@@ -714,7 +692,6 @@ export function Pipeline() {
         isOpen={isCallSummaryModalOpen}
         onClose={() => setIsCallSummaryModalOpen(false)}
         onSubmit={handleCallSummarySubmit}
-        // ✅ FIX DISPLAY NAME
         prospectName={selectedDeal ? getDisplayName(selectedDeal) : ''}
         offerPrice={selectedDeal?.value || 1500}
       />
@@ -723,7 +700,6 @@ export function Pipeline() {
         isOpen={isNoAnswerModalOpen}
         onClose={() => setIsNoAnswerModalOpen(false)}
         onMarkAsNoShow={handleMarkAsNoShow}
-        // ✅ FIX DISPLAY NAME
         prospectName={selectedDeal ? getDisplayName(selectedDeal) : ''}
       />
 
@@ -731,7 +707,6 @@ export function Pipeline() {
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
         prospectId={selectedDeal?.id}
-        // ✅ FIX DISPLAY NAME
         prospectName={selectedDeal ? getDisplayName(selectedDeal) : ''}
       />
 
@@ -750,5 +725,4 @@ export function Pipeline() {
   )
 }
 
-// Composant icône manquant importé au début
 function Building2(props: any) { return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M16 18h.01"/></svg>}
