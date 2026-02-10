@@ -26,7 +26,8 @@ import {
   Building2,
   PlusCircle,
   Sheet,
-  Clock 
+  Clock,
+  ArrowDown // J'ai ajouté cette icône pour la bulle
 } from 'lucide-react'
 
 export function LandingPage() {
@@ -50,7 +51,7 @@ export function LandingPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 overflow-x-hidden">
+    <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 overflow-x-hidden relative">
       
       {/* BANDEAU OFFRE */}
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
@@ -820,6 +821,16 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+
+       {/* AJOUT DE LA BULLE FLOTTANTE ICI */}
+      <a
+        href="#pricing"
+        className="fixed bottom-6 right-6 z-[90] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl shadow-blue-500/30 transition-all duration-300 hover:scale-110 hover:bg-blue-500 active:scale-95 animate-in fade-in slide-in-from-bottom-10 delay-700 group"
+        aria-label="Aller aux tarifs"
+      >
+         <ArrowDown className="h-6 w-6 group-hover:animate-bounce" />
+      </a>
+
     </div>
   )
 }
