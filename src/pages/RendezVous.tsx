@@ -65,6 +65,7 @@ export function RendezVous() {
   const [isLoadingEvents, setIsLoadingEvents] = useState(false)
   
   // États Modales
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   
@@ -77,7 +78,7 @@ export function RendezVous() {
   // États pour Édition
   const [editingEvent, setEditingEvent] = useState<EventTypeData | null>(null)
   const [isUpdatingEvent, setIsUpdatingEvent] = useState(false)
-  const [noticeUnit, setNoticeUnit] = useState<'minutes' | 'hours'>('minutes') // Helper pour l'UI
+  const [noticeUnit, setNoticeUnit] = useState<'minutes' | 'hours'>('minutes')
 
   // États Webhook
   const [webhookCopied, setWebhookCopied] = useState(false)
@@ -170,7 +171,6 @@ export function RendezVous() {
 
   // 5. Ouvrir Modale Édition
   const handleOpenEdit = (evt: any) => {
-    // Conversion minutes/heures pour l'affichage préavis
     const notice = evt.minimumBookingNotice || 0
     let unit: 'minutes' | 'hours' = 'minutes'
     let value = notice
@@ -185,7 +185,7 @@ export function RendezVous() {
       slug: evt.slug,
       length: evt.length,
       description: evt.description || '',
-      locations: evt.locations || [{ type: 'integrations:daily' }], // Valeur par défaut
+      locations: evt.locations || [{ type: 'integrations:daily' }],
       beforeEventBuffer: evt.beforeEventBuffer || 0,
       afterEventBuffer: evt.afterEventBuffer || 0,
       minimumBookingNotice: value,
@@ -200,7 +200,6 @@ export function RendezVous() {
     if (!editingEvent) return
     setIsUpdatingEvent(true)
     try {
-        // Recalcul du préavis en minutes
         const noticeInMinutes = noticeUnit === 'hours' 
             ? editingEvent.minimumBookingNotice * 60 
             : editingEvent.minimumBookingNotice
@@ -210,7 +209,7 @@ export function RendezVous() {
             slug: editingEvent.slug,
             length: Number(editingEvent.length),
             description: editingEvent.description,
-            locations: editingEvent.locations, // Envoi direct de l'objet locations bien formé
+            locations: editingEvent.locations,
             beforeEventBuffer: Number(editingEvent.beforeEventBuffer),
             afterEventBuffer: Number(editingEvent.afterEventBuffer),
             minimumBookingNotice: Number(noticeInMinutes),
@@ -224,11 +223,10 @@ export function RendezVous() {
         })
 
         if (!response.ok) throw new Error('Erreur mise à jour')
-        
         await fetchEventTypes(calApiKey)
         setIsEditModalOpen(false)
     } catch (error) {
-        alert("Erreur lors de la mise à jour de l'événement. Vérifiez les champs.")
+        alert("Erreur lors de la mise à jour.")
         console.error(error)
     } finally {
         setIsUpdatingEvent(false)
@@ -308,97 +306,134 @@ export function RendezVous() {
   return (
     <div className="h-full overflow-y-auto bg-slate-950 p-8 text-left">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Gestion des Rendez-vous</h1>
-          <p className="text-slate-400">Gérez vos liens de réservation et synchronisez votre agenda Cal.com.</p>
-        </div>
-
-        {/* --- CONFIGURATION API --- */}
-        <div className="mb-12 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg space-y-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-black font-bold text-xl">C</div>
-              <div><h2 className="text-xl font-bold text-white">1. Clé API Cal.com</h2><p className="text-sm text-slate-400 mt-1 max-w-lg">Entrez votre Clé API pour gérer vos liens.</p></div>
-            </div>
-            <div className="flex flex-col gap-2 w-full md:w-auto">
-              <div className="flex items-center gap-2">
-                <input type="password" value={calApiKey} onChange={(e) => setCalApiKey(e.target.value)} placeholder="cal_..." className="block w-full md:w-80 rounded-lg border border-slate-700 bg-slate-950 py-2.5 px-4 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                <button onClick={handleSaveApiKey} disabled={isSavingKey || !calApiKey} className="flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-black hover:bg-slate-200 disabled:opacity-50 transition-all">{isSavingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {keySaveSuccess ? 'Sauvegardé' : 'Enregistrer'}</button>
-              </div>
-            </div>
+        <div className="mb-8 flex items-end justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Rendez-vous</h1>
+            <p className="text-slate-400">Consultez vos rendez-vous et gérez votre agenda.</p>
           </div>
-
-          {/* --- LISTE DES EVENTS --- */}
-          {calApiKey && (
-            <div className="border-t border-slate-800 pt-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 font-bold text-xl"><LinkIcon className="h-6 w-6" /></div>
-                  <div><h2 className="text-xl font-bold text-white">2. Vos Types d'Événements</h2><p className="text-sm text-slate-400 mt-1">Vos liens de réservation actifs.</p></div>
-                </div>
-                <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"><Plus className="h-4 w-4" /> Nouveau</button>
-              </div>
-
-              {isLoadingEvents ? (<div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-slate-500" /></div>) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {eventTypes.map(evt => (
-                    <div key={evt.id} className="group relative rounded-xl border border-slate-800 bg-slate-950 p-5 hover:border-slate-700 transition-all flex flex-col justify-between">
-                      <div>
-                        <div className="flex justify-between items-start mb-3">
-                          <span className="inline-block rounded bg-slate-800 px-2 py-1 text-xs font-bold text-slate-400">{evt.length} min</span>
-                          <div className="flex gap-2">
-                             <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-white" title="Ouvrir le lien"><ExternalLink className="h-4 w-4"/></a>
-                          </div>
-                        </div>
-                        <h3 className="font-bold text-white text-lg mb-1">{evt.title}</h3>
-                        <p className="text-xs text-slate-500 font-mono mb-4">/{evt.slug}</p>
-                      </div>
-                      
-                      {/* --- BOUTONS D'ACTION SUR LA CARTE --- */}
-                      <div className="flex gap-2 mt-auto border-t border-slate-800 pt-3">
-                        <button 
-                            onClick={() => handleCopyLink(evt.slug, evt.id)} 
-                            className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-slate-800 py-2 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-                        >
-                            {linkCopiedId === evt.id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />} Copier
-                        </button>
-                        <button 
-                            onClick={() => handleOpenEdit(evt)}
-                            className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-600/10 py-2 text-xs font-bold text-blue-400 hover:bg-blue-600/20 transition-colors"
-                        >
-                            <Edit2 className="h-3 w-3" /> Modifier
-                        </button>
-                        <a 
-                            href={`https://app.cal.com/event-types/${evt.id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center justify-center rounded-lg bg-slate-800 px-3 text-slate-400 hover:text-white hover:bg-slate-700"
-                            title="Paramètres avancés sur Cal.com"
-                        >
-                            <Settings className="h-4 w-4" />
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                  {eventTypes.length === 0 && (<div className="col-span-full text-center py-8 text-slate-500 italic border border-dashed border-slate-800 rounded-xl">Aucun événement. Créez-en un !</div>)}
-                </div>
-              )}
-            </div>
-          )}
-
-          {calApiKey && (
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 border-t border-slate-800 pt-8">
-              <div className="flex items-start gap-4"><div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-600/20 text-purple-400 font-bold text-xl"><Webhook className="h-6 w-6" /></div><div><h2 className="text-xl font-bold text-white">3. Synchronisation (Webhook)</h2><p className="text-sm text-slate-400 mt-1 max-w-lg">Requis pour recevoir les réservations dans le Cockpit.</p></div></div>
-              <div className="w-full md:w-auto"><div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg p-2 pl-4"><code className="text-xs font-mono text-purple-300 truncate max-w-[250px] md:max-w-md select-all">{webhookUrl}</code><button onClick={handleCopyWebhook} className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors" title="Copier l'URL">{webhookCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}</button></div></div>
-            </div>
-          )}
+          {/* BOUTON D'OUVERTURE DE LA CONFIGURATION */}
+          <button 
+            onClick={() => setIsConfigModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl bg-slate-800 border border-slate-700 px-5 py-3 text-sm font-bold text-white hover:bg-slate-700 transition-all shadow-lg hover:shadow-slate-700/20"
+          >
+            <Settings className="h-4 w-4" /> Configurer les Booking
+          </button>
         </div>
 
+        {/* --- SECTION 2: TYPES D'EVENEMENTS (RESTE SUR LA PAGE PRINCIPALE) --- */}
+        {calApiKey && (
+            <div className="mb-12">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 font-bold text-xl"><LinkIcon className="h-6 w-6" /></div>
+                        <div><h2 className="text-xl font-bold text-white">Vos Liens de Réservation</h2><p className="text-sm text-slate-400 mt-1">Vos types d'événements actifs sur Cal.com.</p></div>
+                    </div>
+                    <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"><Plus className="h-4 w-4" /> Nouveau</button>
+                </div>
+                
+                {isLoadingEvents ? (<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-slate-500" /></div>) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {eventTypes.map(evt => (
+                        <div key={evt.id} className="group relative rounded-xl border border-slate-800 bg-slate-900 p-5 hover:border-slate-700 transition-all flex flex-col justify-between hover:shadow-lg hover:shadow-black/20">
+                        <div>
+                            <div className="flex justify-between items-start mb-3">
+                            <span className="inline-block rounded bg-slate-800 px-2 py-1 text-xs font-bold text-slate-400">{evt.length} min</span>
+                            <div className="flex gap-2">
+                                <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-white" title="Ouvrir le lien"><ExternalLink className="h-4 w-4"/></a>
+                            </div>
+                            </div>
+                            <h3 className="font-bold text-white text-lg mb-1">{evt.title}</h3>
+                            <p className="text-xs text-slate-500 font-mono mb-4">/{evt.slug}</p>
+                        </div>
+                        
+                        <div className="flex gap-2 mt-auto border-t border-slate-800 pt-3">
+                            <button 
+                                onClick={() => handleCopyLink(evt.slug, evt.id)} 
+                                className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-slate-800 py-2 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                            >
+                                {linkCopiedId === evt.id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />} Copier
+                            </button>
+                            <button 
+                                onClick={() => handleOpenEdit(evt)}
+                                className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-600/10 py-2 text-xs font-bold text-blue-400 hover:bg-blue-600/20 transition-colors"
+                            >
+                                <Edit2 className="h-3 w-3" /> Modifier
+                            </button>
+                            <a 
+                                href={`https://app.cal.com/event-types/${evt.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center justify-center rounded-lg bg-slate-800 px-3 text-slate-400 hover:text-white hover:bg-slate-700"
+                                title="Paramètres avancés sur Cal.com"
+                            >
+                                <Settings className="h-4 w-4" />
+                            </a>
+                        </div>
+                        </div>
+                    ))}
+                    {eventTypes.length === 0 && (<div className="col-span-full text-center py-12 text-slate-500 italic border border-dashed border-slate-800 rounded-xl bg-slate-900/50">Aucun événement trouvé. Créez-en un !</div>)}
+                    </div>
+                )}
+            </div>
+        )}
+
+        {/* --- CONTENU PRINCIPAL : LES TABLEAUX --- */}
         <MeetingTable data={upcomingMeetings} title="Rendez-vous à venir" icon={Calendar} emptyText="Aucun rendez-vous synchronisé." />
         <MeetingTable data={pastMeetings} title="Historique" icon={History} emptyText="Aucun historique disponible." showDeleteAction={true} />
       </div>
 
-      {/* --- MODALE CRÉATION (Simple) --- */}
+      {/* --- GRANDE MODALE DE CONFIGURATION CAL.COM (API & Webhook) --- */}
+      {isConfigModalOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsConfigModalOpen(false)} />
+            <div className="relative w-full max-w-2xl rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl flex flex-col animate-in fade-in zoom-in-95 overflow-hidden">
+                
+                {/* Header Modale */}
+                <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900 z-10">
+                    <div>
+                        <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center text-black font-bold">C</div>
+                            Configuration Cal.com
+                        </h2>
+                        <p className="text-slate-400 text-sm mt-1">Paramètres de connexion et synchronisation.</p>
+                    </div>
+                    <button onClick={() => setIsConfigModalOpen(false)} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
+                        <X className="h-6 w-6" />
+                    </button>
+                </div>
+
+                {/* Corps Modale */}
+                <div className="p-8 space-y-8 bg-slate-950/50">
+                    
+                    {/* 1. Clé API */}
+                    <section>
+                         <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-wider">1. Clé API</h3>
+                         <div className="flex flex-col gap-2">
+                             <input type="password" value={calApiKey} onChange={(e) => setCalApiKey(e.target.value)} placeholder="cal_..." className="block w-full rounded-lg border border-slate-700 bg-slate-900 py-3 px-4 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                             <button onClick={handleSaveApiKey} disabled={isSavingKey || !calApiKey} className="w-full flex justify-center items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-bold text-black hover:bg-slate-200 disabled:opacity-50 transition-all">{isSavingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {keySaveSuccess ? 'Sauvegardé' : 'Enregistrer la clé'}</button>
+                             <p className="text-xs text-slate-500 mt-1">Nécessaire pour lire et modifier vos liens de réservation.</p>
+                         </div>
+                    </section>
+
+                    <hr className="border-slate-800" />
+
+                    {/* 2. Webhook */}
+                    {calApiKey && (
+                        <section>
+                             <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-wider">2. Synchronisation (Webhook)</h3>
+                             <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg p-2 pl-4">
+                                <code className="text-xs font-mono text-purple-300 truncate flex-1 select-all">{webhookUrl}</code>
+                                <button onClick={handleCopyWebhook} className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors" title="Copier l'URL">{webhookCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}</button>
+                             </div>
+                             <p className="text-xs text-slate-500 mt-2">Ajoutez cette URL dans vos Webhooks Cal.com pour recevoir les réservations.</p>
+                        </section>
+                    )}
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* --- MODALE CRÉATION (Z-50) --- */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
@@ -414,7 +449,7 @@ export function RendezVous() {
         </div>
       )}
 
-      {/* --- MODALE ÉDITION COMPLÈTE (Advanced) --- */}
+      {/* --- MODALE ÉDITION COMPLÈTE (Z-50) --- */}
       {isEditModalOpen && editingEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
@@ -446,19 +481,15 @@ export function RendezVous() {
                         <textarea rows={3} value={editingEvent.description} onChange={(e) => setEditingEvent({...editingEvent, description: e.target.value})} className="w-full rounded-lg bg-slate-950 border border-slate-700 py-2 px-4 text-white focus:border-blue-500 outline-none resize-none" />
                      </div>
                      
-                     {/* 🚀 CORRECTION GESTION DES LIEUX */}
                      <div className="col-span-2">
                         <label className="block text-xs font-bold text-slate-500 mb-1">Lieu / Location</label>
                         <div className="space-y-3">
-                           {/* 1. Le Sélecteur */}
                            <div className="p-3 rounded-lg border border-slate-700 bg-slate-950 text-slate-400 text-xs flex items-center gap-2">
                               <MapPin className="h-4 w-4" />
                               <select 
                                 className="bg-transparent outline-none w-full text-white cursor-pointer"
                                 onChange={(e) => {
                                    const newType = e.target.value
-                                   // On conserve l'ancien objet pour ne pas écraser address/link si on rechange, 
-                                   // mais idéalement on nettoie les champs inutiles
                                    const currentLoc = editingEvent.locations[0] || {}
                                    setEditingEvent({
                                       ...editingEvent, 
@@ -487,7 +518,6 @@ export function RendezVous() {
                               </select>
                            </div>
 
-                           {/* 2. Champs conditionnels (INPUTS) */}
                            {editingEvent.locations[0]?.type === 'in_person' && (
                               <div className="animate-in fade-in slide-in-from-top-2">
                                  <label className="block text-[10px] font-bold text-blue-400 uppercase mb-1">Adresse exacte du RDV</label>
@@ -545,7 +575,7 @@ export function RendezVous() {
 
                <hr className="border-slate-800" />
 
-               {/* 2. PARAMÈTRES AVANCÉS (Screen 2) */}
+               {/* 2. PARAMÈTRES AVANCÉS */}
                <section className="space-y-4">
                   <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2"><Clock className="h-4 w-4"/> Disponibilités & Limites</h4>
                   <div className="grid grid-cols-2 gap-6">
