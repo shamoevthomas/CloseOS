@@ -86,7 +86,7 @@ export function RendezVous() {
   const [webhookCopied, setWebhookCopied] = useState(false)
   const [linkCopiedId, setLinkCopiedId] = useState<number | null>(null)
   const [calBookings, setCalBookings] = useState<any[]>([])
-  const [isSyncing, setIsSyncing] = useState(false) // Pour le bouton refresh
+  const [isSyncing, setIsSyncing] = useState(false) 
 
   // États pour la gestion des meetings (Tableaux)
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
@@ -111,64 +111,79 @@ export function RendezVous() {
         setCalApiKey(data.cal_api_key)
         fetchEventTypes(data.cal_api_key)
         fetchCalProfile(data.cal_api_key)
-        fetchCalBookings(data.cal_api_key)
+        fetchCalBookings(data.cal_api_key, false) // Chargement silencieux au démarrage
       }
     }
     fetchProfile()
   }, [user])
 
-  // --- AUTOMATISATION : Mise à jour en base de données des statuts annulés ---
-  useEffect(() => {
-    const syncStatusesToDb = async () => {
-        if (!meetings || meetings.length === 0 || !calBookings || calBookings.length === 0) return;
+  // --- FONCTION DE SYNCHRONISATION PUISSANTE ---
+  const runDeepSync = async (bookings: any[]) => {
+    if (!meetings || meetings.length === 0 || !bookings || bookings.length === 0) return 0;
 
-        const normalize = (str: string) => str ? str.toLowerCase().replace(/[^a-z0-9@]/g, '') : '';
-        let updatesCount = 0;
+    // Normalisation agressive (minuscule, sans accents, sans caractères spéciaux)
+    const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '') : '';
+    let updatesCount = 0;
 
-        for (const m of meetings) {
-            // Ne pas traiter si déjà annulé ou terminé
-            if (['annulé', 'cancelled', 'rejected', 'terminé'].includes((m.status || '').toLowerCase())) continue;
+    console.log("🔄 Démarrage Deep Sync...");
 
-            const dbDate = parseISO(m.date);
+    for (const m of meetings) {
+        // Ignorer si déjà annulé
+        if (['annule', 'cancelled', 'rejected', 'termine'].includes(normalize(m.status || ''))) continue;
+
+        const dbDate = parseISO(m.date);
+        const dbContact = normalize(m.contact || '');
+        
+        // Chercher le booking correspondant
+        const calData = bookings.find((b: any) => {
+            const apiDate = parseISO(b.startTime);
+            const dayDiff = Math.abs(differenceInDays(dbDate, apiDate));
             
-            // Chercher le booking correspondant dans Cal.com
-            const calData = calBookings.find((b: any) => {
-                const apiDate = parseISO(b.startTime);
-                const dayDiff = Math.abs(differenceInDays(dbDate, apiDate));
-                if (dayDiff > 1) return false; // Trop loin dans le temps
+            // 1. Date doit être proche (+/- 1 jour)
+            if (dayDiff > 1) return false;
 
-                const dbContact = normalize(m.contact || '');
-                const attendees = b.attendees || [];
-                const title = normalize(b.title || '');
+            // 2. Matching de nom/email
+            const attendees = b.attendees || [];
+            const title = normalize(b.title || '');
+            const description = normalize(b.description || '');
 
-                const isAttendeeMatch = attendees.some((att: any) => {
-                    const apiName = normalize(att.name || '');
-                    const apiEmail = normalize(att.email || '');
-                    return (dbContact && (apiName.includes(dbContact) || dbContact.includes(apiName))) ||
-                           (m.description && apiEmail && normalize(m.description).includes(apiEmail));
-                });
-
-                const isTitleMatch = dbContact && title.includes(dbContact);
-                return isAttendeeMatch || isTitleMatch;
+            const isAttendeeMatch = attendees.some((att: any) => {
+                const apiName = normalize(att.name || '');
+                const apiEmail = normalize(att.email || '');
+                return (dbContact && (apiName.includes(dbContact) || dbContact.includes(apiName))) ||
+                       (m.description && apiEmail && normalize(m.description).includes(apiEmail));
             });
 
-            // Si on trouve un match ET que le statut API est CANCELLED/REJECTED
-            if (calData && ['CANCELLED', 'REJECTED'].includes(calData.status)) {
-                console.log(`🔄 Auto-correction du statut pour ${m.contact} : ${calData.status}`);
-                // Mise à jour silencieuse en base
-                await supabase.from('meetings').update({ status: 'Annulé' }).eq('id', m.id);
+            const isTitleMatch = dbContact && title.includes(dbContact);
+            const isDescMatch = dbContact && description.includes(dbContact);
+
+            return isAttendeeMatch || isTitleMatch || isDescMatch;
+        });
+
+        // Si match trouvé ET statut Annulé/Rejeté
+        if (calData && ['CANCELLED', 'REJECTED'].includes(calData.status)) {
+            console.log(`❌ Rendez-vous annulé détecté pour ${m.contact}. Mise à jour BDD...`);
+            
+            // Mise à jour BDD
+            const { error } = await supabase.from('meetings').update({ status: 'Annulé' }).eq('id', m.id);
+            
+            if (!error) {
                 updatesCount++;
+            } else {
+                console.error("Erreur update Supabase:", error);
             }
         }
+    }
 
-        if (updatesCount > 0 && refreshMeetings) {
-            refreshMeetings(); // Rafraichir l'affichage après mise à jour
-        }
-    };
-
-    syncStatusesToDb();
-  }, [calBookings, meetings]); 
-
+    if (updatesCount > 0) {
+        if (refreshMeetings) await refreshMeetings();
+        console.log(`✅ ${updatesCount} statuts mis à jour.`);
+    } else {
+        console.log("Aucune mise à jour nécessaire.");
+    }
+    
+    return updatesCount;
+  };
 
   // 2. Sauvegarder Clé API
   const handleSaveApiKey = async () => {
@@ -181,7 +196,7 @@ export function RendezVous() {
       setTimeout(() => setKeySaveSuccess(false), 3000)
       fetchEventTypes(calApiKey)
       fetchCalProfile(calApiKey)
-      fetchCalBookings(calApiKey)
+      fetchCalBookings(calApiKey, true)
     } catch (err) { alert("Impossible de sauvegarder la clé API") } finally { setIsSavingKey(false) }
   }
 
@@ -205,20 +220,27 @@ export function RendezVous() {
     } catch (error) { console.error(error) }
   }
 
-  // 3c. Fetch Bookings (MANUEL OU AUTO)
-  const fetchCalBookings = async (apiKey: string) => {
+  // 3c. Fetch Bookings & Trigger Sync
+  const fetchCalBookings = async (apiKey: string, manualTrigger: boolean = false) => {
     if (!apiKey) return;
-    setIsSyncing(true);
+    if (manualTrigger) setIsSyncing(true);
+    
     try {
         const response = await fetch(`https://api.cal.com/v1/bookings?apiKey=${apiKey}&take=100&status=CANCELLED,ACCEPTED,REJECTED`)
         const data = await response.json()
         if (data.bookings) {
-            setCalBookings(data.bookings)
+            setCalBookings(data.bookings);
+            // Lancer la synchro DB immédiatement après récupération
+            const count = await runDeepSync(data.bookings);
+            if (manualTrigger) {
+                alert(`Synchronisation terminée : ${count} rendez-vous mis à jour.`);
+            }
         }
     } catch (error) {
-        console.error("Erreur fetch Bookings Cal.com:", error)
+        console.error("Erreur fetch Bookings Cal.com:", error);
+        if (manualTrigger) alert("Erreur lors de la synchronisation.");
     } finally {
-        setIsSyncing(false);
+        if (manualTrigger) setIsSyncing(false);
     }
   }
 
@@ -328,38 +350,33 @@ export function RendezVous() {
     setTimeout(() => setWebhookCopied(false), 2000)
   }
 
-  // --- LOGIQUE TABLEAUX (Fusionnée avec les données API pour l'affichage immédiat) ---
+  // --- LOGIQUE TABLEAUX (Affichage) ---
   const { upcomingMeetings, pastMeetings } = useMemo(() => {
     const now = new Date(); 
     const today = startOfDay(now);
     
-    // Nettoyeur de chaine
-    const normalize = (str: string) => str ? str.toLowerCase().replace(/[^a-z0-9@]/g, '') : '';
+    // Normalisation agressive pour l'affichage temps réel
+    const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '') : '';
 
     const allMeetings = (meetings || []).map(m => {
-        // Tentative de trouver le statut API "en temps réel" en plus de la DB
+        // Overlay Statut API (si trouvé en RAM avant le refresh DB)
         const calData = calBookings.find((b: any) => {
              const dbDate = parseISO(m.date);
              const apiDate = parseISO(b.startTime);
-             const dayDiff = Math.abs(differenceInDays(dbDate, apiDate));
-             if (dayDiff > 1) return false;
+             if (Math.abs(differenceInDays(dbDate, apiDate)) > 1) return false;
 
              const dbContact = normalize(m.contact || '');
              const attendees = b.attendees || [];
              const title = normalize(b.title || '');
              
-             const isMatch = attendees.some((att: any) => {
+             return attendees.some((att: any) => {
                  const apiName = normalize(att.name || '');
-                 const apiEmail = normalize(att.email || '');
-                 return (dbContact && (apiName.includes(dbContact) || dbContact.includes(apiName))) ||
-                        (m.description && apiEmail && normalize(m.description).includes(apiEmail));
+                 return (dbContact && (apiName.includes(dbContact) || dbContact.includes(apiName)));
              }) || (dbContact && title.includes(dbContact));
-
-             return isMatch;
         });
 
         if (calData && ['CANCELLED', 'REJECTED'].includes(calData.status)) {
-            return { ...m, status: 'Annulé' }; // Force l'affichage annulé
+            return { ...m, status: 'Annulé' }; 
         }
         return m;
     });
@@ -397,14 +414,14 @@ export function RendezVous() {
   const getStatusStyle = (s: string) => { 
       s = s?.toLowerCase() || ''; 
       if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'; 
-      if (['annulé', 'cancelled', 'rejected', 'canceled'].includes(s)) return 'bg-red-500/20 text-red-400 border-red-500/30'; 
+      if (['annulé', 'cancelled', 'rejected', 'canceled', 'annule'].includes(s)) return 'bg-red-500/20 text-red-400 border-red-500/30'; 
       return 'bg-slate-500/20 text-slate-400 border-slate-500/30'; 
   }
   
   const getStatusLabel = (s: string) => {
       s = s?.toLowerCase() || '';
       if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return 'Confirmé';
-      if (['annulé', 'cancelled', 'canceled'].includes(s)) return 'Annulé';
+      if (['annulé', 'cancelled', 'canceled', 'annule'].includes(s)) return 'Annulé';
       if (['rejected'].includes(s)) return 'Refusé';
       return s.charAt(0).toUpperCase() + s.slice(1);
   }
@@ -424,7 +441,7 @@ export function RendezVous() {
                 <button 
                     onClick={onRefresh} 
                     className={`ml-2 p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-white transition-colors ${isSyncing ? 'animate-spin text-blue-500' : ''}`}
-                    title="Forcer la synchronisation avec Cal.com"
+                    title="Forcer la synchronisation (MàJ Statuts)"
                 >
                     <RefreshCw className="h-4 w-4" />
                 </button>
@@ -545,12 +562,12 @@ export function RendezVous() {
             title="Rendez-vous à venir" 
             icon={Calendar} 
             emptyText="Aucun rendez-vous synchronisé." 
-            onRefresh={() => fetchCalBookings(calApiKey)} // 👈 PASSE LE REFRESH ICI
+            onRefresh={() => fetchCalBookings(calApiKey, true)} // 👈 MODE MANUEL
         />
         <MeetingTable data={pastMeetings} title="Historique" icon={History} emptyText="Aucun historique disponible." showDeleteAction={true} />
       </div>
 
-      {/* --- GRANDE MODALE DE CONFIGURATION (Avec logo corrigé) --- */}
+      {/* --- GRANDE MODALE DE CONFIGURATION --- */}
       {isConfigModalOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsConfigModalOpen(false)} />
@@ -560,8 +577,8 @@ export function RendezVous() {
                 <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900 z-10">
                     <div>
                         <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                            {/* LOGO PERSONNALISÉ SUR FOND BLANC */}
-                            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center p-1">
+                            {/* LOGO PERSONNALISÉ AVEC FOND BLANC */}
+                            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center p-1 overflow-hidden">
                                 <img src="/Calcom.png" alt="Cal.com" className="w-full h-full object-contain" />
                             </div>
                             Configuration Cal.com
