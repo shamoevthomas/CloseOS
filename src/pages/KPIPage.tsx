@@ -24,12 +24,12 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer 
-} from 'recharts'; // 👈 IMPORT RECHARTS
+} from 'recharts';
 import { useOffers } from '../contexts/OffersContext';
 import { useProspects } from '../contexts/ProspectsContext';
 
 // ============================================================================
-// UNIVERSAL DATA PARSING HELPERS
+// HELPERS (Logique reprise de EXKPIPage pour la fiabilité)
 // ============================================================================
 
 const extractDealsFromKanban = (data: any): any[] => {
@@ -37,10 +37,10 @@ const extractDealsFromKanban = (data: any): any[] => {
   if (Array.isArray(data)) return data;
 
   const allDeals: any[] = [];
-  const recursiveExtract = (obj: any, parentKey: string = ''): void => {
+  const recursiveExtract = (obj: any) => {
     if (!obj || typeof obj !== 'object') return;
     if (obj.columns && typeof obj.columns === 'object') {
-      recursiveExtract(obj.columns, 'columns');
+      recursiveExtract(obj.columns);
       return;
     }
     Object.entries(obj).forEach(([key, value]: [string, any]) => {
@@ -66,7 +66,7 @@ const extractDealsFromKanban = (data: any): any[] => {
             allDeals.push(deal);
           });
         } else {
-          recursiveExtract(value, key);
+          recursiveExtract(value);
         }
       }
     });
@@ -76,7 +76,7 @@ const extractDealsFromKanban = (data: any): any[] => {
 };
 
 const getDealAmount = (deal: any): number => {
-  const possibleFields = [deal.amount, deal.price, deal.prix, deal.montant, deal.value, deal.total, deal.Amount, deal.Price];
+  const possibleFields = [deal.amount, deal.price, deal.prix, deal.montant, deal.value, deal.total];
   for (const value of possibleFields) {
     if (value !== undefined && value !== null && value !== '') {
       if (typeof value === 'number' && !isNaN(value)) return value > 0 ? value : 0;
@@ -102,7 +102,7 @@ const isLostDeal = (deal: any): boolean => {
 };
 
 const getDealDate = (deal: any): Date => {
-  const possibleFields = [deal.createdAt, deal.date, deal.creationDate, deal.dateCreation, deal.created_at, deal.dateAdded, deal.lastContact];
+  const possibleFields = [deal.createdAt, deal.date, deal.creationDate, deal.dateCreation, deal.created_at, deal.dateAdded];
   for (const value of possibleFields) {
     if (value) {
       const d = new Date(value);
@@ -124,7 +124,7 @@ export function KPIPage() {
   const { offers: allOffers } = useOffers();
   const { prospects: allProspects } = useProspects();
 
-  // --- LOGIQUE OFFRES (Active vs Inactive) ---
+  // --- Logique Offres ---
   const isExpired = (offer: any) => {
     if (!offer.endDate) return false;
     const today = new Date();
@@ -139,27 +139,22 @@ export function KPIPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'all'>('all'); 
   const [activeTab, setActiveTab] = useState('global');
-  const [deals, setDeals] = useState<any[]>([]);
+  const [legacyDeals, setLegacyDeals] = useState<any[]>([]);
   const [includeInactiveInGlobal, setIncludeInactiveInGlobal] = useState(false);
 
+  // Chargement Legacy
   useEffect(() => {
     const loadData = () => {
       try {
         const pipelineData = localStorage.getItem('closeros_pipeline');
         if (pipelineData) {
-          const parsed = JSON.parse(pipelineData);
-          setDeals(extractDealsFromKanban(parsed));
-        } else {
-          setDeals([]);
+          setLegacyDeals(extractDealsFromKanban(JSON.parse(pipelineData)));
         }
       } catch (error) {
-        console.error('❌ Error loading KPI data:', error);
-        setDeals([]);
+        console.error('Error loading legacy data', error);
       }
     };
     loadData();
-    window.addEventListener('focus', loadData);
-    return () => window.removeEventListener('focus', loadData);
   }, []);
 
   const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -168,8 +163,7 @@ export function KPIPage() {
   const formatCurrency = (value: number) => new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
   const formatPercent = (value: number) => value.toFixed(1);
 
-  // --- 🚀 LOGIQUE DE FILTRAGE UNIFIÉE ---
-  
+  // Helper de filtrage (Offre Active)
   const isActiveOffer = (itemName: string | undefined, itemId: string | number | undefined) => {
     if (itemId) {
       if (activeOffers.some(o => String(o.id) === String(itemId))) return true;
@@ -190,64 +184,170 @@ export function KPIPage() {
     return match ? parseFloat(match[1]) / 100 : 0.10;
   };
 
-  // Source unique pour éviter les conflits
-  const chartSource = allProspects.length > 0 ? allProspects : deals;
+  // ==================================================================================
+  // 1. CALCULS BASÉS SUR LES PROSPECTS (Supabase/Context) - Logique EXKPIPage
+  // ==================================================================================
+  
+  // A. Filtrage Context pour les KPI (Respecte ViewMode)
+  const filteredProspects = allProspects.filter((prospect) => {
+    if (activeTab !== 'global') {
+      const tabName = activeTab.toLowerCase();
+      const pOffer = (prospect.offer || '').toLowerCase();
+      const pOfferId = String(prospect.offerId || '');
+      const targetOffer = allOffers.find(o => o.name.toLowerCase() === tabName);
+      
+      const matchName = pOffer.includes(tabName) || tabName.includes(pOffer);
+      const matchId = targetOffer && pOfferId === String(targetOffer.id);
+      if (!matchName && !matchId) return false;
+    } else if (!includeInactiveInGlobal) {
+      if (!isActiveOffer(prospect.offer, prospect.offerId)) return false;
+    }
 
-  // 1. Filtrage par Onglet (Global ou Spécifique) - Indépendant de la date pour les graphiques
-  const filteredByTab = useMemo(() => {
-    return chartSource.filter(item => {
-      if (activeTab !== 'global') {
-        const tabName = activeTab.toLowerCase();
-        const pOffer = (item.offer || item.offerName || getDealOffer(item)).toLowerCase();
-        const pOfferId = String(item.offerId || '');
-        const targetOffer = allOffers.find(o => o.name.toLowerCase() === tabName);
-        
-        const matchName = pOffer.includes(tabName) || tabName.includes(pOffer);
-        const matchId = targetOffer && pOfferId === String(targetOffer.id);
+    if (viewMode === 'month') {
+      const pDate = prospect.dateAdded ? new Date(prospect.dateAdded) : new Date();
+      if (pDate.getMonth() !== currentDate.getMonth() || pDate.getFullYear() !== currentDate.getFullYear()) return false;
+    }
+    return true;
+  });
 
-        if (!matchName && !matchId) return false;
-      } else {
-        if (!includeInactiveInGlobal) {
-          if (!isActiveOffer(item.offer || item.offerName || getDealOffer(item), item.offerId)) return false;
-        }
-      }
-      return true;
-    });
-  }, [chartSource, activeTab, includeInactiveInGlobal, allOffers, activeOffers]);
+  // B. Filtrage Context pour les Graphiques (Ignore ViewMode, prend tout l'historique)
+  const historicalProspects = allProspects.filter((prospect) => {
+    if (activeTab !== 'global') {
+      const tabName = activeTab.toLowerCase();
+      const pOffer = (prospect.offer || '').toLowerCase();
+      const pOfferId = String(prospect.offerId || '');
+      const targetOffer = allOffers.find(o => o.name.toLowerCase() === tabName);
+      
+      const matchName = pOffer.includes(tabName) || tabName.includes(pOffer);
+      const matchId = targetOffer && pOfferId === String(targetOffer.id);
+      if (!matchName && !matchId) return false;
+    } else if (!includeInactiveInGlobal) {
+      if (!isActiveOffer(prospect.offer, prospect.offerId)) return false;
+    }
+    return true;
+  });
 
-  // 2. Données pour les KPI (Cartes) - Filtré par Date
-  const kpiData = useMemo(() => {
-    return filteredByTab.filter(item => {
-      if (viewMode === 'month') {
-        const dDate = getDealDate(item);
-        if (dDate.getMonth() !== currentDate.getMonth() || dDate.getFullYear() !== currentDate.getFullYear()) return false;
-      }
-      return true;
-    });
-  }, [filteredByTab, viewMode, currentDate]);
+  // KPI Context
+  const wonProspects = filteredProspects.filter(p => p?.stage === 'won');
+  const lostProspects = filteredProspects.filter(p => p?.stage === 'lost');
+  const activeProspects = filteredProspects.filter(p => p?.stage && p.stage !== 'won' && p.stage !== 'lost');
+  
+  const ctxRevenue = wonProspects.reduce((sum, p) => sum + (p?.value || 0), 0);
+  const ctxSales = wonProspects.length;
+  const ctxLeads = filteredProspects.length;
+  const ctxClosed = wonProspects.length + lostProspects.length;
+  const ctxConversion = ctxClosed > 0 ? (ctxSales / ctxClosed) * 100 : 0;
+  
+  // Commissions Context
+  const ctxCommissions = wonProspects.reduce((sum, deal) => {
+    const dealOffer = allOffers.find(o => (deal.offerId && String(o.id) === String(deal.offerId)) || (deal.offer && o.name.toLowerCase() === deal.offer.toLowerCase()));
+    const rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
+    return sum + (deal.value * rate);
+  }, 0);
 
-  // 3. Données pour les Graphiques - Historique Global
+  // No Show Context
+  const noShowProspects = filteredProspects.filter(p => (p?.status || p?.stage || '').toLowerCase().match(/no show|absent|noshow/));
+  const ctxOutcomes = wonProspects.length + lostProspects.length + noShowProspects.length + filteredProspects.filter(p => (p.stage || '').match(/follow/)).length;
+  const ctxNoShowRate = ctxOutcomes > 0 ? (noShowProspects.length / ctxOutcomes) * 100 : 0;
+
+
+  // ==================================================================================
+  // 2. CALCULS BASÉS SUR LE LEGACY (LocalStorage) - Logique EXKPIPage
+  // ==================================================================================
+  
+  // A. Filtrage Legacy pour KPI
+  const filteredLegacyDeals = legacyDeals.filter((deal) => {
+    if (activeTab !== 'global') {
+      const dealOffer = getDealOffer(deal);
+      const tabName = activeTab.toLowerCase();
+      if (!dealOffer.includes(tabName) && !tabName.includes(dealOffer)) return false;
+    } else if (!includeInactiveInGlobal) {
+      const dealOfferName = getDealOffer(deal);
+      const isLinkedToActive = activeOffers.some(o => {
+        const oName = o.name.toLowerCase().trim();
+        return dealOfferName.includes(oName) || oName.includes(dealOfferName);
+      });
+      if (!isLinkedToActive) return false;
+    }
+
+    if (viewMode === 'month') {
+      const dDate = getDealDate(deal);
+      if (dDate.getMonth() !== currentDate.getMonth() || dDate.getFullYear() !== currentDate.getFullYear()) return false;
+    }
+    return true;
+  });
+
+  // B. Filtrage Legacy pour Graphiques (Historique complet)
+  const historicalLegacyDeals = legacyDeals.filter((deal) => {
+    if (activeTab !== 'global') {
+      const dealOffer = getDealOffer(deal);
+      const tabName = activeTab.toLowerCase();
+      if (!dealOffer.includes(tabName) && !tabName.includes(dealOffer)) return false;
+    } else if (!includeInactiveInGlobal) {
+      const dealOfferName = getDealOffer(deal);
+      const isLinkedToActive = activeOffers.some(o => {
+        const oName = o.name.toLowerCase().trim();
+        return dealOfferName.includes(oName) || oName.includes(dealOfferName);
+      });
+      if (!isLinkedToActive) return false;
+    }
+    return true;
+  });
+
+  const legacyWon = filteredLegacyDeals.filter(d => isWonDeal(d));
+  const legacyLost = filteredLegacyDeals.filter(d => isLostDeal(d));
+  const legacyRev = legacyWon.reduce((s, d) => s + getDealAmount(d), 0);
+  const legacyConv = (filteredLegacyDeals.length > 0) ? (legacyWon.length / filteredLegacyDeals.length) * 100 : 0; // Approx pour legacy
+  
+  // ==================================================================================
+  // 3. SELECTION FINALE (Source of Truth)
+  // ==================================================================================
+
+  const hasContextData = allProspects.length > 0;
+
+  // Variables affichées dans les cartes (KPI)
+  const finalRevenue = hasContextData ? ctxRevenue : legacyRev;
+  const finalSales = hasContextData ? ctxSales : legacyWon.length;
+  const finalLeads = hasContextData ? ctxLeads : filteredLegacyDeals.length;
+  const finalConversion = hasContextData ? ctxConversion : legacyConv;
+  const finalCommissions = hasContextData ? ctxCommissions : legacyRev * 0.10;
+  const finalNoShowRate = hasContextData ? ctxNoShowRate : 0;
+  const finalLost = hasContextData ? lostProspects.length : legacyLost.length;
+  const finalActiveCount = hasContextData ? activeProspects.length : 0;
+  const avgCommission = finalSales > 0 ? finalCommissions / finalSales : 0;
+
+
+  // ==================================================================================
+  // 4. CONSTRUCTION DES DONNÉES GRAPHIQUES (Recharts)
+  // ==================================================================================
+  
+  const chartSourceData = hasContextData ? historicalProspects : historicalLegacyDeals;
+
   const chartData = useMemo(() => {
     const grouped: Record<string, { won: number; total: number; commission: number; date: Date }> = {};
 
-    filteredByTab.forEach(item => {
-      const date = getDealDate(item);
+    chartSourceData.forEach(item => {
+      // Normalisation des champs selon la source
+      const date = hasContextData 
+        ? (item.dateAdded ? new Date(item.dateAdded) : new Date()) 
+        : getDealDate(item);
+      
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       if (!grouped[key]) {
         grouped[key] = { won: 0, total: 0, commission: 0, date };
       }
 
-      const isWon = isWonDeal(item);
-      const isLost = isLostDeal(item);
+      const isWon = hasContextData ? (item.stage === 'won') : isWonDeal(item);
+      const isLost = hasContextData ? (item.stage === 'lost') : isLostDeal(item);
 
       if (isWon || isLost) {
         grouped[key].total += 1;
         if (isWon) {
           grouped[key].won += 1;
-          const val = item.value || getDealAmount(item);
+          const val = hasContextData ? (item.value || 0) : getDealAmount(item);
           let comm = 0;
-          if (allProspects.length > 0) {
+          if (hasContextData) {
              const dealOffer = allOffers.find(o => (item.offerId && String(o.id) === String(item.offerId)) || (item.offer && o.name.toLowerCase() === (item.offer || '').toLowerCase()));
              const rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
              comm = val * rate;
@@ -266,44 +366,7 @@ export function KPIPage() {
         closingRate: d.total > 0 ? parseFloat(((d.won / d.total) * 100).toFixed(1)) : 0,
         commission: Math.round(d.commission)
       }));
-  }, [filteredByTab, allOffers, allProspects]);
-
-  // --- CALCULS DES VALEURS FINALES ---
-  const wonDeals = kpiData.filter(p => isWonDeal(p));
-  const lostDeals = kpiData.filter(p => isLostDeal(p));
-  const noShowDeals = kpiData.filter(p => (p.status || p.stage || '').toLowerCase().match(/no show|absent|noshow/));
-  const activeDeals = kpiData.filter(p => !isWonDeal(p) && !isLostDeal(p));
-
-  const totalRevenue = wonDeals.reduce((sum, p) => sum + (p.value || getDealAmount(p)), 0);
-  const totalSales = wonDeals.length;
-  const totalLeads = kpiData.length;
-  const closedDeals = wonDeals.length + lostDeals.length;
-  const conversionRate = closedDeals > 0 ? (totalSales / closedDeals) * 100 : 0;
-  
-  const totalCallOutcomes = wonDeals.length + lostDeals.length + noShowDeals.length; // Correction dénominateur
-  const noShowRate = totalCallOutcomes > 0 ? (noShowDeals.length / totalCallOutcomes) * 100 : 0;
-
-  const totalCommissions = wonDeals.reduce((sum, deal) => {
-    const val = deal.value || getDealAmount(deal);
-    let rate = 0.10;
-    if (allProspects.length > 0) {
-      const dealOffer = allOffers.find(o => (deal.offerId && String(o.id) === String(deal.offerId)) || (deal.offer && o.name.toLowerCase() === (deal.offer || '').toLowerCase()));
-      rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
-    }
-    return sum + (val * rate);
-  }, 0);
-
-  const avgCommission = totalSales > 0 ? totalCommissions / totalSales : 0;
-
-  // Variables finales pour l'affichage (Utilisation directe des calculs unifiés)
-  const finalRevenue = totalRevenue;
-  const finalSales = totalSales;
-  const finalLeads = totalLeads;
-  const finalConversion = conversionRate;
-  const finalCommissions = totalCommissions;
-  const finalNoShowRate = noShowRate;
-  const finalLost = lostDeals.length;
-  const finalActiveCount = activeDeals.length;
+  }, [chartSourceData, hasContextData, allOffers]);
 
   return (
     <div className="min-h-screen bg-slate-950 p-6 md:p-8 font-sans text-slate-100">
@@ -372,10 +435,9 @@ export function KPIPage() {
           <KpiCard title="Deals Perdus" value={finalLost.toString()} icon={Ban} color="slate" />
         </div>
 
-        {/* 🚀 NOUVEAU: SECTION GRAPHIQUES AVEC RECHARTS */}
+        {/* GRAPHIQUES RECHARTS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          {/* Graphique 1: Taux de Closing */}
           <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <Target className="w-5 h-5 text-purple-400" />
@@ -403,7 +465,6 @@ export function KPIPage() {
             </div>
           </div>
 
-          {/* Graphique 2: Commissions */}
           <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <Award className="w-5 h-5 text-emerald-400" />
