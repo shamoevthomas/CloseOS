@@ -18,7 +18,9 @@ import {
   Webhook,
   Copy,
   Check,
-  Link as LinkIcon // On renomme pour éviter les confusions
+  Plus,
+  Settings,
+  Link as LinkIcon 
 } from 'lucide-react'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
@@ -35,66 +37,134 @@ export function RendezVous() {
   const { meetings, loading: meetingsLoading, refreshMeetings } = useMeetings()
   const { maskData } = usePrivacy()
   
-  // États pour Cal.com
-  const [calUsername, setCalUsername] = useState('')
-  const [isSavingCal, setIsSavingCal] = useState(false)
-  const [saveSuccess, setSaveSuccess] = useState(false)
-  const [webhookCopied, setWebhookCopied] = useState(false)
-  const [publicLinkCopied, setPublicLinkCopied] = useState(false)
+  // --- ÉTATS CAL.COM API ---
+  const [calApiKey, setCalApiKey] = useState('')
+  const [isSavingKey, setIsSavingKey] = useState(false)
+  const [keySaveSuccess, setKeySaveSuccess] = useState(false)
+  
+  // États Gestion Event Types
+  const [eventTypes, setEventTypes] = useState<any[]>([])
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false)
+  
+  // États Création Event Type
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [newEventTitle, setNewEventTitle] = useState('')
+  const [newEventDuration, setNewEventDuration] = useState(30)
+  const [newEventSlug, setNewEventSlug] = useState('')
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false)
 
-  // États pour la gestion des meetings
+  // États Webhook
+  const [webhookCopied, setWebhookCopied] = useState(false)
+
+  // États pour la gestion des meetings (Tableaux existants)
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
-  // Construction de l'URL de base
+  // URL de base
   const baseUrl = window.location.origin.includes('localhost') 
     ? 'http://localhost:5173' 
     : 'https://close-os.vercel.app'
   
-  // URL du Webhook (Pour Cal.com)
+  // URL du Webhook
   const webhookUrl = user?.id 
     ? `${baseUrl}/api/cal-webhook?user_id=${user.id}`
     : 'Chargement...'
 
-  // URL Publique (À envoyer aux clients)
-  const publicBookingUrl = calUsername 
-    ? `${baseUrl}/book/${calUsername}`
-    : ''
-
-  // 1. Charger le pseudo Cal.com au démarrage
+  // 1. Charger la Clé API au démarrage
   useEffect(() => {
-    if (user?.user_metadata?.calcom_username) {
-      setCalUsername(user.user_metadata.calcom_username)
+    const fetchProfile = async () => {
+      if (!user) return
+      const { data } = await supabase
+        .from('profiles')
+        .select('cal_api_key')
+        .eq('id', user.id)
+        .single()
+      
+      if (data?.cal_api_key) {
+        setCalApiKey(data.cal_api_key)
+        // Si on a la clé, on charge direct les events
+        fetchEventTypes(data.cal_api_key)
+      }
     }
+    fetchProfile()
   }, [user])
 
-  // 2. Sauvegarder le pseudo Cal.com
-  const handleSaveCalcom = async () => {
+  // 2. Sauvegarder la Clé API
+  const handleSaveApiKey = async () => {
     if (!user) return
-    setIsSavingCal(true)
-    setSaveSuccess(false)
-
+    setIsSavingKey(true)
     try {
-      let cleanUsername = calUsername.trim()
-      cleanUsername = cleanUsername.replace('https://', '').replace('http://', '').replace('cal.com/', '')
-      // Enlever les slashes éventuels à la fin
-      cleanUsername = cleanUsername.replace(/\/$/, "")
-      
-      const { error } = await supabase.auth.updateUser({
-        data: { calcom_username: cleanUsername }
-      })
+      const { error } = await supabase
+        .from('profiles')
+        .update({ cal_api_key: calApiKey })
+        .eq('id', user.id)
 
       if (error) throw error
       
-      setCalUsername(cleanUsername)
-      setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 3000)
+      setKeySaveSuccess(true)
+      setTimeout(() => setKeySaveSuccess(false), 3000)
+      
+      // Recharger la liste après sauvegarde
+      fetchEventTypes(calApiKey)
     } catch (err) {
-      console.error("Erreur sauvegarde Cal.com:", err)
-      alert("Impossible de sauvegarder le lien Cal.com")
+      console.error("Erreur sauvegarde API Key:", err)
+      alert("Impossible de sauvegarder la clé API")
     } finally {
-      setIsSavingCal(false)
+      setIsSavingKey(false)
+    }
+  }
+
+  // 3. Récupérer les Event Types depuis Cal.com
+  const fetchEventTypes = async (apiKey: string) => {
+    setIsLoadingEvents(true)
+    try {
+      const response = await fetch(`https://api.cal.com/v1/event-types?apiKey=${apiKey}`)
+      const data = await response.json()
+      if (data.event_types) {
+        setEventTypes(data.event_types)
+      }
+    } catch (error) {
+      console.error("Erreur fetch Cal.com:", error)
+    } finally {
+      setIsLoadingEvents(false)
+    }
+  }
+
+  // 4. Créer un Event Type
+  const handleCreateEventType = async () => {
+    if (!newEventTitle || !newEventSlug) return
+    setIsCreatingEvent(true)
+
+    try {
+      const payload = {
+        title: newEventTitle,
+        slug: newEventSlug,
+        length: parseInt(String(newEventDuration)),
+        isHidden: false
+      }
+
+      const response = await fetch(`https://api.cal.com/v1/event-types?apiKey=${calApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) throw new Error('Erreur création')
+
+      // Refresh la liste
+      await fetchEventTypes(calApiKey)
+      
+      // Reset et fermeture
+      setIsCreateModalOpen(false)
+      setNewEventTitle('')
+      setNewEventSlug('')
+      setNewEventDuration(30)
+      
+    } catch (error) {
+      alert("Erreur lors de la création sur Cal.com")
+    } finally {
+      setIsCreatingEvent(false)
     }
   }
 
@@ -104,12 +174,7 @@ export function RendezVous() {
     setTimeout(() => setWebhookCopied(false), 2000)
   }
 
-  const handleCopyPublicLink = () => {
-    navigator.clipboard.writeText(publicBookingUrl)
-    setPublicLinkCopied(true)
-    setTimeout(() => setPublicLinkCopied(false), 2000)
-  }
-
+  // --- LOGIQUE EXISTANTE POUR LES TABLEAUX ---
   const { upcomingMeetings, pastMeetings } = useMemo(() => {
     const now = new Date();
     const today = startOfDay(now);
@@ -181,6 +246,7 @@ export function RendezVous() {
     return 'Appel';
   }
 
+  // --- COMPOSANT TABLEAU (Inchangé) ---
   const MeetingTable = ({ data, title, icon: Icon, emptyText, showDeleteAction }: any) => (
     <div className="mb-12">
       <div className="mb-4 flex items-center justify-between px-2">
@@ -237,83 +303,92 @@ export function RendezVous() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Gestion des Rendez-vous</h1>
-          <p className="text-slate-400">Connectez votre agenda pour permettre aux prospects de réserver des créneaux.</p>
+          <p className="text-slate-400">Gérez vos liens de réservation et synchronisez votre agenda Cal.com.</p>
         </div>
 
-        {/* --- SECTION CONFIGURATION CAL.COM --- */}
+        {/* --- NOUVELLE SECTION : CONFIGURATION API CAL.COM --- */}
         <div className="mb-12 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg space-y-8">
           
-          {/* Étape 1 : Le Pseudo */}
+          {/* Étape 1 : La Clé API */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-black font-bold text-xl">C</div>
               <div>
-                <h2 className="text-xl font-bold text-white">1. Connexion Cal.com</h2>
-                <p className="text-sm text-slate-400 mt-1 max-w-lg">Renseignez votre pseudo Cal.com pour activer l'intégration.</p>
+                <h2 className="text-xl font-bold text-white">1. Clé API Cal.com</h2>
+                <p className="text-sm text-slate-400 mt-1 max-w-lg">Entrez votre Clé API (disponible dans Settings {'>'} API Keys) pour gérer vos liens.</p>
               </div>
             </div>
             <div className="flex flex-col gap-2 w-full md:w-auto">
               <div className="flex items-center gap-2">
-                <div className="relative w-full md:w-64">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><span className="text-slate-500 text-sm">cal.com/</span></div>
-                  <input type="text" value={calUsername} onChange={(e) => setCalUsername(e.target.value)} placeholder="votre-pseudo" className="block w-full rounded-lg border border-slate-700 bg-slate-950 py-2.5 pl-16 pr-3 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                </div>
-                <button onClick={handleSaveCalcom} disabled={isSavingCal || !calUsername} className="flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-black hover:bg-slate-200 disabled:opacity-50 transition-all">
-                  {isSavingCal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {saveSuccess ? 'Sauvegardé' : 'Enregistrer'}
+                <input 
+                  type="password" 
+                  value={calApiKey} 
+                  onChange={(e) => setCalApiKey(e.target.value)} 
+                  placeholder="cal_..." 
+                  className="block w-full md:w-80 rounded-lg border border-slate-700 bg-slate-950 py-2.5 px-4 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
+                />
+                <button onClick={handleSaveApiKey} disabled={isSavingKey || !calApiKey} className="flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-black hover:bg-slate-200 disabled:opacity-50 transition-all">
+                  {isSavingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {keySaveSuccess ? 'Sauvegardé' : 'Enregistrer'}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Étape 2 : Le Lien Public (VISIBLE UNIQUEMENT SI CONNECTÉ) */}
-          {calUsername && (
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 border-t border-slate-800 pt-8">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 font-bold text-xl">
-                  <LinkIcon className="h-6 w-6" />
+          {/* Étape 2 : Liste des Event Types (VISIBLE UNIQUEMENT SI API KEY PRÉSENTE) */}
+          {calApiKey && (
+            <div className="border-t border-slate-800 pt-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 font-bold text-xl">
+                    <LinkIcon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">2. Vos Types d'Événements</h2>
+                    <p className="text-sm text-slate-400 mt-1">Vos liens de réservation actifs sur Cal.com.</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">2. Votre lien de réservation</h2>
-                  <p className="text-sm text-slate-400 mt-1 max-w-lg">
-                    Envoyez ce lien à vos prospects. Ils verront votre agenda intégré dans CloseOS.
-                  </p>
-                </div>
-              </div>
-              <div className="w-full md:w-auto">
-                <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg p-2 pl-4">
-                  <code className="text-sm font-mono text-blue-300 truncate max-w-[250px] md:max-w-md select-all">
-                    {publicBookingUrl}
-                  </code>
-                  <button 
-                    onClick={handleCopyPublicLink} 
-                    className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-                    title="Copier le lien"
-                  >
-                    {publicLinkCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-                  </button>
-                </div>
-                <a 
-                  href={publicBookingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer" 
-                  className="mt-2 inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-blue-400 transition-colors uppercase tracking-wider font-bold"
+                <button 
+                   onClick={() => setIsCreateModalOpen(true)}
+                   className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"
                 >
-                  <ExternalLink className="h-3 w-3" /> Tester le lien
-                </a>
+                  <Plus className="h-4 w-4" /> Nouveau
+                </button>
               </div>
+
+              {isLoadingEvents ? (
+                <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-slate-500" /></div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {eventTypes.map(evt => (
+                    <div key={evt.id} className="group relative rounded-xl border border-slate-800 bg-slate-950 p-5 hover:border-slate-700 transition-all">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="inline-block rounded bg-slate-800 px-2 py-1 text-xs font-bold text-slate-400">{evt.length} min</span>
+                        <a href={`https://cal.com/${user?.user_metadata?.username || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-white"><ExternalLink className="h-4 w-4"/></a>
+                      </div>
+                      <h3 className="font-bold text-white text-lg mb-1">{evt.title}</h3>
+                      <p className="text-xs text-slate-500 font-mono">/{evt.slug}</p>
+                    </div>
+                  ))}
+                  {eventTypes.length === 0 && (
+                    <div className="col-span-full text-center py-8 text-slate-500 italic border border-dashed border-slate-800 rounded-xl">
+                      Aucun type d'événement trouvé. Créez-en un !
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Étape 3 : Le Webhook (VISIBLE UNIQUEMENT SI CONNECTÉ) */}
-          {calUsername && (
+          {/* Étape 3 : Le Webhook (VISIBLE UNIQUEMENT SI API KEY PRÉSENTE) */}
+          {calApiKey && (
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 border-t border-slate-800 pt-8">
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-600/20 text-purple-400 font-bold text-xl"><Webhook className="h-6 w-6" /></div>
                 <div>
                   <h2 className="text-xl font-bold text-white">3. Synchronisation (Webhook)</h2>
                   <p className="text-sm text-slate-400 mt-1 max-w-lg">
-                    Indispensable pour voir vos rendez-vous dans le Cockpit. <br/>
-                    Allez dans <strong>Cal.com {'>'} Settings {'>'} Developer {'>'} Webhooks</strong> et collez cette URL.
+                    Requis pour recevoir les réservations dans le Cockpit. <br/>
+                    URL à coller dans vos Webhooks Cal.com.
                   </p>
                 </div>
               </div>
@@ -328,9 +403,6 @@ export function RendezVous() {
                     {webhookCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                   </button>
                 </div>
-                <div className="mt-2 text-[10px] text-slate-500">
-                  Déclencheurs à cocher : <strong>Booking Created</strong> et <strong>Booking Rescheduled</strong>.
-                </div>
               </div>
             </div>
           )}
@@ -340,6 +412,68 @@ export function RendezVous() {
         <MeetingTable data={upcomingMeetings} title="Rendez-vous à venir" icon={Calendar} emptyText="Aucun rendez-vous synchronisé." />
         <MeetingTable data={pastMeetings} title="Historique" icon={History} emptyText="Aucun historique disponible." showDeleteAction={true} />
       </div>
+
+      {/* --- MODALE CRÉATION EVENT TYPE --- */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
+          <div className="relative w-full max-w-md rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-2xl animate-in fade-in zoom-in-95">
+            <h3 className="text-xl font-bold text-white mb-6">Nouveau Type d'Événement</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Titre</label>
+                <input 
+                  type="text" 
+                  value={newEventTitle}
+                  onChange={(e) => {
+                     setNewEventTitle(e.target.value)
+                     // Auto-slug simple
+                     setNewEventSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
+                  }}
+                  placeholder="Ex: Appel Découverte"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950 py-2.5 px-4 text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">URL / Slug</label>
+                <div className="flex items-center">
+                   <span className="bg-slate-800 text-slate-500 px-3 py-2.5 rounded-l-lg border border-r-0 border-slate-700 text-sm">/</span>
+                   <input 
+                    type="text" 
+                    value={newEventSlug}
+                    onChange={(e) => setNewEventSlug(e.target.value)}
+                    className="w-full rounded-r-lg border border-slate-700 bg-slate-950 py-2.5 px-4 text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Durée (minutes)</label>
+                <div className="flex gap-2">
+                   {[15, 30, 45, 60].map(mins => (
+                      <button 
+                        key={mins}
+                        onClick={() => setNewEventDuration(mins)}
+                        className={cn("flex-1 py-2 rounded-lg text-sm font-bold border transition-all", newEventDuration === mins ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700 bg-slate-800 text-slate-400 hover:text-white")}
+                      >
+                        {mins}
+                      </button>
+                   ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex gap-3">
+              <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 rounded-lg py-3 font-bold text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">Annuler</button>
+              <button onClick={handleCreateEventType} disabled={isCreatingEvent || !newEventTitle} className="flex-1 rounded-lg bg-blue-600 py-3 font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20 disabled:opacity-50">
+                {isCreatingEvent ? 'Création...' : 'Créer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Détails (Inchangé) */}
       {selectedMeeting && (
