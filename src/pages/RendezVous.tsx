@@ -39,6 +39,7 @@ export function RendezVous() {
   
   // --- ÉTATS CAL.COM API ---
   const [calApiKey, setCalApiKey] = useState('')
+  const [calUsername, setCalUsername] = useState('') // 👈 NOUVEL ÉTAT POUR LE PSEUDO
   const [isSavingKey, setIsSavingKey] = useState(false)
   const [keySaveSuccess, setKeySaveSuccess] = useState(false)
   
@@ -83,8 +84,9 @@ export function RendezVous() {
       
       if (data?.cal_api_key) {
         setCalApiKey(data.cal_api_key)
-        // Si on a la clé, on charge direct les events
+        // Si on a la clé, on charge direct les events ET le profil
         fetchEventTypes(data.cal_api_key)
+        fetchCalProfile(data.cal_api_key) // 👈 RECUPERATION DU PSEUDO
       }
     }
     fetchProfile()
@@ -105,8 +107,9 @@ export function RendezVous() {
       setKeySaveSuccess(true)
       setTimeout(() => setKeySaveSuccess(false), 3000)
       
-      // Recharger la liste après sauvegarde
+      // Recharger la liste et le profil après sauvegarde
       fetchEventTypes(calApiKey)
+      fetchCalProfile(calApiKey) // 👈 RECUPERATION DU PSEUDO
     } catch (err) {
       console.error("Erreur sauvegarde API Key:", err)
       alert("Impossible de sauvegarder la clé API")
@@ -128,6 +131,22 @@ export function RendezVous() {
       console.error("Erreur fetch Cal.com:", error)
     } finally {
       setIsLoadingEvents(false)
+    }
+  }
+
+  // 🆕 3b. Récupérer le PROFIL utilisateur (pour avoir le bon slug/username)
+  const fetchCalProfile = async (apiKey: string) => {
+    try {
+      const response = await fetch(`https://api.cal.com/v1/me?apiKey=${apiKey}`)
+      const data = await response.json()
+      // L'API retourne soit { user: { username: "..." } } soit directement les infos selon les versions
+      if (data.user?.username) {
+        setCalUsername(data.user.username)
+      } else if (data.username) {
+        setCalUsername(data.username)
+      }
+    } catch (error) {
+      console.error("Erreur fetch User Cal.com:", error)
     }
   }
 
@@ -363,7 +382,8 @@ export function RendezVous() {
                     <div key={evt.id} className="group relative rounded-xl border border-slate-800 bg-slate-950 p-5 hover:border-slate-700 transition-all">
                       <div className="flex justify-between items-start mb-2">
                         <span className="inline-block rounded bg-slate-800 px-2 py-1 text-xs font-bold text-slate-400">{evt.length} min</span>
-                        <a href={`https://cal.com/${user?.user_metadata?.username || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-white"><ExternalLink className="h-4 w-4"/></a>
+                        {/* 👇 MODIFICATION ICI : On utilise le calUsername récupéré */}
+                        <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-white"><ExternalLink className="h-4 w-4"/></a>
                       </div>
                       <h3 className="font-bold text-white text-lg mb-1">{evt.title}</h3>
                       <p className="text-xs text-slate-500 font-mono">/{evt.slug}</p>
