@@ -81,7 +81,6 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
           <div className="flex items-center gap-3">
             <img 
               src="/logo.PNG" 
-              alt="CloserOS" 
               className="h-8 w-auto object-contain rounded-md" 
             />
             <span className="text-xl font-bold text-white">CloserOS</span>
