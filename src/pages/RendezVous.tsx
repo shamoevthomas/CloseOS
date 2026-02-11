@@ -111,13 +111,13 @@ export function RendezVous() {
         setCalApiKey(data.cal_api_key)
         fetchEventTypes(data.cal_api_key)
         fetchCalProfile(data.cal_api_key)
-        fetchCalBookings(data.cal_api_key, false) // Chargement silencieux au démarrage
+        fetchCalBookings(data.cal_api_key, false)
       }
     }
     fetchProfile()
   }, [user])
 
-  // --- FONCTION DE SYNCHRONISATION PUISSANTE ---
+  // --- FONCTION DE SYNCHRONISATION PUISSANTE (Deep Sync) ---
   const runDeepSync = async (bookings: any[]) => {
     if (!meetings || meetings.length === 0 || !bookings || bookings.length === 0) return 0;
 
@@ -125,7 +125,7 @@ export function RendezVous() {
     const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '') : '';
     let updatesCount = 0;
 
-    console.log("🔄 Démarrage Deep Sync...");
+    console.log("🔄 Analyse Deep Sync en cours...");
 
     for (const m of meetings) {
         // Ignorer si déjà annulé
@@ -134,7 +134,7 @@ export function RendezVous() {
         const dbDate = parseISO(m.date);
         const dbContact = normalize(m.contact || '');
         
-        // Chercher le booking correspondant
+        // Chercher le booking correspondant dans la liste API
         const calData = bookings.find((b: any) => {
             const apiDate = parseISO(b.startTime);
             const dayDiff = Math.abs(differenceInDays(dbDate, apiDate));
@@ -162,9 +162,9 @@ export function RendezVous() {
 
         // Si match trouvé ET statut Annulé/Rejeté
         if (calData && ['CANCELLED', 'REJECTED'].includes(calData.status)) {
-            console.log(`❌ Rendez-vous annulé détecté pour ${m.contact}. Mise à jour BDD...`);
+            console.log(`❌ Annulation détectée pour ${m.contact}. Mise à jour BDD...`);
             
-            // Mise à jour BDD
+            // Mise à jour BDD Supabase
             const { error } = await supabase.from('meetings').update({ status: 'Annulé' }).eq('id', m.id);
             
             if (!error) {
@@ -177,9 +177,7 @@ export function RendezVous() {
 
     if (updatesCount > 0) {
         if (refreshMeetings) await refreshMeetings();
-        console.log(`✅ ${updatesCount} statuts mis à jour.`);
-    } else {
-        console.log("Aucune mise à jour nécessaire.");
+        console.log(`✅ ${updatesCount} statuts mis à jour via Proxy.`);
     }
     
     return updatesCount;
@@ -200,7 +198,7 @@ export function RendezVous() {
     } catch (err) { alert("Impossible de sauvegarder la clé API") } finally { setIsSavingKey(false) }
   }
 
-  // 3. Fetch Events
+  // 3. Fetch Events (Récupération des types d'événements)
   const fetchEventTypes = async (apiKey: string) => {
     setIsLoadingEvents(true)
     try {
@@ -220,25 +218,29 @@ export function RendezVous() {
     } catch (error) { console.error(error) }
   }
 
-  // 3c. Fetch Bookings & Trigger Sync
+  // 3c. Fetch Bookings VIA PROXY (C'est ICI que ça change)
   const fetchCalBookings = async (apiKey: string, manualTrigger: boolean = false) => {
     if (!apiKey) return;
     if (manualTrigger) setIsSyncing(true);
     
     try {
-        const response = await fetch(`https://api.cal.com/v1/bookings?apiKey=${apiKey}&take=100&status=CANCELLED,ACCEPTED,REJECTED`)
+        // 👇 APPEL AU PROXY LOCAL (Fonctionne pour .js et .ts)
+        const response = await fetch(`/api/cal-proxy?apiKey=${apiKey}`)
+        
+        if (!response.ok) throw new Error('Erreur Proxy')
+        
         const data = await response.json()
         if (data.bookings) {
             setCalBookings(data.bookings);
             // Lancer la synchro DB immédiatement après récupération
             const count = await runDeepSync(data.bookings);
             if (manualTrigger) {
-                alert(`Synchronisation terminée : ${count} rendez-vous mis à jour.`);
+                alert(count > 0 ? `Succès : ${count} rendez-vous mis à jour en 'Annulé'.` : "Synchronisation terminée. Aucun nouveau statut annulé détecté.");
             }
         }
     } catch (error) {
-        console.error("Erreur fetch Bookings Cal.com:", error);
-        if (manualTrigger) alert("Erreur lors de la synchronisation.");
+        console.error("Erreur Sync:", error);
+        if (manualTrigger) alert("Erreur lors de la synchronisation via le proxy.");
     } finally {
         if (manualTrigger) setIsSyncing(false);
     }
@@ -350,16 +352,14 @@ export function RendezVous() {
     setTimeout(() => setWebhookCopied(false), 2000)
   }
 
-  // --- LOGIQUE TABLEAUX (Affichage) ---
+  // --- LOGIQUE TABLEAUX ---
   const { upcomingMeetings, pastMeetings } = useMemo(() => {
     const now = new Date(); 
     const today = startOfDay(now);
-    
-    // Normalisation agressive pour l'affichage temps réel
-    const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '') : '';
+    const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9@]/g, '') : '';
 
     const allMeetings = (meetings || []).map(m => {
-        // Overlay Statut API (si trouvé en RAM avant le refresh DB)
+        // Overlay Statut API en temps réel (pour affichage immédiat)
         const calData = calBookings.find((b: any) => {
              const dbDate = parseISO(m.date);
              const apiDate = parseISO(b.startTime);
@@ -436,7 +436,6 @@ export function RendezVous() {
             <Icon className="h-5 w-5 text-blue-500" />
             <h2 className="text-xl font-bold text-white">{title}</h2>
             <span className="ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-xs font-bold text-slate-400">{data.length}</span>
-            {/* BOUTON SYNC MANUEL */}
             {onRefresh && (
                 <button 
                     onClick={onRefresh} 
