@@ -5,7 +5,8 @@ import {
   EmbeddedCheckout
 } from '@stripe/react-stripe-js';
 import { CheckCircle2, ShieldCheck, Sparkles, ArrowLeft, Square, CheckSquare, AlertCircle, TicketPercent, Loader2 } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { DemoExitModal } from '../components/DemoExitModal'; // 👈 IMPORT DU MODAL
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -28,6 +29,10 @@ export const CheckoutForm = () => {
   // 👇 MODIFICATION ICI : On récupère aussi la fonction pour changer l'URL
   const [searchParams, setSearchParams] = useSearchParams();
   const isYearly = searchParams.get('billing') === 'yearly';
+
+  // 🚀 ÉTAT POUR LE POPUP DE SORTIE
+  const [showExitModal, setShowExitModal] = useState(false);
+  const navigate = useNavigate();
 
   // Fonction pour basculer le cycle de facturation
   const handleBillingSwitch = (mode: 'monthly' | 'yearly') => {
@@ -143,10 +148,15 @@ export const CheckoutForm = () => {
       
       <nav className="border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group text-slate-400 hover:text-white transition-colors">
+          
+          {/* 👇 REMPLACEMENT DU LINK PAR UN BOUTON AVEC ACTION */}
+          <button 
+            onClick={() => setShowExitModal(true)}
+            className="flex items-center gap-2 group text-slate-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
+          >
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Retour</span>
-          </Link>
+          </button>
           
           <div className="flex items-center gap-2">
             <img src="/logo.PNG" alt="CloseOS Logo" className="h-8 w-auto" />
@@ -341,6 +351,13 @@ export const CheckoutForm = () => {
 
         </div>
       </main>
+
+      {/* 🚀 MODAL DE SORTIE AJOUTÉ ICI */}
+      <DemoExitModal 
+        isOpen={showExitModal} 
+        onClose={() => setShowExitModal(false)} 
+        onConfirmExit={() => navigate('/')} 
+      />
     </div>
   );
 };
