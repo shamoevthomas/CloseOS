@@ -30,7 +30,7 @@ import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { format, isValid, parseISO, isAfter, startOfDay, compareAsc, compareDesc } from 'date-fns'
+import { format, isValid, parseISO, isAfter, startOfDay, compareAsc, compareDesc, differenceInDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '../lib/utils'
 import { isDailyCoLink } from '../services/dailyService'
@@ -64,7 +64,7 @@ export function RendezVous() {
   // États Gestion Event Types
   const [eventTypes, setEventTypes] = useState<any[]>([])
   const [isLoadingEvents, setIsLoadingEvents] = useState(false)
-  const [isDeletingEvent, setIsDeletingEvent] = useState<number | null>(null) // Pour le loader de suppression
+  const [isDeletingEvent, setIsDeletingEvent] = useState<number | null>(null)
   
   // États Modales
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false)
@@ -85,7 +85,7 @@ export function RendezVous() {
   // États Webhook & Sync
   const [webhookCopied, setWebhookCopied] = useState(false)
   const [linkCopiedId, setLinkCopiedId] = useState<number | null>(null)
-  const [calBookings, setCalBookings] = useState<any[]>([]) // Stockage des réservations venant de Cal.com
+  const [calBookings, setCalBookings] = useState<any[]>([])
 
   // États pour la gestion des meetings (Tableaux)
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
@@ -110,7 +110,7 @@ export function RendezVous() {
         setCalApiKey(data.cal_api_key)
         fetchEventTypes(data.cal_api_key)
         fetchCalProfile(data.cal_api_key)
-        fetchCalBookings(data.cal_api_key) // 👈 Récupération des status réels
+        fetchCalBookings(data.cal_api_key)
       }
     }
     fetchProfile()
@@ -151,11 +151,10 @@ export function RendezVous() {
     } catch (error) { console.error(error) }
   }
 
-  // 🆕 3c. Fetch Bookings (Pour le statut réel)
+  // 3c. Fetch Bookings (CORRIGÉ: Paramètre take augmenté)
   const fetchCalBookings = async (apiKey: string) => {
     try {
-        // On récupère les 100 dernières réservations pour checker les statuts
-        const response = await fetch(`https://api.cal.com/v1/bookings?apiKey=${apiKey}&take=100`)
+        const response = await fetch(`https://api.cal.com/v1/bookings?apiKey=${apiKey}&take=100&status=CANCELLED,ACCEPTED,REJECTED`)
         const data = await response.json()
         if (data.bookings) {
             setCalBookings(data.bookings)
@@ -165,29 +164,18 @@ export function RendezVous() {
     }
   }
 
-  // 🆕 SUPPRESSION D'UN EVENT TYPE (Local + Cal.com)
+  // 4. Suppression Event Type
   const handleDeleteEventType = async (id: number) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce type d'événement définitivement (sur CloseOS et Cal.com) ?")) return
-    
+    if (!window.confirm("Voulez-vous supprimer ce lien définitivement (CloseOS + Cal.com) ?")) return
     setIsDeletingEvent(id)
     try {
-        const response = await fetch(`https://api.cal.com/v1/event-types/${id}?apiKey=${calApiKey}`, {
-            method: 'DELETE'
-        })
-        
-        if (!response.ok) throw new Error("Erreur lors de la suppression")
-        
-        // Rafraichir la liste
+        const response = await fetch(`https://api.cal.com/v1/event-types/${id}?apiKey=${calApiKey}`, { method: 'DELETE' })
+        if (!response.ok) throw new Error("Erreur suppression")
         await fetchEventTypes(calApiKey)
-    } catch (error) {
-        alert("Impossible de supprimer l'événement sur Cal.com")
-        console.error(error)
-    } finally {
-        setIsDeletingEvent(null)
-    }
+    } catch (error) { alert("Erreur suppression Cal.com"); console.error(error) } finally { setIsDeletingEvent(null) }
   }
 
-  // 4. Créer Event
+  // 5. Créer Event
   const handleCreateEventType = async () => {
     if (!newEventTitle || !newEventSlug) return
     setIsCreatingEvent(true)
@@ -210,7 +198,7 @@ export function RendezVous() {
     } catch (error) { alert("Erreur lors de la création") } finally { setIsCreatingEvent(false) }
   }
 
-  // 5. Ouvrir Modale Édition
+  // 6. Ouvrir Modale Édition
   const handleOpenEdit = (evt: any) => {
     const notice = evt.minimumBookingNotice || 0
     let unit: 'minutes' | 'hours' = 'minutes'
@@ -236,7 +224,7 @@ export function RendezVous() {
     setIsEditModalOpen(true)
   }
 
-  // 6. Sauvegarder Édition (PATCH)
+  // 7. Sauvegarder Édition
   const handleUpdateEvent = async () => {
     if (!editingEvent) return
     setIsUpdatingEvent(true)
@@ -266,12 +254,7 @@ export function RendezVous() {
         if (!response.ok) throw new Error('Erreur mise à jour')
         await fetchEventTypes(calApiKey)
         setIsEditModalOpen(false)
-    } catch (error) {
-        alert("Erreur lors de la mise à jour.")
-        console.error(error)
-    } finally {
-        setIsUpdatingEvent(false)
-    }
+    } catch (error) { alert("Erreur maj"); console.error(error) } finally { setIsUpdatingEvent(false) }
   }
 
   const handleCopyLink = (slug: string, id: number) => {
@@ -287,7 +270,7 @@ export function RendezVous() {
     setTimeout(() => setWebhookCopied(false), 2000)
   }
 
-  // --- LOGIQUE TABLEAUX AVEC SYNC STATUT ---
+  // --- LOGIQUE TABLEAUX AVEC SYNC STATUT AMÉLIORÉE ---
   const { upcomingMeetings, pastMeetings } = useMemo(() => {
     const now = new Date(); 
     const today = startOfDay(now);
@@ -296,18 +279,29 @@ export function RendezVous() {
     const allMeetings = (meetings || []).map(m => {
         // Chercher une correspondance dans les bookings Cal.com récupérés
         const calData = calBookings.find((b: any) => {
-             // Matching approximatif par date et nom (car pas toujours d'ID commun)
-             const dbDate = m.date; 
-             const calDate = b.startTime ? b.startTime.split('T')[0] : null;
-             return dbDate === calDate && (
-                 (b.attendees?.[0]?.name && m.contact && b.attendees[0].name.toLowerCase().includes(m.contact.toLowerCase())) ||
-                 (b.attendees?.[0]?.email && m.description && m.description.includes(b.attendees[0].email))
-             );
+             // Matching approximatif par date (+/- 1 jour pour gérer les Timezones)
+             const dbDate = parseISO(m.date);
+             const apiDate = parseISO(b.startTime);
+             
+             // Différence en jours (ignorer l'heure exacte)
+             const dayDiff = Math.abs(differenceInDays(dbDate, apiDate));
+             const isSameDate = dayDiff <= 1;
+
+             // Matching par Nom ou Email
+             const dbContact = (m.contact || '').toLowerCase();
+             const apiContact = (b.attendees?.[0]?.name || '').toLowerCase();
+             const dbDesc = (m.description || '').toLowerCase();
+             const apiEmail = (b.attendees?.[0]?.email || '').toLowerCase();
+
+             const isNameMatch = apiContact && dbContact && (apiContact.includes(dbContact) || dbContact.includes(apiContact));
+             const isEmailMatch = apiEmail && dbDesc.includes(apiEmail);
+
+             return isSameDate && (isNameMatch || isEmailMatch);
         });
 
         if (calData) {
-            // Si on trouve une correspondance, on prend le statut Cal.com
-            // CANCELLED, REJECTED, ACCEPTED
+            // Si trouvé, on prend le statut Cal.com
+            // Status possibles API: CANCELLED, ACCEPTED, REJECTED
             return { ...m, status: calData.status };
         }
         return m;
@@ -344,18 +338,18 @@ export function RendezVous() {
   const safeFormat = (dateStr: string, formatStr: string) => { try { const date = parseISO(dateStr); return isValid(date) ? format(date, formatStr, { locale: fr }) : 'N/A'; } catch { return 'N/A' } }
   
   const getStatusStyle = (s: string) => { 
-      s = s?.toLowerCase(); 
+      s = s?.toLowerCase() || ''; 
       if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'; 
       if (['annulé', 'cancelled', 'rejected', 'canceled'].includes(s)) return 'bg-red-500/20 text-red-400 border-red-500/30'; 
       return 'bg-slate-500/20 text-slate-400 border-slate-500/30'; 
   }
   
   const getStatusLabel = (s: string) => {
-      s = s?.toLowerCase();
+      s = s?.toLowerCase() || '';
       if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return 'Confirmé';
       if (['annulé', 'cancelled', 'canceled'].includes(s)) return 'Annulé';
       if (['rejected'].includes(s)) return 'Refusé';
-      return s;
+      return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
   const getMeetingSource = (m: any) => { if (!m) return 'Réservation'; if (m.description?.match(/Type:\s*([^\n\r]+)/)) return m.description.match(/Type:\s*([^\n\r]+)/)[1].trim(); return 'Appel'; }
@@ -407,7 +401,7 @@ export function RendezVous() {
           </button>
         </div>
 
-        {/* --- SECTION 2: TYPES D'EVENEMENTS (RESTE SUR LA PAGE PRINCIPALE) --- */}
+        {/* --- SECTION 2: TYPES D'EVENEMENTS --- */}
         {calApiKey && (
             <div className="mb-12">
                 <div className="flex items-center justify-between mb-6">
@@ -426,16 +420,17 @@ export function RendezVous() {
                             <div className="flex justify-between items-start mb-3">
                             <span className="inline-block rounded bg-slate-800 px-2 py-1 text-xs font-bold text-slate-400">{evt.length} min</span>
                             <div className="flex gap-2">
-                                {/* BOUTON SUPPRIMER LE LIEN */}
+                                {/* BOUTON SUPPRIMER LE LIEN (POUBELLE) */}
                                 <button 
                                     onClick={() => handleDeleteEventType(evt.id)} 
                                     disabled={isDeletingEvent === evt.id}
-                                    className="text-slate-500 hover:text-red-500 transition-colors"
+                                    className="p-1 rounded hover:bg-red-500/10 text-slate-500 hover:text-red-500 transition-colors"
                                     title="Supprimer ce lien"
                                 >
                                     {isDeletingEvent === evt.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4"/>}
                                 </button>
-                                <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-white" title="Ouvrir le lien"><ExternalLink className="h-4 w-4"/></a>
+                                {/* BOUTON OUVRIR */}
+                                <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="p-1 rounded hover:bg-slate-800 text-slate-500 hover:text-white" title="Ouvrir le lien"><ExternalLink className="h-4 w-4"/></a>
                             </div>
                             </div>
                             <h3 className="font-bold text-white text-lg mb-1">{evt.title}</h3>
@@ -478,7 +473,7 @@ export function RendezVous() {
         <MeetingTable data={pastMeetings} title="Historique" icon={History} emptyText="Aucun historique disponible." showDeleteAction={true} />
       </div>
 
-      {/* --- GRANDE MODALE DE CONFIGURATION CAL.COM (API & Webhook) --- */}
+      {/* --- GRANDE MODALE DE CONFIGURATION --- */}
       {isConfigModalOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsConfigModalOpen(false)} />
@@ -488,8 +483,10 @@ export function RendezVous() {
                 <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900 z-10">
                     <div>
                         <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                            {/* LOGO PERSONNALISÉ */}
-                            <img src="/Calcom.png" alt="Cal.com" className="h-8 w-8 rounded-lg" />
+                            {/* LOGO PERSONNALISÉ SUR FOND BLANC */}
+                            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center p-1">
+                                <img src="/Calcom.png" alt="Cal.com" className="w-full h-full object-contain" />
+                            </div>
                             Configuration Cal.com
                         </h2>
                         <p className="text-slate-400 text-sm mt-1">Paramètres de connexion et synchronisation.</p>
