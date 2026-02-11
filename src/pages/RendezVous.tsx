@@ -41,7 +41,7 @@ interface EventTypeData {
   slug: string
   length: number
   description: string
-  locations: Array<{ type: string; address?: string; link?: string }>
+  locations: Array<{ type: string; address?: string; link?: string; phone?: string }>
   beforeEventBuffer: number
   afterEventBuffer: number
   minimumBookingNotice: number
@@ -185,7 +185,7 @@ export function RendezVous() {
       slug: evt.slug,
       length: evt.length,
       description: evt.description || '',
-      locations: evt.locations || [],
+      locations: evt.locations || [{ type: 'integrations:daily' }], // Valeur par défaut
       beforeEventBuffer: evt.beforeEventBuffer || 0,
       afterEventBuffer: evt.afterEventBuffer || 0,
       minimumBookingNotice: value,
@@ -210,7 +210,7 @@ export function RendezVous() {
             slug: editingEvent.slug,
             length: Number(editingEvent.length),
             description: editingEvent.description,
-            locations: editingEvent.locations,
+            locations: editingEvent.locations, // Envoi direct de l'objet locations bien formé
             beforeEventBuffer: Number(editingEvent.beforeEventBuffer),
             afterEventBuffer: Number(editingEvent.afterEventBuffer),
             minimumBookingNotice: Number(noticeInMinutes),
@@ -228,7 +228,7 @@ export function RendezVous() {
         await fetchEventTypes(calApiKey)
         setIsEditModalOpen(false)
     } catch (error) {
-        alert("Erreur lors de la mise à jour de l'événement")
+        alert("Erreur lors de la mise à jour de l'événement. Vérifiez les champs.")
         console.error(error)
     } finally {
         setIsUpdatingEvent(false)
@@ -445,25 +445,99 @@ export function RendezVous() {
                         <label className="block text-xs font-bold text-slate-500 mb-1">Description</label>
                         <textarea rows={3} value={editingEvent.description} onChange={(e) => setEditingEvent({...editingEvent, description: e.target.value})} className="w-full rounded-lg bg-slate-950 border border-slate-700 py-2 px-4 text-white focus:border-blue-500 outline-none resize-none" />
                      </div>
+                     
+                     {/* 🚀 CORRECTION GESTION DES LIEUX */}
                      <div className="col-span-2">
                         <label className="block text-xs font-bold text-slate-500 mb-1">Lieu / Location</label>
-                        <div className="p-3 rounded-lg border border-slate-700 bg-slate-950 text-slate-400 text-xs flex items-center gap-2">
-                           <MapPin className="h-4 w-4" />
-                           <select 
-                             className="bg-transparent outline-none w-full text-white cursor-pointer"
-                             onChange={(e) => {
-                                // Simple switch pour location par défaut
-                                const type = e.target.value
-                                setEditingEvent({...editingEvent, locations: [{ type }]})
-                             }}
-                             value={editingEvent.locations[0]?.type || 'integrations:google:meet'}
-                           >
-                              <option value="integrations:google:meet">Google Meet</option>
-                              <option value="attendee_phone">Téléphone (L'invité appelle)</option>
-                              <option value="organiser_phone">Téléphone (J'appelle)</option>
-                              <option value="in_person">En personne</option>
-                              <option value="link">Lien personnalisé</option>
-                           </select>
+                        <div className="space-y-3">
+                           {/* 1. Le Sélecteur */}
+                           <div className="p-3 rounded-lg border border-slate-700 bg-slate-950 text-slate-400 text-xs flex items-center gap-2">
+                              <MapPin className="h-4 w-4" />
+                              <select 
+                                className="bg-transparent outline-none w-full text-white cursor-pointer"
+                                onChange={(e) => {
+                                   const newType = e.target.value
+                                   // On conserve l'ancien objet pour ne pas écraser address/link si on rechange, 
+                                   // mais idéalement on nettoie les champs inutiles
+                                   const currentLoc = editingEvent.locations[0] || {}
+                                   setEditingEvent({
+                                      ...editingEvent, 
+                                      locations: [{ ...currentLoc, type: newType }]
+                                   })
+                                }}
+                                value={editingEvent.locations[0]?.type || 'integrations:daily'}
+                              >
+                                 <optgroup label="Visio">
+                                    <option value="integrations:daily">Cal Video (Par défaut)</option>
+                                    <option value="integrations:google:meet">Google Meet</option>
+                                    <option value="integrations:zoom:video">Zoom Video</option>
+                                    <option value="integrations:discord">Discord</option>
+                                 </optgroup>
+                                 <optgroup label="Téléphone">
+                                    <option value="attendee_phone">Numéro de téléphone du participant</option>
+                                    <option value="phone">Appel téléphonique (Organisateur appelle)</option>
+                                 </optgroup>
+                                 <optgroup label="Physique">
+                                    <option value="attendee_in_person">En personne (adresse du participant)</option>
+                                    <option value="in_person">En personne (adresse de l'organisateur)</option>
+                                 </optgroup>
+                                 <optgroup label="Autre">
+                                    <option value="link">Lien personnalisé / Autre</option>
+                                 </optgroup>
+                              </select>
+                           </div>
+
+                           {/* 2. Champs conditionnels (INPUTS) */}
+                           {editingEvent.locations[0]?.type === 'in_person' && (
+                              <div className="animate-in fade-in slide-in-from-top-2">
+                                 <label className="block text-[10px] font-bold text-blue-400 uppercase mb-1">Adresse exacte du RDV</label>
+                                 <input 
+                                    type="text" 
+                                    placeholder="Ex: 12 Rue de la Paix, Paris"
+                                    value={editingEvent.locations[0].address || ''} 
+                                    onChange={(e) => {
+                                       const newLocs = [...editingEvent.locations]
+                                       newLocs[0] = { ...newLocs[0], address: e.target.value }
+                                       setEditingEvent({...editingEvent, locations: newLocs})
+                                    }}
+                                    className="w-full rounded-lg bg-slate-950 border border-blue-500/50 py-2 px-4 text-white text-sm focus:border-blue-500 outline-none" 
+                                 />
+                              </div>
+                           )}
+
+                           {editingEvent.locations[0]?.type === 'link' && (
+                              <div className="animate-in fade-in slide-in-from-top-2">
+                                 <label className="block text-[10px] font-bold text-blue-400 uppercase mb-1">URL du lien</label>
+                                 <input 
+                                    type="text" 
+                                    placeholder="https://..."
+                                    value={editingEvent.locations[0].link || ''} 
+                                    onChange={(e) => {
+                                       const newLocs = [...editingEvent.locations]
+                                       newLocs[0] = { ...newLocs[0], link: e.target.value }
+                                       setEditingEvent({...editingEvent, locations: newLocs})
+                                    }}
+                                    className="w-full rounded-lg bg-slate-950 border border-blue-500/50 py-2 px-4 text-white text-sm focus:border-blue-500 outline-none" 
+                                 />
+                              </div>
+                           )}
+                           
+                           {editingEvent.locations[0]?.type === 'phone' && (
+                              <div className="animate-in fade-in slide-in-from-top-2">
+                                 <label className="block text-[10px] font-bold text-blue-400 uppercase mb-1">Numéro à appeler</label>
+                                 <input 
+                                    type="text" 
+                                    placeholder="+33 6..."
+                                    value={editingEvent.locations[0].phone || ''} 
+                                    onChange={(e) => {
+                                       const newLocs = [...editingEvent.locations]
+                                       newLocs[0] = { ...newLocs[0], phone: e.target.value }
+                                       setEditingEvent({...editingEvent, locations: newLocs})
+                                    }}
+                                    className="w-full rounded-lg bg-slate-950 border border-blue-500/50 py-2 px-4 text-white text-sm focus:border-blue-500 outline-none" 
+                                 />
+                              </div>
+                           )}
                         </div>
                      </div>
                   </div>
