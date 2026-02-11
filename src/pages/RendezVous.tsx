@@ -23,7 +23,8 @@ import {
   Link as LinkIcon,
   Edit2,
   MapPin,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
@@ -63,6 +64,7 @@ export function RendezVous() {
   // États Gestion Event Types
   const [eventTypes, setEventTypes] = useState<any[]>([])
   const [isLoadingEvents, setIsLoadingEvents] = useState(false)
+  const [isDeletingEvent, setIsDeletingEvent] = useState<number | null>(null) // Pour le loader de suppression
   
   // États Modales
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false)
@@ -80,9 +82,10 @@ export function RendezVous() {
   const [isUpdatingEvent, setIsUpdatingEvent] = useState(false)
   const [noticeUnit, setNoticeUnit] = useState<'minutes' | 'hours'>('minutes')
 
-  // États Webhook
+  // États Webhook & Sync
   const [webhookCopied, setWebhookCopied] = useState(false)
   const [linkCopiedId, setLinkCopiedId] = useState<number | null>(null)
+  const [calBookings, setCalBookings] = useState<any[]>([]) // Stockage des réservations venant de Cal.com
 
   // États pour la gestion des meetings (Tableaux)
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
@@ -107,6 +110,7 @@ export function RendezVous() {
         setCalApiKey(data.cal_api_key)
         fetchEventTypes(data.cal_api_key)
         fetchCalProfile(data.cal_api_key)
+        fetchCalBookings(data.cal_api_key) // 👈 Récupération des status réels
       }
     }
     fetchProfile()
@@ -123,6 +127,7 @@ export function RendezVous() {
       setTimeout(() => setKeySaveSuccess(false), 3000)
       fetchEventTypes(calApiKey)
       fetchCalProfile(calApiKey)
+      fetchCalBookings(calApiKey)
     } catch (err) { alert("Impossible de sauvegarder la clé API") } finally { setIsSavingKey(false) }
   }
 
@@ -144,6 +149,42 @@ export function RendezVous() {
       if (data.user?.username) setCalUsername(data.user.username)
       else if (data.username) setCalUsername(data.username)
     } catch (error) { console.error(error) }
+  }
+
+  // 🆕 3c. Fetch Bookings (Pour le statut réel)
+  const fetchCalBookings = async (apiKey: string) => {
+    try {
+        // On récupère les 100 dernières réservations pour checker les statuts
+        const response = await fetch(`https://api.cal.com/v1/bookings?apiKey=${apiKey}&take=100`)
+        const data = await response.json()
+        if (data.bookings) {
+            setCalBookings(data.bookings)
+        }
+    } catch (error) {
+        console.error("Erreur fetch Bookings Cal.com:", error)
+    }
+  }
+
+  // 🆕 SUPPRESSION D'UN EVENT TYPE (Local + Cal.com)
+  const handleDeleteEventType = async (id: number) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce type d'événement définitivement (sur CloseOS et Cal.com) ?")) return
+    
+    setIsDeletingEvent(id)
+    try {
+        const response = await fetch(`https://api.cal.com/v1/event-types/${id}?apiKey=${calApiKey}`, {
+            method: 'DELETE'
+        })
+        
+        if (!response.ok) throw new Error("Erreur lors de la suppression")
+        
+        // Rafraichir la liste
+        await fetchEventTypes(calApiKey)
+    } catch (error) {
+        alert("Impossible de supprimer l'événement sur Cal.com")
+        console.error(error)
+    } finally {
+        setIsDeletingEvent(null)
+    }
   }
 
   // 4. Créer Event
@@ -246,18 +287,49 @@ export function RendezVous() {
     setTimeout(() => setWebhookCopied(false), 2000)
   }
 
-  // --- LOGIQUE TABLEAUX (Inchangée) ---
+  // --- LOGIQUE TABLEAUX AVEC SYNC STATUT ---
   const { upcomingMeetings, pastMeetings } = useMemo(() => {
-    const now = new Date(); const today = startOfDay(now);
-    const allMeetings = meetings || []; const upcoming = []; const past = [];
+    const now = new Date(); 
+    const today = startOfDay(now);
+    
+    // Fusionner les données de Supabase avec le statut réel de Cal.com
+    const allMeetings = (meetings || []).map(m => {
+        // Chercher une correspondance dans les bookings Cal.com récupérés
+        const calData = calBookings.find((b: any) => {
+             // Matching approximatif par date et nom (car pas toujours d'ID commun)
+             const dbDate = m.date; 
+             const calDate = b.startTime ? b.startTime.split('T')[0] : null;
+             return dbDate === calDate && (
+                 (b.attendees?.[0]?.name && m.contact && b.attendees[0].name.toLowerCase().includes(m.contact.toLowerCase())) ||
+                 (b.attendees?.[0]?.email && m.description && m.description.includes(b.attendees[0].email))
+             );
+        });
+
+        if (calData) {
+            // Si on trouve une correspondance, on prend le statut Cal.com
+            // CANCELLED, REJECTED, ACCEPTED
+            return { ...m, status: calData.status };
+        }
+        return m;
+    });
+
+    const upcoming = []; 
+    const past = [];
+    
     for (const m of allMeetings) {
       const meetingDate = parseISO(m.date);
-      if (isAfter(meetingDate, today) || m.date === format(now, 'yyyy-MM-dd')) { upcoming.push(m); } else { past.push(m); }
+      if (isAfter(meetingDate, today) || m.date === format(now, 'yyyy-MM-dd')) { 
+          upcoming.push(m); 
+      } else { 
+          past.push(m); 
+      }
     }
+    
     upcoming.sort((a, b) => compareAsc(parseISO(a.date + 'T' + a.time.split(' - ')[0]), parseISO(b.date + 'T' + b.time.split(' - ')[0])))
     past.sort((a, b) => compareDesc(parseISO(a.date + 'T' + a.time.split(' - ')[0]), parseISO(b.date + 'T' + b.time.split(' - ')[0])))
+    
     return { upcomingMeetings: upcoming, pastMeetings: past };
-  }, [meetings]);
+  }, [meetings, calBookings]);
 
   const handleUpdateStatus = async (newStatus: string) => {
     if (!selectedMeeting) return; setIsUpdatingStatus(true);
@@ -270,7 +342,22 @@ export function RendezVous() {
   };
 
   const safeFormat = (dateStr: string, formatStr: string) => { try { const date = parseISO(dateStr); return isValid(date) ? format(date, formatStr, { locale: fr }) : 'N/A'; } catch { return 'N/A' } }
-  const getStatusStyle = (s: string) => { s = s?.toLowerCase(); if (['upcoming', 'confirmé', 'confirmed', 'scheduled'].includes(s)) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'; if (['annulé', 'cancelled'].includes(s)) return 'bg-red-500/20 text-red-400 border-red-500/30'; return 'bg-slate-500/20 text-slate-400 border-slate-500/30'; }
+  
+  const getStatusStyle = (s: string) => { 
+      s = s?.toLowerCase(); 
+      if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'; 
+      if (['annulé', 'cancelled', 'rejected', 'canceled'].includes(s)) return 'bg-red-500/20 text-red-400 border-red-500/30'; 
+      return 'bg-slate-500/20 text-slate-400 border-slate-500/30'; 
+  }
+  
+  const getStatusLabel = (s: string) => {
+      s = s?.toLowerCase();
+      if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return 'Confirmé';
+      if (['annulé', 'cancelled', 'canceled'].includes(s)) return 'Annulé';
+      if (['rejected'].includes(s)) return 'Refusé';
+      return s;
+  }
+
   const getMeetingSource = (m: any) => { if (!m) return 'Réservation'; if (m.description?.match(/Type:\s*([^\n\r]+)/)) return m.description.match(/Type:\s*([^\n\r]+)/)[1].trim(); return 'Appel'; }
 
   // --- RENDU ---
@@ -290,7 +377,7 @@ export function RendezVous() {
                   <td className="px-6 py-4"><div className="flex items-center gap-3 text-white"><div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg bg-slate-800 border border-slate-700 font-bold"><span className="text-[10px] text-blue-500 uppercase">{safeFormat(m.date, 'MMM')}</span><span className="text-sm">{safeFormat(m.date, 'dd')}</span></div><div><div className="font-bold">{safeFormat(m.date, 'eeee d MMMM')}</div><div className="text-xs text-slate-500">{m.time}</div></div></div></td>
                   <td className="px-6 py-4 font-bold text-slate-200">{maskData(m.contact || 'Prospect', 'name')}</td>
                   <td className="px-6 py-4 text-sm text-blue-400 font-medium">{getMeetingSource(m)}</td>
-                  <td className="px-6 py-4"><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(m.status)}`}>{m.status === 'scheduled' || m.status === 'upcoming' ? 'Confirmé' : m.status}</span></td>
+                  <td className="px-6 py-4"><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(m.status)}`}>{getStatusLabel(m.status)}</span></td>
                   <td className="px-6 py-4 text-right"><ExternalLink className="h-4 w-4 text-slate-600 ml-auto" /></td>
                 </tr>
               ))
@@ -339,6 +426,15 @@ export function RendezVous() {
                             <div className="flex justify-between items-start mb-3">
                             <span className="inline-block rounded bg-slate-800 px-2 py-1 text-xs font-bold text-slate-400">{evt.length} min</span>
                             <div className="flex gap-2">
+                                {/* BOUTON SUPPRIMER LE LIEN */}
+                                <button 
+                                    onClick={() => handleDeleteEventType(evt.id)} 
+                                    disabled={isDeletingEvent === evt.id}
+                                    className="text-slate-500 hover:text-red-500 transition-colors"
+                                    title="Supprimer ce lien"
+                                >
+                                    {isDeletingEvent === evt.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4"/>}
+                                </button>
                                 <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-white" title="Ouvrir le lien"><ExternalLink className="h-4 w-4"/></a>
                             </div>
                             </div>
@@ -392,7 +488,8 @@ export function RendezVous() {
                 <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900 z-10">
                     <div>
                         <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center text-black font-bold">C</div>
+                            {/* LOGO PERSONNALISÉ */}
+                            <img src="/Calcom.png" alt="Cal.com" className="h-8 w-8 rounded-lg" />
                             Configuration Cal.com
                         </h2>
                         <p className="text-slate-400 text-sm mt-1">Paramètres de connexion et synchronisation.</p>
