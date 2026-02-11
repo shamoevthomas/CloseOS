@@ -1,16 +1,15 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+// api/cal-proxy.ts
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 1. Headers CORS pour autoriser ton site à parler à ce proxy
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+export default async function handler(req: any, res: any) {
+  // 1. Headers CORS permissifs (mais SANS Credentials pour éviter le conflit)
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
 
-  // 2. Répondre OK tout de suite si le navigateur demande la permission (Preflight)
+  // 2. Répondre OK immédiatement à la requête de pré-vérification (OPTIONS)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -22,21 +21,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // 3. Appel Serveur vers Cal.com (Ici, pas de blocage CORS car on est côté serveur)
-    const response = await fetch(
-      `https://api.cal.com/v1/bookings?apiKey=${apiKey}&take=100&status=CANCELLED,ACCEPTED,REJECTED`
-    );
+    // 3. Appel à Cal.com
+    // On utilise "global.fetch" qui est natif sous Node 18+ (standard Vercel)
+    const targetUrl = `https://api.cal.com/v1/bookings?apiKey=${apiKey}&take=100&status=CANCELLED,ACCEPTED,REJECTED`;
+    
+    const response = await fetch(targetUrl);
     
     if (!response.ok) {
-        throw new Error(`Erreur Cal.com: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Erreur Cal.com (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
     
-    // 4. On renvoie les données propres à ton site
+    // 4. Renvoi propre au frontend
     return res.status(200).json(data);
 
   } catch (error: any) {
-    return res.status(500).json({ error: error.message || 'Erreur interne' });
+    console.error("Proxy Error:", error);
+    // On renvoie l'erreur exacte pour le débuggage
+    return res.status(500).json({ 
+        error: error.message || 'Erreur interne du proxy',
+        details: error.toString() 
+    });
   }
 }
