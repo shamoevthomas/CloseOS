@@ -11,12 +11,13 @@ import {
   BarChart3, 
   Video, 
   Smartphone, 
-  Brain, 
+  // Brain, // Icône supprimée
   CreditCard, 
   CalendarCheck, 
   Lock,
   Coffee,
-  X // Ajout de l'icône de fermeture
+  X,
+  FileText // Nouvelle icône pour "Rapport"
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState } from 'react'
@@ -24,8 +25,9 @@ import { useNotifications } from '../contexts/NotificationsContext'
 import { useAuth } from '../contexts/AuthContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
 
+// Mise à jour de la navigation
 const navigation = [
-  { name: 'Cockpit', href: '/dashboard', icon: LayoutDashboard }, // ✅ CORRECTION ICI
+  { name: 'Cockpit', href: '/dashboard', icon: LayoutDashboard }, 
   { name: 'Pipeline', href: '/pipeline', icon: GitBranch },
   { name: 'Contacts', href: '/contacts', icon: Users },
   { name: 'Offres', href: '/offers', icon: Briefcase },
@@ -33,15 +35,15 @@ const navigation = [
   { name: 'Rendez-vous', href: '/rendez-vous', icon: CalendarCheck },
   { name: 'Appels', href: '/calls', icon: Video },
   { name: 'Téléphonie', href: '/telephony', icon: Smartphone },
-  { name: 'Coach IA', href: '/ai-coach', icon: Brain },
+  { name: 'Rapport', href: '/ai-coach', icon: FileText }, // Modification ici : Nom et Icône
   { name: 'Factures', href: '/invoices', icon: CreditCard },
   { name: 'KPI', href: '/kpi', icon: BarChart3 },
 ]
 
 interface SidebarProps {
   onOpenSettings: () => void
-  isOpen?: boolean // Nouvel accessoire pour le mobile
-  onClose?: () => void // Nouvelle fonction pour fermer sur mobile
+  isOpen?: boolean
+  onClose?: () => void
 }
 
 export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
@@ -62,7 +64,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Overlay pour mobile : Ferme la barre si on clique à côté */}
+      {/* Overlay pour mobile */}
       {isOpen && (
         <div 
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
@@ -74,15 +76,16 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
         "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-800 bg-slate-900 transition-transform duration-300 lg:static lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        {/* Logo & Bouton Fermer (Mobile uniquement) */}
+        {/* Logo & Bouton Fermer */}
         <div className="flex h-16 items-center justify-between px-6 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-              <Coffee className="h-5 w-5 text-white" />
-            </div>
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo.PNG" 
+              alt="CloserOS" 
+              className="h-8 w-auto object-contain rounded-md" 
+            />
             <span className="text-xl font-bold text-white">CloserOS</span>
           </div>
-          {/* Bouton de fermeture visible seulement sur mobile */}
           <button onClick={onClose} className="lg:hidden p-2 text-slate-400 hover:text-white">
             <X className="h-5 w-5" />
           </button>
