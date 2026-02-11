@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { CreditCard, TrendingUp, DollarSign, Calendar, FileText, Wallet, Building2, Eye, Download, Info } from 'lucide-react'
+import { CreditCard, TrendingUp, DollarSign, Calendar, FileText, Wallet, Building2, Eye, Download, Info, Clock } from 'lucide-react' // 👈 AJOUT IMPORT CLOCK
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { InvoiceGeneratorModal } from '../components/InvoiceGeneratorModal'
@@ -44,7 +44,7 @@ export function InvoicesPage() {
     if (data) setSavedInvoices(data)
   }
 
-  // MODIFICATION ICI : On recharge aussi quand le détail se ferme pour être sûr d'avoir le nouveau statut
+  // On recharge aussi quand le détail se ferme pour être sûr d'avoir le nouveau statut
   useEffect(() => {
     fetchInvoices()
   }, [isGeneratorOpen, isDetailOpen]) 
@@ -84,6 +84,22 @@ export function InvoicesPage() {
   }
 
   const selectedOffer = activeOffers.find((offer) => offer.id === selectedOfferId)
+
+  // --- 🚀 NOUVEAU CALCUL : PAIEMENTS EN ATTENTE ---
+  const pendingStats = useMemo(() => {
+    const pendingInvoices = savedInvoices.filter(inv => 
+      ['en_attente', 'retard', 'autre'].includes(inv.status) || 
+      inv.status === 'en attente' // Compatibilité au cas où
+    );
+    
+    const totalPending = pendingInvoices.reduce((sum, inv) => sum + (inv.amount_ttc || 0), 0);
+    
+    return {
+      amount: totalPending,
+      count: pendingInvoices.length
+    };
+  }, [savedInvoices]);
+  // ------------------------------------------------
 
   const stats = useMemo(() => {
     if (!selectedOffer) {
@@ -191,14 +207,14 @@ export function InvoicesPage() {
     return d.toLocaleDateString('fr-FR')
   }
 
-  // Helper pour afficher la couleur du statut (Ajout des anciens statuts pour compatibilité)
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'payé': return 'bg-emerald-500/10 text-emerald-400';
-      case 'envoyée': return 'bg-emerald-500/10 text-emerald-400'; // Compatible avec l'existant
-      case 'générée': return 'bg-cyan-500/10 text-cyan-400'; // Compatible avec l'existant
+      case 'envoyée': return 'bg-emerald-500/10 text-emerald-400'; 
+      case 'générée': return 'bg-cyan-500/10 text-cyan-400'; 
       case 'retard': return 'bg-rose-500/10 text-rose-400';
       case 'en attente': return 'bg-amber-500/10 text-amber-400';
+      case 'en_attente': return 'bg-amber-500/10 text-amber-400'; // Correction doublon
       default: return 'bg-slate-500/10 text-slate-400';
     }
   };
@@ -281,7 +297,8 @@ export function InvoicesPage() {
 
       {selectedOffer ? (
         <>
-          <div className="mb-8 grid gap-6 md:grid-cols-3">
+          {/* 👇 GRILLE MODIFIÉE POUR 4 COLONNES */}
+          <div className="mb-8 grid gap-6 md:grid-cols-4">
             <div className="rounded-xl border border-slate-800 bg-gradient-to-br from-blue-500/10 to-blue-600/10 p-6">
               <div className="mb-4 flex items-center gap-3">
                 <div className="rounded-full bg-blue-500/20 p-3">
@@ -323,6 +340,20 @@ export function InvoicesPage() {
                 </div>
               </div>
               <p className="text-xs text-slate-500">Par deal/mensualité</p>
+            </div>
+
+            {/* 🚀 NOUVELLE BULLE : PAIEMENTS EN ATTENTE */}
+            <div className="rounded-xl border border-slate-800 bg-gradient-to-br from-amber-500/10 to-amber-600/10 p-6">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="rounded-full bg-amber-500/20 p-3">
+                  <Clock className="h-6 w-6 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-400">En attente</p>
+                  <p className="text-2xl font-bold text-white">{formatCurrency(pendingStats.amount)}</p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500">{pendingStats.count} facture(s) non réglée(s)</p>
             </div>
           </div>
 
@@ -460,73 +491,77 @@ export function InvoicesPage() {
       )}
 
       <div className="mt-12">
-        <h2 className="mb-4 text-xl font-bold text-white">Historique des factures</h2>
-        <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 shadow-lg">
-          <table className="w-full text-left text-sm text-slate-300">
-            <thead className="bg-slate-800/50 text-xs uppercase text-slate-500">
-              <tr>
-                <th className="px-6 py-4">N° Facture</th>
-                <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4">Client / Offre</th>
-                <th className="px-6 py-4">Montant TTC</th>
-                <th className="px-6 py-4">Statut</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {savedInvoices.map((inv) => (
-                <tr 
-                  key={inv.id} 
-                  onClick={() => { setSelectedInvoice(inv); setIsDetailOpen(true); }} // 👈 AJOUT CLICK
-                  className="transition-colors hover:bg-slate-800/30 cursor-pointer" // 👈 AJOUT CURSOR POINTER
-                >
-                  <td className="px-6 py-4 font-mono font-medium text-purple-400">{inv.invoice_number}</td>
-                  <td className="px-6 py-4">{new Date(inv.created_at).toLocaleDateString()}</td>
-                  <td className="px-6 py-4">
-                    <div className="font-semibold text-white">{inv.client_name}</div>
-                    <div className="text-xs text-slate-500">{inv.offer_name}</div>
-                  </td>
-                  <td className="px-6 py-4 font-bold text-white">{formatCurrency(inv.amount_ttc)}</td>
-                  <td className="px-6 py-4">
-                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(inv.status)}`}>
-                      {inv.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}> 
-                    {/* e.stopPropagation() évite d'ouvrir la modale si on clique juste sur les boutons de téléchargement */}
-                    {inv.pdf_url && (
-                      <div className="flex justify-end gap-3">
-                        <a 
-                          href={inv.pdf_url} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="text-slate-400 hover:text-purple-400 transition-colors"
-                          title="Voir"
-                        >
-                          <Eye className="h-5 w-5" />
-                        </a>
-                        <a 
-                          href={inv.pdf_url} 
-                          download 
-                          className="text-slate-400 hover:text-emerald-400 transition-colors"
-                          title="Télécharger"
-                        >
-                          <Download className="h-5 w-5" />
-                        </a>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {savedInvoices.length === 0 && (
+        {/* 👇 TITRE RENOMMÉ */}
+        <h2 className="mb-4 text-xl font-bold text-white">Mes factures</h2>
+        
+        {/* 👇 TABLEAU SCROLLABLE (4 lignes visibles max) */}
+        <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 shadow-lg flex flex-col">
+          <div className="overflow-y-auto max-h-[350px]"> {/* Environ 4-5 lignes de hauteur */}
+            <table className="w-full text-left text-sm text-slate-300 relative border-collapse">
+              <thead className="bg-slate-900 text-xs uppercase text-slate-500 sticky top-0 z-10 shadow-sm">
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500 italic">
-                    Aucune facture enregistrée dans l'historique.
-                  </td>
+                  <th className="px-6 py-4 bg-slate-900">N° Facture</th>
+                  <th className="px-6 py-4 bg-slate-900">Date</th>
+                  <th className="px-6 py-4 bg-slate-900">Client / Offre</th>
+                  <th className="px-6 py-4 bg-slate-900">Montant TTC</th>
+                  <th className="px-6 py-4 bg-slate-900">Statut</th>
+                  <th className="px-6 py-4 text-right bg-slate-900">Actions</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {savedInvoices.map((inv) => (
+                  <tr 
+                    key={inv.id} 
+                    onClick={() => { setSelectedInvoice(inv); setIsDetailOpen(true); }} 
+                    className="transition-colors hover:bg-slate-800/30 cursor-pointer"
+                  >
+                    <td className="px-6 py-4 font-mono font-medium text-purple-400">{inv.invoice_number}</td>
+                    <td className="px-6 py-4">{new Date(inv.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-white">{inv.client_name}</div>
+                      <div className="text-xs text-slate-500">{inv.offer_name}</div>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-white">{formatCurrency(inv.amount_ttc)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(inv.status)}`}>
+                        {inv.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}> 
+                      {inv.pdf_url && (
+                        <div className="flex justify-end gap-3">
+                          <a 
+                            href={inv.pdf_url} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-slate-400 hover:text-purple-400 transition-colors"
+                            title="Voir"
+                          >
+                            <Eye className="h-5 w-5" />
+                          </a>
+                          <a 
+                            href={inv.pdf_url} 
+                            download 
+                            className="text-slate-400 hover:text-emerald-400 transition-colors"
+                            title="Télécharger"
+                          >
+                            <Download className="h-5 w-5" />
+                          </a>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {savedInvoices.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-10 text-center text-slate-500 italic">
+                      Aucune facture enregistrée dans l'historique.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -556,7 +591,6 @@ export function InvoicesPage() {
         onClose={() => setIsStripeConnectOpen(false)}
       />
 
-      {/* 👈 AJOUT MODAL DÉTAILS */}
       <InvoiceDetailModal
         invoice={selectedInvoice}
         isOpen={isDetailOpen}
