@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { 
   X, 
   Shield, 
@@ -15,11 +15,12 @@ import {
   ExternalLink, 
   Mail,
   Camera,
-  Globe, // Ajouté pour le fuseau horaire
-  Trash2 // Ajouté pour la suppression
+  Globe, 
+  Trash2,
+  Search // Ajouté pour la recherche
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase' // Assurez-vous que ce chemin est bon
+import { supabase } from '../../lib/supabase' 
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -31,9 +32,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'mail' | 'timezone' | 'subscription' | 'support' | 'delete_account'>('profile')
   const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false) // État pour l'upload d'image
+  const [uploading, setUploading] = useState(false) 
   const [message, setMessage] = useState({ type: '', text: '' })
-  const fileInputRef = useRef<HTMLInputElement>(null) // Référence pour l'input caché
+  const fileInputRef = useRef<HTMLInputElement>(null) 
+
+  // États pour la recherche et le filtrage des fuseaux
+  const [searchTerm, setSearchTerm] = useState('')
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -41,18 +45,38 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     role: '',
     newPassword: '',
     avatar_url: '',
-    timezone: 'Europe/Paris' // Nouveau champ pour le fuseau horaire
+    timezone: 'Europe/Paris'
   })
 
-  // Récupération des données au chargement
+  // ✅ LOGIQUE DE GROUPEMENT PAR CONTINENT ET FILTRAGE
+  const groupedTimezones = useMemo(() => {
+    const allTimezones = Intl.supportedValuesOf('timeZone')
+    const searchLower = searchTerm.toLowerCase()
+    
+    const filtered = allTimezones.filter(tz => 
+      tz.toLowerCase().includes(searchLower) || 
+      tz.replace(/_/g, ' ').toLowerCase().includes(searchLower)
+    )
+
+    const groups: { [key: string]: string[] } = {}
+    
+    filtered.forEach(tz => {
+      const parts = tz.split('/')
+      const continent = parts.length > 1 ? parts[0] : 'Autres'
+      if (!groups[continent]) groups[continent] = []
+      groups[continent].push(tz)
+    })
+
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
+  }, [searchTerm])
+
   useEffect(() => {
     const fetchProfileData = async () => {
       if (user && isOpen) {
-        // On récupère les données fraîches depuis Supabase pour avoir l'avatar
         const { data } = await supabase
           .from('profiles')
           .select('full_name, phone, role, avatar_url, timezone')
-          .eq('id', user.id)
+          .eq(user.id)
           .single()
 
         setFormData(prev => ({
@@ -71,7 +95,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   if (!isOpen) return null
 
-  // --- GESTION PHOTO DE PROFIL ---
   const handleAvatarClick = () => {
     fileInputRef.current?.click()
   }
@@ -90,49 +113,39 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       const fileName = `${user?.id}-${Math.random()}.${fileExt}`
       const filePath = `${fileName}`
 
-      // 1. Upload vers Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file)
 
       if (uploadError) throw uploadError
 
-      // 2. Récupérer l'URL publique
       const { data: urlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath)
 
-      // 3. Mettre à jour le profil
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: urlData.publicUrl })
-        .eq('id', user?.id)
+        .eq(user?.id)
 
       if (updateError) throw updateError
 
-      // --- AJOUT POUR LA SIDEBAR : Mise à jour des métadonnées Auth ---
       await updateProfile({
         avatar_url: urlData.publicUrl
       })
 
-      // 4. Mise à jour locale
       setFormData(prev => ({ ...prev, avatar_url: urlData.publicUrl }))
       setMessage({ type: 'success', text: 'Photo de profil mise à jour !' })
-      
-      // Alerte de succès
       window.alert("Fait avec succès : Photo de profil mise à jour !")
 
     } catch (error: any) {
       console.error('Erreur upload:', error)
       setMessage({ type: 'error', text: 'Erreur lors de l\'upload de l\'image.' })
-      
-      // Alerte d'erreur concernant la photo
       window.alert("Erreur concernant la photo : " + error.message)
     } finally {
       setUploading(false)
     }
   }
-  // ------------------------------
 
   const handleManageBilling = () => {
     window.open('https://billing.stripe.com/p/login/3cI00c3qReYdd9a1wsbjW00', '_blank');
@@ -141,17 +154,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    // Note: updateProfile ne gère généralement que les métadonnées auth, 
-    // on s'assure ici de sauvegarder aussi dans la table profiles si nécessaire via le contexte
     const { error } = await updateProfile({
       full_name: formData.full_name,
       phone: formData.phone,
       role: formData.role,
-      avatar_url: formData.avatar_url, // Ajouté pour garder la Sidebar synchronisée
+      avatar_url: formData.avatar_url,
       timezone: formData.timezone
     })
     
-    // Double sécurité : Update direct dans la table profiles pour être sûr
     let dbErrorMsg = null;
     if (!error && user) {
         const { error: dbError } = await supabase.from('profiles').update({
@@ -159,7 +169,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             phone: formData.phone,
             role: formData.role,
             timezone: formData.timezone
-        }).eq('id', user.id)
+        }).eq(user.id)
         if (dbError) dbErrorMsg = dbError.message;
     }
 
@@ -264,7 +274,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         <div className="flex-1 flex flex-col bg-[#020617]/50 backdrop-blur-sm overflow-hidden text-left z-10 relative">
           <div className="px-10 py-8 border-b border-white/5 flex justify-between items-center">
             <div>
-                <h2 className="text-2xl font-bold text-white">
+                <h2 className="text-2xl font-bold text-white text-left">
                 {activeTab === 'profile' && 'Mon Profil'}
                 {activeTab === 'mail' && 'Adresse Email'}
                 {activeTab === 'timezone' && 'Fuseau Horaire'}
@@ -273,7 +283,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 {activeTab === 'support' && 'Centre d\'Aide'}
                 {activeTab === 'delete_account' && 'Suppression du compte'}
                 </h2>
-                <p className="text-slate-400 text-sm mt-1">
+                <p className="text-slate-400 text-sm mt-1 text-left">
                 {activeTab === 'profile' && 'Gérez vos informations personnelles et votre rôle.'}
                 {activeTab === 'mail' && 'Consultez l\'adresse email reliée à votre compte.'}
                 {activeTab === 'timezone' && 'Réglez votre fuseau horaire pour vos rendez-vous.'}
@@ -285,7 +295,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-10 custom-scrollbar text-left">
             {message.text && (
               <div className={`mb-8 flex items-center gap-3 p-4 rounded-xl border ${
                 message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
@@ -297,12 +307,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             {/* --- ONGLET PROFIL --- */}
             {activeTab === 'profile' && (
-              <form onSubmit={handleUpdateProfile} className="space-y-8 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <form onSubmit={handleUpdateProfile} className="space-y-8 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                 
                 {/* SECTION AVATAR MODIFIABLE */}
                 <div className="flex items-center gap-6 p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                   <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
-                    {/* INPUT CACHÉ */}
                     <input
                         type="file"
                         ref={fileInputRef}
@@ -312,7 +321,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         disabled={uploading}
                     />
                     
-                    {/* AFFICHAGE IMAGE OU INITIALES */}
                     <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/10 shadow-xl shadow-blue-500/20 group-hover:border-blue-500 transition-all">
                         {formData.avatar_url ? (
                             <img src={formData.avatar_url} alt="Profil" className="w-full h-full object-cover" />
@@ -323,7 +331,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         )}
                     </div>
 
-                    {/* OVERLAY DE CHARGEMENT OU ICÔNE */}
                     <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         {uploading ? (
                             <Loader2 className="h-6 w-6 text-white animate-spin" />
@@ -343,49 +350,41 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                 <div className="grid gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                      Nom complet
-                    </label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">Nom complet</label>
                     <input
                       type="text"
                       disabled
                       value={formData.full_name}
-                      className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-slate-500 cursor-not-allowed outline-none transition-all font-medium"
+                      className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-slate-500 cursor-not-allowed outline-none transition-all font-medium text-left"
                     />
                     <div className="flex items-start gap-2 mt-2 px-1">
                       <AlertCircle className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
-                      <p className="text-xs text-blue-300/80 leading-relaxed text-left">
-                        Le nom est verrouillé pour garantir la stabilité de vos liens. Contactez le support pour le modifier.
-                      </p>
+                      <p className="text-xs text-blue-300/80 leading-relaxed text-left">Le nom est verrouillé pour garantir la stabilité de vos liens.</p>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                       Numéro de téléphone
-                    </label>
+                  <div className="space-y-2 text-left">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">Numéro de téléphone</label>
                     <div className="relative">
                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                         <input
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-left"
                         placeholder="+33 6 00 00 00 00"
                         />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                       Spécialité / Rôle
-                    </label>
+                  <div className="space-y-2 text-left">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">Spécialité / Rôle</label>
                     <div className="relative">
                         <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                         <select
                         value={formData.role}
                         onChange={(e) => setFormData({...formData, role: e.target.value})}
-                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all cursor-pointer appearance-none"
+                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all cursor-pointer appearance-none text-left"
                         >
                         <option value="Closer">Closer</option>
                         <option value="Setter">Setter</option>
@@ -409,45 +408,66 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {/* --- ONGLET MAIL --- */}
             {activeTab === 'mail' && (
               <div className="space-y-6 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Adresse Email actuelle</label>
-                  <div className="relative">
+                <div className="space-y-2 text-left">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Adresse Email actuelle</label>
+                  <div className="relative text-left">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                     <input
                       type="email"
                       readOnly
                       value={user?.email || ''}
-                      className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-slate-400 cursor-default outline-none"
+                      className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-slate-400 cursor-default outline-none text-left"
                     />
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">Pour modifier votre adresse email, veuillez contacter notre support technique.</p>
+                  <p className="text-xs text-slate-500 mt-2 text-left">Pour modifier votre email, contactez le support.</p>
                 </div>
               </div>
             )}
 
-            {/* --- ONGLET FUSEAU HORAIRE (AVEC TOUS LES FUSEAUX) --- */}
+            {/* --- ONGLET FUSEAU HORAIRE (AVEC RECHERCHE ET SECTIONS) --- */}
             {activeTab === 'timezone' && (
               <form onSubmit={handleUpdateProfile} className="space-y-6 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Votre Fuseau Horaire</label>
-                  <div className="relative">
-                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                    <select
-                      value={formData.timezone}
-                      onChange={(e) => setFormData({...formData, timezone: e.target.value})}
-                      className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 outline-none cursor-pointer appearance-none"
-                    >
-                      {/* ✅ Génération dynamique de tous les fuseaux horaires du monde */}
-                      {Intl.supportedValuesOf('timeZone').map((tz) => (
-                        <option key={tz} value={tz}>
-                          {tz.replace(/_/g, ' ')}
-                        </option>
-                      ))}
-                    </select>
+                <div className="space-y-4 text-left">
+                  
+                  {/* BARRE DE RECHERCHE */}
+                  <div className="space-y-2 text-left">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Rechercher un fuseau</label>
+                    <div className="relative text-left">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                      <input
+                        type="text"
+                        placeholder="Ex: Paris, New York, Tokyo..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 outline-none transition-all text-left"
+                      />
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-500">Ce réglage assure que vos rendez-vous et votre agenda sont toujours à l'heure.</p>
+
+                  <div className="space-y-2 text-left">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Sélectionner votre fuseau</label>
+                    <div className="relative text-left">
+                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                      <select
+                        value={formData.timezone}
+                        onChange={(e) => setFormData({...formData, timezone: e.target.value})}
+                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 outline-none cursor-pointer appearance-none text-left"
+                      >
+                        {groupedTimezones.map(([continent, tzs]) => (
+                          <optgroup key={continent} label={continent} className="bg-slate-900 text-blue-400 font-bold uppercase tracking-widest text-[10px]">
+                            {tzs.map((tz) => (
+                              <option key={tz} value={tz} className="bg-slate-900 text-white font-medium capitalize text-sm py-2">
+                                {tz.split('/').slice(1).join(' / ').replace(/_/g, ' ') || tz}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="text-xs text-slate-500 text-left">Indispensable pour vos rappels et votre agenda.</p>
+                  </div>
                 </div>
-                <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3">
+                <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20">
                   {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Save className="h-5 w-5" />}
                   Mettre à jour le fuseau
                 </button>
@@ -463,21 +483,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <Shield className="h-6 w-6 text-blue-400 shrink-0" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-white mb-1 text-lg">Authentification Google active</h4>
-                      <p className="text-sm text-blue-200/70 leading-relaxed text-left">Votre compte est sécurisé par Google. La gestion du mot de passe se fait directement via votre compte Google.</p>
+                      <h4 className="font-bold text-white mb-1 text-lg text-left">Authentification Google active</h4>
+                      <p className="text-sm text-blue-200/70 leading-relaxed text-left">Votre compte est sécurisé par Google. La gestion du mot de passe se fait via Google.</p>
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleUpdatePassword} className="space-y-6">
+                  <form onSubmit={handleUpdatePassword} className="space-y-6 text-left">
                     <div className="space-y-2 text-left">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left">Nouveau mot de passe</label>
-                      <div className="relative">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Nouveau mot de passe</label>
+                      <div className="relative text-left">
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                         <input
                             type="password"
                             value={formData.newPassword}
                             onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
-                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-left"
                             placeholder="8 caractères minimum"
                             minLength={8}
                         />
@@ -486,7 +506,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <button 
                       type="submit" 
                       disabled={loading || !formData.newPassword} 
-                      className="w-full bg-white/5 hover:bg-white/10 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-white/10 hover:border-white/20"
+                      className="w-full bg-white/5 hover:bg-white/10 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-white/10 hover:border-white/20 text-left"
                     >
                       {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Shield className="h-5 w-5" />}
                       Mettre à jour le mot de passe
@@ -499,19 +519,19 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {/* --- ONGLET SUPPRESSION --- */}
             {activeTab === 'delete_account' && (
               <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                <div className="p-8 border border-red-500/20 bg-red-500/5 rounded-3xl space-y-6">
-                  <div className="flex items-center gap-4 text-red-400">
-                    <AlertCircle className="h-8 w-8" />
-                    <h3 className="text-xl font-bold">Zone de danger</h3>
+                <div className="p-8 border border-red-500/20 bg-red-500/5 rounded-3xl space-y-6 text-left">
+                  <div className="flex items-center gap-4 text-red-400 text-left">
+                    <AlertCircle className="h-8 w-8 text-left" />
+                    <h3 className="text-xl font-bold text-left">Zone de danger</h3>
                   </div>
-                  <p className="text-slate-400 leading-relaxed">
-                    La suppression de votre compte entraînera la perte définitive de tous vos contacts, offres, rendez-vous et historiques d'appels. Cette action est irréversible.
+                  <p className="text-slate-400 leading-relaxed text-left">
+                    La suppression est irréversible. Toutes vos données seront effacées définitivement.
                   </p>
                   <button 
                     onClick={handleDeleteAccount}
-                    className="flex items-center gap-3 px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20"
+                    className="flex items-center gap-3 px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20 text-left"
                   >
-                    <Trash2 className="h-5 w-5" />
+                    <Trash2 className="h-5 w-5 text-left" />
                     Supprimer mon compte et mes données
                   </button>
                 </div>
@@ -520,63 +540,62 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             {/* --- ONGLET ABONNEMENT --- */}
             {activeTab === 'subscription' && (
-                <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                     <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden text-left">
-                        <div className="absolute top-0 right-0 p-3 opacity-10">
-                            <CreditCard className="w-32 h-32 text-white" />
+                        <div className="absolute top-0 right-0 p-3 opacity-10 text-left">
+                            <CreditCard className="w-32 h-32 text-white text-left" />
                         </div>
-                        <div className="relative z-10">
-                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-bold uppercase tracking-wider mb-4">
-                                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                        <div className="relative z-10 text-left">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-bold uppercase tracking-wider mb-4 text-left">
+                                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse text-left"></span>
                                 Plan Actif
                             </span>
-                            <h3 className="text-3xl font-bold text-white mb-2">Founder Edition</h3>
+                            <h3 className="text-3xl font-bold text-white mb-2 text-left">Founder Edition</h3>
                             <p className="text-slate-300 mb-6 max-w-md text-left">
-                                Vous bénéficiez de l'accès complet à CloseOS. 
-                                Vous pouvez gérer votre méthode de paiement, télécharger vos factures ou résilier à tout moment.
+                                Gérez vos paiements et factures en toute sécurité via Stripe.
                             </p>
                             <button 
                                 onClick={handleManageBilling}
-                                className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg flex items-center gap-2"
+                                className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg flex items-center gap-2 text-left"
                             >
-                                <ExternalLink className="h-4 w-4" />
-                                Gérer ou Résilier l'abonnement (Stripe)
+                                <ExternalLink className="h-4 w-4 text-left" />
+                                Gérer ou Résilier l'abonnement
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* --- ONGLET SUPPORT (INTÉGRALITÉ RESTAURÉE) --- */}
+            {/* --- ONGLET SUPPORT --- */}
             {activeTab === 'support' && (
                 <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                    <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02]">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 group-hover:text-blue-300 transition-colors">
-                                    <Mail className="h-6 w-6" />
+                    <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02] text-left">
+                        <div className="flex items-center justify-between text-left">
+                            <div className="flex items-center gap-4 text-left">
+                                <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 group-hover:text-blue-300 transition-colors text-left">
+                                    <Mail className="h-6 w-6 text-left" />
                                 </div>
-                                <div>
+                                <div className="text-left">
                                     <h4 className="font-bold text-white text-lg text-left">Email Support</h4>
                                     <p className="text-sm text-slate-400 text-left">Réponse sous 24h ouvrées</p>
                                 </div>
                             </div>
-                            <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
+                            <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white text-left" />
                         </div>
                     </a>
 
-                    <a href="#" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02]">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors">
-                                    <AlertCircle className="h-6 w-6" />
+                    <a href="#" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02] text-left">
+                        <div className="flex items-center justify-between text-left">
+                            <div className="flex items-center gap-4 text-left">
+                                <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors text-left">
+                                    <AlertCircle className="h-6 w-6 text-left" />
                                 </div>
-                                <div>
-                                    <h4 className="font-bold text-white text-lg">Centre d'aide & FAQ</h4>
-                                    <p className="text-sm text-slate-400">Guides et tutoriels (Bientôt disponible)</p>
+                                <div className="text-left">
+                                    <h4 className="font-bold text-white text-lg text-left">Centre d'aide & FAQ</h4>
+                                    <p className="text-sm text-slate-400 text-left">Guides et tutoriels (Bientôt disponible)</p>
                                 </div>
                             </div>
-                            <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
+                            <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white text-left" />
                         </div>
                     </a>
                 </div>
