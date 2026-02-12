@@ -109,10 +109,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       // 4. Mise à jour locale
       setFormData(prev => ({ ...prev, avatar_url: urlData.publicUrl }))
       setMessage({ type: 'success', text: 'Photo de profil mise à jour !' })
+      
+      // Alerte de succès
+      window.alert("Fait avec succès : Photo de profil mise à jour !")
 
     } catch (error: any) {
       console.error('Erreur upload:', error)
       setMessage({ type: 'error', text: 'Erreur lors de l\'upload de l\'image.' })
+      
+      // Alerte d'erreur concernant la photo
+      window.alert("Erreur concernant la photo : " + error.message)
     } finally {
       setUploading(false)
     }
@@ -135,16 +141,25 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     })
     
     // Double sécurité : Update direct dans la table profiles pour être sûr
+    let dbErrorMsg = null;
     if (!error && user) {
-        await supabase.from('profiles').update({
+        const { error: dbError } = await supabase.from('profiles').update({
             full_name: formData.full_name,
             phone: formData.phone,
             role: formData.role
         }).eq('id', user.id)
+        if (dbError) dbErrorMsg = dbError.message;
     }
 
-    if (error) setMessage({ type: 'error', text: error.message })
-    else setMessage({ type: 'success', text: 'Profil mis à jour avec succès !' })
+    if (error || dbErrorMsg) {
+        const finalError = error?.message || dbErrorMsg;
+        setMessage({ type: 'error', text: finalError })
+        window.alert("Il y a une erreur : " + finalError)
+    }
+    else {
+        setMessage({ type: 'success', text: 'Profil mis à jour avec succès !' })
+        window.alert("Fait avec succès !")
+    }
     setLoading(false)
   }
 
