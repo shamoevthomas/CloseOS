@@ -306,48 +306,28 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 Plan Actif
                             </span>
                             <h3 className="text-3xl font-bold text-white mb-2">Founder Edition</h3>
-                            <p className="text-slate-300 mb-6 max-w-md">Vous bénéficiez de l'accès complet à CloseOS avec toutes les fonctionnalités débloquées à vie.</p>
+                            <p className="text-slate-300 mb-6 max-w-md">
+                                Vous bénéficiez de l'accès complet à CloseOS. 
+                                Vous pouvez gérer votre méthode de paiement, télécharger vos factures ou résilier à tout moment.
+                            </p>
                             
                             <button 
                                 onClick={handleManageBilling}
                                 className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg flex items-center gap-2"
                             >
                                 <ExternalLink className="h-4 w-4" />
-                                Gérer ma facturation (Stripe)
+                                Gérer ou Résilier l'abonnement (Stripe)
                             </button>
                         </div>
                     </div>
 
-                    {/* Historique (Placeholder pour le moment) */}
-                    <div>
-                        <h4 className="text-lg font-bold text-white mb-4">Historique des factures</h4>
-                        <div className="rounded-xl border border-white/5 bg-slate-900/30 overflow-hidden">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-white/5 text-slate-400 font-bold">
-                                    <tr>
-                                        <th className="px-6 py-3">Date</th>
-                                        <th className="px-6 py-3">Montant</th>
-                                        <th className="px-6 py-3">Statut</th>
-                                        <th className="px-6 py-3 text-right">Reçu</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    <tr>
-                                        <td className="px-6 py-4 text-white">12 Fév 2026</td>
-                                        <td className="px-6 py-4 text-white">29.00 €</td>
-                                        <td className="px-6 py-4"><span className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">Payé</span></td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button 
-                                                onClick={handleManageBilling}
-                                                className="text-slate-400 hover:text-white underline"
-                                            >
-                                                Voir sur Stripe
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                    {/* Information supplémentaire */}
+                    <div className="p-4 rounded-xl bg-slate-800/50 border border-white/5 flex gap-3 text-sm text-slate-400">
+                        <AlertCircle className="h-5 w-5 text-slate-500 shrink-0" />
+                        <p>
+                            En cliquant sur le bouton ci-dessus, vous serez redirigé vers notre portail sécurisé Stripe où vous pourrez 
+                            télécharger vos factures, changer de carte bancaire ou <strong>annuler votre abonnement</strong>.
+                        </p>
                     </div>
                 </div>
             )}
