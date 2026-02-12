@@ -1,5 +1,20 @@
 import { useState, useEffect } from 'react'
-import { X, Shield, User, Save, Phone, Briefcase, Lock, Loader2, Check, AlertCircle } from 'lucide-react'
+import { 
+  X, 
+  Shield, 
+  User, 
+  Save, 
+  Phone, 
+  Briefcase, 
+  Lock, 
+  Loader2, 
+  Check, 
+  AlertCircle, 
+  CreditCard, 
+  Headphones, 
+  ExternalLink, 
+  Mail 
+} from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 interface SettingsModalProps {
@@ -10,7 +25,8 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, updateProfile, updatePassword } = useAuth()
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile')
+  // Ajout des onglets 'subscription' et 'support'
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'support'>('profile')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
@@ -30,7 +46,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         role: user.user_metadata?.role || '',
       }))
     }
-    // On réinitialise le message quand on change d'onglet
     setMessage({ type: '', text: '' })
   }, [user, isOpen, activeTab])
 
@@ -63,123 +78,162 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const isGoogleUser = user?.app_metadata?.provider === 'google'
 
+  // Fonction utilitaire pour le style des onglets
+  const tabButtonClass = (tabName: string) => `
+    w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all
+    ${activeTab === tabName 
+      ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20' 
+      : 'text-slate-400 hover:bg-white/5 hover:text-white'}
+  `
+
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-4xl rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden flex flex-col md:flex-row h-[620px]">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-[#020617] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[700px] relative">
         
+        {/* Background Gradients */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+            <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-600/5 blur-[100px] rounded-full" />
+            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/5 blur-[100px] rounded-full" />
+        </div>
+
         {/* SIDEBAR GAUCHE */}
-        <div className="w-full md:w-64 border-r border-slate-700 bg-slate-800/30 p-6 flex flex-col">
-          <h2 className="text-xl font-bold text-white mb-8 mt-2">Paramètres</h2>
-          <nav className="space-y-3 flex-1">
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                activeTab === 'profile' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
+        <div className="w-full md:w-72 border-r border-white/5 bg-slate-900/30 p-6 flex flex-col backdrop-blur-sm z-10">
+          <div className="flex items-center gap-3 mb-8 px-2">
+             <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                <User className="h-5 w-5 text-white" />
+             </div>
+             <h2 className="text-xl font-bold text-white">Paramètres</h2>
+          </div>
+          
+          <nav className="space-y-2 flex-1">
+            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Compte</p>
+            <button onClick={() => setActiveTab('profile')} className={tabButtonClass('profile')}>
               <User className="w-4 h-4" /> Profil
             </button>
-            <button
-              onClick={() => setActiveTab('security')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                activeTab === 'security' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
+            <button onClick={() => setActiveTab('security')} className={tabButtonClass('security')}>
               <Lock className="w-4 h-4" /> Sécurité
             </button>
+
+            <div className="my-6 h-px bg-white/5 mx-4" />
+            
+            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Abonnement</p>
+            <button onClick={() => setActiveTab('subscription')} className={tabButtonClass('subscription')}>
+              <CreditCard className="w-4 h-4" /> Facturation
+            </button>
+
+            <div className="my-6 h-px bg-white/5 mx-4" />
+
+            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Aide</p>
+            <button onClick={() => setActiveTab('support')} className={tabButtonClass('support')}>
+              <Headphones className="w-4 h-4" /> Support
+            </button>
           </nav>
-          <button onClick={onClose} className="mt-auto flex items-center gap-2 px-4 py-2 text-slate-400 hover:text-white font-medium transition-colors">
+
+          <button onClick={onClose} className="mt-auto flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-white font-bold transition-colors rounded-xl hover:bg-white/5">
             <X className="w-4 h-4" /> Fermer
           </button>
         </div>
 
         {/* ZONE DE CONTENU DROITE */}
-        <div className="flex-1 flex flex-col bg-slate-900 overflow-hidden text-left">
-          <div className="px-10 py-8 border-b border-slate-800">
-            <h2 className="text-2xl font-bold text-white">
-              {activeTab === 'profile' ? 'Mon Profil' : 'Sécurité du compte'}
-            </h2>
-            <p className="text-slate-400 text-sm mt-1">
-              {activeTab === 'profile' ? 'Gérez vos informations personnelles et votre rôle.' : 'Sécurisez l\'accès à votre compte CloserOS.'}
-            </p>
+        <div className="flex-1 flex flex-col bg-[#020617]/50 backdrop-blur-sm overflow-hidden text-left z-10 relative">
+          <div className="px-10 py-8 border-b border-white/5 flex justify-between items-center">
+            <div>
+                <h2 className="text-2xl font-bold text-white">
+                {activeTab === 'profile' && 'Mon Profil'}
+                {activeTab === 'security' && 'Sécurité & Connexion'}
+                {activeTab === 'subscription' && 'Mon Abonnement'}
+                {activeTab === 'support' && 'Centre d\'Aide'}
+                </h2>
+                <p className="text-slate-400 text-sm mt-1">
+                {activeTab === 'profile' && 'Gérez vos informations personnelles et votre rôle.'}
+                {activeTab === 'security' && 'Protégez l\'accès à votre compte CloserOS.'}
+                {activeTab === 'subscription' && 'Gérez votre plan et vos factures.'}
+                {activeTab === 'support' && 'Une question ? Notre équipe est là pour vous.'}
+                </p>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-10">
+          <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
             {message.text && (
               <div className={`mb-8 flex items-center gap-3 p-4 rounded-xl border ${
                 message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
               }`}>
                 {message.type === 'success' ? <Check className="h-5 w-5" /> : <X className="h-5 w-5" />}
-                <p className="font-medium">{message.text}</p>
+                <p className="font-medium text-sm">{message.text}</p>
               </div>
             )}
 
             {/* --- ONGLET PROFIL --- */}
             {activeTab === 'profile' && (
-              <form onSubmit={handleUpdateProfile} className="space-y-8 max-w-xl">
-                <div className="flex items-center gap-6 p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-2xl font-bold text-white shadow-xl">
+              <form onSubmit={handleUpdateProfile} className="space-y-8 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center gap-6 p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl shadow-blue-500/20">
                     {formData.full_name?.[0] || 'U'}
                   </div>
                   <div className="text-left">
-                    <h3 className="font-bold text-white">Photo de profil</h3>
-                    <p className="text-sm text-slate-400">Générée automatiquement depuis votre nom.</p>
+                    <h3 className="font-bold text-white text-lg">Photo de profil</h3>
+                    <p className="text-sm text-slate-400 mt-1">Générée automatiquement depuis votre nom.</p>
                   </div>
                 </div>
 
                 <div className="grid gap-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-                      <User className="h-4 w-4 text-blue-500" /> Nom complet
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                      Nom complet
                     </label>
                     <input
                       type="text"
                       disabled
                       value={formData.full_name}
-                      className="w-full bg-slate-800/30 border border-slate-700/50 rounded-xl px-4 py-3 text-slate-500 cursor-not-allowed outline-none transition-all"
-                      placeholder="Ex: Jean Dupont"
+                      className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-slate-500 cursor-not-allowed outline-none transition-all font-medium"
                     />
-                    <div className="flex items-start gap-2 mt-1.5 px-1">
-                      <AlertCircle className="h-3.5 w-3.5 text-blue-500/70 mt-0.5 shrink-0" />
-                      <p className="text-[11px] text-slate-500 leading-relaxed italic">
-                        Le nom est définitif après l'onboarding pour garantir la stabilité de vos liens de réservation.
+                    <div className="flex items-start gap-2 mt-2 px-1">
+                      <AlertCircle className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
+                      <p className="text-xs text-blue-300/80 leading-relaxed">
+                        Le nom est verrouillé pour garantir la stabilité de vos liens. Contactez le support pour le modifier.
                       </p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-blue-500" /> Numéro de téléphone
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                       Numéro de téléphone
                     </label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                      placeholder="+33 6 00 00 00 00"
-                    />
+                    <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                        <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                        placeholder="+33 6 00 00 00 00"
+                        />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-                      <Briefcase className="h-4 w-4 text-blue-500" /> Spécialité / Rôle
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                       Spécialité / Rôle
                     </label>
-                    <select
-                      value={formData.role}
-                      onChange={(e) => setFormData({...formData, role: e.target.value})}
-                      className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all cursor-pointer"
-                    >
-                      <option value="Closer">Closer</option>
-                      <option value="Setter">Setter</option>
-                      <option value="Setter-Closer">Setter-Closer</option>
-                    </select>
+                    <div className="relative">
+                        <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                        <select
+                        value={formData.role}
+                        onChange={(e) => setFormData({...formData, role: e.target.value})}
+                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all cursor-pointer appearance-none"
+                        >
+                        <option value="Closer">Closer</option>
+                        <option value="Setter">Setter</option>
+                        <option value="Setter-Closer">Setter-Closer</option>
+                        </select>
+                    </div>
                   </div>
                 </div>
 
                 <button 
                   type="submit" 
                   disabled={loading} 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-900/30 disabled:opacity-50"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 hover:scale-[1.02]"
                 >
                   {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Save className="h-5 w-5" />}
                   Enregistrer les modifications
@@ -189,40 +243,141 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             {/* --- ONGLET SÉCURITÉ --- */}
             {activeTab === 'security' && (
-              <div className="max-w-xl space-y-8">
+              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {isGoogleUser ? (
                   <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4 text-left">
-                    <Shield className="h-6 w-6 text-blue-400 shrink-0" />
+                    <div className="p-3 bg-blue-500/20 rounded-xl h-fit">
+                        <Shield className="h-6 w-6 text-blue-400 shrink-0" />
+                    </div>
                     <div>
-                      <h4 className="font-bold text-white mb-1">Authentification Google active</h4>
-                      <p className="text-sm text-blue-300/80">Votre compte est sécurisé par Google. La modification du mot de passe n'est pas disponible depuis CloserOS.</p>
+                      <h4 className="font-bold text-white mb-1 text-lg">Authentification Google active</h4>
+                      <p className="text-sm text-blue-200/70 leading-relaxed">Votre compte est sécurisé par Google. La gestion du mot de passe se fait directement via votre compte Google.</p>
                     </div>
                   </div>
                 ) : (
                   <form onSubmit={handleUpdatePassword} className="space-y-6">
                     <div className="space-y-2 text-left">
-                      <label className="text-sm font-semibold text-slate-300">Nouveau mot de passe</label>
-                      <input
-                        type="password"
-                        value={formData.newPassword}
-                        onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
-                        className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                        placeholder="8 caractères minimum"
-                        minLength={8}
-                      />
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nouveau mot de passe</label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                        <input
+                            type="password"
+                            value={formData.newPassword}
+                            onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
+                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                            placeholder="8 caractères minimum"
+                            minLength={8}
+                        />
+                      </div>
                     </div>
                     <button 
                       type="submit" 
                       disabled={loading || !formData.newPassword} 
-                      className="w-full bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-slate-700"
+                      className="w-full bg-white/5 hover:bg-white/10 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-white/10 hover:border-white/20"
                     >
-                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Shield className="h-5 w-5" />}
                       Mettre à jour le mot de passe
                     </button>
                   </form>
                 )}
               </div>
             )}
+
+            {/* --- ONGLET ABONNEMENT --- */}
+            {activeTab === 'subscription' && (
+                <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    
+                    {/* Carte Plan Actuel */}
+                    <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-3 opacity-10">
+                            <CreditCard className="w-32 h-32 text-white" />
+                        </div>
+                        <div className="relative z-10">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-bold uppercase tracking-wider mb-4">
+                                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                                Plan Actif
+                            </span>
+                            <h3 className="text-3xl font-bold text-white mb-2">Founder Edition</h3>
+                            <p className="text-slate-300 mb-6 max-w-md">Vous bénéficiez de l'accès complet à CloseOS avec toutes les fonctionnalités débloquées à vie.</p>
+                            
+                            <button className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg flex items-center gap-2">
+                                <ExternalLink className="h-4 w-4" />
+                                Gérer ma facturation (Stripe)
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Historique (Placeholder) */}
+                    <div>
+                        <h4 className="text-lg font-bold text-white mb-4">Historique des factures</h4>
+                        <div className="rounded-xl border border-white/5 bg-slate-900/30 overflow-hidden">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-white/5 text-slate-400 font-bold">
+                                    <tr>
+                                        <th className="px-6 py-3">Date</th>
+                                        <th className="px-6 py-3">Montant</th>
+                                        <th className="px-6 py-3">Statut</th>
+                                        <th className="px-6 py-3 text-right">Reçu</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {/* Exemple statique */}
+                                    <tr>
+                                        <td className="px-6 py-4 text-white">12 Fév 2026</td>
+                                        <td className="px-6 py-4 text-white">29.00 €</td>
+                                        <td className="px-6 py-4"><span className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">Payé</span></td>
+                                        <td className="px-6 py-4 text-right"><button className="text-slate-400 hover:text-white">Télécharger</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- ONGLET SUPPORT --- */}
+            {activeTab === 'support' && (
+                <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
+                            <Headphones className="h-8 w-8 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-white">Comment pouvons-nous vous aider ?</h3>
+                        <p className="text-slate-400 mt-2">Notre équipe de support est disponible du Lundi au Vendredi.</p>
+                    </div>
+
+                    <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02]">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 group-hover:text-blue-300 transition-colors">
+                                    <Mail className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-white text-lg">Email Support</h4>
+                                    <p className="text-sm text-slate-400">Réponse sous 24h ouvrées</p>
+                                </div>
+                            </div>
+                            <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
+                        </div>
+                    </a>
+
+                    <a href="#" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02]">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors">
+                                    <AlertCircle className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-white text-lg">Centre d'aide & FAQ</h4>
+                                    <p className="text-sm text-slate-400">Guides et tutoriels (Bientôt disponible)</p>
+                                </div>
+                            </div>
+                            <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
+                        </div>
+                    </a>
+                </div>
+            )}
+
           </div>
         </div>
       </div>
