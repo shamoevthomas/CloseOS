@@ -19,9 +19,10 @@ import {
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState } from 'react'
-// ❌ LIGNE SUPPRIMÉE : import { useNotifications } ... (C'est elle qui fait planter)
+// ❌ LIGNE SUPPRIMÉE : import { useNotifications } ... (C'est elle qui causait le crash)
 import { useAuth } from '../contexts/AuthContext'
 
+// Mise à jour de la navigation
 const navigation = [
   { name: 'Cockpit', href: '/dashboard', icon: LayoutDashboard }, 
   { name: 'Pipeline', href: '/pipeline', icon: GitBranch },
@@ -47,7 +48,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const { logout, user } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   
-  // ❌ LIGNE SUPPRIMÉE : const { counts, clearBadge } = useNotifications()
+  // ❌ LIGNE SUPPRIMÉE : const { counts, clearBadge } = useNotifications() (C'est elle qui causait le crash)
 
   const handleLogout = async () => {
     await logout()
@@ -58,7 +59,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const userRole = user?.user_metadata?.role || 'Membre';
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   
-  // ✅ AJOUT : Récupération de la photo de profil (qu'on a réparée juste avant)
+  // ✅ AJOUT : Récupération de l'URL de la photo de profil
   const avatarUrl = user?.user_metadata?.avatar_url;
 
   return (
@@ -109,7 +110,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
             >
               <item.icon className="h-4 w-4" />
               <span className="flex-1">{item.name}</span>
-              {/* Badge de notification supprimé ici aussi */}
+              {/* Note: Les badges de notifications ont été retirés car la fonctionnalité est désactivée */}
             </NavLink>
           ))}
         </nav>
@@ -168,17 +169,13 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
               isMenuOpen ? 'bg-slate-800' : 'bg-slate-800/50 hover:bg-slate-800'
             )}
           >
-            {/* Gestion Avatar / Initiales */}
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20 overflow-hidden">
               {avatarUrl ? (
                  <img src={avatarUrl} alt="Profil" className="h-full w-full object-cover" />
               ) : (
-                 <span className="text-sm font-bold text-blue-500">
-                   {initials || 'U'}
-                 </span>
+                 <span className="text-sm font-bold text-blue-500">{initials || 'U'}</span>
               )}
             </div>
-            
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-slate-100 truncate">
                 {fullName}
