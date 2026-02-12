@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { 
   X, 
   Shield, 
@@ -15,9 +15,7 @@ import {
   ExternalLink, 
   Mail,
   Camera,
-  Globe, 
-  Trash2,
-  Search 
+  Trash2 
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase' 
@@ -30,53 +28,30 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, updateProfile, updatePassword } = useAuth()
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'mail' | 'timezone' | 'subscription' | 'support' | 'delete_account'>('profile')
+  // Retrait de 'timezone' des onglets possibles
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'mail' | 'subscription' | 'support' | 'delete_account'>('profile')
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false) 
   const [message, setMessage] = useState({ type: '', text: '' })
   const fileInputRef = useRef<HTMLInputElement>(null) 
-
-  // États pour la recherche et le filtrage des fuseaux
-  const [searchTerm, setSearchTerm] = useState('')
 
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
     role: '',
     newPassword: '',
-    avatar_url: '',
-    timezone: 'Europe/Paris'
+    avatar_url: ''
+    // Retrait de timezone ici
   })
-
-  // LOGIQUE DE GROUPEMENT PAR CONTINENT ET FILTRAGE
-  const groupedTimezones = useMemo(() => {
-    const allTimezones = Intl.supportedValuesOf('timeZone')
-    const searchLower = searchTerm.toLowerCase()
-    
-    const filtered = allTimezones.filter(tz => 
-      tz.toLowerCase().includes(searchLower) || 
-      tz.replace(/_/g, ' ').toLowerCase().includes(searchLower)
-    )
-
-    const groups: { [key: string]: string[] } = {}
-    
-    filtered.forEach(tz => {
-      const parts = tz.split('/')
-      const continent = parts.length > 1 ? parts[0] : 'Autres'
-      if (!groups[continent]) groups[continent] = []
-      groups[continent].push(tz)
-    })
-
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
-  }, [searchTerm])
 
   useEffect(() => {
     const fetchProfileData = async () => {
       if (user && isOpen) {
+        // Retrait de timezone du select
         const { data } = await supabase
           .from('profiles')
-          .select('full_name, phone, role, avatar_url, timezone')
-          .eq('id', user.id) // ✅ CORRECTION ICI
+          .select('full_name, phone, role, avatar_url')
+          .eq('id', user.id)
           .single()
 
         setFormData(prev => ({
@@ -84,8 +59,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           full_name: user.user_metadata?.full_name || data?.full_name || '',
           phone: user.user_metadata?.phone || data?.phone || '',
           role: user.user_metadata?.role || data?.role || '',
-          avatar_url: data?.avatar_url || '',
-          timezone: data?.timezone || 'Europe/Paris'
+          avatar_url: data?.avatar_url || ''
         }))
       }
       setMessage({ type: '', text: '' })
@@ -126,7 +100,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: urlData.publicUrl })
-        .eq('id', user?.id) // ✅ CORRECTION ICI
+        .eq('id', user?.id)
 
       if (updateError) throw updateError
 
@@ -154,12 +128,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    // Retrait de timezone de l'update
     const { error } = await updateProfile({
       full_name: formData.full_name,
       phone: formData.phone,
       role: formData.role,
-      avatar_url: formData.avatar_url,
-      timezone: formData.timezone
+      avatar_url: formData.avatar_url
     })
     
     let dbErrorMsg = null;
@@ -167,9 +141,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         const { error: dbError } = await supabase.from('profiles').update({
             full_name: formData.full_name,
             phone: formData.phone,
-            role: formData.role,
-            timezone: formData.timezone
-        }).eq('id', user.id) // ✅ CORRECTION ICI
+            role: formData.role
+        }).eq('id', user.id)
         if (dbError) dbErrorMsg = dbError.message;
     }
 
@@ -240,9 +213,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <button onClick={() => setActiveTab('mail')} className={tabButtonClass('mail')}>
               <Mail className="w-4 h-4" /> Email
             </button>
-            <button onClick={() => setActiveTab('timezone')} className={tabButtonClass('timezone')}>
-              <Globe className="w-4 h-4" /> Fuseau horaire
-            </button>
+            {/* RETRAIT DU BOUTON FUSEAU HORAIRE ICI */}
             <button onClick={() => setActiveTab('security')} className={tabButtonClass('security')}>
               <Lock className="w-4 h-4" /> Sécurité
             </button>
@@ -277,7 +248,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <h2 className="text-2xl font-bold text-white text-left">
                 {activeTab === 'profile' && 'Mon Profil'}
                 {activeTab === 'mail' && 'Adresse Email'}
-                {activeTab === 'timezone' && 'Fuseau Horaire'}
+                {/* Retrait du titre Fuseau Horaire */}
                 {activeTab === 'security' && 'Sécurité & Connexion'}
                 {activeTab === 'subscription' && 'Mon Abonnement'}
                 {activeTab === 'support' && 'Centre d\'Aide'}
@@ -286,7 +257,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <p className="text-slate-400 text-sm mt-1 text-left">
                 {activeTab === 'profile' && 'Gérez vos informations personnelles et votre rôle.'}
                 {activeTab === 'mail' && 'Consultez l\'adresse email reliée à votre compte.'}
-                {activeTab === 'timezone' && 'Réglez votre fuseau horaire pour vos rendez-vous.'}
+                {/* Retrait de la description Fuseau Horaire */}
                 {activeTab === 'security' && 'Protégez l\'accès à votre compte CloserOS.'}
                 {activeTab === 'subscription' && 'Gérez votre plan, vos factures et l\'annulation.'}
                 {activeTab === 'support' && 'Une question ? Notre équipe est là pour vous.'}
@@ -424,55 +395,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
-            {/* --- ONGLET FUSEAU HORAIRE (AVEC RECHERCHE ET SECTIONS) --- */}
-            {activeTab === 'timezone' && (
-              <form onSubmit={handleUpdateProfile} className="space-y-6 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                <div className="space-y-4 text-left">
-                  
-                  {/* BARRE DE RECHERCHE */}
-                  <div className="space-y-2 text-left">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Rechercher un fuseau</label>
-                    <div className="relative text-left">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                      <input
-                        type="text"
-                        placeholder="Ex: Paris, New York, Tokyo..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 outline-none transition-all text-left"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-left">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Sélectionner votre fuseau</label>
-                    <div className="relative text-left">
-                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                      <select
-                        value={formData.timezone}
-                        onChange={(e) => setFormData({...formData, timezone: e.target.value})}
-                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 outline-none cursor-pointer appearance-none text-left"
-                      >
-                        {groupedTimezones.map(([continent, tzs]) => (
-                          <optgroup key={continent} label={continent} className="bg-slate-900 text-blue-400 font-bold uppercase tracking-widest text-[10px]">
-                            {tzs.map((tz) => (
-                              <option key={tz} value={tz} className="bg-slate-900 text-white font-medium capitalize text-sm py-2">
-                                {tz.split('/').slice(1).join(' / ').replace(/_/g, ' ') || tz}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                    </div>
-                    <p className="text-xs text-slate-500 text-left">Indispensable pour vos rappels et votre agenda.</p>
-                  </div>
-                </div>
-                <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20">
-                  {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Save className="h-5 w-5" />}
-                  Mettre à jour le fuseau
-                </button>
-              </form>
-            )}
+            {/* RETRAIT DE LA SECTION ONGLET FUSEAU HORAIRE ICI */}
 
             {/* --- ONGLET SÉCURITÉ --- */}
             {activeTab === 'security' && (
