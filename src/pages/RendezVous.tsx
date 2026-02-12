@@ -101,6 +101,9 @@ export function RendezVous() {
   const webhookUrl = user?.id 
     ? `${baseUrl}/api/cal-webhook?user_id=${user.id}`
     : 'Chargement...'
+  
+  // URL OAuth pour le bouton
+  const calOAuthUrl = `https://cal.com/api/auth/oauth/authorize?client_id=${import.meta.env.VITE_CAL_CLIENT_ID}&redirect_uri=${window.location.origin}/api/cal-callback&response_type=code&scope=calendars:read&state=${user?.id}`
 
   // 1. Chargement initial
   useEffect(() => {
@@ -596,9 +599,25 @@ export function RendezVous() {
                     {/* 1. Clé API */}
                     <section>
                          <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-wider">1. Clé API</h3>
-                         <div className="flex flex-col gap-2">
-                             <input type="password" value={calApiKey} onChange={(e) => setCalApiKey(e.target.value)} placeholder="cal_..." className="block w-full rounded-lg border border-slate-700 bg-slate-900 py-3 px-4 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                             <button onClick={handleSaveApiKey} disabled={isSavingKey || !calApiKey} className="w-full flex justify-center items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-bold text-black hover:bg-slate-200 disabled:opacity-50 transition-all">{isSavingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {keySaveSuccess ? 'Sauvegardé' : 'Enregistrer la clé'}</button>
+                         <div className="flex flex-col gap-4">
+                             
+                             {/* ✅ BOUTON OAUTH INTÉGRÉ ICI */}
+                             <a href={calOAuthUrl} className="w-full flex justify-center items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-bold text-black hover:bg-slate-200 transition-all">
+                                <img src="https://cal.com/favicon.ico" alt="Cal" className="w-4 h-4" />
+                                Se connecter avec Cal.com
+                             </a>
+
+                             {/* SÉPARATEUR */}
+                             <div className="flex items-center gap-3">
+                                <div className="h-px flex-1 bg-slate-800"></div>
+                                <span className="text-[10px] font-bold text-slate-600 uppercase">OU CLÉ API MANUELLE</span>
+                                <div className="h-px flex-1 bg-slate-800"></div>
+                             </div>
+
+                             <div className="flex flex-col gap-2">
+                                <input type="password" value={calApiKey} onChange={(e) => setCalApiKey(e.target.value)} placeholder="cal_..." className="block w-full rounded-lg border border-slate-700 bg-slate-900 py-3 px-4 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                                <button onClick={handleSaveApiKey} disabled={isSavingKey || !calApiKey} className="w-full flex justify-center items-center gap-2 rounded-lg bg-slate-800 border border-slate-700 px-4 py-3 text-sm font-bold text-white hover:bg-slate-700 disabled:opacity-50 transition-all">{isSavingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {keySaveSuccess ? 'Sauvegardé' : 'Enregistrer la clé'}</button>
+                             </div>
                              <p className="text-xs text-slate-500 mt-1">Nécessaire pour lire et modifier vos liens de réservation.</p>
                          </div>
                     </section>
