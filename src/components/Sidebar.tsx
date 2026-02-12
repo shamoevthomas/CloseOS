@@ -57,6 +57,9 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const fullName = user?.user_metadata?.full_name || 'Utilisateur';
   const userRole = user?.user_metadata?.role || 'Membre';
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+  
+  // Récupération de l'URL de la photo de profil depuis les métadonnées ou le profil
+  const avatarUrl = user?.user_metadata?.avatar_url;
 
   return (
     <>
@@ -165,10 +168,19 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
               isMenuOpen ? 'bg-slate-800' : 'bg-slate-800/50 hover:bg-slate-800'
             )}
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20">
-              <span className="text-sm font-bold text-blue-500">
-                {initials || 'U'}
-              </span>
+            {/* Affichage de l'avatar circulaire */}
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20 overflow-hidden">
+              {avatarUrl ? (
+                <img 
+                  src={avatarUrl} 
+                  alt={fullName} 
+                  className="h-full w-full object-cover" 
+                />
+              ) : (
+                <span className="text-sm font-bold text-blue-500">
+                  {initials || 'U'}
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-slate-100 truncate">
