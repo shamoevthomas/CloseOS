@@ -14,7 +14,9 @@ import {
   Headphones, 
   ExternalLink, 
   Mail,
-  Camera // Nouvelle icône
+  Camera,
+  Globe, // Ajouté pour le fuseau horaire
+  Trash2 // Ajouté pour la suppression
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase' // Assurez-vous que ce chemin est bon
@@ -27,7 +29,7 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, updateProfile, updatePassword } = useAuth()
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'support'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'mail' | 'timezone' | 'subscription' | 'support' | 'delete_account'>('profile')
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false) // État pour l'upload d'image
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -38,7 +40,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     phone: '',
     role: '',
     newPassword: '',
-    avatar_url: '' // Nouveau champ
+    avatar_url: '',
+    timezone: 'Europe/Paris' // Nouveau champ pour le fuseau horaire
   })
 
   // Récupération des données au chargement
@@ -48,7 +51,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         // On récupère les données fraîches depuis Supabase pour avoir l'avatar
         const { data } = await supabase
           .from('profiles')
-          .select('full_name, phone, role, avatar_url')
+          .select('full_name, phone, role, avatar_url, timezone')
           .eq('id', user.id)
           .single()
 
@@ -57,7 +60,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           full_name: user.user_metadata?.full_name || data?.full_name || '',
           phone: user.user_metadata?.phone || data?.phone || '',
           role: user.user_metadata?.role || data?.role || '',
-          avatar_url: data?.avatar_url || ''
+          avatar_url: data?.avatar_url || '',
+          timezone: data?.timezone || 'Europe/Paris'
         }))
       }
       setMessage({ type: '', text: '' })
@@ -143,7 +147,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       full_name: formData.full_name,
       phone: formData.phone,
       role: formData.role,
-      avatar_url: formData.avatar_url // Ajouté pour garder la Sidebar synchronisée
+      avatar_url: formData.avatar_url, // Ajouté pour garder la Sidebar synchronisée
+      timezone: formData.timezone
     })
     
     // Double sécurité : Update direct dans la table profiles pour être sûr
@@ -152,7 +157,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         const { error: dbError } = await supabase.from('profiles').update({
             full_name: formData.full_name,
             phone: formData.phone,
-            role: formData.role
+            role: formData.role,
+            timezone: formData.timezone
         }).eq('id', user.id)
         if (dbError) dbErrorMsg = dbError.message;
     }
@@ -179,6 +185,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setFormData(prev => ({ ...prev, newPassword: '' }))
     }
     setLoading(false)
+  }
+
+  const handleDeleteAccount = async () => {
+    const confirmation = window.confirm("ATTENTION : Cette action est irréversible. Toutes vos données seront supprimées. Voulez-vous continuer ?");
+    if (confirmation) {
+      window.alert("Pour des raisons de sécurité, veuillez contacter le support à support@closeos.fr pour finaliser la suppression de votre compte.");
+    }
   }
 
   const isGoogleUser = user?.app_metadata?.provider === 'google'
@@ -214,8 +227,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <button onClick={() => setActiveTab('profile')} className={tabButtonClass('profile')}>
               <User className="w-4 h-4" /> Profil
             </button>
+            <button onClick={() => setActiveTab('mail')} className={tabButtonClass('mail')}>
+              <Mail className="w-4 h-4" /> Email
+            </button>
+            <button onClick={() => setActiveTab('timezone')} className={tabButtonClass('timezone')}>
+              <Globe className="w-4 h-4" /> Fuseau horaire
+            </button>
             <button onClick={() => setActiveTab('security')} className={tabButtonClass('security')}>
               <Lock className="w-4 h-4" /> Sécurité
+            </button>
+            <button onClick={() => setActiveTab('delete_account')} className={tabButtonClass('delete_account')}>
+              <Trash2 className="w-4 h-4 text-red-400" /> Suppression
             </button>
 
             <div className="my-6 h-px bg-white/5 mx-4" />
@@ -244,15 +266,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <div>
                 <h2 className="text-2xl font-bold text-white">
                 {activeTab === 'profile' && 'Mon Profil'}
+                {activeTab === 'mail' && 'Adresse Email'}
+                {activeTab === 'timezone' && 'Fuseau Horaire'}
                 {activeTab === 'security' && 'Sécurité & Connexion'}
                 {activeTab === 'subscription' && 'Mon Abonnement'}
                 {activeTab === 'support' && 'Centre d\'Aide'}
+                {activeTab === 'delete_account' && 'Suppression du compte'}
                 </h2>
                 <p className="text-slate-400 text-sm mt-1">
                 {activeTab === 'profile' && 'Gérez vos informations personnelles et votre rôle.'}
+                {activeTab === 'mail' && 'Consultez l\'adresse email reliée à votre compte.'}
+                {activeTab === 'timezone' && 'Réglez votre fuseau horaire pour vos rendez-vous.'}
                 {activeTab === 'security' && 'Protégez l\'accès à votre compte CloserOS.'}
                 {activeTab === 'subscription' && 'Gérez votre plan, vos factures et l\'annulation.'}
                 {activeTab === 'support' && 'Une question ? Notre équipe est là pour vous.'}
+                {activeTab === 'delete_account' && 'Zone de danger : Supprimer votre compte et vos données.'}
                 </p>
             </div>
           </div>
@@ -378,17 +406,63 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </form>
             )}
 
-            {/* ... Reste du code (Security, Subscription, Support) ... */}
+            {/* --- ONGLET MAIL --- */}
+            {activeTab === 'mail' && (
+              <div className="space-y-6 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Adresse Email actuelle</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                    <input
+                      type="email"
+                      readOnly
+                      value={user?.email || ''}
+                      className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-slate-400 cursor-default outline-none"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">Pour modifier votre adresse email, veuillez contacter notre support technique.</p>
+                </div>
+              </div>
+            )}
+
+            {/* --- ONGLET FUSEAU HORAIRE --- */}
+            {activeTab === 'timezone' && (
+              <form onSubmit={handleUpdateProfile} className="space-y-6 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Votre Fuseau Horaire</label>
+                  <div className="relative">
+                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                    <select
+                      value={formData.timezone}
+                      onChange={(e) => setFormData({...formData, timezone: e.target.value})}
+                      className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 outline-none cursor-pointer appearance-none"
+                    >
+                      <option value="Europe/Paris">Europe/Paris (GMT+1)</option>
+                      <option value="Europe/London">Europe/London (GMT+0)</option>
+                      <option value="America/New_York">America/New_York (GMT-5)</option>
+                      <option value="Asia/Dubai">Asia/Dubai (GMT+4)</option>
+                    </select>
+                  </div>
+                  <p className="text-xs text-slate-500">Ce réglage assure que vos rendez-vous et votre agenda sont toujours à l'heure.</p>
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3">
+                  {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Save className="h-5 w-5" />}
+                  Mettre à jour le fuseau
+                </button>
+              </form>
+            )}
+
+            {/* --- ONGLET SÉCURITÉ --- */}
             {activeTab === 'security' && (
               <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                 {isGoogleUser ? (
-                  <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4">
+                  <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4 text-left">
                     <div className="p-3 bg-blue-500/20 rounded-xl h-fit">
                         <Shield className="h-6 w-6 text-blue-400 shrink-0" />
                     </div>
                     <div>
                       <h4 className="font-bold text-white mb-1 text-lg">Authentification Google active</h4>
-                      <p className="text-sm text-blue-200/70 leading-relaxed text-left">Votre compte est sécurisé par Google. La gestion du mot de passe se fait directement via votre compte Google.</p>
+                      <p className="text-sm text-blue-200/70 leading-relaxed">Votre compte est sécurisé par Google. La gestion du mot de passe se fait directement via votre compte Google.</p>
                     </div>
                   </div>
                 ) : (
@@ -417,6 +491,28 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </button>
                   </form>
                 )}
+              </div>
+            )}
+
+            {/* --- ONGLET SUPPRESSION --- */}
+            {activeTab === 'delete_account' && (
+              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+                <div className="p-8 border border-red-500/20 bg-red-500/5 rounded-3xl space-y-6">
+                  <div className="flex items-center gap-4 text-red-400">
+                    <AlertCircle className="h-8 w-8" />
+                    <h3 className="text-xl font-bold">Zone de danger</h3>
+                  </div>
+                  <p className="text-slate-400 leading-relaxed">
+                    La suppression de votre compte entraînera la perte définitive de tous vos contacts, offres, rendez-vous et historiques d'appels. Cette action est irréversible.
+                  </p>
+                  <button 
+                    onClick={handleDeleteAccount}
+                    className="flex items-center gap-3 px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                    Supprimer mon compte et mes données
+                  </button>
+                </div>
               </div>
             )}
 
