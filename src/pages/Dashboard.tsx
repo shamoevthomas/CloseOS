@@ -4,15 +4,11 @@ import {
   Target,
   Phone,
   Video,
-  Mail,
   FileText,
-  ExternalLink,
-  CheckCircle2,
   Clock,
   Sparkles,
-  Smartphone,
-  ChevronDown,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  ArrowUpRight
 } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -132,7 +128,7 @@ export function Dashboard() {
     isGoogleEvent?: boolean
   }>>([])
 
-  // --- CALCUL DES MÉTRIQUES (CORRIGÉ POUR CORRESPONDRE À KPIPage) ---
+  // --- CALCUL DES MÉTRIQUES ---
   const metrics = useMemo(() => {
     const wonProspects = prospects.filter(p => p.stage === 'won')
     const closedProspects = prospects.filter(p => p.stage === 'won' || p.stage === 'lost')
@@ -140,20 +136,16 @@ export function Dashboard() {
     // 1. Cash Généré
     const cashGenere = wonProspects.reduce((sum, p) => sum + (p.value || 0), 0)
 
-    // 2. Commissions (Logique corrigée pour matcher KPIPage)
+    // 2. Commissions
     const totalCommissions = wonProspects.reduce((sum, prospect) => {
-      // Recherche de l'offre correspondante (par ID ou par Nom, insensible à la casse)
       const offer = offers.find(o => 
         (prospect.offerId && String(o.id) === String(prospect.offerId)) || 
         (prospect.offer && o.name.toLowerCase().trim() === prospect.offer.toLowerCase().trim())
       )
-
-      // Si offre trouvée, on prend sa commission, sinon 10% par défaut (comme sur la page KPI)
-      let rate = 0.10 // Default 10%
+      let rate = 0.10
       if (offer && offer.commission) {
         rate = parseCommission(offer.commission) / 100
       }
-
       return sum + ((prospect.value || 0) * rate)
     }, 0)
 
@@ -162,7 +154,7 @@ export function Dashboard() {
       ? (wonProspects.length / closedProspects.length) * 100
       : 0
 
-    // 4. Pipeline Value (prospects not won/lost)
+    // 4. Pipeline Value
     const pipelineValue = prospects
       .filter(p => !['won', 'lost'].includes(p.stage))
       .reduce((sum, p) => sum + (p.value || 0), 0)
@@ -178,10 +170,10 @@ export function Dashboard() {
   // Calculate pipeline stages distribution
   const pipelineStages = useMemo(() => {
     const stages = [
-      { name: 'Prospect', key: 'prospect', color: 'bg-blue-500' },
-      { name: 'Qualifié', key: 'qualified', color: 'bg-purple-500' },
-      { name: 'Follow up', key: 'followup', color: 'bg-orange-500' },
-      { name: 'Gagné', key: 'won', color: 'bg-emerald-600' },
+      { name: 'Prospect', key: 'prospect', color: 'from-blue-600 to-blue-400' },
+      { name: 'Qualifié', key: 'qualified', color: 'from-purple-600 to-purple-400' },
+      { name: 'Follow up', key: 'followup', color: 'from-orange-500 to-orange-400' },
+      { name: 'Gagné', key: 'won', color: 'from-emerald-600 to-emerald-400' },
     ]
 
     return stages.map(stage => {
@@ -268,16 +260,25 @@ export function Dashboard() {
       name: 'Cash Généré',
       value: `${metrics.cashGenere.toLocaleString('fr-FR')}€`,
       icon: DollarSign,
+      color: 'text-emerald-400',
+      bgColor: 'bg-emerald-500/10',
+      borderColor: 'border-emerald-500/20'
     },
     {
       name: 'Commissions',
       value: `${metrics.totalCommissions.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}€`,
       icon: TrendingUp,
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/10',
+      borderColor: 'border-blue-500/20'
     },
     {
       name: 'Taux de Conversion',
       value: `${metrics.tauxConversion.toFixed(1)}%`,
       icon: Target,
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-500/10',
+      borderColor: 'border-purple-500/20'
     },
   ]
 
@@ -313,28 +314,55 @@ export function Dashboard() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mx-auto max-w-7xl space-y-8">
+    <div className="relative min-h-screen bg-[#020617] p-8 overflow-hidden font-sans text-slate-100">
+      
+      {/* Background Blobs */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
+
+      <div className="relative mx-auto max-w-7xl space-y-8 z-10">
+
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-extrabold text-white tracking-tight">Cockpit</h1>
+              <p className="text-slate-400 mt-1">Vue d'ensemble de vos performances</p>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/50 border border-slate-800 backdrop-blur-sm">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-xs font-medium text-slate-300">Système opérationnel</span>
+            </div>
+          </div>
 
           {/* KPIs Grid */}
           <div className="grid gap-6 md:grid-cols-3">
-            {kpis.map((kpi) => (
+            {kpis.map((kpi, index) => (
               <div
                 key={kpi.name}
-                className="group relative overflow-hidden rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800 transition-all hover:ring-blue-500/50"
+                className={cn(
+                  "group relative overflow-hidden rounded-3xl bg-slate-900/50 p-8 transition-all duration-300 hover:scale-[1.02]",
+                  "border border-white/5 hover:border-white/10 backdrop-blur-xl shadow-2xl"
+                )}
+                style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                <div className={cn(
+                    "absolute top-0 right-0 p-8 opacity-5 transition-transform duration-500 group-hover:scale-110 group-hover:opacity-10",
+                    kpi.color
+                )}>
+                    <kpi.icon className="w-32 h-32" />
+                </div>
 
-                <div className="relative">
-                  <div className="flex items-start justify-between">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/20">
-                      <kpi.icon className="h-6 w-6 text-blue-500" />
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", kpi.bgColor)}>
+                      <kpi.icon className={cn("h-6 w-6", kpi.color)} />
                     </div>
+                    <ArrowUpRight className={cn("h-5 w-5 opacity-50", kpi.color)} />
                   </div>
 
-                  <div className="mt-6">
-                    <p className="text-sm font-medium text-slate-400">{kpi.name}</p>
-                    <p className="mt-2 text-4xl font-bold text-white">
+                  <div>
+                    <p className="text-sm font-medium text-slate-400 uppercase tracking-wider">{kpi.name}</p>
+                    <p className="mt-2 text-4xl font-black text-white tracking-tight">
                       <MaskedText value={kpi.value} type="number" />
                     </p>
                   </div>
@@ -344,31 +372,36 @@ export function Dashboard() {
           </div>
 
           {/* Pipeline Progress Section */}
-          <div className="rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
-            <div className="mb-6 flex items-center justify-between">
+          <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-md shadow-xl">
+            <div className="mb-8 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">Pipeline Commercial</h2>
-                <p className="mt-1 text-sm text-slate-400">Répartition par étape</p>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-blue-400" />
+                    Pipeline Commercial
+                </h2>
+                <p className="mt-1 text-sm text-slate-400">Répartition de vos opportunités</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-slate-400">Total Pipeline</p>
-                <p className="text-2xl font-bold text-blue-500">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Pipeline</p>
+                <p className="text-2xl font-bold text-white">
                   <MaskedText value={`${totalPipelineValue.toLocaleString()}€`} type="number" />
                 </p>
               </div>
             </div>
 
-            <div className="mb-6 flex h-4 overflow-hidden rounded-full bg-slate-800">
+            {/* Barre de progression avec dégradés */}
+            <div className="mb-8 flex h-3 overflow-hidden rounded-full bg-slate-800/50 p-0.5">
               {pipelineStages.map((stage, index) => {
                 const percentage = (stage.count / (totalPipelineCount || 1)) * 100
                 return (
                   <div
                     key={stage.name}
                     className={cn(
+                      "bg-gradient-to-r h-full relative transition-all duration-500 hover:brightness-110",
                       stage.color,
                       index === 0 && 'rounded-l-full',
                       index === pipelineStages.length - 1 && 'rounded-r-full',
-                      'transition-all hover:opacity-80'
+                      index !== pipelineStages.length - 1 && 'mr-[1px]' // Séparateur fin
                     )}
                     style={{ width: `${percentage}%` }}
                     title={`${stage.name}: ${stage.count} leads`}
@@ -377,17 +410,19 @@ export function Dashboard() {
               })}
             </div>
 
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {pipelineStages.map((stage) => (
-                <div key={stage.name} className="rounded-xl bg-slate-800/50 p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={cn('h-3 w-3 rounded-full', stage.color)} />
-                    <h3 className="text-sm font-semibold text-white">{stage.name}</h3>
+                <div key={stage.name} className="rounded-2xl bg-slate-800/30 border border-white/5 p-4 hover:bg-slate-800/50 transition-colors">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={cn('h-2 w-2 rounded-full bg-gradient-to-r', stage.color)} />
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400">{stage.name}</h3>
                   </div>
-                  <p className="text-2xl font-bold text-white">{stage.count}</p>
-                  <p className="mt-1 text-sm text-slate-400">
-                    <MaskedText value={`${stage.value.toLocaleString()}€`} type="number" />
-                  </p>
+                  <div className="flex flex-col">
+                    <span className="text-2xl font-bold text-white">{stage.count}</span>
+                    <span className="text-xs text-slate-500 font-medium">
+                        <MaskedText value={`${stage.value.toLocaleString()}€`} type="number" />
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -396,74 +431,78 @@ export function Dashboard() {
           <div className="grid gap-6">
 
             {/* Événements à venir */}
-            <div className="rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white">Événements à venir</h2>
-                <div className="rounded-lg bg-blue-500/10 px-3 py-1">
-                  <span className="text-sm font-semibold text-blue-400">{upcomingEvents.length} Événements</span>
+            <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-md shadow-xl">
+              <div className="mb-8 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <CalendarIcon className="h-5 w-5 text-purple-400" />
+                    Événements à venir
+                </h2>
+                <div className="rounded-full bg-purple-500/10 border border-purple-500/20 px-3 py-1">
+                  <span className="text-xs font-bold text-purple-400 uppercase tracking-wide">{upcomingEvents.length} Prévus</span>
                 </div>
               </div>
 
               {upcomingEvents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/20">
                   <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800/50">
-                    <Clock className="h-8 w-8 text-slate-600" />
+                    <Sparkles className="h-8 w-8 text-slate-600" />
                   </div>
-                  <p className="text-lg font-semibold text-slate-400">Aucun événement à venir (3j)</p>
+                  <p className="text-lg font-semibold text-slate-300">Agenda vide (3j)</p>
                   <p className="mt-2 text-sm text-slate-500">
-                    Profitez-en pour prospecter !
+                    C'est le moment idéal pour faire de la prospection !
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {upcomingEvents.map((event) => {
                     const EventIcon = event.isGoogleEvent ? CalendarIcon : (event.type === 'video' ? Video : Phone)
-                    const iconColor = event.isGoogleEvent ? 'bg-blue-500/20' : (event.type === 'video' ? 'bg-purple-500/20' : 'bg-blue-500/20')
-                    const iconTextColor = event.isGoogleEvent ? 'text-blue-400' : (event.type === 'video' ? 'text-purple-400' : 'text-blue-400')
+                    const iconStyles = event.isGoogleEvent 
+                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
+                        : (event.type === 'video' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20')
 
                     return (
                       <div
                         key={event.id}
                         onClick={() => navigate('/agenda', { state: { eventId: event.id } })}
-                        className="group flex items-center justify-between rounded-xl bg-slate-800/50 p-4 transition-all hover:bg-slate-800 cursor-pointer"
+                        className="group flex items-center justify-between rounded-2xl bg-slate-800/40 border border-white/5 p-4 transition-all hover:bg-slate-800/80 hover:border-white/10 cursor-pointer hover:shadow-lg"
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-5">
                           <div className={cn(
-                            'flex h-10 w-10 items-center justify-center rounded-lg',
-                            iconColor
+                            'flex h-12 w-12 items-center justify-center rounded-xl border',
+                            iconStyles
                           )}>
-                            <EventIcon className={cn('h-5 w-5', iconTextColor)} />
+                            <EventIcon className="h-5 w-5" />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-semibold text-white">{event.title}</p>
+                            <div className="flex items-center gap-3">
+                              <p className="font-bold text-white text-lg">{event.title}</p>
                               {event.isGoogleEvent && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Google</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold uppercase">Google</span>
                               )}
                             </div>
-                            <p className="text-sm text-slate-400">
+                            <p className="text-sm text-slate-400 font-medium">
                               <MaskedText value={event.contact} type="name" />
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <p className="text-sm font-medium text-white">
+                            <p className="text-sm font-bold text-white">
                               {formatRelativeTime(event.date, event.time)}
                             </p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-500 font-medium">
                               {getEventStatus(event.date, event.time)}
                             </p>
                           </div>
 
-                          <div className="opacity-0 group-hover:opacity-100 transition-all">
+                          <div className="opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 navigate('/agenda', { state: { eventId: event.id } });
                               }}
-                              className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20"
+                              className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10 transition-colors border border-white/10"
                             >
                               <FileText className="h-4 w-4" />
                               Détails
@@ -505,12 +544,12 @@ export function Dashboard() {
 
       {showAiToast && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[70]">
-          <div className="flex items-center gap-3 px-6 py-4 bg-slate-900 border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
+          <div className="flex items-center gap-3 px-6 py-4 bg-slate-900/90 border border-purple-500/30 rounded-2xl shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-5 duration-300">
             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-purple-500/20">
-              <span className="text-2xl">✨</span>
+              <Sparkles className="h-5 w-5 text-purple-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">Analyse IA en cours...</p>
+              <p className="text-sm font-bold text-white">Analyse IA en cours...</p>
               <p className="text-xs text-slate-400 mt-0.5">Le CRM sera mis à jour automatiquement.</p>
             </div>
           </div>
