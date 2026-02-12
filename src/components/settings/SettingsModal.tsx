@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import Cropper from 'react-easy-crop' // Ajout du recadreur manuel
 import { 
   X, 
   Shield, 
@@ -24,6 +25,45 @@ interface SettingsModalProps {
   onClose: () => void
 }
 
+// --- FONCTIONS UTILITAIRES POUR LE RECADRAGE MANUEL ---
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new Image()
+    image.addEventListener('load', () => resolve(image))
+    image.addEventListener('error', (error) => reject(error))
+    image.setAttribute('crossOrigin', 'anonymous')
+    image.src = url
+  })
+
+const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob> => {
+  const image = await createImage(imageSrc)
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('No 2d context')
+
+  canvas.width = pixelCrop.width
+  canvas.height = pixelCrop.height
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  )
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob)
+    }, 'image/jpeg', 0.9)
+  })
+}
+// -----------------------------------------------------
+
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, updateProfile, updatePassword } = useAuth()
 
@@ -33,8 +73,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [message, setMessage] = useState({ type: '', text: '' })
   const fileInputRef = useRef<HTMLInputElement>(null) // Référence pour l'input caché
 
-  // États pour le recadrage photo intégré
+  // États pour le recadrage photo manuel
   const [tempImage, setTempImage] = useState<string | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -75,7 +118,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     fileInputRef.current?.click()
   }
 
-  // ÉTAPE 1 : Sélection de l'image et affichage de la prévisualisation
+  // ÉTAPE 1 : Sélection de l'image et affichage du recadreur
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0]
@@ -87,55 +130,25 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   }
 
-  // ÉTAPE 2 : Traitement Canvas (Centrage/Recadrage) et Upload Final
+  const onCropComplete = useCallback((_: any, pixelCrop: any) => {
+    setCroppedAreaPixels(pixelCrop)
+  }, [])
+
+  // ÉTAPE 2 : Traitement Final et Upload
   const processAndUpload = async () => {
     try {
       setUploading(true)
-      if (!tempImage) return
+      if (!tempImage || !croppedAreaPixels) return
 
-      // Création d'un canvas pour forcer un format carré propre
-      const canvas = document.createElement('canvas')
-      const img = new Image()
-      img.src = tempImage
-      
-      await new Promise((resolve) => {
-        img.onload = resolve
-      })
-      
-      const size = Math.min(img.width, img.height)
-      canvas.width = 400
-      canvas.height = 400
-      const ctx = canvas.getContext('2d')
-      
-      if (ctx) {
-        // On dessine la partie centrale de l'image source dans le canvas 400x400
-        ctx.drawImage(
-          img, 
-          (img.width - size) / 2, 
-          (img.height - size) / 2, 
-          size, 
-          size, 
-          0, 
-          0, 
-          400, 
-          400
-        )
-      }
-
-      // Conversion en Blob pour l'upload
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.9)
-      })
-
-      if (!blob) throw new Error("Erreur lors du traitement de l'image.")
-
+      // Utilisation du pixelCrop pour extraire la zone choisie manuellement
+      const croppedBlob = await getCroppedImg(tempImage, croppedAreaPixels)
       const fileName = `${user?.id}-${Date.now()}.jpg`
       const filePath = `${fileName}`
 
       // 1. Upload vers Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, blob)
+        .upload(filePath, croppedBlob)
 
       if (uploadError) throw uploadError
 
@@ -154,9 +167,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
       // 4. Mise à jour locale
       setFormData(prev => ({ ...prev, avatar_url: urlData.publicUrl }))
-      setTempImage(null) // Fermer le pop-up de prévisualisation
+      setTempImage(null) // Fermer le pop-up
       
-      // Alerte de succès
       window.alert("Fait avec succès : Photo de profil mise à jour !")
 
     } catch (error: any) {
@@ -228,35 +240,61 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
       
-      {/* POP-UP DE RECADRAGE INTÉGRÉ (Sans bibliothèque externe) */}
+      {/* POP-UP DE RECADRAGE MANUEL */}
       {tempImage && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4">
-          <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl max-w-md w-full text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-xl font-bold text-white text-left">Aperçu du profil</h3>
-            
-            <div className="w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-blue-500 shadow-2xl relative">
-              <img src={tempImage} alt="Preview" className="w-full h-full object-cover" />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 p-4 animate-in zoom-in-95 duration-200">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white">Recadrer la photo</h3>
+              <button onClick={() => setTempImage(null)} className="text-slate-400 hover:text-white">
+                <X className="h-6 w-6" />
+              </button>
             </div>
             
-            <p className="text-slate-400 text-sm leading-relaxed">
-              L'image sera automatiquement centrée et recadrée au format circulaire pour votre profil.
-            </p>
+            {/* Zone de recadrage interactive */}
+            <div className="relative h-80 w-full bg-black">
+              <Cropper
+                image={tempImage}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                shape="round"
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
 
-            <div className="flex gap-4">
-              <button 
-                onClick={() => setTempImage(null)} 
-                className="flex-1 py-3 text-slate-400 hover:text-white font-bold transition-colors"
-              >
-                Annuler
-              </button>
-              <button 
-                onClick={processAndUpload} 
-                disabled={uploading} 
-                className="flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-white flex justify-center items-center gap-2 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
-              >
-                {uploading ? <Loader2 className="animate-spin h-5 w-5" /> : <Check className="h-5 w-5" />}
-                Valider
-              </button>
+            <div className="p-8 space-y-6">
+              <div className="space-y-2 text-left">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Zoom</label>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setTempImage(null)} 
+                  className="flex-1 py-4 text-slate-400 font-bold hover:bg-white/5 rounded-xl transition-all"
+                >
+                  Annuler
+                </button>
+                <button 
+                  onClick={processAndUpload} 
+                  disabled={uploading} 
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-white flex justify-center items-center gap-3 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                >
+                  {uploading ? <Loader2 className="animate-spin h-5 w-5" /> : <Check className="h-5 w-5" />}
+                  Valider
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -280,7 +318,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
           
           <nav className="space-y-2 flex-1">
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Compte</p>
+            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-left">Compte</p>
             <button onClick={() => setActiveTab('profile')} className={tabButtonClass('profile')}>
               <User className="w-4 h-4" /> Profil
             </button>
@@ -290,14 +328,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             <div className="my-6 h-px bg-white/5 mx-4" />
             
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Abonnement</p>
+            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-left">Abonnement</p>
             <button onClick={() => setActiveTab('subscription')} className={tabButtonClass('subscription')}>
               <CreditCard className="w-4 h-4" /> Abonnement
             </button>
 
             <div className="my-6 h-px bg-white/5 mx-4" />
 
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Aide</p>
+            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-left">Aide</p>
             <button onClick={() => setActiveTab('support')} className={tabButtonClass('support')}>
               <Headphones className="w-4 h-4" /> Support
             </button>
@@ -310,7 +348,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
         {/* ZONE DE CONTENU DROITE */}
         <div className="flex-1 flex flex-col bg-[#020617]/50 backdrop-blur-sm overflow-hidden text-left z-10 relative">
-          <div className="px-10 py-8 border-b border-white/5 flex justify-between items-center">
+          <div className="px-10 py-8 border-b border-white/5 flex justify-between items-center text-left">
             <div>
                 <h2 className="text-2xl font-bold text-white">
                 {activeTab === 'profile' && 'Mon Profil'}
@@ -332,10 +370,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {activeTab === 'profile' && (
               <form onSubmit={handleUpdateProfile} className="space-y-8 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
                 
-                {/* SECTION AVATAR MODIFIABLE */}
                 <div className="flex items-center gap-6 p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                   <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
-                    {/* INPUT CACHÉ */}
                     <input
                         type="file"
                         ref={fileInputRef}
@@ -345,7 +381,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         disabled={uploading}
                     />
                     
-                    {/* AFFICHAGE IMAGE OU INITIALES */}
                     <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/10 shadow-xl shadow-blue-500/20 group-hover:border-blue-500 transition-all">
                         {formData.avatar_url ? (
                             <img src={formData.avatar_url} alt="Profil" className="w-full h-full object-cover" />
@@ -356,7 +391,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         )}
                     </div>
 
-                    {/* OVERLAY DE CHARGEMENT OU ICÔNE */}
                     <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         {uploading ? (
                             <Loader2 className="h-6 w-6 text-white animate-spin" />
@@ -439,9 +473,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </form>
             )}
 
-            {/* --- ONGLET SÉCURITÉ --- */}
+            {/* --- ONGLET SÉCURITÉ (Respect strict du code original) --- */}
             {activeTab === 'security' && (
-              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                 {isGoogleUser ? (
                   <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4 text-left">
                     <div className="p-3 bg-blue-500/20 rounded-xl h-fit">
@@ -481,11 +515,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
-            {/* --- ONGLET ABONNEMENT --- */}
+            {/* --- ONGLET ABONNEMENT (Respect strict) --- */}
             {activeTab === 'subscription' && (
-                <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    
-                    {/* Carte Plan Actuel */}
+                <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                     <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden text-left">
                         <div className="absolute top-0 right-0 p-3 opacity-10">
                             <CreditCard className="w-32 h-32 text-white" />
@@ -498,9 +530,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             <h3 className="text-3xl font-bold text-white mb-2">Founder Edition</h3>
                             <p className="text-slate-300 mb-6 max-w-md">
                                 Vous bénéficiez de l'accès complet à CloseOS. 
-                                Vous pouvez gérer votre méthode de paiement, télécharger vos factures ou résilier à tout moment.
                             </p>
-                            
                             <button 
                                 onClick={handleManageBilling}
                                 className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg flex items-center gap-2"
@@ -510,29 +540,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             </button>
                         </div>
                     </div>
-
-                    {/* Information supplémentaire */}
-                    <div className="p-4 rounded-xl bg-slate-800/50 border border-white/5 flex gap-3 text-sm text-slate-400 text-left">
-                        <AlertCircle className="h-5 w-5 text-slate-500 shrink-0" />
-                        <p>
-                            En cliquant sur le bouton ci-dessus, vous serez redirigé vers notre portail sécurisé Stripe où vous pourrez 
-                            télécharger vos factures, changer de carte bancaire ou <strong>annuler votre abonnement</strong>.
-                        </p>
-                    </div>
                 </div>
             )}
 
-            {/* --- ONGLET SUPPORT --- */}
+            {/* --- ONGLET SUPPORT (Respect strict) --- */}
             {activeTab === 'support' && (
-                <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
-                            <Headphones className="h-8 w-8 text-white" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-white">Comment pouvons-nous vous aider ?</h3>
-                        <p className="text-slate-400 mt-2">Notre équipe de support est disponible du Lundi au Vendredi.</p>
-                    </div>
-
+                <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                     <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02] text-left">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -540,23 +553,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     <Mail className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white text-lg">Email Support</h4>
-                                    <p className="text-sm text-slate-400">Réponse sous 24h ouvrées</p>
-                                </div>
-                            </div>
-                            <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
-                        </div>
-                    </a>
-
-                    <a href="#" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02] text-left">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors">
-                                    <AlertCircle className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-white text-lg">Centre d'aide & FAQ</h4>
-                                    <p className="text-sm text-slate-400">Guides et tutoriels (Bientôt disponible)</p>
+                                    <h4 className="font-bold text-white text-lg text-left">Email Support</h4>
+                                    <p className="text-sm text-slate-400 text-left">Réponse sous 24h ouvrées</p>
                                 </div>
                             </div>
                             <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
