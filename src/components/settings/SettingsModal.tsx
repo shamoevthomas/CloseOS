@@ -25,7 +25,6 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, updateProfile, updatePassword } = useAuth()
 
-  // Ajout des onglets 'subscription' et 'support'
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'support'>('profile')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -51,13 +50,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   if (!isOpen) return null
 
-  // --- LOGIQUE DE GESTION DU PORTAIL STRIPE (SIMPLIFIÉE) ---
+  // --- LOGIQUE DE GESTION DU PORTAIL STRIPE ---
   const handleManageBilling = () => {
     // Redirection directe vers votre Portail Client Stripe
-    // L'utilisateur devra entrer son email pour recevoir un lien de connexion sécurisé
     window.open('https://billing.stripe.com/p/login/3cI00c3qReYdd9a1wsbjW00', '_blank');
   }
-  // ---------------------------------------------------------
+  // --------------------------------------------
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,7 +84,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const isGoogleUser = user?.app_metadata?.provider === 'google'
 
-  // Fonction utilitaire pour le style des onglets
   const tabButtonClass = (tabName: string) => `
     w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all
     ${activeTab === tabName 
@@ -126,7 +123,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             
             <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Abonnement</p>
             <button onClick={() => setActiveTab('subscription')} className={tabButtonClass('subscription')}>
-              <CreditCard className="w-4 h-4" /> Facturation
+              <CreditCard className="w-4 h-4" /> Abonnement
             </button>
 
             <div className="my-6 h-px bg-white/5 mx-4" />
@@ -155,7 +152,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <p className="text-slate-400 text-sm mt-1">
                 {activeTab === 'profile' && 'Gérez vos informations personnelles et votre rôle.'}
                 {activeTab === 'security' && 'Protégez l\'accès à votre compte CloserOS.'}
-                {activeTab === 'subscription' && 'Gérez votre plan et vos factures.'}
+                {activeTab === 'subscription' && 'Gérez votre plan, vos factures et l\'annulation.'}
                 {activeTab === 'support' && 'Une question ? Notre équipe est là pour vous.'}
                 </p>
             </div>
