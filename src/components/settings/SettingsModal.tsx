@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import Cropper from 'react-easy-crop' // Ajout du recadreur manuel
+import { useState, useEffect, useRef } from 'react'
 import { 
   X, 
   Shield, 
@@ -25,45 +24,6 @@ interface SettingsModalProps {
   onClose: () => void
 }
 
-// --- FONCTIONS UTILITAIRES POUR LE RECADRAGE MANUEL ---
-const createImage = (url: string): Promise<HTMLImageElement> =>
-  new Promise((resolve, reject) => {
-    const image = new Image()
-    image.addEventListener('load', () => resolve(image))
-    image.addEventListener('error', (error) => reject(error))
-    image.setAttribute('crossOrigin', 'anonymous')
-    image.src = url
-  })
-
-const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob> => {
-  const image = await createImage(imageSrc)
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('No 2d context')
-
-  canvas.width = pixelCrop.width
-  canvas.height = pixelCrop.height
-
-  ctx.drawImage(
-    image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
-    0,
-    0,
-    pixelCrop.width,
-    pixelCrop.height
-  )
-
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob)
-    }, 'image/jpeg', 0.9)
-  })
-}
-// -----------------------------------------------------
-
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, updateProfile, updatePassword } = useAuth()
 
@@ -72,12 +32,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [uploading, setUploading] = useState(false) // État pour l'upload d'image
   const [message, setMessage] = useState({ type: '', text: '' })
   const fileInputRef = useRef<HTMLInputElement>(null) // Référence pour l'input caché
-
-  // États pour le recadrage photo manuel
-  const [tempImage, setTempImage] = useState<string | null>(null)
-  const [crop, setCrop] = useState({ x: 0, y: 0 })
-  const [zoom, setZoom] = useState(1)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -118,37 +72,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     fileInputRef.current?.click()
   }
 
-  // ÉTAPE 1 : Sélection de l'image et affichage du recadreur
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0]
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setTempImage(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const onCropComplete = useCallback((_: any, pixelCrop: any) => {
-    setCroppedAreaPixels(pixelCrop)
-  }, [])
-
-  // ÉTAPE 2 : Traitement Final et Upload
-  const processAndUpload = async () => {
     try {
       setUploading(true)
-      if (!tempImage || !croppedAreaPixels) return
+      setMessage({ type: '', text: '' })
 
-      // Utilisation du pixelCrop pour extraire la zone choisie manuellement
-      const croppedBlob = await getCroppedImg(tempImage, croppedAreaPixels)
-      const fileName = `${user?.id}-${Date.now()}.jpg`
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('Veuillez sélectionner une image.')
+      }
+
+      const file = event.target.files[0]
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user?.id}-${Math.random()}.${fileExt}`
       const filePath = `${fileName}`
 
       // 1. Upload vers Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, croppedBlob)
+        .upload(filePath, file)
 
       if (uploadError) throw uploadError
 
@@ -167,12 +108,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
       // 4. Mise à jour locale
       setFormData(prev => ({ ...prev, avatar_url: urlData.publicUrl }))
-      setTempImage(null) // Fermer le pop-up
+      setMessage({ type: 'success', text: 'Photo de profil mise à jour !' })
       
+      // Alerte de succès
       window.alert("Fait avec succès : Photo de profil mise à jour !")
 
     } catch (error: any) {
       console.error('Erreur upload:', error)
+      setMessage({ type: 'error', text: 'Erreur lors de l\'upload de l\'image.' })
+      
+      // Alerte d'erreur concernant la photo
       window.alert("Erreur concernant la photo : " + error.message)
     } finally {
       setUploading(false)
@@ -208,9 +153,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
     if (error || dbErrorMsg) {
         const finalError = error?.message || dbErrorMsg;
+        setMessage({ type: 'error', text: finalError })
         window.alert("Il y a une erreur : " + finalError)
     }
     else {
+        setMessage({ type: 'success', text: 'Profil mis à jour avec succès !' })
         window.alert("Fait avec succès !")
     }
     setLoading(false)
@@ -220,9 +167,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     e.preventDefault()
     setLoading(true)
     const { error } = await updatePassword(formData.newPassword)
-    if (error) window.alert("Erreur : " + error.message)
+    if (error) setMessage({ type: 'error', text: error.message })
     else {
-      window.alert("Fait avec succès !")
+      setMessage({ type: 'success', text: 'Mot de passe modifié avec succès !' })
       setFormData(prev => ({ ...prev, newPassword: '' }))
     }
     setLoading(false)
@@ -239,67 +186,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      
-      {/* POP-UP DE RECADRAGE MANUEL */}
-      {tempImage && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 p-4 animate-in zoom-in-95 duration-200">
-          <div className="bg-slate-900 border border-white/10 rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-white/5 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-white">Recadrer la photo</h3>
-              <button onClick={() => setTempImage(null)} className="text-slate-400 hover:text-white">
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            
-            {/* Zone de recadrage interactive */}
-            <div className="relative h-80 w-full bg-black">
-              <Cropper
-                image={tempImage}
-                crop={crop}
-                zoom={zoom}
-                aspect={1}
-                shape="round"
-                onCropChange={setCrop}
-                onCropComplete={onCropComplete}
-                onZoomChange={setZoom}
-              />
-            </div>
-
-            <div className="p-8 space-y-6">
-              <div className="space-y-2 text-left">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Zoom</label>
-                <input
-                  type="range"
-                  value={zoom}
-                  min={1}
-                  max={3}
-                  step={0.1}
-                  onChange={(e) => setZoom(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                />
-              </div>
-
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => setTempImage(null)} 
-                  className="flex-1 py-4 text-slate-400 font-bold hover:bg-white/5 rounded-xl transition-all"
-                >
-                  Annuler
-                </button>
-                <button 
-                  onClick={processAndUpload} 
-                  disabled={uploading} 
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-white flex justify-center items-center gap-3 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
-                >
-                  {uploading ? <Loader2 className="animate-spin h-5 w-5" /> : <Check className="h-5 w-5" />}
-                  Valider
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-[#020617] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[700px] relative">
         
         {/* Background Gradients */}
@@ -318,7 +204,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
           
           <nav className="space-y-2 flex-1">
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-left">Compte</p>
+            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Compte</p>
             <button onClick={() => setActiveTab('profile')} className={tabButtonClass('profile')}>
               <User className="w-4 h-4" /> Profil
             </button>
@@ -328,14 +214,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             <div className="my-6 h-px bg-white/5 mx-4" />
             
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-left">Abonnement</p>
+            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Abonnement</p>
             <button onClick={() => setActiveTab('subscription')} className={tabButtonClass('subscription')}>
               <CreditCard className="w-4 h-4" /> Abonnement
             </button>
 
             <div className="my-6 h-px bg-white/5 mx-4" />
 
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-left">Aide</p>
+            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Aide</p>
             <button onClick={() => setActiveTab('support')} className={tabButtonClass('support')}>
               <Headphones className="w-4 h-4" /> Support
             </button>
@@ -348,7 +234,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
         {/* ZONE DE CONTENU DROITE */}
         <div className="flex-1 flex flex-col bg-[#020617]/50 backdrop-blur-sm overflow-hidden text-left z-10 relative">
-          <div className="px-10 py-8 border-b border-white/5 flex justify-between items-center text-left">
+          <div className="px-10 py-8 border-b border-white/5 flex justify-between items-center">
             <div>
                 <h2 className="text-2xl font-bold text-white">
                 {activeTab === 'profile' && 'Mon Profil'}
@@ -366,12 +252,23 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+            {message.text && (
+              <div className={`mb-8 flex items-center gap-3 p-4 rounded-xl border ${
+                message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
+              }`}>
+                {message.type === 'success' ? <Check className="h-5 w-5" /> : <X className="h-5 w-5" />}
+                <p className="font-medium text-sm">{message.text}</p>
+              </div>
+            )}
+
             {/* --- ONGLET PROFIL --- */}
             {activeTab === 'profile' && (
               <form onSubmit={handleUpdateProfile} className="space-y-8 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
                 
+                {/* SECTION AVATAR MODIFIABLE */}
                 <div className="flex items-center gap-6 p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                   <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+                    {/* INPUT CACHÉ */}
                     <input
                         type="file"
                         ref={fileInputRef}
@@ -381,6 +278,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         disabled={uploading}
                     />
                     
+                    {/* AFFICHAGE IMAGE OU INITIALES */}
                     <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/10 shadow-xl shadow-blue-500/20 group-hover:border-blue-500 transition-all">
                         {formData.avatar_url ? (
                             <img src={formData.avatar_url} alt="Profil" className="w-full h-full object-cover" />
@@ -391,6 +289,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         )}
                     </div>
 
+                    {/* OVERLAY DE CHARGEMENT OU ICÔNE */}
                     <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         {uploading ? (
                             <Loader2 className="h-6 w-6 text-white animate-spin" />
@@ -409,7 +308,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
 
                 <div className="grid gap-6">
-                  <div className="space-y-2 text-left">
+                  <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                       Nom complet
                     </label>
@@ -421,13 +320,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     />
                     <div className="flex items-start gap-2 mt-2 px-1">
                       <AlertCircle className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
-                      <p className="text-xs text-blue-300/80 leading-relaxed text-left">
+                      <p className="text-xs text-blue-300/80 leading-relaxed">
                         Le nom est verrouillé pour garantir la stabilité de vos liens. Contactez le support pour le modifier.
                       </p>
                     </div>
                   </div>
 
-                  <div className="space-y-2 text-left">
+                  <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                        Numéro de téléphone
                     </label>
@@ -443,7 +342,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </div>
                   </div>
 
-                  <div className="space-y-2 text-left">
+                  <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                        Spécialité / Rôle
                     </label>
@@ -473,9 +372,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </form>
             )}
 
-            {/* --- ONGLET SÉCURITÉ (Respect strict du code original) --- */}
+            {/* --- ONGLET SÉCURITÉ --- */}
             {activeTab === 'security' && (
-              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {isGoogleUser ? (
                   <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4 text-left">
                     <div className="p-3 bg-blue-500/20 rounded-xl h-fit">
@@ -515,10 +414,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
-            {/* --- ONGLET ABONNEMENT (Respect strict) --- */}
+            {/* --- ONGLET ABONNEMENT --- */}
             {activeTab === 'subscription' && (
-                <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                    <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden text-left">
+                <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    
+                    {/* Carte Plan Actuel */}
+                    <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-3 opacity-10">
                             <CreditCard className="w-32 h-32 text-white" />
                         </div>
@@ -530,7 +431,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             <h3 className="text-3xl font-bold text-white mb-2">Founder Edition</h3>
                             <p className="text-slate-300 mb-6 max-w-md">
                                 Vous bénéficiez de l'accès complet à CloseOS. 
+                                Vous pouvez gérer votre méthode de paiement, télécharger vos factures ou résilier à tout moment.
                             </p>
+                            
                             <button 
                                 onClick={handleManageBilling}
                                 className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg flex items-center gap-2"
@@ -540,21 +443,53 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             </button>
                         </div>
                     </div>
+
+                    {/* Information supplémentaire */}
+                    <div className="p-4 rounded-xl bg-slate-800/50 border border-white/5 flex gap-3 text-sm text-slate-400">
+                        <AlertCircle className="h-5 w-5 text-slate-500 shrink-0" />
+                        <p>
+                            En cliquant sur le bouton ci-dessus, vous serez redirigé vers notre portail sécurisé Stripe où vous pourrez 
+                            télécharger vos factures, changer de carte bancaire ou <strong>annuler votre abonnement</strong>.
+                        </p>
+                    </div>
                 </div>
             )}
 
-            {/* --- ONGLET SUPPORT (Respect strict) --- */}
+            {/* --- ONGLET SUPPORT --- */}
             {activeTab === 'support' && (
-                <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                    <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02] text-left">
+                <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
+                            <Headphones className="h-8 w-8 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-white">Comment pouvons-nous vous aider ?</h3>
+                        <p className="text-slate-400 mt-2">Notre équipe de support est disponible du Lundi au Vendredi.</p>
+                    </div>
+
+                    <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02]">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 group-hover:text-blue-300 transition-colors">
                                     <Mail className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white text-lg text-left">Email Support</h4>
-                                    <p className="text-sm text-slate-400 text-left">Réponse sous 24h ouvrées</p>
+                                    <h4 className="font-bold text-white text-lg">Email Support</h4>
+                                    <p className="text-sm text-slate-400">Réponse sous 24h ouvrées</p>
+                                </div>
+                            </div>
+                            <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
+                        </div>
+                    </a>
+
+                    <a href="#" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02]">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors">
+                                    <AlertCircle className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-white text-lg">Centre d'aide & FAQ</h4>
+                                    <p className="text-sm text-slate-400">Guides et tutoriels (Bientôt disponible)</p>
                                 </div>
                             </div>
                             <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
