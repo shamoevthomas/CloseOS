@@ -12,10 +12,10 @@ import {
   Sparkles,
   Smartphone,
   ChevronDown,
-  Calendar as CalendarIcon // Ajout de l'icône Calendar
+  Calendar as CalendarIcon
 } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom' // Hook pour la navigation
+import { useNavigate } from 'react-router-dom'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
 import { VideoCallOverlay } from '../components/VideoCallOverlay'
@@ -25,10 +25,11 @@ import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { useNotifications } from '../contexts/NotificationsContext'
 import { useMeetings } from '../contexts/MeetingsContext'
-import { useGoogleCalendar } from '../contexts/GoogleCalendarContext' // AJOUT : Contexte Google
+import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
 
-// Helper to parse commission percentage
+// Helper to parse commission percentage (Ex: "10%" -> 10)
 const parseCommission = (commissionString: string): number => {
+  if (!commissionString) return 0
   const match = commissionString.match(/[\d.]+/)
   return match ? parseFloat(match[0]) : 0
 }
@@ -48,9 +49,7 @@ const formatRelativeTime = (dateStr: string, timeStr: string): string => {
     tomorrow.setDate(tomorrow.getDate() + 1)
     const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
 
-    // Check if it's today
     if (eventDay.getTime() === today.getTime()) {
-      // Calculate minutes until event
       const diffMs = eventDate.getTime() - now.getTime()
       const diffMinutes = Math.floor(diffMs / 60000)
 
@@ -60,12 +59,10 @@ const formatRelativeTime = (dateStr: string, timeStr: string): string => {
       return `${hours}:${minutes}`
     }
 
-    // Check if it's tomorrow
     if (eventDay.getTime() === tomorrow.getTime()) {
       return `Demain ${hours}:${minutes}`
     }
 
-    // Otherwise show date
     return eventDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
   } catch {
     return timeStr
@@ -109,46 +106,13 @@ const getEventStatus = (dateStr: string, timeStr: string): string => {
   }
 }
 
-// Helper to format notification time
-const formatNotificationTime = (timestamp: string): string => {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMins / 60)
-  const diffDays = Math.floor(diffHours / 24)
-
-  if (diffMins < 1) return "À l'instant"
-  if (diffMins < 60) return `il y a ${diffMins} min`
-  if (diffHours < 24) return `il y a ${diffHours}h`
-  if (diffDays === 1) return 'Hier'
-  if (diffDays < 7) return `il y a ${diffDays}j`
-  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-}
-
-// Helper to get icon and color based on notification type
-const getActivityIcon = (type: string) => {
-  switch (type) {
-    case 'booking':
-      return { icon: Video, color: 'bg-purple-500/20 text-purple-400' }
-    case 'agenda':
-      return { icon: Phone, color: 'bg-blue-500/20 text-blue-400' }
-    case 'ai':
-      return { icon: Sparkles, color: 'bg-purple-500/20 text-purple-400' }
-    case 'message':
-      return { icon: Mail, color: 'bg-emerald-500/20 text-emerald-400' }
-    default:
-      return { icon: FileText, color: 'bg-slate-500/20 text-slate-400' }
-  }
-}
-
 export function Dashboard() {
-  const navigate = useNavigate() // Hook de navigation
+  const navigate = useNavigate()
   const { prospects } = useProspects()
   const { offers } = useOffers()
   const { notifications } = useNotifications()
   const { meetings } = useMeetings() 
-  const { googleEvents } = useGoogleCalendar() // AJOUT : Récupération des événements Google
+  const { googleEvents } = useGoogleCalendar()
 
   const [isCallOpen, setIsCallOpen] = useState(false)
   const [selectedProspect, setSelectedProspect] = useState({ name: '', avatar: '' })
@@ -165,33 +129,40 @@ export function Dashboard() {
     type: 'call' | 'video' | 'meeting'
     status: string
     date: string
-    isGoogleEvent?: boolean // AJOUT : Flag pour identifier la source
+    isGoogleEvent?: boolean
   }>>([])
 
-  // Calculate real metrics from prospects
+  // --- CALCUL DES MÉTRIQUES (CORRIGÉ POUR CORRESPONDRE À KPIPage) ---
   const metrics = useMemo(() => {
     const wonProspects = prospects.filter(p => p.stage === 'won')
     const closedProspects = prospects.filter(p => p.stage === 'won' || p.stage === 'lost')
 
-    // Cash Généré
+    // 1. Cash Généré
     const cashGenere = wonProspects.reduce((sum, p) => sum + (p.value || 0), 0)
 
-    // Commissions
-    let totalCommissions = 0
-    wonProspects.forEach(prospect => {
-      const offer = offers.find(o => o.name === prospect.offer)
-      if (offer) {
-        const commissionRate = parseCommission(offer.commission)
-        totalCommissions += (prospect.value || 0) * (commissionRate / 100)
-      }
-    })
+    // 2. Commissions (Logique corrigée pour matcher KPIPage)
+    const totalCommissions = wonProspects.reduce((sum, prospect) => {
+      // Recherche de l'offre correspondante (par ID ou par Nom, insensible à la casse)
+      const offer = offers.find(o => 
+        (prospect.offerId && String(o.id) === String(prospect.offerId)) || 
+        (prospect.offer && o.name.toLowerCase().trim() === prospect.offer.toLowerCase().trim())
+      )
 
-    // Taux de Conversion
+      // Si offre trouvée, on prend sa commission, sinon 10% par défaut (comme sur la page KPI)
+      let rate = 0.10 // Default 10%
+      if (offer && offer.commission) {
+        rate = parseCommission(offer.commission) / 100
+      }
+
+      return sum + ((prospect.value || 0) * rate)
+    }, 0)
+
+    // 3. Taux de Conversion
     const tauxConversion = closedProspects.length > 0
       ? (wonProspects.length / closedProspects.length) * 100
       : 0
 
-    // Pipeline Value (prospects not won/lost)
+    // 4. Pipeline Value (prospects not won/lost)
     const pipelineValue = prospects
       .filter(p => !['won', 'lost'].includes(p.stage))
       .reduce((sum, p) => sum + (p.value || 0), 0)
@@ -230,12 +201,7 @@ export function Dashboard() {
     })
   }, [prospects])
 
-  // Get recent activities from notifications (last 5)
-  const recentActivities = useMemo(() => {
-    return notifications.slice(0, 5)
-  }, [notifications])
-
-  // MODIFIÉ : Fusion des rendez-vous CRM et Google Agenda
+  // Fusion des rendez-vous CRM et Google Agenda
   useEffect(() => {
     try {
       const now = new Date()
@@ -243,7 +209,6 @@ export function Dashboard() {
       threeDaysLater.setDate(now.getDate() + 3)
       threeDaysLater.setHours(23, 59, 59, 999)
       
-      // 1. Transformer les événements Google au format attendu par le Dashboard
       const transformedGoogle = googleEvents
         .filter(ge => ge && ge.start && !ge.allDay)
         .map(ge => ({
@@ -257,15 +222,12 @@ export function Dashboard() {
           isGoogleEvent: true
         }))
 
-      // 2. Fusionner les deux listes
       const allEvents = [...meetings, ...transformedGoogle]
 
       const filtered = allEvents.filter((event: any) => {
         try {
           if (!event || !event.date) return false
-
           const eventDate = new Date(event.date)
-          
           if (event.time) {
             const timePart = event.time.split(' ')[0]
             const [hours, minutes] = timePart.split(':')
@@ -273,7 +235,6 @@ export function Dashboard() {
               eventDate.setHours(parseInt(hours), parseInt(minutes), 0, 0)
             }
           }
-
           const margin = new Date(now.getTime() - 15 * 60000)
           return eventDate >= margin && eventDate <= threeDaysLater
         } catch {
@@ -281,7 +242,6 @@ export function Dashboard() {
         }
       })
 
-      // 3. Tri chronologique précis
       filtered.sort((a: any, b: any) => {
         const dateA = new Date(a.date)
         const dateB = new Date(b.date)
@@ -301,7 +261,7 @@ export function Dashboard() {
       console.error('❌ Error filtering events for Dashboard:', error)
       setUpcomingEvents([])
     }
-  }, [meetings, googleEvents]) // Déclenchement sur changement CRM ou Google
+  }, [meetings, googleEvents])
 
   const kpis = [
     {
@@ -321,7 +281,6 @@ export function Dashboard() {
     },
   ]
 
-  // Calcul basé sur le NOMBRE de leads pour le graphique (Correction 50/50)
   const totalPipelineValue = pipelineStages.reduce((sum, stage) => sum + stage.value, 0)
   const totalPipelineCount = pipelineStages.reduce((sum, stage) => sum + stage.count, 0)
 
@@ -329,10 +288,6 @@ export function Dashboard() {
     setSelectedProspect({ name: prospectName, avatar: avatar || '' })
     setCallModeWithAi(withAi)
     setIsCallOpen(true)
-    setCallDropdownOpen(null)
-  }
-
-  const handlePhoneCall = () => {
     setCallDropdownOpen(null)
   }
 
@@ -440,7 +395,7 @@ export function Dashboard() {
 
           <div className="grid gap-6">
 
-            {/* Événements à venir (Fusionnés avec Google Agenda) */}
+            {/* Événements à venir */}
             <div className="rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white">Événements à venir</h2>
@@ -462,7 +417,6 @@ export function Dashboard() {
               ) : (
                 <div className="space-y-3">
                   {upcomingEvents.map((event) => {
-                    // MODIFIÉ : Choix de l'icône en fonction de la source Google
                     const EventIcon = event.isGoogleEvent ? CalendarIcon : (event.type === 'video' ? Video : Phone)
                     const iconColor = event.isGoogleEvent ? 'bg-blue-500/20' : (event.type === 'video' ? 'bg-purple-500/20' : 'bg-blue-500/20')
                     const iconTextColor = event.isGoogleEvent ? 'text-blue-400' : (event.type === 'video' ? 'text-purple-400' : 'text-blue-400')
