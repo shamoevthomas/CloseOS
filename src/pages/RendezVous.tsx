@@ -226,11 +226,7 @@ export function RendezVous() {
     if (manualTrigger) setIsSyncing(true);
     
     try {
-        // 👇 MODIFICATION ICI : Utilisation du proxy local pour éviter CORS
-        const response = await fetch(`/api/cal-bookings?apiKey=${apiKey}`)
-        
-        if (!response.ok) throw new Error("Erreur Proxy");
-
+        const response = await fetch(`https://api.cal.com/v1/bookings?apiKey=${apiKey}&take=100&status=CANCELLED,ACCEPTED,REJECTED`)
         const data = await response.json()
         if (data.bookings) {
             setCalBookings(data.bookings);
@@ -242,7 +238,7 @@ export function RendezVous() {
         }
     } catch (error) {
         console.error("Erreur fetch Bookings Cal.com:", error);
-        if (manualTrigger) alert("Erreur lors de la synchronisation (Vérifiez la clé API ou l'accès internet).");
+        if (manualTrigger) alert("Erreur lors de la synchronisation.");
     } finally {
         if (manualTrigger) setIsSyncing(false);
     }
@@ -461,7 +457,7 @@ export function RendezVous() {
               data.map((m: any) => (
                 <tr key={m.id} onClick={() => setSelectedMeeting(m)} className="cursor-pointer hover:bg-slate-800/40 transition-colors">
                   <td className="px-6 py-4"><div className="flex items-center gap-3 text-white"><div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg bg-slate-800 border border-slate-700 font-bold"><span className="text-[10px] text-blue-500 uppercase">{safeFormat(m.date, 'MMM')}</span><span className="text-sm">{safeFormat(m.date, 'dd')}</span></div><div><div className="font-bold">{safeFormat(m.date, 'eeee d MMMM')}</div><div className="text-xs text-slate-500">{m.time}</div></div></div></td>
-                  <td className="px-6 py-4 font-bold text-slate-200"><MaskedText value={m.contact || 'Prospect'} type="name" /></td>
+                  <td className="px-6 py-4 font-bold text-slate-200">{maskData(m.contact || 'Prospect', 'name')}</td>
                   <td className="px-6 py-4 text-sm text-blue-400 font-medium">{getMeetingSource(m)}</td>
                   <td className="px-6 py-4"><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(m.status)}`}>{getStatusLabel(m.status)}</span></td>
                   <td className="px-6 py-4 text-right"><ExternalLink className="h-4 w-4 text-slate-600 ml-auto" /></td>
@@ -892,4 +888,4 @@ export function RendezVous() {
       )}
     </div>
   )
-}
+}a
