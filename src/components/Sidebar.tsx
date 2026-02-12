@@ -58,7 +58,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const userRole = user?.user_metadata?.role || 'Membre';
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   
-  // Récupération de l'URL de la photo de profil depuis les métadonnées ou le profil
+  // ✅ AJOUT : Récupération de l'URL de la photo de profil
   const avatarUrl = user?.user_metadata?.avatar_url;
 
   return (
@@ -83,7 +83,6 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
               alt="CloserOS" 
               className="h-8 w-auto object-contain rounded-md" 
             />
-            {/* Texte supprimé ici */}
           </div>
           <button onClick={onClose} className="lg:hidden p-2 text-slate-400 hover:text-white">
             <X className="h-5 w-5" />
@@ -168,14 +167,10 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
               isMenuOpen ? 'bg-slate-800' : 'bg-slate-800/50 hover:bg-slate-800'
             )}
           >
-            {/* Affichage de l'avatar circulaire */}
+            {/* ✅ MODIFICATION : Affichage de l'image si elle existe, sinon les initiales */}
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20 overflow-hidden">
               {avatarUrl ? (
-                <img 
-                  src={avatarUrl} 
-                  alt={fullName} 
-                  className="h-full w-full object-cover" 
-                />
+                <img src={avatarUrl} alt={fullName} className="h-full w-full object-cover" />
               ) : (
                 <span className="text-sm font-bold text-blue-500">
                   {initials || 'U'}

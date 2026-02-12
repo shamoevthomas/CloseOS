@@ -106,6 +106,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
       if (updateError) throw updateError
 
+      // --- AJOUT POUR LA SIDEBAR : Mise à jour des métadonnées Auth ---
+      await updateProfile({
+        avatar_url: urlData.publicUrl
+      })
+
       // 4. Mise à jour locale
       setFormData(prev => ({ ...prev, avatar_url: urlData.publicUrl }))
       setMessage({ type: 'success', text: 'Photo de profil mise à jour !' })
@@ -137,7 +142,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const { error } = await updateProfile({
       full_name: formData.full_name,
       phone: formData.phone,
-      role: formData.role
+      role: formData.role,
+      avatar_url: formData.avatar_url // Ajouté pour garder la Sidebar synchronisée
     })
     
     // Double sécurité : Update direct dans la table profiles pour être sûr
@@ -372,23 +378,23 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </form>
             )}
 
-            {/* --- ONGLET SÉCURITÉ --- */}
+            {/* ... Reste du code (Security, Subscription, Support) ... */}
             {activeTab === 'security' && (
-              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                 {isGoogleUser ? (
-                  <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4 text-left">
+                  <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4">
                     <div className="p-3 bg-blue-500/20 rounded-xl h-fit">
                         <Shield className="h-6 w-6 text-blue-400 shrink-0" />
                     </div>
                     <div>
                       <h4 className="font-bold text-white mb-1 text-lg">Authentification Google active</h4>
-                      <p className="text-sm text-blue-200/70 leading-relaxed">Votre compte est sécurisé par Google. La gestion du mot de passe se fait directement via votre compte Google.</p>
+                      <p className="text-sm text-blue-200/70 leading-relaxed text-left">Votre compte est sécurisé par Google. La gestion du mot de passe se fait directement via votre compte Google.</p>
                     </div>
                   </div>
                 ) : (
                   <form onSubmit={handleUpdatePassword} className="space-y-6">
                     <div className="space-y-2 text-left">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nouveau mot de passe</label>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left">Nouveau mot de passe</label>
                       <div className="relative">
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                         <input
@@ -414,12 +420,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
-            {/* --- ONGLET ABONNEMENT --- */}
             {activeTab === 'subscription' && (
                 <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    
-                    {/* Carte Plan Actuel */}
-                    <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden">
+                    <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden text-left">
                         <div className="absolute top-0 right-0 p-3 opacity-10">
                             <CreditCard className="w-32 h-32 text-white" />
                         </div>
@@ -429,11 +432,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 Plan Actif
                             </span>
                             <h3 className="text-3xl font-bold text-white mb-2">Founder Edition</h3>
-                            <p className="text-slate-300 mb-6 max-w-md">
+                            <p className="text-slate-300 mb-6 max-w-md text-left">
                                 Vous bénéficiez de l'accès complet à CloseOS. 
                                 Vous pouvez gérer votre méthode de paiement, télécharger vos factures ou résilier à tout moment.
                             </p>
-                            
                             <button 
                                 onClick={handleManageBilling}
                                 className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg flex items-center gap-2"
@@ -443,29 +445,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             </button>
                         </div>
                     </div>
-
-                    {/* Information supplémentaire */}
-                    <div className="p-4 rounded-xl bg-slate-800/50 border border-white/5 flex gap-3 text-sm text-slate-400">
-                        <AlertCircle className="h-5 w-5 text-slate-500 shrink-0" />
-                        <p>
-                            En cliquant sur le bouton ci-dessus, vous serez redirigé vers notre portail sécurisé Stripe où vous pourrez 
-                            télécharger vos factures, changer de carte bancaire ou <strong>annuler votre abonnement</strong>.
-                        </p>
-                    </div>
                 </div>
             )}
 
-            {/* --- ONGLET SUPPORT --- */}
             {activeTab === 'support' && (
-                <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
-                            <Headphones className="h-8 w-8 text-white" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-white">Comment pouvons-nous vous aider ?</h3>
-                        <p className="text-slate-400 mt-2">Notre équipe de support est disponible du Lundi au Vendredi.</p>
-                    </div>
-
+                <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                     <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02]">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -473,23 +457,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     <Mail className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white text-lg">Email Support</h4>
-                                    <p className="text-sm text-slate-400">Réponse sous 24h ouvrées</p>
-                                </div>
-                            </div>
-                            <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
-                        </div>
-                    </a>
-
-                    <a href="#" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02]">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors">
-                                    <AlertCircle className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-white text-lg">Centre d'aide & FAQ</h4>
-                                    <p className="text-sm text-slate-400">Guides et tutoriels (Bientôt disponible)</p>
+                                    <h4 className="font-bold text-white text-lg text-left">Email Support</h4>
+                                    <p className="text-sm text-slate-400 text-left">Réponse sous 24h ouvrées</p>
                                 </div>
                             </div>
                             <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
@@ -497,7 +466,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </a>
                 </div>
             )}
-
           </div>
         </div>
       </div>
