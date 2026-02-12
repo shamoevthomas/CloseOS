@@ -18,9 +18,10 @@ import {
   FileText
 } from 'lucide-react'
 import { cn } from '../lib/utils'
-import { useState } from 'react'
+import { useState, useEffect } from 'react' // Modification ici : ajout de useEffect
 import { useNotifications } from '../contexts/NotificationsContext'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase' // Ajout de l'import supabase
 
 // Mise à jour de la navigation
 const navigation = [
@@ -49,17 +50,38 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { counts, clearBadge } = useNotifications()
 
+  // État pour stocker l'avatar récupéré en base de données
+  const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
+
   const handleLogout = async () => {
     await logout()
     navigate('/login')
   }
 
+  // Récupération directe de l'avatar depuis Supabase
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      if (user?.id) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .single()
+        
+        if (data?.avatar_url) {
+          setDbAvatarUrl(data.avatar_url)
+        }
+      }
+    }
+    fetchAvatar()
+  }, [user?.id, onOpenSettings]) // Se rafraîchit si l'ID change ou si on ferme les réglages
+
   const fullName = user?.user_metadata?.full_name || 'Utilisateur';
   const userRole = user?.user_metadata?.role || 'Membre';
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   
-  // ✅ AJOUT : Récupération de l'URL de la photo de profil
-  const avatarUrl = user?.user_metadata?.avatar_url;
+  // On utilise l'URL de la base de données en priorité, puis les métadonnées auth
+  const avatarUrl = dbAvatarUrl || user?.user_metadata?.avatar_url;
 
   return (
     <>
