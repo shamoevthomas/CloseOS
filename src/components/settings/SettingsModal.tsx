@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { 
   X, 
   Shield, 
@@ -13,9 +13,11 @@ import {
   CreditCard, 
   Headphones, 
   ExternalLink, 
-  Mail 
+  Mail,
+  Camera // Nouvelle icône
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../../lib/supabase' // Assurez-vous que ce chemin est bon
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -27,44 +29,120 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'support'>('profile')
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false) // État pour l'upload d'image
   const [message, setMessage] = useState({ type: '', text: '' })
+  const fileInputRef = useRef<HTMLInputElement>(null) // Référence pour l'input caché
 
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
     role: '',
-    newPassword: ''
+    newPassword: '',
+    avatar_url: '' // Nouveau champ
   })
 
+  // Récupération des données au chargement
   useEffect(() => {
-    if (user && isOpen) {
-      setFormData(prev => ({
-        ...prev,
-        full_name: user.user_metadata?.full_name || '',
-        phone: user.user_metadata?.phone || '',
-        role: user.user_metadata?.role || '',
-      }))
+    const fetchProfileData = async () => {
+      if (user && isOpen) {
+        // On récupère les données fraîches depuis Supabase pour avoir l'avatar
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name, phone, role, avatar_url')
+          .eq('id', user.id)
+          .single()
+
+        setFormData(prev => ({
+          ...prev,
+          full_name: user.user_metadata?.full_name || data?.full_name || '',
+          phone: user.user_metadata?.phone || data?.phone || '',
+          role: user.user_metadata?.role || data?.role || '',
+          avatar_url: data?.avatar_url || ''
+        }))
+      }
+      setMessage({ type: '', text: '' })
     }
-    setMessage({ type: '', text: '' })
+    fetchProfileData()
   }, [user, isOpen, activeTab])
 
   if (!isOpen) return null
 
-  // --- LOGIQUE DE GESTION DU PORTAIL STRIPE ---
+  // --- GESTION PHOTO DE PROFIL ---
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true)
+      setMessage({ type: '', text: '' })
+
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('Veuillez sélectionner une image.')
+      }
+
+      const file = event.target.files[0]
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user?.id}-${Math.random()}.${fileExt}`
+      const filePath = `${fileName}`
+
+      // 1. Upload vers Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // 2. Récupérer l'URL publique
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+
+      // 3. Mettre à jour le profil
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: urlData.publicUrl })
+        .eq('id', user?.id)
+
+      if (updateError) throw updateError
+
+      // 4. Mise à jour locale
+      setFormData(prev => ({ ...prev, avatar_url: urlData.publicUrl }))
+      setMessage({ type: 'success', text: 'Photo de profil mise à jour !' })
+
+    } catch (error: any) {
+      console.error('Erreur upload:', error)
+      setMessage({ type: 'error', text: 'Erreur lors de l\'upload de l\'image.' })
+    } finally {
+      setUploading(false)
+    }
+  }
+  // ------------------------------
+
   const handleManageBilling = () => {
-    // Redirection directe vers votre Portail Client Stripe
     window.open('https://billing.stripe.com/p/login/3cI00c3qReYdd9a1wsbjW00', '_blank');
   }
-  // --------------------------------------------
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    // Note: updateProfile ne gère généralement que les métadonnées auth, 
+    // on s'assure ici de sauvegarder aussi dans la table profiles si nécessaire via le contexte
     const { error } = await updateProfile({
       full_name: formData.full_name,
       phone: formData.phone,
       role: formData.role
     })
+    
+    // Double sécurité : Update direct dans la table profiles pour être sûr
+    if (!error && user) {
+        await supabase.from('profiles').update({
+            full_name: formData.full_name,
+            phone: formData.phone,
+            role: formData.role
+        }).eq('id', user.id)
+    }
+
     if (error) setMessage({ type: 'error', text: error.message })
     else setMessage({ type: 'success', text: 'Profil mis à jour avec succès !' })
     setLoading(false)
@@ -171,13 +249,46 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {/* --- ONGLET PROFIL --- */}
             {activeTab === 'profile' && (
               <form onSubmit={handleUpdateProfile} className="space-y-8 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                
+                {/* SECTION AVATAR MODIFIABLE */}
                 <div className="flex items-center gap-6 p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl shadow-blue-500/20">
-                    {formData.full_name?.[0] || 'U'}
+                  <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+                    {/* INPUT CACHÉ */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                        accept="image/jpeg, image/png, image/webp"
+                        disabled={uploading}
+                    />
+                    
+                    {/* AFFICHAGE IMAGE OU INITIALES */}
+                    <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/10 shadow-xl shadow-blue-500/20 group-hover:border-blue-500 transition-all">
+                        {formData.avatar_url ? (
+                            <img src={formData.avatar_url} alt="Profil" className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white">
+                                {formData.full_name?.[0] || 'U'}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* OVERLAY DE CHARGEMENT OU ICÔNE */}
+                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        {uploading ? (
+                            <Loader2 className="h-6 w-6 text-white animate-spin" />
+                        ) : (
+                            <Camera className="h-6 w-6 text-white" />
+                        )}
+                    </div>
                   </div>
+
                   <div className="text-left">
                     <h3 className="font-bold text-white text-lg">Photo de profil</h3>
-                    <p className="text-sm text-slate-400 mt-1">Générée automatiquement depuis votre nom.</p>
+                    <p className="text-sm text-slate-400 mt-1">
+                        {uploading ? 'Téléchargement en cours...' : 'Cliquez sur l\'image pour la modifier (JPG, PNG).'}
+                    </p>
                   </div>
                 </div>
 
