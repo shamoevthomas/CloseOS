@@ -11,19 +11,16 @@ import {
   BarChart3, 
   Video, 
   Smartphone, 
-  // Brain, // Icône supprimée
   CreditCard, 
   CalendarCheck, 
-  Lock,
   Coffee,
   X,
-  FileText // Nouvelle icône pour "Rapport"
+  FileText
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState } from 'react'
 import { useNotifications } from '../contexts/NotificationsContext'
 import { useAuth } from '../contexts/AuthContext'
-import { usePrivacy } from '../contexts/PrivacyContext'
 
 // Mise à jour de la navigation
 const navigation = [
@@ -35,7 +32,7 @@ const navigation = [
   { name: 'Rendez-vous', href: '/rendez-vous', icon: CalendarCheck },
   { name: 'Appels', href: '/calls', icon: Video },
   { name: 'Téléphonie', href: '/telephony', icon: Smartphone },
-  { name: 'Rapport', href: '/ai-coach', icon: FileText }, 
+  { name: 'Rapport', href: '/ai-coach', icon: FileText },
   { name: 'Factures', href: '/invoices', icon: CreditCard },
   { name: 'KPI', href: '/kpi', icon: BarChart3 },
 ]
@@ -49,7 +46,6 @@ interface SidebarProps {
 export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
-  const { isPrivacyEnabled } = usePrivacy()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { counts, clearBadge } = useNotifications()
 
@@ -67,26 +63,26 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
       {/* Overlay pour mobile */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={onClose}
         />
       )}
 
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-white/5 bg-[#020617] transition-transform duration-300 lg:static lg:translate-x-0 shadow-2xl",
+        "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-800 bg-slate-900 transition-transform duration-300 lg:static lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* Logo & Bouton Fermer */}
-        <div className="flex h-16 items-center justify-between px-6 border-b border-white/5">
+        <div className="flex h-16 items-center justify-between px-6 border-b border-slate-800">
           <div className="flex items-center gap-3">
             <img 
               src="/logo.PNG" 
               alt="CloserOS" 
-              className="h-9 w-auto object-contain rounded-md" 
+              className="h-8 w-auto object-contain rounded-md" 
             />
             {/* Texte supprimé ici */}
           </div>
-          <button onClick={onClose} className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="lg:hidden p-2 text-slate-400 hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -102,14 +98,14 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
               }}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-all duration-200',
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                 )
               }
             >
-              <item.icon className={cn("h-4 w-4", ({ isActive }: any) => isActive ? "text-white" : "text-slate-500 group-hover:text-white")} />
+              <item.icon className="h-4 w-4" />
               <span className="flex-1">{item.name}</span>
             </NavLink>
           ))}
@@ -134,26 +130,26 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* User Section */}
-        <div className="relative border-t border-white/5 p-4 bg-[#020617]">
+        <div className="relative border-t border-slate-800 p-4">
           {isMenuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)} />
-              <div className="absolute bottom-full left-4 right-4 z-20 mb-2 overflow-hidden rounded-xl border border-white/10 bg-[#0B1121] shadow-xl backdrop-blur-md">
+              <div className="absolute bottom-full left-4 right-4 z-20 mb-2 overflow-hidden rounded-xl border border-slate-700 bg-slate-800 shadow-xl">
                 <button
                   onClick={() => {
                     onOpenSettings()
                     setIsMenuOpen(false)
                     if (window.innerWidth < 1024) onClose?.();
                   }}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
                 >
                   <Settings className="h-4 w-4" />
                   Paramètres
                 </button>
-                <div className="h-px bg-white/5" />
+                <div className="h-px bg-slate-700" />
                 <button
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-300 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-red-400"
                 >
                   <LogOut className="h-4 w-4" />
                   Déconnexion
@@ -165,26 +161,26 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className={cn(
-              'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200',
-              isMenuOpen ? 'bg-white/5 text-white' : 'hover:bg-white/5 text-slate-300'
+              'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
+              isMenuOpen ? 'bg-slate-800' : 'bg-slate-800/50 hover:bg-slate-800'
             )}
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/20 border border-blue-500/10">
-              <span className="text-xs font-bold text-blue-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20">
+              <span className="text-sm font-bold text-blue-500">
                 {initials || 'U'}
               </span>
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-bold text-slate-200 truncate">
-                {isPrivacyEnabled ? '••••••••' : fullName}
+              <p className="text-sm font-medium text-slate-100 truncate">
+                {fullName}
               </p>
-              <p className="text-xs text-slate-500 truncate font-medium">
-                {isPrivacyEnabled ? '••••••••' : userRole}
+              <p className="text-xs text-slate-500 truncate">
+                {userRole}
               </p>
             </div>
             <ChevronUp className={cn(
-              "h-4 w-4 text-slate-500 transition-transform duration-200",
-              isMenuOpen && "rotate-180 text-white"
+              "h-4 w-4 text-slate-500 transition-transform",
+              isMenuOpen && "rotate-180"
             )} />
           </button>
         </div>
