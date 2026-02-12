@@ -1,747 +1,460 @@
-import { useState } from 'react'
-import { ChevronDown, Plus, User, Phone, Mail, Edit2, Trash2, UserPlus, X, Search, Filter } from 'lucide-react'
-import { useProspects, type Prospect } from '../contexts/ProspectsContext'
-import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
+import { useState, useMemo } from 'react'
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Phone, 
+  Mail, 
+  Building2, 
+  Edit2, 
+  Trash2, 
+  Users, 
+  Calendar,
+  Sparkles,
+  MoreHorizontal
+} from 'lucide-react'
+import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
-import { ProspectView } from '../components/ProspectView'
+import { useInternalContacts } from '../contexts/InternalContactsContext'
+// Imports des composants fonctionnels existants
+import { ProspectModal } from '../components/ProspectModal'
 import { InternalContactModal } from '../components/InternalContactModal'
-import { CreateProspectModal } from '../components/CreateProspectModal'
-// MODIFICATION : Utilisation de votre fichier existant CreateEventModal pour corriger l'erreur Vercel
 import { CreateEventModal } from '../components/CreateEventModal'
-
-interface LocalProspect {
-  id: number
-  name?: string
-  firstName?: string
-  lastName?: string
-  company: string
-  status?: string
-  stage?: string
-  lastInteraction?: string
-  lastContact?: Date
-  dateAdded?: string | Date
-  email: string
-  phone: string
-  offer?: string
-  offerId?: number
-}
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal'
+import { MaskedText } from '../components/MaskedText'
+import { cn } from '../lib/utils'
 
 export function Contacts() {
-  // 🔄 SAFE CONTEXT CONNECTION - Try to connect to global context with fallback
-  let context
-  try {
-    context = useProspects()
-  } catch (error) {
-    console.error('Failed to connect to ProspectsContext:', error)
-    context = null
-  }
-
-  // Check if connection is valid
-  const isConnected = !!(context && context.prospects && Array.isArray(context.prospects))
-
-  // 📦 FALLBACK LOCAL STATE (used if global fails)
-  const [localProspects] = useState<LocalProspect[]>([
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      company: 'Tech Innovations Inc',
-      status: 'Qualifié',
-      stage: 'qualified',
-      lastInteraction: '2024-01-15',
-      dateAdded: '2024-01-01',
-      email: 'sarah@techinno.com',
-      phone: '+33 6 12 34 56 78',
-      offer: 'Genix'
-    },
-    {
-      id: 2,
-      name: 'Marc Dupont',
-      firstName: 'Marc',
-      lastName: 'Dupont',
-      company: 'Digital Ventures',
-      status: 'Prospect',
-      stage: 'prospect',
-      lastInteraction: '2024-01-20',
-      dateAdded: '2024-01-05',
-      email: 'marc@digitalvent.io',
-      phone: '+33 7 98 76 54 32',
-      offer: 'Bodymind'
-    },
-    {
-      id: 3,
-      name: 'Emma Williams',
-      firstName: 'Emma',
-      lastName: 'Williams',
-      company: 'Global Solutions Ltd',
-      status: 'Gagné',
-      stage: 'won',
-      lastInteraction: '2024-01-18',
-      dateAdded: '2024-01-10',
-      email: 'emma@globalsol.com',
-      phone: '+33 6 45 67 89 01',
-      offer: 'Genix'
-    }
-  ])
-
-  // Use global data if connected, otherwise use local fallback
-  const displayProspects = isConnected ? context.prospects : localProspects
-  const { addProspect, deleteProspect, updateProspect } = context || {}
-
-  // Global internal contacts from context
-  const { contacts: internalContacts, addContact, deleteContact, updateContact } = useInternalContacts()
-
-  // Global offers from context
+  // 1. Connexions aux Contextes (Données réelles)
+  const { prospects, loading: prospectsLoading, deleteProspect } = useProspects()
   const { offers } = useOffers()
+  const { contacts: internalContacts, deleteContact: deleteInternalContact, updateContact: updateInternalContact } = useInternalContacts()
 
-  // UI state
-  const [prospectsExpanded, setProspectsExpanded] = useState(true)
-  const [internalsExpanded, setInternalsExpanded] = useState(true)
-  const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false)
-  const [isNewProspectModalOpen, setIsNewProspectModalOpen] = useState(false)
-  // MODIFICATION : État pour la modale de rendez-vous
+  // 2. États pour l'interface et les Modales
+  const [activeTab, setActiveTab] = useState<'prospects' | 'internal'>('prospects')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedStage, setSelectedStage] = useState<string>('all')
+  const [selectedOffer, setSelectedOffer] = useState<string>('all')
+  
+  // États des Modales
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [editingProspect, setEditingProspect] = useState<any>(null)
+  const [prospectToDelete, setProspectToDelete] = useState<any>(null)
+  
+  // États spécifiques pour les fonctionnalités avancées
   const [isAddMeetingModalOpen, setIsAddMeetingModalOpen] = useState(false)
-  const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null)
-  const [selectedContact, setSelectedContact] = useState<InternalContact | null>(null)
+  const [selectedProspectForEvent, setSelectedProspectForEvent] = useState<any>(null)
+  const [selectedInternalContact, setSelectedInternalContact] = useState<any>(null)
 
-  // --- NOUVEAU : États pour la recherche et le filtrage ---
-  const [prospectSearch, setProspectSearch] = useState('')
-  const [internalSearch, setInternalSearch] = useState('')
-  const [selectedOfferFilter, setSelectedOfferFilter] = useState<string>('all')
+  // --- CONFIGURATION DES ÉTAPES (BADGES) ---
+  const stages = [
+    { value: 'prospect', label: 'Prospect', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+    { value: 'qualified', label: 'Qualifié', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+    { value: 'proposal', label: 'Proposition', color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+    { value: 'negotiation', label: 'Négociation', color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
+    { value: 'won', label: 'Gagné', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+    { value: 'lost', label: 'Perdu', color: 'bg-red-500/10 text-red-400 border-red-500/20' },
+  ]
 
-  // Form state
-  const [newContact, setNewContact] = useState({
-    name: '',
-    role: '',
-    email: '',
-    phone: ''
-    // SUPPRESSION DES CHAMPS DE FACTURATION ICI
-  })
+  // --- FILTRAGE DES PROSPECTS ---
+  const filteredProspects = useMemo(() => {
+    if (!prospects) return []
+    return prospects.filter(prospect => {
+      const matchesSearch = 
+        (prospect.firstName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (prospect.lastName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (prospect.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (prospect.company?.toLowerCase() || '').includes(searchTerm.toLowerCase())
 
-  // --- LOGIQUE DE FILTRAGE DES PROSPECTS (AJOUTÉE) ---
-  const filteredProspects = displayProspects.filter(prospect => {
-    // 1. Filtre par recherche textuelle (Nom, Entreprise, Email)
-    const term = prospectSearch.toLowerCase()
-    const fullName = prospect.name || `${prospect.firstName || ''} ${prospect.lastName || ''}`
-    const matchesSearch = 
-      fullName.toLowerCase().includes(term) ||
-      (prospect.company || '').toLowerCase().includes(term) ||
-      (prospect.email || '').toLowerCase().includes(term)
-
-    // 2. Filtre par Offre
-    let matchesOffer = true
-    if (selectedOfferFilter !== 'all') {
-      // On cherche l'objet offre correspondant à l'ID sélectionné
-      const selectedOfferObj = offers.find(o => o.id.toString() === selectedOfferFilter)
+      const matchesStage = selectedStage === 'all' || prospect.stage === selectedStage
       
-      if (selectedOfferObj) {
-        // On compare soit avec l'ID, soit avec le NOM de l'offre (plus robuste)
-        const offerNameMatch = (prospect.offer || '').trim() === selectedOfferObj.name.trim()
-        const offerIdMatch = prospect.offerId?.toString() === selectedOfferFilter
-        matchesOffer = offerNameMatch || offerIdMatch
-      } else {
-        matchesOffer = false
+      let matchesOffer = selectedOffer === 'all'
+      if (selectedOffer !== 'all') {
+        if (selectedOffer === 'none') {
+          matchesOffer = !prospect.offerId && !prospect.offer
+        } else {
+          matchesOffer = String(prospect.offerId) === selectedOffer || prospect.offer === selectedOffer
+        }
       }
-    }
 
-    return matchesSearch && matchesOffer
-  })
-
-  // --- LOGIQUE DE FILTRAGE DES CONTACTS INTERNES (AJOUTÉE) ---
-  const filteredInternalContacts = internalContacts.filter(contact => {
-    const term = internalSearch.toLowerCase()
-    return (
-      contact.name.toLowerCase().includes(term) ||
-      contact.role.toLowerCase().includes(term) ||
-      contact.email.toLowerCase().includes(term)
-    )
-  })
-
-  // Helper to get status color
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      'Prospect': 'bg-blue-500/10 text-blue-400',
-      'prospect': 'bg-blue-500/10 text-blue-400',
-      'Qualifié': 'bg-purple-500/10 text-purple-400',
-      'qualified': 'bg-purple-500/10 text-purple-400',
-      'Gagné': 'bg-emerald-500/10 text-emerald-400',
-      'won': 'bg-emerald-500/10 text-emerald-400',
-      'Perdu': 'bg-rose-500/10 text-rose-400',
-      'lost': 'bg-rose-500/10 text-rose-400',
-    }
-    return colors[status] || 'bg-slate-500/10 text-slate-400'
-  }
-
-  // Helper to get status display name
-  const getStatusName = (status: string) => {
-    const names: Record<string, string> = {
-      'prospect': 'Prospect',
-      'qualified': 'Qualifié',
-      'won': 'Gagné',
-      'lost': 'Perdu',
-      'followup': 'Follow Up',
-      'noshow': 'No Show',
-    }
-    return names[status] || status
-  }
-
-  // Handlers
-  const handleAddContact = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newContact.name || !newContact.role || !newContact.email || !newContact.phone) {
-      alert('Veuillez remplir tous les champs')
-      return
-    }
-
-    // 🔄 MODIFICATION : Appel direct avec async pour garantir l'affichage
-    await addContact(newContact)
-    setNewContact({
-      name: '',
-      role: '',
-      email: '',
-      phone: ''
+      return matchesSearch && matchesStage && matchesOffer
     })
-    setIsAddContactModalOpen(false)
+  }, [prospects, searchTerm, selectedStage, selectedOffer])
+
+  // --- FILTRAGE DES CONTACTS INTERNES ---
+  const filteredInternalContacts = useMemo(() => {
+    if (!internalContacts) return []
+    return internalContacts.filter(contact => 
+      (contact.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (contact.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (contact.role?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    )
+  }, [internalContacts, searchTerm])
+
+  // --- HANDLERS (Gestion des clics) ---
+  const handleEdit = (prospect: any) => {
+    setEditingProspect(prospect)
+    setIsCreateModalOpen(true)
   }
 
-  const handleDeleteContact = (id: number) => {
-    deleteContact(id)
+  const handleDeleteClick = (prospect: any) => {
+    setProspectToDelete(prospect)
   }
 
-  const handleDeleteProspect = (e: React.MouseEvent, id: number) => {
-    e.stopPropagation()
-
-    if (!isConnected || !deleteProspect) {
-      alert('⚠️ Mode Local: Impossible de supprimer les prospects en mode déconnecté')
-      return
-    }
-
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce prospect ?')) {
-      deleteProspect(id)
-    }
-  }
-
-  const handleCreateProspect = async (prospectData: {
-    contact: string
-    firstName: string
-    lastName: string
-    email: string
-    phone: string
-    company: string
-    offer: string
-    value: number
-    source: string
-    stage: string
-  }) => {
-    // 🔄 MODIFICATION : Suppression de l'alerte "Mode Déconnecté" pour forcer l'ajout dans Supabase
-    if (addProspect) {
-      await addProspect({
-        ...prospectData,
-        title: `${prospectData.offer} - ${prospectData.company}`,
-        probability: 40,
-        dateAdded: new Date(),
-        lastContact: new Date(),
-      })
-    }
-
-    setIsNewProspectModalOpen(false)
-  }
-
-  // Format date helper
-  const formatDate = (date: Date | string | undefined) => {
-    if (!date) return 'N/A'
-
-    try {
-      const dateObj = typeof date === 'string' ? new Date(date) : date
-      return dateObj.toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })
-    } catch {
-      return String(date)
+  const handleConfirmDelete = async () => {
+    if (prospectToDelete) {
+      await deleteProspect(prospectToDelete.id)
+      setProspectToDelete(null)
     }
   }
 
-  // Format relative time helper
-  const formatRelativeTime = (date: Date | string | undefined) => {
-    if (!date) return 'Jamais'
+  const handleOpenMeetingModal = (prospect: any) => {
+    setSelectedProspectForEvent(prospect)
+    setIsAddMeetingModalOpen(true)
+  }
 
-    try {
-      const dateObj = typeof date === 'string' ? new Date(date) : date
-      const now = new Date()
-      const diffMs = now.getTime() - dateObj.getTime()
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  const handleInternalContactClick = (contact: any) => {
+    setSelectedInternalContact(contact)
+  }
 
-      if (diffDays === 0) return "Aujourd'hui"
-      if (diffDays === 1) return 'Hier'
-      if (diffDays < 7) return `Il y a ${diffDays}j`
-      if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} sem.`
-      return formatDate(dateObj)
-    } catch {
-      return String(date)
+  // --- UTILITAIRES D'AFFICHAGE ---
+  const getStageLabel = (stageValue: string) => {
+    return stages.find(s => s.value === stageValue)?.label || stageValue
+  }
+
+  const getStageColor = (stageValue: string) => {
+    return stages.find(s => s.value === stageValue)?.color || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+  }
+
+  const getOfferName = (prospect: any) => {
+    if (prospect.offerId) {
+      const offer = offers.find(o => String(o.id) === String(prospect.offerId))
+      return offer ? offer.name : '-'
     }
+    return prospect.offer || '-'
   }
 
   return (
-    <div className="h-full overflow-auto bg-slate-950 p-8 text-slate-100">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* SECTION A: Mes Prospects */}
-        <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-          {/* Header */}
-          <div
-            onClick={() => setProspectsExpanded(!prospectsExpanded)}
-            className="flex w-full items-center justify-between cursor-pointer border-b border-slate-800 bg-slate-950 px-6 py-4 transition-colors hover:bg-slate-900/50"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20">
-                <User className="h-5 w-5 text-blue-400" />
-              </div>
-              <div className="text-left">
-                <h2 className="text-lg font-bold text-white">Mes Prospects</h2>
-                <p className="text-sm text-slate-400">{filteredProspects.length} contact(s)</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-              {/* BARRE DE RECHERCHE PROSPECTS */}
-              <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="text"
-                  placeholder="Rechercher..."
-                  value={prospectSearch}
-                  onChange={(e) => setProspectSearch(e.target.value)}
-                  className="h-10 w-64 rounded-lg border border-slate-700 bg-slate-800 pl-10 pr-4 text-sm text-white focus:border-blue-500 focus:outline-none placeholder-slate-500"
-                />
-              </div>
+    <div className="relative min-h-screen bg-[#020617] p-8 overflow-hidden font-sans text-slate-100">
+      
+      {/* Background Ambience (Blobs) */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
 
-              {/* FILTRE PAR OFFRE */}
-              <div className="relative hidden md:block">
-                <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                <select
-                  value={selectedOfferFilter}
-                  onChange={(e) => setSelectedOfferFilter(e.target.value)}
-                  className="h-10 rounded-lg border border-slate-700 bg-slate-800 pl-10 pr-4 text-sm text-white focus:border-blue-500 focus:outline-none appearance-none cursor-pointer hover:bg-slate-700"
+      <div className="relative mx-auto max-w-7xl space-y-8 z-10">
+        
+        {/* HEADER & TABS */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">Contacts</h1>
+            <p className="text-slate-400 mt-1">Gérez vos prospects et votre carnet d'adresses.</p>
+          </div>
+          
+          <div className="flex items-center gap-4">
+             {/* Onglets Switcher */}
+             <div className="flex p-1 bg-slate-900/50 border border-white/10 rounded-xl backdrop-blur-sm">
+                <button
+                  onClick={() => setActiveTab('prospects')}
+                  className={cn(
+                    "px-4 py-2 text-sm font-bold rounded-lg transition-all",
+                    activeTab === 'prospects' 
+                      ? "bg-blue-600 text-white shadow-lg" 
+                      : "text-slate-400 hover:text-white"
+                  )}
                 >
-                  <option value="all">Toutes les offres</option>
-                  {offers.filter(o => o.status === 'active').map(offer => (
-                    <option key={offer.id} value={offer.id.toString()}>
-                      {offer.name}
-                    </option>
+                  Prospects
+                </button>
+                <button
+                  onClick={() => setActiveTab('internal')}
+                  className={cn(
+                    "px-4 py-2 text-sm font-bold rounded-lg transition-all",
+                    activeTab === 'internal' 
+                      ? "bg-blue-600 text-white shadow-lg" 
+                      : "text-slate-400 hover:text-white"
+                  )}
+                >
+                  Interne
+                </button>
+             </div>
+
+             <button
+              onClick={() => {
+                setEditingProspect(null)
+                setIsCreateModalOpen(true)
+              }}
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40"
+            >
+              <Plus className="h-5 w-5" />
+              <span className="hidden sm:inline">Ajouter</span>
+            </button>
+          </div>
+        </div>
+
+        {/* BARRE DE FILTRES (Seulement pour les prospects) */}
+        {activeTab === 'prospects' && (
+          <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-4 backdrop-blur-md shadow-xl flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Rechercher par nom, email, entreprise..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-slate-800/50 pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all hover:bg-slate-800/70"
+              />
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 md:pb-0">
+              <div className="relative min-w-[180px]">
+                  <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                  <select
+                    value={selectedStage}
+                    onChange={(e) => setSelectedStage(e.target.value)}
+                    className="w-full appearance-none rounded-xl border border-white/10 bg-slate-800/50 pl-10 pr-8 py-3 text-sm font-medium text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer hover:bg-slate-800/70 transition-all"
+                  >
+                    <option value="all" className="bg-slate-900">Toutes étapes</option>
+                    {stages.map(stage => (
+                        <option key={stage.value} value={stage.value} className="bg-slate-900">{stage.label}</option>
+                    ))}
+                  </select>
+              </div>
+              
+              <div className="relative min-w-[180px]">
+                <select
+                  value={selectedOffer}
+                  onChange={(e) => setSelectedOffer(e.target.value)}
+                  className="w-full appearance-none rounded-xl border border-white/10 bg-slate-800/50 px-4 py-3 text-sm font-medium text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer hover:bg-slate-800/70 transition-all"
+                >
+                  <option value="all" className="bg-slate-900">Toutes offres</option>
+                  <option value="none" className="bg-slate-900">Sans offre</option>
+                  {offers.map(offer => (
+                    <option key={offer.id} value={String(offer.id)} className="bg-slate-900">{offer.name}</option>
                   ))}
                 </select>
               </div>
-
-              <button
-                onClick={() => setIsNewProspectModalOpen(true)}
-                className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-blue-600"
-              >
-                <Plus className="h-4 w-4" />
-                Nouveau
-              </button>
-              <ChevronDown
-                className={`h-5 w-5 text-slate-400 transition-transform ${prospectsExpanded ? 'rotate-180' : ''}`}
-              />
             </div>
           </div>
+        )}
 
-          {/* Content */}
-          {prospectsExpanded && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-800 bg-slate-950">
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Nom & Entreprise
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Offre
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Statut
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Dernier Contact
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Date d'ajout
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {filteredProspects.length > 0 ? (
-                    filteredProspects.map((prospect) => {
-                      // Safe field extraction with fallbacks
-                      const firstName = prospect.firstName || ''
-                      const lastName = prospect.lastName || ''
-                      const fullName = prospect.name || `${firstName} ${lastName}`.trim() || 'N/A'
-                      
-                      // MODIFICATION ICI: Si l'entreprise est vide ou N/A, on met une chaîne vide
-                      const rawCompany = prospect.company || ''
-                      const company = rawCompany === 'N/A' ? '' : rawCompany
-                      
-                      const status = prospect.stage || prospect.status || 'prospect'
-                      const lastContact = prospect.lastContact || prospect.lastInteraction
-                      const dateAdded = prospect.dateAdded
-                      const email = prospect.email || ''
-
-                      return (
-                        <tr
-                          key={prospect.id}
-                          onClick={() => setSelectedProspect(prospect)}
-                          className="cursor-pointer transition-colors hover:bg-slate-800/50"
-                        >
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20">
-                                <User className="h-5 w-5 text-blue-400" />
-                              </div>
-                              <div>
-                                <p className="font-semibold text-white">{fullName}</p>
-                                {/* Rendu conditionnel : on n'affiche la ligne que si company n'est pas vide */}
-                                {company && <p className="text-sm text-slate-400">{company}</p>}
-                              </div>
-                            </div>
-                          </td>
-                          {/* NOUVELLE COLONNE OFFRE */}
-                          <td className="px-6 py-4">
-                            <span className="text-sm text-slate-300">
-                              {prospect.offer || '-'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(status)}`}>
-                              {getStatusName(status)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm text-slate-300">{formatRelativeTime(lastContact)}</p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm text-slate-300">{formatDate(dateAdded)}</p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center justify-center gap-2">
-                              {/* BOUTON GMAIL RÉPARÉ */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (email) {
-                                    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank')
-                                  } else {
-                                    alert('Pas d\'email renseigné')
-                                  }
-                                }}
-                                className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
-                                title="Envoyer un email (Gmail)"
-                              >
-                                <Mail className="h-4 w-4" />
-                              </button>
-                              {/* MODIFICATION : Le bouton d'appel a été retiré d'ici */}
-                              <button
-                                onClick={(e) => handleDeleteProspect(e, prospect.id)}
-                                className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
-                                title="Supprimer"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </td>
+        {/* CONTENU PRINCIPAL : TABLEAUX */}
+        <div className="rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md shadow-xl overflow-hidden min-h-[400px]">
+          
+          {/* LOADER */}
+          {prospectsLoading ? (
+            <div className="flex items-center justify-center h-full min-h-[400px]">
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+                <p className="text-slate-500 animate-pulse">Chargement des données...</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* VUE PROSPECTS */}
+              {activeTab === 'prospects' && (
+                filteredProspects.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-slate-800/50 border border-white/5">
+                      <Users className="h-10 w-10 text-slate-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white">Aucun prospect trouvé</h3>
+                    <p className="mt-2 text-slate-400 max-w-sm mx-auto">
+                      Votre recherche ne donne aucun résultat. Essayez de modifier les filtres ou ajoutez un nouveau prospect.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-white/5 bg-slate-900/60">
+                          <th className="px-6 py-5 text-left text-xs font-bold uppercase tracking-widest text-slate-500">Identité</th>
+                          <th className="px-6 py-5 text-left text-xs font-bold uppercase tracking-widest text-slate-500 hidden md:table-cell">Coordonnées</th>
+                          <th className="px-6 py-5 text-left text-xs font-bold uppercase tracking-widest text-slate-500">Pipeline</th>
+                          <th className="px-6 py-5 text-left text-xs font-bold uppercase tracking-widest text-slate-500 hidden lg:table-cell">Offre</th>
+                          <th className="px-6 py-5 text-right text-xs font-bold uppercase tracking-widest text-slate-500">Valeur</th>
+                          <th className="px-6 py-5 text-right text-xs font-bold uppercase tracking-widest text-slate-500">Actions</th>
                         </tr>
-                      )
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-slate-500 italic">
-                        Aucun prospect ne correspond à ces critères.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {filteredProspects.map((prospect) => (
+                          <tr key={prospect.id} className="group transition-colors hover:bg-white/5">
+                            {/* Identité */}
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-slate-800 border border-slate-700 font-bold text-lg text-blue-400">
+                                  {prospect.firstName?.[0]}{prospect.lastName?.[0]}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-white text-base">
+                                    <MaskedText value={`${prospect.firstName} ${prospect.lastName}`} type="name" />
+                                  </div>
+                                  {prospect.company && (
+                                    <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1">
+                                      <Building2 className="h-3 w-3" />
+                                      <MaskedText value={prospect.company} type="name" />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
 
-        {/* SECTION B: Contacts Internes */}
-        <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-          {/* Header */}
-          <div
-            onClick={() => setInternalsExpanded(!internalsExpanded)}
-            className="flex w-full items-center justify-between cursor-pointer border-b border-slate-800 bg-slate-950 px-6 py-4 transition-colors hover:bg-slate-900/50"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-500/20">
-                <UserPlus className="h-5 w-5 text-purple-400" />
-              </div>
-              <div className="text-left">
-                <h2 className="text-lg font-bold text-white">Contacts Internes</h2>
-                <p className="text-sm text-slate-400">{filteredInternalContacts.length} contact(s)</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-              {/* BARRE DE RECHERCHE CONTACTS INTERNES */}
-              <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="text"
-                  placeholder="Rechercher..."
-                  value={internalSearch}
-                  onChange={(e) => setInternalSearch(e.target.value)}
-                  className="h-10 w-64 rounded-lg border border-slate-700 bg-slate-800 pl-10 pr-4 text-sm text-white focus:border-purple-500 focus:outline-none placeholder-slate-500"
-                />
-              </div>
+                            {/* Coordonnées */}
+                            <td className="px-6 py-4 hidden md:table-cell">
+                              <div className="space-y-1.5">
+                                {prospect.email && (
+                                  <div className="flex items-center gap-2 text-sm text-slate-300">
+                                    <Mail className="h-3.5 w-3.5 text-slate-500" />
+                                    <MaskedText value={prospect.email} type="email" className="truncate max-w-[150px]" />
+                                  </div>
+                                )}
+                                {prospect.phone && (
+                                  <div className="flex items-center gap-2 text-sm text-slate-300">
+                                    <Phone className="h-3.5 w-3.5 text-slate-500" />
+                                    <MaskedText value={prospect.phone} type="phone" />
+                                  </div>
+                                )}
+                              </div>
+                            </td>
 
-              <button
-                onClick={() => setIsAddContactModalOpen(true)}
-                className="flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-purple-600"
-              >
-                <Plus className="h-4 w-4" />
-                Nouveau
-              </button>
-              <ChevronDown
-                className={`h-5 w-5 text-slate-400 transition-transform ${internalsExpanded ? 'rotate-180' : ''}`}
-              />
-            </div>
-          </div>
+                            {/* Pipeline / Stage */}
+                            <td className="px-6 py-4">
+                              <span className={cn(
+                                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide shadow-sm",
+                                getStageColor(prospect.stage)
+                              )}>
+                                {prospect.stage === 'won' && <Sparkles className="h-3 w-3" />}
+                                {getStageLabel(prospect.stage)}
+                              </span>
+                            </td>
 
-          {/* Content */}
-          {internalsExpanded && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-800 bg-slate-950">
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Nom
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Rôle/Poste
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Email
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Téléphone
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {filteredInternalContacts.length > 0 ? (
-                    filteredInternalContacts.map((contact) => (
-                      <tr
-                        key={contact.id}
-                        onClick={() => setSelectedContact(contact)}
-                        className="cursor-pointer transition-colors hover:bg-slate-800/50"
-                      >
-                        <td className="px-6 py-4">
-                          <p className="font-semibold text-white">{contact.name}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm text-slate-300">{contact.role}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm text-slate-300">{contact.email}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm text-slate-300">{contact.phone}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedContact(contact)
-                              }}
-                              className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
-                              title="Voir détails"
+                            {/* Offre */}
+                            <td className="px-6 py-4 text-sm text-slate-300 hidden lg:table-cell font-medium">
+                              {getOfferName(prospect)}
+                            </td>
+
+                            {/* Valeur */}
+                            <td className="px-6 py-4 text-right">
+                                <span className="font-bold text-emerald-400 text-lg">
+                                    <MaskedText value={prospect.value ? `${prospect.value.toLocaleString()}€` : '-'} type="number" />
+                                </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                <button
+                                  onClick={() => handleOpenMeetingModal(prospect)}
+                                  className="p-2 rounded-lg hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 transition-colors"
+                                  title="Planifier un RDV"
+                                >
+                                  <Calendar className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleEdit(prospect)}
+                                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                  title="Modifier"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClick(prospect)}
+                                  className="p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors"
+                                  title="Supprimer"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              )}
+
+              {/* VUE CONTACTS INTERNES */}
+              {activeTab === 'internal' && (
+                filteredInternalContacts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <p className="text-slate-400">Aucun contact interne trouvé.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+                        {filteredInternalContacts.map(contact => (
+                            <div 
+                                key={contact.id} 
+                                onClick={() => handleInternalContactClick(contact)}
+                                className="group relative p-6 rounded-2xl bg-slate-800/30 border border-white/5 hover:bg-slate-800/50 hover:border-white/10 transition-all cursor-pointer"
                             >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (confirm(`Êtes-vous sûr de vouloir supprimer ${contact.name} ?`)) {
-                                  handleDeleteContact(contact.id)
-                                }
-                              }}
-                              className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center text-slate-500 italic">
-                        Aucun contact interne trouvé pour cette recherche.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold text-lg border border-purple-500/30">
+                                        {contact.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-white">{contact.name}</h3>
+                                        <p className="text-xs text-purple-400 font-medium uppercase tracking-wider">{contact.role}</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-2 text-sm text-slate-400">
+                                    <div className="flex items-center gap-2"><Mail className="h-4 w-4"/> {contact.email}</div>
+                                    <div className="flex items-center gap-2"><Phone className="h-4 w-4"/> {contact.phone}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* Add Contact Modal */}
-      {isAddContactModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setIsAddContactModalOpen(false)}
-          />
-
-          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
-            <div className="flex items-center justify-between border-b border-slate-800 p-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-500/20">
-                  <UserPlus className="h-5 w-5 text-purple-400" />
-                </div>
-                <h3 className="text-lg font-bold text-white">Nouveau Contact Interne</h3>
-              </div>
-            </div>
-
-            <form onSubmit={handleAddContact} className="space-y-4 p-6">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-400">Nom complet</label>
-                <input
-                  type="text"
-                  value={newContact.name}
-                  onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                  placeholder="Ex: Jean Dupont"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-400">Rôle/Poste</label>
-                <input
-                  type="text"
-                  value={newContact.role}
-                  onChange={(e) => setNewContact({ ...newContact, role: e.target.value })}
-                  placeholder="Ex: Directeur Commercial"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-400">Email</label>
-                <input
-                  type="email"
-                  value={newContact.email}
-                  onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                  placeholder="Ex: jean.dupont@closeros.com"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-400">Téléphone</label>
-                <input
-                  type="tel"
-                  value={newContact.phone}
-                  onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                  placeholder="Ex: +33 6 12 34 56 78"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-                  required
-                />
-              </div>
-
-              {/* SUPPRESSION DE TOUTE LA PARTIE OFFRE AFFILIÉE ET FACTURATION ICI */}
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAddContactModalOpen(false)}
-                  className="flex-1 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-all hover:bg-slate-800"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-lg bg-purple-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-purple-600"
-                >
-                  Ajouter
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* New Prospect Modal */}
-      <CreateProspectModal
-        isOpen={isNewProspectModalOpen}
-        onClose={() => setIsNewProspectModalOpen(false)}
-        onSubmit={handleCreateProspect}
+      {/* --- MODALES --- */}
+      
+      {/* 1. Modale Création / Édition Prospect */}
+      <ProspectModal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+            setIsCreateModalOpen(false)
+            setEditingProspect(null)
+        }}
+        prospectToEdit={editingProspect}
       />
 
-      {/* Prospect View Slide-over */}
-      {selectedProspect && (
-        <ProspectView
-          prospect={selectedProspect}
-          onClose={() => setSelectedProspect(null)}
-          onUpdate={(id, updates) => {
-            if (updateProspect) {
-              updateProspect(id, updates)
-            }
-          }}
-          onDelete={(id) => {
-            if (deleteProspect) {
-              deleteProspect(id)
-            }
-            setSelectedProspect(null)
-          }}
-          // MODIFICATION : Lien direct vers la modale de rendez-vous
-          onCreateEvent={() => setIsAddMeetingModalOpen(true)}
-          onStartCall={(withAi) => {
-            console.log('Start call with AI:', withAi)
-            // TODO: Implement video call
-          }}
-          onPhoneCall={() => {
-            console.log('Phone call:', selectedProspect.phone)
-            // TODO: Implement phone call
-          }}
-        />
-      )}
+      {/* 2. Modale Suppression */}
+      <DeleteConfirmationModal
+        isOpen={!!prospectToDelete}
+        onClose={() => setProspectToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Supprimer le contact"
+        description={`Êtes-vous sûr de vouloir supprimer ${prospectToDelete?.firstName} ${prospectToDelete?.lastName} ? Cette action est irréversible.`}
+      />
 
-      {/* MODIFICATION : Nouvelle modale de création de RDV avec sélection automatique du prospect utilisant CreateEventModal */}
+      {/* 3. Modale Création RDV (Liée au contact) */}
       {isAddMeetingModalOpen && (
         <CreateEventModal
           isOpen={isAddMeetingModalOpen}
           onClose={() => setIsAddMeetingModalOpen(false)}
-          prospectId={selectedProspect?.id}
-          prospectName={selectedProspect?.contact}
+          prospectId={selectedProspectForEvent?.id}
+          prospectName={`${selectedProspectForEvent?.firstName} ${selectedProspectForEvent?.lastName}`}
         />
       )}
 
-      {/* Internal Contact Modal */}
-      {selectedContact && (
+      {/* 4. Modale Contact Interne */}
+      {selectedInternalContact && (
         <InternalContactModal
-          contact={selectedContact}
-          onClose={() => setSelectedContact(null)}
-          onEdit={(updatedContact) => {
-            updateContact(updatedContact.id, updatedContact)
-            setSelectedContact(updatedContact)
+          contact={selectedInternalContact}
+          onClose={() => setSelectedInternalContact(null)}
+          onEdit={(updated) => {
+            updateInternalContact(updated.id, updated)
+            setSelectedInternalContact(updated)
           }}
-          onDelete={handleDeleteContact}
+          onDelete={(id) => {
+            deleteInternalContact(id)
+            setSelectedInternalContact(null)
+          }}
         />
       )}
+
     </div>
   )
 }
