@@ -9,8 +9,7 @@ import { ProspectsProvider } from './contexts/ProspectsContext'
 import { OffersProvider } from './contexts/OffersContext'
 import { InternalContactsProvider } from './contexts/InternalContactsContext'
 import { CallsProvider } from './contexts/CallsContext'
-import { MessagesProvider } from './contexts/MessagesContext'
-import { NotificationsProvider } from './contexts/NotificationsContext'
+// SUPPRIMÉ : MessagesProvider et NotificationsProvider
 
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
@@ -35,7 +34,7 @@ import { AICoachPage } from './pages/AICoachPage'
 import { InvoicesPage } from './pages/InvoicesPage'
 import { KPIPage } from './pages/KPIPage'
 import { RendezVous } from './pages/RendezVous'
-import { MessagesPage } from './pages/MessagesPage'
+// SUPPRIMÉ : MessagesPage
 import { PublicBooking } from './pages/PublicBooking'
 import { BookingSettings } from './pages/BookingSettings'
 import CallRoom from './pages/CallRoom'
@@ -45,7 +44,7 @@ import { Legal } from './pages/Legal'
 import { WelcomeFounder } from './pages/WelcomeFounder' 
 import { ComingSoon } from './pages/ComingSoon' 
 import { CGU } from './pages/CGU' 
-import { PrivacyPolicy } from './pages/PrivacyPolicy' // 👇 AJOUT IMPORT
+import { PrivacyPolicy } from './pages/PrivacyPolicy'
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -70,7 +69,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function OnboardingWrapper({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const location = useLocation()
   
-  // 👇 AJOUT de '/coming-soon' pour que l'onboarding ne s'ouvre pas dessus
   const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/coming-soon'];
 
   if (hiddenPaths.includes(location.pathname)) {
@@ -96,7 +94,7 @@ function AuthenticatedApp() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 👇 REDIRECTION PRINCIPALE : Si connecté, on va sur /coming-soon au lieu de /dashboard */}
+        {/* Redirection Principale */}
         <Route 
           path="/" 
           element={user ? <Navigate to="/coming-soon" replace /> : <LandingPage />} 
@@ -108,7 +106,7 @@ function AuthenticatedApp() {
         <Route path="/book/:slug" element={<PublicBooking />} />
         <Route path="/mentions-legales" element={<Legal />} />
         <Route path="/cgu" element={<CGU />} />
-        <Route path="/confidentialite" element={<PrivacyPolicy />} /> {/* 👇 AJOUT ROUTE CONFIDENTIALITÉ */}
+        <Route path="/confidentialite" element={<PrivacyPolicy />} />
 
         {/* Routes Paiement & Onboarding */}
         <Route path="/checkout" element={<CheckoutForm />} />
@@ -116,7 +114,7 @@ function AuthenticatedApp() {
         <Route path="/return" element={<Return />} />
         <Route path="/welcome-founder" element={<WelcomeFounder />} />
 
-        {/* 👇 NOUVELLE ROUTE SÉPARÉE : Coming Soon (Hors du Layout) */}
+        {/* Route Coming Soon */}
         <Route 
           path="/coming-soon" 
           element={
@@ -136,7 +134,7 @@ function AuthenticatedApp() {
           } 
         />
 
-        {/* APPLICATION PROTÉGÉE (AVEC MENU LATÉRAL) */}
+        {/* APPLICATION PROTÉGÉE */}
         <Route
           element={
             <ProtectedRoute>
@@ -144,9 +142,7 @@ function AuthenticatedApp() {
             </ProtectedRoute>
           }
         >
-          {/* 👇 J'AI REMIS LE DASHBOARD ICI */}
           <Route path="dashboard" element={<Dashboard />} />
-          
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="contacts" element={<Contacts />} />
           <Route path="offers" element={<Offers />} />
@@ -158,10 +154,9 @@ function AuthenticatedApp() {
           <Route path="invoices" element={<InvoicesPage />} />
           <Route path="kpi" element={<KPIPage />} />
           <Route path="rendez-vous" element={<RendezVous />} />
-          <Route path="messages" element={<MessagesPage />} />
+          {/* SUPPRIMÉ : Route messages */}
           <Route path="settings/booking" element={<BookingSettings />} />
           
-          {/* Si page inconnue, on renvoie vers coming-soon pour l'instant */}
           <Route path="*" element={<Navigate to="/coming-soon" replace />} />
         </Route>
       </Routes>
@@ -191,11 +186,8 @@ function App() {
             <OffersProvider>
               <MeetingsProvider>
                 <CallsProvider>
-                  <MessagesProvider>
-                    <NotificationsProvider>
-                      <AuthenticatedApp />
-                    </NotificationsProvider>
-                  </MessagesProvider>
+                  {/* SUPPRIMÉ : MessagesProvider et NotificationsProvider */}
+                  <AuthenticatedApp />
                 </CallsProvider>
               </MeetingsProvider>
             </OffersProvider>
