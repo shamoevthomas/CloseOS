@@ -86,6 +86,7 @@ export function RendezVous() {
   const [webhookCopied, setWebhookCopied] = useState(false)
   const [linkCopiedId, setLinkCopiedId] = useState<number | null>(null)
   const [calBookings, setCalBookings] = useState<any[]>([])
+  const [isSyncing, setIsSyncing] = useState(false) 
 
   // États pour la gestion des meetings (Tableaux)
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
@@ -110,11 +111,79 @@ export function RendezVous() {
         setCalApiKey(data.cal_api_key)
         fetchEventTypes(data.cal_api_key)
         fetchCalProfile(data.cal_api_key)
-        fetchCalBookings(data.cal_api_key)
+        fetchCalBookings(data.cal_api_key, false) // Chargement silencieux au démarrage
       }
     }
     fetchProfile()
   }, [user])
+
+  // --- FONCTION DE SYNCHRONISATION PUISSANTE ---
+  const runDeepSync = async (bookings: any[]) => {
+    if (!meetings || meetings.length === 0 || !bookings || bookings.length === 0) return 0;
+
+    // Normalisation agressive (minuscule, sans accents, sans caractères spéciaux)
+    const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '') : '';
+    let updatesCount = 0;
+
+    console.log("🔄 Démarrage Deep Sync...");
+
+    for (const m of meetings) {
+        // Ignorer si déjà annulé
+        if (['annule', 'cancelled', 'rejected', 'termine'].includes(normalize(m.status || ''))) continue;
+
+        const dbDate = parseISO(m.date);
+        const dbContact = normalize(m.contact || '');
+        
+        // Chercher le booking correspondant
+        const calData = bookings.find((b: any) => {
+            const apiDate = parseISO(b.startTime);
+            const dayDiff = Math.abs(differenceInDays(dbDate, apiDate));
+            
+            // 1. Date doit être proche (+/- 1 jour)
+            if (dayDiff > 1) return false;
+
+            // 2. Matching de nom/email
+            const attendees = b.attendees || [];
+            const title = normalize(b.title || '');
+            const description = normalize(b.description || '');
+
+            const isAttendeeMatch = attendees.some((att: any) => {
+                const apiName = normalize(att.name || '');
+                const apiEmail = normalize(att.email || '');
+                return (dbContact && (apiName.includes(dbContact) || dbContact.includes(apiName))) ||
+                       (m.description && apiEmail && normalize(m.description).includes(apiEmail));
+            });
+
+            const isTitleMatch = dbContact && title.includes(dbContact);
+            const isDescMatch = dbContact && description.includes(dbContact);
+
+            return isAttendeeMatch || isTitleMatch || isDescMatch;
+        });
+
+        // Si match trouvé ET statut Annulé/Rejeté
+        if (calData && ['CANCELLED', 'REJECTED'].includes(calData.status)) {
+            console.log(`❌ Rendez-vous annulé détecté pour ${m.contact}. Mise à jour BDD...`);
+            
+            // Mise à jour BDD
+            const { error } = await supabase.from('meetings').update({ status: 'Annulé' }).eq('id', m.id);
+            
+            if (!error) {
+                updatesCount++;
+            } else {
+                console.error("Erreur update Supabase:", error);
+            }
+        }
+    }
+
+    if (updatesCount > 0) {
+        if (refreshMeetings) await refreshMeetings();
+        console.log(`✅ ${updatesCount} statuts mis à jour.`);
+    } else {
+        console.log("Aucune mise à jour nécessaire.");
+    }
+    
+    return updatesCount;
+  };
 
   // 2. Sauvegarder Clé API
   const handleSaveApiKey = async () => {
@@ -127,7 +196,7 @@ export function RendezVous() {
       setTimeout(() => setKeySaveSuccess(false), 3000)
       fetchEventTypes(calApiKey)
       fetchCalProfile(calApiKey)
-      fetchCalBookings(calApiKey)
+      fetchCalBookings(calApiKey, true)
     } catch (err) { alert("Impossible de sauvegarder la clé API") } finally { setIsSavingKey(false) }
   }
 
@@ -151,16 +220,27 @@ export function RendezVous() {
     } catch (error) { console.error(error) }
   }
 
-  // 3c. Fetch Bookings (CORRIGÉ: Paramètre take augmenté)
-  const fetchCalBookings = async (apiKey: string) => {
+  // 3c. Fetch Bookings & Trigger Sync
+  const fetchCalBookings = async (apiKey: string, manualTrigger: boolean = false) => {
+    if (!apiKey) return;
+    if (manualTrigger) setIsSyncing(true);
+    
     try {
         const response = await fetch(`https://api.cal.com/v1/bookings?apiKey=${apiKey}&take=100&status=CANCELLED,ACCEPTED,REJECTED`)
         const data = await response.json()
         if (data.bookings) {
-            setCalBookings(data.bookings)
+            setCalBookings(data.bookings);
+            // Lancer la synchro DB immédiatement après récupération
+            const count = await runDeepSync(data.bookings);
+            if (manualTrigger) {
+                alert(`Synchronisation terminée : ${count} rendez-vous mis à jour.`);
+            }
         }
     } catch (error) {
-        console.error("Erreur fetch Bookings Cal.com:", error)
+        console.error("Erreur fetch Bookings Cal.com:", error);
+        if (manualTrigger) alert("Erreur lors de la synchronisation.");
+    } finally {
+        if (manualTrigger) setIsSyncing(false);
     }
   }
 
@@ -270,39 +350,33 @@ export function RendezVous() {
     setTimeout(() => setWebhookCopied(false), 2000)
   }
 
-  // --- LOGIQUE TABLEAUX AVEC SYNC STATUT AMÉLIORÉE ---
+  // --- LOGIQUE TABLEAUX (Affichage) ---
   const { upcomingMeetings, pastMeetings } = useMemo(() => {
     const now = new Date(); 
     const today = startOfDay(now);
     
-    // Fusionner les données de Supabase avec le statut réel de Cal.com
+    // Normalisation agressive pour l'affichage temps réel
+    const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '') : '';
+
     const allMeetings = (meetings || []).map(m => {
-        // Chercher une correspondance dans les bookings Cal.com récupérés
+        // Overlay Statut API (si trouvé en RAM avant le refresh DB)
         const calData = calBookings.find((b: any) => {
-             // Matching approximatif par date (+/- 1 jour pour gérer les Timezones)
              const dbDate = parseISO(m.date);
              const apiDate = parseISO(b.startTime);
+             if (Math.abs(differenceInDays(dbDate, apiDate)) > 1) return false;
+
+             const dbContact = normalize(m.contact || '');
+             const attendees = b.attendees || [];
+             const title = normalize(b.title || '');
              
-             // Différence en jours (ignorer l'heure exacte)
-             const dayDiff = Math.abs(differenceInDays(dbDate, apiDate));
-             const isSameDate = dayDiff <= 1;
-
-             // Matching par Nom ou Email
-             const dbContact = (m.contact || '').toLowerCase();
-             const apiContact = (b.attendees?.[0]?.name || '').toLowerCase();
-             const dbDesc = (m.description || '').toLowerCase();
-             const apiEmail = (b.attendees?.[0]?.email || '').toLowerCase();
-
-             const isNameMatch = apiContact && dbContact && (apiContact.includes(dbContact) || dbContact.includes(apiContact));
-             const isEmailMatch = apiEmail && dbDesc.includes(apiEmail);
-
-             return isSameDate && (isNameMatch || isEmailMatch);
+             return attendees.some((att: any) => {
+                 const apiName = normalize(att.name || '');
+                 return (dbContact && (apiName.includes(dbContact) || dbContact.includes(apiName)));
+             }) || (dbContact && title.includes(dbContact));
         });
 
-        if (calData) {
-            // Si trouvé, on prend le statut Cal.com
-            // Status possibles API: CANCELLED, ACCEPTED, REJECTED
-            return { ...m, status: calData.status };
+        if (calData && ['CANCELLED', 'REJECTED'].includes(calData.status)) {
+            return { ...m, status: 'Annulé' }; 
         }
         return m;
     });
@@ -340,14 +414,14 @@ export function RendezVous() {
   const getStatusStyle = (s: string) => { 
       s = s?.toLowerCase() || ''; 
       if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'; 
-      if (['annulé', 'cancelled', 'rejected', 'canceled'].includes(s)) return 'bg-red-500/20 text-red-400 border-red-500/30'; 
+      if (['annulé', 'cancelled', 'rejected', 'canceled', 'annule'].includes(s)) return 'bg-red-500/20 text-red-400 border-red-500/30'; 
       return 'bg-slate-500/20 text-slate-400 border-slate-500/30'; 
   }
   
   const getStatusLabel = (s: string) => {
       s = s?.toLowerCase() || '';
       if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return 'Confirmé';
-      if (['annulé', 'cancelled', 'canceled'].includes(s)) return 'Annulé';
+      if (['annulé', 'cancelled', 'canceled', 'annule'].includes(s)) return 'Annulé';
       if (['rejected'].includes(s)) return 'Refusé';
       return s.charAt(0).toUpperCase() + s.slice(1);
   }
@@ -355,10 +429,24 @@ export function RendezVous() {
   const getMeetingSource = (m: any) => { if (!m) return 'Réservation'; if (m.description?.match(/Type:\s*([^\n\r]+)/)) return m.description.match(/Type:\s*([^\n\r]+)/)[1].trim(); return 'Appel'; }
 
   // --- RENDU ---
-  const MeetingTable = ({ data, title, icon: Icon, emptyText, showDeleteAction }: any) => (
+  const MeetingTable = ({ data, title, icon: Icon, emptyText, showDeleteAction, onRefresh }: any) => (
     <div className="mb-12">
       <div className="mb-4 flex items-center justify-between px-2">
-        <div className="flex items-center gap-2"><Icon className="h-5 w-5 text-blue-500" /><h2 className="text-xl font-bold text-white">{title}</h2><span className="ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-xs font-bold text-slate-400">{data.length}</span></div>
+        <div className="flex items-center gap-2">
+            <Icon className="h-5 w-5 text-blue-500" />
+            <h2 className="text-xl font-bold text-white">{title}</h2>
+            <span className="ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-xs font-bold text-slate-400">{data.length}</span>
+            {/* BOUTON SYNC MANUEL */}
+            {onRefresh && (
+                <button 
+                    onClick={onRefresh} 
+                    className={`ml-2 p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-white transition-colors ${isSyncing ? 'animate-spin text-blue-500' : ''}`}
+                    title="Forcer la synchronisation (MàJ Statuts)"
+                >
+                    <RefreshCw className="h-4 w-4" />
+                </button>
+            )}
+        </div>
         {showDeleteAction && data.length > 0 && (<button onClick={handleDeleteAllPast} disabled={isDeleting} className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50">{isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} Tout supprimer</button>)}
       </div>
       <div className="rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden shadow-xl">
@@ -469,7 +557,13 @@ export function RendezVous() {
         )}
 
         {/* --- CONTENU PRINCIPAL : LES TABLEAUX --- */}
-        <MeetingTable data={upcomingMeetings} title="Rendez-vous à venir" icon={Calendar} emptyText="Aucun rendez-vous synchronisé." />
+        <MeetingTable 
+            data={upcomingMeetings} 
+            title="Rendez-vous à venir" 
+            icon={Calendar} 
+            emptyText="Aucun rendez-vous synchronisé." 
+            onRefresh={() => fetchCalBookings(calApiKey, true)} // 👈 MODE MANUEL
+        />
         <MeetingTable data={pastMeetings} title="Historique" icon={History} emptyText="Aucun historique disponible." showDeleteAction={true} />
       </div>
 
@@ -483,8 +577,8 @@ export function RendezVous() {
                 <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900 z-10">
                     <div>
                         <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                            {/* LOGO PERSONNALISÉ SUR FOND BLANC */}
-                            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center p-1">
+                            {/* LOGO PERSONNALISÉ AVEC FOND BLANC */}
+                            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center p-1 overflow-hidden">
                                 <img src="/Calcom.png" alt="Cal.com" className="w-full h-full object-contain" />
                             </div>
                             Configuration Cal.com
