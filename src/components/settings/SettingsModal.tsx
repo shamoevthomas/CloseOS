@@ -354,7 +354,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     />
                     <div className="flex items-start gap-2 mt-2 px-1">
                       <AlertCircle className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
-                      <p className="text-xs text-blue-300/80 leading-relaxed">
+                      <p className="text-xs text-blue-300/80 leading-relaxed text-left">
                         Le nom est verrouillé pour garantir la stabilité de vos liens. Contactez le support pour le modifier.
                       </p>
                     </div>
@@ -425,7 +425,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
-            {/* --- ONGLET FUSEAU HORAIRE --- */}
+            {/* --- ONGLET FUSEAU HORAIRE (AVEC TOUS LES FUSEAUX) --- */}
             {activeTab === 'timezone' && (
               <form onSubmit={handleUpdateProfile} className="space-y-6 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                 <div className="space-y-2">
@@ -437,10 +437,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       onChange={(e) => setFormData({...formData, timezone: e.target.value})}
                       className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 outline-none cursor-pointer appearance-none"
                     >
-                      <option value="Europe/Paris">Europe/Paris (GMT+1)</option>
-                      <option value="Europe/London">Europe/London (GMT+0)</option>
-                      <option value="America/New_York">America/New_York (GMT-5)</option>
-                      <option value="Asia/Dubai">Asia/Dubai (GMT+4)</option>
+                      {/* ✅ Génération dynamique de tous les fuseaux horaires du monde */}
+                      {Intl.supportedValuesOf('timeZone').map((tz) => (
+                        <option key={tz} value={tz}>
+                          {tz.replace(/_/g, ' ')}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <p className="text-xs text-slate-500">Ce réglage assure que vos rendez-vous et votre agenda sont toujours à l'heure.</p>
@@ -462,7 +464,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </div>
                     <div>
                       <h4 className="font-bold text-white mb-1 text-lg">Authentification Google active</h4>
-                      <p className="text-sm text-blue-200/70 leading-relaxed">Votre compte est sécurisé par Google. La gestion du mot de passe se fait directement via votre compte Google.</p>
+                      <p className="text-sm text-blue-200/70 leading-relaxed text-left">Votre compte est sécurisé par Google. La gestion du mot de passe se fait directement via votre compte Google.</p>
                     </div>
                   </div>
                 ) : (
@@ -516,6 +518,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
+            {/* --- ONGLET ABONNEMENT --- */}
             {activeTab === 'subscription' && (
                 <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden text-left">
@@ -544,6 +547,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
             )}
 
+            {/* --- ONGLET SUPPORT (INTÉGRALITÉ RESTAURÉE) --- */}
             {activeTab === 'support' && (
                 <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                     <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02]">
@@ -555,6 +559,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 <div>
                                     <h4 className="font-bold text-white text-lg text-left">Email Support</h4>
                                     <p className="text-sm text-slate-400 text-left">Réponse sous 24h ouvrées</p>
+                                </div>
+                            </div>
+                            <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
+                        </div>
+                    </a>
+
+                    <a href="#" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02]">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors">
+                                    <AlertCircle className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-white text-lg">Centre d'aide & FAQ</h4>
+                                    <p className="text-sm text-slate-400">Guides et tutoriels (Bientôt disponible)</p>
                                 </div>
                             </div>
                             <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
