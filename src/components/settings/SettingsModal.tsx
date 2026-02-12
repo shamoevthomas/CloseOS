@@ -17,7 +17,7 @@ import {
   Camera,
   Globe, 
   Trash2,
-  Search // Ajouté pour la recherche
+  Search 
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase' 
@@ -48,7 +48,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     timezone: 'Europe/Paris'
   })
 
-  // ✅ LOGIQUE DE GROUPEMENT PAR CONTINENT ET FILTRAGE
+  // LOGIQUE DE GROUPEMENT PAR CONTINENT ET FILTRAGE
   const groupedTimezones = useMemo(() => {
     const allTimezones = Intl.supportedValuesOf('timeZone')
     const searchLower = searchTerm.toLowerCase()
@@ -76,7 +76,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         const { data } = await supabase
           .from('profiles')
           .select('full_name, phone, role, avatar_url, timezone')
-          .eq(user.id)
+          .eq('id', user.id) // ✅ CORRECTION ICI
           .single()
 
         setFormData(prev => ({
@@ -126,7 +126,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: urlData.publicUrl })
-        .eq(user?.id)
+        .eq('id', user?.id) // ✅ CORRECTION ICI
 
       if (updateError) throw updateError
 
@@ -169,7 +169,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             phone: formData.phone,
             role: formData.role,
             timezone: formData.timezone
-        }).eq(user.id)
+        }).eq('id', user.id) // ✅ CORRECTION ICI
         if (dbError) dbErrorMsg = dbError.message;
     }
 
