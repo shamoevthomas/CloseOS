@@ -1,8 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from '../components/Sidebar'
-// Import de NotificationBell supprimé
-import { Eye, EyeOff, Menu, Coffee } from 'lucide-react' 
-import { usePrivacy } from '../contexts/PrivacyContext'
+import { Menu, Coffee } from 'lucide-react' 
 import { cn } from '../lib/utils'
 import { useState } from 'react'
 
@@ -27,7 +25,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 
 export function Layout({ onOpenSettings }: LayoutProps) {
   const location = useLocation()
-  const { isPrivacyEnabled, togglePrivacy } = usePrivacy()
+  // Suppression du hook usePrivacy
   const pageInfo = PAGE_TITLES[location.pathname] || { title: 'CloserOS', subtitle: '' }
   
   // État pour gérer l'ouverture du menu sur mobile
@@ -72,24 +70,7 @@ export function Layout({ onOpenSettings }: LayoutProps) {
 
             {/* Actions Droite */}
             <div className="flex items-center gap-2 sm:gap-4">
-              <button
-                onClick={togglePrivacy}
-                className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-slate-800 sm:px-4 sm:py-2"
-              >
-                {isPrivacyEnabled ? (
-                  <>
-                    <Eye className="h-4 w-4 text-emerald-400" />
-                    <span className="hidden text-sm font-medium text-emerald-400 md:block">Discrétion</span>
-                  </>
-                ) : (
-                  <>
-                    <EyeOff className="h-4 w-4 text-slate-400" />
-                    <span className="hidden text-sm font-medium text-slate-400 md:block">Discrétion</span>
-                  </>
-                )}
-              </button>
-
-              {/* NotificationBell supprimé d'ici */}
+              {/* Bouton Discrétion supprimé ici */}
 
               {/* Live Indicator - Caché sur mobile très petit */}
               <div className="hidden items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 xs:flex">

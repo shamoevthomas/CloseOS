@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState } from 'react'
-import { useNotifications } from '../contexts/NotificationsContext'
+// SUPPRIMÉ : import { useNotifications } ... (C'était la cause du crash)
 import { useAuth } from '../contexts/AuthContext'
 
 // Mise à jour de la navigation
@@ -47,7 +47,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { counts, clearBadge } = useNotifications()
+  // SUPPRIMÉ : const { counts, clearBadge } = useNotifications() (Cause du crash)
 
   const handleLogout = async () => {
     await logout()
@@ -57,6 +57,9 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const fullName = user?.user_metadata?.full_name || 'Utilisateur';
   const userRole = user?.user_metadata?.role || 'Membre';
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+  
+  // Ajout pour afficher la photo de profil qu'on vient de réparer
+  const avatarUrl = user?.user_metadata?.avatar_url;
 
   return (
     <>
@@ -80,7 +83,6 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
               alt="CloserOS" 
               className="h-8 w-auto object-contain rounded-md" 
             />
-            {/* Texte supprimé ici */}
           </div>
           <button onClick={onClose} className="lg:hidden p-2 text-slate-400 hover:text-white">
             <X className="h-5 w-5" />
@@ -165,11 +167,15 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
               isMenuOpen ? 'bg-slate-800' : 'bg-slate-800/50 hover:bg-slate-800'
             )}
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20">
-              <span className="text-sm font-bold text-blue-500">
-                {initials || 'U'}
-              </span>
+            {/* Gestion de l'avatar ou des initiales */}
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20 overflow-hidden">
+              {avatarUrl ? (
+                 <img src={avatarUrl} alt="Profil" className="h-full w-full object-cover" />
+              ) : (
+                 <span className="text-sm font-bold text-blue-500">{initials || 'U'}</span>
+              )}
             </div>
+            
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-slate-100 truncate">
                 {fullName}
