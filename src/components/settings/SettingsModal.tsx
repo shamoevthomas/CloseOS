@@ -51,6 +51,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   if (!isOpen) return null
 
+  // --- LOGIQUE DE GESTION DU PORTAIL STRIPE (SIMPLIFIÉE) ---
+  const handleManageBilling = () => {
+    // Redirection directe vers votre Portail Client Stripe
+    // L'utilisateur devra entrer son email pour recevoir un lien de connexion sécurisé
+    window.open('https://billing.stripe.com/p/login/3cI00c3qReYdd9a1wsbjW00', '_blank');
+  }
+  // ---------------------------------------------------------
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -300,14 +308,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             <h3 className="text-3xl font-bold text-white mb-2">Founder Edition</h3>
                             <p className="text-slate-300 mb-6 max-w-md">Vous bénéficiez de l'accès complet à CloseOS avec toutes les fonctionnalités débloquées à vie.</p>
                             
-                            <button className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg flex items-center gap-2">
+                            <button 
+                                onClick={handleManageBilling}
+                                className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg flex items-center gap-2"
+                            >
                                 <ExternalLink className="h-4 w-4" />
                                 Gérer ma facturation (Stripe)
                             </button>
                         </div>
                     </div>
 
-                    {/* Historique (Placeholder) */}
+                    {/* Historique (Placeholder pour le moment) */}
                     <div>
                         <h4 className="text-lg font-bold text-white mb-4">Historique des factures</h4>
                         <div className="rounded-xl border border-white/5 bg-slate-900/30 overflow-hidden">
@@ -321,12 +332,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {/* Exemple statique */}
                                     <tr>
                                         <td className="px-6 py-4 text-white">12 Fév 2026</td>
                                         <td className="px-6 py-4 text-white">29.00 €</td>
                                         <td className="px-6 py-4"><span className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">Payé</span></td>
-                                        <td className="px-6 py-4 text-right"><button className="text-slate-400 hover:text-white">Télécharger</button></td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button 
+                                                onClick={handleManageBilling}
+                                                className="text-slate-400 hover:text-white underline"
+                                            >
+                                                Voir sur Stripe
+                                            </button>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
