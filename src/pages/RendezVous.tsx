@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom' // Ajout useSearchParams
 import { 
   Calendar, 
   Clock, 
@@ -52,6 +52,7 @@ interface EventTypeData {
 export function RendezVous() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams() // Hook pour lire l'URL
   const { meetings, loading: meetingsLoading, refreshMeetings } = useMeetings()
   const { maskData } = usePrivacy()
   
@@ -60,6 +61,9 @@ export function RendezVous() {
   const [calUsername, setCalUsername] = useState('')
   const [isSavingKey, setIsSavingKey] = useState(false)
   const [keySaveSuccess, setKeySaveSuccess] = useState(false)
+  
+  // Nouvel état pour gérer le chargement OAuth
+  const [isHandlingOAuth, setIsHandlingOAuth] = useState(false)
   
   // États Gestion Event Types
   const [eventTypes, setEventTypes] = useState<any[]>([])
@@ -102,8 +106,9 @@ export function RendezVous() {
     ? `${baseUrl}/api/cal-webhook?user_id=${user.id}`
     : 'Chargement...'
   
-  // URL OAuth pour le bouton
-  const calOAuthUrl = `https://cal.com/api/auth/oauth/authorize?client_id=${import.meta.env.VITE_CAL_CLIENT_ID}&redirect_uri=${window.location.origin}/api/cal-callback&response_type=code&scope=calendars:read&state=${user?.id}`
+  // ✅ FIX: L'URL de redirection est maintenant la page RendezVous elle-même
+  const redirectUri = `${baseUrl}/rendez-vous`
+  const calOAuthUrl = `https://app.cal.com/auth/oauth2/authorize?client_id=${import.meta.env.VITE_CAL_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=calendars:read&state=${user?.id}`
 
   // 1. Chargement initial
   useEffect(() => {
@@ -119,6 +124,45 @@ export function RendezVous() {
     }
     fetchProfile()
   }, [user])
+
+  // --- NOUVEAU : GESTION DU RETOUR OAUTH ---
+  useEffect(() => {
+    const code = searchParams.get('code')
+    const state = searchParams.get('state')
+
+    if (code && state && !isHandlingOAuth) {
+      const handleOAuthCallback = async () => {
+        setIsHandlingOAuth(true)
+        try {
+          // On appelle notre API pour échanger le code
+          const response = await fetch('/api/cal-callback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, state })
+          })
+          
+          const result = await response.json()
+          
+          if (!response.ok) throw new Error(result.error || 'Erreur connexion')
+
+          // Succès : on nettoie l'URL et on notifie
+          setSearchParams({}) 
+          alert("Compte Cal.com connecté avec succès !")
+          
+          // On recharge la page pour récupérer les nouvelles infos (clé API masquée ou token)
+          window.location.reload()
+
+        } catch (error: any) {
+          console.error("Erreur OAuth:", error)
+          alert("Erreur lors de la connexion Cal.com: " + error.message)
+          setSearchParams({}) // On nettoie quand même
+        } finally {
+          setIsHandlingOAuth(false)
+        }
+      }
+      handleOAuthCallback()
+    }
+  }, [searchParams])
 
   // --- FONCTION DE SYNCHRONISATION PUISSANTE ---
   const runDeepSync = async (bookings: any[]) => {
@@ -477,6 +521,18 @@ export function RendezVous() {
 
   return (
     <div className="h-full overflow-y-auto bg-slate-950 p-8 text-left">
+      
+      {/* OVERLAY DE CHARGEMENT PENDANT L'OAUTH */}
+      {isHandlingOAuth && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-white mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white">Connexion à Cal.com...</h2>
+            <p className="text-slate-400 mt-2">Veuillez patienter pendant la sécurisation de la connexion.</p>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex items-end justify-between">
           <div>
@@ -601,7 +657,7 @@ export function RendezVous() {
                          <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-wider">1. Clé API</h3>
                          <div className="flex flex-col gap-4">
                              
-                             {/* ✅ BOUTON OAUTH INTÉGRÉ ICI */}
+                             {/* ✅ BOUTON OAUTH INTÉGRÉ ICI AVEC URL APP.CAL.COM */}
                              <a href={calOAuthUrl} className="w-full flex justify-center items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-bold text-black hover:bg-slate-200 transition-all">
                                 <img src="https://cal.com/favicon.ico" alt="Cal" className="w-4 h-4" />
                                 Se connecter avec Cal.com
