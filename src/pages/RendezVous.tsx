@@ -71,10 +71,18 @@ export function RendezVous() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   
-  // États pour Création
+  // États pour Création (Mis à jour avec tous les champs)
   const [newEventTitle, setNewEventTitle] = useState('')
   const [newEventDuration, setNewEventDuration] = useState(30)
   const [newEventSlug, setNewEventSlug] = useState('')
+  const [newEventDescription, setNewEventDescription] = useState('')
+  const [newEventLocationType, setNewEventLocationType] = useState('integrations:daily')
+  const [newEventLocationAddress, setNewEventLocationAddress] = useState('')
+  const [newEventBeforeBuffer, setNewEventBeforeBuffer] = useState(0)
+  const [newEventAfterBuffer, setNewEventAfterBuffer] = useState(0)
+  const [newEventNotice, setNewEventNotice] = useState(0)
+  const [newEventNoticeUnit, setNewEventNoticeUnit] = useState<'minutes' | 'hours'>('minutes')
+  const [newEventSlotInterval, setNewEventSlotInterval] = useState<number | null>(null)
   const [isCreatingEvent, setIsCreatingEvent] = useState(false)
 
   // États pour Édition
@@ -255,17 +263,31 @@ export function RendezVous() {
     } catch (error) { alert("Erreur suppression Cal.com"); console.error(error) } finally { setIsDeletingEvent(null) }
   }
 
-  // 5. Créer Event
+  // 5. Créer Event (Mis à jour avec tous les champs)
   const handleCreateEventType = async () => {
     if (!newEventTitle || !newEventSlug) return
     setIsCreatingEvent(true)
     try {
+      const noticeInMinutes = newEventNoticeUnit === 'hours' ? newEventNotice * 60 : newEventNotice
+      
       const payload = {
         title: newEventTitle,
         slug: newEventSlug,
         length: parseInt(String(newEventDuration)),
+        description: newEventDescription,
+        locations: [{
+            type: newEventLocationType,
+            address: newEventLocationType === 'in_person' ? newEventLocationAddress : undefined,
+            link: newEventLocationType === 'link' ? newEventLocationAddress : undefined,
+            phone: newEventLocationType === 'phone' ? newEventLocationAddress : undefined,
+        }],
+        beforeEventBuffer: Number(newEventBeforeBuffer),
+        afterEventBuffer: Number(newEventAfterBuffer),
+        minimumBookingNotice: Number(noticeInMinutes),
+        slotInterval: newEventSlotInterval ? Number(newEventSlotInterval) : null,
         isHidden: false
       }
+
       const response = await fetch(`https://api.cal.com/v1/event-types?apiKey=${calApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -274,7 +296,15 @@ export function RendezVous() {
       if (!response.ok) throw new Error('Erreur création')
       await fetchEventTypes(calApiKey)
       setIsCreateModalOpen(false)
-      setNewEventTitle(''); setNewEventSlug(''); setNewEventDuration(30)
+      // Reset complet du formulaire
+      setNewEventTitle('')
+      setNewEventSlug('')
+      setNewEventDuration(30)
+      setNewEventDescription('')
+      setNewEventLocationAddress('')
+      setNewEventBeforeBuffer(0)
+      setNewEventAfterBuffer(0)
+      setNewEventNotice(0)
     } catch (error) { alert("Erreur lors de la création") } finally { setIsCreatingEvent(false) }
   }
 
@@ -562,7 +592,7 @@ export function RendezVous() {
             title="Rendez-vous à venir" 
             icon={Calendar} 
             emptyText="Aucun rendez-vous synchronisé." 
-            onRefresh={() => fetchCalBookings(calApiKey, true)} // 👈 MODE MANUEL
+            onRefresh={() => fetchCalBookings(calApiKey, true)}
         />
         <MeetingTable data={pastMeetings} title="Historique" icon={History} emptyText="Aucun historique disponible." showDeleteAction={true} />
       </div>
@@ -577,8 +607,7 @@ export function RendezVous() {
                 <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900 z-10">
                     <div>
                         <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                            {/* LOGO PERSONNALISÉ AVEC FOND BLANC */}
-                            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center p-1 overflow-hidden">
+                            <div className="h-8 w-8 flex items-center justify-center overflow-hidden">
                                 <img src="/Calcom.png" alt="Cal.com" className="w-full h-full object-contain" />
                             </div>
                             Configuration Cal.com
@@ -592,14 +621,45 @@ export function RendezVous() {
 
                 {/* Corps Modale */}
                 <div className="p-8 space-y-8 bg-slate-950/50">
-                    
-                    {/* 1. Clé API */}
                     <section>
-                         <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-wider">1. Clé API</h3>
-                         <div className="flex flex-col gap-2">
-                             <input type="password" value={calApiKey} onChange={(e) => setCalApiKey(e.target.value)} placeholder="cal_..." className="block w-full rounded-lg border border-slate-700 bg-slate-900 py-3 px-4 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                             <button onClick={handleSaveApiKey} disabled={isSavingKey || !calApiKey} className="w-full flex justify-center items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-bold text-black hover:bg-slate-200 disabled:opacity-50 transition-all">{isSavingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {keySaveSuccess ? 'Sauvegardé' : 'Enregistrer la clé'}</button>
-                             <p className="text-xs text-slate-500 mt-1">Nécessaire pour lire et modifier vos liens de réservation.</p>
+                         <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">1. Connexion Cal.com</h3>
+                         <div className="rounded-lg bg-slate-900 border border-slate-800 p-6 mb-6">
+                            <p className="text-sm text-slate-300 mb-4 leading-relaxed">
+                                Pour synchroniser vos rendez-vous, nous utilisons le service Cal.com. Connectez-vous à votre compte pour obtenir vos identifiants ou gérer votre agenda.
+                            </p>
+                            <a 
+                                href="https://app.cal.com/auth/login" 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="w-full flex justify-center items-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
+                            >
+                                <ExternalLink className="h-4 w-4" />
+                                Ouvrir Cal.com
+                            </a>
+                         </div>
+
+                         <div className="space-y-4">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Clé API Manuelle</label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="password" 
+                                        value={calApiKey} 
+                                        onChange={(e) => setCalApiKey(e.target.value)} 
+                                        placeholder="cal_live_..." 
+                                        className="flex-1 rounded-lg border border-slate-700 bg-slate-900 py-3 px-4 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none" 
+                                    />
+                                    <button 
+                                        onClick={handleSaveApiKey} 
+                                        disabled={isSavingKey || !calApiKey} 
+                                        className="flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-bold text-black hover:bg-slate-200 disabled:opacity-50 transition-all"
+                                    >
+                                        {isSavingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} 
+                                        {keySaveSuccess ? 'Sauvegardé' : 'Enregistrer'}
+                                    </button>
+                                </div>
+                            </div>
+                            <p className="text-[10px] text-slate-500 italic ml-1">Nécessaire pour synchroniser vos types d'événements.</p>
                          </div>
                     </section>
 
@@ -613,7 +673,9 @@ export function RendezVous() {
                                 <code className="text-xs font-mono text-purple-300 truncate flex-1 select-all">{webhookUrl}</code>
                                 <button onClick={handleCopyWebhook} className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors" title="Copier l'URL">{webhookCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}</button>
                              </div>
-                             <p className="text-xs text-slate-500 mt-2">Ajoutez cette URL dans vos Webhooks Cal.com pour recevoir les réservations.</p>
+                             <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                                 Copiez cette URL et ajoutez-la dans la section <b>Webhooks</b> de vos paramètres Cal.com pour recevoir les notifications de réservation.
+                             </p>
                         </section>
                     )}
                 </div>
@@ -621,23 +683,170 @@ export function RendezVous() {
         </div>
       )}
 
-      {/* --- MODALE CRÉATION (Z-50) --- */}
+      {/* --- MODALE CRÉATION (ÉTENDUE AVEC TOUS LES PARAMÈTRES) --- */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
-          <div className="relative w-full max-w-md rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-2xl animate-in fade-in zoom-in-95">
-            <h3 className="text-xl font-bold text-white mb-6">Nouveau Type d'Événement</h3>
-            <div className="space-y-4">
-              <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Titre</label><input type="text" value={newEventTitle} onChange={(e) => { setNewEventTitle(e.target.value); setNewEventSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) }} className="w-full rounded-lg border border-slate-700 bg-slate-950 py-2.5 px-4 text-white focus:outline-none focus:border-blue-500" placeholder="Ex: Appel Découverte" /></div>
-              <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">URL / Slug</label><div className="flex items-center"><span className="bg-slate-800 text-slate-500 px-3 py-2.5 rounded-l-lg border border-r-0 border-slate-700 text-sm">/</span><input type="text" value={newEventSlug} onChange={(e) => setNewEventSlug(e.target.value)} className="w-full rounded-r-lg border border-slate-700 bg-slate-950 py-2.5 px-4 text-white focus:outline-none focus:border-blue-500" /></div></div>
-              <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Durée (minutes)</label><div className="flex gap-2">{[15, 30, 45, 60].map(mins => (<button key={mins} onClick={() => setNewEventDuration(mins)} className={cn("flex-1 py-2 rounded-lg text-sm font-bold border transition-all", newEventDuration === mins ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700 bg-slate-800 text-slate-400 hover:text-white")}>{mins}</button>))}</div></div>
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 border border-slate-800 p-8 shadow-2xl animate-in fade-in zoom-in-95 custom-scrollbar">
+            <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
+               <div>
+                 <h3 className="text-2xl font-bold text-white">Nouveau Type d'Événement</h3>
+                 <p className="text-slate-400 text-sm">Configurez les détails et les limites de votre nouveau lien.</p>
+               </div>
+               <button onClick={() => setIsCreateModalOpen(false)} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"><X className="h-6 w-6" /></button>
             </div>
-            <div className="mt-8 flex gap-3"><button onClick={() => setIsCreateModalOpen(false)} className="flex-1 rounded-lg py-3 font-bold text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">Annuler</button><button onClick={handleCreateEventType} disabled={isCreatingEvent || !newEventTitle} className="flex-1 rounded-lg bg-blue-600 py-3 font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20 disabled:opacity-50">{isCreatingEvent ? 'Création...' : 'Créer'}</button></div>
+
+            <div className="space-y-8">
+               {/* 1. INFO GÉNÉRALES */}
+               <section className="space-y-4">
+                  <h4 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2"><Plus className="h-4 w-4"/> Informations Générales</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="col-span-2 md:col-span-1">
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Titre</label>
+                        <input type="text" value={newEventTitle} onChange={(e) => { setNewEventTitle(e.target.value); setNewEventSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) }} className="w-full rounded-lg bg-slate-950 border border-slate-700 py-2.5 px-4 text-white focus:border-blue-500 outline-none transition-all" placeholder="Ex: Appel Découverte" />
+                     </div>
+                     <div className="col-span-2 md:col-span-1">
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Durée (min)</label>
+                        <input type="number" value={newEventDuration} onChange={(e) => setNewEventDuration(parseInt(e.target.value))} className="w-full rounded-lg bg-slate-950 border border-slate-700 py-2.5 px-4 text-white focus:border-blue-500 outline-none transition-all" />
+                     </div>
+                     <div className="col-span-2">
+                        <label className="block text-xs font-bold text-slate-500 mb-1">URL / Slug</label>
+                        <div className="flex items-center">
+                           <span className="bg-slate-800 text-slate-500 px-4 py-2.5 rounded-l-lg border border-r-0 border-slate-700 text-sm">cal.com/{calUsername || 'user'}/</span>
+                           <input type="text" value={newEventSlug} onChange={(e) => setNewEventSlug(e.target.value)} className="w-full rounded-r-lg border border-slate-700 bg-slate-950 py-2.5 px-4 text-white focus:border-blue-500 outline-none transition-all" />
+                        </div>
+                     </div>
+                     <div className="col-span-2">
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Description</label>
+                        <textarea rows={3} value={newEventDescription} onChange={(e) => setNewEventDescription(e.target.value)} className="w-full rounded-lg bg-slate-950 border border-slate-700 py-2.5 px-4 text-white focus:border-blue-500 outline-none resize-none transition-all" placeholder="Détails du rendez-vous..." />
+                     </div>
+                     
+                     <div className="col-span-2">
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Lieu / Location</label>
+                        <div className="space-y-3">
+                           <div className="p-3 rounded-lg border border-slate-700 bg-slate-950 text-slate-400 text-xs flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-blue-500" />
+                              <select 
+                                className="bg-transparent outline-none w-full text-white cursor-pointer"
+                                onChange={(e) => setNewEventLocationType(e.target.value)}
+                                value={newEventLocationType}
+                              >
+                                 <optgroup label="Visio">
+                                    <option value="integrations:daily">Cal Video (Par défaut)</option>
+                                    <option value="integrations:google:meet">Google Meet</option>
+                                    <option value="integrations:zoom:video">Zoom Video</option>
+                                 </optgroup>
+                                 <optgroup label="Téléphone">
+                                    <option value="attendee_phone">Numéro de téléphone du participant</option>
+                                    <option value="phone">Appel téléphonique (Organisateur appelle)</option>
+                                 </optgroup>
+                                 <optgroup label="Physique">
+                                    <option value="attendee_in_person">En personne (adresse du participant)</option>
+                                    <option value="in_person">En personne (adresse de l'organisateur)</option>
+                                 </optgroup>
+                                 <optgroup label="Autre">
+                                    <option value="link">Lien personnalisé / Autre</option>
+                                 </optgroup>
+                              </select>
+                           </div>
+
+                           {['in_person', 'link', 'phone'].includes(newEventLocationType) && (
+                              <div className="animate-in fade-in slide-in-from-top-2">
+                                 <label className="block text-[10px] font-bold text-blue-400 uppercase mb-1">
+                                    {newEventLocationType === 'phone' ? 'Numéro à appeler' : newEventLocationType === 'link' ? 'URL du lien' : 'Adresse exacte'}
+                                 </label>
+                                 <input 
+                                    type="text" 
+                                    placeholder="..."
+                                    value={newEventLocationAddress} 
+                                    onChange={(e) => setNewEventLocationAddress(e.target.value)}
+                                    className="w-full rounded-lg bg-slate-950 border border-blue-500/50 py-2 px-4 text-white text-sm focus:border-blue-500 outline-none" 
+                                 />
+                              </div>
+                           )}
+                        </div>
+                     </div>
+                  </div>
+               </section>
+
+               <hr className="border-slate-800" />
+
+               {/* 2. DISPONIBILITÉS */}
+               <section className="space-y-4">
+                  <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2"><Clock className="h-4 w-4"/> Disponibilités & Limites</h4>
+                  <div className="grid grid-cols-2 gap-6">
+                     <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Marge avant (min)</label>
+                        <select 
+                           value={newEventBeforeBuffer} 
+                           onChange={(e) => setNewEventBeforeBuffer(parseInt(e.target.value))} 
+                           className="w-full rounded-lg bg-slate-950 border border-slate-700 py-2.5 px-4 text-white outline-none cursor-pointer hover:border-slate-600 transition-all"
+                        >
+                           <option value={0}>Aucune</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
+                        </select>
+                     </div>
+                     <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Marge après (min)</label>
+                        <select 
+                           value={newEventAfterBuffer} 
+                           onChange={(e) => setNewEventAfterBuffer(parseInt(e.target.value))} 
+                           className="w-full rounded-lg bg-slate-950 border border-slate-700 py-2.5 px-4 text-white outline-none cursor-pointer hover:border-slate-600 transition-all"
+                        >
+                           <option value={0}>Aucune</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
+                        </select>
+                     </div>
+                     
+                     <div className="col-span-2 md:col-span-1">
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Préavis minimum</label>
+                        <div className="flex">
+                           <input 
+                              type="number" 
+                              value={newEventNotice} 
+                              onChange={(e) => setNewEventNotice(parseInt(e.target.value))} 
+                              className="w-20 rounded-l-lg bg-slate-950 border border-r-0 border-slate-700 py-2.5 px-4 text-white outline-none focus:border-blue-500 transition-all" 
+                           />
+                           <select 
+                              value={newEventNoticeUnit}
+                              onChange={(e) => setNewEventNoticeUnit(e.target.value as 'minutes' | 'hours')}
+                              className="flex-1 rounded-r-lg bg-slate-950 border border-slate-700 py-2.5 px-2 text-white outline-none cursor-pointer hover:border-slate-600 transition-all"
+                           >
+                              <option value="minutes">Minutes</option>
+                              <option value="hours">Heures</option>
+                           </select>
+                        </div>
+                     </div>
+
+                     <div className="col-span-2 md:col-span-1">
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Fréquence des créneaux</label>
+                        <select 
+                           value={newEventSlotInterval || 'default'} 
+                           onChange={(e) => setNewEventSlotInterval(e.target.value === 'default' ? null : parseInt(e.target.value))} 
+                           className="w-full rounded-lg bg-slate-950 border border-slate-700 py-2.5 px-4 text-white outline-none cursor-pointer hover:border-slate-600 transition-all"
+                        >
+                           <option value="default">Par défaut (Durée)</option>
+                           <option value={15}>15 min</option><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>60 min</option>
+                        </select>
+                     </div>
+                  </div>
+               </section>
+            </div>
+
+            <div className="mt-8 flex gap-4 border-t border-slate-800 pt-6">
+                <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-3 rounded-xl font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">Annuler</button>
+                <button 
+                    onClick={handleCreateEventType} 
+                    disabled={isCreatingEvent || !newEventTitle} 
+                    className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                    {isCreatingEvent ? <Loader2 className="h-4 w-4 animate-spin"/> : <Save className="h-4 w-4"/>} 
+                    Créer l'événement
+                </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* --- MODALE ÉDITION COMPLÈTE (Z-50) --- */}
+      {/* MODALE ÉDITION COMPLÈTE (Z-50) (Inchangée) */}
       {isEditModalOpen && editingEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
@@ -652,7 +861,6 @@ export function RendezVous() {
             </div>
 
             <div className="space-y-8">
-               {/* 1. INFO DE BASE */}
                <section className="space-y-4">
                   <h4 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2"><Edit2 className="h-4 w-4"/> Informations Générales</h4>
                   <div className="grid grid-cols-2 gap-4">
@@ -763,7 +971,6 @@ export function RendezVous() {
 
                <hr className="border-slate-800" />
 
-               {/* 2. PARAMÈTRES AVANCÉS */}
                <section className="space-y-4">
                   <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2"><Clock className="h-4 w-4"/> Disponibilités & Limites</h4>
                   <div className="grid grid-cols-2 gap-6">
