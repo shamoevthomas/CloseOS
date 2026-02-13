@@ -17,15 +17,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // 1. Échange du code contre les tokens
-    // L'URL de redirection doit être STRICTEMENT identique à celle déclarée dans Cal.com (votre page frontend)
+    // SÉCURITÉ : On force l'URL de production pour éviter les erreurs de variables d'environnement
+    const redirectUri = 'https://close-os.vercel.app/rendez-vous'
+
     const tokenResponse = await fetch('https://app.cal.com/api/auth/oauth/token', {
       method: 'POST',
       body: JSON.stringify({
         grant_type: 'authorization_code',
         client_id: process.env.VITE_CAL_CLIENT_ID,
         client_secret: process.env.CAL_CLIENT_SECRET,
-        // C'est ICI que la magie opère : on dit à Cal.com "l'utilisateur est revenu sur /rendez-vous"
-        redirect_uri: `${process.env.VITE_APP_URL}/rendez-vous`, 
+        redirect_uri: redirectUri,
         code
       }),
       headers: { 'Content-Type': 'application/json' }
