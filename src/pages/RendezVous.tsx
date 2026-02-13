@@ -678,7 +678,7 @@ export function RendezVous() {
                                     frameBorder="0" 
                                     allow="clipboard-write" 
                                     allowFullScreen
-                                    className="w-full h-[400px]"
+                                    className="w-full h-[200px]"
                                     title="Guide Cal.com"
                                 />
                             </div>
