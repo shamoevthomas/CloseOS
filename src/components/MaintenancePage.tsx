@@ -23,7 +23,7 @@ export function MaintenancePage() {
         </h1>
         <p className="text-lg text-slate-400 mb-10 leading-relaxed max-w-lg mx-auto">
           La plateforme tout-en-un pour les closers est en phase finale de préparation. 
-          La page de présentation sera disponible très bientôt.
+          La page de présentation sera disponible dès Mercredi !
         </p>
 
         {/* ENCART OFFRE SPECIALE */}
