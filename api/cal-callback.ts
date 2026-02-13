@@ -5,49 +5,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const code = req.query.code || req.body?.code
   const state = req.query.state || req.body?.state
 
-  console.log('🚀 Callback - Code:', code ? 'OUI' : 'NON', '- State:', state)
+  console.log('🚀 OAuth Callback - Code:', code ? 'OUI' : 'NON', '- State:', state)
 
   if (!code || !state) {
-    return res.status(400).json({ error: 'Paramètres manquants' })
+    return res.status(400).json({ error: 'Paramètres manquants (code ou state)' })
   }
 
   if (!process.env.VITE_CAL_CLIENT_ID || !process.env.CAL_CLIENT_SECRET) {
     console.error('❌ Variables env manquantes')
-    return res.status(500).json({ error: 'Config serveur incomplète' })
+    return res.status(500).json({ error: 'Configuration serveur incomplète' })
   }
 
   try {
-    console.log('🔄 Échange code OAuth...')
+    console.log('🔄 Échange code OAuth avec Cal.com...')
     
-    const params = new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: process.env.VITE_CAL_CLIENT_ID,
-      client_secret: process.env.CAL_CLIENT_SECRET,
-      redirect_uri: 'https://close-os.vercel.app/rendez-vous',
-      code: code as string
-    })
-
-    console.log('📤 POST https://app.cal.com/api/auth/oauth/token')
-
     const tokenResponse = await fetch('https://app.cal.com/api/auth/oauth/token', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params.toString()
+      body: JSON.stringify({
+        grant_type: 'authorization_code',
+        client_id: process.env.VITE_CAL_CLIENT_ID,
+        client_secret: process.env.CAL_CLIENT_SECRET,
+        redirect_uri: `${process.env.VITE_APP_URL}/rendez-vous`,
+        code
+      }),
+      headers: { 'Content-Type': 'application/json' }
     })
 
     const data = await tokenResponse.json()
     
     console.log('📊 Status:', tokenResponse.status)
-    console.log('📦 Data:', JSON.stringify(data))
+    console.log('📦 Response:', JSON.stringify(data))
     
-    if (!tokenResponse.ok || data.error) {
-      console.error('❌ Erreur Cal.com:', data)
-      throw new Error(data.error_description || data.error || data.message || JSON.stringify(data))
+    if (data.error || !tokenResponse.ok) {
+      console.error('❌ Erreur Token Cal.com:', data)
+      throw new Error(data.error?.message || data.error || 'Erreur échange token')
     }
 
-    console.log('✅ Token obtenu')
+    console.log('✅ Token obtenu:', data.access_token ? 'OUI' : 'NON')
 
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL!,
@@ -65,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw error
     }
 
-    console.log('✅ Sauvegarde OK')
+    console.log('✅ Token sauvegardé pour user:', state)
     
     return res.status(200).json({ success: true })
   } catch (error: any) {
