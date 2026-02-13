@@ -24,7 +24,9 @@ import {
   Edit2,
   MapPin,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  LogOut, // Ajout icône
+  Key     // Ajout icône
 } from 'lucide-react'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
@@ -62,8 +64,11 @@ export function RendezVous() {
   const [isSavingKey, setIsSavingKey] = useState(false)
   const [keySaveSuccess, setKeySaveSuccess] = useState(false)
   
-  // Nouvel état pour gérer le chargement OAuth
+  // --- NOUVEAUX ÉTATS POUR OAUTH & HYBRIDE ---
+  const [calAccessToken, setCalAccessToken] = useState('')
+  const [calProfile, setCalProfile] = useState<any>(null)
   const [isHandlingOAuth, setIsHandlingOAuth] = useState(false)
+  const [configMode, setConfigMode] = useState<'oauth' | 'manual'>('oauth') // Switch état
   
   // États Gestion Event Types
   const [eventTypes, setEventTypes] = useState<any[]>([])
@@ -106,26 +111,30 @@ export function RendezVous() {
     ? `${baseUrl}/api/cal-webhook?user_id=${user.id}`
     : 'Chargement...'
   
-  // ✅ FIX: L'URL de redirection est maintenant la page RendezVous elle-même
-  const redirectUri = `${baseUrl}/rendez-vous`
+  // URL OAuth forcée
+  const redirectUri = 'https://close-os.vercel.app/rendez-vous'
   const calOAuthUrl = `https://app.cal.com/auth/oauth2/authorize?client_id=${import.meta.env.VITE_CAL_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=calendars:read&state=${user?.id}`
 
-  // 1. Chargement initial
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return
-      const { data } = await supabase.from('profiles').select('cal_api_key').eq('id', user.id).single()
-      if (data?.cal_api_key) {
-        setCalApiKey(data.cal_api_key)
-        fetchEventTypes(data.cal_api_key)
-        fetchCalProfile(data.cal_api_key)
-        fetchCalBookings(data.cal_api_key, false) // Chargement silencieux au démarrage
-      }
+  // 1. Chargement initial (HYBRIDE)
+  const loadCalData = async () => {
+    if (!user) return
+    const { data } = await supabase.from('profiles').select('cal_api_key, cal_access_token').eq('id', user.id).single()
+    if (data) {
+        if (data.cal_api_key) setCalApiKey(data.cal_api_key)
+        if (data.cal_access_token) setCalAccessToken(data.cal_access_token)
+        
+        // On lance avec ce qu'on a (Token prioritaire)
+        fetchEventTypes(data.cal_access_token, data.cal_api_key)
+        fetchCalProfile(data.cal_access_token, data.cal_api_key)
+        fetchCalBookings(data.cal_access_token, data.cal_api_key, false) 
     }
-    fetchProfile()
+  }
+
+  useEffect(() => {
+    loadCalData()
   }, [user])
 
-  // --- NOUVEAU : GESTION DU RETOUR OAUTH ---
+  // --- GESTION DU RETOUR OAUTH ---
   useEffect(() => {
     const code = searchParams.get('code')
     const state = searchParams.get('state')
@@ -134,28 +143,25 @@ export function RendezVous() {
       const handleOAuthCallback = async () => {
         setIsHandlingOAuth(true)
         try {
-          // On appelle notre API pour échanger le code
           const response = await fetch('/api/cal-callback', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code, state })
           })
           
-          const result = await response.json()
-          
-          if (!response.ok) throw new Error(result.error || 'Erreur connexion')
+          if (!response.ok) {
+             const err = await response.json()
+             throw new Error(err.error || 'Erreur connexion')
+          }
 
-          // Succès : on nettoie l'URL et on notifie
           setSearchParams({}) 
           alert("Compte Cal.com connecté avec succès !")
-          
-          // On recharge la page pour récupérer les nouvelles infos (clé API masquée ou token)
-          window.location.reload()
+          setTimeout(() => window.location.reload(), 1000)
 
         } catch (error: any) {
           console.error("Erreur OAuth:", error)
           alert("Erreur lors de la connexion Cal.com: " + error.message)
-          setSearchParams({}) // On nettoie quand même
+          setSearchParams({}) 
         } finally {
           setIsHandlingOAuth(false)
         }
@@ -163,6 +169,20 @@ export function RendezVous() {
       handleOAuthCallback()
     }
   }, [searchParams])
+
+  // --- HELPERS API HYBRIDES ---
+  const getAuthHeaders = (token?: string) => {
+      if (token) return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      return { 'Content-Type': 'application/json' }
+  }
+
+  const getAuthUrl = (endpoint: string, apiKey?: string, token?: string) => {
+      let url = `https://api.cal.com/v1/${endpoint}`
+      if (!token && apiKey) {
+          url += (url.includes('?') ? '&' : '?') + `apiKey=${apiKey}`
+      }
+      return url
+  }
 
   // --- FONCTION DE SYNCHRONISATION PUISSANTE ---
   const runDeepSync = async (bookings: any[]) => {
@@ -241,43 +261,51 @@ export function RendezVous() {
       if (error) throw error
       setKeySaveSuccess(true)
       setTimeout(() => setKeySaveSuccess(false), 3000)
-      fetchEventTypes(calApiKey)
-      fetchCalProfile(calApiKey)
-      fetchCalBookings(calApiKey, true)
+      // Recharge hybride
+      fetchEventTypes(calAccessToken, calApiKey)
+      fetchCalProfile(calAccessToken, calApiKey)
+      fetchCalBookings(calAccessToken, calApiKey, true)
     } catch (err) { alert("Impossible de sauvegarder la clé API") } finally { setIsSavingKey(false) }
   }
 
-  // 3. Fetch Events
-  const fetchEventTypes = async (apiKey: string) => {
+  // 3. Fetch Events (Hybride)
+  const fetchEventTypes = async (token?: string, apiKey?: string) => {
+    if (!token && !apiKey) return
     setIsLoadingEvents(true)
     try {
-      const response = await fetch(`https://api.cal.com/v1/event-types?apiKey=${apiKey}`)
+      const url = getAuthUrl('event-types', apiKey, token)
+      const response = await fetch(url, { headers: getAuthHeaders(token) })
       const data = await response.json()
       if (data.event_types) setEventTypes(data.event_types)
     } catch (error) { console.error("Erreur fetch Cal.com:", error) } finally { setIsLoadingEvents(false) }
   }
 
-  // 3b. Fetch Profile
-  const fetchCalProfile = async (apiKey: string) => {
+  // 3b. Fetch Profile (Hybride)
+  const fetchCalProfile = async (token?: string, apiKey?: string) => {
+    if (!token && !apiKey) return
     try {
-      const response = await fetch(`https://api.cal.com/v1/me?apiKey=${apiKey}`)
+      const url = getAuthUrl('me', apiKey, token)
+      const response = await fetch(url, { headers: getAuthHeaders(token) })
       const data = await response.json()
-      if (data.user?.username) setCalUsername(data.user.username)
-      else if (data.username) setCalUsername(data.username)
+      const userData = data.user || data
+      if (userData) {
+          setCalProfile(userData)
+          if (userData.username) setCalUsername(userData.username)
+      }
     } catch (error) { console.error(error) }
   }
 
-  // 3c. Fetch Bookings & Trigger Sync
-  const fetchCalBookings = async (apiKey: string, manualTrigger: boolean = false) => {
-    if (!apiKey) return;
+  // 3c. Fetch Bookings (Hybride)
+  const fetchCalBookings = async (token?: string, apiKey?: string, manualTrigger: boolean = false) => {
+    if (!token && !apiKey) return
     if (manualTrigger) setIsSyncing(true);
     
     try {
-        const response = await fetch(`https://api.cal.com/v1/bookings?apiKey=${apiKey}&take=100&status=CANCELLED,ACCEPTED,REJECTED`)
+        const url = getAuthUrl('bookings?take=100&status=CANCELLED,ACCEPTED,REJECTED', apiKey, token)
+        const response = await fetch(url, { headers: getAuthHeaders(token) })
         const data = await response.json()
         if (data.bookings) {
             setCalBookings(data.bookings);
-            // Lancer la synchro DB immédiatement après récupération
             const count = await runDeepSync(data.bookings);
             if (manualTrigger) {
                 alert(`Synchronisation terminée : ${count} rendez-vous mis à jour.`);
@@ -291,18 +319,22 @@ export function RendezVous() {
     }
   }
 
-  // 4. Suppression Event Type
+  // 4. Suppression Event Type (Hybride)
   const handleDeleteEventType = async (id: number) => {
     if (!window.confirm("Voulez-vous supprimer ce lien définitivement (CloseOS + Cal.com) ?")) return
     setIsDeletingEvent(id)
     try {
-        const response = await fetch(`https://api.cal.com/v1/event-types/${id}?apiKey=${calApiKey}`, { method: 'DELETE' })
+        const url = getAuthUrl(`event-types/${id}`, calApiKey, calAccessToken)
+        const response = await fetch(url, { 
+            method: 'DELETE',
+            headers: getAuthHeaders(calAccessToken)
+        })
         if (!response.ok) throw new Error("Erreur suppression")
-        await fetchEventTypes(calApiKey)
+        await fetchEventTypes(calAccessToken, calApiKey)
     } catch (error) { alert("Erreur suppression Cal.com"); console.error(error) } finally { setIsDeletingEvent(null) }
   }
 
-  // 5. Créer Event
+  // 5. Créer Event (Hybride)
   const handleCreateEventType = async () => {
     if (!newEventTitle || !newEventSlug) return
     setIsCreatingEvent(true)
@@ -313,13 +345,14 @@ export function RendezVous() {
         length: parseInt(String(newEventDuration)),
         isHidden: false
       }
-      const response = await fetch(`https://api.cal.com/v1/event-types?apiKey=${calApiKey}`, {
+      const url = getAuthUrl('event-types', calApiKey, calAccessToken)
+      const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(calAccessToken),
         body: JSON.stringify(payload)
       })
       if (!response.ok) throw new Error('Erreur création')
-      await fetchEventTypes(calApiKey)
+      await fetchEventTypes(calAccessToken, calApiKey)
       setIsCreateModalOpen(false)
       setNewEventTitle(''); setNewEventSlug(''); setNewEventDuration(30)
     } catch (error) { alert("Erreur lors de la création") } finally { setIsCreatingEvent(false) }
@@ -351,7 +384,7 @@ export function RendezVous() {
     setIsEditModalOpen(true)
   }
 
-  // 7. Sauvegarder Édition
+  // 7. Sauvegarder Édition (Hybride)
   const handleUpdateEvent = async () => {
     if (!editingEvent) return
     setIsUpdatingEvent(true)
@@ -372,14 +405,15 @@ export function RendezVous() {
             slotInterval: editingEvent.slotInterval ? Number(editingEvent.slotInterval) : null
         }
 
-        const response = await fetch(`https://api.cal.com/v1/event-types/${editingEvent.id}?apiKey=${calApiKey}`, {
+        const url = getAuthUrl(`event-types/${editingEvent.id}`, calApiKey, calAccessToken)
+        const response = await fetch(url, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(calAccessToken),
             body: JSON.stringify(payload)
         })
 
         if (!response.ok) throw new Error('Erreur mise à jour')
-        await fetchEventTypes(calApiKey)
+        await fetchEventTypes(calAccessToken, calApiKey)
         setIsEditModalOpen(false)
     } catch (error) { alert("Erreur maj"); console.error(error) } finally { setIsUpdatingEvent(false) }
   }
@@ -522,7 +556,6 @@ export function RendezVous() {
   return (
     <div className="h-full overflow-y-auto bg-slate-950 p-8 text-left">
       
-      {/* OVERLAY DE CHARGEMENT PENDANT L'OAUTH */}
       {isHandlingOAuth && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md">
           <div className="text-center">
@@ -549,7 +582,7 @@ export function RendezVous() {
         </div>
 
         {/* --- SECTION 2: TYPES D'EVENEMENTS --- */}
-        {calApiKey && (
+        {(calApiKey || calAccessToken) && (
             <div className="mb-12">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-start gap-4">
@@ -621,7 +654,7 @@ export function RendezVous() {
             title="Rendez-vous à venir" 
             icon={Calendar} 
             emptyText="Aucun rendez-vous synchronisé." 
-            onRefresh={() => fetchCalBookings(calApiKey, true)} // 👈 MODE MANUEL
+            onRefresh={() => fetchCalBookings(calAccessToken, calApiKey, true)} // 👈 MODE MANUEL
         />
         <MeetingTable data={pastMeetings} title="Historique" icon={History} emptyText="Aucun historique disponible." showDeleteAction={true} />
       </div>
@@ -652,36 +685,102 @@ export function RendezVous() {
                 {/* Corps Modale */}
                 <div className="p-8 space-y-8 bg-slate-950/50">
                     
-                    {/* 1. Clé API */}
+                    {/* --- SWITCH MODE --- */}
+                    <div className="flex p-1 bg-slate-900 rounded-lg border border-slate-800">
+                        <button 
+                            onClick={() => setConfigMode('oauth')} 
+                            className={cn("flex-1 py-2 text-sm font-bold rounded-md transition-all", configMode === 'oauth' ? "bg-slate-700 text-white shadow-sm" : "text-slate-500 hover:text-white")}
+                        >
+                            Automatique (OAuth)
+                        </button>
+                        <button 
+                            onClick={() => setConfigMode('manual')} 
+                            className={cn("flex-1 py-2 text-sm font-bold rounded-md transition-all", configMode === 'manual' ? "bg-slate-700 text-white shadow-sm" : "text-slate-500 hover:text-white")}
+                        >
+                            Manuel (Clé API)
+                        </button>
+                    </div>
+
+                    {/* 1. SECTION PRINCIPALE (DYNAMIQUE) */}
                     <section>
-                         <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-wider">1. Clé API</h3>
+                         <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2">
+                             {configMode === 'oauth' ? <Globe className="h-4 w-4 text-blue-400"/> : <Key className="h-4 w-4 text-amber-400"/>}
+                             {configMode === 'oauth' ? '1. Connexion Simplifiée' : '1. Clé API Expert'}
+                         </h3>
+                         
                          <div className="flex flex-col gap-4">
                              
-                             {/* ✅ BOUTON OAUTH INTÉGRÉ ICI AVEC URL APP.CAL.COM */}
-                             <a href={calOAuthUrl} className="w-full flex justify-center items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-bold text-black hover:bg-slate-200 transition-all">
-                                <img src="https://cal.com/favicon.ico" alt="Cal" className="w-4 h-4" />
-                                Se connecter avec Cal.com
-                             </a>
+                             {/* --- MODE OAUTH --- */}
+                             {configMode === 'oauth' && (
+                                calAccessToken ? (
+                                    <div className="space-y-4 animate-in fade-in zoom-in-95">
+                                        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 flex items-center gap-4">
+                                            <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                                                <Check className="h-5 w-5 text-white" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-bold text-white">Connecté via OAuth</h4>
+                                                <p className="text-xs text-emerald-400 font-medium">Synchronisation active</p>
+                                            </div>
+                                            <button 
+                                                onClick={async () => {
+                                                    if(!window.confirm("Se déconnecter de Cal.com ?")) return;
+                                                    await supabase.from('profiles').update({ cal_access_token: null, cal_refresh_token: null }).eq('id', user?.id);
+                                                    window.location.reload();
+                                                }}
+                                                className="px-3 py-2 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                                            >
+                                                <LogOut className="h-4 w-4" />
+                                            </button>
+                                        </div>
 
-                             {/* SÉPARATEUR */}
-                             <div className="flex items-center gap-3">
-                                <div className="h-px flex-1 bg-slate-800"></div>
-                                <span className="text-[10px] font-bold text-slate-600 uppercase">OU CLÉ API MANUELLE</span>
-                                <div className="h-px flex-1 bg-slate-800"></div>
-                             </div>
+                                        {/* INFO PROFIL CAL.COM */}
+                                        {calProfile && (
+                                            <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-800 animate-in fade-in slide-in-from-top-2">
+                                                {calProfile.avatar_url ? (
+                                                    <img src={calProfile.avatar_url} alt="Cal Profile" className="w-12 h-12 rounded-full border-2 border-slate-700" />
+                                                ) : (
+                                                    <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-lg font-bold text-white">
+                                                        {calProfile.name?.charAt(0) || calProfile.username?.charAt(0) || '?'}
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <p className="text-white font-bold text-sm">{calProfile.name || 'Utilisateur Cal.com'}</p>
+                                                    <p className="text-xs text-slate-400 font-mono">@{calProfile.username}</p>
+                                                    {calProfile.email && <p className="text-xs text-slate-500">{calProfile.email}</p>}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3 animate-in fade-in zoom-in-95">
+                                        <a href={calOAuthUrl} className="w-full flex justify-center items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-bold text-black hover:bg-slate-200 transition-all">
+                                            <img src="https://cal.com/favicon.ico" alt="Cal" className="w-4 h-4" />
+                                            Se connecter avec Cal.com
+                                        </a>
+                                        <p className="text-xs text-slate-500 text-center">Méthode recommandée : connexion directe et sécurisée.</p>
+                                    </div>
+                                )
+                             )}
 
-                             <div className="flex flex-col gap-2">
-                                <input type="password" value={calApiKey} onChange={(e) => setCalApiKey(e.target.value)} placeholder="cal_..." className="block w-full rounded-lg border border-slate-700 bg-slate-900 py-3 px-4 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                <button onClick={handleSaveApiKey} disabled={isSavingKey || !calApiKey} className="w-full flex justify-center items-center gap-2 rounded-lg bg-slate-800 border border-slate-700 px-4 py-3 text-sm font-bold text-white hover:bg-slate-700 disabled:opacity-50 transition-all">{isSavingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {keySaveSuccess ? 'Sauvegardé' : 'Enregistrer la clé'}</button>
-                             </div>
-                             <p className="text-xs text-slate-500 mt-1">Nécessaire pour lire et modifier vos liens de réservation.</p>
+                             {/* --- MODE MANUEL --- */}
+                             {configMode === 'manual' && (
+                                <div className="space-y-4 animate-in fade-in zoom-in-95">
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-xs font-bold text-slate-500 uppercase">Votre Clé API (v1)</label>
+                                        <input type="password" value={calApiKey} onChange={(e) => setCalApiKey(e.target.value)} placeholder="cal_live_..." className="block w-full rounded-lg border border-slate-700 bg-slate-900 py-3 px-4 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                                        <button onClick={handleSaveApiKey} disabled={isSavingKey || !calApiKey} className="w-full flex justify-center items-center gap-2 rounded-lg bg-slate-800 border border-slate-700 px-4 py-3 text-sm font-bold text-white hover:bg-slate-700 disabled:opacity-50 transition-all">{isSavingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {keySaveSuccess ? 'Sauvegardé' : 'Enregistrer la clé'}</button>
+                                    </div>
+                                    <p className="text-xs text-slate-500">Trouvez votre clé dans Cal.com &gt; Settings &gt; API Keys. Utilisez cette méthode si l'OAuth ne fonctionne pas.</p>
+                                </div>
+                             )}
                          </div>
                     </section>
 
                     <hr className="border-slate-800" />
 
                     {/* 2. Webhook */}
-                    {calApiKey && (
+                    {(calApiKey || calAccessToken) && (
                         <section>
                              <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-wider">2. Synchronisation (Webhook)</h3>
                              <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg p-2 pl-4">

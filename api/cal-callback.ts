@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Supporte GET (via url) ou POST (via fetch)
   const code = req.query.code || req.body?.code
   const state = req.query.state || req.body?.state 
 
@@ -10,22 +9,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Paramètres manquants (code ou state)' })
   }
 
-  // Vérification des variables d'environnement
   if (!process.env.VITE_CAL_CLIENT_ID || !process.env.CAL_CLIENT_SECRET) {
     return res.status(500).json({ error: 'Configuration serveur incomplète' })
   }
 
   try {
-    // 1. Échange du code contre les tokens
-    // L'URL de redirection doit être STRICTEMENT identique à celle déclarée dans Cal.com (votre page frontend)
+    // SÉCURITÉ : URL en dur pour correspondre exactement au Dashboard Cal.com
+    // Cela évite les erreurs 500 ou mismatch URI
+    const redirectUri = 'https://close-os.vercel.app/rendez-vous'
+
     const tokenResponse = await fetch('https://app.cal.com/api/auth/oauth/token', {
       method: 'POST',
       body: JSON.stringify({
         grant_type: 'authorization_code',
         client_id: process.env.VITE_CAL_CLIENT_ID,
         client_secret: process.env.CAL_CLIENT_SECRET,
-        // C'est ICI que la magie opère : on dit à Cal.com "l'utilisateur est revenu sur /rendez-vous"
-        redirect_uri: `${process.env.VITE_APP_URL}/rendez-vous`, 
+        redirect_uri: redirectUri,
         code
       }),
       headers: { 'Content-Type': 'application/json' }
@@ -35,10 +34,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (data.error) {
       console.error('Erreur Token Cal.com:', data)
-      throw new Error(data.error.message || 'Erreur échange token')
+      throw new Error(data.error.message || JSON.stringify(data))
     }
 
-    // 2. Sauvegarde dans Supabase
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -52,7 +50,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) throw error
 
-    // 3. Réponse JSON succès
     return res.status(200).json({ success: true })
 
   } catch (error: any) {
