@@ -601,10 +601,10 @@ export function RendezVous() {
       {isConfigModalOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsConfigModalOpen(false)} />
-            <div className="relative w-full max-w-2xl rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl flex flex-col animate-in fade-in zoom-in-95 overflow-hidden">
+            <div className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl flex flex-col animate-in fade-in zoom-in-95 overflow-hidden">
                 
                 {/* Header Modale */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900 z-10">
+                <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900 z-10 shrink-0">
                     <div>
                         <h2 className="text-xl font-bold text-white flex items-center gap-3">
                             <div className="h-8 w-8 flex items-center justify-center overflow-hidden">
@@ -620,7 +620,7 @@ export function RendezVous() {
                 </div>
 
                 {/* Corps Modale */}
-                <div className="p-8 space-y-8 bg-slate-950/50">
+                <div className="p-8 space-y-8 bg-slate-950/50 overflow-y-auto custom-scrollbar">
                     <section>
                          <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">1. Connexion Cal.com</h3>
                          <div className="rounded-lg bg-slate-900 border border-slate-800 p-6 mb-6">
@@ -672,13 +672,13 @@ export function RendezVous() {
                             <p className="text-sm text-slate-300 mb-4">
                                 Découvrez comment configurer Cal.com et synchroniser vos rendez-vous avec Close OS.
                             </p>
-                            <div className="rounded-lg overflow-hidden border border-slate-700 bg-black">
+                            <div className="rounded-lg overflow-hidden border border-slate-700 bg-black" style={{aspectRatio: '16/10'}}>
                                 <iframe 
                                     src="https://app.supademo.com/embed/cmllct87b268o5yi3m4p1uhni" 
                                     frameBorder="0" 
                                     allow="clipboard-write" 
                                     allowFullScreen
-                                    className="w-full h-[200px]"
+                                    className="w-full h-full"
                                     title="Guide Cal.com"
                                 />
                             </div>
