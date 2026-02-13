@@ -665,6 +665,28 @@ export function RendezVous() {
 
                     <hr className="border-slate-800" />
 
+                    {/* Supademo Tutorial */}
+                    <section>
+                         <div className="rounded-lg bg-slate-900 border border-slate-800 p-6">
+                            <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">📚 Guide d'utilisation</h3>
+                            <p className="text-sm text-slate-300 mb-4">
+                                Découvrez comment configurer Cal.com et synchroniser vos rendez-vous avec Close OS.
+                            </p>
+                            <button 
+                                onClick={() => {
+                                    if (window.Supademo) {
+                                        window.Supademo.open('cmllct87b268o5yi3m4p1uhni');
+                                    }
+                                }}
+                                className="w-full flex justify-center items-center gap-2 rounded-xl bg-purple-600 py-3 text-sm font-bold text-white hover:bg-purple-500 transition-all shadow-lg shadow-purple-600/20"
+                            >
+                                ▶️ Voir le tutoriel
+                            </button>
+                         </div>
+                    </section>
+
+                    <hr className="border-slate-800" />
+
                     {/* 2. Webhook */}
                     {calApiKey && (
                         <section>
