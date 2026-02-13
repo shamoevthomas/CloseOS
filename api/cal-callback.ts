@@ -2,28 +2,30 @@ import { createClient } from '@supabase/supabase-js'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { code, state } = req.query
+  // Supporte GET (via url) ou POST (via fetch)
+  const code = req.query.code || req.body?.code
+  const state = req.query.state || req.body?.state 
 
   if (!code || !state) {
     return res.status(400).json({ error: 'Paramètres manquants (code ou state)' })
   }
 
-  // Vérification de sécurité des variables
+  // Vérification des variables d'environnement
   if (!process.env.VITE_CAL_CLIENT_ID || !process.env.CAL_CLIENT_SECRET) {
-    console.error('Erreur config: Variables Cal.com manquantes')
     return res.status(500).json({ error: 'Configuration serveur incomplète' })
   }
 
   try {
     // 1. Échange du code contre les tokens
-    // ✅ CORRECTION ICI : https://app.cal.com au lieu de https://cal.com
+    // L'URL de redirection doit être STRICTEMENT identique à celle déclarée dans Cal.com (votre page frontend)
     const tokenResponse = await fetch('https://app.cal.com/api/auth/oauth/token', {
       method: 'POST',
       body: JSON.stringify({
         grant_type: 'authorization_code',
         client_id: process.env.VITE_CAL_CLIENT_ID,
         client_secret: process.env.CAL_CLIENT_SECRET,
-        redirect_uri: `${process.env.VITE_APP_URL}/api/cal-callback`,
+        // C'est ICI que la magie opère : on dit à Cal.com "l'utilisateur est revenu sur /rendez-vous"
+        redirect_uri: `${process.env.VITE_APP_URL}/rendez-vous`, 
         code
       }),
       headers: { 'Content-Type': 'application/json' }
@@ -32,17 +34,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const data = await tokenResponse.json()
 
     if (data.error) {
-      console.error('Erreur Cal.com Token:', data)
-      throw new Error(data.error.message || 'Erreur lors de l\'échange de token')
+      console.error('Erreur Token Cal.com:', data)
+      throw new Error(data.error.message || 'Erreur échange token')
     }
 
-    // 2. Initialisation Supabase Admin
+    // 2. Sauvegarde dans Supabase
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // 3. Sauvegarde dans le profil
     const { error } = await supabase.from('profiles').update({
       cal_access_token: data.access_token,
       cal_refresh_token: data.refresh_token,
@@ -51,11 +52,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) throw error
 
-    // 4. Succès -> Retour aux réglages
-    res.redirect(`${process.env.VITE_APP_URL}/settings?cal_connected=true`)
+    // 3. Réponse JSON succès
+    return res.status(200).json({ success: true })
 
   } catch (error: any) {
-    console.error('Erreur OAuth:', error)
-    res.redirect(`${process.env.VITE_APP_URL}/settings?cal_error=${encodeURIComponent(error.message)}`)
+    console.error('Erreur API OAuth:', error)
+    return res.status(500).json({ error: error.message })
   }
 }
