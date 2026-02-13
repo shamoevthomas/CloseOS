@@ -16,7 +16,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // 1. Échange du code contre les tokens
-    const tokenResponse = await fetch('https://cal.com/api/auth/oauth/token', {
+    // ✅ CORRECTION ICI : https://app.cal.com au lieu de https://cal.com
+    const tokenResponse = await fetch('https://app.cal.com/api/auth/oauth/token', {
       method: 'POST',
       body: JSON.stringify({
         grant_type: 'authorization_code',
@@ -42,7 +43,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     )
 
     // 3. Sauvegarde dans le profil
-    // state = user_id (passé depuis le frontend)
     const { error } = await supabase.from('profiles').update({
       cal_access_token: data.access_token,
       cal_refresh_token: data.refresh_token,
