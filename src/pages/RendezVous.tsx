@@ -24,7 +24,8 @@ import {
   Edit2,
   MapPin,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  LogOut // Icône pour déconnexion
 } from 'lucide-react'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
@@ -59,7 +60,7 @@ export function RendezVous() {
   // --- ÉTATS CAL.COM ---
   const [calAccessToken, setCalAccessToken] = useState('')
   const [calUsername, setCalUsername] = useState('')
-  // Nouvel état pour le profil Cal.com
+  // Nouvel état pour stocker les infos complètes du profil Cal
   const [calProfile, setCalProfile] = useState<any>(null)
   
   const [isHandlingOAuth, setIsHandlingOAuth] = useState(false)
@@ -113,6 +114,7 @@ export function RendezVous() {
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return
+      // On récupère le token OAuth stocké en base
       const { data } = await supabase.from('profiles').select('cal_access_token').eq('id', user.id).single()
       
       if (data?.cal_access_token) {
@@ -145,13 +147,15 @@ export function RendezVous() {
           
           if (!response.ok) throw new Error(result.error || 'Erreur connexion')
 
-          setSearchParams({}) 
+          setSearchParams({}) // Nettoyage de l'URL
           alert("Connexion réussie ! Vos liens vont apparaître.")
+          
+          // Rechargement pour être sûr que tout se mette à jour
           window.location.reload()
 
         } catch (error: any) {
           console.error("Erreur OAuth:", error)
-          alert("Erreur: " + error.message)
+          alert("Erreur lors de la connexion Cal.com: " + error.message)
           setSearchParams({})
         } finally {
           setIsHandlingOAuth(false)
@@ -226,7 +230,7 @@ export function RendezVous() {
       // Cal.com renvoie parfois { user: {...} } ou directement {...}
       const userData = data.user || data
       if (userData) {
-          setCalProfile(userData)
+          setCalProfile(userData) // On stocke tout le profil pour l'affichage
           if (userData.username) setCalUsername(userData.username)
       }
     } catch (error) { console.error(error) }
@@ -431,7 +435,7 @@ export function RendezVous() {
           <button onClick={() => setIsConfigModalOpen(true)} className="flex items-center gap-2 rounded-xl bg-slate-800 border border-slate-700 px-5 py-3 text-sm font-bold text-white hover:bg-slate-700 transition-all shadow-lg hover:shadow-slate-700/20"><Settings className="h-4 w-4" /> Configurer les Booking</button>
         </div>
 
-        {/* --- SECTION 2: TYPES D'EVENEMENTS --- */}
+        {/* --- SECTION 2: TYPES D'EVENEMENTS (AFFICHÉS SI CONNECTÉ) --- */}
         {calAccessToken && (
             <div className="mb-12">
                 <div className="flex items-center justify-between mb-6">
@@ -484,7 +488,6 @@ export function RendezVous() {
                                             <h4 className="font-bold text-white">Compte connecté via OAuth</h4>
                                             <p className="text-xs text-emerald-400 font-medium">Synchronisation active</p>
                                         </div>
-                                        {/* BOUTON DECONNEXION */}
                                         <button 
                                             onClick={async () => {
                                                 if(!window.confirm("Se déconnecter de Cal.com ?")) return;
