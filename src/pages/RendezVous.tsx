@@ -674,12 +674,16 @@ export function RendezVous() {
                             </p>
                             <div className="rounded-lg overflow-hidden border border-slate-700 bg-black">
                                 <iframe 
-                                    src="https://app.supademo.com/embed/cmllct87b268o5yi3m4p1uhni" 
-                                    frameBorder="0" 
-                                    allow="clipboard-write" 
-                                    allowFullScreen
-                                    className="w-full h-[500px]"
-                                    title="Guide Cal.com"
+                                  src="https://app.supademo.com/embed/cmllct87b268o5yi3m4p1uhni?embed_v=2&utm_source=embed&loop=1&autoplay=1" 
+                                  loading="lazy" 
+                                  title="Configurer votre agenda" 
+                                  allow="clipboard-write" 
+                                  frameBorder="0" 
+                                  webkitAllowFullScreen 
+                                  mozAllowFullScreen 
+                                  allowFullScreen 
+                                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                          
                                 />
                             </div>
                          </div>
