@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Supporte GET (via url) ou POST (via fetch)
   const code = req.query.code || req.body?.code
   const state = req.query.state || req.body?.state
 
@@ -10,27 +9,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Paramètres manquants (code ou state)' })
   }
 
-  // Vérification des variables d'environnement
   if (!process.env.VITE_CAL_CLIENT_ID || !process.env.CAL_CLIENT_SECRET) {
     return res.status(500).json({ error: 'Configuration serveur incomplète' })
   }
 
   try {
-    console.log('🔄 Échange du code OAuth...')
+    console.log('🔄 Échange du code OAuth avec Cal.com...')
     
-    // 1. Échange du code contre les tokens - CORRIGÉ
-    const tokenResponse = await fetch('https://api.cal.com/v2/oauth/token', {
+    // ✅ ANCIEN ENDPOINT QUI FONCTIONNE (v1)
+    const tokenResponse = await fetch('https://app.cal.com/api/auth/oauth/token', {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/json'  // ✅ JSON fonctionne avec v1
       },
-      body: new URLSearchParams({
+      body: JSON.stringify({
         grant_type: 'authorization_code',
         client_id: process.env.VITE_CAL_CLIENT_ID,
         client_secret: process.env.CAL_CLIENT_SECRET,
         redirect_uri: `${process.env.VITE_APP_URL}/rendez-vous`,
         code: code as string
-      }).toString()
+      })
     })
 
     const data = await tokenResponse.json()
@@ -39,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     if (!tokenResponse.ok || data.error) {
       console.error('❌ Erreur Token Cal.com:', data)
-      throw new Error(data.error_description || data.error || 'Erreur échange token')
+      throw new Error(data.error_description || data.error || JSON.stringify(data))
     }
 
     // 2. Sauvegarde dans Supabase
@@ -51,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { error } = await supabase.from('profiles').update({
       cal_access_token: data.access_token,
       cal_refresh_token: data.refresh_token,
-      cal_token_expires_at: Date.now() + (data.expires_in * 1000)
+      cal_token_expires_at: Date.now() + ((data.expires_in || 1800) * 1000)
     }).eq('id', state)
 
     if (error) {
@@ -59,12 +57,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw error
     }
 
-    console.log('✅ OAuth Cal.com réussi !')
+    console.log('✅ OAuth Cal.com réussi pour user:', state)
     
-    // 3. Réponse JSON succès
     return res.status(200).json({ success: true })
   } catch (error: any) {
-    console.error('❌ Erreur API OAuth:', error)
-    return res.status(500).json({ error: error.message })
+    console.error('❌ Erreur API OAuth complète:', error)
+    return res.status(500).json({ 
+      error: error.message || 'Erreur inconnue',
+      details: error.toString()
+    })
   }
 }
