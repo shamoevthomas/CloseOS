@@ -102,8 +102,8 @@ export function RendezVous() {
     ? `${baseUrl}/api/cal-webhook?user_id=${user.id}`
     : 'Chargement...'
   
-  // ✅ URL OAuth CORRIGÉE : app.cal.com
-  const calOAuthUrl = `https://app.cal.com/api/auth/oauth/authorize?client_id=${import.meta.env.VITE_CAL_CLIENT_ID}&redirect_uri=${window.location.origin}/api/cal-callback&response_type=code&scope=calendars:read&state=${user?.id}`
+  // ✅ CORRECTION MAJEURE ICI : /auth/oauth2/authorize (et non /api/auth/...)
+  const calOAuthUrl = `https://app.cal.com/auth/oauth2/authorize?client_id=${import.meta.env.VITE_CAL_CLIENT_ID}&redirect_uri=${window.location.origin}/api/cal-callback&response_type=code&scope=calendars:read&state=${user?.id}`
 
   // 1. Chargement initial
   useEffect(() => {
