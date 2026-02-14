@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
 
 export const config = {
     runtime: 'edge',
@@ -20,6 +21,11 @@ export default async function handler(req: Request) {
             process.env.VITE_SUPABASE_URL || '',
             process.env.SUPABASE_SERVICE_ROLE_KEY || ''
         );
+
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+            apiVersion: '2023-10-16',
+            httpClient: Stripe.createFetchHttpClient(),
+        });
 
         // Récupérer l'utilisateur pour vérifier app_metadata
         const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
@@ -51,7 +57,7 @@ export default async function handler(req: Request) {
             return new Response(JSON.stringify({ error: 'Lien invalide.' }), { status: 400 });
         }
 
-        // Update Email
+        // Update Email in Supabase
         const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
             email: new_email,
             email_confirm: true,
@@ -62,12 +68,31 @@ export default async function handler(req: Request) {
 
         if (updateError) throw updateError;
 
+        // STRIPE SYNC: Retrieve Profile to get Stripe Customer ID
+        const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('stripe_customer_id')
+            .eq('id', userId)
+            .single();
+
+        if (profile?.stripe_customer_id) {
+            try {
+                await stripe.customers.update(profile.stripe_customer_id, {
+                    email: new_email
+                });
+                console.log(`Stripe email updated for user ${userId} / Customer ${profile.stripe_customer_id}`);
+            } catch (stripeError) {
+                console.error("Failed to update Stripe email:", stripeError);
+                // We don't fail the whole request if Stripe update fails, but we log it.
+            }
+        }
+
         return new Response(JSON.stringify({ success: true }), {
             status: 200,
             headers: { 'content-type': 'application/json' }
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Erreur API:", error);
         return new Response(JSON.stringify({ error: error.message }), { status: 500 });
     }
