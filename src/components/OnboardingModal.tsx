@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
-import { Phone, User, Briefcase, ArrowRight, Loader2, Camera, Info } from 'lucide-react';
+import { Phone, User, Briefcase, ArrowRight, Loader2, Camera, Info, X, Check, ZoomIn, ZoomOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import Cropper from 'react-easy-crop';
+import getCroppedImg from '../lib/image-crop';
 
 export function OnboardingModal() {
   const { user, updateProfile } = useAuth();
@@ -9,6 +11,12 @@ export function OnboardingModal() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // States pour le crop
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     full_name: user?.user_metadata?.full_name || '',
@@ -24,19 +32,43 @@ export function OnboardingModal() {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const imageDataUrl = await readFile(file);
+      setImageSrc(imageDataUrl as string);
+      // Reset value to allow re-selecting the same file if needed
+      e.target.value = '';
+    }
+  };
+
+  const readFile = (file: File) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => resolve(reader.result), false);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const onCropComplete = (_: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const showCroppedImage = async () => {
     try {
       setUploading(true);
-      setMessage({ type: '', text: '' });
+      const croppedImageBlob = await getCroppedImg(
+        imageSrc!,
+        croppedAreaPixels
+      );
 
-      if (!event.target.files || event.target.files.length === 0) {
-        throw new Error('Veuillez sélectionner une image.');
+      if (!croppedImageBlob) {
+        throw new Error("Erreur lors de la création de l'image.");
       }
 
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
+      const fileName = `${user?.id}-${Math.random()}.jpg`;
       const filePath = `${fileName}`;
+      const file = new File([croppedImageBlob], fileName, { type: "image/jpeg" });
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -51,13 +83,21 @@ export function OnboardingModal() {
       setFormData(prev => ({ ...prev, avatar_url: urlData.publicUrl }));
       setMessage({ type: 'success', text: 'Photo chargée !' });
 
-    } catch (error: any) {
-      console.error('Erreur upload:', error);
+      // Fermer le cropper
+      setImageSrc(null);
+
+    } catch (e: any) {
+      console.error(e);
       setMessage({ type: 'error', text: "Erreur lors de l'upload." });
     } finally {
       setUploading(false);
     }
   };
+
+  const handleCancelCrop = () => {
+    setImageSrc(null);
+    setZoom(1);
+  }
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -83,6 +123,61 @@ export function OnboardingModal() {
        qui utilisent souvent des z-index élevés (z-50 ou z-100).
     */
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+
+      {/* INTERFACE DE CROP (SUPERPOSÉE) */}
+      {imageSrc && (
+        <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900 mb-6">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+            />
+          </div>
+
+          <div className="w-full max-w-lg space-y-6">
+            <div className="flex items-center gap-4 px-4">
+              <ZoomOut className="h-5 w-5 text-slate-400" />
+              <input
+                type="range"
+                value={zoom}
+                min={1}
+                max={3}
+                step={0.1}
+                aria-labelledby="Zoom"
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              />
+              <ZoomIn className="h-5 w-5 text-slate-400" />
+            </div>
+
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={handleCancelCrop}
+                disabled={uploading}
+                className="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Annuler
+              </button>
+              <button
+                onClick={showCroppedImage}
+                disabled={uploading}
+                className="px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/25 flex items-center gap-2"
+              >
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Valider la photo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       <div className="w-full max-w-md rounded-2xl border border-blue-500/20 bg-[#0B1121] p-8 shadow-2xl relative overflow-hidden">
 
         {/* Halo décoratif */}
@@ -92,7 +187,7 @@ export function OnboardingModal() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20">
             <User className="h-8 w-8" />
           </div>
-          <h2 className="text-2xl font-bold text-white">Bienvenue sur CloserOS</h2>
+          <h2 className="text-2xl font-bold text-white">Bien bienvenue sur CloserOS</h2>
           <p className="mt-2 text-slate-400">Configurons votre profil pour commencer</p>
         </div>
 
@@ -118,11 +213,7 @@ export function OnboardingModal() {
                 ) : (
                   <User className="w-10 h-10 text-slate-500" />
                 )}
-                {uploading && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 text-white animate-spin" />
-                  </div>
-                )}
+                {/* On cache le loader ici car l'upload se fait dans l'écran de crop */}
               </div>
               <div className="absolute bottom-0 right-0 bg-blue-600 p-1.5 rounded-full border-2 border-[#0B1121] text-white shadow-sm group-hover:scale-110 transition-transform">
                 <Camera className="w-4 h-4" />
@@ -130,7 +221,7 @@ export function OnboardingModal() {
               <input
                 type="file"
                 ref={fileInputRef}
-                onChange={handleAvatarUpload}
+                onChange={onFileChange}
                 accept="image/*"
                 className="hidden"
               />
