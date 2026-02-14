@@ -24,6 +24,7 @@ import { supabase } from '../../lib/supabase'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
 import { DeletionModal } from './DeletionModal'
+import { CancellationRetentionModal } from './CancellationRetentionModal'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -38,6 +39,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
+  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -165,11 +167,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const handleCancelCrop = () => {
     setImageSrc(null);
-    setZoom(1);
-  }
-
-  const handleManageBilling = () => {
-    window.open('https://billing.stripe.com/p/login/3cI00c3qReYdd9a1wsbjW00', '_blank');
   }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -761,11 +758,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       Gérez vos paiements et factures en toute sécurité via Stripe.
                     </p>
                     <button
-                      onClick={handleManageBilling}
-                      className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg flex items-center gap-2 text-left"
+                      onClick={() => setIsCancellationModalOpen(true)}
+                      className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors shadow-lg flex items-center gap-2 text-left"
                     >
-                      <ExternalLink className="h-4 w-4 text-left" />
-                      Gérer ou Résilier l'abonnement
+                      <Trash2 className="h-4 w-4 text-left" />
+                      Annuler mon abonnement
                     </button>
                   </div>
                 </div>
@@ -830,6 +827,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           }
           setMessage({ type: 'success', text: 'Demande de suppression enregistrée.' });
         }}
+      />
+
+      {/* Cancellation Retention Modal */}
+      <CancellationRetentionModal
+        isOpen={isCancellationModalOpen}
+        onClose={() => setIsCancellationModalOpen(false)}
       />
     </div>
   )
