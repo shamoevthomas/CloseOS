@@ -26,8 +26,7 @@ import {
   Building2,
   PlusCircle,
   Sheet,
-  Clock,
-  Sparkles
+  Clock
 } from 'lucide-react'
 
 export function LandingPage() {
@@ -114,14 +113,6 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* 👇 AJOUT : BULLE "MEILLEUR OUTIL" */}
-          <div className="flex justify-center mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-75">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-sm font-bold shadow-lg shadow-indigo-500/10">
-              <Sparkles className="h-4 w-4 text-indigo-400" />
-              Le meilleur outil de closing sur le marché
-            </div>
-          </div>
-
 
 
           <h1 className="mx-auto max-w-5xl text-5xl font-extrabold tracking-tight text-white sm:text-7xl mb-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
@@ -155,16 +146,27 @@ export function LandingPage() {
             </a>
           </div>
 
-          {/* 👇 AJOUT : SOCIAL PROOF */}
-          <div className="mt-8 flex items-center justify-center gap-2 text-sm font-medium text-slate-400 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
-            <div className="flex -space-x-2">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-6 w-6 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[8px] text-white">
-                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i}&backgroundColor=b6e3f4`} alt="Avatar" className="h-full w-full rounded-full" />
+          {/* 👇 AJOUT : SOCIAL PROOF AVEC VRAIES PHOTOS */}
+          <div className="mt-8 flex items-center justify-center gap-3 text-sm font-medium text-slate-400 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
+            <div className="flex -space-x-3">
+              {[
+                "https://randomuser.me/api/portraits/men/32.jpg",
+                "https://randomuser.me/api/portraits/women/44.jpg",
+                "https://randomuser.me/api/portraits/men/86.jpg",
+                "https://randomuser.me/api/portraits/women/68.jpg",
+                "https://randomuser.me/api/portraits/men/45.jpg"
+              ].map((src, i) => (
+                <div key={i} className="h-8 w-8 rounded-full border-2 border-[#020617] relative z-0 hover:z-10 transition-all hover:scale-110">
+                  <img src={src} alt="Closer" className="h-full w-full rounded-full object-cover" />
                 </div>
               ))}
             </div>
-            <span>Produit validé par <strong className="text-white">+70 closers</strong></span>
+            <div className="flex flex-col text-left">
+              <div className="flex text-amber-400 gap-0.5">
+                {[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 fill-current" />)}
+              </div>
+              <span>Produit validé par <strong className="text-white">+70 closers</strong></span>
+            </div>
           </div>
 
         </div>
