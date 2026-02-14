@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../lib/image-crop';
+import { countries } from '../lib/countries';
 
 export function OnboardingModal() {
   const { user, updateProfile } = useAuth();
@@ -11,6 +12,7 @@ export function OnboardingModal() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [countryCode, setCountryCode] = useState('+33');
 
   // States pour le crop
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -105,7 +107,7 @@ export function OnboardingModal() {
       // Sauvegarde des informations dans les métadonnées de l'utilisateur Supabase
       await updateProfile({
         full_name: formData.full_name,
-        phone: formData.phone,
+        phone: `${countryCode}${formData.phone}`,
         role: formData.role,
         avatar_url: formData.avatar_url,
         onboarding_completed: true
@@ -187,7 +189,7 @@ export function OnboardingModal() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20">
             <User className="h-8 w-8" />
           </div>
-          <h2 className="text-2xl font-bold text-white">Bien bienvenue sur CloserOS</h2>
+          <h2 className="text-2xl font-bold text-white">Bienvenue sur CloserOS</h2>
           <p className="mt-2 text-slate-400">Configurons votre profil pour commencer</p>
         </div>
 
@@ -197,7 +199,7 @@ export function OnboardingModal() {
           <div>
             <p className="font-bold text-white mb-1">Version Bêta 🚀</p>
             <p className="leading-relaxed opacity-90">
-              Félicitations pour votre accès ! Si vous rencontrez un bug, merci de le signaler à <a href="mailto:support@closeros.fr" className="text-white font-bold underline decoration-indigo-500/50 hover:decoration-white transition-all">support@closeros.fr</a>.
+              Félicitations pour votre accès ! Si vous rencontrez un bug, merci de le signaler à <a href="mailto:support@closeos.fr" className="text-white font-bold underline decoration-indigo-500/50 hover:decoration-white transition-all">support@closeos.fr</a>.
             </p>
           </div>
         </div>
@@ -256,21 +258,14 @@ export function OnboardingModal() {
               <div className="relative w-28">
                 <select
                   className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-3 pr-8 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer text-sm"
-                  defaultValue="+33"
-                  onChange={(_) => {
-                    // Gestion basique pour le MVP : on pourrait stocker l'indicatif dans un state à part
-                    // Pour l'instant on laisse l'utilisateur gérer son numéro, ou on préfixe si le champ est vide.
-                    // Amélioration future : concaténer au submit.
-                  }}
+                  value={countryCode}
+                  onChange={(e) => setCountryCode(e.target.value)}
                 >
-                  <option value="+33">🇫🇷 +33</option>
-                  <option value="+32">🇧🇪 +32</option>
-                  <option value="+41">🇨🇭 +41</option>
-                  <option value="+1">🇨🇦 +1</option>
-                  <option value="+44">🇬🇧 +44</option>
-                  <option value="+34">🇪🇸 +34</option>
-                  <option value="+39">🇮🇹 +39</option>
-                  <option value="+49">🇩🇪 +49</option>
+                  {countries.map((country) => (
+                    <option key={country.code} value={country.dial_code}>
+                      {country.code === 'FR' ? '🇫🇷' : ''} {country.name} ({country.dial_code})
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="relative flex-1">
