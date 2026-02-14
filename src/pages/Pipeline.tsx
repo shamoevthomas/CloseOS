@@ -77,7 +77,8 @@ export function Pipeline() {
   const [searchQuery, setSearchQuery] = useState('')
   const [stageFilter, setStageFilter] = useState<string>('all')
   const [filterDate, setFilterDate] = useState<string>('all')
-  
+  const [formulaFilter, setFormulaFilter] = useState<string>('all')
+
   // Modals state
   const [isNewProspectModalOpen, setIsNewProspectModalOpen] = useState(false)
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false)
@@ -89,7 +90,7 @@ export function Pipeline() {
 
   // --- LOGIQUE DE FILTRAGE DES OFFRES (Modifié) ---
   // On ne garde que les offres actives et non expirées pour les onglets
-  const activeOffers = offers.length > 0 
+  const activeOffers = offers.length > 0
     ? offers.filter(o => o.status === 'active' && !isOfferExpired(o))
     : Array.from(new Set(pipelineDeals.map(d => d.offer).filter(Boolean))).map(name => ({ id: name, name }))
 
@@ -137,9 +138,26 @@ export function Pipeline() {
     return deal.contact || 'Prospect sans nom'
   }
 
+  // Helper : extraire le nom de base de l'offre (avant le " - FormulaName")
+  const getBaseOfferName = (offerName: string | undefined) => {
+    if (!offerName) return ''
+    return offerName.split(' - ')[0]
+  }
+
+  // Formules disponibles pour l'onglet courant
+  const getAvailableFormulas = () => {
+    if (currentOfferTab === 'global') return []
+    const currentOffer = offers.find(o => o.name === currentOfferTab)
+    if (currentOffer?.formulas && currentOffer.formulas.length > 0) {
+      return currentOffer.formulas
+    }
+    return []
+  }
+
   const getFilteredDeals = () => {
     return (pipelineDeals || []).filter(deal => {
-      const matchesOfferTab = currentOfferTab === 'global' || deal.offer === currentOfferTab
+      // Matching par offre : on compare le nom de base (avant " - Formule")
+      const matchesOfferTab = currentOfferTab === 'global' || getBaseOfferName(deal.offer) === currentOfferTab
       const fullName = getDisplayName(deal)
       const matchesSearch = searchQuery === '' ||
         fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -154,7 +172,13 @@ export function Pipeline() {
         return dealYearMonth === filterDate
       })()
 
-      return matchesOfferTab && matchesSearch && matchesStage && matchesDate
+      // Filtre par formule (seulement dans les onglets par offre)
+      const matchesFormula = formulaFilter === 'all' || (() => {
+        if (!deal.formula_id) return formulaFilter === 'none'
+        return deal.formula_id === formulaFilter
+      })()
+
+      return matchesOfferTab && matchesSearch && matchesStage && matchesDate && matchesFormula
     })
   }
 
@@ -166,11 +190,11 @@ export function Pipeline() {
 
   const getSmartValue = (deal: Prospect) => {
     if ((!deal.value || deal.value === 0) && deal.formula_id) {
-       const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
-       if (parentOffer && parentOffer.formulas) {
-          const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
-          if (formula) return parsePrice(formula.price)
-       }
+      const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
+      if (parentOffer && parentOffer.formulas) {
+        const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
+        if (formula) return parsePrice(formula.price)
+      }
     }
     return deal.value || 0
   }
@@ -185,14 +209,14 @@ export function Pipeline() {
       'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
       'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
     ]
-    ;(pipelineDeals || []).forEach(deal => {
-      const dateStr = deal.created_at || deal.dateAdded
-      if (dateStr) {
-        const date = new Date(dateStr)
-        const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-        monthsSet.add(value)
-      }
-    })
+      ; (pipelineDeals || []).forEach(deal => {
+        const dateStr = deal.created_at || deal.dateAdded
+        if (dateStr) {
+          const date = new Date(dateStr)
+          const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+          monthsSet.add(value)
+        }
+      })
     return Array.from(monthsSet).sort((a, b) => b.localeCompare(a)).map(value => {
       const [year, month] = value.split('-')
       return { value, label: `${monthNames[parseInt(month) - 1]} ${year}` }
@@ -201,7 +225,7 @@ export function Pipeline() {
 
   const getStageInfo = (stageId: string) => ALL_STAGES.find(s => s.id === stageId)
   const handleOpenDeal = (deal: Prospect) => setSelectedDeal(deal)
-  
+
   const handleStartCall = (withAi: boolean) => {
     setCallModeWithAi(withAi)
     setIsVideoCallOpen(true)
@@ -264,15 +288,15 @@ export function Pipeline() {
 
   return (
     <div className="flex h-full flex-col p-8">
-      
+
       {/* HEADER */}
       <div className="mb-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          
+
           {/* Onglets des Offres (Filtrés) */}
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
             <button
-              onClick={() => setCurrentOfferTab('global')}
+              onClick={() => { setCurrentOfferTab('global'); setFormulaFilter('all') }}
               className={cn(
                 'flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all whitespace-nowrap',
                 currentOfferTab === 'global'
@@ -287,7 +311,7 @@ export function Pipeline() {
             {activeOffers.map((offer) => (
               <button
                 key={offer.name}
-                onClick={() => setCurrentOfferTab(offer.name)}
+                onClick={() => { setCurrentOfferTab(offer.name); setFormulaFilter('all') }}
                 className={cn(
                   'flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all whitespace-nowrap',
                   currentOfferTab === offer.name
@@ -297,7 +321,7 @@ export function Pipeline() {
               >
                 <span>{offer.name}</span>
                 <span className="ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-950/30 px-1.5 text-xs">
-                  {(pipelineDeals || []).filter(d => d.offer === offer.name).length}
+                  {(pipelineDeals || []).filter(d => getBaseOfferName(d.offer) === offer.name).length}
                 </span>
               </button>
             ))}
@@ -374,6 +398,22 @@ export function Pipeline() {
             </select>
             <Calendar className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500 pointer-events-none" />
           </div>
+
+          {/* Filtre par formule (affiché uniquement dans les onglets par offre) */}
+          {currentOfferTab !== 'global' && getAvailableFormulas().length > 0 && (
+            <div className="relative">
+              <select
+                value={formulaFilter}
+                onChange={(e) => setFormulaFilter(e.target.value)}
+                className="appearance-none rounded-lg border border-slate-800 bg-slate-900 py-1.5 pl-3 pr-8 text-xs text-slate-300 focus:border-blue-500 focus:outline-none"
+              >
+                <option value="all">Toutes les formules</option>
+                <option value="none">Sans formule</option>
+                {getAvailableFormulas().map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -383,7 +423,7 @@ export function Pipeline() {
         // WRAPPER DRAG & DROP
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="flex-1 space-y-8 overflow-y-auto pr-2">
-            
+
             {/* FLUX ACTIF */}
             <div>
               <div className="mb-4 flex items-center justify-between">
@@ -408,7 +448,7 @@ export function Pipeline() {
                       )}
                     >
                       {/* Header Colonne */}
-                      <div 
+                      <div
                         onClick={() => toggleColumn(stage.id)}
                         className="cursor-pointer border-b border-slate-800 p-3 hover:bg-slate-800/50 transition-colors"
                       >
@@ -420,7 +460,7 @@ export function Pipeline() {
                             </span>
                           )}
                         </div>
-                        
+
                         {!isCollapsed && (
                           <div className="mt-2">
                             <h3 className="font-semibold text-slate-200">{stage.name}</h3>
@@ -447,19 +487,19 @@ export function Pipeline() {
                                 const isB2B = deal.company && deal.company !== 'N/A'
                                 const displayName = getDisplayName(deal)
                                 const mainTitle = isB2B ? deal.company : displayName
-                                
+
                                 let displayValue = deal.value || 0
                                 let displayOfferName = deal.offer
 
                                 if ((displayValue === 0) && deal.formula_id) {
-                                   const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
-                                   if (parentOffer && parentOffer.formulas) {
-                                      const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
-                                      if (formula) {
-                                         displayValue = parsePrice(formula.price)
-                                         displayOfferName = `${parentOffer.name} - ${formula.name}`
-                                      }
-                                   }
+                                  const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
+                                  if (parentOffer && parentOffer.formulas) {
+                                    const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
+                                    if (formula) {
+                                      displayValue = parsePrice(formula.price)
+                                      displayOfferName = `${parentOffer.name} - ${formula.name}`
+                                    }
+                                  }
                                 }
 
                                 const subTitle = isB2B ? displayName : displayOfferName
@@ -484,11 +524,11 @@ export function Pipeline() {
                                           <h4 className="font-medium text-slate-200 group-hover:text-white truncate">
                                             <MaskedText value={mainTitle || 'Sans nom'} type="name" />
                                           </h4>
-                                          
+
                                           <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
                                             {isB2B ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
                                             <span className="truncate">
-                                               <MaskedText value={subTitle || ''} type="name" />
+                                              <MaskedText value={subTitle || ''} type="name" />
                                             </span>
                                           </div>
 
@@ -496,7 +536,7 @@ export function Pipeline() {
                                             <span className="text-xs font-semibold text-blue-400">
                                               <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
                                             </span>
-                                            
+
                                             {currentOfferTab === 'global' && displayOfferName && (
                                               <span className="max-w-[80px] truncate rounded bg-slate-950 px-1.5 py-0.5 text-[10px] text-slate-500">
                                                 {displayOfferName}
@@ -542,11 +582,11 @@ export function Pipeline() {
                         isCollapsed ? 'w-16' : 'w-72 shrink-0'
                       )}
                     >
-                       <div 
+                      <div
                         onClick={() => toggleColumn(stage.id)}
                         className="cursor-pointer border-b border-slate-800/30 p-3 hover:bg-slate-800/30"
                       >
-                         <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between">
                           <div className={cn('h-2 w-2 rounded-full opacity-50', stage.color)} />
                           {!isCollapsed && <span className="text-xs text-slate-600">{stageDeals.length}</span>}
                         </div>
@@ -555,11 +595,11 @@ export function Pipeline() {
 
                       {!isCollapsed && (
                         <div className="space-y-2 p-2 max-h-[300px] overflow-y-auto">
-                           {stageDeals.map((deal) => (
-                             <div key={deal.id} onClick={() => handleOpenDeal(deal)} className="cursor-pointer rounded border border-slate-800/30 bg-slate-900/40 p-2 opacity-60 hover:opacity-100">
-                               <p className="text-sm text-slate-400"><MaskedText value={getDisplayName(deal)} type="name" /></p>
-                             </div>
-                           ))}
+                          {stageDeals.map((deal) => (
+                            <div key={deal.id} onClick={() => handleOpenDeal(deal)} className="cursor-pointer rounded border border-slate-800/30 bg-slate-900/40 p-2 opacity-60 hover:opacity-100">
+                              <p className="text-sm text-slate-400"><MaskedText value={getDisplayName(deal)} type="name" /></p>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -586,28 +626,28 @@ export function Pipeline() {
               </thead>
               <tbody className="divide-y divide-slate-800 text-slate-300">
                 {filteredDeals.map((deal) => {
-                   const stageInfo = getStageInfo(deal.stage)
-                   
-                   let displayValue = deal.value || 0
-                   let displayOfferName = deal.offer
+                  const stageInfo = getStageInfo(deal.stage)
 
-                   if ((displayValue === 0) && deal.formula_id) {
-                      const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
-                      if (parentOffer && parentOffer.formulas) {
-                         const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
-                         if (formula) {
-                            displayValue = parsePrice(formula.price)
-                            displayOfferName = `${parentOffer.name} - ${formula.name}`
-                         }
+                  let displayValue = deal.value || 0
+                  let displayOfferName = deal.offer
+
+                  if ((displayValue === 0) && deal.formula_id) {
+                    const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
+                    if (parentOffer && parentOffer.formulas) {
+                      const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
+                      if (formula) {
+                        displayValue = parsePrice(formula.price)
+                        displayOfferName = `${parentOffer.name} - ${formula.name}`
                       }
-                   }
+                    }
+                  }
 
-                   return (
+                  return (
                     <tr key={deal.id} onClick={() => handleOpenDeal(deal)} className="group cursor-pointer hover:bg-slate-800/50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800 text-slate-400">
-                            {deal.company ? <Building2 className="h-4 w-4"/> : <User className="h-4 w-4"/>}
+                            {deal.company ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
                           </div>
                           <div>
                             <p className="font-medium text-white"><MaskedText value={getDisplayName(deal)} type="name" /></p>
@@ -621,9 +661,9 @@ export function Pipeline() {
                       </td>
                       <td className="px-6 py-4">
                         {stageInfo && (
-                          <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-800", 
-                            stageInfo.id === 'won' ? 'text-emerald-400' : 
-                            stageInfo.id === 'lost' ? 'text-red-400' : 'text-slate-300'
+                          <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-800",
+                            stageInfo.id === 'won' ? 'text-emerald-400' :
+                              stageInfo.id === 'lost' ? 'text-red-400' : 'text-slate-300'
                           )}>
                             <span className={cn("h-1.5 w-1.5 rounded-full", stageInfo.color)}></span>
                             {stageInfo.name}
@@ -631,13 +671,13 @@ export function Pipeline() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal)}} className="p-2 hover:text-blue-400"><Edit2 className="h-4 w-4"/></button>
-                            <button onClick={(e) => { e.stopPropagation(); if(confirm('Supprimer ?')) handleDelete(deal.id)}} className="p-2 hover:text-red-500"><Trash2 className="h-4 w-4"/></button>
-                         </div>
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal) }} className="p-2 hover:text-blue-400"><Edit2 className="h-4 w-4" /></button>
+                          <button onClick={(e) => { e.stopPropagation(); if (confirm('Supprimer ?')) handleDelete(deal.id) }} className="p-2 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
+                        </div>
                       </td>
                     </tr>
-                   )
+                  )
                 })}
               </tbody>
             </table>
@@ -673,7 +713,7 @@ export function Pipeline() {
             probability: 40,
             dateAdded: new Date(),
             lastContact: new Date(),
-            offer: currentOfferTab !== 'global' ? currentOfferTab : prospectData.offer 
+            offer: currentOfferTab !== 'global' ? currentOfferTab : prospectData.offer
           })
           setIsNewProspectModalOpen(false)
         }}
@@ -725,4 +765,4 @@ export function Pipeline() {
   )
 }
 
-function Building2(props: any) { return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M16 18h.01"/></svg>}
+function Building2(props: any) { return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2" /><path d="M9 22v-4h6v4" /><path d="M8 6h.01" /><path d="M16 6h.01" /><path d="M8 10h.01" /><path d="M16 10h.01" /><path d="M8 14h.01" /><path d="M16 14h.01" /><path d="M8 18h.01" /><path d="M16 18h.01" /></svg> }
