@@ -301,7 +301,7 @@ export function LandingPage() {
                     <div className="group p-3 rounded-xl bg-slate-900/80 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 text-center">
                       <Zap className="h-4 w-4 text-blue-400 mx-auto mb-1.5" />
                       <h3 className="font-bold text-white text-[11px] leading-tight">Lancement CloseOS</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">CRM, Pipeline, VoIP, KPIs</p>
+                      <p className="text-[10px] text-slate-500 mt-1">CRM, Pipeline, VoIP, KPIs...</p>
                       <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
                       </div>
