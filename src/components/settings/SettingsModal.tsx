@@ -23,6 +23,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
+import { DeletionModal } from './DeletionModal'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -36,6 +37,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'mail' | 'subscription' | 'support' | 'delete_account'>('profile')
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -53,7 +55,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     confirmPassword: '',
     currentPassword: '', // AJOUT
     newEmail: '',
-    avatar_url: ''
+    avatar_url: '',
+    deletion_scheduled_at: null as string | null
   })
 
   useEffect(() => {
@@ -62,7 +65,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         // Retrait de timezone du select
         const { data } = await supabase
           .from('profiles')
-          .select('full_name, phone, role, avatar_url')
+          .select('full_name, phone, role, avatar_url, deletion_scheduled_at')
           .eq('id', user.id)
           .single()
 
@@ -71,7 +74,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           full_name: user.user_metadata?.full_name || data?.full_name || '',
           phone: user.user_metadata?.phone || data?.phone || '',
           role: user.user_metadata?.role || data?.role || '',
-          avatar_url: user.user_metadata?.avatar_url || data?.avatar_url || ''
+          avatar_url: user.user_metadata?.avatar_url || data?.avatar_url || '',
+          deletion_scheduled_at: data?.deletion_scheduled_at || null
         }))
       }
       setMessage({ type: '', text: '' })
@@ -286,11 +290,31 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   }
 
-  const handleDeleteAccount = async () => {
-    const confirmation = window.confirm("ATTENTION : Cette action est irréversible. Toutes vos données seront supprimées. Voulez-vous continuer ?");
-    if (confirmation) {
-      window.alert("Pour des raisons de sécurité, veuillez contacter le support à support@closeos.fr pour finaliser la suppression de votre compte.");
+  const handleCancelDeletion = async () => {
+    if (!window.confirm("Voulez-vous vraiment annuler la suppression de votre compte ?")) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/cancel-deletion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user?.id })
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de l\'annulation');
+
+      setFormData(prev => ({ ...prev, deletion_scheduled_at: null }));
+      setMessage({ type: 'success', text: 'La demande de suppression a été annulée.' });
+    } catch (error) {
+      console.error(error);
+      setMessage({ type: 'error', text: 'Impossible d\'annuler la suppression.' });
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeletionModalOpen(true);
   }
 
   const isGoogleUser = user?.app_metadata?.provider === 'google'
@@ -684,16 +708,38 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <AlertCircle className="h-8 w-8 text-left" />
                     <h3 className="text-xl font-bold text-left">Zone de danger</h3>
                   </div>
-                  <p className="text-slate-400 leading-relaxed text-left">
-                    La suppression est irréversible. Toutes vos données seront effacées définitivement.
-                  </p>
-                  <button
-                    onClick={handleDeleteAccount}
-                    className="flex items-center gap-3 px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20 text-left"
-                  >
-                    <Trash2 className="h-5 w-5 text-left" />
-                    Supprimer mon compte et mes données
-                  </button>
+                  <div className="space-y-4">
+                    <p className="text-slate-400 leading-relaxed text-left">
+                      La suppression est irréversible. Vous pourrez sélectionner si vous souhaitez supprimer vos données de facturation, contacts internes ou externes avant de valider.
+                    </p>
+
+                    {formData.deletion_scheduled_at && (
+                      <div className="p-4 bg-red-500/20 rounded-xl border border-red-500/30">
+                        <p className="font-bold text-red-200">Compte en cours de suppression</p>
+                        <p className="text-sm text-red-300 mt-1">
+                          Prévue le : {new Date(formData.deletion_scheduled_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {formData.deletion_scheduled_at ? (
+                    <button
+                      onClick={handleCancelDeletion}
+                      disabled={loading}
+                      className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold transition-all border border-slate-600"
+                    >
+                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : "Annuler la demande de suppression"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleDeleteAccount}
+                      className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20 text-left"
+                    >
+                      <Trash2 className="h-5 w-5 text-left" />
+                      Supprimer mon compte et mes données
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -763,6 +809,28 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
         </div>
       </div>
+      <DeletionModal
+        isOpen={isDeletionModalOpen}
+        onClose={() => setIsDeletionModalOpen(false)}
+        userEmail={user?.email || ''}
+        userId={user?.id || ''}
+        onSuccess={() => {
+          // Refresh profile locally or re-fetch
+          if (user) {
+            supabase
+              .from('profiles')
+              .select('deletion_scheduled_at')
+              .eq('id', user.id)
+              .single()
+              .then(({ data }) => {
+                if (data) {
+                  setFormData(prev => ({ ...prev, deletion_scheduled_at: data.deletion_scheduled_at }));
+                }
+              });
+          }
+          setMessage({ type: 'success', text: 'Demande de suppression enregistrée.' });
+        }}
+      />
     </div>
   )
 }
