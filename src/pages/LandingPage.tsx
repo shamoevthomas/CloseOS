@@ -797,7 +797,7 @@ export function LandingPage() {
                 <div className="text-left">
                   <p className="text-sm font-bold text-white">Option VoIP & Enregistrements</p>
                   <p className="text-xs text-blue-300">
-                    Ajoutez la téléphonie à votre plan pour <span className="text-white font-bold">+{billingCycle === 'yearly' ? '4' : '5'}€/mois</span>
+                    Ajoutez la téléphonie à votre plan pour <span className="text-white font-bold">+{billingCycle === 'yearly' ? '7' : '10'}€/mois</span>
                   </p>
                 </div>
               </div>
