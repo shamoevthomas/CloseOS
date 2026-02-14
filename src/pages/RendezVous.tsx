@@ -459,13 +459,24 @@ export function RendezVous() {
    const getMeetingLocation = (m: any) => {
       // 1. Priorité aux données API Cal.com
       if (m.apiLocation) {
-         if (m.apiLocation.includes('integrations:daily')) return 'Visio';
-         if (m.apiLocation.includes('http')) return 'Lien';
+         const loc = m.apiLocation.toLowerCase();
+         if (loc.includes('integrations:daily')) return 'Cal Video';
+         if (loc.includes('google:meet')) return 'Google Meet';
+         if (loc.includes('zoom:video')) return 'Zoom';
+         if (loc.includes('discord')) return 'Discord';
+         if (loc.includes('phone')) return 'Téléphone';
+         if (loc.includes('in_person')) return 'En personne';
+         if (loc.includes('http')) return 'Lien';
          return m.apiLocation;
       }
       // 2. Fallback DB
       if (m.location) {
-         if (m.location.includes('http')) return 'Visio';
+         const loc = m.location.toLowerCase();
+         if (loc.includes('daily.co')) return 'Cal Video';
+         if (loc.includes('meet.google')) return 'Google Meet';
+         if (loc.includes('zoom.us')) return 'Zoom';
+         if (loc.includes('discord')) return 'Discord';
+         if (loc.includes('http')) return 'Lien';
          return m.location;
       }
       // 3. Fallback Description
