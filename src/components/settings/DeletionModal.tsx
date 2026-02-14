@@ -45,7 +45,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
         } else {
             // "Non, conserver les données" -> Scope destruction is empty. Only Auth User is deleted.
             setScope([]);
-            setStep('confirm');
+            setStep('cal');
         }
     };
 
@@ -81,10 +81,19 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
 
     const handleValidation = () => {
         if (scope.length === 0) return;
+        setStep('cal');
+    };
+
+    const handleRefuseMeeting = () => {
         setStep('confirm');
     };
 
-    const handleVerifyPassword = async () => {
+    const handleAppointmentBooked = () => {
+        // Just close, do not delete.
+        onClose();
+    };
+
+    const handleConfirmDeletion = async () => {
         if (!password) {
             setError('Le mot de passe est requis.');
             return;
@@ -94,6 +103,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
         setError('');
 
         try {
+            // 1. Verify Password
             const { error: authError } = await supabase.auth.signInWithPassword({
                 email: userEmail,
                 password: password
@@ -103,19 +113,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                 throw new Error('Mot de passe incorrect.');
             }
 
-            // Password verified, proceed to Cal step
-            setStep('cal');
-        } catch (error: any) {
-            console.error(error);
-            setError(error.message || "Erreur de vérification.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleFinalizeDeletion = async () => {
-        setLoading(true);
-        try {
+            // 2. Request Deletion
             const response = await fetch('/api/request-deletion', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -127,24 +125,16 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
 
             if (data.scheduledAt) {
                 // Optional: show a toast or alert before closing? 
-                // But typically onSuccess handles the UI state refresh/redirect.
             }
 
             onSuccess();
             onClose();
         } catch (error: any) {
             console.error(error);
-            // Show alert or error state. Since we are in the modal, we might want to stay here?
-            // But usually this API call shouldn't fail if earlier checks passed.
-            window.alert(error.message || "Erreur lors de la demande de suppression.");
+            setError(error.message || "Erreur lors de la suppression.");
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleAppointmentBooked = () => {
-        // Just close, do not delete.
-        onClose();
     };
 
     return (
@@ -333,19 +323,6 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                         </>
                     )}
 
-                    {step === 'confirm' && (
-                        <>
-                            <button onClick={onClose} className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors">Annuler</button>
-                            <button
-                                onClick={handleVerifyPassword}
-                                disabled={loading || !password}
-                                className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
-                            >
-                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Valider et continuer"}
-                            </button>
-                        </>
-                    )}
-
                     {step === 'cal' && (
                         <div className="w-full flex gap-3">
                             <button
@@ -355,13 +332,26 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                 J'ai pris rendez-vous
                             </button>
                             <button
-                                onClick={handleFinalizeDeletion}
+                                onClick={handleRefuseMeeting}
                                 disabled={loading}
                                 className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
                             >
-                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Je ne souhaite pas discuter"}
+                                Je ne souhaite pas discuter
                             </button>
                         </div>
+                    )}
+
+                    {step === 'confirm' && (
+                        <>
+                            <button onClick={onClose} className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors">Annuler</button>
+                            <button
+                                onClick={handleConfirmDeletion}
+                                disabled={loading || !password}
+                                className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Valider la suppression"}
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
