@@ -39,6 +39,7 @@ interface KpiFormulaEntry {
   name: string;
   price: number;
   commission: number;
+  sales: number;
 }
 
 interface KpiConfigEntry {
@@ -223,7 +224,7 @@ export function KPIPage() {
   const addFormula = (key: string) => {
     setKpiConfigs(prev => {
       const cfg = prev[key] || defaultConfig(key);
-      return { ...prev, [key]: { ...cfg, formulas: [...cfg.formulas, { name: '', price: 0, commission: 0 }] } };
+      return { ...prev, [key]: { ...cfg, formulas: [...cfg.formulas, { name: '', price: 0, commission: 0, sales: 0 }] } };
     });
   };
 
@@ -411,8 +412,8 @@ export function KPIPage() {
     Object.values(kpiConfigs).forEach(c => {
       total.planned_calls += c.planned_calls; total.no_shows += c.no_shows; total.lost_calls += c.lost_calls; total.won_calls += c.won_calls;
       total.total_revenue += c.total_revenue; total.total_commission += c.total_commission;
-      // Calculer revenu et commission depuis les formules par offre
-      (c.formulas || []).forEach(f => { total.total_revenue += f.price * (c.won_calls || 0); total.total_commission += f.commission * (c.won_calls || 0); });
+      // Calculer revenu et commission depuis les formules par offre (via ventes par formule)
+      (c.formulas || []).forEach(f => { total.total_revenue += f.price * (f.sales || 0); total.total_commission += f.commission * (f.sales || 0); });
     });
     return total;
   }, [kpiConfigs]);
@@ -444,18 +445,16 @@ export function KPIPage() {
   const finalConversion = totalOutcomes > 0 ? (finalSales / totalOutcomes) * 100 : (hasContextData ? ctxConversion : legacyConv);
   const finalNoShowRate = totalOutcomes > 0 ? (cfgNoShow + (hasContextData ? noShowProspects.length : 0)) / totalOutcomes * 100 : (hasContextData ? ctxNoShowRate : 0);
 
-  // Calculer le CA et commissions depuis les formules de la config
+  // Calculer le CA et commissions depuis les formules de la config (par ventes par formule)
   const cfgRevenue = useMemo(() => {
     if (activeTab === 'global') return activeTabKpiConfig.total_revenue;
-    const cfg = activeTabKpiConfig;
-    return (cfg.formulas || []).reduce((sum, f) => sum + f.price * cfgWon, 0);
-  }, [activeTab, activeTabKpiConfig, cfgWon]);
+    return (activeTabKpiConfig.formulas || []).reduce((sum, f) => sum + f.price * (f.sales || 0), 0);
+  }, [activeTab, activeTabKpiConfig]);
 
   const cfgCommission = useMemo(() => {
     if (activeTab === 'global') return activeTabKpiConfig.total_commission;
-    const cfg = activeTabKpiConfig;
-    return (cfg.formulas || []).reduce((sum, f) => sum + f.commission * cfgWon, 0);
-  }, [activeTab, activeTabKpiConfig, cfgWon]);
+    return (activeTabKpiConfig.formulas || []).reduce((sum, f) => sum + f.commission * (f.sales || 0), 0);
+  }, [activeTab, activeTabKpiConfig]);
 
   const finalRevenue = baseRevenue + cfgRevenue;
   const finalCommissions = baseCommissions + cfgCommission;
@@ -662,9 +661,9 @@ export function KPIPage() {
 
         {/* MODAL CONFIGURER MES KPI */}
         {showConfigModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowConfigModal(false)} />
-            <div className="relative w-full max-w-xl mx-4 bg-slate-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowConfigModal(false)} />
+            <div className="relative w-full max-w-xl mx-4 bg-slate-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
 
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/5">
@@ -778,7 +777,7 @@ export function KPIPage() {
                             className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-3 gap-3">
                           <div>
                             <label className="text-xs text-slate-400 mb-1 block">💰 Prix (€)</label>
                             <input
@@ -797,6 +796,16 @@ export function KPIPage() {
                               value={formula.commission}
                               onChange={(e) => updateFormula(configTab, idx, 'commission', parseFloat(e.target.value) || 0)}
                               className="w-full rounded-lg border border-emerald-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">📊 Ventes</label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={formula.sales || 0}
+                              onChange={(e) => updateFormula(configTab, idx, 'sales', parseInt(e.target.value) || 0)}
+                              className="w-full rounded-lg border border-blue-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
                             />
                           </div>
                         </div>
