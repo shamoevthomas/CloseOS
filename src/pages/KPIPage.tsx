@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -14,19 +14,32 @@ import {
   Infinity,
   UserX,
   Archive,
-  CheckSquare
+  Settings,
+  X,
+  AlertTriangle,
+  Save
 } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
 } from 'recharts';
 import { useOffers } from '../contexts/OffersContext';
 import { useProspects } from '../contexts/ProspectsContext';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+
+interface KpiConfigEntry {
+  offer_id: number | null;
+  planned_calls: number;
+  no_shows: number;
+  lost_calls: number;
+  won_calls: number;
+}
 
 // ============================================================================
 // HELPERS (Logique reprise de EXKPIPage pour la fiabilité)
@@ -85,7 +98,7 @@ const getDealAmount = (deal: any): number => {
         str = /,\d{1,2}$/.test(str) ? str.replace(',', '.') : str.replace(/,/g, '');
         const num = parseFloat(str);
         if (!isNaN(num) && num > 0) return num;
-      } catch (e) {}
+      } catch (e) { }
     }
   }
   return 0;
@@ -123,6 +136,7 @@ const getDealOffer = (deal: any): string => {
 export function KPIPage() {
   const { offers: allOffers } = useOffers();
   const { prospects: allProspects } = useProspects();
+  const { user } = useAuth();
 
   // --- Logique Offres ---
   const isExpired = (offer: any) => {
@@ -137,10 +151,51 @@ export function KPIPage() {
   const inactiveOffers = useMemo(() => allOffers.filter(o => o.status === 'inactive' || (o.status === 'active' && isExpired(o))), [allOffers]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'month' | 'all'>('all'); 
+  const [viewMode, setViewMode] = useState<'month' | 'all'>('all');
   const [activeTab, setActiveTab] = useState('global');
   const [legacyDeals, setLegacyDeals] = useState<any[]>([]);
-  const [includeInactiveInGlobal, setIncludeInactiveInGlobal] = useState(false);
+  const includeInactiveInGlobal = true;
+
+  // --- KPI CONFIG ---
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [configTab, setConfigTab] = useState<string>('global');
+  const [kpiConfigs, setKpiConfigs] = useState<Record<string, KpiConfigEntry>>({});
+  const [savingConfig, setSavingConfig] = useState(false);
+
+  const loadKpiConfig = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await supabase.from('kpi_config').select('*').eq('user_id', user.id);
+    if (error) { console.error('Erreur chargement kpi_config:', error); return; }
+    const configs: Record<string, KpiConfigEntry> = {};
+    (data || []).forEach((row: any) => {
+      const key = row.offer_id ? String(row.offer_id) : 'global';
+      configs[key] = { offer_id: row.offer_id, planned_calls: row.planned_calls || 0, no_shows: row.no_shows || 0, lost_calls: row.lost_calls || 0, won_calls: row.won_calls || 0 };
+    });
+    setKpiConfigs(configs);
+  }, [user]);
+
+  useEffect(() => { loadKpiConfig(); }, [loadKpiConfig]);
+
+  const saveKpiConfig = async () => {
+    if (!user) return;
+    setSavingConfig(true);
+    try {
+      const upsertRows = Object.entries(kpiConfigs).map(([key, entry]) => ({
+        user_id: user.id, offer_id: key === 'global' ? null : parseInt(key),
+        planned_calls: entry.planned_calls, no_shows: entry.no_shows, lost_calls: entry.lost_calls, won_calls: entry.won_calls,
+        updated_at: new Date().toISOString(),
+      }));
+      const { error } = await supabase.from('kpi_config').upsert(upsertRows, { onConflict: 'user_id,offer_id' });
+      if (error) throw error;
+      setShowConfigModal(false);
+    } catch (err) { console.error('Erreur sauvegarde kpi_config:', err); } finally { setSavingConfig(false); }
+  };
+
+  const updateConfigField = (key: string, field: keyof KpiConfigEntry, value: number) => {
+    setKpiConfigs(prev => ({ ...prev, [key]: { ...prev[key] || { offer_id: key === 'global' ? null : parseInt(key), planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0 }, [field]: value } }));
+  };
+
+  const getConfigForKey = (key: string): KpiConfigEntry => kpiConfigs[key] || { offer_id: key === 'global' ? null : parseInt(key), planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0 };
 
   // Chargement Legacy
   useEffect(() => {
@@ -187,7 +242,7 @@ export function KPIPage() {
   // ==================================================================================
   // 1. CALCULS BASÉS SUR LES PROSPECTS (Supabase/Context) - Logique EXKPIPage
   // ==================================================================================
-  
+
   // A. Filtrage Context pour les KPI (Respecte ViewMode)
   const filteredProspects = allProspects.filter((prospect) => {
     if (activeTab !== 'global') {
@@ -195,7 +250,7 @@ export function KPIPage() {
       const pOffer = (prospect.offer || '').toLowerCase();
       const pOfferId = String(prospect.offerId || '');
       const targetOffer = allOffers.find(o => o.name.toLowerCase() === tabName);
-      
+
       const matchName = pOffer.includes(tabName) || tabName.includes(pOffer);
       const matchId = targetOffer && pOfferId === String(targetOffer.id);
       if (!matchName && !matchId) return false;
@@ -217,7 +272,7 @@ export function KPIPage() {
       const pOffer = (prospect.offer || '').toLowerCase();
       const pOfferId = String(prospect.offerId || '');
       const targetOffer = allOffers.find(o => o.name.toLowerCase() === tabName);
-      
+
       const matchName = pOffer.includes(tabName) || tabName.includes(pOffer);
       const matchId = targetOffer && pOfferId === String(targetOffer.id);
       if (!matchName && !matchId) return false;
@@ -231,13 +286,13 @@ export function KPIPage() {
   const wonProspects = filteredProspects.filter(p => p?.stage === 'won');
   const lostProspects = filteredProspects.filter(p => p?.stage === 'lost');
   const activeProspects = filteredProspects.filter(p => p?.stage && p.stage !== 'won' && p.stage !== 'lost');
-  
+
   const ctxRevenue = wonProspects.reduce((sum, p) => sum + (p?.value || 0), 0);
   const ctxSales = wonProspects.length;
   const ctxLeads = filteredProspects.length;
   const ctxClosed = wonProspects.length + lostProspects.length;
   const ctxConversion = ctxClosed > 0 ? (ctxSales / ctxClosed) * 100 : 0;
-  
+
   // Commissions Context
   const ctxCommissions = wonProspects.reduce((sum, deal) => {
     const dealOffer = allOffers.find(o => (deal.offerId && String(o.id) === String(deal.offerId)) || (deal.offer && o.name.toLowerCase() === deal.offer.toLowerCase()));
@@ -254,7 +309,7 @@ export function KPIPage() {
   // ==================================================================================
   // 2. CALCULS BASÉS SUR LE LEGACY (LocalStorage) - Logique EXKPIPage
   // ==================================================================================
-  
+
   // A. Filtrage Legacy pour KPI
   const filteredLegacyDeals = legacyDeals.filter((deal) => {
     if (activeTab !== 'global') {
@@ -298,7 +353,7 @@ export function KPIPage() {
   const legacyLost = filteredLegacyDeals.filter(d => isLostDeal(d));
   const legacyRev = legacyWon.reduce((s, d) => s + getDealAmount(d), 0);
   const legacyConv = (filteredLegacyDeals.length > 0) ? (legacyWon.length / filteredLegacyDeals.length) * 100 : 0; // Approx pour legacy
-  
+
   // ==================================================================================
   // 3. SELECTION FINALE (Source of Truth)
   // ==================================================================================
@@ -320,20 +375,33 @@ export function KPIPage() {
   // ==================================================================================
   // 4. CONSTRUCTION DES DONNÉES GRAPHIQUES (Recharts)
   // ==================================================================================
-  
+
   const chartSourceData = hasContextData ? historicalProspects : historicalLegacyDeals;
+
+  // KPI Config pour graphiques
+  const totalKpiConfig = useMemo(() => {
+    const total = { planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0 };
+    Object.values(kpiConfigs).forEach(c => { total.planned_calls += c.planned_calls; total.no_shows += c.no_shows; total.lost_calls += c.lost_calls; total.won_calls += c.won_calls; });
+    return total;
+  }, [kpiConfigs]);
+
+  const activeTabKpiConfig = useMemo(() => {
+    if (activeTab === 'global') return totalKpiConfig;
+    const targetOffer = allOffers.find(o => o.name === activeTab);
+    if (targetOffer) { const config = kpiConfigs[String(targetOffer.id)]; if (config) return config; }
+    return { planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0 };
+  }, [activeTab, kpiConfigs, totalKpiConfig, allOffers]);
 
   const chartData = useMemo(() => {
     const grouped: Record<string, { won: number; total: number; commission: number; date: Date }> = {};
 
     chartSourceData.forEach(item => {
-      // Normalisation des champs selon la source
-      const date = hasContextData 
-        ? (item.dateAdded ? new Date(item.dateAdded) : new Date()) 
+      const date = hasContextData
+        ? (item.dateAdded ? new Date(item.dateAdded) : new Date())
         : getDealDate(item);
-      
+
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      
+
       if (!grouped[key]) {
         grouped[key] = { won: 0, total: 0, commission: 0, date };
       }
@@ -348,30 +416,39 @@ export function KPIPage() {
           const val = hasContextData ? (item.value || 0) : getDealAmount(item);
           let comm = 0;
           if (hasContextData) {
-             const dealOffer = allOffers.find(o => (item.offerId && String(o.id) === String(item.offerId)) || (item.offer && o.name.toLowerCase() === (item.offer || '').toLowerCase()));
-             const rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
-             comm = val * rate;
+            const dealOffer = allOffers.find(o => (item.offerId && String(o.id) === String(item.offerId)) || (item.offer && o.name.toLowerCase() === (item.offer || '').toLowerCase()));
+            const rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
+            comm = val * rate;
           } else {
-             comm = val * 0.10;
+            comm = val * 0.10;
           }
           grouped[key].commission += comm;
         }
       }
     });
 
-    return Object.values(grouped)
+    const result = Object.values(grouped)
       .sort((a, b) => a.date.getTime() - b.date.getTime())
       .map(d => ({
         name: d.date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }),
         closingRate: d.total > 0 ? parseFloat(((d.won / d.total) * 100).toFixed(1)) : 0,
         commission: Math.round(d.commission)
       }));
-  }, [chartSourceData, hasContextData, allOffers]);
+
+    // Injecter le point initial KPI config
+    if (activeTabKpiConfig.planned_calls > 0 || activeTabKpiConfig.won_calls > 0) {
+      const totalClosed = activeTabKpiConfig.won_calls + activeTabKpiConfig.lost_calls;
+      const initClosingRate = totalClosed > 0 ? parseFloat(((activeTabKpiConfig.won_calls / totalClosed) * 100).toFixed(1)) : 0;
+      result.unshift({ name: '📊 Initial', closingRate: initClosingRate, commission: 0 });
+    }
+
+    return result;
+  }, [chartSourceData, hasContextData, allOffers, activeTabKpiConfig]);
 
   return (
     <div className="min-h-screen bg-slate-950 p-6 md:p-8 font-sans text-slate-100">
       <div className="max-w-7xl mx-auto space-y-8">
-        
+
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-slate-900/50 p-6 rounded-2xl border border-white/5 backdrop-blur-xl">
           <div>
@@ -396,6 +473,12 @@ export function KPIPage() {
               {viewMode === 'month' ? <Infinity className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
               {viewMode === 'month' ? 'Vue Globale' : 'Vue Mensuelle'}
             </button>
+            <button
+              onClick={() => { setConfigTab(activeOffers.length > 0 ? String(activeOffers[0].id) : 'global'); setShowConfigModal(true); }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all"
+            >
+              <Settings className="w-4 h-4" /> Configurer mes KPI
+            </button>
           </div>
         </div>
 
@@ -417,12 +500,7 @@ export function KPIPage() {
             )}
           </div>
 
-          {activeTab === 'global' && (
-            <button onClick={() => setIncludeInactiveInGlobal(!includeInactiveInGlobal)} className="flex items-center gap-2.5 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors group">
-              <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${includeInactiveInGlobal ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 group-hover:border-slate-500'}`}>{includeInactiveInGlobal && <CheckSquare className="w-3.5 h-3.5 text-white" />}</div>
-              <span className={`text-sm font-medium ${includeInactiveInGlobal ? 'text-white' : 'text-slate-400 group-hover:text-slate-300'}`}>Inclure offres inactives</span>
-            </button>
-          )}
+
         </div>
 
         {/* CARDS KPI */}
@@ -437,7 +515,7 @@ export function KPIPage() {
 
         {/* GRAPHIQUES RECHARTS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
           <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <Target className="w-5 h-5 text-purple-400" />
@@ -448,14 +526,14 @@ export function KPIPage() {
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorClosing" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                   <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} unit="%" />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
                     itemStyle={{ color: '#a855f7' }}
                   />
@@ -475,14 +553,14 @@ export function KPIPage() {
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorCommissions" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                   <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
                     itemStyle={{ color: '#10b981' }}
                     formatter={(value: number) => [`${value} €`, 'Commission']}
@@ -504,6 +582,105 @@ export function KPIPage() {
             <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="amber" />
           </div>
         </div>
+
+        {/* MODAL CONFIGURER MES KPI */}
+        {showConfigModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowConfigModal(false)} />
+            <div className="relative w-full max-w-xl mx-4 bg-slate-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-600/20 rounded-lg border border-blue-500/30">
+                    <Settings className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">Configurer mes KPI</h2>
+                </div>
+                <button onClick={() => setShowConfigModal(false)} className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Warning */}
+              <div className="mx-6 mt-4 flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                <p className="text-sm text-amber-300">Merci de créer vos différentes offres tout d'abord</p>
+              </div>
+
+              {/* Recommendation */}
+              <p className="mx-6 mt-3 text-xs text-slate-500 italic">💡 Il est recommandé de commencer par remplir les offres avant l'onglet Global.</p>
+
+              {/* Tabs */}
+              <div className="flex items-center gap-2 px-6 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+                {allOffers.map((offer) => (
+                  <button
+                    key={offer.id}
+                    onClick={() => setConfigTab(String(offer.id))}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${configTab === String(offer.id) ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-500/50 text-white shadow-lg' : 'bg-slate-800/50 border-transparent text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                  >
+                    {offer.name}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setConfigTab('global')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${configTab === 'global' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-500/50 text-white shadow-lg' : 'bg-slate-800/50 border-transparent text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                >
+                  Global
+                </button>
+              </div>
+
+              {/* Form */}
+              <div className="p-6 space-y-4">
+                {configTab === 'global' && (
+                  <p className="text-xs text-slate-400 bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700/50">
+                    📌 Saisissez les chiffres <span className="font-semibold text-white">hors offres déjà inscrites</span> ci-dessus.
+                  </p>
+                )}
+
+                {(() => {
+                  const config = getConfigForKey(configTab);
+                  const fields: { key: keyof KpiConfigEntry; label: string; icon: string; color: string }[] = [
+                    { key: 'planned_calls', label: 'Combien de calls prévus initialement ?', icon: '📞', color: 'border-blue-500/30 focus:border-blue-500' },
+                    { key: 'no_shows', label: 'Combien de no show ?', icon: '👻', color: 'border-rose-500/30 focus:border-rose-500' },
+                    { key: 'lost_calls', label: 'Combien de calls perdus ?', icon: '❌', color: 'border-red-500/30 focus:border-red-500' },
+                    { key: 'won_calls', label: 'Combien de calls gagnés ?', icon: '✅', color: 'border-emerald-500/30 focus:border-emerald-500' },
+                  ];
+                  return fields.map(f => (
+                    <div key={f.key}>
+                      <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+                        <span>{f.icon}</span> {f.label}
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={config[f.key] as number}
+                        onChange={(e) => updateConfigField(configTab, f.key, parseInt(e.target.value) || 0)}
+                        className={`w-full rounded-lg border bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none ${f.color}`}
+                      />
+                    </div>
+                  ));
+                })()}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end gap-3 px-6 pb-6">
+                <button onClick={() => setShowConfigModal(false)} className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white transition-colors">
+                  Annuler
+                </button>
+                <button
+                  onClick={saveKpiConfig}
+                  disabled={savingConfig}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm font-bold text-white hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {savingConfig ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
