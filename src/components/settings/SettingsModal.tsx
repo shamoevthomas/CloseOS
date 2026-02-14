@@ -15,10 +15,14 @@ import {
   ExternalLink,
   Mail,
   Camera,
-  Trash2
+  Trash2,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
+import Cropper from 'react-easy-crop'
+import getCroppedImg from '../../lib/image-crop'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -34,6 +38,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // States pour le crop
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -74,19 +84,45 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     fileInputRef.current?.click()
   }
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const imageDataUrl = await readFile(file);
+      setImageSrc(imageDataUrl as string);
+      // Reset value to allow re-selecting the same file if needed
+      e.target.value = '';
+    }
+  };
+
+  const readFile = (file: File) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => resolve(reader.result), false);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const onCropComplete = (_: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const showCroppedImage = async () => {
     try {
       setUploading(true)
       setMessage({ type: '', text: '' })
 
-      if (!event.target.files || event.target.files.length === 0) {
-        throw new Error('Veuillez sélectionner une image.')
+      const croppedImageBlob = await getCroppedImg(
+        imageSrc!,
+        croppedAreaPixels
+      );
+
+      if (!croppedImageBlob) {
+        throw new Error("Erreur lors de la création de l'image.");
       }
 
-      const file = event.target.files[0]
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${user?.id}-${Math.random()}.${fileExt}`
-      const filePath = `${fileName}`
+      const fileName = `${user?.id}-${Math.random()}.jpg`;
+      const filePath = `${fileName}`;
+      const file = new File([croppedImageBlob], fileName, { type: "image/jpeg" });
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -111,15 +147,20 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
       setFormData(prev => ({ ...prev, avatar_url: urlData.publicUrl }))
       setMessage({ type: 'success', text: 'Photo de profil mise à jour !' })
-      window.alert("Fait avec succès : Photo de profil mise à jour !")
+
+      setImageSrc(null); // Close cropper
 
     } catch (error: any) {
       console.error('Erreur upload:', error)
       setMessage({ type: 'error', text: 'Erreur lors de l\'upload de l\'image.' })
-      window.alert("Erreur concernant la photo : " + error.message)
     } finally {
       setUploading(false)
     }
+  }
+
+  const handleCancelCrop = () => {
+    setImageSrc(null);
+    setZoom(1);
   }
 
   const handleManageBilling = () => {
@@ -215,6 +256,59 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+
+      {/* CROPPER OVERLAY */}
+      {imageSrc && (
+        <div className="absolute inset-0 z-[200] bg-black flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900 mb-6">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+            />
+          </div>
+
+          <div className="w-full max-w-lg space-y-6">
+            <div className="flex items-center gap-4 px-4">
+              <ZoomOut className="h-5 w-5 text-slate-400" />
+              <input
+                type="range"
+                value={zoom}
+                min={1}
+                max={3}
+                step={0.1}
+                aria-labelledby="Zoom"
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              />
+              <ZoomIn className="h-5 w-5 text-slate-400" />
+            </div>
+
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={handleCancelCrop}
+                disabled={uploading}
+                className="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Annuler
+              </button>
+              <button
+                onClick={showCroppedImage}
+                disabled={uploading}
+                className="px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/25 flex items-center gap-2"
+              >
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Valider la photo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-[#020617] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[700px] relative">
 
         {/* Background Gradients */}
@@ -312,7 +406,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <input
                       type="file"
                       ref={fileInputRef}
-                      onChange={handleAvatarUpload}
+                      onChange={onFileChange}
                       className="hidden"
                       accept="image/jpeg, image/png, image/webp"
                       disabled={uploading}

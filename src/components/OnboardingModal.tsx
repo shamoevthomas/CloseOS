@@ -252,15 +252,37 @@ export function OnboardingModal() {
           {/* ÉTAPE 2 : TÉLÉPHONE */}
           <div>
             <label className="mb-1.5 block text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Téléphone</label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm"
-                placeholder="+33 6 12 34 56 78"
-              />
+            <div className="flex gap-2">
+              <div className="relative w-28">
+                <select
+                  className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-3 pr-8 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer text-sm"
+                  defaultValue="+33"
+                  onChange={(_) => {
+                    // Gestion basique pour le MVP : on pourrait stocker l'indicatif dans un state à part
+                    // Pour l'instant on laisse l'utilisateur gérer son numéro, ou on préfixe si le champ est vide.
+                    // Amélioration future : concaténer au submit.
+                  }}
+                >
+                  <option value="+33">🇫🇷 +33</option>
+                  <option value="+32">🇧🇪 +32</option>
+                  <option value="+41">🇨🇭 +41</option>
+                  <option value="+1">🇨🇦 +1</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+34">🇪🇸 +34</option>
+                  <option value="+39">🇮🇹 +39</option>
+                  <option value="+49">🇩🇪 +49</option>
+                </select>
+              </div>
+              <div className="relative flex-1">
+                <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm"
+                  placeholder="6 12 34 56 78"
+                />
+              </div>
             </div>
           </div>
 
