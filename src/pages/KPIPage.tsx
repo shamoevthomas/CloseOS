@@ -51,6 +51,7 @@ interface KpiConfigEntry {
   formulas: KpiFormulaEntry[];
   total_revenue: number;
   total_commission: number;
+  mode: 'formulas' | 'manual';
 }
 
 // ============================================================================
@@ -178,6 +179,7 @@ export function KPIPage() {
     offer_id: key === 'global' ? null : parseInt(key),
     planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0,
     formulas: [], total_revenue: 0, total_commission: 0,
+    mode: 'formulas',
   });
 
   const loadKpiConfig = useCallback(async () => {
@@ -187,11 +189,15 @@ export function KPIPage() {
     const configs: Record<string, KpiConfigEntry> = {};
     (data || []).forEach((row: any) => {
       const key = row.offer_id ? String(row.offer_id) : 'global';
+      const rawFormulas = Array.isArray(row.formulas) ? row.formulas : [];
+      const modeEntry = rawFormulas.find((f: any) => f._mode);
+      const actualFormulas = rawFormulas.filter((f: any) => !f._mode);
       configs[key] = {
         offer_id: row.offer_id, planned_calls: row.planned_calls || 0, no_shows: row.no_shows || 0,
         lost_calls: row.lost_calls || 0, won_calls: row.won_calls || 0,
-        formulas: Array.isArray(row.formulas) ? row.formulas : [],
+        formulas: actualFormulas,
         total_revenue: row.total_revenue || 0, total_commission: row.total_commission || 0,
+        mode: (modeEntry?._mode === 'manual' ? 'manual' : 'formulas') as 'formulas' | 'manual',
       };
     });
     setKpiConfigs(configs);
@@ -203,19 +209,23 @@ export function KPIPage() {
     if (!user) return;
     setSavingConfig(true);
     try {
-      const upsertRows = Object.entries(kpiConfigs).map(([key, entry]) => ({
-        user_id: user.id, offer_id: key === 'global' ? null : parseInt(key),
-        planned_calls: entry.planned_calls, no_shows: entry.no_shows, lost_calls: entry.lost_calls, won_calls: entry.won_calls,
-        formulas: entry.formulas, total_revenue: entry.total_revenue, total_commission: entry.total_commission,
-        updated_at: new Date().toISOString(),
-      }));
+      const upsertRows = Object.entries(kpiConfigs).map(([key, entry]) => {
+        // Embed mode as metadata in formulas JSONB to avoid needing a DB column
+        const formulasWithMode = [...entry.formulas, { _mode: entry.mode || 'formulas' }];
+        return {
+          user_id: user.id, offer_id: key === 'global' ? null : parseInt(key),
+          planned_calls: entry.planned_calls, no_shows: entry.no_shows, lost_calls: entry.lost_calls, won_calls: entry.won_calls,
+          formulas: formulasWithMode, total_revenue: entry.total_revenue, total_commission: entry.total_commission,
+          updated_at: new Date().toISOString(),
+        };
+      });
       const { error } = await supabase.from('kpi_config').upsert(upsertRows, { onConflict: 'user_id,offer_id' });
       if (error) throw error;
       setShowConfigModal(false);
     } catch (err) { console.error('Erreur sauvegarde kpi_config:', err); } finally { setSavingConfig(false); }
   };
 
-  const updateConfigField = (key: string, field: keyof KpiConfigEntry, value: number) => {
+  const updateConfigField = (key: string, field: keyof KpiConfigEntry, value: number | string) => {
     setKpiConfigs(prev => ({ ...prev, [key]: { ...(prev[key] || defaultConfig(key)), [field]: value } }));
   };
 
@@ -408,12 +418,16 @@ export function KPIPage() {
 
   // KPI Config pour cartes et graphiques
   const totalKpiConfig = useMemo(() => {
-    const total: KpiConfigEntry = { offer_id: null, planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0, formulas: [] as KpiFormulaEntry[], total_revenue: 0, total_commission: 0 };
+    const total: KpiConfigEntry = { offer_id: null, planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0, formulas: [] as KpiFormulaEntry[], total_revenue: 0, total_commission: 0, mode: 'formulas' };
     Object.values(kpiConfigs).forEach(c => {
       total.planned_calls += c.planned_calls; total.no_shows += c.no_shows; total.lost_calls += c.lost_calls; total.won_calls += c.won_calls;
       total.total_revenue += c.total_revenue; total.total_commission += c.total_commission;
-      // Calculer revenu et commission depuis les formules par offre (via ventes par formule)
-      (c.formulas || []).forEach(f => { total.total_revenue += f.price * (f.sales || 0); total.total_commission += f.commission * (f.sales || 0); });
+      // Calculer revenu et commission depuis les formules par offre (via ventes par formule, commission en %)
+      if (c.mode === 'manual') {
+        // manual mode: total_revenue and total_commission already added above
+      } else {
+        (c.formulas || []).forEach(f => { total.total_revenue += f.price * (f.sales || 0); total.total_commission += (f.price * (f.commission / 100)) * (f.sales || 0); });
+      }
     });
     return total;
   }, [kpiConfigs]);
@@ -445,15 +459,18 @@ export function KPIPage() {
   const finalConversion = totalOutcomes > 0 ? (finalSales / totalOutcomes) * 100 : (hasContextData ? ctxConversion : legacyConv);
   const finalNoShowRate = totalOutcomes > 0 ? (cfgNoShow + (hasContextData ? noShowProspects.length : 0)) / totalOutcomes * 100 : (hasContextData ? ctxNoShowRate : 0);
 
-  // Calculer le CA et commissions depuis les formules de la config (par ventes par formule)
+  // Calculer le CA et commissions depuis les formules de la config (par ventes par formule, commission en %)
   const cfgRevenue = useMemo(() => {
     if (activeTab === 'global') return activeTabKpiConfig.total_revenue;
+    if (activeTabKpiConfig.mode === 'manual') return activeTabKpiConfig.total_revenue;
     return (activeTabKpiConfig.formulas || []).reduce((sum, f) => sum + f.price * (f.sales || 0), 0);
   }, [activeTab, activeTabKpiConfig]);
 
   const cfgCommission = useMemo(() => {
     if (activeTab === 'global') return activeTabKpiConfig.total_commission;
-    return (activeTabKpiConfig.formulas || []).reduce((sum, f) => sum + f.commission * (f.sales || 0), 0);
+    if (activeTabKpiConfig.mode === 'manual') return activeTabKpiConfig.total_commission;
+    // commission is now a % → (price × commission% / 100) × sales
+    return (activeTabKpiConfig.formulas || []).reduce((sum, f) => sum + (f.price * (f.commission / 100)) * (f.sales || 0), 0);
   }, [activeTab, activeTabKpiConfig]);
 
   const finalRevenue = baseRevenue + cfgRevenue;
@@ -739,80 +756,142 @@ export function KPIPage() {
                   ));
                 })()}
 
-                {/* OFFER TABS: Formulas frame */}
-                {configTab !== 'global' && (
-                  <div className="mt-4 rounded-xl border border-white/10 bg-slate-800/30 p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-bold text-white">📋 Formules</h4>
-                      <button
-                        onClick={() => addFormula(configTab)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-xs font-medium text-emerald-400 hover:bg-emerald-600/30 transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Ajouter
-                      </button>
-                    </div>
-
-                    {getConfigForKey(configTab).formulas.length === 0 && (
-                      <p className="text-xs text-slate-500 italic">Aucune formule. Cliquez sur "Ajouter" pour en créer une.</p>
-                    )}
-
-                    {getConfigForKey(configTab).formulas.map((formula, idx) => (
-                      <div key={idx} className="rounded-lg border border-white/5 bg-slate-900/50 p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-400">Formule {idx + 1}</span>
-                          <button
-                            onClick={() => removeFormula(configTab, idx)}
-                            className="p-1 rounded text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-400 mb-1 block">Nom</label>
-                          <input
-                            type="text"
-                            value={formula.name}
-                            onChange={(e) => updateFormula(configTab, idx, 'name', e.target.value)}
-                            placeholder="Ex: Formule Gold"
-                            className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                          />
-                        </div>
-                        <div className="grid grid-cols-3 gap-3">
-                          <div>
-                            <label className="text-xs text-slate-400 mb-1 block">💰 Prix (€)</label>
-                            <input
-                              type="number"
-                              min={0}
-                              value={formula.price}
-                              onChange={(e) => updateFormula(configTab, idx, 'price', parseFloat(e.target.value) || 0)}
-                              className="w-full rounded-lg border border-amber-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-slate-400 mb-1 block">🏆 Commission (€)</label>
-                            <input
-                              type="number"
-                              min={0}
-                              value={formula.commission}
-                              onChange={(e) => updateFormula(configTab, idx, 'commission', parseFloat(e.target.value) || 0)}
-                              className="w-full rounded-lg border border-emerald-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-slate-400 mb-1 block">📊 Ventes</label>
-                            <input
-                              type="number"
-                              min={0}
-                              value={formula.sales || 0}
-                              onChange={(e) => updateFormula(configTab, idx, 'sales', parseInt(e.target.value) || 0)}
-                              className="w-full rounded-lg border border-blue-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                            />
-                          </div>
-                        </div>
+                {/* OFFER TABS: Mode switch + content */}
+                {configTab !== 'global' && (() => {
+                  const cfgMode = getConfigForKey(configTab).mode || 'formulas';
+                  return (
+                    <div className="mt-4 space-y-4">
+                      {/* Mode switch */}
+                      <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-800/60 border border-white/5">
+                        <button
+                          onClick={() => updateConfigField(configTab, 'mode', 'formulas')}
+                          className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ${cfgMode === 'formulas' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                        >
+                          📊 Calcul auto (formules)
+                        </button>
+                        <button
+                          onClick={() => updateConfigField(configTab, 'mode', 'manual')}
+                          className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ${cfgMode === 'manual' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                        >
+                          ✍️ Saisie manuelle
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                )}
+
+                      {/* Formula mode */}
+                      {cfgMode === 'formulas' && (
+                        <div className="rounded-xl border border-white/10 bg-slate-800/30 p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-white">📋 Formules</h4>
+                            <button
+                              onClick={() => addFormula(configTab)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-xs font-medium text-emerald-400 hover:bg-emerald-600/30 transition-colors"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Ajouter
+                            </button>
+                          </div>
+
+                          {getConfigForKey(configTab).formulas.length === 0 && (
+                            <p className="text-xs text-slate-500 italic">Aucune formule. Cliquez sur "Ajouter" pour en créer une.</p>
+                          )}
+
+                          {getConfigForKey(configTab).formulas.map((formula, idx) => (
+                            <div key={idx} className="rounded-lg border border-white/5 bg-slate-900/50 p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-400">Formule {idx + 1}</span>
+                                <button
+                                  onClick={() => removeFormula(configTab, idx)}
+                                  className="p-1 rounded text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <div>
+                                <label className="text-xs text-slate-400 mb-1 block">Nom</label>
+                                <input
+                                  type="text"
+                                  value={formula.name}
+                                  onChange={(e) => updateFormula(configTab, idx, 'name', e.target.value)}
+                                  placeholder="Ex: Formule Gold"
+                                  className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                                />
+                              </div>
+                              <div className="grid grid-cols-3 gap-3">
+                                <div>
+                                  <label className="text-xs text-slate-400 mb-1 block">💰 Prix (€)</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={formula.price}
+                                    onChange={(e) => updateFormula(configTab, idx, 'price', parseFloat(e.target.value) || 0)}
+                                    className="w-full rounded-lg border border-amber-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-slate-400 mb-1 block">🏆 Commission (%)</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    value={formula.commission}
+                                    onChange={(e) => updateFormula(configTab, idx, 'commission', parseFloat(e.target.value) || 0)}
+                                    className="w-full rounded-lg border border-emerald-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-slate-400 mb-1 block">📊 Ventes</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={formula.sales || 0}
+                                    onChange={(e) => updateFormula(configTab, idx, 'sales', parseInt(e.target.value) || 0)}
+                                    className="w-full rounded-lg border border-blue-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                                  />
+                                </div>
+                              </div>
+                              {/* Auto-calculated commission preview */}
+                              {(formula.sales || 0) > 0 && formula.price > 0 && formula.commission > 0 && (
+                                <div className="text-xs text-emerald-400/80 bg-emerald-500/10 rounded-lg px-3 py-1.5 border border-emerald-500/20">
+                                  💡 Commission calculée : <span className="font-bold">{((formula.price * (formula.commission / 100)) * (formula.sales || 0)).toLocaleString('fr-FR')} €</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Manual mode */}
+                      {cfgMode === 'manual' && (
+                        <div className="rounded-xl border border-white/10 bg-slate-800/30 p-4 space-y-3">
+                          <h4 className="text-sm font-bold text-white">💶 Revenus initiaux</h4>
+                          <div>
+                            <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+                              <span>💰</span> CA Généré (€)
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={getConfigForKey(configTab).total_revenue}
+                              onChange={(e) => updateConfigField(configTab, 'total_revenue', parseFloat(e.target.value) || 0)}
+                              className="w-full rounded-lg border border-emerald-500/30 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+                              <span>🏆</span> Commission touchée (€)
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={getConfigForKey(configTab).total_commission}
+                              onChange={(e) => updateConfigField(configTab, 'total_commission', parseFloat(e.target.value) || 0)}
+                              className="w-full rounded-lg border border-amber-500/30 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* GLOBAL TAB: Commission & CA */}
                 {configTab === 'global' && (
@@ -832,7 +911,7 @@ export function KPIPage() {
                     </div>
                     <div>
                       <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
-                        <span>🏆</span> Commission (€)
+                        <span>🏆</span> Commission touchée (€)
                       </label>
                       <input
                         type="number"
