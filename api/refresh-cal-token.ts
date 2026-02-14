@@ -36,14 +36,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 4. Call Cal.com to refresh
     try {
-        const response = await fetch('https://api.cal.com/v1/auth/refresh', {
+        const response = await fetch('https://api.cal.com/v2/auth/oauth2/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 client_id: clientId,
                 client_secret: clientSecret,
-                refresh_token: profile.cal_refresh_token,
-                grant_type: 'refresh_token'
+                grant_type: 'refresh_token',
+                refresh_token: profile.cal_refresh_token
             })
         });
 

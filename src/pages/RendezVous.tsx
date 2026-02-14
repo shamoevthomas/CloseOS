@@ -228,14 +228,13 @@ export function RendezVous() {
       return updatesCount;
    };
 
-   // 2. Connexion OAuth
+   // 2. Connexion OAuth (v2)
    const handleConnectCal = () => {
       const clientId = import.meta.env.VITE_CAL_CLIENT_ID
       const redirectUri = `${import.meta.env.VITE_APP_URL}/api/cal-callback`
-      const scope = 'bookings:read:all event-types:read:all event-types:write:all' // Permissions
       const state = user?.id
 
-      window.location.href = `https://app.cal.com/api/auth/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`
+      window.location.href = `https://app.cal.com/auth/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`
    }
 
    // 3. Fetch Events (OAuth)

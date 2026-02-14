@@ -15,8 +15,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // 1. Échange du code contre les tokens
-    const tokenResponse = await fetch('https://cal.com/api/auth/oauth/token', {
+    // 1. Échange du code contre les tokens (API v2)
+    const tokenResponse = await fetch('https://api.cal.com/v2/auth/oauth2/token', {
       method: 'POST',
       body: JSON.stringify({
         grant_type: 'authorization_code',
