@@ -47,6 +47,7 @@ import { ComingSoon } from './pages/ComingSoon'
 import { CGU } from './pages/CGU'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
+import { SubscriptionRetention } from './pages/SubscriptionRetention'
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -68,7 +69,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 // Wrapper pour cacher l'onboarding sur certaines pages
-function OnboardingWrapper({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+function OnboardingWrapper() {
   const location = useLocation()
 
   // 👇 AJOUT de '/coming-soon' pour que l'onboarding ne s'ouvre pas dessus
@@ -78,13 +79,12 @@ function OnboardingWrapper({ isOpen, onClose }: { isOpen: boolean, onClose: () =
     return null;
   }
 
-  return <OnboardingModal isOpen={isOpen} onClose={onClose} />;
+  return <OnboardingModal />;
 }
 
 function AuthenticatedApp() {
   const { user, loading } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(true)
 
   if (loading) {
     return (
@@ -117,6 +117,7 @@ function AuthenticatedApp() {
         <Route path="/return" element={<Return />} />
         <Route path="/welcome-founder" element={<WelcomeFounder />} />
         <Route path="/confirm-email-change" element={<ConfirmEmailUpdate />} />
+        <Route path="/retention" element={<SubscriptionRetention />} />
 
         {/* 👇 NOUVELLE ROUTE SÉPARÉE : Coming Soon (Hors du Layout) */}
         <Route
@@ -170,10 +171,7 @@ function AuthenticatedApp() {
 
       {user && (
         <>
-          <OnboardingWrapper
-            isOpen={isOnboardingOpen}
-            onClose={() => setIsOnboardingOpen(false)}
-          />
+          <OnboardingWrapper />
           <SettingsModal
             isOpen={isSettingsOpen}
             onClose={() => setIsSettingsOpen(false)}
