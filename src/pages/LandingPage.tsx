@@ -154,12 +154,11 @@ export function LandingPage() {
             Synchronisation native avec vos outils préférés
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
+            <div className="flex flex-col items-center gap-1 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span><span className="text-[9px] font-medium text-slate-500 uppercase tracking-wider">à débloquer</span></div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Cal.com</div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Calendly</div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Hubspot</div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Pipedrive</div>
           </div>
@@ -273,223 +272,128 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ROADMAP TIMELINE */}
-      <section className="py-24 bg-[#0B1121] border-t border-white/5 relative overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-indigo-600/8 blur-[150px] rounded-full pointer-events-none" />
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="text-center mb-16">
+      {/* ROADMAP TIMELINE — HORIZONTAL */}
+      <section className="py-20 bg-[#0B1121] border-t border-white/5 relative overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-indigo-600/8 blur-[150px] rounded-full pointer-events-none" />
+        <div className="mx-auto max-w-7xl px-6 relative z-10">
+          <div className="text-center mb-12">
             <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-400 uppercase tracking-widest">
               Roadmap 2025
             </span>
             <h2 className="text-3xl sm:text-5xl font-bold text-white mt-6">Le Futur du Closing</h2>
-            <p className="text-slate-400 mt-4 max-w-2xl mx-auto">Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers, agences et infopreneurs.</p>
+            <p className="text-slate-400 mt-4 max-w-2xl mx-auto text-sm">Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers, agences et infopreneurs.</p>
           </div>
 
-          {/* Timeline */}
-          <div className="relative">
-            {/* Vertical line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/50 via-indigo-500/50 via-purple-500/50 to-emerald-500/50 -translate-x-1/2 hidden md:block" />
-            <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/50 via-indigo-500/50 via-purple-500/50 to-emerald-500/50 md:hidden" />
+          {/* Horizontal scrollable timeline */}
+          <div className="overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide">
+            <div className="relative min-w-[900px]">
+              {/* Horizontal line */}
+              <div className="absolute top-[28px] left-0 right-0 h-px bg-gradient-to-r from-blue-500/60 via-purple-500/60 via-amber-500/60 to-emerald-500/60" />
 
-            <div className="space-y-0">
+              <div className="flex justify-between items-start">
 
-              {/* ===== Q1 ===== */}
-              <div className="relative flex items-start md:justify-center gap-6 md:gap-0">
-                {/* Quarter badge - center on desktop */}
-                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 z-20">
-                  <div className="px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/30 border border-blue-400/30">
-                    Q1 2025
+                {/* Q1 */}
+                <div className="flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="relative z-10 w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-blue-500/30 border-2 border-blue-400/40 ring-4 ring-[#0B1121]">
+                    Q1
                   </div>
-                </div>
-                {/* Mobile badge */}
-                <div className="md:hidden flex-shrink-0 z-20 relative">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white text-[10px] font-black shadow-lg shadow-blue-500/30 border border-blue-400/30">Q1</div>
-                </div>
-                <div className="md:w-1/2 md:pr-12 md:text-right pt-1 md:pt-12" />
-                <div className="md:w-1/2 md:pl-12 pt-1 md:pt-12">
-                  <div className="group p-5 rounded-2xl bg-slate-900/80 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-blue-500/5">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 rounded-lg bg-blue-500/20 group-hover:bg-blue-500/30 transition-colors"><Zap className="h-5 w-5 text-blue-400" /></div>
-                      <div>
-                        <h3 className="font-bold text-white text-sm">Lancement de CloseOS</h3>
-                        <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">Janvier</span>
+                  <div className="mt-4 w-full">
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 text-center">
+                      <Zap className="h-4 w-4 text-blue-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">Lancement CloseOS</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">CRM, Pipeline, VoIP, KPIs</p>
+                      <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
                       </div>
                     </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">Sortie officielle de la plateforme. CRM, Pipeline, Agenda, Booking, VoIP, Facturation et KPIs — tout réuni dans un seul outil.</p>
-                    <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
+                  </div>
+                </div>
+
+                {/* Q2 — Début */}
+                <div className="flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="relative z-10 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-[9px] font-black shadow-lg shadow-indigo-500/30 border-2 border-indigo-400/40 ring-4 ring-[#0B1121]">
+                    Q2
+                  </div>
+                  <div className="mt-4 w-full">
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300 text-center">
+                      <Building2 className="h-4 w-4 text-indigo-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">Interface Infopreneur</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">Dashboard multi-closers</p>
+                      <span className="text-[9px] text-indigo-400 font-semibold uppercase">Début Q2</span>
                     </div>
                   </div>
                 </div>
+
+                {/* Q2 — Milieu */}
+                <div className="flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="relative z-10 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-[#0B1121] mt-[18px]" />
+                  <div className="mt-6 w-full">
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 text-center">
+                      <Users className="h-4 w-4 text-purple-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">Interface Agence</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">Gestion d'équipes</p>
+                      <span className="text-[9px] text-purple-400 font-semibold uppercase">Milieu Q2</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Q2 — Fin */}
+                <div className="flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="relative z-10 w-4 h-4 rounded-full bg-violet-500 ring-4 ring-[#0B1121] mt-[18px]" />
+                  <div className="mt-6 w-full">
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300 text-center">
+                      <BrainCircuit className="h-4 w-4 text-violet-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">Analyse IA</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">Feedback sur appels</p>
+                      <span className="text-[9px] text-violet-400 font-semibold uppercase">Fin Q2</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Q3 — Milieu */}
+                <div className="flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="relative z-10 w-14 h-14 rounded-full bg-gradient-to-br from-amber-600 to-orange-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-amber-500/30 border-2 border-amber-400/40 ring-4 ring-[#0B1121]">
+                    Q3
+                  </div>
+                  <div className="mt-4 w-full">
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 text-center">
+                      <Smartphone className="h-4 w-4 text-amber-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">App Mobile</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">iOS {'&'} Android</p>
+                      <span className="text-[9px] text-amber-400 font-semibold uppercase">Milieu Q3</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Q3 — Fin */}
+                <div className="flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="relative z-10 w-4 h-4 rounded-full bg-orange-500 ring-4 ring-[#0B1121] mt-[18px]" />
+                  <div className="mt-6 w-full">
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 text-center">
+                      <Database className="h-4 w-4 text-orange-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">CRM Complet</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">Acquisition de leads</p>
+                      <span className="text-[9px] text-orange-400 font-semibold uppercase">Fin Q3</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Q4 */}
+                <div className="flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="relative z-10 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-emerald-500/30 border-2 border-emerald-400/40 ring-4 ring-[#0B1121]">
+                    Q4
+                  </div>
+                  <div className="mt-4 w-full">
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 text-center">
+                      <MessageSquare className="h-4 w-4 text-emerald-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">Messagerie Interne</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">Chat équipe intégré</p>
+                      <span className="text-[9px] text-emerald-400 font-semibold uppercase">Q4</span>
+                    </div>
+                  </div>
+                </div>
+
               </div>
-
-              {/* Dot on line */}
-              <div className="hidden md:block absolute left-1/2 -translate-x-1/2" style={{ top: '8%' }}>
-                <div className="w-3 h-3 rounded-full bg-blue-500 ring-4 ring-blue-500/20" />
-              </div>
-
-              {/* ===== Q2 ===== */}
-              <div className="relative pt-8">
-                {/* Quarter badge */}
-                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 z-20">
-                  <div className="px-4 py-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-500/30 border border-indigo-400/30">
-                    Q2 2025
-                  </div>
-                </div>
-                <div className="md:hidden flex items-start gap-6 mb-4">
-                  <div className="flex-shrink-0 z-20 relative">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-[10px] font-black shadow-lg shadow-indigo-500/30 border border-indigo-400/30">Q2</div>
-                  </div>
-                  <div className="text-xs text-indigo-400 font-bold uppercase pt-3 tracking-widest">Avril — Juin</div>
-                </div>
-
-                <div className="space-y-4 pt-4 md:pt-12">
-                  {/* Début Q2: Interface Infopreneur */}
-                  <div className="relative flex items-start md:justify-center gap-6 md:gap-0">
-                    <div className="md:hidden w-12 flex-shrink-0" />
-                    <div className="md:w-1/2 md:pr-12 md:text-right">
-                      <div className="group p-5 rounded-2xl bg-slate-900/80 border border-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-indigo-500/5">
-                        <div className="flex items-center gap-3 mb-2 md:flex-row-reverse">
-                          <div className="p-2 rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors"><Building2 className="h-5 w-5 text-indigo-400" /></div>
-                          <div className="md:text-right">
-                            <h3 className="font-bold text-white text-sm">Interface Infopreneur / Entrepreneur</h3>
-                            <span className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider">Début Q2</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-slate-400 leading-relaxed">Dashboard multi-closers, attribution automatique des leads, suivi de performance par équipe et messagerie interne pour un pilotage à 360°.</p>
-                      </div>
-                    </div>
-                    <div className="hidden md:block md:w-1/2 md:pl-12" />
-                  </div>
-
-                  {/* Milieu Q2: Interface Agence */}
-                  <div className="relative flex items-start md:justify-center gap-6 md:gap-0">
-                    <div className="md:hidden w-12 flex-shrink-0" />
-                    <div className="hidden md:block md:w-1/2 md:pr-12" />
-                    <div className="md:w-1/2 md:pl-12">
-                      <div className="group p-5 rounded-2xl bg-slate-900/80 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-purple-500/5">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30 transition-colors"><Users className="h-5 w-5 text-purple-400" /></div>
-                          <div>
-                            <h3 className="font-bold text-white text-sm">Interface Agence</h3>
-                            <span className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">Milieu Q2</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-slate-400 leading-relaxed">Dédiée aux agences de closing. Pilotez plusieurs équipes, gérez l'attribution des leads et analysez la rentabilité de chaque closer.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Fin Q2: Analyse IA */}
-                  <div className="relative flex items-start md:justify-center gap-6 md:gap-0">
-                    <div className="md:hidden w-12 flex-shrink-0" />
-                    <div className="md:w-1/2 md:pr-12 md:text-right">
-                      <div className="group p-5 rounded-2xl bg-slate-900/80 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-violet-500/5">
-                        <div className="flex items-center gap-3 mb-2 md:flex-row-reverse">
-                          <div className="p-2 rounded-lg bg-violet-500/20 group-hover:bg-violet-500/30 transition-colors"><BrainCircuit className="h-5 w-5 text-violet-400" /></div>
-                          <div className="md:text-right">
-                            <h3 className="font-bold text-white text-sm">Analyse IA</h3>
-                            <span className="text-[10px] text-violet-400 font-semibold uppercase tracking-wider">Fin Q2</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-slate-400 leading-relaxed">Feedback objectif sur vos appels. Identifiez les objections non traitées et les moments clés pour améliorer votre taux de conversion.</p>
-                      </div>
-                    </div>
-                    <div className="hidden md:block md:w-1/2 md:pl-12" />
-                  </div>
-                </div>
-              </div>
-
-              {/* ===== Q3 ===== */}
-              <div className="relative pt-8">
-                {/* Quarter badge */}
-                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 z-20">
-                  <div className="px-4 py-2 rounded-full bg-gradient-to-r from-amber-600 to-orange-500 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-amber-500/30 border border-amber-400/30">
-                    Q3 2025
-                  </div>
-                </div>
-                <div className="md:hidden flex items-start gap-6 mb-4">
-                  <div className="flex-shrink-0 z-20 relative">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-600 to-orange-500 flex items-center justify-center text-white text-[10px] font-black shadow-lg shadow-amber-500/30 border border-amber-400/30">Q3</div>
-                  </div>
-                  <div className="text-xs text-amber-400 font-bold uppercase pt-3 tracking-widest">Juillet — Septembre</div>
-                </div>
-
-                <div className="space-y-4 pt-4 md:pt-12">
-                  {/* Milieu Q3: Application Mobile */}
-                  <div className="relative flex items-start md:justify-center gap-6 md:gap-0">
-                    <div className="md:hidden w-12 flex-shrink-0" />
-                    <div className="hidden md:block md:w-1/2 md:pr-12" />
-                    <div className="md:w-1/2 md:pl-12">
-                      <div className="group p-5 rounded-2xl bg-slate-900/80 border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-amber-500/5">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2 rounded-lg bg-amber-500/20 group-hover:bg-amber-500/30 transition-colors"><Smartphone className="h-5 w-5 text-amber-400" /></div>
-                          <div>
-                            <h3 className="font-bold text-white text-sm">Application Mobile Native</h3>
-                            <span className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">Milieu Q3</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-slate-400 leading-relaxed">Gérez votre pipeline, recevez vos notifs et passez vos appels depuis votre poche. iOS {'&'} Android.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Fin Q3: CRM complet */}
-                  <div className="relative flex items-start md:justify-center gap-6 md:gap-0">
-                    <div className="md:hidden w-12 flex-shrink-0" />
-                    <div className="md:w-1/2 md:pr-12 md:text-right">
-                      <div className="group p-5 rounded-2xl bg-slate-900/80 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-orange-500/5">
-                        <div className="flex items-center gap-3 mb-2 md:flex-row-reverse">
-                          <div className="p-2 rounded-lg bg-orange-500/20 group-hover:bg-orange-500/30 transition-colors"><Database className="h-5 w-5 text-orange-400" /></div>
-                          <div className="md:text-right">
-                            <h3 className="font-bold text-white text-sm">CRM Complet & Acquisition de Leads</h3>
-                            <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wider">Fin Q3</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-slate-400 leading-relaxed">Fini les CRM de base. CloseOS devient un vrai CRM complet avec acquisition de leads, nurturing, scoring et suivi du cycle de vente de A à Z.</p>
-                      </div>
-                    </div>
-                    <div className="hidden md:block md:w-1/2 md:pl-12" />
-                  </div>
-                </div>
-              </div>
-
-              {/* ===== Q4 ===== */}
-              <div className="relative pt-8 pb-4">
-                {/* Quarter badge */}
-                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 z-20">
-                  <div className="px-4 py-2 rounded-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-500/30 border border-emerald-400/30">
-                    Q4 2025
-                  </div>
-                </div>
-                <div className="md:hidden flex items-start gap-6 mb-4">
-                  <div className="flex-shrink-0 z-20 relative">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-[10px] font-black shadow-lg shadow-emerald-500/30 border border-emerald-400/30">Q4</div>
-                  </div>
-                  <div className="text-xs text-emerald-400 font-bold uppercase pt-3 tracking-widest">Octobre — Décembre</div>
-                </div>
-
-                <div className="space-y-4 pt-4 md:pt-12">
-                  {/* Q4: Messagerie Interne */}
-                  <div className="relative flex items-start md:justify-center gap-6 md:gap-0">
-                    <div className="md:hidden w-12 flex-shrink-0" />
-                    <div className="hidden md:block md:w-1/2 md:pr-12" />
-                    <div className="md:w-1/2 md:pl-12">
-                      <div className="group p-5 rounded-2xl bg-slate-900/80 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-emerald-500/5">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2 rounded-lg bg-emerald-500/20 group-hover:bg-emerald-500/30 transition-colors"><MessageSquare className="h-5 w-5 text-emerald-400" /></div>
-                          <div>
-                            <h3 className="font-bold text-white text-sm">Messagerie Interne & Chat Équipe</h3>
-                            <span className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">Q4</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-slate-400 leading-relaxed">Communication en temps réel entre closers et managers, directement intégrée au pipeline. Fini les conversations éparpillées sur WhatsApp et Slack.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div>
           </div>
         </div>
@@ -644,8 +548,8 @@ export function LandingPage() {
               <button
                 onClick={() => setPricingTab('closer')}
                 className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${pricingTab === 'closer'
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
                   }`}
               >
                 Closer Indépendant
@@ -653,8 +557,8 @@ export function LandingPage() {
               <button
                 onClick={() => setPricingTab('agency')}
                 className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${pricingTab === 'agency'
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
                   }`}
               >
                 Agence
@@ -662,8 +566,8 @@ export function LandingPage() {
               <button
                 onClick={() => setPricingTab('enterprise')}
                 className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${pricingTab === 'enterprise'
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
                   }`}
               >
                 Entreprise / Infopreneur
