@@ -360,25 +360,7 @@ export function KPIPage() {
 
   const hasContextData = allProspects.length > 0;
 
-  // Variables affichées dans les cartes (KPI)
-  const finalRevenue = hasContextData ? ctxRevenue : legacyRev;
-  const finalSales = hasContextData ? ctxSales : legacyWon.length;
-  const finalLeads = hasContextData ? ctxLeads : filteredLegacyDeals.length;
-  const finalConversion = hasContextData ? ctxConversion : legacyConv;
-  const finalCommissions = hasContextData ? ctxCommissions : legacyRev * 0.10;
-  const finalNoShowRate = hasContextData ? ctxNoShowRate : 0;
-  const finalLost = hasContextData ? lostProspects.length : legacyLost.length;
-  const finalActiveCount = hasContextData ? activeProspects.length : 0;
-  const avgCommission = finalSales > 0 ? finalCommissions / finalSales : 0;
-
-
-  // ==================================================================================
-  // 4. CONSTRUCTION DES DONNÉES GRAPHIQUES (Recharts)
-  // ==================================================================================
-
-  const chartSourceData = hasContextData ? historicalProspects : historicalLegacyDeals;
-
-  // KPI Config pour graphiques
+  // KPI Config pour cartes et graphiques
   const totalKpiConfig = useMemo(() => {
     const total = { planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0 };
     Object.values(kpiConfigs).forEach(c => { total.planned_calls += c.planned_calls; total.no_shows += c.no_shows; total.lost_calls += c.lost_calls; total.won_calls += c.won_calls; });
@@ -391,6 +373,38 @@ export function KPIPage() {
     if (targetOffer) { const config = kpiConfigs[String(targetOffer.id)]; if (config) return config; }
     return { planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0 };
   }, [activeTab, kpiConfigs, totalKpiConfig, allOffers]);
+
+  // Variables affichées dans les cartes (KPI) — incluant la config initiale
+  const cfgWon = activeTabKpiConfig.won_calls;
+  const cfgLost = activeTabKpiConfig.lost_calls;
+  const cfgNoShow = activeTabKpiConfig.no_shows;
+  const cfgPlanned = activeTabKpiConfig.planned_calls;
+
+  const baseSales = hasContextData ? ctxSales : legacyWon.length;
+  const baseLost = hasContextData ? lostProspects.length : legacyLost.length;
+  const baseLeads = hasContextData ? ctxLeads : filteredLegacyDeals.length;
+  const baseRevenue = hasContextData ? ctxRevenue : legacyRev;
+  const baseCommissions = hasContextData ? ctxCommissions : legacyRev * 0.10;
+
+  const finalSales = baseSales + cfgWon;
+  const finalLost = baseLost + cfgLost;
+  const finalLeads = baseLeads + cfgPlanned;
+
+  const totalOutcomes = finalSales + finalLost + cfgNoShow;
+  const finalConversion = totalOutcomes > 0 ? (finalSales / totalOutcomes) * 100 : (hasContextData ? ctxConversion : legacyConv);
+  const finalNoShowRate = totalOutcomes > 0 ? (cfgNoShow + (hasContextData ? noShowProspects.length : 0)) / totalOutcomes * 100 : (hasContextData ? ctxNoShowRate : 0);
+
+  const finalRevenue = baseRevenue;
+  const finalCommissions = baseCommissions;
+  const finalActiveCount = hasContextData ? activeProspects.length : 0;
+  const avgCommission = finalSales > 0 ? finalCommissions / finalSales : 0;
+
+
+  // ==================================================================================
+  // 4. CONSTRUCTION DES DONNÉES GRAPHIQUES (Recharts)
+  // ==================================================================================
+
+  const chartSourceData = hasContextData ? historicalProspects : historicalLegacyDeals;
 
   const chartData = useMemo(() => {
     const grouped: Record<string, { won: number; total: number; commission: number; date: Date }> = {};
