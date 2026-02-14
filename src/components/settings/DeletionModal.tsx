@@ -40,12 +40,12 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
 
     if (!isOpen) return null;
 
-    const handleInitialChoice = (wantsToSelectData: boolean) => {
-        if (wantsToSelectData) {
+    const handleInitialChoice = (wantsToDeleteData: boolean) => {
+        if (wantsToDeleteData) {
             setStep('select');
         } else {
-            // "Si non on passe a l'etape suivante" -> Confirmation (implying full delete/default account delete)
-            setScope(['all']); // Default behavior for account deletion usually implies everything
+            // "Non, conserver les données" -> Scope destruction is empty. Only Auth User is deleted.
+            setScope([]);
             setStep('confirm');
         }
     };
@@ -164,23 +164,23 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                 <ShieldAlert className="h-12 w-12 text-blue-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-white mb-4">Souhaitez-vous supprimer des données spécifiques ?</h3>
+                                <h3 className="text-2xl font-bold text-white mb-4">Souhaitez-vous supprimer vos données ?</h3>
                                 <p className="text-slate-400 max-w-md mx-auto">
-                                    Vous avez la possibilité de sélectionner précisément quelles catégories de données (facturation, contacts...) vous souhaitez effacer, ou de tout supprimer d'un coup.
+                                    En plus de votre compte, souhaitez-vous supprimer définitivement les données qui y sont associées (factures, contacts, historiques...) ?
                                 </p>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
                                 <button
                                     onClick={() => handleInitialChoice(true)}
-                                    className="px-6 py-3 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white rounded-xl font-bold transition-all border border-blue-600/20"
+                                    className="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl font-bold transition-all border border-red-500/20"
                                 >
-                                    Oui, choisir les données
+                                    Oui, supprimer des données
                                 </button>
                                 <button
                                     onClick={() => handleInitialChoice(false)}
                                     className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all border border-white/10"
                                 >
-                                    Non, tout supprimer
+                                    Non, conserver les données
                                 </button>
                             </div>
                         </div>
