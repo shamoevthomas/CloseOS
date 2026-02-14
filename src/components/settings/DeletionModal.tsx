@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, AlertTriangle, CheckCircle, Calendar, Trash2, ArrowRight, Loader2 } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle, Calendar, Trash2, ArrowRight, Loader2, Lock, ShieldAlert } from 'lucide-react';
 import { getCalApi } from "@calcom/embed-react";
 import Cal from "@calcom/embed-react";
 import { supabase } from '../../lib/supabase';
@@ -13,10 +13,21 @@ interface DeletionModalProps {
 }
 
 export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }: DeletionModalProps) {
-    const [step, setStep] = useState<'select' | 'confirm' | 'cal' | 'final'>('select');
-    const [scope, setScope] = useState<string[]>(['all']);
+    const [step, setStep] = useState<'initial' | 'select' | 'confirm' | 'cal' | 'final'>('initial');
+    const [scope, setScope] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [scheduledDate, setScheduledDate] = useState<string | null>(null);
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            setStep('initial');
+            setScope([]);
+            setPassword('');
+            setError('');
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         if (step === 'cal' && isOpen) {
@@ -28,6 +39,16 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
     }, [step, isOpen]);
 
     if (!isOpen) return null;
+
+    const handleInitialChoice = (wantsToSelectData: boolean) => {
+        if (wantsToSelectData) {
+            setStep('select');
+        } else {
+            // "Si non on passe a l'etape suivante" -> Confirmation (implying full delete/default account delete)
+            setScope(['all']); // Default behavior for account deletion usually implies everything
+            setStep('confirm');
+        }
+    };
 
     const handleScopeChange = (value: string) => {
         if (value === 'all') {
@@ -49,7 +70,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
             }
 
             // Check if all specific options are selected
-            const allOptions = ['billing', 'internal', 'external'];
+            const allOptions = ['billing', 'internal', 'external', 'personal'];
             const isAllSelected = allOptions.every(o => newScope.includes(o));
             if (isAllSelected) {
                 setScope(['all']);
@@ -65,8 +86,26 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
     };
 
     const handleConfirmDeletion = async () => {
+        if (!password) {
+            setError('Le mot de passe est requis.');
+            return;
+        }
+
         setLoading(true);
+        setError('');
+
         try {
+            // 1. Verify Password
+            const { error: authError } = await supabase.auth.signInWithPassword({
+                email: userEmail,
+                password: password
+            });
+
+            if (authError) {
+                throw new Error('Mot de passe incorrect.');
+            }
+
+            // 2. Request Deletion
             const response = await fetch('/api/request-deletion', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -81,9 +120,9 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
             }
 
             setStep('cal'); // Proceed to exit interview / info
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            window.alert("Erreur lors de la demande de suppression.");
+            setError(error.message || "Erreur lors de la demande de suppression.");
         } finally {
             setLoading(false);
         }
@@ -119,11 +158,39 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6">
 
+                    {step === 'initial' && (
+                        <div className="space-y-8 text-center py-8">
+                            <div className="p-4 bg-blue-500/10 rounded-full w-fit mx-auto">
+                                <ShieldAlert className="h-12 w-12 text-blue-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold text-white mb-4">Souhaitez-vous supprimer des données spécifiques ?</h3>
+                                <p className="text-slate-400 max-w-md mx-auto">
+                                    Vous avez la possibilité de sélectionner précisément quelles catégories de données (facturation, contacts...) vous souhaitez effacer, ou de tout supprimer d'un coup.
+                                </p>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+                                <button
+                                    onClick={() => handleInitialChoice(true)}
+                                    className="px-6 py-3 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white rounded-xl font-bold transition-all border border-blue-600/20"
+                                >
+                                    Oui, choisir les données
+                                </button>
+                                <button
+                                    onClick={() => handleInitialChoice(false)}
+                                    className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all border border-white/10"
+                                >
+                                    Non, tout supprimer
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {step === 'select' && (
                         <div className="space-y-6">
                             <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex gap-3 text-amber-200">
                                 <AlertTriangle className="h-5 w-5 shrink-0" />
-                                <p className="text-sm">Vous êtes sur le point de supprimer votre compte. Vous pouvez choisir de supprimer certaines données spécifiques ou l'ensemble de votre compte.</p>
+                                <p className="text-sm">Sélectionnez les données que vous souhaitez supprimer définitivement.</p>
                             </div>
 
                             <div className="space-y-3">
@@ -141,6 +208,16 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                 </label>
 
                                 <div className="pl-8 space-y-2">
+                                    <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={scope.includes('all') || scope.includes('personal')}
+                                            onChange={() => handleScopeChange('personal')}
+                                            disabled={scope.includes('all')}
+                                            className="w-4 h-4 rounded border-white/20 bg-white/10 text-red-500 focus:ring-red-500"
+                                        />
+                                        <span className="text-slate-300">Données personnelles (Nom, email...)</span>
+                                    </label>
                                     <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 cursor-pointer hover:bg-white/10 transition-colors">
                                         <input
                                             type="checkbox"
@@ -181,10 +258,26 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                             <AlertTriangle className="h-20 w-20 text-red-500 mx-auto opacity-80" />
                             <div>
                                 <h3 className="text-2xl font-bold text-white mb-2">Êtes-vous vraiment sûr ?</h3>
-                                <p className="text-slate-400 max-w-md mx-auto">
+                                <p className="text-slate-400 max-w-md mx-auto mb-6">
                                     Cette action enclenchera le processus de suppression définitif.
                                     {scheduledDate ? " La suppression sera effective à la fin de votre période de facturation." : ""}
                                 </p>
+
+                                <div className="max-w-sm mx-auto space-y-4">
+                                    <div className="relative text-left">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                        <input
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all placeholder:text-slate-600"
+                                            placeholder="Entrez votre mot de passe pour confirmer"
+                                        />
+                                    </div>
+                                    {error && (
+                                        <p className="text-red-400 text-sm font-medium">{error}</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -211,13 +304,21 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                 {/* Footer */}
                 <div className="p-6 border-t border-white/10 bg-slate-900/50 flex justify-end gap-3">
                     {step === 'select' && (
-                        <button
-                            onClick={handleValidation}
-                            disabled={scope.length === 0}
-                            className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                        >
-                            Continuer <ArrowRight className="h-4 w-4" />
-                        </button>
+                        <>
+                            <button
+                                onClick={onClose}
+                                className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors"
+                            >
+                                Finalement ne rien supprimer
+                            </button>
+                            <button
+                                onClick={handleValidation}
+                                disabled={scope.length === 0}
+                                className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                Continuer <ArrowRight className="h-4 w-4" />
+                            </button>
+                        </>
                     )}
 
                     {step === 'confirm' && (
@@ -225,10 +326,10 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                             <button onClick={onClose} className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors">Annuler</button>
                             <button
                                 onClick={handleConfirmDeletion}
-                                disabled={loading}
-                                className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
+                                disabled={loading || !password}
+                                className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
                             >
-                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmer la suppression"}
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Valider la suppression"}
                             </button>
                         </>
                     )}
