@@ -406,9 +406,9 @@ export function RendezVous() {
          });
 
          if (calData && ['CANCELLED', 'REJECTED'].includes(calData.status)) {
-            return { ...m, status: 'Annulé' };
+            return { ...m, status: 'Annulé', apiLocation: calData.location };
          }
-         return m;
+         return { ...m, apiLocation: calData ? calData.location : null };
       });
 
       const upcoming = [];
@@ -456,7 +456,23 @@ export function RendezVous() {
       return s.charAt(0).toUpperCase() + s.slice(1);
    }
 
-   const getMeetingSource = (m: any) => { if (!m) return 'Réservation'; if (m.description?.match(/Type:\s*([^\n\r]+)/)) return m.description.match(/Type:\s*([^\n\r]+)/)[1].trim(); return 'Appel'; }
+   const getMeetingLocation = (m: any) => {
+      // 1. Priorité aux données API Cal.com
+      if (m.apiLocation) {
+         if (m.apiLocation.includes('integrations:daily')) return 'Visio';
+         if (m.apiLocation.includes('http')) return 'Lien';
+         return m.apiLocation;
+      }
+      // 2. Fallback DB
+      if (m.location) {
+         if (m.location.includes('http')) return 'Visio';
+         return m.location;
+      }
+      // 3. Fallback Description
+      if (m.description?.match(/Lieu:\s*([^\n\r]+)/)) return m.description.match(/Lieu:\s*([^\n\r]+)/)[1].trim();
+
+      return 'À vérifier';
+   }
 
    // --- RENDU ---
    const MeetingTable = ({ data, title, icon: Icon, emptyText, showDeleteAction, onRefresh }: any) => (
@@ -481,14 +497,14 @@ export function RendezVous() {
          </div>
          <div className="rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden shadow-xl">
             <table className="w-full">
-               <thead className="bg-slate-800/50"><tr className="border-b border-slate-800 text-xs font-bold uppercase tracking-widest text-slate-500 text-left"><th className="px-6 py-4">Date & Heure</th><th className="px-6 py-4">Prospect</th><th className="px-6 py-4">Provenance</th><th className="px-6 py-4">Statut</th><th className="px-6 py-4 text-right">Détails</th></tr></thead>
+               <thead className="bg-slate-800/50"><tr className="border-b border-slate-800 text-xs font-bold uppercase tracking-widest text-slate-500 text-left"><th className="px-6 py-4">Date & Heure</th><th className="px-6 py-4">Prospect</th><th className="px-6 py-4">Lieu</th><th className="px-6 py-4">Statut</th><th className="px-6 py-4 text-right">Détails</th></tr></thead>
                <tbody className="divide-y divide-slate-800">
                   {data.length === 0 ? (<tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium italic">{emptyText}</td></tr>) : (
                      data.map((m: any) => (
                         <tr key={m.id} onClick={() => setSelectedMeeting(m)} className="cursor-pointer hover:bg-slate-800/40 transition-colors">
                            <td className="px-6 py-4"><div className="flex items-center gap-3 text-white"><div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg bg-slate-800 border border-slate-700 font-bold"><span className="text-[10px] text-blue-500 uppercase">{safeFormat(m.date, 'MMM')}</span><span className="text-sm">{safeFormat(m.date, 'dd')}</span></div><div><div className="font-bold">{safeFormat(m.date, 'eeee d MMMM')}</div><div className="text-xs text-slate-500">{m.time}</div></div></div></td>
                            <td className="px-6 py-4 font-bold text-slate-200">{maskData(m.contact || 'Prospect', 'name')}</td>
-                           <td className="px-6 py-4 text-sm text-blue-400 font-medium">{getMeetingSource(m)}</td>
+                           <td className="px-6 py-4 text-sm text-blue-400 font-medium">{getMeetingLocation(m)}</td>
                            <td className="px-6 py-4"><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(m.status)}`}>{getStatusLabel(m.status)}</span></td>
                            <td className="px-6 py-4 text-right"><ExternalLink className="h-4 w-4 text-slate-600 ml-auto" /></td>
                         </tr>
@@ -1089,7 +1105,7 @@ export function RendezVous() {
                            <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center text-xl font-bold text-white">{selectedMeeting.contact?.charAt(0)}</div>
                            <div>
                               <p className="text-lg font-bold text-white">{maskData(selectedMeeting.contact, 'name')}</p>
-                              <p className="text-sm text-slate-500">{getMeetingSource(selectedMeeting)}</p>
+                              <p className="text-sm text-slate-500">{getMeetingLocation(selectedMeeting)}</p>
                            </div>
                         </div>
                         <div className="relative">
