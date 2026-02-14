@@ -70,7 +70,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           full_name: user.user_metadata?.full_name || data?.full_name || '',
           phone: user.user_metadata?.phone || data?.phone || '',
           role: user.user_metadata?.role || data?.role || '',
-          avatar_url: data?.avatar_url || ''
+          avatar_url: user.user_metadata?.avatar_url || data?.avatar_url || ''
         }))
       }
       setMessage({ type: '', text: '' })
