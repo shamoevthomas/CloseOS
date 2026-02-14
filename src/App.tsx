@@ -41,11 +41,12 @@ import { BookingSettings } from './pages/BookingSettings'
 import CallRoom from './pages/CallRoom'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import { Legal } from './pages/Legal' 
-import { WelcomeFounder } from './pages/WelcomeFounder' 
-import { ComingSoon } from './pages/ComingSoon' 
-import { CGU } from './pages/CGU' 
-import { PrivacyPolicy } from './pages/PrivacyPolicy' // 👇 AJOUT IMPORT
+import { Legal } from './pages/Legal'
+import { WelcomeFounder } from './pages/WelcomeFounder'
+import { ComingSoon } from './pages/ComingSoon'
+import { CGU } from './pages/CGU'
+import { PrivacyPolicy } from './pages/PrivacyPolicy'
+import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -69,14 +70,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Wrapper pour cacher l'onboarding sur certaines pages
 function OnboardingWrapper({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const location = useLocation()
-  
+
   // 👇 AJOUT de '/coming-soon' pour que l'onboarding ne s'ouvre pas dessus
   const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/coming-soon'];
 
   if (hiddenPaths.includes(location.pathname)) {
     return null;
   }
-  
+
   return <OnboardingModal isOpen={isOpen} onClose={onClose} />;
 }
 
@@ -97,11 +98,11 @@ function AuthenticatedApp() {
     <BrowserRouter>
       <Routes>
         {/* 👇 REDIRECTION PRINCIPALE : Si connecté, on va sur /coming-soon au lieu de /dashboard */}
-        <Route 
-          path="/" 
-          element={user ? <Navigate to="/coming-soon" replace /> : <LandingPage />} 
+        <Route
+          path="/"
+          element={user ? <Navigate to="/coming-soon" replace /> : <LandingPage />}
         />
-        
+
         {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -115,25 +116,26 @@ function AuthenticatedApp() {
         <Route path="/checkout-starter" element={<CheckoutStarter />} />
         <Route path="/return" element={<Return />} />
         <Route path="/welcome-founder" element={<WelcomeFounder />} />
+        <Route path="/confirm-email-change" element={<ConfirmEmailUpdate />} />
 
         {/* 👇 NOUVELLE ROUTE SÉPARÉE : Coming Soon (Hors du Layout) */}
-        <Route 
-          path="/coming-soon" 
+        <Route
+          path="/coming-soon"
           element={
             <ProtectedRoute>
               <ComingSoon />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Route Appel Plein Écran */}
-        <Route 
-          path="/live-call" 
+        <Route
+          path="/live-call"
           element={
             <ProtectedRoute>
               <CallRoom />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* APPLICATION PROTÉGÉE (AVEC MENU LATÉRAL) */}
@@ -146,7 +148,7 @@ function AuthenticatedApp() {
         >
           {/* 👇 J'AI REMIS LE DASHBOARD ICI */}
           <Route path="dashboard" element={<Dashboard />} />
-          
+
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="contacts" element={<Contacts />} />
           <Route path="offers" element={<Offers />} />
@@ -160,7 +162,7 @@ function AuthenticatedApp() {
           <Route path="rendez-vous" element={<RendezVous />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
-          
+
           {/* Si page inconnue, on renvoie vers coming-soon pour l'instant */}
           <Route path="*" element={<Navigate to="/coming-soon" replace />} />
         </Route>
@@ -168,9 +170,9 @@ function AuthenticatedApp() {
 
       {user && (
         <>
-          <OnboardingWrapper 
-            isOpen={isOnboardingOpen} 
-            onClose={() => setIsOnboardingOpen(false)} 
+          <OnboardingWrapper
+            isOpen={isOnboardingOpen}
+            onClose={() => setIsOnboardingOpen(false)}
           />
           <SettingsModal
             isOpen={isSettingsOpen}

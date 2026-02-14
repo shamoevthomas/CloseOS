@@ -51,6 +51,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     role: '',
     newPassword: '',
     confirmPassword: '',
+    currentPassword: '', // AJOUT
     newEmail: '',
     avatar_url: ''
   })
@@ -206,17 +207,46 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setMessage({ type: 'error', text: 'Les mots de passe ne correspondent pas.' })
       return
     }
-    setLoading(true)
-    const { error } = await updatePassword(formData.newPassword)
-    if (error) {
-      setMessage({ type: 'error', text: error.message })
-      window.alert('Erreur : ' + error.message)
-    } else {
-      setMessage({ type: 'success', text: 'Mot de passe modifié avec succès !' })
-      window.alert('Mot de passe modifié avec succès !')
-      setFormData(prev => ({ ...prev, newPassword: '', confirmPassword: '' }))
+    if (!formData.currentPassword) {
+      setMessage({ type: 'error', text: 'Veuillez entrer votre mot de passe actuel.' })
+      return
     }
-    setLoading(false)
+
+    setLoading(true)
+    setMessage({ type: '', text: '' })
+
+    try {
+      // 1. Vérifier le mot de passe actuel
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: formData.currentPassword
+      });
+
+      if (signInError) {
+        throw new Error('Mot de passe actuel incorrect.');
+      }
+
+      // 2. Mettre à jour le mot de passe
+      const { error: updateError } = await updatePassword(formData.newPassword)
+
+      if (updateError) throw updateError;
+
+      // 3. Envoyer notification de sécurité
+      await fetch('/api/notify-password-change', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user?.email })
+      });
+
+      setMessage({ type: 'success', text: 'Mot de passe modifié avec succès ! Un email de sécurité a été envoyé.' })
+      setFormData(prev => ({ ...prev, newPassword: '', confirmPassword: '', currentPassword: '' }))
+
+    } catch (error: any) {
+      console.error(error);
+      setMessage({ type: 'error', text: error.message || "Erreur lors de la mise à jour." })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleUpdateEmail = async (e: React.FormEvent) => {
@@ -226,16 +256,34 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       return
     }
     setLoading(true)
-    const { error } = await supabase.auth.updateUser({ email: formData.newEmail })
-    if (error) {
-      setMessage({ type: 'error', text: error.message })
-      window.alert('Erreur : ' + error.message)
-    } else {
-      setMessage({ type: 'success', text: 'Un email de confirmation a été envoyé à votre nouvelle adresse. Vérifiez votre boîte mail pour valider le changement.' })
-      window.alert('Un email de confirmation a été envoyé à votre nouvelle adresse. Vérifiez votre boîte mail pour valider le changement.')
+    setMessage({ type: '', text: '' })
+
+    try {
+      // Appel API personnalisé pour envoyer le lien de confirmation
+      const response = await fetch('/api/request-email-change', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          newEmail: formData.newEmail
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erreur lors de la demande.");
+      }
+
+      setMessage({ type: 'success', text: 'Un lien de confirmation a été envoyé à votre adresse ACTUELLE (support@closeos.fr). Vérifiez vos spams.' })
       setFormData(prev => ({ ...prev, newEmail: '' }))
+
+    } catch (error: any) {
+      console.error(error);
+      setMessage({ type: 'error', text: error.message })
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const handleDeleteAccount = async () => {
@@ -539,7 +587,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                       <div className="flex items-start gap-2 mt-2 px-1">
                         <AlertCircle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-                        <p className="text-xs text-amber-300/80 leading-relaxed text-left">Un email de confirmation sera envoyé à la nouvelle adresse. Le changement prendra effet après confirmation.</p>
+                        <p className="text-xs text-amber-300/80 leading-relaxed text-left">Un lien de confirmation sera envoyé à votre adresse <strong>ACTUELLE</strong>. Vous devrez ensuite confirmer votre mot de passe.</p>
                       </div>
                     </div>
                     <button
@@ -573,6 +621,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 ) : (
                   <form onSubmit={handleUpdatePassword} className="space-y-6 text-left">
                     <div className="space-y-2 text-left">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Mot de passe actuel (Requis)</label>
+                      <div className="relative text-left">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                        <input
+                          type="password"
+                          value={formData.currentPassword}
+                          onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+                          className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-left"
+                          placeholder="Votre mot de passe actuel"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-left">
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Nouveau mot de passe</label>
                       <div className="relative text-left">
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
@@ -602,7 +665,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </div>
                     <button
                       type="submit"
-                      disabled={loading || !formData.newPassword || !formData.confirmPassword}
+                      disabled={loading || !formData.newPassword || !formData.confirmPassword || !formData.currentPassword}
                       className="w-full bg-white/5 hover:bg-white/10 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-white/10 hover:border-white/20 text-left"
                     >
                       {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Shield className="h-5 w-5" />}
