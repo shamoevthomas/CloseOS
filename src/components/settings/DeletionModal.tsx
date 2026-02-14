@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, AlertTriangle, CheckCircle, Calendar, Trash2, ArrowRight, Loader2, Lock, ShieldAlert } from 'lucide-react';
+import { X, AlertTriangle, Trash2, ArrowRight, Loader2, Lock, ShieldAlert } from 'lucide-react';
 import { getCalApi } from "@calcom/embed-react";
 import Cal from "@calcom/embed-react";
 import { supabase } from '../../lib/supabase';
@@ -16,7 +16,6 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
     const [step, setStep] = useState<'initial' | 'select' | 'confirm' | 'cal' | 'final'>('initial');
     const [scope, setScope] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
-    const [scheduledDate, setScheduledDate] = useState<string | null>(null);
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
@@ -85,7 +84,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
         setStep('confirm');
     };
 
-    const handleConfirmDeletion = async () => {
+    const handleVerifyPassword = async () => {
         if (!password) {
             setError('Le mot de passe est requis.');
             return;
@@ -95,7 +94,6 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
         setError('');
 
         try {
-            // 1. Verify Password
             const { error: authError } = await supabase.auth.signInWithPassword({
                 email: userEmail,
                 password: password
@@ -105,7 +103,19 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                 throw new Error('Mot de passe incorrect.');
             }
 
-            // 2. Request Deletion
+            // Password verified, proceed to Cal step
+            setStep('cal');
+        } catch (error: any) {
+            console.error(error);
+            setError(error.message || "Erreur de vérification.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFinalizeDeletion = async () => {
+        setLoading(true);
+        try {
             const response = await fetch('/api/request-deletion', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -116,21 +126,24 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
             if (!response.ok) throw new Error(data.error);
 
             if (data.scheduledAt) {
-                setScheduledDate(data.scheduledAt);
+                // Optional: show a toast or alert before closing? 
+                // But typically onSuccess handles the UI state refresh/redirect.
             }
 
-            setStep('cal'); // Proceed to exit interview / info
+            onSuccess();
+            onClose();
         } catch (error: any) {
             console.error(error);
-            setError(error.message || "Erreur lors de la demande de suppression.");
+            // Show alert or error state. Since we are in the modal, we might want to stay here?
+            // But usually this API call shouldn't fail if earlier checks passed.
+            window.alert(error.message || "Erreur lors de la demande de suppression.");
         } finally {
             setLoading(false);
         }
     };
 
-    // Skip booking or finish
-    const handleFinish = () => {
-        onSuccess();
+    const handleAppointmentBooked = () => {
+        // Just close, do not delete.
         onClose();
     };
 
@@ -259,8 +272,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                             <div>
                                 <h3 className="text-2xl font-bold text-white mb-2">Êtes-vous vraiment sûr ?</h3>
                                 <p className="text-slate-400 max-w-md mx-auto mb-6">
-                                    Cette action enclenchera le processus de suppression définitif.
-                                    {scheduledDate ? " La suppression sera effective à la fin de votre période de facturation." : ""}
+                                    Cette action est la dernière étape avant la suppression définitive.
                                 </p>
 
                                 <div className="max-w-sm mx-auto space-y-4">
@@ -325,22 +337,31 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                         <>
                             <button onClick={onClose} className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors">Annuler</button>
                             <button
-                                onClick={handleConfirmDeletion}
+                                onClick={handleVerifyPassword}
                                 disabled={loading || !password}
                                 className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
                             >
-                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Valider la suppression"}
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Valider et continuer"}
                             </button>
                         </>
                     )}
 
                     {step === 'cal' && (
-                        <button
-                            onClick={handleFinish}
-                            className="w-full px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
-                        >
-                            J'ai pris rendez-vous / Je ne souhaite pas discuter <ArrowRight className="h-4 w-4" />
-                        </button>
+                        <div className="w-full flex gap-3">
+                            <button
+                                onClick={handleAppointmentBooked}
+                                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                                J'ai pris rendez-vous
+                            </button>
+                            <button
+                                onClick={handleFinalizeDeletion}
+                                disabled={loading}
+                                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Je ne souhaite pas discuter"}
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
