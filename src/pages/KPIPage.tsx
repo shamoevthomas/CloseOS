@@ -17,7 +17,9 @@ import {
   Settings,
   X,
   AlertTriangle,
-  Save
+  Save,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import {
   AreaChart,
@@ -33,12 +35,21 @@ import { useProspects } from '../contexts/ProspectsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
+interface KpiFormulaEntry {
+  name: string;
+  price: number;
+  commission: number;
+}
+
 interface KpiConfigEntry {
   offer_id: number | null;
   planned_calls: number;
   no_shows: number;
   lost_calls: number;
   won_calls: number;
+  formulas: KpiFormulaEntry[];
+  total_revenue: number;
+  total_commission: number;
 }
 
 // ============================================================================
@@ -162,6 +173,12 @@ export function KPIPage() {
   const [kpiConfigs, setKpiConfigs] = useState<Record<string, KpiConfigEntry>>({});
   const [savingConfig, setSavingConfig] = useState(false);
 
+  const defaultConfig = (key: string): KpiConfigEntry => ({
+    offer_id: key === 'global' ? null : parseInt(key),
+    planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0,
+    formulas: [], total_revenue: 0, total_commission: 0,
+  });
+
   const loadKpiConfig = useCallback(async () => {
     if (!user) return;
     const { data, error } = await supabase.from('kpi_config').select('*').eq('user_id', user.id);
@@ -169,7 +186,12 @@ export function KPIPage() {
     const configs: Record<string, KpiConfigEntry> = {};
     (data || []).forEach((row: any) => {
       const key = row.offer_id ? String(row.offer_id) : 'global';
-      configs[key] = { offer_id: row.offer_id, planned_calls: row.planned_calls || 0, no_shows: row.no_shows || 0, lost_calls: row.lost_calls || 0, won_calls: row.won_calls || 0 };
+      configs[key] = {
+        offer_id: row.offer_id, planned_calls: row.planned_calls || 0, no_shows: row.no_shows || 0,
+        lost_calls: row.lost_calls || 0, won_calls: row.won_calls || 0,
+        formulas: Array.isArray(row.formulas) ? row.formulas : [],
+        total_revenue: row.total_revenue || 0, total_commission: row.total_commission || 0,
+      };
     });
     setKpiConfigs(configs);
   }, [user]);
@@ -183,6 +205,7 @@ export function KPIPage() {
       const upsertRows = Object.entries(kpiConfigs).map(([key, entry]) => ({
         user_id: user.id, offer_id: key === 'global' ? null : parseInt(key),
         planned_calls: entry.planned_calls, no_shows: entry.no_shows, lost_calls: entry.lost_calls, won_calls: entry.won_calls,
+        formulas: entry.formulas, total_revenue: entry.total_revenue, total_commission: entry.total_commission,
         updated_at: new Date().toISOString(),
       }));
       const { error } = await supabase.from('kpi_config').upsert(upsertRows, { onConflict: 'user_id,offer_id' });
@@ -192,10 +215,32 @@ export function KPIPage() {
   };
 
   const updateConfigField = (key: string, field: keyof KpiConfigEntry, value: number) => {
-    setKpiConfigs(prev => ({ ...prev, [key]: { ...prev[key] || { offer_id: key === 'global' ? null : parseInt(key), planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0 }, [field]: value } }));
+    setKpiConfigs(prev => ({ ...prev, [key]: { ...(prev[key] || defaultConfig(key)), [field]: value } }));
   };
 
-  const getConfigForKey = (key: string): KpiConfigEntry => kpiConfigs[key] || { offer_id: key === 'global' ? null : parseInt(key), planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0 };
+  const getConfigForKey = (key: string): KpiConfigEntry => kpiConfigs[key] || defaultConfig(key);
+
+  const addFormula = (key: string) => {
+    setKpiConfigs(prev => {
+      const cfg = prev[key] || defaultConfig(key);
+      return { ...prev, [key]: { ...cfg, formulas: [...cfg.formulas, { name: '', price: 0, commission: 0 }] } };
+    });
+  };
+
+  const removeFormula = (key: string, idx: number) => {
+    setKpiConfigs(prev => {
+      const cfg = prev[key] || defaultConfig(key);
+      return { ...prev, [key]: { ...cfg, formulas: cfg.formulas.filter((_, i) => i !== idx) } };
+    });
+  };
+
+  const updateFormula = (key: string, idx: number, field: keyof KpiFormulaEntry, value: string | number) => {
+    setKpiConfigs(prev => {
+      const cfg = prev[key] || defaultConfig(key);
+      const updated = cfg.formulas.map((f, i) => i === idx ? { ...f, [field]: value } : f);
+      return { ...prev, [key]: { ...cfg, formulas: updated } };
+    });
+  };
 
   // Chargement Legacy
   useEffect(() => {
@@ -362,16 +407,21 @@ export function KPIPage() {
 
   // KPI Config pour cartes et graphiques
   const totalKpiConfig = useMemo(() => {
-    const total = { planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0 };
-    Object.values(kpiConfigs).forEach(c => { total.planned_calls += c.planned_calls; total.no_shows += c.no_shows; total.lost_calls += c.lost_calls; total.won_calls += c.won_calls; });
+    const total: KpiConfigEntry = { offer_id: null, planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0, formulas: [] as KpiFormulaEntry[], total_revenue: 0, total_commission: 0 };
+    Object.values(kpiConfigs).forEach(c => {
+      total.planned_calls += c.planned_calls; total.no_shows += c.no_shows; total.lost_calls += c.lost_calls; total.won_calls += c.won_calls;
+      total.total_revenue += c.total_revenue; total.total_commission += c.total_commission;
+      // Calculer revenu et commission depuis les formules par offre
+      (c.formulas || []).forEach(f => { total.total_revenue += f.price * (c.won_calls || 0); total.total_commission += f.commission * (c.won_calls || 0); });
+    });
     return total;
   }, [kpiConfigs]);
 
-  const activeTabKpiConfig = useMemo(() => {
+  const activeTabKpiConfig = useMemo((): KpiConfigEntry => {
     if (activeTab === 'global') return totalKpiConfig;
     const targetOffer = allOffers.find(o => o.name === activeTab);
     if (targetOffer) { const config = kpiConfigs[String(targetOffer.id)]; if (config) return config; }
-    return { planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0 };
+    return defaultConfig('0');
   }, [activeTab, kpiConfigs, totalKpiConfig, allOffers]);
 
   // Variables affichées dans les cartes (KPI) — incluant la config initiale
@@ -394,8 +444,21 @@ export function KPIPage() {
   const finalConversion = totalOutcomes > 0 ? (finalSales / totalOutcomes) * 100 : (hasContextData ? ctxConversion : legacyConv);
   const finalNoShowRate = totalOutcomes > 0 ? (cfgNoShow + (hasContextData ? noShowProspects.length : 0)) / totalOutcomes * 100 : (hasContextData ? ctxNoShowRate : 0);
 
-  const finalRevenue = baseRevenue;
-  const finalCommissions = baseCommissions;
+  // Calculer le CA et commissions depuis les formules de la config
+  const cfgRevenue = useMemo(() => {
+    if (activeTab === 'global') return activeTabKpiConfig.total_revenue;
+    const cfg = activeTabKpiConfig;
+    return (cfg.formulas || []).reduce((sum, f) => sum + f.price * cfgWon, 0);
+  }, [activeTab, activeTabKpiConfig, cfgWon]);
+
+  const cfgCommission = useMemo(() => {
+    if (activeTab === 'global') return activeTabKpiConfig.total_commission;
+    const cfg = activeTabKpiConfig;
+    return (cfg.formulas || []).reduce((sum, f) => sum + f.commission * cfgWon, 0);
+  }, [activeTab, activeTabKpiConfig, cfgWon]);
+
+  const finalRevenue = baseRevenue + cfgRevenue;
+  const finalCommissions = baseCommissions + cfgCommission;
   const finalActiveCount = hasContextData ? activeProspects.length : 0;
   const avgCommission = finalSales > 0 ? finalCommissions / finalSales : 0;
 
@@ -645,13 +708,14 @@ export function KPIPage() {
               </div>
 
               {/* Form */}
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-4 max-h-[50vh] overflow-y-auto">
                 {configTab === 'global' && (
                   <p className="text-xs text-slate-400 bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700/50">
                     📌 Saisissez les chiffres <span className="font-semibold text-white">hors offres déjà inscrites</span> ci-dessus.
                   </p>
                 )}
 
+                {/* Call fields — both offer and global tabs */}
                 {(() => {
                   const config = getConfigForKey(configTab);
                   const fields: { key: keyof KpiConfigEntry; label: string; icon: string; color: string }[] = [
@@ -675,6 +739,102 @@ export function KPIPage() {
                     </div>
                   ));
                 })()}
+
+                {/* OFFER TABS: Formulas frame */}
+                {configTab !== 'global' && (
+                  <div className="mt-4 rounded-xl border border-white/10 bg-slate-800/30 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-white">📋 Formules</h4>
+                      <button
+                        onClick={() => addFormula(configTab)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-xs font-medium text-emerald-400 hover:bg-emerald-600/30 transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Ajouter
+                      </button>
+                    </div>
+
+                    {getConfigForKey(configTab).formulas.length === 0 && (
+                      <p className="text-xs text-slate-500 italic">Aucune formule. Cliquez sur "Ajouter" pour en créer une.</p>
+                    )}
+
+                    {getConfigForKey(configTab).formulas.map((formula, idx) => (
+                      <div key={idx} className="rounded-lg border border-white/5 bg-slate-900/50 p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-400">Formule {idx + 1}</span>
+                          <button
+                            onClick={() => removeFormula(configTab, idx)}
+                            className="p-1 rounded text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 mb-1 block">Nom</label>
+                          <input
+                            type="text"
+                            value={formula.name}
+                            onChange={(e) => updateFormula(configTab, idx, 'name', e.target.value)}
+                            placeholder="Ex: Formule Gold"
+                            className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">💰 Prix (€)</label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={formula.price}
+                              onChange={(e) => updateFormula(configTab, idx, 'price', parseFloat(e.target.value) || 0)}
+                              className="w-full rounded-lg border border-amber-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">🏆 Commission (€)</label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={formula.commission}
+                              onChange={(e) => updateFormula(configTab, idx, 'commission', parseFloat(e.target.value) || 0)}
+                              className="w-full rounded-lg border border-emerald-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* GLOBAL TAB: Commission & CA */}
+                {configTab === 'global' && (
+                  <div className="mt-4 rounded-xl border border-white/10 bg-slate-800/30 p-4 space-y-3">
+                    <h4 className="text-sm font-bold text-white">💶 Revenus initiaux</h4>
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+                        <span>💰</span> CA Généré (€)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={getConfigForKey('global').total_revenue}
+                        onChange={(e) => updateConfigField('global', 'total_revenue', parseFloat(e.target.value) || 0)}
+                        className="w-full rounded-lg border border-emerald-500/30 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+                        <span>🏆</span> Commission (€)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={getConfigForKey('global').total_commission}
+                        onChange={(e) => updateConfigField('global', 'total_commission', parseFloat(e.target.value) || 0)}
+                        className="w-full rounded-lg border border-amber-500/30 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Footer */}
