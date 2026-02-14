@@ -51,11 +51,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) throw error
 
-    // 4. Succès -> Retour aux réglages
-    res.redirect(`${process.env.VITE_APP_URL}/settings?cal_connected=true`)
+    // 4. Succès -> Retour à la page Rendez-vous
+    res.redirect(`${process.env.VITE_APP_URL}/rendez-vous?cal_connected=true`)
 
   } catch (error: any) {
     console.error('Erreur OAuth:', error)
-    res.redirect(`${process.env.VITE_APP_URL}/settings?cal_error=${encodeURIComponent(error.message)}`)
+    res.redirect(`${process.env.VITE_APP_URL}/rendez-vous?cal_error=${encodeURIComponent(error.message)}`)
   }
 }
