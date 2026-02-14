@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
   User,
   ChevronDown,
