@@ -777,27 +777,7 @@ export function RendezVous() {
                         )}
                      </section>
 
-                     <hr className="border-slate-800" />
-
-                     {/* Supademo Tutorial */}
-                     <section>
-                        <div className="rounded-lg bg-slate-900 border border-slate-800 p-6">
-                           <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">📚 Guide d'utilisation</h3>
-                           <p className="text-sm text-slate-300 mb-4">
-                              Découvrez comment configurer Cal.com et synchroniser vos rendez-vous avec Close OS.
-                           </p>
-                           <div className="rounded-lg overflow-hidden border border-slate-700 bg-black" style={{ aspectRatio: '16/9' }}>
-                              <iframe
-                                 src="https://app.supademo.com/embed/cmllct87b268o5yi3m4p1uhni"
-                                 frameBorder="0"
-                                 allow="clipboard-write"
-                                 allowFullScreen
-                                 className="w-full h-full"
-                                 title="Guide Cal.com"
-                              />
-                           </div>
-                        </div>
-                     </section>
+                     {/* Tutorial removed */}
 
                      <hr className="border-slate-800" />
 
