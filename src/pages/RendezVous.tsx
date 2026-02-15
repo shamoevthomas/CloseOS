@@ -230,8 +230,8 @@ export function RendezVous() {
 
    // 2. Connexion OAuth (v2)
    const handleConnectCal = () => {
-      const clientId = import.meta.env.VITE_CAL_CLIENT_ID
-      const redirectUri = `${import.meta.env.VITE_APP_URL}/api/cal-callback`
+      const clientId = '452e83a06c630a84cba92ab72cd43735c78ee8b5b691f488de432201b2d951ba'
+      const redirectUri = `https://close-os.vercel.app/api/cal-callback`
       const state = user?.id
 
       window.location.href = `https://app.cal.com/auth/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`
