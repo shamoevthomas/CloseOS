@@ -35,9 +35,18 @@ export default async function handler(req: Request) {
         // Forward headers (especially Authorization)
         const headers = new Headers();
         const authHeader = req.headers.get('Authorization');
+
+        console.log(`[Proxy] Target: ${targetUrl}`);
+        console.log(`[Proxy] Auth Header Present: ${!!authHeader}`); // Debug log
+
         if (authHeader) {
+            console.log(`[Proxy] Auth Header Length: ${authHeader.length}`);
+            console.log(`[Proxy] Auth Header Preview: ${authHeader.substring(0, 15)}...`);
             headers.set('Authorization', authHeader);
+        } else {
+            console.warn(`[Proxy] Missing Authorization Header!`);
         }
+
         headers.set('Content-Type', 'application/json');
 
         const options: RequestInit = {
@@ -50,13 +59,20 @@ export default async function handler(req: Request) {
             const bodyText = await req.text();
             if (bodyText) {
                 options.body = bodyText;
+                console.log(`[Proxy] Body included (${bodyText.length} chars)`);
             }
         }
 
         const response = await fetch(targetUrl, options);
 
+        console.log(`[Proxy] Upstream Status: ${response.status}`);
+
         // Handling response
         const responseBody = await response.text();
+
+        if (!response.ok) {
+            console.log(`[Proxy] Upstream Error Body: ${responseBody.slice(0, 500)}`);
+        }
 
         return new Response(responseBody, {
             status: response.status,

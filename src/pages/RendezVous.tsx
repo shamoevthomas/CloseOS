@@ -189,6 +189,7 @@ export function RendezVous() {
    // 3. Fetch Events (OAuth)
    const fetchEventTypes = async (accessToken: string) => {
       setIsLoadingEvents(true)
+      console.log("DEBUG: Fetching Event Types with Token:", accessToken ? (accessToken.substring(0, 10) + "...") : "MISSING");
       try {
          const response = await fetch(`/api/cal-proxy?url=/v1/event-types`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
