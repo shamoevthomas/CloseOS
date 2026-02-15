@@ -199,20 +199,30 @@ export function RendezVous() {
          console.log("V2 Event Types Response FULL:", JSON.stringify(data, null, 2));
 
          // Handle V2 response structure
-         let events = [];
+         let events: any[] = [];
          if (data.status === "success") {
-             if (Array.isArray(data.data)) {
-                 events = data.data;
-             } else if (data.data && typeof data.data === 'object') {
-                 // Check for common V2 pagination wrappers
-                 // @ts-ignore
-                 events = data.data.event_types || data.data.items || data.data.rows || [];
-             }
+            if (Array.isArray(data.data)) {
+               events = data.data;
+            } else if (data.data && typeof data.data === 'object') {
+               // V2 Structure: data.data.eventTypeGroups[].eventTypes
+               // @ts-ignore
+               if (data.data.eventTypeGroups && Array.isArray(data.data.eventTypeGroups)) {
+                  // @ts-ignore
+                  events = data.data.eventTypeGroups.flatMap((group: any) => group.eventTypes || []);
+               }
+               // Fallback for other structures
+               // @ts-ignore
+               else if (data.data.event_types) events = data.data.event_types;
+               // @ts-ignore
+               else if (data.data.items) events = data.data.items;
+               // @ts-ignore
+               else if (data.data.rows) events = data.data.rows;
+            }
          } else if (data.event_types) {
-             // Fallback V1
-             events = data.event_types;
+            // Fallback V1
+            events = data.event_types;
          }
-         
+
          setEventTypes(events)
       } catch (error) { console.error("Erreur fetch Cal.com:", error) } finally { setIsLoadingEvents(false) }
    }
