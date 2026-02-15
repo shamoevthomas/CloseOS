@@ -25,6 +25,7 @@ import { useState, useEffect } from 'react' // Modification ici : ajout de useEf
 import { useNotifications } from '../contexts/NotificationsContext'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { useTheme } from '../contexts/ThemeContext'
 
 // Mise à jour de la navigation
 const navigation = [
@@ -50,6 +51,7 @@ interface SidebarProps {
 export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
+  const { theme } = useTheme()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { counts, clearBadge } = useNotifications()
 
@@ -104,7 +106,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
         <div className="flex h-16 items-center justify-between px-6 border-b border-gray-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <img
-              src="/logo.PNG"
+              src={theme === 'light' ? "/logo-light.png" : "/logo.PNG"}
               alt="CloserOS"
               className="h-8 w-auto object-contain rounded-md"
             />
