@@ -110,55 +110,7 @@ export function RendezVous() {
 
    // 1. Chargement initial (OAuth)
    // 1. Chargement initial (OAuth) + Auto-Refresh
-   useEffect(() => {
-      const fetchProfile = async () => {
-         if (!user) return
 
-         try {
-            const { data } = await supabase.from('profiles').select('cal_access_token, cal_token_expires_at').eq('id', user.id).single()
-
-            if (data?.cal_access_token) {
-               let token = data.cal_access_token;
-
-               // Check Expiration (with 5 min buffer)
-               if (data.cal_token_expires_at && Date.now() > (data.cal_token_expires_at - 300000)) {
-                  console.log("Token expired or expiring soon. Refreshing...");
-                  try {
-                     const refreshRes = await fetch('/api/refresh-cal-token', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: user.id })
-                     });
-                     const refreshData = await refreshRes.json();
-                     if (refreshData.access_token) {
-                        token = refreshData.access_token;
-                        console.log("Token refreshed successfully.");
-                     }
-                  } catch (e) {
-                     console.error("Failed to refresh token", e);
-                  }
-               }
-
-               setCalAccessToken(token)
-               fetchEventTypes(token)
-               fetchCalProfile(token)
-               fetchCalBookings(token, false) // Chargement silencieux au démarrage
-            }
-         } catch (err) {
-            console.error("Error fetching profile:", err);
-         }
-      }
-      fetchProfile()
-
-      // Check URL params for OAuth success/error
-      const params = new URLSearchParams(window.location.search)
-      if (params.get('cal_connected') === 'true') {
-         setIsConfigModalOpen(true)
-         window.history.replaceState({}, '', window.location.pathname) // Clean URL
-      } else if (params.get('cal_error')) {
-         alert("Erreur connexion Cal.com: " + params.get('cal_error'))
-      }
-   }, [user])
 
    // --- FONCTION DE SYNCHRONISATION PUISSANTE ---
    const runDeepSync = async (bookings: any[]) => {
@@ -252,13 +204,28 @@ export function RendezVous() {
    // 3b. Fetch Profile (OAuth)
    const fetchCalProfile = async (accessToken: string) => {
       try {
+         // Try V2 API first
+         const responseV2 = await fetch(`https://api.cal.com/v2/me`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+         })
+
+         if (responseV2.ok) {
+            const data = await responseV2.json()
+            const username = data.data?.username || data.data?.email
+            if (username) {
+               setCalUsername(username)
+               return
+            }
+         }
+
+         // Fallback to V1 API
          const response = await fetch(`https://api.cal.com/v1/me`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
          })
          const data = await response.json()
          if (data.user?.username) setCalUsername(data.user.username)
          else if (data.username) setCalUsername(data.username)
-      } catch (error) { console.error(error) }
+      } catch (error) { console.error("Erreur fetch profile Cal.com:", error) }
    }
 
    // 3c. Fetch Bookings & Trigger Sync (OAuth)
@@ -570,6 +537,60 @@ export function RendezVous() {
          </div>
       </div>
    )
+
+   // 1. Chargement initial (OAuth) + Auto-Refresh
+   useEffect(() => {
+      const fetchProfile = async () => {
+         if (!user) return
+
+         try {
+            const { data } = await supabase.from('profiles').select('cal_access_token, cal_token_expires_at, cal_username').eq('id', user.id).single()
+
+            if (data?.cal_access_token) {
+               let token = data.cal_access_token;
+
+               // Check Expiration (with 5 min buffer)
+               if (data.cal_token_expires_at && Date.now() > (new Date(data.cal_token_expires_at).getTime() - 300000)) {
+                  console.log("Token expired or expiring soon. Refreshing...");
+                  try {
+                     const refreshRes = await fetch('/api/refresh-cal-token', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: user.id })
+                     });
+                     const refreshData = await refreshRes.json();
+                     if (refreshData.access_token) {
+                        token = refreshData.access_token;
+                        console.log("Token refreshed successfully.");
+                     }
+                  } catch (e) {
+                     console.error("Failed to refresh token", e);
+                  }
+               }
+
+               setCalAccessToken(token)
+               if (data.cal_username) setCalUsername(data.cal_username)
+
+               await fetchEventTypes(token)
+               await fetchCalProfile(token)
+               await fetchCalBookings(token, false)
+            }
+         } catch (err) {
+            console.error("Error fetching profile:", err);
+         }
+      }
+      fetchProfile()
+
+      // Check URL params for OAuth success/error
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('cal_connected') === 'true') {
+         setIsConfigModalOpen(true)
+         window.history.replaceState({}, '', window.location.pathname) // Clean URL
+      } else if (params.get('cal_error')) {
+         alert("Erreur connexion Cal.com: " + params.get('cal_error'))
+      }
+   }, [user])
+
 
    if (meetingsLoading) return <div className="flex h-screen items-center justify-center bg-slate-950"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div></div>
 

@@ -12,7 +12,7 @@ interface PrivacyContextType {
   settings: PrivacySettings
   togglePrivacy: () => void
   updateSettings: (newSettings: Partial<PrivacySettings>) => void
-  maskData: (value: string, type: 'number' | 'name') => string
+  maskData: (value: string, type: 'number' | 'name' | 'email' | 'phone') => string
 }
 
 const PrivacyContext = createContext<PrivacyContextType | undefined>(undefined)
@@ -83,7 +83,7 @@ export function PrivacyProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => ({ ...prev, ...newSettings }))
   }
 
-  const maskData = (value: string, type: 'number' | 'name'): string => {
+  const maskData = (value: string, type: 'number' | 'name' | 'email' | 'phone'): string => {
     if (!isPrivacyEnabled) {
       return value
     }
@@ -105,7 +105,7 @@ export function PrivacyProvider({ children }: { children: ReactNode }) {
       return value
     }
 
-    if (type === 'name' && settings.hideNames) {
+    if ((type === 'name' || type === 'email' || type === 'phone') && settings.hideNames) {
       // Garder les 3 premières lettres et remplacer le reste par des étoiles
       if (value.length <= 3) {
         return value
