@@ -196,14 +196,24 @@ export function RendezVous() {
             headers: { 'Authorization': `Bearer ${accessToken}` }
          })
          const data = await response.json()
-         console.log("V2 Event Types Response:", data);
+         console.log("V2 Event Types Response FULL:", JSON.stringify(data, null, 2));
 
-         if (data.status === "success" && Array.isArray(data.data)) {
-            setEventTypes(data.data)
+         // Handle V2 response structure
+         let events = [];
+         if (data.status === "success") {
+             if (Array.isArray(data.data)) {
+                 events = data.data;
+             } else if (data.data && typeof data.data === 'object') {
+                 // Check for common V2 pagination wrappers
+                 // @ts-ignore
+                 events = data.data.event_types || data.data.items || data.data.rows || [];
+             }
          } else if (data.event_types) {
-            // Fallback if V1 was somehow called or schema differs
-            setEventTypes(data.event_types)
+             // Fallback V1
+             events = data.event_types;
          }
+         
+         setEventTypes(events)
       } catch (error) { console.error("Erreur fetch Cal.com:", error) } finally { setIsLoadingEvents(false) }
    }
 
@@ -264,12 +274,12 @@ export function RendezVous() {
       }
    }
 
-   // 4. Suppression Event Type (OAuth)
+   // 4. Suppression Event Type (OAuth) - V2
    const handleDeleteEventType = async (id: number) => {
       if (!window.confirm("Voulez-vous supprimer ce lien définitivement (CloseOS + Cal.com) ?")) return
       setIsDeletingEvent(id)
       try {
-         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent(`/v1/event-types/${id}`)}`, {
+         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent(`/v2/event-types/${id}`)}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${calAccessToken}` }
          })
@@ -303,7 +313,7 @@ export function RendezVous() {
             isHidden: false
          }
 
-         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent('/v1/event-types')}`, {
+         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent('/v2/event-types')}`, {
             method: 'POST',
             headers: {
                'Content-Type': 'application/json',
@@ -373,7 +383,7 @@ export function RendezVous() {
             slotInterval: editingEvent.slotInterval ? Number(editingEvent.slotInterval) : null
          }
 
-         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent(`/v1/event-types/${editingEvent.id}`)}`, {
+         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent(`/v2/event-types/${editingEvent.id}`)}`, {
             method: 'PATCH',
             headers: {
                'Content-Type': 'application/json',
