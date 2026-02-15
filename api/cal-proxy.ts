@@ -30,19 +30,27 @@ export default async function handler(req: Request) {
         }
 
         // Construct target URL
-        const targetUrl = `https://api.cal.com${targetPath}`;
+        let finalTargetUrl = `https://api.cal.com${targetPath}`;
 
         // Forward headers (especially Authorization)
         const headers = new Headers();
         const authHeader = req.headers.get('Authorization');
 
-        console.log(`[Proxy] Target: ${targetUrl}`);
-        console.log(`[Proxy] Auth Header Present: ${!!authHeader}`); // Debug log
+        console.log(`[Proxy] Target Path: ${targetPath}`);
+        console.log(`[Proxy] Auth Header Present: ${!!authHeader}`);
 
         if (authHeader) {
-            console.log(`[Proxy] Auth Header Length: ${authHeader.length}`);
-            console.log(`[Proxy] Auth Header Preview: ${authHeader.substring(0, 15)}...`);
+            // console.log(`[Proxy] Auth Header Length: ${authHeader.length}`);
             headers.set('Authorization', authHeader);
+
+            // Fallback: Append access_token query param for V1 endpoints if Bearer token
+            // This helps if Cal.com V1 fails to read the header or expects apiKey/access_token param
+            if (authHeader.startsWith('Bearer ')) {
+                const token = authHeader.split(' ')[1];
+                const separator = finalTargetUrl.includes('?') ? '&' : '?';
+                finalTargetUrl += `${separator}access_token=${token}`;
+                console.log(`[Proxy] Appended access_token to URL fallback`);
+            }
         } else {
             console.warn(`[Proxy] Missing Authorization Header!`);
         }
@@ -63,7 +71,8 @@ export default async function handler(req: Request) {
             }
         }
 
-        const response = await fetch(targetUrl, options);
+        console.log(`[Proxy] Fetching: ${finalTargetUrl}`);
+        const response = await fetch(finalTargetUrl, options);
 
         console.log(`[Proxy] Upstream Status: ${response.status}`);
 
