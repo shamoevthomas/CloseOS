@@ -191,11 +191,19 @@ export function RendezVous() {
       setIsLoadingEvents(true)
       console.log("DEBUG: Fetching Event Types with Token:", accessToken ? (accessToken.substring(0, 10) + "...") : "MISSING");
       try {
-         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent('/v1/event-types')}`, {
+         // Attempt V2 API
+         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent('/v2/event-types')}`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
          })
          const data = await response.json()
-         if (data.event_types) setEventTypes(data.event_types)
+         console.log("V2 Event Types Response:", data);
+
+         if (data.status === "success" && Array.isArray(data.data)) {
+            setEventTypes(data.data)
+         } else if (data.event_types) {
+            // Fallback if V1 was somehow called or schema differs
+            setEventTypes(data.event_types)
+         }
       } catch (error) { console.error("Erreur fetch Cal.com:", error) } finally { setIsLoadingEvents(false) }
    }
 
@@ -232,14 +240,18 @@ export function RendezVous() {
       if (manualTrigger) setIsSyncing(true);
 
       try {
-         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent('/v1/bookings?take=100&status=CANCELLED,ACCEPTED,REJECTED')}`, {
+         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent('/v2/bookings?limit=100&status=CANCELLED,ACCEPTED,REJECTED')}`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
          })
          const data = await response.json()
-         if (data.bookings) {
-            setCalBookings(data.bookings);
+         console.log("V2 Bookings Response:", data);
+
+         const bookings = data.status === "success" && data.data ? data.data : data.bookings;
+
+         if (bookings) {
+            setCalBookings(bookings);
             // Lancer la synchro DB immédiatement après récupération
-            const count = await runDeepSync(data.bookings);
+            const count = await runDeepSync(bookings);
             if (manualTrigger) {
                alert(`Synchronisation terminée : ${count} rendez-vous mis à jour.`);
             }
