@@ -179,7 +179,7 @@ export function LandingPage() {
             Synchronisation native avec vos outils préférés
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
-            <div className="flex flex-col items-center gap-1 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
@@ -309,130 +309,118 @@ export function LandingPage() {
             <p className="text-slate-400 mt-4 max-w-2xl mx-auto text-sm">Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers, agences et infopreneurs.</p>
           </div>
 
-          {/* Timeline Roadmap with Alternating Cards */}
-          <div className="relative max-w-6xl mx-auto px-4 py-12">
-            {/* Horizontal Timeline Line */}
-            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-purple-500 via-orange-500 to-teal-500"></div>
+          {/* Horizontal scrollable timeline — alternating top/bottom */}
+          <div className="overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide">
+            <div className="relative min-w-[900px]" style={{ height: '340px' }}>
+              {/* Horizontal line — centered vertically */}
+              <div className="absolute left-0 right-0 h-px bg-gradient-to-r from-blue-500/60 via-purple-500/60 via-amber-500/60 to-emerald-500/60" style={{ top: '50%' }} />
 
-            {/* Timeline Grid */}
-            <div className="grid grid-cols-7 gap-8 relative">
+              <div className="flex justify-between items-stretch h-full">
 
-              {/* Q1 - Lancement CloseOS (Above) */}
-              <div className="col-span-1 flex flex-col items-center">
-                <div className="relative z-10 mb-8">
-                  <div className="bg-[#0f1829] border border-blue-500/30 rounded-xl p-4 w-48 hover:shadow-xl hover:shadow-blue-500/20 transition-all">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Zap className="h-4 w-4 text-blue-400" />
-                    </div>
-                    <h3 className="font-bold text-white text-sm mb-1">Lancement CloseOS</h3>
-                    <p className="text-xs text-slate-400 mb-2">CRM, Pipeline, VoIP, KPIs...</p>
-                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30">
-                      <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></span>
-                      <span className="text-[10px] font-bold text-emerald-400">LIVE</span>
+                {/* Q1 — BELOW */}
+                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-blue-500/30 border-2 border-blue-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
+                    Q1
+                  </div>
+                  <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 36px)' }}>
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 text-center">
+                      <Zap className="h-4 w-4 text-blue-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">Lancement CloseOS</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">CRM, Pipeline, VoIP, KPIs...</p>
+                      <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-blue-500/50">
-                  Q1
-                </div>
-              </div>
 
-              {/* Q2 - Interface Infopreneur (Below) */}
-              <div className="col-span-2 flex flex-col items-center">
-                <div className="w-14 h-14 rounded-full bg-purple-500 flex items-center justify-center text-white font-black shadow-lg shadow-purple-500/50 mb-8">
-                  Q2
-                </div>
-                <div className="relative z-10">
-                  <div className="bg-[#0f1829] border border-purple-500/30 rounded-xl p-4 w-48 hover:shadow-xl hover:shadow-purple-500/20 transition-all">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Building2 className="h-4 w-4 text-purple-400" />
+                {/* Q2 Début — ABOVE */}
+                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-[9px] font-black shadow-lg shadow-indigo-500/30 border-2 border-indigo-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
+                    Q2
+                  </div>
+                  <div className="absolute left-0 right-0 px-1" style={{ bottom: 'calc(50% + 36px)' }}>
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300 text-center">
+                      <Building2 className="h-4 w-4 text-indigo-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">Interface Infopreneur</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">Gérez votre équipe de closers</p>
+                      <span className="text-[9px] text-indigo-400 font-semibold uppercase">Début Q2</span>
                     </div>
-                    <h3 className="font-bold text-white text-sm mb-1">Interface Infopreneur</h3>
-                    <p className="text-xs text-slate-400 mb-1">Gérer votre équipe</p>
-                    <span className="text-[10px] text-purple-400 font-bold uppercase">Début Q2</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Q2 - Interface Agence (Below) */}
-              <div className="col-span-1 flex flex-col items-center pt-20">
-                <div className="relative z-10">
-                  <div className="bg-[#0f1829] border border-purple-500/30 rounded-xl p-4 w-44 hover:shadow-xl hover:shadow-purple-500/20 transition-all">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="h-4 w-4 text-purple-400" />
+                {/* Q2 Milieu — BELOW */}
+                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 8px)' }} />
+                  <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 16px)' }}>
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 text-center">
+                      <Users className="h-4 w-4 text-purple-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">Interface Agence</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">Gestion d'équipes</p>
+                      <span className="text-[9px] text-purple-400 font-semibold uppercase">Milieu Q2</span>
                     </div>
-                    <h3 className="font-bold text-white text-sm mb-1">Interface Agence</h3>
-                    <p className="text-xs text-slate-400 mb-1">Manager vos closers</p>
-                    <span className="text-[10px] text-purple-400 font-bold uppercase">Milieu Q2</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Q2 - Rapport de Perf + Coaching (Below) */}
-              <div className="col-span-1 flex flex-col items-center pt-20">
-                <div className="relative z-10">
-                  <div className="bg-[#0f1829] border border-purple-500/30 rounded-xl p-4 w-44 hover:shadow-xl hover:shadow-purple-500/20 transition-all">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FileText className="h-4 w-4 text-purple-400" />
+                {/* Q2 Fin — ABOVE */}
+                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full bg-violet-500 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 8px)' }} />
+                  <div className="absolute left-0 right-0 px-1" style={{ bottom: 'calc(50% + 16px)' }}>
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300 text-center">
+                      <FileText className="h-4 w-4 text-violet-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">Rapport de performance</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">Feedback sur appels</p>
+                      <span className="text-[9px] text-violet-400 font-semibold uppercase">Fin Q2</span>
                     </div>
-                    <h3 className="font-bold text-white text-sm mb-1">Rapport de Perf + Coaching</h3>
-                    <p className="text-xs text-slate-400 mb-1">Feedback sur appels</p>
-                    <span className="text-[10px] text-purple-400 font-bold uppercase">Fin Q2</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Q3 - App Mobile (Above) */}
-              <div className="col-span-1 flex flex-col items-center">
-                <div className="relative z-10 mb-8">
-                  <div className="bg-[#0f1829] border border-orange-500/30 rounded-xl p-4 w-44 hover:shadow-xl hover:shadow-orange-500/20 transition-all">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Smartphone className="h-4 w-4 text-orange-400" />
+                {/* Q3 — BELOW */}
+                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-amber-600 to-orange-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-amber-500/30 border-2 border-amber-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
+                    Q3
+                  </div>
+                  <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 36px)' }}>
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 text-center">
+                      <Smartphone className="h-4 w-4 text-amber-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">App Mobile</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">iOS {'&'} Android</p>
+                      <span className="text-[9px] text-amber-400 font-semibold uppercase">Milieu Q3</span>
                     </div>
-                    <h3 className="font-bold text-white text-sm mb-1">App Mobile</h3>
-                    <p className="text-xs text-slate-400 mb-1">iOS & Android</p>
-                    <span className="text-[10px] text-orange-400 font-bold uppercase">Milieu Q3</span>
                   </div>
                 </div>
-                <div className="w-14 h-14 rounded-full bg-orange-500 flex items-center justify-center text-white font-black shadow-lg shadow-orange-500/50">
-                  Q3
-                </div>
-              </div>
 
-              {/* Q3 - CRM Complet (Below) */}
-              <div className="col-span-1 flex flex-col items-center pt-20">
-                <div className="relative z-10">
-                  <div className="bg-[#0f1829] border border-orange-500/30 rounded-xl p-4 w-44 hover:shadow-xl hover:shadow-orange-500/20 transition-all">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Database className="h-4 w-4 text-orange-400" />
+                {/* Q3 Fin — ABOVE */}
+                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full bg-orange-500 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 8px)' }} />
+                  <div className="absolute left-0 right-0 px-1" style={{ bottom: 'calc(50% + 16px)' }}>
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 text-center">
+                      <Database className="h-4 w-4 text-orange-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">CRM Complet</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">Acquisition de leads</p>
+                      <span className="text-[9px] text-orange-400 font-semibold uppercase">Fin Q3</span>
                     </div>
-                    <h3 className="font-bold text-white text-sm mb-1">CRM Complet</h3>
-                    <p className="text-xs text-slate-400 mb-1">Acquisition de leads</p>
-                    <span className="text-[10px] text-orange-400 font-bold uppercase">Fin Q3</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Q4 - Messagerie Interne (Below) */}
-              <div className="col-span-1 flex flex-col items-center">
-                <div className="w-14 h-14 rounded-full bg-teal-500 flex items-center justify-center text-white font-black shadow-lg shadow-teal-500/50 mb-8">
-                  Q4
-                </div>
-                <div className="relative z-10">
-                  <div className="bg-[#0f1829] border border-teal-500/30 rounded-xl p-4 w-44 hover:shadow-xl hover:shadow-teal-500/20 transition-all">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MessageSquare className="h-4 w-4 text-teal-400" />
+                {/* Q4 — BELOW */}
+                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-emerald-500/30 border-2 border-emerald-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
+                    Q4
+                  </div>
+                  <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 36px)' }}>
+                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 text-center">
+                      <MessageSquare className="h-4 w-4 text-emerald-400 mx-auto mb-1.5" />
+                      <h3 className="font-bold text-white text-[11px] leading-tight">Messagerie Interne</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">Chat équipe intégré</p>
+                      <span className="text-[9px] text-emerald-400 font-semibold uppercase">Q4</span>
                     </div>
-                    <h3 className="font-bold text-white text-sm mb-1">Messagerie Interne</h3>
-                    <p className="text-xs text-slate-400 mb-1">Chat équipe intégré</p>
-                    <span className="text-[10px] text-teal-400 font-bold uppercase">Q4</span>
                   </div>
                 </div>
-              </div>
 
+              </div>
             </div>
           </div>
-
         </div>
       </section>
 
@@ -499,7 +487,6 @@ export function LandingPage() {
                   <div className="text-4xl font-black text-white">
                     35h<span className="text-lg text-slate-500 font-medium">/mois</span>
                   </div>
-
                 </div>
               </div>
             </div>
