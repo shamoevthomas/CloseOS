@@ -508,7 +508,9 @@ export function LandingPage() {
               <div className="col-span-1" />
             </div>
 
+
           </div>
+        </div>
       </section>
 
       {/* COMPARISON SECTION */}
