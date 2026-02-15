@@ -179,7 +179,7 @@ export function LandingPage() {
             Synchronisation native avec vos outils préférés
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
-            <div className="flex flex-col items-center gap-1 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span><span className="text-[9px] font-medium text-slate-500 uppercase tracking-wider">à débloquer</span></div>
+            <div className="flex flex-col items-center gap-1 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
@@ -309,115 +309,143 @@ export function LandingPage() {
             <p className="text-slate-400 mt-4 max-w-2xl mx-auto text-sm">Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers, agences et infopreneurs.</p>
           </div>
 
-          {/* Horizontal scrollable timeline — alternating top/bottom */}
-          <div className="overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide">
-            <div className="relative min-w-[900px]" style={{ height: '340px' }}>
-              {/* Horizontal line — centered vertically */}
-              <div className="absolute left-0 right-0 h-px bg-gradient-to-r from-blue-500/60 via-purple-500/60 via-amber-500/60 to-emerald-500/60" style={{ top: '50%' }} />
-
-              <div className="flex justify-between items-stretch h-full">
-
-                {/* Q1 — BELOW */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
-                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-blue-500/30 border-2 border-blue-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
-                    Q1
-                  </div>
-                  <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 36px)' }}>
-                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 text-center">
-                      <Zap className="h-4 w-4 text-blue-400 mx-auto mb-1.5" />
-                      <h3 className="font-bold text-white text-[11px] leading-tight">Lancement CloseOS</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">CRM, Pipeline, VoIP, KPIs...</p>
-                      <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
-                      </div>
-                    </div>
+          {/* Vertical Zigzag Timeline */}
+          <div className="max-w-4xl mx-auto space-y-8">
+            {/* Q1 - Right */}
+            <div className="flex items-center gap-6">
+              <div className="flex-1" />
+              <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-blue-500/30 border-4 border-blue-400/40 ring-4 ring-[#0B1121] z-10">
+                Q1
+              </div>
+              <div className="flex-1">
+                <div className="group p-6 rounded-xl bg-slate-900/80 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300">
+                  <Zap className="h-6 w-6 text-blue-400 mb-3" />
+                  <h3 className="font-bold text-white text-lg mb-2">Lancement CloseOS</h3>
+                  <p className="text-sm text-slate-400 mb-3">CRM, Pipeline, VoIP, KPIs...</p>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> LIVE
                   </div>
                 </div>
+              </div>
+            </div>
 
-                {/* Q2 Début — ABOVE */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
-                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-[9px] font-black shadow-lg shadow-indigo-500/30 border-2 border-indigo-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
-                    Q2
-                  </div>
-                  <div className="absolute left-0 right-0 px-1" style={{ bottom: 'calc(50% + 36px)' }}>
-                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300 text-center">
-                      <Building2 className="h-4 w-4 text-indigo-400 mx-auto mb-1.5" />
-                      <h3 className="font-bold text-white text-[11px] leading-tight">Interface Infopreneur</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">Dashboard multi-closers</p>
-                      <span className="text-[9px] text-indigo-400 font-semibold uppercase">Début Q2</span>
-                    </div>
-                  </div>
+            {/* Connecting line */}
+            <div className="flex justify-center">
+              <div className="w-0.5 h-8 bg-gradient-to-b from-blue-500/60 to-indigo-500/60" />
+            </div>
+
+            {/* Q2 Début - Left */}
+            <div className="flex items-center gap-6">
+              <div className="flex-1">
+                <div className="group p-6 rounded-xl bg-slate-900/80 border border-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300">
+                  <Building2 className="h-6 w-6 text-indigo-400 mb-3" />
+                  <h3 className="font-bold text-white text-lg mb-2">Interface Infopreneur</h3>
+                  <p className="text-sm text-slate-400 mb-3">Gérez votre équipe de closers</p>
+                  <span className="text-xs text-indigo-400 font-semibold uppercase">Début Q2</span>
                 </div>
+              </div>
+              <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-indigo-500/30 border-4 border-indigo-400/40 ring-4 ring-[#0B1121] z-10">
+                Q2
+              </div>
+              <div className="flex-1" />
+            </div>
 
-                {/* Q2 Milieu — BELOW */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
-                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 8px)' }} />
-                  <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 16px)' }}>
-                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 text-center">
-                      <Users className="h-4 w-4 text-purple-400 mx-auto mb-1.5" />
-                      <h3 className="font-bold text-white text-[11px] leading-tight">Interface Agence</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">Gestion d'équipes</p>
-                      <span className="text-[9px] text-purple-400 font-semibold uppercase">Milieu Q2</span>
-                    </div>
-                  </div>
+            {/* Connecting line */}
+            <div className="flex justify-center">
+              <div className="w-0.5 h-8 bg-gradient-to-b from-purple-500/60 to-purple-500/60" />
+            </div>
+
+            {/* Q2 Milieu - Right */}
+            <div className="flex items-center gap-6">
+              <div className="flex-1" />
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-purple-500 ring-4 ring-[#0B1121] z-10" />
+              <div className="flex-1">
+                <div className="group p-6 rounded-xl bg-slate-900/80 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300">
+                  <Users className="h-6 w-6 text-purple-400 mb-3" />
+                  <h3 className="font-bold text-white text-lg mb-2">Interface Agence</h3>
+                  <p className="text-sm text-slate-400 mb-3">Gestion d'équipes</p>
+                  <span className="text-xs text-purple-400 font-semibold uppercase">Milieu Q2</span>
                 </div>
+              </div>
+            </div>
 
-                {/* Q2 Fin — ABOVE */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
-                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full bg-violet-500 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 8px)' }} />
-                  <div className="absolute left-0 right-0 px-1" style={{ bottom: 'calc(50% + 16px)' }}>
-                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300 text-center">
-                      <BrainCircuit className="h-4 w-4 text-violet-400 mx-auto mb-1.5" />
-                      <h3 className="font-bold text-white text-[11px] leading-tight">Analyse IA</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">Feedback sur appels</p>
-                      <span className="text-[9px] text-violet-400 font-semibold uppercase">Fin Q2</span>
-                    </div>
-                  </div>
+            {/* Connecting line */}
+            <div className="flex justify-center">
+              <div className="w-0.5 h-8 bg-gradient-to-b from-purple-500/60 to-violet-500/60" />
+            </div>
+
+            {/* Q2 Fin - Left */}
+            <div className="flex items-center gap-6">
+              <div className="flex-1">
+                <div className="group p-6 rounded-xl bg-slate-900/80 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300">
+                  <FileText className="h-6 w-6 text-violet-400 mb-3" />
+                  <h3 className="font-bold text-white text-lg mb-2">Rapport de performance</h3>
+                  <p className="text-sm text-slate-400 mb-3">Feedback sur appels</p>
+                  <span className="text-xs text-violet-400 font-semibold uppercase">Fin Q2</span>
                 </div>
+              </div>
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-violet-500 ring-4 ring-[#0B1121] z-10" />
+              <div className="flex-1" />
+            </div>
 
-                {/* Q3 — BELOW */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
-                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-amber-600 to-orange-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-amber-500/30 border-2 border-amber-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
-                    Q3
-                  </div>
-                  <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 36px)' }}>
-                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 text-center">
-                      <Smartphone className="h-4 w-4 text-amber-400 mx-auto mb-1.5" />
-                      <h3 className="font-bold text-white text-[11px] leading-tight">App Mobile</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">iOS {'&'} Android</p>
-                      <span className="text-[9px] text-amber-400 font-semibold uppercase">Milieu Q3</span>
-                    </div>
-                  </div>
+            {/* Connecting line */}
+            <div className="flex justify-center">
+              <div className="w-0.5 h-8 bg-gradient-to-b from-violet-500/60 to-amber-500/60" />
+            </div>
+
+            {/* Q3 - Right */}
+            <div className="flex items-center gap-6">
+              <div className="flex-1" />
+              <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 to-orange-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-amber-500/30 border-4 border-amber-400/40 ring-4 ring-[#0B1121] z-10">
+                Q3
+              </div>
+              <div className="flex-1">
+                <div className="group p-6 rounded-xl bg-slate-900/80 border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300">
+                  <Smartphone className="h-6 w-6 text-amber-400 mb-3" />
+                  <h3 className="font-bold text-white text-lg mb-2">App Mobile</h3>
+                  <p className="text-sm text-slate-400 mb-3">iOS & Android</p>
+                  <span className="text-xs text-amber-400 font-semibold uppercase">Milieu Q3</span>
                 </div>
+              </div>
+            </div>
 
-                {/* Q3 Fin — ABOVE */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
-                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full bg-orange-500 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 8px)' }} />
-                  <div className="absolute left-0 right-0 px-1" style={{ bottom: 'calc(50% + 16px)' }}>
-                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 text-center">
-                      <Database className="h-4 w-4 text-orange-400 mx-auto mb-1.5" />
-                      <h3 className="font-bold text-white text-[11px] leading-tight">CRM Complet</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">Acquisition de leads</p>
-                      <span className="text-[9px] text-orange-400 font-semibold uppercase">Fin Q3</span>
-                    </div>
-                  </div>
+            {/* Connecting line */}
+            <div className="flex justify-center">
+              <div className="w-0.5 h-8 bg-gradient-to-b from-orange-500/60 to-orange-500/60" />
+            </div>
+
+            {/* Q3 Fin - Left */}
+            <div className="flex items-center gap-6">
+              <div className="flex-1">
+                <div className="group p-6 rounded-xl bg-slate-900/80 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300">
+                  <Database className="h-6 w-6 text-orange-400 mb-3" />
+                  <h3 className="font-bold text-white text-lg mb-2">CRM Complet</h3>
+                  <p className="text-sm text-slate-400 mb-3">Acquisition de leads</p>
+                  <span className="text-xs text-orange-400 font-semibold uppercase">Fin Q3</span>
                 </div>
+              </div>
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-orange-500 ring-4 ring-[#0B1121] z-10" />
+              <div className="flex-1" />
+            </div>
 
-                {/* Q4 — BELOW */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
-                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-emerald-500/30 border-2 border-emerald-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
-                    Q4
-                  </div>
-                  <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 36px)' }}>
-                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 text-center">
-                      <MessageSquare className="h-4 w-4 text-emerald-400 mx-auto mb-1.5" />
-                      <h3 className="font-bold text-white text-[11px] leading-tight">Messagerie Interne</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">Chat équipe intégré</p>
-                      <span className="text-[9px] text-emerald-400 font-semibold uppercase">Q4</span>
-                    </div>
-                  </div>
+            {/* Connecting line */}
+            <div className="flex justify-center">
+              <div className="w-0.5 h-8 bg-gradient-to-b from-orange-500/60 to-emerald-500/60" />
+            </div>
+
+            {/* Q4 - Right */}
+            <div className="flex items-center gap-6">
+              <div className="flex-1" />
+              <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-emerald-500/30 border-4 border-emerald-400/40 ring-4 ring-[#0B1121] z-10">
+                Q4
+              </div>
+              <div className="flex-1">
+                <div className="group p-6 rounded-xl bg-slate-900/80 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300">
+                  <MessageSquare className="h-6 w-6 text-emerald-400 mb-3" />
+                  <h3 className="font-bold text-white text-lg mb-2">Messagerie Interne</h3>
+                  <p className="text-sm text-slate-400 mb-3">Chat équipe intégré</p>
+                  <span className="text-xs text-emerald-400 font-semibold uppercase">Q4</span>
                 </div>
-
               </div>
             </div>
           </div>
@@ -485,7 +513,7 @@ export function LandingPage() {
                   <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1">PERTE ESTIMÉE</p>
                   {/* MODIFICATION 2 : 35H + SOUS-TITRE */}
                   <div className="text-4xl font-black text-white">
-                    35h<span className="text-lg text-slate-500 font-medium">/semaine</span>
+                    35h<span className="text-lg text-slate-500 font-medium">/mois</span>
                   </div>
                   <p className="text-slate-400 text-sm mt-3 font-semibold">
                     Presque 2 mois par an perdus en administration.
