@@ -309,207 +309,118 @@ export function LandingPage() {
             <p className="text-slate-400 mt-4 max-w-2xl mx-auto text-sm">Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers, agences et infopreneurs.</p>
           </div>
 
-          {/* Grid Zigzag Pattern with Arrows */}
-          <div className="max-w-5xl mx-auto">
-            {/* Row 1: Q1 → Q2 Début */}
-            <div className="grid grid-cols-7 gap-3 mb-3 items-center">
-              <div className="col-span-1" />
-
+          {/* Horizontal Scrollable Timeline */}
+          <div className="relative">
+            <div className="flex gap-6 overflow-x-auto pb-8 px-4 scrollbar-hide snap-x snap-mandatory">
               {/* Q1 */}
-              <div className="col-span-2">
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
+              <div className="flex-shrink-0 w-80 snap-center">
+                <div className="group p-6 rounded-xl bg-gradient-to-br from-blue-600 to-blue-500 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 h-full">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-lg font-black">
                       Q1
                     </div>
-                    <Zap className="h-5 w-5 text-white" />
+                    <Zap className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="font-bold text-white text-base mb-1">Lancement CloseOS</h3>
-                  <p className="text-xs text-blue-100">CRM, Pipeline, VoIP, KPIs</p>
-                  <div className="mt-3 inline-flex items-center gap-2 px-2 py-1 rounded-full bg-emerald-400/20 border border-emerald-300/30 text-[10px] font-bold text-white">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+                  <h3 className="font-bold text-white text-lg mb-2">Lancement CloseOS</h3>
+                  <p className="text-sm text-blue-100 mb-4">CRM, Pipeline, VoIP, KPIs...</p>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-400/20 border border-emerald-300/30 text-xs font-bold text-white">
+                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" /> LIVE
                   </div>
-                </div>
-              </div>
-
-              {/* Arrow Right */}
-              <div className="col-span-1 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
                 </div>
               </div>
 
               {/* Q2 Début */}
-              <div className="col-span-2">
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 hover:shadow-2xl hover:shadow-amber-500/30 transition-all duration-300">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
+              <div className="flex-shrink-0 w-80 snap-center">
+                <div className="group p-6 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 hover:shadow-2xl hover:shadow-indigo-500/30 transition-all duration-300 h-full">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-lg font-black">
                       Q2
                     </div>
-                    <Building2 className="h-5 w-5 text-white" />
+                    <Building2 className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="font-bold text-white text-base mb-1">Interface Infopreneur</h3>
-                  <p className="text-xs text-amber-100">Gérez votre équipe</p>
-                </div>
-              </div>
-
-              <div className="col-span-1" />
-            </div>
-
-            {/* Arrow Down from Q2 */}
-            <div className="grid grid-cols-7 gap-3 mb-3">
-              <div className="col-span-5" />
-              <div className="col-span-1 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                </div>
-              </div>
-              <div className="col-span-1" />
-            </div>
-
-            {/* Row 2: Q2 Fin ← Q2 Milieu */}
-            <div className="grid grid-cols-7 gap-3 mb-3 items-center">
-              <div className="col-span-1" />
-
-              {/* Q2 Fin */}
-              <div className="col-span-2">
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 hover:shadow-2xl hover:shadow-violet-500/30 transition-all duration-300">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
-                      Q2
-                    </div>
-                    <FileText className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="font-bold text-white text-base mb-1">Rapport de performance</h3>
-                  <p className="text-xs text-violet-100">Feedback sur appels</p>
-                </div>
-              </div>
-
-              {/* Arrow Left */}
-              <div className="col-span-1 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-                  </svg>
+                  <h3 className="font-bold text-white text-lg mb-2">Interface Infopreneur</h3>
+                  <p className="text-sm text-indigo-100 mb-4">Gérez votre équipe de closers</p>
+                  <span className="text-xs text-indigo-200 font-semibold uppercase">Début Q2</span>
                 </div>
               </div>
 
               {/* Q2 Milieu */}
-              <div className="col-span-2">
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 hover:shadow-2xl hover:shadow-amber-500/30 transition-all duration-300">
+              <div className="flex-shrink-0 w-72 snap-center">
+                <div className="group p-5 rounded-xl bg-gradient-to-br from-purple-600 to-purple-700 hover:shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 h-full">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
                       Q2
                     </div>
                     <Users className="h-5 w-5 text-white" />
                   </div>
-                  <h3 className="font-bold text-white text-base mb-1">Interface Agence</h3>
-                  <p className="text-xs text-amber-100">Gestion d'équipes</p>
+                  <h3 className="font-bold text-white text-base mb-2">Interface Agence</h3>
+                  <p className="text-sm text-purple-100 mb-3">Gestion d'équipes</p>
+                  <span className="text-xs text-purple-200 font-semibold uppercase">Milieu Q2</span>
                 </div>
               </div>
 
-              <div className="col-span-1" />
-            </div>
-
-            {/* Arrow Down from Q2 Fin */}
-            <div className="grid grid-cols-7 gap-3 mb-3">
-              <div className="col-span-1" />
-              <div className="col-span-1 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                </div>
-              </div>
-              <div className="col-span-5" />
-            </div>
-
-            {/* Row 3: Q3 → CRM Complet */}
-            <div className="grid grid-cols-7 gap-3 mb-3 items-center">
-              <div className="col-span-1" />
-
-              {/* Q3 */}
-              <div className="col-span-2">
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 hover:shadow-2xl hover:shadow-amber-500/30 transition-all duration-300">
+              {/* Q2 Fin */}
+              <div className="flex-shrink-0 w-72 snap-center">
+                <div className="group p-5 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 hover:shadow-2xl hover:shadow-violet-500/30 transition-all duration-300 h-full">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
+                      Q2
+                    </div>
+                    <FileText className="h-5 w-5 text-white" />
+                  </div>
+                  <h3 className="font-bold text-white text-base mb-2">Rapport de performance</h3>
+                  <p className="text-sm text-violet-100 mb-3">Feedback sur appels</p>
+                  <span className="text-xs text-violet-200 font-semibold uppercase">Fin Q2</span>
+                </div>
+              </div>
+
+              {/* Q3 */}
+              <div className="flex-shrink-0 w-80 snap-center">
+                <div className="group p-6 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 hover:shadow-2xl hover:shadow-amber-500/30 transition-all duration-300 h-full">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-lg font-black">
                       Q3
                     </div>
-                    <Smartphone className="h-5 w-5 text-white" />
+                    <Smartphone className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="font-bold text-white text-base mb-1">App Mobile</h3>
-                  <p className="text-xs text-orange-100">iOS & Android</p>
+                  <h3 className="font-bold text-white text-lg mb-2">App Mobile</h3>
+                  <p className="text-sm text-amber-100 mb-4">iOS & Android</p>
+                  <span className="text-xs text-amber-200 font-semibold uppercase">Milieu Q3</span>
                 </div>
               </div>
 
-              {/* Arrow Right */}
-              <div className="col-span-1 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* CRM Complet */}
-              <div className="col-span-2">
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 hover:shadow-2xl hover:shadow-orange-500/30 transition-all duration-300">
+              {/* Q3 Fin */}
+              <div className="flex-shrink-0 w-72 snap-center">
+                <div className="group p-5 rounded-xl bg-gradient-to-br from-orange-600 to-red-600 hover:shadow-2xl hover:shadow-orange-500/30 transition-all duration-300 h-full">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
                       Q3
                     </div>
                     <Database className="h-5 w-5 text-white" />
                   </div>
-                  <h3 className="font-bold text-white text-base mb-1">CRM Complet</h3>
-                  <p className="text-xs text-orange-100">Acquisition de leads</p>
+                  <h3 className="font-bold text-white text-base mb-2">CRM Complet</h3>
+                  <p className="text-sm text-orange-100 mb-3">Acquisition de leads</p>
+                  <span className="text-xs text-orange-200 font-semibold uppercase">Fin Q3</span>
                 </div>
               </div>
-
-              <div className="col-span-1" />
-            </div>
-
-            {/* Arrow Down from CRM */}
-            <div className="grid grid-cols-7 gap-3 mb-3">
-              <div className="col-span-5" />
-              <div className="col-span-1 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                </div>
-              </div>
-              <div className="col-span-1" />
-            </div>
-
-            {/* Row 4: Q4 */}
-            <div className="grid grid-cols-7 gap-3 items-center">
-              <div className="col-span-1" />
-              <div className="col-span-2" />
-              <div className="col-span-1" />
 
               {/* Q4 */}
-              <div className="col-span-2">
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 hover:shadow-2xl hover:shadow-emerald-500/30 transition-all duration-300">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
+              <div className="flex-shrink-0 w-80 snap-center">
+                <div className="group p-6 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 hover:shadow-2xl hover:shadow-emerald-500/30 transition-all duration-300 h-full">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-lg font-black">
                       Q4
                     </div>
-                    <MessageSquare className="h-5 w-5 text-white" />
+                    <MessageSquare className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="font-bold text-white text-base mb-1">Messagerie Interne</h3>
-                  <p className="text-xs text-emerald-100">Chat équipe intégré</p>
+                  <h3 className="font-bold text-white text-lg mb-2">Messagerie Interne</h3>
+                  <p className="text-sm text-emerald-100 mb-4">Chat équipe intégré</p>
+                  <span className="text-xs text-emerald-200 font-semibold uppercase">Q4</span>
                 </div>
               </div>
-
-              <div className="col-span-1" />
             </div>
-
-
           </div>
+
         </div>
       </section>
 
