@@ -309,165 +309,206 @@ export function LandingPage() {
             <p className="text-slate-400 mt-4 max-w-2xl mx-auto text-sm">Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers, agences et infopreneurs.</p>
           </div>
 
-          {/* Diagonal Zigzag Path */}
+          {/* Grid Zigzag Pattern with Arrows */}
           <div className="max-w-5xl mx-auto">
-            {/* Q1 - Center Start */}
-            <div className="flex justify-center mb-8">
-              <div className="w-96">
-                <div className="group p-6 rounded-xl bg-slate-900/80 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-blue-500/30 border-4 border-blue-400/40">
+            {/* Row 1: Q1 → Q2 Début */}
+            <div className="grid grid-cols-7 gap-3 mb-3 items-center">
+              <div className="col-span-1" />
+
+              {/* Q1 */}
+              <div className="col-span-2">
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
                       Q1
                     </div>
-                    <div>
-                      <Zap className="h-6 w-6 text-blue-400 mb-2" />
-                      <h3 className="font-bold text-white text-lg">Lancement CloseOS</h3>
-                    </div>
+                    <Zap className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-sm text-slate-400 mb-3">CRM, Pipeline, VoIP, KPIs...</p>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-400">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> LIVE
+                  <h3 className="font-bold text-white text-base mb-1">Lancement CloseOS</h3>
+                  <p className="text-xs text-blue-100">CRM, Pipeline, VoIP, KPIs</p>
+                  <div className="mt-3 inline-flex items-center gap-2 px-2 py-1 rounded-full bg-emerald-400/20 border border-emerald-300/30 text-[10px] font-bold text-white">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Diagonal connector to right */}
-            <div className="flex justify-center mb-8">
-              <div className="w-0.5 h-12 bg-gradient-to-b from-blue-500/60 to-indigo-500/60 transform translate-x-24" />
-            </div>
+              {/* Arrow Right */}
+              <div className="col-span-1 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </div>
+              </div>
 
-            {/* Q2 Début - Right */}
-            <div className="flex justify-end mb-8 pr-12">
-              <div className="w-96">
-                <div className="group p-6 rounded-xl bg-slate-900/80 border border-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-indigo-500/30 border-4 border-indigo-400/40">
+              {/* Q2 Début */}
+              <div className="col-span-2">
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 hover:shadow-2xl hover:shadow-amber-500/30 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
                       Q2
                     </div>
-                    <div>
-                      <Building2 className="h-6 w-6 text-indigo-400 mb-2" />
-                      <h3 className="font-bold text-white text-lg">Interface Infopreneur</h3>
-                    </div>
+                    <Building2 className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-sm text-slate-400 mb-3">Gérez votre équipe de closers</p>
-                  <span className="text-xs text-indigo-400 font-semibold uppercase">Début Q2</span>
+                  <h3 className="font-bold text-white text-base mb-1">Interface Infopreneur</h3>
+                  <p className="text-xs text-amber-100">Gérez votre équipe</p>
                 </div>
               </div>
+
+              <div className="col-span-1" />
             </div>
 
-            {/* Connector down */}
-            <div className="flex justify-end pr-24 mb-8">
-              <div className="w-0.5 h-12 bg-gradient-to-b from-purple-500/60 to-purple-500/60" />
+            {/* Arrow Down from Q2 */}
+            <div className="grid grid-cols-7 gap-3 mb-3">
+              <div className="col-span-5" />
+              <div className="col-span-1 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </div>
+              </div>
+              <div className="col-span-1" />
             </div>
 
-            {/* Q2 Milieu - Right Below */}
-            <div className="flex justify-end mb-8 pr-12">
-              <div className="w-80">
-                <div className="group p-5 rounded-xl bg-slate-900/80 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300">
+            {/* Row 2: Q2 Fin ← Q2 Milieu */}
+            <div className="grid grid-cols-7 gap-3 mb-3 items-center">
+              <div className="col-span-1" />
+
+              {/* Q2 Fin */}
+              <div className="col-span-2">
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 hover:shadow-2xl hover:shadow-violet-500/30 transition-all duration-300">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center">
-                      <Users className="h-5 w-5 text-white" />
+                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
+                      Q2
                     </div>
-                    <h3 className="font-bold text-white text-base">Interface Agence</h3>
+                    <FileText className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-sm text-slate-400 mb-2">Gestion d'équipes</p>
-                  <span className="text-xs text-purple-400 font-semibold uppercase">Milieu Q2</span>
+                  <h3 className="font-bold text-white text-base mb-1">Rapport de performance</h3>
+                  <p className="text-xs text-violet-100">Feedback sur appels</p>
                 </div>
               </div>
-            </div>
 
-            {/* Diagonal connector to left */}
-            <div className="flex justify-end pr-24 mb-8">
-              <div className="w-0.5 h-12 bg-gradient-to-b from-purple-500/60 to-violet-500/60 transform -translate-x-48" />
-            </div>
+              {/* Arrow Left */}
+              <div className="col-span-1 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+                  </svg>
+                </div>
+              </div>
 
-            {/* Q2 Fin - Left */}
-            <div className="flex justify-start mb-8 pl-12">
-              <div className="w-80">
-                <div className="group p-5 rounded-xl bg-slate-900/80 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300">
+              {/* Q2 Milieu */}
+              <div className="col-span-2">
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 hover:shadow-2xl hover:shadow-amber-500/30 transition-all duration-300">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-full bg-violet-500 flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-white" />
+                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
+                      Q2
                     </div>
-                    <h3 className="font-bold text-white text-base">Rapport de performance</h3>
+                    <Users className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-sm text-slate-400 mb-2">Feedback sur appels</p>
-                  <span className="text-xs text-violet-400 font-semibold uppercase">Fin Q2</span>
+                  <h3 className="font-bold text-white text-base mb-1">Interface Agence</h3>
+                  <p className="text-xs text-amber-100">Gestion d'équipes</p>
                 </div>
               </div>
+
+              <div className="col-span-1" />
             </div>
 
-            {/* Connector down */}
-            <div className="flex justify-start pl-24 mb-8">
-              <div className="w-0.5 h-12 bg-gradient-to-b from-violet-500/60 to-amber-500/60" />
+            {/* Arrow Down from Q2 Fin */}
+            <div className="grid grid-cols-7 gap-3 mb-3">
+              <div className="col-span-1" />
+              <div className="col-span-1 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </div>
+              </div>
+              <div className="col-span-5" />
             </div>
 
-            {/* Q3 - Left Below */}
-            <div className="flex justify-start mb-8 pl-12">
-              <div className="w-96">
-                <div className="group p-6 rounded-xl bg-slate-900/80 border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-600 to-orange-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-amber-500/30 border-4 border-amber-400/40">
+            {/* Row 3: Q3 → CRM Complet */}
+            <div className="grid grid-cols-7 gap-3 mb-3 items-center">
+              <div className="col-span-1" />
+
+              {/* Q3 */}
+              <div className="col-span-2">
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 hover:shadow-2xl hover:shadow-amber-500/30 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
                       Q3
                     </div>
-                    <div>
-                      <Smartphone className="h-6 w-6 text-amber-400 mb-2" />
-                      <h3 className="font-bold text-white text-lg">App Mobile</h3>
-                    </div>
+                    <Smartphone className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-sm text-slate-400 mb-3">iOS & Android</p>
-                  <span className="text-xs text-amber-400 font-semibold uppercase">Milieu Q3</span>
+                  <h3 className="font-bold text-white text-base mb-1">App Mobile</h3>
+                  <p className="text-xs text-orange-100">iOS & Android</p>
                 </div>
               </div>
-            </div>
 
-            {/* Diagonal connector to right */}
-            <div className="flex justify-start pl-24 mb-8">
-              <div className="w-0.5 h-12 bg-gradient-to-b from-orange-500/60 to-orange-500/60 transform translate-x-48" />
-            </div>
+              {/* Arrow Right */}
+              <div className="col-span-1 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </div>
+              </div>
 
-            {/* Q3 Fin - Right */}
-            <div className="flex justify-end mb-8 pr-12">
-              <div className="w-80">
-                <div className="group p-5 rounded-xl bg-slate-900/80 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300">
+              {/* CRM Complet */}
+              <div className="col-span-2">
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 hover:shadow-2xl hover:shadow-orange-500/30 transition-all duration-300">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center">
-                      <Database className="h-5 w-5 text-white" />
+                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
+                      Q3
                     </div>
-                    <h3 className="font-bold text-white text-base">CRM Complet</h3>
+                    <Database className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-sm text-slate-400 mb-2">Acquisition de leads</p>
-                  <span className="text-xs text-orange-400 font-semibold uppercase">Fin Q3</span>
+                  <h3 className="font-bold text-white text-base mb-1">CRM Complet</h3>
+                  <p className="text-xs text-orange-100">Acquisition de leads</p>
                 </div>
               </div>
+
+              <div className="col-span-1" />
             </div>
 
-            {/* Connector down */}
-            <div className="flex justify-end pr-24 mb-8">
-              <div className="w-0.5 h-12 bg-gradient-to-b from-orange-500/60 to-emerald-500/60" />
+            {/* Arrow Down from CRM */}
+            <div className="grid grid-cols-7 gap-3 mb-3">
+              <div className="col-span-5" />
+              <div className="col-span-1 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </div>
+              </div>
+              <div className="col-span-1" />
             </div>
 
-            {/* Q4 - Right Below */}
-            <div className="flex justify-end pr-12">
-              <div className="w-96">
-                <div className="group p-6 rounded-xl bg-slate-900/80 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-emerald-500/30 border-4 border-emerald-400/40">
+            {/* Row 4: Q4 */}
+            <div className="grid grid-cols-7 gap-3 items-center">
+              <div className="col-span-1" />
+              <div className="col-span-2" />
+              <div className="col-span-1" />
+
+              {/* Q4 */}
+              <div className="col-span-2">
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 hover:shadow-2xl hover:shadow-emerald-500/30 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
                       Q4
                     </div>
-                    <div>
-                      <MessageSquare className="h-6 w-6 text-emerald-400 mb-2" />
-                      <h3 className="font-bold text-white text-lg">Messagerie Interne</h3>
-                    </div>
+                    <MessageSquare className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-sm text-slate-400 mb-3">Chat équipe intégré</p>
-                  <span className="text-xs text-emerald-400 font-semibold uppercase">Q4</span>
+                  <h3 className="font-bold text-white text-base mb-1">Messagerie Interne</h3>
+                  <p className="text-xs text-emerald-100">Chat équipe intégré</p>
                 </div>
               </div>
+
+              <div className="col-span-1" />
             </div>
+
           </div>
-        </div>
       </section>
 
       {/* COMPARISON SECTION */}
@@ -533,9 +574,7 @@ export function LandingPage() {
                   <div className="text-4xl font-black text-white">
                     35h<span className="text-lg text-slate-500 font-medium">/mois</span>
                   </div>
-                  <p className="text-slate-400 text-sm mt-3 font-semibold">
-                    L'équivalent de 10 semaines de travail par an.
-                  </p>
+
                 </div>
               </div>
             </div>
