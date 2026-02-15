@@ -11,6 +11,7 @@ import { InternalContactsProvider } from './contexts/InternalContactsContext'
 import { CallsProvider } from './contexts/CallsContext'
 import { MessagesProvider } from './contexts/MessagesContext'
 import { NotificationsProvider } from './contexts/NotificationsContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
@@ -185,23 +186,25 @@ function AuthenticatedApp() {
 function App() {
   return (
     <AuthProvider>
-      <PrivacyProvider>
-        <ProspectsProvider>
-          <InternalContactsProvider>
-            <OffersProvider>
-              <MeetingsProvider>
-                <CallsProvider>
-                  <MessagesProvider>
-                    <NotificationsProvider>
-                      <AuthenticatedApp />
-                    </NotificationsProvider>
-                  </MessagesProvider>
-                </CallsProvider>
-              </MeetingsProvider>
-            </OffersProvider>
-          </InternalContactsProvider>
-        </ProspectsProvider>
-      </PrivacyProvider>
+      <ThemeProvider>
+        <PrivacyProvider>
+          <ProspectsProvider>
+            <InternalContactsProvider>
+              <OffersProvider>
+                <MeetingsProvider>
+                  <CallsProvider>
+                    <MessagesProvider>
+                      <NotificationsProvider>
+                        <AuthenticatedApp />
+                      </NotificationsProvider>
+                    </MessagesProvider>
+                  </CallsProvider>
+                </MeetingsProvider>
+              </OffersProvider>
+            </InternalContactsProvider>
+          </ProspectsProvider>
+        </PrivacyProvider>
+      </ThemeProvider>
     </AuthProvider>
   )
 }

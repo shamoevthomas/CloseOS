@@ -6,22 +6,25 @@ export interface Prospect {
   id: number
   user_id: string
   company: string
-  contact: string      
-  firstName?: string   
-  lastName?: string    
+  contact: string
+  name?: string // Added for compatibility
+  firstName?: string
+  lastName?: string
   email: string
   phone: string
   value?: number
-  offer?: string       
+  offer?: string
+  offerId?: number
+  offer_id?: number // For Supabase compatibility
   stage: string
   notes?: string
   created_at?: string
-  dateAdded?: string   
+  dateAdded?: string
   last_contact?: string
-  lastContact?: string 
+  lastContact?: string
   // AJOUT ICI : La nouvelle colonne
   formula_id?: string
-  
+
   call_notes?: {
     id: string
     date: string

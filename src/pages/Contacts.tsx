@@ -13,14 +13,16 @@ import { cn } from '../lib/utils'
 
 interface LocalProspect {
   id: number
+  user_id: string
+  contact: string
   name?: string
   firstName?: string
   lastName?: string
   company: string
   status?: string
-  stage?: string
+  stage: string
   lastInteraction?: string
-  lastContact?: Date
+  lastContact?: Date | string
   dateAdded?: string | Date
   email: string
   phone: string
@@ -45,6 +47,8 @@ export function Contacts() {
   const [localProspects] = useState<LocalProspect[]>([
     {
       id: 1,
+      user_id: 'local',
+      contact: 'Sarah Johnson',
       name: 'Sarah Johnson',
       firstName: 'Sarah',
       lastName: 'Johnson',
@@ -59,6 +63,8 @@ export function Contacts() {
     },
     {
       id: 2,
+      user_id: 'local',
+      contact: 'Marc Dupont',
       name: 'Marc Dupont',
       firstName: 'Marc',
       lastName: 'Dupont',
@@ -73,6 +79,8 @@ export function Contacts() {
     },
     {
       id: 3,
+      user_id: 'local',
+      contact: 'Emma Williams',
       name: 'Emma Williams',
       firstName: 'Emma',
       lastName: 'Williams',
@@ -126,7 +134,7 @@ export function Contacts() {
     // 1. Filtre par recherche textuelle (Nom, Entreprise, Email)
     const term = prospectSearch.toLowerCase()
     const fullName = prospect.name || `${prospect.firstName || ''} ${prospect.lastName || ''}`
-    const matchesSearch = 
+    const matchesSearch =
       fullName.toLowerCase().includes(term) ||
       (prospect.company || '').toLowerCase().includes(term) ||
       (prospect.email || '').toLowerCase().includes(term)
@@ -136,7 +144,7 @@ export function Contacts() {
     if (selectedOfferFilter !== 'all') {
       // On cherche l'objet offre correspondant à l'ID sélectionné
       const selectedOfferObj = offers.find(o => o.id.toString() === selectedOfferFilter)
-      
+
       if (selectedOfferObj) {
         // On compare soit avec l'ID, soit avec le NOM de l'offre (plus robuste)
         const offerNameMatch = (prospect.offer || '').trim() === selectedOfferObj.name.trim()
@@ -220,26 +228,16 @@ export function Contacts() {
     }
   }
 
-  const handleCreateProspect = async (prospectData: {
-    contact: string
-    firstName: string
-    lastName: string
-    email: string
-    phone: string
-    company: string
-    offer: string
-    value: number
-    source: string
-    stage: string
-  }) => {
+  const handleCreateProspect = async (prospectData: any) => {
     // 🔄 MODIFICATION : Suppression de l'alerte "Mode Déconnecté" pour forcer l'ajout dans Supabase
     if (addProspect) {
       await addProspect({
         ...prospectData,
+        stage: prospectData.stage || 'prospect',
         title: `${prospectData.offer} - ${prospectData.company}`,
         probability: 40,
-        dateAdded: new Date(),
-        lastContact: new Date(),
+        dateAdded: new Date().toISOString(),
+        lastContact: new Date().toISOString(),
       })
     }
 
@@ -283,39 +281,39 @@ export function Contacts() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#020617] p-8 overflow-hidden font-sans text-slate-100">
-      
+    <div className="relative min-h-screen bg-slate-50 p-8 overflow-hidden font-sans text-slate-900 dark:bg-[#020617] dark:text-slate-100">
+
       {/* Background Blobs (Premium Design) */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none dark:block hidden" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none dark:block hidden" />
 
       <div className="relative mx-auto max-w-7xl space-y-8 z-10">
-        
+
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Contacts</h1>
-            <p className="text-slate-400 mt-1">Gérez vos prospects et votre équipe.</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight dark:text-white">Contacts</h1>
+            <p className="text-slate-500 mt-1 dark:text-slate-400">Gérez vos prospects et votre équipe.</p>
           </div>
         </div>
 
         {/* SECTION A: Mes Prospects */}
-        <div className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md shadow-xl">
+        <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl dark:border-white/5 dark:bg-slate-900/40 dark:backdrop-blur-md">
           {/* Header Section */}
           <div
             onClick={() => setProspectsExpanded(!prospectsExpanded)}
-            className="flex w-full items-center justify-between cursor-pointer border-b border-white/5 bg-slate-900/60 px-6 py-5 transition-colors hover:bg-slate-900/80"
+            className="flex w-full items-center justify-between cursor-pointer border-b border-gray-100 bg-gray-50 px-6 py-5 transition-colors hover:bg-gray-100 dark:border-white/5 dark:bg-slate-900/60 dark:hover:bg-slate-900/80"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 border border-blue-500/20">
                 <User className="h-5 w-5 text-blue-400" />
               </div>
               <div className="text-left">
-                <h2 className="text-lg font-bold text-white">Mes Prospects</h2>
-                <p className="text-sm text-slate-400">{filteredProspects.length} contact(s)</p>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Mes Prospects</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{filteredProspects.length} contact(s)</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
               {/* BARRE DE RECHERCHE PROSPECTS */}
               <div className="relative hidden md:block">
@@ -325,7 +323,7 @@ export function Contacts() {
                   placeholder="Rechercher..."
                   value={prospectSearch}
                   onChange={(e) => setProspectSearch(e.target.value)}
-                  className="h-10 w-64 rounded-xl border border-white/10 bg-slate-800/50 pl-10 pr-4 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none placeholder-slate-500 transition-all hover:bg-slate-800/70"
+                  className="h-10 w-64 rounded-xl border border-gray-200 bg-white pl-10 pr-4 text-sm text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none placeholder-slate-400 transition-all hover:bg-gray-50 dark:border-white/10 dark:bg-slate-800/50 dark:text-white dark:placeholder-slate-500 dark:hover:bg-slate-800/70"
                 />
               </div>
 
@@ -335,11 +333,11 @@ export function Contacts() {
                 <select
                   value={selectedOfferFilter}
                   onChange={(e) => setSelectedOfferFilter(e.target.value)}
-                  className="h-10 rounded-xl border border-white/10 bg-slate-800/50 pl-10 pr-8 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none appearance-none cursor-pointer hover:bg-slate-800/70 transition-all"
+                  className="h-10 rounded-xl border border-gray-200 bg-white pl-10 pr-8 text-sm text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none appearance-none cursor-pointer hover:bg-gray-50 transition-all dark:border-white/10 dark:bg-slate-800/50 dark:text-white dark:hover:bg-slate-800/70"
                 >
-                  <option value="all" className="bg-slate-900">Toutes les offres</option>
+                  <option value="all" className="bg-white dark:bg-slate-900">Toutes les offres</option>
                   {offers.filter(o => o.status === 'active').map(offer => (
-                    <option key={offer.id} value={offer.id.toString()} className="bg-slate-900">
+                    <option key={offer.id} value={offer.id.toString()} className="bg-white dark:bg-slate-900">
                       {offer.name}
                     </option>
                   ))}
@@ -364,8 +362,8 @@ export function Contacts() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-white/5 bg-slate-900/40">
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                  <tr className="border-b border-gray-100 bg-gray-50/50 dark:border-white/5 dark:bg-slate-900/40">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-500">
                       Nom & Entreprise
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
@@ -385,27 +383,27 @@ export function Contacts() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-gray-100 dark:divide-white/5">
                   {filteredProspects.length > 0 ? (
                     filteredProspects.map((prospect) => {
                       // Safe field extraction with fallbacks
                       const firstName = prospect.firstName || ''
                       const lastName = prospect.lastName || ''
                       const fullName = prospect.name || `${firstName} ${lastName}`.trim() || 'N/A'
-                      
+
                       const rawCompany = prospect.company || ''
                       const company = rawCompany === 'N/A' ? '' : rawCompany
-                      
-                      const status = prospect.stage || prospect.status || 'prospect'
-                      const lastContact = prospect.lastContact || prospect.lastInteraction
+
+                      const status = prospect.stage || (prospect as any).status || 'prospect'
+                      const lastContact = prospect.lastContact || (prospect as any).lastInteraction
                       const dateAdded = prospect.dateAdded
                       const email = prospect.email || ''
 
                       return (
                         <tr
                           key={prospect.id}
-                          onClick={() => setSelectedProspect(prospect)}
-                          className="cursor-pointer transition-colors hover:bg-white/5 group"
+                          onClick={() => setSelectedProspect(prospect as Prospect)}
+                          className="cursor-pointer transition-colors hover:bg-gray-50 group dark:hover:bg-white/5"
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -413,25 +411,25 @@ export function Contacts() {
                                 <User className="h-5 w-5" />
                               </div>
                               <div>
-                                <p className="font-bold text-white text-base">{fullName}</p>
+                                <p className="font-bold text-slate-900 text-base dark:text-white">{fullName}</p>
                                 {company && (
-                                    <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-                                        <Building2 className="h-3 w-3" /> {company}
-                                    </p>
+                                  <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1 dark:text-slate-400">
+                                    <Building2 className="h-3 w-3" /> {company}
+                                  </p>
                                 )}
                               </div>
                             </div>
                           </td>
                           {/* NOUVELLE COLONNE OFFRE */}
                           <td className="px-6 py-4">
-                            <span className="text-sm text-slate-300 font-medium">
+                            <span className="text-sm text-slate-600 font-medium dark:text-slate-300">
                               {prospect.offer || '-'}
                             </span>
                           </td>
                           <td className="px-6 py-4">
                             <span className={cn(
-                                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
-                                getStatusColor(status)
+                              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                              getStatusColor(status)
                             )}>
                               {status === 'won' && <Sparkles className="h-3 w-3" />}
                               {getStatusName(status)}
@@ -449,10 +447,10 @@ export function Contacts() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  setSelectedProspect(prospect)
+                                  setSelectedProspect(prospect as Prospect)
                                   setIsAddMeetingModalOpen(true)
                                 }}
-                                className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
+                                className="rounded-lg border border-gray-200 bg-white p-2 text-slate-500 transition-all hover:border-blue-500/50 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
                                 title="Planifier RDV"
                               >
                                 <Calendar className="h-4 w-4" />
@@ -468,15 +466,15 @@ export function Contacts() {
                                     alert('Pas d\'email renseigné')
                                   }
                                 }}
-                                className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
+                                className="rounded-lg border border-gray-200 bg-white p-2 text-slate-500 transition-all hover:border-blue-500/50 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
                                 title="Envoyer un email"
                               >
                                 <Mail className="h-4 w-4" />
                               </button>
-                              
+
                               <button
                                 onClick={(e) => handleDeleteProspect(e, prospect.id)}
-                                className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
+                                className="rounded-lg border border-gray-200 bg-white p-2 text-slate-500 transition-all hover:border-red-500/50 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                                 title="Supprimer"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -500,19 +498,19 @@ export function Contacts() {
         </div>
 
         {/* SECTION B: Contacts Internes */}
-        <div className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md shadow-xl">
+        <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl dark:border-white/5 dark:bg-slate-900/40 dark:backdrop-blur-md">
           {/* Header */}
           <div
             onClick={() => setInternalsExpanded(!internalsExpanded)}
-            className="flex w-full items-center justify-between cursor-pointer border-b border-white/5 bg-slate-900/60 px-6 py-5 transition-colors hover:bg-slate-900/80"
+            className="flex w-full items-center justify-between cursor-pointer border-b border-gray-100 bg-gray-50 px-6 py-5 transition-colors hover:bg-gray-100 dark:border-white/5 dark:bg-slate-900/60 dark:hover:bg-slate-900/80"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/20 border border-purple-500/20">
                 <UserPlus className="h-5 w-5 text-purple-400" />
               </div>
               <div className="text-left">
-                <h2 className="text-lg font-bold text-white">Contacts Internes</h2>
-                <p className="text-sm text-slate-400">{filteredInternalContacts.length} contact(s)</p>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Contacts Internes</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{filteredInternalContacts.length} contact(s)</p>
               </div>
             </div>
             <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
@@ -524,7 +522,7 @@ export function Contacts() {
                   placeholder="Rechercher..."
                   value={internalSearch}
                   onChange={(e) => setInternalSearch(e.target.value)}
-                  className="h-10 w-64 rounded-xl border border-white/10 bg-slate-800/50 pl-10 pr-4 text-sm text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none placeholder-slate-500 transition-all hover:bg-slate-800/70"
+                  className="h-10 w-64 rounded-xl border border-gray-200 bg-white pl-10 pr-4 text-sm text-slate-900 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none placeholder-slate-400 transition-all hover:bg-gray-50 dark:border-white/10 dark:bg-slate-800/50 dark:text-white dark:placeholder-slate-500 dark:hover:bg-slate-800/70"
                 />
               </div>
 
@@ -546,8 +544,8 @@ export function Contacts() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-white/5 bg-slate-900/40">
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                  <tr className="border-b border-gray-100 bg-gray-50/50 dark:border-white/5 dark:bg-slate-900/40">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-500">
                       Nom
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
@@ -564,16 +562,16 @@ export function Contacts() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-gray-100 dark:divide-white/5">
                   {filteredInternalContacts.length > 0 ? (
                     filteredInternalContacts.map((contact) => (
                       <tr
                         key={contact.id}
                         onClick={() => setSelectedContact(contact)}
-                        className="cursor-pointer transition-colors hover:bg-white/5 group"
+                        className="cursor-pointer transition-colors hover:bg-gray-50 group dark:hover:bg-white/5"
                       >
                         <td className="px-6 py-4">
-                          <p className="font-bold text-white">{contact.name}</p>
+                          <p className="font-bold text-slate-900 dark:text-white">{contact.name}</p>
                         </td>
                         <td className="px-6 py-4">
                           <span className="inline-flex items-center rounded-lg bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 text-xs font-bold text-purple-400 uppercase tracking-wide">
@@ -581,10 +579,10 @@ export function Contacts() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm text-slate-300">{contact.email}</p>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">{contact.email}</p>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm text-slate-300">{contact.phone}</p>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">{contact.phone}</p>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
@@ -593,7 +591,7 @@ export function Contacts() {
                                 e.stopPropagation()
                                 setSelectedContact(contact)
                               }}
-                              className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
+                              className="rounded-lg border border-gray-200 bg-white p-2 text-slate-500 transition-all hover:border-blue-500/50 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
                               title="Voir détails"
                             >
                               <Edit2 className="h-4 w-4" />
@@ -605,7 +603,7 @@ export function Contacts() {
                                   handleDeleteContact(contact.id)
                                 }
                               }}
-                              className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
+                              className="rounded-lg border border-gray-200 bg-white p-2 text-slate-500 transition-all hover:border-red-500/50 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                               title="Supprimer"
                             >
                               <Trash2 className="h-4 w-4" />

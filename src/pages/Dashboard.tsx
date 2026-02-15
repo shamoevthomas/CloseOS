@@ -107,7 +107,7 @@ export function Dashboard() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
   const { notifications } = useNotifications()
-  const { meetings } = useMeetings() 
+  const { meetings } = useMeetings()
   const { googleEvents } = useGoogleCalendar()
 
   const [isCallOpen, setIsCallOpen] = useState(false)
@@ -122,7 +122,7 @@ export function Dashboard() {
     title: string
     contact: string
     time: string
-    type: 'call' | 'video' | 'meeting'
+    type: 'call' | 'video' | 'meeting' | 'event' | 'other'
     status: string
     date: string
     isGoogleEvent?: boolean
@@ -138,8 +138,9 @@ export function Dashboard() {
 
     // 2. Commissions
     const totalCommissions = wonProspects.reduce((sum, prospect) => {
-      const offer = offers.find(o => 
-        (prospect.offerId && String(o.id) === String(prospect.offerId)) || 
+      const offer = offers.find(o =>
+        (prospect.offerId && String(o.id) === String(prospect.offerId)) ||
+        (prospect.offer_id && String(o.id) === String(prospect.offer_id)) ||
         (prospect.offer && o.name.toLowerCase().trim() === prospect.offer.toLowerCase().trim())
       )
       let rate = 0.10
@@ -184,7 +185,7 @@ export function Dashboard() {
         }
         return pStage === stage.key;
       })
-      
+
       return {
         ...stage,
         count: stageProspects.length,
@@ -200,7 +201,7 @@ export function Dashboard() {
       const threeDaysLater = new Date()
       threeDaysLater.setDate(now.getDate() + 3)
       threeDaysLater.setHours(23, 59, 59, 999)
-      
+
       const transformedGoogle = googleEvents
         .filter(ge => ge && ge.start && !ge.allDay)
         .map(ge => ({
@@ -208,7 +209,7 @@ export function Dashboard() {
           title: ge.title,
           contact: ge.title,
           time: `${ge.start!.getHours().toString().padStart(2, '0')}:${ge.start!.getMinutes().toString().padStart(2, '0')} - ${ge.end!.getHours().toString().padStart(2, '0')}:${ge.end!.getMinutes().toString().padStart(2, '0')}`,
-          type: 'meeting' as const,
+          type: 'meeting' as any,
           status: 'Planifié',
           date: ge.start!.toISOString().split('T')[0],
           isGoogleEvent: true
@@ -260,25 +261,25 @@ export function Dashboard() {
       name: 'Cash Généré',
       value: `${metrics.cashGenere.toLocaleString('fr-FR')}€`,
       icon: DollarSign,
-      color: 'text-emerald-400',
-      bgColor: 'bg-emerald-500/10',
-      borderColor: 'border-emerald-500/20'
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bgColor: 'bg-emerald-100 dark:bg-emerald-500/10',
+      borderColor: 'border-emerald-200 dark:border-emerald-500/20'
     },
     {
       name: 'Commissions',
       value: `${metrics.totalCommissions.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}€`,
       icon: TrendingUp,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10',
-      borderColor: 'border-blue-500/20'
+      color: 'text-blue-600 dark:text-blue-400',
+      bgColor: 'bg-blue-100 dark:bg-blue-500/10',
+      borderColor: 'border-blue-200 dark:border-blue-500/20'
     },
     {
       name: 'Taux de Conversion',
       value: `${metrics.tauxConversion.toFixed(1)}%`,
       icon: Target,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10',
-      borderColor: 'border-purple-500/20'
+      color: 'text-purple-600 dark:text-purple-400',
+      bgColor: 'bg-purple-100 dark:bg-purple-500/10',
+      borderColor: 'border-purple-200 dark:border-purple-500/20'
     },
   ]
 
@@ -314,207 +315,206 @@ export function Dashboard() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#020617] p-8 overflow-hidden font-sans text-slate-100">
-      
+    <div className="relative min-h-screen bg-slate-50 p-8 overflow-hidden font-sans text-slate-900 dark:bg-[#020617] dark:text-slate-100">
+
       {/* Background Blobs */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen dark:block hidden" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen dark:block hidden" />
 
       <div className="relative mx-auto max-w-7xl space-y-8 z-10">
 
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">Cockpit</h1>
-              <p className="text-slate-400 mt-1">Vue d'ensemble de vos performances</p>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight dark:text-white">Cockpit</h1>
+            <p className="text-slate-500 mt-1 dark:text-slate-400">Vue d'ensemble de vos performances</p>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm dark:bg-slate-900/50 dark:border-slate-800 dark:backdrop-blur-sm">
+            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Système opérationnel</span>
+          </div>
+        </div>
+
+        {/* KPIs Grid */}
+        <div className="grid gap-6 md:grid-cols-3">
+          {kpis.map((kpi, index) => (
+            <div
+              key={kpi.name}
+              className={cn(
+                "group relative overflow-hidden rounded-3xl bg-white p-8 transition-all duration-300 hover:scale-[1.02] border border-gray-100 shadow-xl dark:bg-slate-900/50 dark:border-white/5 dark:hover:border-white/10 dark:backdrop-blur-xl dark:shadow-2xl"
+              )}
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <div className={cn(
+                "absolute top-0 right-0 p-8 opacity-5 transition-transform duration-500 group-hover:scale-110 group-hover:opacity-10",
+                kpi.color
+              )}>
+                <kpi.icon className="w-32 h-32" />
+              </div>
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", kpi.bgColor)}>
+                    <kpi.icon className={cn("h-6 w-6", kpi.color)} />
+                  </div>
+                  <ArrowUpRight className={cn("h-5 w-5 opacity-50", kpi.color)} />
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-slate-500 uppercase tracking-wider dark:text-slate-400">{kpi.name}</p>
+                  <p className="mt-2 text-4xl font-black text-slate-900 tracking-tight dark:text-white">
+                    <MaskedText value={kpi.value} type="number" />
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/50 border border-slate-800 backdrop-blur-sm">
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-xs font-medium text-slate-300">Système opérationnel</span>
+          ))}
+        </div>
+
+        {/* Pipeline Progress Section */}
+        <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-xl dark:border-white/5 dark:bg-slate-900/40 dark:backdrop-blur-md">
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 dark:text-white">
+                <TrendingUp className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                Pipeline Commercial
+              </h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Répartition de vos opportunités</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Pipeline</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                <MaskedText value={`${totalPipelineValue.toLocaleString()}€`} type="number" />
+              </p>
             </div>
           </div>
 
-          {/* KPIs Grid */}
-          <div className="grid gap-6 md:grid-cols-3">
-            {kpis.map((kpi, index) => (
-              <div
-                key={kpi.name}
-                className={cn(
-                  "group relative overflow-hidden rounded-3xl bg-slate-900/50 p-8 transition-all duration-300 hover:scale-[1.02]",
-                  "border border-white/5 hover:border-white/10 backdrop-blur-xl shadow-2xl"
-                )}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className={cn(
-                    "absolute top-0 right-0 p-8 opacity-5 transition-transform duration-500 group-hover:scale-110 group-hover:opacity-10",
-                    kpi.color
-                )}>
-                    <kpi.icon className="w-32 h-32" />
+          {/* Barre de progression avec dégradés */}
+          <div className="mb-8 flex h-3 overflow-hidden rounded-full bg-gray-100 p-0.5 dark:bg-slate-800/50">
+            {pipelineStages.map((stage, index) => {
+              const percentage = (stage.count / (totalPipelineCount || 1)) * 100
+              return (
+                <div
+                  key={stage.name}
+                  className={cn(
+                    "bg-gradient-to-r h-full relative transition-all duration-500 hover:brightness-110",
+                    stage.color,
+                    index === 0 && 'rounded-l-full',
+                    index === pipelineStages.length - 1 && 'rounded-r-full',
+                    index !== pipelineStages.length - 1 && 'mr-[1px]' // Séparateur fin
+                  )}
+                  style={{ width: `${percentage}%` }}
+                  title={`${stage.name}: ${stage.count} leads`}
+                />
+              )
+            })}
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {pipelineStages.map((stage) => (
+              <div key={stage.name} className="rounded-2xl bg-gray-50 border border-gray-100 p-4 hover:bg-gray-100 transition-colors dark:bg-slate-800/30 dark:border-white/5 dark:hover:bg-slate-800/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className={cn('h-2 w-2 rounded-full bg-gradient-to-r', stage.color)} />
+                  <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{stage.name}</h3>
                 </div>
-
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", kpi.bgColor)}>
-                      <kpi.icon className={cn("h-6 w-6", kpi.color)} />
-                    </div>
-                    <ArrowUpRight className={cn("h-5 w-5 opacity-50", kpi.color)} />
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-slate-400 uppercase tracking-wider">{kpi.name}</p>
-                    <p className="mt-2 text-4xl font-black text-white tracking-tight">
-                      <MaskedText value={kpi.value} type="number" />
-                    </p>
-                  </div>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-bold text-slate-900 dark:text-white">{stage.count}</span>
+                  <span className="text-xs text-slate-500 font-medium">
+                    <MaskedText value={`${stage.value.toLocaleString()}€`} type="number" />
+                  </span>
                 </div>
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Pipeline Progress Section */}
-          <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-md shadow-xl">
+        <div className="grid gap-6">
+
+          {/* Événements à venir */}
+          <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-xl dark:border-white/5 dark:bg-slate-900/40 dark:backdrop-blur-md">
             <div className="mb-8 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-blue-400" />
-                    Pipeline Commercial
-                </h2>
-                <p className="mt-1 text-sm text-slate-400">Répartition de vos opportunités</p>
+              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 dark:text-white">
+                <CalendarIcon className="h-5 w-5 text-purple-500 dark:text-purple-400" />
+                Événements à venir
+              </h2>
+              <div className="rounded-full bg-purple-500/10 border border-purple-500/20 px-3 py-1">
+                <span className="text-xs font-bold text-purple-400 uppercase tracking-wide">{upcomingEvents.length} Prévus</span>
               </div>
-              <div className="text-right">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Pipeline</p>
-                <p className="text-2xl font-bold text-white">
-                  <MaskedText value={`${totalPipelineValue.toLocaleString()}€`} type="number" />
+            </div>
+
+            {upcomingEvents.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50 dark:border-slate-800 dark:bg-slate-900/20">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800/50">
+                  <Sparkles className="h-8 w-8 text-slate-400 dark:text-slate-600" />
+                </div>
+                <p className="text-lg font-semibold text-slate-700 dark:text-slate-300">Agenda vide (3j)</p>
+                <p className="mt-2 text-sm text-slate-500">
+                  C'est le moment idéal pour faire de la prospection !
                 </p>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                {upcomingEvents.map((event) => {
+                  const EventIcon = event.isGoogleEvent ? CalendarIcon : (event.type === 'video' ? Video : Phone)
+                  const iconStyles = event.isGoogleEvent
+                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                    : (event.type === 'video' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20')
 
-            {/* Barre de progression avec dégradés */}
-            <div className="mb-8 flex h-3 overflow-hidden rounded-full bg-slate-800/50 p-0.5">
-              {pipelineStages.map((stage, index) => {
-                const percentage = (stage.count / (totalPipelineCount || 1)) * 100
-                return (
-                  <div
-                    key={stage.name}
-                    className={cn(
-                      "bg-gradient-to-r h-full relative transition-all duration-500 hover:brightness-110",
-                      stage.color,
-                      index === 0 && 'rounded-l-full',
-                      index === pipelineStages.length - 1 && 'rounded-r-full',
-                      index !== pipelineStages.length - 1 && 'mr-[1px]' // Séparateur fin
-                    )}
-                    style={{ width: `${percentage}%` }}
-                    title={`${stage.name}: ${stage.count} leads`}
-                  />
-                )
-              })}
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {pipelineStages.map((stage) => (
-                <div key={stage.name} className="rounded-2xl bg-slate-800/30 border border-white/5 p-4 hover:bg-slate-800/50 transition-colors">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className={cn('h-2 w-2 rounded-full bg-gradient-to-r', stage.color)} />
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400">{stage.name}</h3>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold text-white">{stage.count}</span>
-                    <span className="text-xs text-slate-500 font-medium">
-                        <MaskedText value={`${stage.value.toLocaleString()}€`} type="number" />
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-6">
-
-            {/* Événements à venir */}
-            <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-md shadow-xl">
-              <div className="mb-8 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5 text-purple-400" />
-                    Événements à venir
-                </h2>
-                <div className="rounded-full bg-purple-500/10 border border-purple-500/20 px-3 py-1">
-                  <span className="text-xs font-bold text-purple-400 uppercase tracking-wide">{upcomingEvents.length} Prévus</span>
-                </div>
-              </div>
-
-              {upcomingEvents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/20">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800/50">
-                    <Sparkles className="h-8 w-8 text-slate-600" />
-                  </div>
-                  <p className="text-lg font-semibold text-slate-300">Agenda vide (3j)</p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    C'est le moment idéal pour faire de la prospection !
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {upcomingEvents.map((event) => {
-                    const EventIcon = event.isGoogleEvent ? CalendarIcon : (event.type === 'video' ? Video : Phone)
-                    const iconStyles = event.isGoogleEvent 
-                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
-                        : (event.type === 'video' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20')
-
-                    return (
-                      <div
-                        key={event.id}
-                        onClick={() => navigate('/agenda', { state: { eventId: event.id } })}
-                        className="group flex items-center justify-between rounded-2xl bg-slate-800/40 border border-white/5 p-4 transition-all hover:bg-slate-800/80 hover:border-white/10 cursor-pointer hover:shadow-lg"
-                      >
-                        <div className="flex items-center gap-5">
-                          <div className={cn(
-                            'flex h-12 w-12 items-center justify-center rounded-xl border',
-                            iconStyles
-                          )}>
-                            <EventIcon className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-3">
-                              <p className="font-bold text-white text-lg">{event.title}</p>
-                              {event.isGoogleEvent && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold uppercase">Google</span>
-                              )}
-                            </div>
-                            <p className="text-sm text-slate-400 font-medium">
-                              <MaskedText value={event.contact} type="name" />
-                            </p>
-                          </div>
+                  return (
+                    <div
+                      key={event.id}
+                      onClick={() => navigate('/agenda', { state: { eventId: event.id } })}
+                      className="group flex items-center justify-between rounded-2xl bg-gray-50 border border-gray-100 p-4 transition-all hover:bg-white hover:border-gray-200 hover:shadow-lg cursor-pointer dark:bg-slate-800/40 dark:border-white/5 dark:hover:bg-slate-800/80 dark:hover:border-white/10"
+                    >
+                      <div className="flex items-center gap-5">
+                        <div className={cn(
+                          'flex h-12 w-12 items-center justify-center rounded-xl border',
+                          iconStyles
+                        )}>
+                          <EventIcon className="h-5 w-5" />
                         </div>
-
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <p className="text-sm font-bold text-white">
-                              {formatRelativeTime(event.date, event.time)}
-                            </p>
-                            <p className="text-xs text-slate-500 font-medium">
-                              {getEventStatus(event.date, event.time)}
-                            </p>
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <p className="font-bold text-slate-900 text-lg dark:text-white">{event.title}</p>
+                            {event.isGoogleEvent && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold uppercase">Google</span>
+                            )}
                           </div>
-
-                          <div className="opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate('/agenda', { state: { eventId: event.id } });
-                              }}
-                              className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10 transition-colors border border-white/10"
-                            >
-                              <FileText className="h-4 w-4" />
-                              Détails
-                            </button>
-                          </div>
+                          <p className="text-sm text-slate-500 font-medium dark:text-slate-400">
+                            <MaskedText value={event.contact} type="name" />
+                          </p>
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-slate-900 dark:text-white">
+                            {formatRelativeTime(event.date, event.time)}
+                          </p>
+                          <p className="text-xs text-slate-500 font-medium">
+                            {getEventStatus(event.date, event.time)}
+                          </p>
+                        </div>
+
+                        <div className="opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate('/agenda', { state: { eventId: event.id } });
+                            }}
+                            className="flex items-center gap-2 rounded-xl bg-gray-200/50 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-gray-200 transition-colors border border-gray-200 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:border-white/10"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Détails
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
