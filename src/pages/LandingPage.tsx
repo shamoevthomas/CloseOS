@@ -309,18 +309,21 @@ export function LandingPage() {
             <p className="text-slate-400 mt-4 max-w-2xl mx-auto text-sm">Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers, agences et infopreneurs.</p>
           </div>
 
-          {/* Vertical Zigzag Timeline */}
-          <div className="max-w-4xl mx-auto space-y-8">
-            {/* Q1 - Right */}
-            <div className="flex items-center gap-6">
-              <div className="flex-1" />
-              <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-blue-500/30 border-4 border-blue-400/40 ring-4 ring-[#0B1121] z-10">
-                Q1
-              </div>
-              <div className="flex-1">
+          {/* Diagonal Zigzag Path */}
+          <div className="max-w-5xl mx-auto">
+            {/* Q1 - Center Start */}
+            <div className="flex justify-center mb-8">
+              <div className="w-96">
                 <div className="group p-6 rounded-xl bg-slate-900/80 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300">
-                  <Zap className="h-6 w-6 text-blue-400 mb-3" />
-                  <h3 className="font-bold text-white text-lg mb-2">Lancement CloseOS</h3>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-blue-500/30 border-4 border-blue-400/40">
+                      Q1
+                    </div>
+                    <div>
+                      <Zap className="h-6 w-6 text-blue-400 mb-2" />
+                      <h3 className="font-bold text-white text-lg">Lancement CloseOS</h3>
+                    </div>
+                  </div>
                   <p className="text-sm text-slate-400 mb-3">CRM, Pipeline, VoIP, KPIs...</p>
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-400">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> LIVE
@@ -329,120 +332,135 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* Connecting line */}
-            <div className="flex justify-center">
-              <div className="w-0.5 h-8 bg-gradient-to-b from-blue-500/60 to-indigo-500/60" />
+            {/* Diagonal connector to right */}
+            <div className="flex justify-center mb-8">
+              <div className="w-0.5 h-12 bg-gradient-to-b from-blue-500/60 to-indigo-500/60 transform translate-x-24" />
             </div>
 
-            {/* Q2 Début - Left */}
-            <div className="flex items-center gap-6">
-              <div className="flex-1">
+            {/* Q2 Début - Right */}
+            <div className="flex justify-end mb-8 pr-12">
+              <div className="w-96">
                 <div className="group p-6 rounded-xl bg-slate-900/80 border border-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300">
-                  <Building2 className="h-6 w-6 text-indigo-400 mb-3" />
-                  <h3 className="font-bold text-white text-lg mb-2">Interface Infopreneur</h3>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-indigo-500/30 border-4 border-indigo-400/40">
+                      Q2
+                    </div>
+                    <div>
+                      <Building2 className="h-6 w-6 text-indigo-400 mb-2" />
+                      <h3 className="font-bold text-white text-lg">Interface Infopreneur</h3>
+                    </div>
+                  </div>
                   <p className="text-sm text-slate-400 mb-3">Gérez votre équipe de closers</p>
                   <span className="text-xs text-indigo-400 font-semibold uppercase">Début Q2</span>
                 </div>
               </div>
-              <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-indigo-500/30 border-4 border-indigo-400/40 ring-4 ring-[#0B1121] z-10">
-                Q2
-              </div>
-              <div className="flex-1" />
             </div>
 
-            {/* Connecting line */}
-            <div className="flex justify-center">
-              <div className="w-0.5 h-8 bg-gradient-to-b from-purple-500/60 to-purple-500/60" />
+            {/* Connector down */}
+            <div className="flex justify-end pr-24 mb-8">
+              <div className="w-0.5 h-12 bg-gradient-to-b from-purple-500/60 to-purple-500/60" />
             </div>
 
-            {/* Q2 Milieu - Right */}
-            <div className="flex items-center gap-6">
-              <div className="flex-1" />
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-purple-500 ring-4 ring-[#0B1121] z-10" />
-              <div className="flex-1">
-                <div className="group p-6 rounded-xl bg-slate-900/80 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300">
-                  <Users className="h-6 w-6 text-purple-400 mb-3" />
-                  <h3 className="font-bold text-white text-lg mb-2">Interface Agence</h3>
-                  <p className="text-sm text-slate-400 mb-3">Gestion d'équipes</p>
+            {/* Q2 Milieu - Right Below */}
+            <div className="flex justify-end mb-8 pr-12">
+              <div className="w-80">
+                <div className="group p-5 rounded-xl bg-slate-900/80 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-bold text-white text-base">Interface Agence</h3>
+                  </div>
+                  <p className="text-sm text-slate-400 mb-2">Gestion d'équipes</p>
                   <span className="text-xs text-purple-400 font-semibold uppercase">Milieu Q2</span>
                 </div>
               </div>
             </div>
 
-            {/* Connecting line */}
-            <div className="flex justify-center">
-              <div className="w-0.5 h-8 bg-gradient-to-b from-purple-500/60 to-violet-500/60" />
+            {/* Diagonal connector to left */}
+            <div className="flex justify-end pr-24 mb-8">
+              <div className="w-0.5 h-12 bg-gradient-to-b from-purple-500/60 to-violet-500/60 transform -translate-x-48" />
             </div>
 
             {/* Q2 Fin - Left */}
-            <div className="flex items-center gap-6">
-              <div className="flex-1">
-                <div className="group p-6 rounded-xl bg-slate-900/80 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300">
-                  <FileText className="h-6 w-6 text-violet-400 mb-3" />
-                  <h3 className="font-bold text-white text-lg mb-2">Rapport de performance</h3>
-                  <p className="text-sm text-slate-400 mb-3">Feedback sur appels</p>
+            <div className="flex justify-start mb-8 pl-12">
+              <div className="w-80">
+                <div className="group p-5 rounded-xl bg-slate-900/80 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-violet-500 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-bold text-white text-base">Rapport de performance</h3>
+                  </div>
+                  <p className="text-sm text-slate-400 mb-2">Feedback sur appels</p>
                   <span className="text-xs text-violet-400 font-semibold uppercase">Fin Q2</span>
                 </div>
               </div>
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-violet-500 ring-4 ring-[#0B1121] z-10" />
-              <div className="flex-1" />
             </div>
 
-            {/* Connecting line */}
-            <div className="flex justify-center">
-              <div className="w-0.5 h-8 bg-gradient-to-b from-violet-500/60 to-amber-500/60" />
+            {/* Connector down */}
+            <div className="flex justify-start pl-24 mb-8">
+              <div className="w-0.5 h-12 bg-gradient-to-b from-violet-500/60 to-amber-500/60" />
             </div>
 
-            {/* Q3 - Right */}
-            <div className="flex items-center gap-6">
-              <div className="flex-1" />
-              <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 to-orange-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-amber-500/30 border-4 border-amber-400/40 ring-4 ring-[#0B1121] z-10">
-                Q3
-              </div>
-              <div className="flex-1">
+            {/* Q3 - Left Below */}
+            <div className="flex justify-start mb-8 pl-12">
+              <div className="w-96">
                 <div className="group p-6 rounded-xl bg-slate-900/80 border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300">
-                  <Smartphone className="h-6 w-6 text-amber-400 mb-3" />
-                  <h3 className="font-bold text-white text-lg mb-2">App Mobile</h3>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-600 to-orange-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-amber-500/30 border-4 border-amber-400/40">
+                      Q3
+                    </div>
+                    <div>
+                      <Smartphone className="h-6 w-6 text-amber-400 mb-2" />
+                      <h3 className="font-bold text-white text-lg">App Mobile</h3>
+                    </div>
+                  </div>
                   <p className="text-sm text-slate-400 mb-3">iOS & Android</p>
                   <span className="text-xs text-amber-400 font-semibold uppercase">Milieu Q3</span>
                 </div>
               </div>
             </div>
 
-            {/* Connecting line */}
-            <div className="flex justify-center">
-              <div className="w-0.5 h-8 bg-gradient-to-b from-orange-500/60 to-orange-500/60" />
+            {/* Diagonal connector to right */}
+            <div className="flex justify-start pl-24 mb-8">
+              <div className="w-0.5 h-12 bg-gradient-to-b from-orange-500/60 to-orange-500/60 transform translate-x-48" />
             </div>
 
-            {/* Q3 Fin - Left */}
-            <div className="flex items-center gap-6">
-              <div className="flex-1">
-                <div className="group p-6 rounded-xl bg-slate-900/80 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300">
-                  <Database className="h-6 w-6 text-orange-400 mb-3" />
-                  <h3 className="font-bold text-white text-lg mb-2">CRM Complet</h3>
-                  <p className="text-sm text-slate-400 mb-3">Acquisition de leads</p>
+            {/* Q3 Fin - Right */}
+            <div className="flex justify-end mb-8 pr-12">
+              <div className="w-80">
+                <div className="group p-5 rounded-xl bg-slate-900/80 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center">
+                      <Database className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-bold text-white text-base">CRM Complet</h3>
+                  </div>
+                  <p className="text-sm text-slate-400 mb-2">Acquisition de leads</p>
                   <span className="text-xs text-orange-400 font-semibold uppercase">Fin Q3</span>
                 </div>
               </div>
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-orange-500 ring-4 ring-[#0B1121] z-10" />
-              <div className="flex-1" />
             </div>
 
-            {/* Connecting line */}
-            <div className="flex justify-center">
-              <div className="w-0.5 h-8 bg-gradient-to-b from-orange-500/60 to-emerald-500/60" />
+            {/* Connector down */}
+            <div className="flex justify-end pr-24 mb-8">
+              <div className="w-0.5 h-12 bg-gradient-to-b from-orange-500/60 to-emerald-500/60" />
             </div>
 
-            {/* Q4 - Right */}
-            <div className="flex items-center gap-6">
-              <div className="flex-1" />
-              <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-emerald-500/30 border-4 border-emerald-400/40 ring-4 ring-[#0B1121] z-10">
-                Q4
-              </div>
-              <div className="flex-1">
+            {/* Q4 - Right Below */}
+            <div className="flex justify-end pr-12">
+              <div className="w-96">
                 <div className="group p-6 rounded-xl bg-slate-900/80 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300">
-                  <MessageSquare className="h-6 w-6 text-emerald-400 mb-3" />
-                  <h3 className="font-bold text-white text-lg mb-2">Messagerie Interne</h3>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-emerald-500/30 border-4 border-emerald-400/40">
+                      Q4
+                    </div>
+                    <div>
+                      <MessageSquare className="h-6 w-6 text-emerald-400 mb-2" />
+                      <h3 className="font-bold text-white text-lg">Messagerie Interne</h3>
+                    </div>
+                  </div>
                   <p className="text-sm text-slate-400 mb-3">Chat équipe intégré</p>
                   <span className="text-xs text-emerald-400 font-semibold uppercase">Q4</span>
                 </div>
@@ -516,7 +534,7 @@ export function LandingPage() {
                     35h<span className="text-lg text-slate-500 font-medium">/mois</span>
                   </div>
                   <p className="text-slate-400 text-sm mt-3 font-semibold">
-                    Presque 2 mois par an perdus en administration.
+                    L'équivalent de 10 semaines de travail par an.
                   </p>
                 </div>
               </div>
