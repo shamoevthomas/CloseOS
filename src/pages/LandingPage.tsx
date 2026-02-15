@@ -309,115 +309,127 @@ export function LandingPage() {
             <p className="text-slate-400 mt-4 max-w-2xl mx-auto text-sm">Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers, agences et infopreneurs.</p>
           </div>
 
-          {/* Horizontal Scrollable Timeline */}
-          <div className="relative">
-            <div className="flex gap-6 overflow-x-auto pb-8 px-4 scrollbar-hide snap-x snap-mandatory">
-              {/* Q1 */}
-              <div className="flex-shrink-0 w-80 snap-center">
-                <div className="group p-6 rounded-xl bg-gradient-to-br from-blue-600 to-blue-500 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 h-full">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-lg font-black">
-                      Q1
+          {/* Timeline Roadmap with Alternating Cards */}
+          <div className="relative max-w-6xl mx-auto px-4 py-12">
+            {/* Horizontal Timeline Line */}
+            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-purple-500 via-orange-500 to-teal-500"></div>
+
+            {/* Timeline Grid */}
+            <div className="grid grid-cols-7 gap-8 relative">
+
+              {/* Q1 - Lancement CloseOS (Above) */}
+              <div className="col-span-1 flex flex-col items-center">
+                <div className="relative z-10 mb-8">
+                  <div className="bg-[#0f1829] border border-blue-500/30 rounded-xl p-4 w-48 hover:shadow-xl hover:shadow-blue-500/20 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Zap className="h-4 w-4 text-blue-400" />
                     </div>
-                    <Zap className="h-6 w-6 text-white" />
+                    <h3 className="font-bold text-white text-sm mb-1">Lancement CloseOS</h3>
+                    <p className="text-xs text-slate-400 mb-2">CRM, Pipeline, VoIP, KPIs...</p>
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30">
+                      <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span className="text-[10px] font-bold text-emerald-400">LIVE</span>
+                    </div>
                   </div>
-                  <h3 className="font-bold text-white text-lg mb-2">Lancement CloseOS</h3>
-                  <p className="text-sm text-blue-100 mb-4">CRM, Pipeline, VoIP, KPIs...</p>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-400/20 border border-emerald-300/30 text-xs font-bold text-white">
-                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" /> LIVE
+                </div>
+                <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-blue-500/50">
+                  Q1
+                </div>
+              </div>
+
+              {/* Q2 - Interface Infopreneur (Below) */}
+              <div className="col-span-2 flex flex-col items-center">
+                <div className="w-14 h-14 rounded-full bg-purple-500 flex items-center justify-center text-white font-black shadow-lg shadow-purple-500/50 mb-8">
+                  Q2
+                </div>
+                <div className="relative z-10">
+                  <div className="bg-[#0f1829] border border-purple-500/30 rounded-xl p-4 w-48 hover:shadow-xl hover:shadow-purple-500/20 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Building2 className="h-4 w-4 text-purple-400" />
+                    </div>
+                    <h3 className="font-bold text-white text-sm mb-1">Interface Infopreneur</h3>
+                    <p className="text-xs text-slate-400 mb-1">Gérer votre équipe</p>
+                    <span className="text-[10px] text-purple-400 font-bold uppercase">Début Q2</span>
                   </div>
                 </div>
               </div>
 
-              {/* Q2 Début */}
-              <div className="flex-shrink-0 w-80 snap-center">
-                <div className="group p-6 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 hover:shadow-2xl hover:shadow-indigo-500/30 transition-all duration-300 h-full">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-lg font-black">
-                      Q2
+              {/* Q2 - Interface Agence (Below) */}
+              <div className="col-span-1 flex flex-col items-center pt-20">
+                <div className="relative z-10">
+                  <div className="bg-[#0f1829] border border-purple-500/30 rounded-xl p-4 w-44 hover:shadow-xl hover:shadow-purple-500/20 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-purple-400" />
                     </div>
-                    <Building2 className="h-6 w-6 text-white" />
+                    <h3 className="font-bold text-white text-sm mb-1">Interface Agence</h3>
+                    <p className="text-xs text-slate-400 mb-1">Manager vos closers</p>
+                    <span className="text-[10px] text-purple-400 font-bold uppercase">Milieu Q2</span>
                   </div>
-                  <h3 className="font-bold text-white text-lg mb-2">Interface Infopreneur</h3>
-                  <p className="text-sm text-indigo-100 mb-4">Gérez votre équipe de closers</p>
-                  <span className="text-xs text-indigo-200 font-semibold uppercase">Début Q2</span>
                 </div>
               </div>
 
-              {/* Q2 Milieu */}
-              <div className="flex-shrink-0 w-72 snap-center">
-                <div className="group p-5 rounded-xl bg-gradient-to-br from-purple-600 to-purple-700 hover:shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 h-full">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
-                      Q2
+              {/* Q2 - Rapport de Perf + Coaching (Below) */}
+              <div className="col-span-1 flex flex-col items-center pt-20">
+                <div className="relative z-10">
+                  <div className="bg-[#0f1829] border border-purple-500/30 rounded-xl p-4 w-44 hover:shadow-xl hover:shadow-purple-500/20 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="h-4 w-4 text-purple-400" />
                     </div>
-                    <Users className="h-5 w-5 text-white" />
+                    <h3 className="font-bold text-white text-sm mb-1">Rapport de Perf + Coaching</h3>
+                    <p className="text-xs text-slate-400 mb-1">Feedback sur appels</p>
+                    <span className="text-[10px] text-purple-400 font-bold uppercase">Fin Q2</span>
                   </div>
-                  <h3 className="font-bold text-white text-base mb-2">Interface Agence</h3>
-                  <p className="text-sm text-purple-100 mb-3">Gestion d'équipes</p>
-                  <span className="text-xs text-purple-200 font-semibold uppercase">Milieu Q2</span>
                 </div>
               </div>
 
-              {/* Q2 Fin */}
-              <div className="flex-shrink-0 w-72 snap-center">
-                <div className="group p-5 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 hover:shadow-2xl hover:shadow-violet-500/30 transition-all duration-300 h-full">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
-                      Q2
+              {/* Q3 - App Mobile (Above) */}
+              <div className="col-span-1 flex flex-col items-center">
+                <div className="relative z-10 mb-8">
+                  <div className="bg-[#0f1829] border border-orange-500/30 rounded-xl p-4 w-44 hover:shadow-xl hover:shadow-orange-500/20 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Smartphone className="h-4 w-4 text-orange-400" />
                     </div>
-                    <FileText className="h-5 w-5 text-white" />
+                    <h3 className="font-bold text-white text-sm mb-1">App Mobile</h3>
+                    <p className="text-xs text-slate-400 mb-1">iOS & Android</p>
+                    <span className="text-[10px] text-orange-400 font-bold uppercase">Milieu Q3</span>
                   </div>
-                  <h3 className="font-bold text-white text-base mb-2">Rapport de performance</h3>
-                  <p className="text-sm text-violet-100 mb-3">Feedback sur appels</p>
-                  <span className="text-xs text-violet-200 font-semibold uppercase">Fin Q2</span>
+                </div>
+                <div className="w-14 h-14 rounded-full bg-orange-500 flex items-center justify-center text-white font-black shadow-lg shadow-orange-500/50">
+                  Q3
                 </div>
               </div>
 
-              {/* Q3 */}
-              <div className="flex-shrink-0 w-80 snap-center">
-                <div className="group p-6 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 hover:shadow-2xl hover:shadow-amber-500/30 transition-all duration-300 h-full">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-lg font-black">
-                      Q3
+              {/* Q3 - CRM Complet (Below) */}
+              <div className="col-span-1 flex flex-col items-center pt-20">
+                <div className="relative z-10">
+                  <div className="bg-[#0f1829] border border-orange-500/30 rounded-xl p-4 w-44 hover:shadow-xl hover:shadow-orange-500/20 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Database className="h-4 w-4 text-orange-400" />
                     </div>
-                    <Smartphone className="h-6 w-6 text-white" />
+                    <h3 className="font-bold text-white text-sm mb-1">CRM Complet</h3>
+                    <p className="text-xs text-slate-400 mb-1">Acquisition de leads</p>
+                    <span className="text-[10px] text-orange-400 font-bold uppercase">Fin Q3</span>
                   </div>
-                  <h3 className="font-bold text-white text-lg mb-2">App Mobile</h3>
-                  <p className="text-sm text-amber-100 mb-4">iOS & Android</p>
-                  <span className="text-xs text-amber-200 font-semibold uppercase">Milieu Q3</span>
                 </div>
               </div>
 
-              {/* Q3 Fin */}
-              <div className="flex-shrink-0 w-72 snap-center">
-                <div className="group p-5 rounded-xl bg-gradient-to-br from-orange-600 to-red-600 hover:shadow-2xl hover:shadow-orange-500/30 transition-all duration-300 h-full">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-black">
-                      Q3
+              {/* Q4 - Messagerie Interne (Below) */}
+              <div className="col-span-1 flex flex-col items-center">
+                <div className="w-14 h-14 rounded-full bg-teal-500 flex items-center justify-center text-white font-black shadow-lg shadow-teal-500/50 mb-8">
+                  Q4
+                </div>
+                <div className="relative z-10">
+                  <div className="bg-[#0f1829] border border-teal-500/30 rounded-xl p-4 w-44 hover:shadow-xl hover:shadow-teal-500/20 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MessageSquare className="h-4 w-4 text-teal-400" />
                     </div>
-                    <Database className="h-5 w-5 text-white" />
+                    <h3 className="font-bold text-white text-sm mb-1">Messagerie Interne</h3>
+                    <p className="text-xs text-slate-400 mb-1">Chat équipe intégré</p>
+                    <span className="text-[10px] text-teal-400 font-bold uppercase">Q4</span>
                   </div>
-                  <h3 className="font-bold text-white text-base mb-2">CRM Complet</h3>
-                  <p className="text-sm text-orange-100 mb-3">Acquisition de leads</p>
-                  <span className="text-xs text-orange-200 font-semibold uppercase">Fin Q3</span>
                 </div>
               </div>
 
-              {/* Q4 */}
-              <div className="flex-shrink-0 w-80 snap-center">
-                <div className="group p-6 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 hover:shadow-2xl hover:shadow-emerald-500/30 transition-all duration-300 h-full">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-lg font-black">
-                      Q4
-                    </div>
-                    <MessageSquare className="h-6 w-6 text-white" />
-                  </div>
-                  <h3 className="font-bold text-white text-lg mb-2">Messagerie Interne</h3>
-                  <p className="text-sm text-emerald-100 mb-4">Chat équipe intégré</p>
-                  <span className="text-xs text-emerald-200 font-semibold uppercase">Q4</span>
-                </div>
-              </div>
             </div>
           </div>
 
