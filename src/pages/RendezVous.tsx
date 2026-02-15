@@ -13,9 +13,6 @@ import {
    ChevronDown,
    Mail,
    Save,
-   CheckCircle2,
-   Globe,
-   Webhook,
    Copy,
    Check,
    Plus,
@@ -193,7 +190,7 @@ export function RendezVous() {
    const fetchEventTypes = async (accessToken: string) => {
       setIsLoadingEvents(true)
       try {
-         const response = await fetch(`https://api.cal.com/v1/event-types`, {
+         const response = await fetch(`/api/cal-proxy?url=/v1/event-types`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
          })
          const data = await response.json()
@@ -205,7 +202,7 @@ export function RendezVous() {
    const fetchCalProfile = async (accessToken: string) => {
       try {
          // Try V2 API first
-         const responseV2 = await fetch(`https://api.cal.com/v2/me`, {
+         const responseV2 = await fetch(`/api/cal-proxy?url=/v2/me`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
          })
 
@@ -219,7 +216,7 @@ export function RendezVous() {
          }
 
          // Fallback to V1 API
-         const response = await fetch(`https://api.cal.com/v1/me`, {
+         const response = await fetch(`/api/cal-proxy?url=/v1/me`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
          })
          const data = await response.json()
@@ -234,7 +231,7 @@ export function RendezVous() {
       if (manualTrigger) setIsSyncing(true);
 
       try {
-         const response = await fetch(`https://api.cal.com/v1/bookings?take=100&status=CANCELLED,ACCEPTED,REJECTED`, {
+         const response = await fetch(`/api/cal-proxy?url=/v1/bookings?take=100&status=CANCELLED,ACCEPTED,REJECTED`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
          })
          const data = await response.json()
@@ -259,7 +256,7 @@ export function RendezVous() {
       if (!window.confirm("Voulez-vous supprimer ce lien définitivement (CloseOS + Cal.com) ?")) return
       setIsDeletingEvent(id)
       try {
-         const response = await fetch(`https://api.cal.com/v1/event-types/${id}`, {
+         const response = await fetch(`/api/cal-proxy?url=/v1/event-types/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${calAccessToken}` }
          })
@@ -293,7 +290,7 @@ export function RendezVous() {
             isHidden: false
          }
 
-         const response = await fetch(`https://api.cal.com/v1/event-types`, {
+         const response = await fetch(`/api/cal-proxy?url=/v1/event-types`, {
             method: 'POST',
             headers: {
                'Content-Type': 'application/json',
@@ -363,7 +360,7 @@ export function RendezVous() {
             slotInterval: editingEvent.slotInterval ? Number(editingEvent.slotInterval) : null
          }
 
-         const response = await fetch(`https://api.cal.com/v1/event-types/${editingEvent.id}`, {
+         const response = await fetch(`/api/cal-proxy?url=/v1/event-types/${editingEvent.id}`, {
             method: 'PATCH',
             headers: {
                'Content-Type': 'application/json',
