@@ -24,7 +24,6 @@ import {
    RefreshCw
 } from 'lucide-react'
 import { useMeetings } from '../contexts/MeetingsContext'
-
 import { usePrivacy } from '../contexts/PrivacyContext'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -50,7 +49,6 @@ interface EventTypeData {
 export function RendezVous() {
    const { user } = useAuth()
    const navigate = useNavigate()
-
    const { meetings, loading: meetingsLoading, refreshMeetings } = useMeetings()
    const { maskData } = usePrivacy()
 
@@ -535,12 +533,12 @@ export function RendezVous() {
             <div className="flex items-center gap-2">
                <Icon className="h-5 w-5 text-blue-500" />
                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{title}</h2>
-               <span className="ml-2 rounded-full bg-gray-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-bold text-slate-500 dark:text-slate-400">{data.length}</span>
+               <span className="ml-2 rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-bold text-slate-500 dark:text-slate-400">{data.length}</span>
                {/* BOUTON SYNC MANUEL */}
                {onRefresh && (
                   <button
                      onClick={onRefresh}
-                     className={`ml-2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors ${isSyncing ? 'animate-spin text-blue-500' : ''}`}
+                     className={`ml-2 p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-white transition-colors ${isSyncing ? 'animate-spin text-blue-500' : ''}`}
                      title="Forcer la synchronisation (MàJ Statuts)"
                   >
                      <RefreshCw className="h-4 w-4" />
@@ -549,18 +547,18 @@ export function RendezVous() {
             </div>
             {showDeleteAction && data.length > 0 && (<button onClick={handleDeleteAllPast} disabled={isDeleting} className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50">{isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} Tout supprimer</button>)}
          </div>
-         <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 overflow-hidden shadow-xl dark:shadow-none">
+         <div className="rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden shadow-xl">
             <table className="w-full">
-               <thead className="bg-gray-50 dark:bg-slate-800/50"><tr className="border-b border-gray-200 dark:border-slate-800 text-xs font-bold uppercase tracking-widest text-slate-500 text-left"><th className="px-6 py-4">Date & Heure</th><th className="px-6 py-4">Prospect</th><th className="px-6 py-4">Lieu</th><th className="px-6 py-4">Statut</th><th className="px-6 py-4 text-right">Détails</th></tr></thead>
-               <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
+               <thead className="bg-slate-50 dark:bg-slate-800/50"><tr className="border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase tracking-widest text-slate-500 text-left"><th className="px-6 py-4">Date & Heure</th><th className="px-6 py-4">Prospect</th><th className="px-6 py-4">Lieu</th><th className="px-6 py-4">Statut</th><th className="px-6 py-4 text-right">Détails</th></tr></thead>
+               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {data.length === 0 ? (<tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium italic">{emptyText}</td></tr>) : (
                      data.map((m: any) => (
-                        <tr key={m.id} onClick={() => setSelectedMeeting(m)} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
-                           <td className="px-6 py-4"><div className="flex items-center gap-3 text-slate-900 dark:text-white"><div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 font-bold"><span className="text-[10px] text-blue-600 dark:text-blue-500 uppercase">{safeFormat(m.date, 'MMM')}</span><span className="text-sm">{safeFormat(m.date, 'dd')}</span></div><div><div className="font-bold">{safeFormat(m.date, 'eeee d MMMM')}</div><div className="text-xs text-slate-500">{m.time}</div></div></div></td>
+                        <tr key={m.id} onClick={() => setSelectedMeeting(m)} className="cursor-pointer hover:bg-slate-800/40 transition-colors">
+                           <td className="px-6 py-4"><div className="flex items-center gap-3 text-white"><div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg bg-slate-800 border border-slate-700 font-bold"><span className="text-[10px] text-blue-500 uppercase">{safeFormat(m.date, 'MMM')}</span><span className="text-sm">{safeFormat(m.date, 'dd')}</span></div><div><div className="font-bold">{safeFormat(m.date, 'eeee d MMMM')}</div><div className="text-xs text-slate-500">{m.time}</div></div></div></td>
                            <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-200">{maskData(m.contact || 'Prospect', 'name')}</td>
                            <td className="px-6 py-4 text-sm text-blue-600 dark:text-blue-400 font-medium">{getMeetingLocation(m)}</td>
                            <td className="px-6 py-4"><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(m.status)}`}>{getStatusLabel(m.status)}</span></td>
-                           <td className="px-6 py-4 text-right"><ExternalLink className="h-4 w-4 text-slate-400 hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-400 ml-auto transition-colors" /></td>
+                           <td className="px-6 py-4 text-right"><ExternalLink className="h-4 w-4 text-slate-400 dark:text-slate-600 ml-auto" /></td>
                         </tr>
                      ))
                   )}
@@ -637,7 +635,7 @@ export function RendezVous() {
                {/* BOUTON D'OUVERTURE DE LA CONFIGURATION */}
                <button
                   onClick={() => setIsConfigModalOpen(true)}
-                  className="flex items-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-5 py-3 text-sm font-bold text-slate-700 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-lg hover:shadow-xl dark:shadow-slate-700/20"
+                  className="flex items-center gap-2 rounded-xl bg-slate-800 border border-slate-700 px-5 py-3 text-sm font-bold text-white hover:bg-slate-700 transition-all shadow-lg hover:shadow-slate-700/20"
                >
                   <Settings className="h-4 w-4" /> Configurer les Booking
                </button>
@@ -648,7 +646,7 @@ export function RendezVous() {
                <div className="mb-12">
                   <div className="flex items-center justify-between mb-6">
                      <div className="flex items-start gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/10 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 font-bold text-xl"><LinkIcon className="h-6 w-6" /></div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 font-bold text-xl"><LinkIcon className="h-6 w-6" /></div>
                         <div><h2 className="text-xl font-bold text-slate-900 dark:text-white">Vos Liens de Réservation</h2><p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Vos types d'événements actifs sur Cal.com.</p></div>
                      </div>
                      <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"><Plus className="h-4 w-4" /> Nouveau</button>
@@ -657,38 +655,38 @@ export function RendezVous() {
                   {isLoadingEvents ? (<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-slate-500" /></div>) : (
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {eventTypes.map(evt => (
-                           <div key={evt.id} className="group relative rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:border-gray-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between hover:shadow-lg dark:hover:shadow-black/20">
+                           <div key={evt.id} className="group relative rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20">
                               <div>
                                  <div className="flex justify-between items-start mb-3">
-                                    <span className="inline-block rounded bg-slate-800 px-2 py-1 text-xs font-bold text-slate-400">{evt.length} min</span>
+                                    <span className="inline-block rounded bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs font-bold text-slate-500 dark:text-slate-400">{evt.length} min</span>
                                     <div className="flex gap-2">
                                        {/* BOUTON SUPPRIMER LE LIEN (POUBELLE) */}
                                        <button
                                           onClick={() => handleDeleteEventType(evt.id)}
                                           disabled={isDeletingEvent === evt.id}
-                                          className="p-1 rounded hover:bg-red-500/10 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-500 transition-colors"
+                                          className="p-1 rounded hover:bg-red-500/10 text-slate-500 hover:text-red-500 transition-colors"
                                           title="Supprimer ce lien"
                                        >
                                           {isDeletingEvent === evt.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                                        </button>
                                        {/* BOUTON OUVRIR */}
-                                       <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white" title="Ouvrir le lien"><ExternalLink className="h-4 w-4" /></a>
+                                       <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="p-1 rounded hover:bg-slate-800 text-slate-500 hover:text-white" title="Ouvrir le lien"><ExternalLink className="h-4 w-4" /></a>
                                     </div>
                                  </div>
                                  <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-1">{evt.title}</h3>
                                  <p className="text-xs text-slate-500 font-mono mb-4">/{evt.slug}</p>
                               </div>
 
-                              <div className="flex gap-2 mt-auto border-t border-slate-800 pt-3">
+                              <div className="flex gap-2 mt-auto border-t border-slate-100 dark:border-slate-800 pt-3">
                                  <button
                                     onClick={() => handleCopyLink(evt.slug, evt.id)}
-                                    className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gray-100 dark:bg-slate-800 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                                    className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-800 py-2 text-xs font-bold text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                                  >
                                     {linkCopiedId === evt.id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />} Copier
                                  </button>
                                  <button
                                     onClick={() => handleOpenEdit(evt)}
-                                    className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-600/10 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-600/20 transition-colors"
+                                    className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-600/10 py-2 text-xs font-bold text-blue-400 hover:bg-blue-600/20 transition-colors"
                                  >
                                     <Edit2 className="h-3 w-3" /> Modifier
                                  </button>
@@ -696,7 +694,7 @@ export function RendezVous() {
                                     href={`https://app.cal.com/event-types/${evt.id}`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="flex items-center justify-center rounded-lg bg-gray-100 dark:bg-slate-800 px-3 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700"
+                                    className="flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 px-3 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700"
                                     title="Paramètres avancés sur Cal.com"
                                  >
                                     <Settings className="h-4 w-4" />
@@ -704,7 +702,7 @@ export function RendezVous() {
                               </div>
                            </div>
                         ))}
-                        {eventTypes.length === 0 && (<div className="col-span-full text-center py-12 text-slate-500 italic border border-dashed border-slate-800 rounded-xl bg-slate-900/50">Aucun événement trouvé. Créez-en un !</div>)}
+                        {eventTypes.length === 0 && (<div className="col-span-full text-center py-12 text-slate-500 italic border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900/50">Aucun événement trouvé. Créez-en un !</div>)}
                      </div>
                   )}
                </div>
@@ -725,10 +723,10 @@ export function RendezVous() {
          {isConfigModalOpen && (
             <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
                <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsConfigModalOpen(false)} />
-               <div className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-2xl flex flex-col animate-in fade-in zoom-in-95 overflow-hidden">
+               <div className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col animate-in fade-in zoom-in-95 overflow-hidden">
 
                   {/* Header Modale */}
-                  <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 z-10 shrink-0">
+                  <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 z-10 shrink-0">
                      <div>
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
                            <div className="h-8 w-8 flex items-center justify-center overflow-hidden rounded-full">
@@ -736,7 +734,7 @@ export function RendezVous() {
                            </div>
                            Configuration Cal.com
                         </h2>
-                        <p className="text-slate-400 text-sm mt-1">Paramètres de connexion et synchronisation.</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Paramètres de connexion et synchronisation.</p>
                      </div>
                      <button onClick={() => setIsConfigModalOpen(false)} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
                         <X className="h-6 w-6" />
@@ -744,18 +742,18 @@ export function RendezVous() {
                   </div>
 
                   {/* Corps Modale */}
-                  <div className="p-8 space-y-8 bg-white dark:bg-slate-950/50 overflow-y-auto custom-scrollbar">
+                  <div className="p-8 space-y-8 bg-slate-50 dark:bg-slate-950/50 overflow-y-auto custom-scrollbar">
                      <section>
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider">1. Connexion Cal.com</h3>
+                        <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">1. Connexion Cal.com</h3>
 
                         {!calAccessToken ? (
-                           <div className="rounded-lg bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-6 mb-6 text-center">
-                              <p className="text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
+                           <div className="rounded-lg bg-slate-900 border border-slate-800 p-6 mb-6 text-center">
+                              <p className="text-sm text-slate-300 mb-6 leading-relaxed">
                                  Connectez votre compte Cal.com pour synchroniser automatiquement vos rendez-vous et gérer vos liens de réservation.
                               </p>
                               <button
                                  onClick={handleConnectCal}
-                                 className="w-full flex justify-center items-center gap-2 rounded-xl bg-slate-900 dark:bg-black py-4 text-sm font-bold text-white hover:bg-slate-800 dark:hover:bg-neutral-900 transition-all shadow-lg border border-slate-800"
+                                 className="w-full flex justify-center items-center gap-2 rounded-xl bg-black py-4 text-sm font-bold text-white hover:bg-neutral-900 transition-all shadow-lg border border-slate-800"
                               >
                                  <div className="h-5 w-5 rounded-full bg-white flex items-center justify-center p-0.5">
                                     <img src="/Calcom.png" alt="" className="w-full h-full object-contain" />
@@ -774,22 +772,22 @@ export function RendezVous() {
                                     <p className="text-xs text-emerald-500/70">@{calUsername || 'Utilisateur'}</p>
                                  </div>
                               </div>
-                              <button onClick={() => { if (window.confirm('Déconnecter ?')) setCalAccessToken(null) }} className="text-xs font-bold text-slate-500 hover:text-red-500 underline transition-colors">Déconnecter</button>
+                              <button onClick={() => { if (window.confirm('Déconnecter ?')) setCalAccessToken(null) }} className="text-xs font-bold text-slate-500 hover:text-white underline">Déconnecter</button>
                            </div>
                         )}
                      </section>
 
                      {/* Tutorial removed */}
 
-                     <hr className="border-gray-200 dark:border-slate-800" />
+                     <hr className="border-slate-200 dark:border-slate-800" />
 
                      {/* 2. Webhook */}
                      {calAccessToken && (
                         <section>
-                           <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 uppercase tracking-wider">2. Synchronisation (Webhook)</h3>
-                           <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-2 pl-4">
-                              <code className="text-xs font-mono text-purple-600 dark:text-purple-300 truncate flex-1 select-all">{webhookUrl}</code>
-                              <button onClick={handleCopyWebhook} className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" title="Copier l'URL">{webhookCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}</button>
+                           <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-wider">2. Synchronisation (Webhook)</h3>
+                           <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg p-2 pl-4">
+                              <code className="text-xs font-mono text-purple-300 truncate flex-1 select-all">{webhookUrl}</code>
+                              <button onClick={handleCopyWebhook} className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors" title="Copier l'URL">{webhookCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}</button>
                            </div>
                            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
                               Copiez cette URL et ajoutez-la dans la section <b>Webhooks</b> de vos paramètres Cal.com pour recevoir les notifications de réservation.
@@ -805,13 +803,13 @@ export function RendezVous() {
          {isCreateModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
-               <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-8 shadow-2xl animate-in fade-in zoom-in-95 custom-scrollbar">
-                  <div className="flex items-center justify-between mb-8 border-b border-gray-200 dark:border-slate-800 pb-4">
+               <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 border border-slate-800 p-8 shadow-2xl animate-in fade-in zoom-in-95 custom-scrollbar">
+                  <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
                      <div>
-                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Nouveau Type d'Événement</h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">Configurez les détails et les limites de votre nouveau lien.</p>
+                        <h3 className="text-2xl font-bold text-white">Nouveau Type d'Événement</h3>
+                        <p className="text-slate-400 text-sm">Configurez les détails et les limites de votre nouveau lien.</p>
                      </div>
-                     <button onClick={() => setIsCreateModalOpen(false)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white"><X className="h-6 w-6" /></button>
+                     <button onClick={() => setIsCreateModalOpen(false)} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"><X className="h-6 w-6" /></button>
                   </div>
 
                   <div className="space-y-8">
@@ -821,28 +819,28 @@ export function RendezVous() {
                         <div className="grid grid-cols-2 gap-4">
                            <div className="col-span-2 md:col-span-1">
                               <label className="block text-xs font-bold text-slate-500 mb-1">Titre</label>
-                              <input type="text" value={newEventTitle} onChange={(e) => { setNewEventTitle(e.target.value); setNewEventSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) }} className="w-full rounded-lg bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white focus:border-blue-500 outline-none transition-all" placeholder="Ex: Appel Découverte" />
+                              <input type="text" value={newEventTitle} onChange={(e) => { setNewEventTitle(e.target.value); setNewEventSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) }} className="w-full rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white focus:border-blue-500 outline-none transition-all" placeholder="Ex: Appel Découverte" />
                            </div>
                            <div className="col-span-2 md:col-span-1">
                               <label className="block text-xs font-bold text-slate-500 mb-1">Durée (min)</label>
-                              <input type="number" value={newEventDuration} onChange={(e) => setNewEventDuration(parseInt(e.target.value))} className="w-full rounded-lg bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white focus:border-blue-500 outline-none transition-all" />
+                              <input type="number" value={newEventDuration} onChange={(e) => setNewEventDuration(parseInt(e.target.value))} className="w-full rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white focus:border-blue-500 outline-none transition-all" />
                            </div>
                            <div className="col-span-2">
                               <label className="block text-xs font-bold text-slate-500 mb-1">URL / Slug</label>
                               <div className="flex items-center">
-                                 <span className="bg-gray-100 dark:bg-slate-800 text-slate-500 px-4 py-2.5 rounded-l-lg border border-r-0 border-gray-300 dark:border-slate-700 text-sm">cal.com/{calUsername || 'user'}/</span>
-                                 <input type="text" value={newEventSlug} onChange={(e) => setNewEventSlug(e.target.value)} className="w-full rounded-r-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 py-2.5 px-4 text-slate-900 dark:text-white focus:border-blue-500 outline-none transition-all" />
+                                 <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 px-4 py-2.5 rounded-l-lg border border-r-0 border-slate-200 dark:border-slate-700 text-sm">cal.com/{calUsername || 'user'}/</span>
+                                 <input type="text" value={newEventSlug} onChange={(e) => setNewEventSlug(e.target.value)} className="w-full rounded-r-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 py-2.5 px-4 text-slate-900 dark:text-white focus:border-blue-500 outline-none transition-all" />
                               </div>
                            </div>
                            <div className="col-span-2">
                               <label className="block text-xs font-bold text-slate-500 mb-1">Description</label>
-                              <textarea rows={3} value={newEventDescription} onChange={(e) => setNewEventDescription(e.target.value)} className="w-full rounded-lg bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white focus:border-blue-500 outline-none resize-none transition-all" placeholder="Détails du rendez-vous..." />
+                              <textarea rows={3} value={newEventDescription} onChange={(e) => setNewEventDescription(e.target.value)} className="w-full rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white focus:border-blue-500 outline-none resize-none transition-all" placeholder="Détails du rendez-vous..." />
                            </div>
 
                            <div className="col-span-2">
                               <label className="block text-xs font-bold text-slate-500 mb-1">Lieu / Location</label>
                               <div className="space-y-3">
-                                 <div className="p-3 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs flex items-center gap-2">
+                                 <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-xs flex items-center gap-2">
                                     <MapPin className="h-4 w-4 text-blue-500" />
                                     <select
                                        className="bg-transparent outline-none w-full text-slate-900 dark:text-white cursor-pointer"
@@ -878,7 +876,7 @@ export function RendezVous() {
                                           placeholder="..."
                                           value={newEventLocationAddress}
                                           onChange={(e) => setNewEventLocationAddress(e.target.value)}
-                                          className="w-full rounded-lg bg-white dark:bg-slate-950 border border-blue-500/50 py-2 px-4 text-slate-900 dark:text-white text-sm focus:border-blue-500 outline-none"
+                                          className="w-full rounded-lg bg-slate-50 dark:bg-slate-950 border border-blue-500/50 py-2 px-4 text-slate-900 dark:text-white text-sm focus:border-blue-500 outline-none"
                                        />
                                     </div>
                                  )}
@@ -898,7 +896,7 @@ export function RendezVous() {
                               <select
                                  value={newEventBeforeBuffer}
                                  onChange={(e) => setNewEventBeforeBuffer(parseInt(e.target.value))}
-                                 className="w-full rounded-lg bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white outline-none cursor-pointer hover:border-gray-400 dark:hover:border-slate-600 transition-all"
+                                 className="w-full rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 transition-all"
                               >
                                  <option value={0}>Aucune</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
                               </select>
@@ -908,7 +906,7 @@ export function RendezVous() {
                               <select
                                  value={newEventAfterBuffer}
                                  onChange={(e) => setNewEventAfterBuffer(parseInt(e.target.value))}
-                                 className="w-full rounded-lg bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white outline-none cursor-pointer hover:border-gray-400 dark:hover:border-slate-600 transition-all"
+                                 className="w-full rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 transition-all"
                               >
                                  <option value={0}>Aucune</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
                               </select>
@@ -921,12 +919,12 @@ export function RendezVous() {
                                     type="number"
                                     value={newEventNotice}
                                     onChange={(e) => setNewEventNotice(parseInt(e.target.value))}
-                                    className="w-20 rounded-l-lg bg-white dark:bg-slate-950 border border-r-0 border-gray-300 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white outline-none focus:border-blue-500 transition-all"
+                                    className="w-20 rounded-l-lg bg-slate-50 dark:bg-slate-950 border border-r-0 border-slate-200 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white outline-none focus:border-blue-500 transition-all"
                                  />
                                  <select
                                     value={newEventNoticeUnit}
                                     onChange={(e) => setNewEventNoticeUnit(e.target.value as 'minutes' | 'hours')}
-                                    className="flex-1 rounded-r-lg bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 py-2.5 px-2 text-slate-900 dark:text-white outline-none cursor-pointer hover:border-gray-400 dark:hover:border-slate-600 transition-all"
+                                    className="flex-1 rounded-r-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 py-2.5 px-2 text-slate-900 dark:text-white outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 transition-all"
                                  >
                                     <option value="minutes">Minutes</option>
                                     <option value="hours">Heures</option>
@@ -939,7 +937,7 @@ export function RendezVous() {
                               <select
                                  value={newEventSlotInterval || 'default'}
                                  onChange={(e) => setNewEventSlotInterval(e.target.value === 'default' ? null : parseInt(e.target.value))}
-                                 className="w-full rounded-lg bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white outline-none cursor-pointer hover:border-gray-400 dark:hover:border-slate-600 transition-all"
+                                 className="w-full rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 py-2.5 px-4 text-slate-900 dark:text-white outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 transition-all"
                               >
                                  <option value="default">Par défaut (Durée)</option>
                                  <option value={15}>15 min</option><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>60 min</option>
@@ -968,11 +966,11 @@ export function RendezVous() {
          {isEditModalOpen && editingEvent && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
-               <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-8 shadow-2xl animate-in fade-in zoom-in-95 custom-scrollbar">
+               <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 border border-slate-800 p-8 shadow-2xl animate-in fade-in zoom-in-95 custom-scrollbar">
 
-                  <div className="flex items-center justify-between mb-8 border-b border-gray-200 dark:border-slate-800 pb-4">
+                  <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
                      <div>
-                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Modifier l'événement</h3>
+                        <h3 className="text-2xl font-bold text-white">Modifier l'événement</h3>
                         <p className="text-slate-400 text-sm">Configurez les détails et les disponibilités.</p>
                      </div>
                      <button onClick={() => setIsEditModalOpen(false)} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"><X className="h-6 w-6" /></button>
@@ -984,24 +982,24 @@ export function RendezVous() {
                         <div className="grid grid-cols-2 gap-4">
                            <div className="col-span-2 md:col-span-1">
                               <label className="block text-xs font-bold text-slate-500 mb-1">Titre</label>
-                              <input type="text" value={editingEvent.title} onChange={(e) => setEditingEvent({ ...editingEvent, title: e.target.value })} className="w-full rounded-lg bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 py-2 px-4 text-slate-900 dark:text-white focus:border-blue-500 outline-none" />
+                              <input type="text" value={editingEvent.title} onChange={(e) => setEditingEvent({ ...editingEvent, title: e.target.value })} className="w-full rounded-lg bg-slate-950 border border-slate-700 py-2 px-4 text-white focus:border-blue-500 outline-none" />
                            </div>
                            <div className="col-span-2 md:col-span-1">
                               <label className="block text-xs font-bold text-slate-500 mb-1">Durée (min)</label>
-                              <input type="number" value={editingEvent.length} onChange={(e) => setEditingEvent({ ...editingEvent, length: parseInt(e.target.value) })} className="w-full rounded-lg bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 py-2 px-4 text-slate-900 dark:text-white focus:border-blue-500 outline-none" />
+                              <input type="number" value={editingEvent.length} onChange={(e) => setEditingEvent({ ...editingEvent, length: parseInt(e.target.value) })} className="w-full rounded-lg bg-slate-950 border border-slate-700 py-2 px-4 text-white focus:border-blue-500 outline-none" />
                            </div>
                            <div className="col-span-2">
                               <label className="block text-xs font-bold text-slate-500 mb-1">Description</label>
-                              <textarea rows={3} value={editingEvent.description} onChange={(e) => setEditingEvent({ ...editingEvent, description: e.target.value })} className="w-full rounded-lg bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 py-2 px-4 text-slate-900 dark:text-white focus:border-blue-500 outline-none resize-none" />
+                              <textarea rows={3} value={editingEvent.description} onChange={(e) => setEditingEvent({ ...editingEvent, description: e.target.value })} className="w-full rounded-lg bg-slate-950 border border-slate-700 py-2 px-4 text-white focus:border-blue-500 outline-none resize-none" />
                            </div>
 
                            <div className="col-span-2">
                               <label className="block text-xs font-bold text-slate-500 mb-1">Lieu / Location</label>
                               <div className="space-y-3">
-                                 <div className="p-3 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs flex items-center gap-2">
-                                    <MapPin className="h-4 w-4 text-blue-500" />
+                                 <div className="p-3 rounded-lg border border-slate-700 bg-slate-950 text-slate-400 text-xs flex items-center gap-2">
+                                    <MapPin className="h-4 w-4" />
                                     <select
-                                       className="bg-transparent outline-none w-full text-slate-900 dark:text-white cursor-pointer"
+                                       className="bg-transparent outline-none w-full text-white cursor-pointer"
                                        onChange={(e) => {
                                           const newType = e.target.value
                                           const currentLoc = editingEvent.locations[0] || {}
@@ -1044,7 +1042,7 @@ export function RendezVous() {
                                              newLocs[0] = { ...newLocs[0], address: e.target.value }
                                              setEditingEvent({ ...editingEvent, locations: newLocs })
                                           }}
-                                          className="w-full rounded-lg bg-white dark:bg-slate-950 border border-blue-500/50 py-2 px-4 text-slate-900 dark:text-white text-sm focus:border-blue-500 outline-none"
+                                          className="w-full rounded-lg bg-slate-950 border border-blue-500/50 py-2 px-4 text-white text-sm focus:border-blue-500 outline-none"
                                        />
                                     </div>
                                  )}
@@ -1061,7 +1059,7 @@ export function RendezVous() {
                                              newLocs[0] = { ...newLocs[0], link: e.target.value }
                                              setEditingEvent({ ...editingEvent, locations: newLocs })
                                           }}
-                                          className="w-full rounded-lg bg-white dark:bg-slate-950 border border-blue-500/50 py-2 px-4 text-slate-900 dark:text-white text-sm focus:border-blue-500 outline-none"
+                                          className="w-full rounded-lg bg-slate-950 border border-blue-500/50 py-2 px-4 text-white text-sm focus:border-blue-500 outline-none"
                                        />
                                     </div>
                                  )}
@@ -1078,7 +1076,7 @@ export function RendezVous() {
                                              newLocs[0] = { ...newLocs[0], phone: e.target.value }
                                              setEditingEvent({ ...editingEvent, locations: newLocs })
                                           }}
-                                          className="w-full rounded-lg bg-white dark:bg-slate-950 border border-blue-500/50 py-2 px-4 text-slate-900 dark:text-white text-sm focus:border-blue-500 outline-none"
+                                          className="w-full rounded-lg bg-slate-950 border border-blue-500/50 py-2 px-4 text-white text-sm focus:border-blue-500 outline-none"
                                        />
                                     </div>
                                  )}
@@ -1120,12 +1118,12 @@ export function RendezVous() {
                                     type="number"
                                     value={editingEvent.minimumBookingNotice}
                                     onChange={(e) => setEditingEvent({ ...editingEvent, minimumBookingNotice: parseInt(e.target.value) })}
-                                    className="w-20 rounded-l-lg bg-white dark:bg-slate-950 border border-r-0 border-gray-300 dark:border-slate-700 py-2 px-4 text-slate-900 dark:text-white outline-none"
+                                    className="w-20 rounded-l-lg bg-slate-950 border border-r-0 border-slate-700 py-2 px-4 text-white outline-none"
                                  />
                                  <select
                                     value={noticeUnit}
                                     onChange={(e) => setNoticeUnit(e.target.value as 'minutes' | 'hours')}
-                                    className="flex-1 rounded-r-lg bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-700 py-2 px-2 text-slate-900 dark:text-white outline-none cursor-pointer"
+                                    className="flex-1 rounded-r-lg bg-slate-950 border border-slate-700 py-2 px-2 text-white outline-none cursor-pointer"
                                  >
                                     <option value="minutes">Minutes</option>
                                     <option value="hours">Heures</option>
@@ -1147,10 +1145,10 @@ export function RendezVous() {
                         </div>
                      </section>
 
-                     <div className="p-4 rounded-xl bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 flex items-start gap-3">
+                     <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700 flex items-start gap-3">
                         <AlertCircle className="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
                         <div>
-                           <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">Besoin de plus de réglages ?</p>
+                           <p className="text-sm text-slate-300 font-medium">Besoin de plus de réglages ?</p>
                            <p className="text-xs text-slate-500 mt-1">Pour les règles avancées (questions, paiements, workflows), utilisez l'interface native.</p>
                            <a href={`https://app.cal.com/event-types/${editingEvent.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-blue-400 mt-2 hover:underline">
                               Ouvrir les paramètres avancés <ExternalLink className="h-3 w-3" />
@@ -1174,17 +1172,17 @@ export function RendezVous() {
          {/* Modal Détails (Inchangé) */}
          {selectedMeeting && (
             <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-left">
-               <div className="w-full max-w-xl rounded-3xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-2xl">
+               <div className="w-full max-w-xl rounded-3xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
                   <div className="mb-8 flex items-center justify-between">
-                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Détails de l'appel</h2>
+                     <h2 className="text-2xl font-bold text-white">Détails de l'appel</h2>
                      <button onClick={() => setSelectedMeeting(null)} className="rounded-full p-2 hover:bg-slate-800 text-slate-400"><X className="h-6 w-6" /></button>
                   </div>
                   <div className="space-y-6">
-                     <div className="p-4 rounded-2xl bg-gray-50 dark:bg-slate-800/30 border border-gray-200 dark:border-slate-800/50 flex items-center justify-between">
+                     <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                            <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center text-xl font-bold text-white">{selectedMeeting.contact?.charAt(0)}</div>
                            <div>
-                              <p className="text-lg font-bold text-slate-900 dark:text-white">{maskData(selectedMeeting.contact, 'name')}</p>
+                              <p className="text-lg font-bold text-white">{maskData(selectedMeeting.contact, 'name')}</p>
                               <p className="text-sm text-slate-500">{getMeetingLocation(selectedMeeting)}</p>
                            </div>
                         </div>
@@ -1196,17 +1194,17 @@ export function RendezVous() {
                         </div>
                      </div>
                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-2xl bg-gray-50 dark:bg-slate-800/30 border border-gray-200 dark:border-slate-800/50"><p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Mail size={10} /> Email</p><p className="font-bold text-slate-900 dark:text-white truncate">{maskData(selectedMeeting.description?.match(/Email:\s*([^\n\r]*)/)?.[1] || 'Non renseigné', 'email')}</p></div>
-                        <div className="p-4 rounded-2xl bg-gray-50 dark:bg-slate-800/30 border border-gray-200 dark:border-slate-800/50"><p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Phone size={10} /> Téléphone</p><p className="font-bold text-slate-900 dark:text-white">{maskData(selectedMeeting.description?.match(/Téléphone:\s*([^\n\r]*)/)?.[1] || 'Non renseigné', 'phone')}</p></div>
+                        <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50"><p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Mail size={10} /> Email</p><p className="text-white font-bold truncate">{maskData(selectedMeeting.description?.match(/Email:\s*([^\n\r]*)/)?.[1] || 'Non renseigné', 'email')}</p></div>
+                        <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50"><p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Phone size={10} /> Téléphone</p><p className="text-white font-bold">{maskData(selectedMeeting.description?.match(/Téléphone:\s*([^\n\r]*)/)?.[1] || 'Non renseigné', 'phone')}</p></div>
                      </div>
                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-2xl bg-gray-50 dark:bg-slate-800/30 border border-gray-200 dark:border-slate-800/50"><p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Calendar size={10} /> Date</p><p className="font-bold text-slate-900 dark:text-white">{safeFormat(selectedMeeting.date, 'dd MMMM yyyy')}</p></div>
-                        <div className="p-4 rounded-2xl bg-gray-50 dark:bg-slate-800/30 border border-gray-200 dark:border-slate-800/50"><p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Clock size={10} /> Heure</p><p className="font-bold text-slate-900 dark:text-white">{selectedMeeting.time}</p></div>
+                        <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50"><p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Calendar size={10} /> Date</p><p className="text-white font-bold">{safeFormat(selectedMeeting.date, 'dd MMMM yyyy')}</p></div>
+                        <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50"><p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Clock size={10} /> Heure</p><p className="text-white font-bold">{selectedMeeting.time}</p></div>
                      </div>
                   </div>
                   <div className="mt-8 flex flex-col gap-3">
                      {selectedMeeting.location && (<button onClick={() => { const locationUrl = selectedMeeting.location; if (isDailyCoLink(locationUrl)) { const url = `/live-call?url=${encodeURIComponent(locationUrl)}&from=/rendez-vous`; navigate(url); } else { window.open(locationUrl, '_blank', 'noopener,noreferrer'); } }} className="w-full flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"><Video className="h-5 w-5" /> Rejoindre l'appel</button>)}
-                     <button onClick={() => setSelectedMeeting(null)} className="w-full rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-800/50 py-4 font-bold text-slate-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">Fermer</button>
+                     <button onClick={() => setSelectedMeeting(null)} className="w-full rounded-2xl border border-slate-800 bg-slate-800/50 py-4 font-bold text-slate-300 hover:bg-slate-800">Fermer</button>
                   </div>
                </div>
             </div>

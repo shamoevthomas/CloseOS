@@ -106,7 +106,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
         <div className="flex h-16 items-center justify-between px-6 border-b border-gray-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <img
-              src={theme === 'light' ? "/logo-light.png" : "/logo.PNG"}
+              src={theme === 'light' ? "/LogoBlack.png" : "/logo.PNG"}
               alt="CloserOS"
               className="h-8 w-auto object-contain rounded-md"
             />
@@ -129,8 +129,8 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
                 cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-600 dark:text-white'
+                    : 'text-black hover:bg-slate-100 hover:text-black dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
                 )
               }
             >

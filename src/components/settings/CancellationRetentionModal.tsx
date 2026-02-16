@@ -52,11 +52,11 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0B1121] shadow-2xl relative overflow-hidden">
+            <div className="w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0B1121] shadow-2xl relative overflow-hidden">
                 {/* Close button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors z-10"
+                    className="absolute top-4 right-4 p-2 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors z-10"
                 >
                     <X className="h-5 w-5" />
                 </button>
@@ -67,19 +67,19 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-orange-500 text-white shadow-lg shadow-red-500/20">
                             <LogOut className="h-8 w-8" />
                         </div>
-                        <h2 className="text-3xl font-bold text-white mb-3">Avant de partir...</h2>
-                        <p className="text-slate-400 text-lg">
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-3">Avant de partir...</h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-lg">
                             Nous aimerions comprendre ce qui ne vous convient pas.
                         </p>
                     </div>
 
                     {/* Content */}
                     <div className="space-y-6 mb-8">
-                        <div className="p-6 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                            <p className="text-white font-medium mb-2">
+                        <div className="p-6 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
+                            <p className="text-slate-900 dark:text-white font-medium mb-2">
                                 💬 Discutons-en ensemble
                             </p>
-                            <p className="text-slate-400 text-sm">
+                            <p className="text-slate-600 dark:text-slate-400 text-sm">
                                 Prenez 15 minutes avec notre équipe pour nous expliquer vos besoins.
                                 Nous trouverons peut-être une solution ensemble !
                             </p>
@@ -100,7 +100,7 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
                             <button
                                 onClick={handleConfirmCancellation}
                                 disabled={loading}
-                                className="w-full px-6 py-4 bg-slate-800/50 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl font-medium transition-all border border-slate-700 flex items-center justify-center gap-3 disabled:opacity-50"
+                                className="w-full px-6 py-4 bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl font-medium transition-all border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-3 disabled:opacity-50"
                             >
                                 {loading ? (
                                     <>
