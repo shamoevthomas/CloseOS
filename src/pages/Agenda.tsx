@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus, Video, Phone, MapPin, Clock, X, Edit2, Trash2, Sparkles, ChevronDown, ExternalLink, Calendar as CalendarIcon, FileText, Info } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Video, Phone, MapPin, Clock, X, Edit2, Trash2, Sparkles, ExternalLink, Calendar as CalendarIcon, FileText } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
 import { VideoCallOverlay } from '../components/VideoCallOverlay'
@@ -124,11 +124,16 @@ const formatShortDayName = (date: Date): string => {
   return date.toLocaleDateString('fr-FR', { weekday: 'short' })
 }
 
-const get3DayDates = (date: Date): Date[] => {
-  return Array.from({ length: 3 }, (_, i) => {
-    const d = new Date(date)
-    d.setDate(date.getDate() + i)
-    return d
+const getWeekDates = (date: Date): Date[] => {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1) // adjust when day is sunday
+  const monday = new Date(d.setDate(diff))
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const weekDate = new Date(monday)
+    weekDate.setDate(monday.getDate() + i)
+    return weekDate
   })
 }
 
@@ -172,13 +177,13 @@ export function Agenda() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<ViewMode>('week')
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [selectedEvent, setSelectedEvent] = useState<typeof meetings[0] | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null)
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false)
   const [isCallSummaryModalOpen, setIsCallSummaryModalOpen] = useState(false)
   const [isNoAnswerModalOpen, setIsNoAnswerModalOpen] = useState(false)
   const [showAiToast, setShowAiToast] = useState(false)
-  const [callModeWithAi, setCallModeWithAi] = useState(false)
-  const [currentProspect, setCurrentProspect] = useState({ name: '', avatar: '' })
+  const [callModeWithAi] = useState(false)
+  const [currentProspect] = useState({ name: '', avatar: '' })
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
   const [editingEventId, setEditingEventId] = useState<number | null>(null)
 
@@ -233,7 +238,7 @@ export function Agenda() {
     if (view === 'day') {
       newDate.setDate(newDate.getDate() + 1)
     } else if (view === 'week') {
-      newDate.setDate(newDate.getDate() + 2)
+      newDate.setDate(newDate.getDate() + 7)
     } else if (view === 'month') {
       newDate.setMonth(newDate.getMonth() + 1)
     }
@@ -245,7 +250,7 @@ export function Agenda() {
     if (view === 'day') {
       newDate.setDate(newDate.getDate() - 1)
     } else if (view === 'week') {
-      newDate.setDate(newDate.getDate() - 2)
+      newDate.setDate(newDate.getDate() - 7)
     } else if (view === 'month') {
       newDate.setMonth(newDate.getMonth() - 1)
     }
@@ -279,9 +284,9 @@ export function Agenda() {
     if (view === 'day') {
       return formatDate(currentDate)
     } else if (view === 'week') {
-      const weekDates = get3DayDates(currentDate)
+      const weekDates = getWeekDates(currentDate)
       const start = weekDates[0]
-      const end = weekDates[2]
+      const end = weekDates[6]
       if (start.getMonth() === end.getMonth()) {
         return `${start.getDate()} - ${end.getDate()} ${start.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`
       } else {
@@ -415,7 +420,7 @@ export function Agenda() {
     }
   }
 
-  const handleCallSummarySubmit = (data: CallSummaryData) => {
+  const handleCallSummarySubmit = () => {
     setIsCallSummaryModalOpen(false)
   }
 
@@ -551,181 +556,183 @@ export function Agenda() {
   }
 
   const renderWeekView = () => {
-    const weekDates = get3DayDates(currentDate)
+    const weekDates = getWeekDates(currentDate)
     const currentTimePos = getCurrentTimePosition()
     const todayIndex = weekDates.findIndex(date => isToday(date))
 
     return (
       <div
         ref={weekViewScrollRef}
-        className="flex-1 overflow-y-auto rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md custom-scrollbar"
+        className="flex-1 overflow-x-auto overflow-y-auto rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md custom-scrollbar"
         style={{ maxHeight: 'calc(100vh - 280px)' }}
       >
-        <div className="sticky top-0 z-20 flex border-b border-white/5 bg-slate-900/90 backdrop-blur-md">
-          <div className="w-16 border-r border-white/5" />
-          {weekDates.map((date, index) => (
-            <div
-              key={index}
-              className={cn(
-                'flex-1 border-r border-white/5 p-3 text-center',
-                isToday(date) && 'bg-blue-500/10'
-              )}
-            >
-              <div className="text-xs font-medium text-slate-400">
-                {formatShortDayName(date)}
-              </div>
-              <div className={cn(
-                'mt-1 text-lg font-bold',
-                isToday(date) ? 'text-blue-400' : 'text-white'
-              )}>
-                {date.getDate()}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="sticky top-[73px] z-10 flex border-b border-white/5 bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-16 border-r border-white/5 p-2">
-            <span className="text-[10px] font-semibold text-slate-400">Toute la journée</span>
-          </div>
-          {weekDates.map((date, dayIndex) => {
-            const allDayEvents = getAllDayEventsForDate(date)
-            return (
-              <div key={dayIndex} className="relative flex-1 border-r border-white/5 p-1.5 min-h-[40px]">
-                {allDayEvents.map(event => (
-                  <div
-                    key={event.id}
-                    className="mb-1 px-2 py-1 rounded text-[10px] font-medium truncate cursor-pointer transition-all hover:bg-slate-800/50"
-                    style={{
-                      backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                      borderLeft: '3px solid #3b82f6',
-                      color: '#ffffff'
-                    }}
-                  >
-                    {event.title}
-                  </div>
-                ))}
-              </div>
-            )
-          })}
-        </div>
-
-        <div className="relative min-h-[1920px]">
-          <div className="absolute left-0 top-0 w-16 border-r border-white/5">
-            {HOURS.map((hour) => (
-              <div key={hour} className="h-20 border-b border-white/5 px-2 py-1">
-                <span className="text-xs font-medium text-slate-500">
-                  {hour.toString().padStart(2, '0')}:00
-                </span>
+        <div className="min-w-[1000px]">
+          <div className="sticky top-0 z-20 flex border-b border-white/5 bg-slate-900/90 backdrop-blur-md">
+            <div className="w-16 border-r border-white/5 flex-shrink-0" />
+            {weekDates.map((date, index) => (
+              <div
+                key={index}
+                className={cn(
+                  'flex-1 border-r border-white/5 p-3 text-center min-w-[120px]',
+                  isToday(date) && 'bg-blue-500/10'
+                )}
+              >
+                <div className="text-xs font-medium text-slate-400">
+                  {formatShortDayName(date)}
+                </div>
+                <div className={cn(
+                  'mt-1 text-lg font-bold',
+                  isToday(date) ? 'text-blue-400' : 'text-white'
+                )}>
+                  {date.getDate()}
+                </div>
               </div>
             ))}
           </div>
 
-          <div className="absolute inset-0 left-16 flex">
+          <div className="sticky top-[73px] z-10 flex border-b border-white/5 bg-slate-950/80 backdrop-blur-sm">
+            <div className="w-16 border-r border-white/5 p-2 flex-shrink-0">
+              <span className="text-[10px] font-semibold text-slate-400">Toute la journée</span>
+            </div>
             {weekDates.map((date, dayIndex) => {
-              const dayMeetings = getMeetingsForDate(date)
-              const previousDate = dayIndex > 0 ? weekDates[dayIndex - 1] : null
-              const previousDayMeetings = previousDate ? getMeetingsForDate(previousDate) : []
-              const overnightContinuations = previousDayMeetings.filter(event => isOvernightEvent(event.time))
-
+              const allDayEvents = getAllDayEventsForDate(date)
               return (
-                <div key={dayIndex} className="relative flex-1 border-r border-white/5">
-                  {HOURS.map((hour) => (
-                    <div key={hour} className="h-20 border-b border-white/5" />
-                  ))}
-
-                  {dayIndex === todayIndex && currentTimePos >= 0 && currentTimePos <= 100 && (
+                <div key={dayIndex} className="relative flex-1 border-r border-white/5 p-1.5 min-h-[40px] min-w-[120px]">
+                  {allDayEvents.map(event => (
                     <div
-                      className="absolute left-0 right-0 z-10"
-                      style={{ top: `${currentTimePos}%` }}
+                      key={event.id}
+                      className="mb-1 px-2 py-1 rounded text-[10px] font-medium truncate cursor-pointer transition-all hover:bg-slate-800/50"
+                      style={{
+                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                        borderLeft: '3px solid #3b82f6',
+                        color: '#ffffff'
+                      }}
                     >
-                      <div className="flex items-center">
-                        <div className="h-3 w-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
-                        <div className="h-0.5 flex-1 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
-                      </div>
+                      {event.title}
                     </div>
-                  )}
-
-                  {overnightContinuations.map((event) => {
-                    const parts = event.time?.split(' - ') || [];
-                    const end = parts[1] || parts[0] || '00:00';
-                    const [endH, endM] = end?.split(':').map(Number) || [0, 0];
-                    const endHour = endH + endM / 60
-                    const top = 0
-                    const height = endHour * 80
-                    const isShort = isShortEvent(endHour)
-                    const style = getEventStyle(event)
-
-                    return (
-                      <div
-                        key={`overnight-${event.id}`}
-                        onClick={() => setSelectedEvent(event)}
-                        className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg hover:brightness-110 rounded-md"
-                        style={{ top: `${top}px`, height: `${height}px`, ...style }}
-                      >
-                        {isShort ? (
-                          <div className="flex h-full items-center">
-                            <p className="truncate text-[10px] font-semibold">
-                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="flex h-full flex-col overflow-hidden">
-                            <p className="truncate text-[10px] font-semibold opacity-90">→ {end}</p>
-                            <p className="truncate text-xs font-bold">
-                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-
-                  {dayMeetings.map((event) => {
-                    const startHour = getStartHour(event.time)
-                    const isOvernight = isOvernightEvent(event.time)
-                    let duration = getDuration(event.time)
-                    let actualHeight = duration * 80
-
-                    if (isOvernight) {
-                      const hoursUntilMidnight = 24 - startHour
-                      actualHeight = hoursUntilMidnight * 80
-                    }
-
-                    const top = startHour * 80
-                    const height = actualHeight
-                    const isShort = isShortEvent(duration)
-                    const style = getEventStyle(event)
-
-                    return (
-                      <div
-                        key={event.id}
-                        onClick={() => setSelectedEvent(event)}
-                        className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg hover:brightness-110 rounded-md"
-                        style={{ top: `${top}px`, height: `${height}px`, ...style }}
-                      >
-                        {isShort ? (
-                          <div className="flex h-full items-center">
-                            <p className="truncate text-[10px] font-semibold">
-                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="flex h-full flex-col overflow-hidden">
-                            <p className="truncate text-[10px] font-semibold opacity-90">
-                              {event.time?.split(' - ')[0] || event.time}{isOvernight ? ' →' : ''}
-                            </p>
-                            <p className="truncate text-xs font-bold">
-                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                  ))}
                 </div>
               )
             })}
+          </div>
+
+          <div className="relative min-h-[1920px]">
+            <div className="absolute left-0 top-0 w-16 border-r border-white/5 flex-shrink-0 bg-slate-900/40 backdrop-blur-sm z-10">
+              {HOURS.map((hour) => (
+                <div key={hour} className="h-20 border-b border-white/5 px-2 py-1">
+                  <span className="text-xs font-medium text-slate-500">
+                    {hour.toString().padStart(2, '0')}:00
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="absolute inset-0 left-16 flex">
+              {weekDates.map((date, dayIndex) => {
+                const dayMeetings = getMeetingsForDate(date)
+                const previousDate = dayIndex > 0 ? weekDates[dayIndex - 1] : null
+                const previousDayMeetings = previousDate ? getMeetingsForDate(previousDate) : []
+                const overnightContinuations = previousDayMeetings.filter(event => isOvernightEvent(event.time))
+
+                return (
+                  <div key={dayIndex} className="relative flex-1 border-r border-white/5 min-w-[120px]">
+                    {HOURS.map((hour) => (
+                      <div key={hour} className="h-20 border-b border-white/5" />
+                    ))}
+
+                    {dayIndex === todayIndex && currentTimePos >= 0 && currentTimePos <= 100 && (
+                      <div
+                        className="absolute left-0 right-0 z-10"
+                        style={{ top: `${currentTimePos}%` }}
+                      >
+                        <div className="flex items-center">
+                          <div className="h-3 w-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+                          <div className="h-0.5 flex-1 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+                        </div>
+                      </div>
+                    )}
+
+                    {overnightContinuations.map((event) => {
+                      const parts = event.time?.split(' - ') || [];
+                      const end = parts[1] || parts[0] || '00:00';
+                      const [endH, endM] = end?.split(':').map(Number) || [0, 0];
+                      const endHour = endH + endM / 60
+                      const top = 0
+                      const height = endHour * 80
+                      const isShort = isShortEvent(endHour)
+                      const style = getEventStyle(event)
+
+                      return (
+                        <div
+                          key={`overnight-${event.id}`}
+                          onClick={() => setSelectedEvent(event)}
+                          className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg hover:brightness-110 rounded-md"
+                          style={{ top: `${top}px`, height: `${height}px`, ...style }}
+                        >
+                          {isShort ? (
+                            <div className="flex h-full items-center">
+                              <p className="truncate text-[10px] font-semibold">
+                                <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="flex h-full flex-col overflow-hidden">
+                              <p className="truncate text-[10px] font-semibold opacity-90">→ {end}</p>
+                              <p className="truncate text-xs font-bold">
+                                <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+
+                    {dayMeetings.map((event) => {
+                      const startHour = getStartHour(event.time)
+                      const isOvernight = isOvernightEvent(event.time)
+                      let duration = getDuration(event.time)
+                      let actualHeight = duration * 80
+
+                      if (isOvernight) {
+                        const hoursUntilMidnight = 24 - startHour
+                        actualHeight = hoursUntilMidnight * 80
+                      }
+
+                      const top = startHour * 80
+                      const height = actualHeight
+                      const isShort = isShortEvent(duration)
+                      const style = getEventStyle(event)
+
+                      return (
+                        <div
+                          key={event.id}
+                          onClick={() => setSelectedEvent(event)}
+                          className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg hover:brightness-110 rounded-md"
+                          style={{ top: `${top}px`, height: `${height}px`, ...style }}
+                        >
+                          {isShort ? (
+                            <div className="flex h-full items-center">
+                              <p className="truncate text-[10px] font-semibold">
+                                <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="flex h-full flex-col overflow-hidden">
+                              <p className="truncate text-[10px] font-semibold opacity-90">
+                                {event.time?.split(' - ')[0] || event.time}{isOvernight ? ' →' : ''}
+                              </p>
+                              <p className="truncate text-xs font-bold">
+                                <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>
