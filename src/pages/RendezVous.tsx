@@ -187,9 +187,11 @@ export function RendezVous() {
             if (['CANCELLED', 'REJECTED'].includes(b.status)) continue;
 
             const apiDate = parseISO(b.startTime);
-            const apiDateStr = format(apiDate, 'yyyy-MM-dd');
-            const apiTimeStr = format(apiDate, 'HH:mm');
-            const endTimeStr = format(parseISO(b.endTime), 'HH:mm');
+            const endDate = parseISO(b.endTime);
+            const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const apiDateStr = apiDate.toLocaleDateString('sv-SE', { timeZone: userTz }); // yyyy-MM-dd format
+            const apiTimeStr = apiDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: userTz });
+            const endTimeStr = endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: userTz });
             const fullTimeStr = `${apiTimeStr} - ${endTimeStr}`;
 
             const contactName = b.attendees?.[0]?.name || b.title || 'Prospect Inconnu';
