@@ -108,7 +108,7 @@ function AuthenticatedApp() {
   }
 
   return (
-    <BrowserRouter>
+    <>
       <Routes>
         {/* 👇 REDIRECTION PRINCIPALE : Si connecté, on va sur /coming-soon au lieu de /dashboard */}
         <Route
@@ -192,31 +192,33 @@ function AuthenticatedApp() {
           />
         </>
       )}
-    </BrowserRouter>
+    </>
   )
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <PrivacyProvider>
-        <ProspectsProvider>
-          <InternalContactsProvider>
-            <OffersProvider>
-              <MeetingsProvider>
-                <CallsProvider>
-                  <MessagesProvider>
-                    <NotificationsProvider>
-                      <AuthenticatedApp />
-                    </NotificationsProvider>
-                  </MessagesProvider>
-                </CallsProvider>
-              </MeetingsProvider>
-            </OffersProvider>
-          </InternalContactsProvider>
-        </ProspectsProvider>
-      </PrivacyProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <PrivacyProvider>
+          <ProspectsProvider>
+            <InternalContactsProvider>
+              <OffersProvider>
+                <MeetingsProvider>
+                  <CallsProvider>
+                    <MessagesProvider>
+                      <NotificationsProvider>
+                        <AuthenticatedApp />
+                      </NotificationsProvider>
+                    </MessagesProvider>
+                  </CallsProvider>
+                </MeetingsProvider>
+              </OffersProvider>
+            </InternalContactsProvider>
+          </ProspectsProvider>
+        </PrivacyProvider>
+      </AuthProvider>
+    </BrowserRouter>
   )
 }
 
