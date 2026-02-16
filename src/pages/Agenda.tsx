@@ -812,13 +812,13 @@ export function Agenda() {
   }
 
   return (
-    <div className="relative flex h-full gap-6 p-8 overflow-x-auto overflow-y-hidden bg-[#020617] text-slate-100 font-sans">
+    <div className="relative flex h-full gap-6 p-8 overflow-auto bg-[#020617] text-slate-100 font-sans">
 
       {/* Background Blobs (Premium Design) */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
 
-      <div className="relative z-10 flex h-full min-w-[1000px] w-full gap-6">
+      <div className="relative z-10 flex flex-col h-full min-w-[1000px] w-full gap-8">
         <div className="flex flex-1 flex-col">
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -927,249 +927,252 @@ export function Agenda() {
           {view === 'month' && renderMonthView()}
         </div>
 
-        <div className="w-80 flex-shrink-0">
-          <div className="sticky top-0 h-full flex flex-col">
-            <h3 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-              Aujourd'hui
-            </h3>
-            <div className="space-y-3 overflow-y-auto flex-1 custom-scrollbar pr-2">
-              {getTodayMeetings().map((event) => {
-                const style = getEventStyle(event)
-                const isGoogleEvent = (event as any).isGoogleEvent
+        <div className="w-full mt-8">
+          <h3 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+            Aujourd'hui
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {getTodayMeetings().map((event) => {
+              const style = getEventStyle(event)
+              const isGoogleEvent = (event as any).isGoogleEvent
 
-                // Ajustement spécifique pour la sidebar (bordure complète et fond sombre)
-                const sidebarStyle = {
-                  ...style,
-                  backgroundColor: isGoogleEvent ? '#ffffff' : 'rgba(30, 41, 59, 0.5)', // Fond sombre semi-transparent pour CloseOS
-                  borderColor: isGoogleEvent ? '#e2e8f0' : 'rgba(255, 255, 255, 0.1)',
-                  borderLeftColor: style.borderLeft.split(' ')[2] // Garde la couleur latérale
-                }
+              // Ajustement spécifique pour la section "Aujourd'hui" (bordure complète et fond sombre)
+              const cardStyle = {
+                ...style,
+                backgroundColor: isGoogleEvent ? '#ffffff' : 'rgba(30, 41, 59, 0.5)', // Fond sombre semi-transparent pour CloseOS
+                borderColor: isGoogleEvent ? '#e2e8f0' : 'rgba(255, 255, 255, 0.1)',
+                borderLeftColor: style.borderLeft.split(' ')[2] // Garde la couleur latérale
+              }
 
-                return (
-                  <div
-                    key={event.id}
-                    onClick={() => setSelectedEvent(event)}
-                    className="cursor-pointer rounded-2xl border p-4 transition-all hover:bg-white/5 hover:scale-[1.02] backdrop-blur-sm"
-                    style={sidebarStyle}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={cn(
-                          'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl shadow-inner',
-                          isGoogleEvent ? 'bg-blue-50' : 'bg-slate-800'
-                        )}
-                      >
-                        {isGoogleEvent && <CalendarIcon className="h-5 w-5 text-blue-500" />}
-                        {!isGoogleEvent && event.type === 'video' && <Video className="h-5 w-5 text-blue-400" />}
-                        {!isGoogleEvent && event.type === 'call' && <Phone className="h-5 w-5 text-emerald-400" />}
-                        {!isGoogleEvent && event.type === 'meeting' && <MapPin className="h-5 w-5 text-orange-400" />}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <p className={cn("font-bold", isGoogleEvent ? "text-slate-900" : "text-white")}>
-                          <MaskedText value={event.contact || 'Inconnu'} type="name" />
-                        </p>
-                        <p className={cn("mt-0.5 text-xs font-medium uppercase tracking-wide", isGoogleEvent ? "text-slate-500" : "text-slate-400")}>
-                          {event.title?.split(' - ')[0] || 'Sans titre'}
-                        </p>
-                        <div className={cn("mt-2 flex items-center gap-1 text-xs font-mono", isGoogleEvent ? "text-slate-400" : "text-slate-500")}>
-                          <Clock className="h-3 w-3" />
-                          <span>{event.time}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedEvent(event)
-                      }}
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600/10 border border-blue-600/20 px-3 py-2 text-sm font-bold text-blue-400 transition-all hover:bg-blue-600 hover:text-white"
-                    >
-                      <FileText className="h-4 w-4" />
-                      Détails
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {selectedEvent && (() => {
-        const isGoogleEvent = (selectedEvent as any).isGoogleEvent
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-              onClick={() => setSelectedEvent(null)}
-            />
-
-            <div className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-white/10 animate-in fade-in zoom-in-95">
-              <div className={cn(
-                "flex items-start justify-between border-b p-6 flex-shrink-0 rounded-t-2xl",
-                isGoogleEvent ? 'border-blue-500/20 bg-blue-500/5' : 'border-orange-500/20 bg-orange-500/5'
-              )}>
-                <div className="flex-1">
-                  <div className="mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider"
-                    style={{
-                      backgroundColor: isGoogleEvent ? 'rgba(59, 130, 246, 0.15)' : 'rgba(249, 115, 22, 0.15)',
-                      color: isGoogleEvent ? '#60a5fa' : '#fb923c'
-                    }}
-                  >
-                    {isGoogleEvent ? '📅 Google Agenda' : '🚀 CloserOS'}
-                  </div>
-
-                  <div className="flex items-start gap-4">
+              return (
+                <div
+                  key={event.id}
+                  onClick={() => setSelectedEvent(event)}
+                  className="cursor-pointer rounded-2xl border p-4 transition-all hover:bg-white/5 hover:scale-[1.02] backdrop-blur-sm"
+                  style={cardStyle}
+                >
+                  <div className="flex items-start gap-3">
                     <div
                       className={cn(
-                        'flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg border border-white/5',
-                        isGoogleEvent && 'bg-blue-500/20',
-                        !isGoogleEvent && selectedEvent.type === 'video' && 'bg-blue-500/20',
-                        !isGoogleEvent && selectedEvent.type === 'call' && 'bg-emerald-500/20',
-                        !isGoogleEvent && selectedEvent.type === 'meeting' && 'bg-orange-500/20'
+                        'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl shadow-inner',
+                        isGoogleEvent ? 'bg-blue-50' : 'bg-slate-800'
                       )}
                     >
-                      {isGoogleEvent && <CalendarIcon className="h-7 w-7 text-blue-400" />}
-                      {!isGoogleEvent && selectedEvent.type === 'video' && <Video className="h-7 w-7 text-blue-400" />}
-                      {!isGoogleEvent && selectedEvent.type === 'call' && <Phone className="h-7 w-7 text-emerald-400" />}
-                      {!isGoogleEvent && selectedEvent.type === 'meeting' && <MapPin className="h-7 w-7 text-orange-400" />}
+                      {isGoogleEvent && <CalendarIcon className="h-5 w-5 text-blue-500" />}
+                      {!isGoogleEvent && event.type === 'video' && <Video className="h-5 w-5 text-blue-400" />}
+                      {!isGoogleEvent && event.type === 'call' && <Phone className="h-5 w-5 text-emerald-400" />}
+                      {!isGoogleEvent && event.type === 'meeting' && <MapPin className="h-5 w-5 text-orange-400" />}
                     </div>
-                    <div>
-                      <button
-                        onClick={() => !isGoogleEvent && handleNavigateToProspect(selectedEvent.prospectId)}
+
+                    <div className="flex-1 min-w-0">
+                      <p className={cn("font-bold truncate", isGoogleEvent ? "text-slate-900" : "text-white")}>
+                        <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                      </p>
+                      <p className={cn("mt-0.5 text-xs font-medium uppercase tracking-wide truncate", isGoogleEvent ? "text-slate-500" : "text-slate-400")}>
+                        {event.title?.split(' - ')[0] || 'Sans titre'}
+                      </p>
+                      <div className={cn("mt-2 flex items-center gap-1 text-xs font-mono", isGoogleEvent ? "text-slate-400" : "text-slate-500")}>
+                        <Clock className="h-3 w-3" />
+                        <span>{event.time}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedEvent(event)
+                    }}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600/10 border border-blue-600/20 px-3 py-2 text-sm font-bold text-blue-400 transition-all hover:bg-blue-600 hover:text-white"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Détails
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+
+      </div>
+
+
+      {
+        selectedEvent && (() => {
+          const isGoogleEvent = (selectedEvent as any).isGoogleEvent
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                onClick={() => setSelectedEvent(null)}
+              />
+
+              <div className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-white/10 animate-in fade-in zoom-in-95">
+                <div className={cn(
+                  "flex items-start justify-between border-b p-6 flex-shrink-0 rounded-t-2xl",
+                  isGoogleEvent ? 'border-blue-500/20 bg-blue-500/5' : 'border-orange-500/20 bg-orange-500/5'
+                )}>
+                  <div className="flex-1">
+                    <div className="mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider"
+                      style={{
+                        backgroundColor: isGoogleEvent ? 'rgba(59, 130, 246, 0.15)' : 'rgba(249, 115, 22, 0.15)',
+                        color: isGoogleEvent ? '#60a5fa' : '#fb923c'
+                      }}
+                    >
+                      {isGoogleEvent ? '📅 Google Agenda' : '🚀 CloserOS'}
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div
                         className={cn(
-                          "group flex items-center gap-2 text-2xl font-bold text-white transition-colors",
-                          !isGoogleEvent && "hover:text-blue-400"
+                          'flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg border border-white/5',
+                          isGoogleEvent && 'bg-blue-500/20',
+                          !isGoogleEvent && selectedEvent.type === 'video' && 'bg-blue-500/20',
+                          !isGoogleEvent && selectedEvent.type === 'call' && 'bg-emerald-500/20',
+                          !isGoogleEvent && selectedEvent.type === 'meeting' && 'bg-orange-500/20'
                         )}
-                        disabled={isGoogleEvent}
                       >
-                        <MaskedText value={selectedEvent.contact || 'Inconnu'} type="name" />
-                        {!isGoogleEvent && <ExternalLink className="h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100" />}
-                      </button>
-                      <p className="mt-1 text-sm font-medium text-slate-400">{selectedEvent.title}</p>
+                        {isGoogleEvent && <CalendarIcon className="h-7 w-7 text-blue-400" />}
+                        {!isGoogleEvent && selectedEvent.type === 'video' && <Video className="h-7 w-7 text-blue-400" />}
+                        {!isGoogleEvent && selectedEvent.type === 'call' && <Phone className="h-7 w-7 text-emerald-400" />}
+                        {!isGoogleEvent && selectedEvent.type === 'meeting' && <MapPin className="h-7 w-7 text-orange-400" />}
+                      </div>
+                      <div>
+                        <button
+                          onClick={() => !isGoogleEvent && handleNavigateToProspect(selectedEvent.prospectId)}
+                          className={cn(
+                            "group flex items-center gap-2 text-2xl font-bold text-white transition-colors",
+                            !isGoogleEvent && "hover:text-blue-400"
+                          )}
+                          disabled={isGoogleEvent}
+                        >
+                          <MaskedText value={selectedEvent.contact || 'Inconnu'} type="name" />
+                          {!isGoogleEvent && <ExternalLink className="h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100" />}
+                        </button>
+                        <p className="mt-1 text-sm font-medium text-slate-400">{selectedEvent.title}</p>
+                      </div>
                     </div>
                   </div>
+                  <button
+                    onClick={() => setSelectedEvent(null)}
+                    className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setSelectedEvent(null)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
 
-              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 p-6">
-                <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
-                  <Clock className="mt-0.5 h-5 w-5 text-blue-400" />
-                  <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date & Heure</p>
-                    <p className="mt-1 text-base font-bold text-white">
-                      {formatDate(currentDate)}
-                    </p>
-                    <p className="mt-0.5 text-sm font-medium text-slate-300 font-mono">{selectedEvent.time}</p>
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 p-6">
+                  <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
+                    <Clock className="mt-0.5 h-5 w-5 text-blue-400" />
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date & Heure</p>
+                      <p className="mt-1 text-base font-bold text-white">
+                        {formatDate(currentDate)}
+                      </p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-300 font-mono">{selectedEvent.time}</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type de rendez-vous</p>
-                  <p className="mt-1 text-base font-semibold capitalize text-white">
-                    {selectedEvent.type === 'video' && 'Visioconférence'}
-                    {selectedEvent.type === 'call' && 'Appel téléphonique'}
-                    {selectedEvent.type === 'meeting' && 'Réunion en présentiel'}
-                    {selectedEvent.type === 'other' && 'Autre événement'}
-                  </p>
-                </div>
+                  <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type de rendez-vous</p>
+                    <p className="mt-1 text-base font-semibold capitalize text-white">
+                      {selectedEvent.type === 'video' && 'Visioconférence'}
+                      {selectedEvent.type === 'call' && 'Appel téléphonique'}
+                      {selectedEvent.type === 'meeting' && 'Réunion en présentiel'}
+                      {selectedEvent.type === 'other' && 'Autre événement'}
+                    </p>
+                  </div>
 
-                {(selectedEvent.location || (selectedEvent as any).location) && (() => {
-                  const locationUrl = selectedEvent.location || (selectedEvent as any).location
-                  return (
+                  {(selectedEvent.location || (selectedEvent as any).location) && (() => {
+                    const locationUrl = selectedEvent.location || (selectedEvent as any).location
+                    return (
+                      <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
+                        <MapPin className="mt-0.5 h-5 w-5 text-emerald-400" />
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Lieu</p>
+                          <p className="mt-1 text-base font-medium text-white break-all">
+                            {locationUrl}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {(selectedEvent.description || (selectedEvent as any).description) && (
                     <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
-                      <MapPin className="mt-0.5 h-5 w-5 text-emerald-400" />
-                      <div className="flex-1">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Lieu</p>
-                        <p className="mt-1 text-base font-medium text-white break-all">
-                          {locationUrl}
+                      <FileText className="mt-0.5 h-5 w-5 text-purple-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Description</p>
+                        <p className="text-sm text-slate-300 whitespace-pre-wrap break-words leading-relaxed">
+                          {renderTextWithLinks(selectedEvent.description || (selectedEvent as any).description)}
                         </p>
                       </div>
                     </div>
-                  )
-                })()}
+                  )}
 
-                {(selectedEvent.description || (selectedEvent as any).description) && (
-                  <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
-                    <FileText className="mt-0.5 h-5 w-5 text-purple-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Description</p>
-                      <p className="text-sm text-slate-300 whitespace-pre-wrap break-words leading-relaxed">
-                        {renderTextWithLinks(selectedEvent.description || (selectedEvent as any).description)}
-                      </p>
+                  {!isGoogleEvent && (
+                    <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Statut</p>
+                      <div className="mt-2 inline-flex rounded-full bg-blue-500/10 border border-blue-500/20 px-3 py-1 text-sm font-bold text-blue-400">
+                        À venir
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                {!isGoogleEvent && (
-                  <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Statut</p>
-                    <div className="mt-2 inline-flex rounded-full bg-blue-500/10 border border-blue-500/20 px-3 py-1 text-sm font-bold text-blue-400">
-                      À venir
+                <div className="flex-shrink-0 border-t border-white/10 p-6 bg-slate-900/50">
+                  {(() => {
+                    const explicitLink = (selectedEvent as any).hangoutLink || (selectedEvent as any).meetingUrl || (selectedEvent as any).link;
+                    let meetingUrl = explicitLink;
+                    if (!meetingUrl && selectedEvent.location && (selectedEvent.location.startsWith('http') || selectedEvent.location.startsWith('https'))) {
+                      meetingUrl = selectedEvent.location;
+                    }
+
+                    const hasLink = !!meetingUrl;
+
+                    return hasLink ? (
+                      <button
+                        onClick={() => {
+                          if (meetingUrl && isDailyCoLink(meetingUrl)) {
+                            const url = `/live-call?url=${encodeURIComponent(meetingUrl)}&from=/agenda`
+                            navigate(url)
+                          } else {
+                            window.open(meetingUrl, '_blank', 'noopener,noreferrer')
+                          }
+                        }}
+                        className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20"
+                      >
+                        <Video className="h-5 w-5" /> Rejoindre la réunion
+                      </button>
+                    ) : null
+                  })()}
+
+                  {!isGoogleEvent && (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleEditEvent}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-800/50 px-4 py-2.5 text-sm font-bold text-slate-300 transition-all hover:bg-slate-800 hover:text-white"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                        Modifier
+                      </button>
+                      <button
+                        onClick={handleDeleteEvent}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-bold text-red-400 transition-all hover:bg-red-500/20"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Supprimer
+                      </button>
                     </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex-shrink-0 border-t border-white/10 p-6 bg-slate-900/50">
-                {(() => {
-                  const explicitLink = (selectedEvent as any).hangoutLink || (selectedEvent as any).meetingUrl || (selectedEvent as any).link;
-                  let meetingUrl = explicitLink;
-                  if (!meetingUrl && selectedEvent.location && (selectedEvent.location.startsWith('http') || selectedEvent.location.startsWith('https'))) {
-                    meetingUrl = selectedEvent.location;
-                  }
-
-                  const hasLink = !!meetingUrl;
-
-                  return hasLink ? (
-                    <button
-                      onClick={() => {
-                        if (meetingUrl && isDailyCoLink(meetingUrl)) {
-                          const url = `/live-call?url=${encodeURIComponent(meetingUrl)}&from=/agenda`
-                          navigate(url)
-                        } else {
-                          window.open(meetingUrl, '_blank', 'noopener,noreferrer')
-                        }
-                      }}
-                      className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20"
-                    >
-                      <Video className="h-5 w-5" /> Rejoindre la réunion
-                    </button>
-                  ) : null
-                })()}
-
-                {!isGoogleEvent && (
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleEditEvent}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-800/50 px-4 py-2.5 text-sm font-bold text-slate-300 transition-all hover:bg-slate-800 hover:text-white"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                      Modifier
-                    </button>
-                    <button
-                      onClick={handleDeleteEvent}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-bold text-red-400 transition-all hover:bg-red-500/20"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Supprimer
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )
-      })()}
+          )
+        })()
+      }
 
       <VideoCallOverlay
         isOpen={isVideoCallOpen}
@@ -1204,17 +1207,19 @@ export function Agenda() {
         editingEvent={editingEventId ? meetings.find(m => m.id === editingEventId) || null : null}
       />
 
-      {showAiToast && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[60]">
-          <div className="flex items-center gap-3 px-6 py-4 bg-purple-500/20 border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
-            <Sparkles className="h-5 w-5 text-purple-400 animate-pulse" />
-            <div>
-              <p className="text-sm font-semibold text-white">Appel analysé par l'IA</p>
-              <p className="text-xs text-purple-300 mt-0.5">Les données ont été sauvegardées automatiquement</p>
+      {
+        showAiToast && (
+          <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[60]">
+            <div className="flex items-center gap-3 px-6 py-4 bg-purple-500/20 border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
+              <Sparkles className="h-5 w-5 text-purple-400 animate-pulse" />
+              <div>
+                <p className="text-sm font-semibold text-white">Appel analysé par l'IA</p>
+                <p className="text-xs text-purple-300 mt-0.5">Les données ont été sauvegardées automatiquement</p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   )
 }
