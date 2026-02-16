@@ -233,8 +233,8 @@ export default function CallRoom() {
                     <button
                         onClick={isRecording ? stopRecording : startRecording}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${isRecording
-                                ? 'bg-red-500/10 text-red-500 border border-red-500/50 animate-pulse'
-                                : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
+                            ? 'bg-red-500/10 text-red-500 border border-red-500/50 animate-pulse'
+                            : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
                             }`}
                     >
                         {isRecording ? (
