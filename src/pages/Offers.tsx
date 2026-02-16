@@ -7,7 +7,7 @@ export function Offers() {
   const { offers, addOffer, updateOffer, deleteOffer } = useOffers()
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null)
   const [showArchived, setShowArchived] = useState(false)
-  
+
   // État pour la modale de confirmation
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
@@ -22,7 +22,7 @@ export function Offers() {
 
   // Active = Statut 'active' ET Date non passée
   const activeOffers = offers.filter((o) => o.status === 'active' && !isExpired(o))
-  
+
   // Archivée = Statut 'archived' OU (Statut 'active' ET Date passée)
   const archivedOffers = offers.filter((o) => o.status === 'archived' || (o.status === 'active' && isExpired(o)))
   // ----------------------------------------------
@@ -43,7 +43,7 @@ export function Offers() {
       contacts: [],
       notes: '',
     }
-    
+
     addOffer(newOffer);
     setIsCreateModalOpen(false); // Ferme la modale immédiatement
   }
@@ -55,7 +55,7 @@ export function Offers() {
 
   return (
     <div className="relative min-h-screen bg-[#020617] p-8 overflow-hidden font-sans text-slate-100">
-      
+
       {/* Background Blobs (Style Landing Page) */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
@@ -70,7 +70,7 @@ export function Offers() {
               {activeOffers.length > 1 ? 's' : ''}
             </p>
           </div>
-          
+
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 active:scale-95"
@@ -244,13 +244,13 @@ export function Offers() {
               Cela ajoutera une offre "Nouvelle Offre" à votre catalogue. Vous pourrez ensuite la personnaliser (prix, commission, description) en cliquant dessus.
             </p>
             <div className="flex gap-4">
-              <button 
+              <button
                 onClick={() => setIsCreateModalOpen(false)}
                 className="flex-1 px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 font-bold hover:bg-slate-800 hover:text-white transition-all"
               >
                 Annuler
               </button>
-              <button 
+              <button
                 onClick={handleConfirmCreate}
                 className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
               >

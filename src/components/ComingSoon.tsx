@@ -1,84 +1,55 @@
-import { Check, type LucideIcon } from 'lucide-react'
-import { cn } from '../lib/utils'
+
+import { type LucideIcon, ArrowLeft } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 interface ComingSoonProps {
-  title: string
-  description: string
-  icon: LucideIcon
-  features: string[]
+    icon: LucideIcon
+    title: string
+    description: string
+    features?: string[]
 }
 
-export function ComingSoon({ title, description, icon: Icon, features }: ComingSoonProps) {
-  return (
-    <div className="flex min-h-[calc(100vh-120px)] items-center justify-center p-8">
-      <div className="w-full max-w-2xl text-center">
-        {/* Icon with Glow Effect */}
-        <div className="relative mx-auto mb-8 inline-flex">
-          {/* Glow effect */}
-          <div className="absolute inset-0 animate-pulse rounded-full bg-gradient-to-r from-blue-500 to-purple-500 opacity-20 blur-3xl"></div>
+export function ComingSoon({ icon: Icon, title, description, features }: ComingSoonProps) {
+    const navigate = useNavigate()
 
-          {/* Icon container */}
-          <div className="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 ring-1 ring-blue-500/30">
-            <Icon className="h-12 w-12 text-blue-400" />
-          </div>
-        </div>
+    return (
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 flex items-center justify-center">
+            <div className="max-w-2xl w-full text-center space-y-8">
 
-        {/* Title with Gradient */}
-        <h1 className="mb-4 text-4xl font-bold">
-          <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            {title}
-          </span>
-        </h1>
-
-        {/* Description */}
-        <p className="mb-8 text-lg text-slate-400">
-          {description}
-        </p>
-
-        {/* Features List */}
-        <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-8 backdrop-blur-sm">
-          <h2 className="mb-6 text-xl font-semibold text-white">
-            Fonctionnalités à venir
-          </h2>
-          <div className="grid gap-4 text-left">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-3 rounded-lg bg-slate-800/50 p-4 transition-all hover:bg-slate-800"
-              >
-                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
-                  <Check className="h-4 w-4 text-emerald-400" />
+                <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20 mb-6 animate-pulse">
+                    <Icon className="h-12 w-12 text-blue-600 dark:text-blue-400" />
                 </div>
-                <p className="text-sm font-medium text-slate-300">{feature}</p>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Coming Soon Badge */}
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-6 py-3">
-          <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
-          <span className="text-sm font-semibold text-blue-400">En développement</span>
-        </div>
+                <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    {title} <span className="text-blue-600 dark:text-blue-400">bientôt disponible</span>
+                </h1>
 
-        {/* Disabled Button */}
-        <div className="mt-6">
-          <button
-            disabled
-            className={cn(
-              'cursor-not-allowed rounded-lg border border-slate-700 bg-slate-800 px-8 py-3 text-sm font-semibold text-slate-500',
-              'opacity-50'
-            )}
-          >
-            Bientôt disponible
-          </button>
-        </div>
+                <p className="text-lg text-slate-500 dark:text-slate-400 leading-relaxed max-w-xl mx-auto">
+                    {description}
+                </p>
 
-        {/* Additional Info */}
-        <p className="mt-6 text-xs text-slate-600">
-          Cette fonctionnalité sera disponible dans une prochaine mise à jour
-        </p>
-      </div>
-    </div>
-  )
+                {features && features.length > 0 && (
+                    <div className="mt-8 grid gap-3 text-left max-w-lg mx-auto bg-white dark:bg-slate-900/50 p-6 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+                        {features.map((feature, index) => (
+                            <div key={index} className="flex items-start gap-3 text-slate-600 dark:text-slate-300">
+                                <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-2 shrink-0" />
+                                <span>{feature}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <div className="pt-8">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Retour au tableau de bord
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    )
 }

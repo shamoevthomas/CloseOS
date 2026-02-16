@@ -102,12 +102,12 @@ const calculateCommission = (price: string, commission: string): number => {
 
 export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDetailModalProps) {
   const { contacts: globalContacts, addContact } = useInternalContacts()
-  
+
   const [isEditing, setIsEditing] = useState(false)
-  
+
   const [isCreatingContact, setIsCreatingContact] = useState(false)
   const [newContactData, setNewContactData] = useState({ name: '', role: '', email: '', phone: '' })
-  
+
   // État pour le feedback de copie
   const [hasCopied, setHasCopied] = useState(false)
 
@@ -127,10 +127,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   })
 
   // --- CALCUL DE L'URL WEBHOOK INTELLIGENTE ---
-  const baseUrl = window.location.origin.includes('localhost') 
-    ? 'https://close-os.vercel.app' 
+  const baseUrl = window.location.origin.includes('localhost')
+    ? 'https://close-os.vercel.app'
     : window.location.origin
-    
+
   // On ajoute &formula_id=XYZ si une formule par défaut est sélectionnée
   const webhookUrl = `${baseUrl}/api/webhook?offer_id=${offer.id}${editedOffer.defaultFormulaId ? `&formula_id=${editedOffer.defaultFormulaId}` : ''}`
 
@@ -142,8 +142,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   }, [offer])
 
   const handleSave = () => {
-    const mainFormula = editedOffer.formulas && editedOffer.formulas.length > 0 
-      ? editedOffer.formulas[0] 
+    const mainFormula = editedOffer.formulas && editedOffer.formulas.length > 0
+      ? editedOffer.formulas[0]
       : { price: '0', commission: '0' }
 
     const finalOffer = {
@@ -180,7 +180,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     try {
       const result = await addContact(newContactData)
       const createdId = result?.data?.[0]?.id || Date.now()
-      
+
       const contactToAdd: OfferContact = {
         id: createdId,
         name: newContactData.name,
@@ -225,7 +225,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const handleUpdateFormula = (id: string, field: keyof OfferFormula, value: string) => {
     setEditedOffer({
       ...editedOffer,
-      formulas: editedOffer.formulas?.map(f => 
+      formulas: editedOffer.formulas?.map(f =>
         f.id === id ? { ...f, [field]: value } : f
       )
     })
@@ -325,11 +325,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <h2 className="text-2xl font-bold text-white">{offer.name}</h2>
                 )}
                 <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    offer.status === 'active'
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${offer.status === 'active'
                       ? 'bg-emerald-500/10 text-emerald-400'
                       : 'bg-slate-500/10 text-slate-400'
-                  }`}
+                    }`}
                 >
                   {offer.status === 'active' ? 'Active' : 'Archivée'}
                 </span>
@@ -402,22 +401,20 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               <div className="flex gap-2">
                 <button
                   onClick={() => setEditedOffer({ ...editedOffer, target: 'B2C' })}
-                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${
-                    editedOffer.target === 'B2C'
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${editedOffer.target === 'B2C'
                       ? 'bg-blue-600 text-white'
                       : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
-                  }`}
+                    }`}
                 >
                   <User className="h-4 w-4" />
                   B2C (Particuliers)
                 </button>
                 <button
                   onClick={() => setEditedOffer({ ...editedOffer, target: 'B2B' })}
-                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${
-                    editedOffer.target === 'B2B'
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${editedOffer.target === 'B2B'
                       ? 'bg-blue-600 text-white'
                       : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
-                  }`}
+                    }`}
                 >
                   <Building2 className="h-4 w-4" />
                   B2B (Entreprises)
@@ -453,7 +450,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   </button>
                 )}
               </div>
-              
+
               <div className="space-y-3">
                 {(editedOffer.formulas || []).map((formula, index) => {
                   const comm = calculateCommission(formula.price, formula.commission)
@@ -584,7 +581,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               </h3>
               {/* BOUTON CRÉER CONTACT */}
               {isEditing && !isCreatingContact && (
-                <button 
+                <button
                   onClick={() => setIsCreatingContact(true)}
                   className="flex items-center gap-1 rounded bg-purple-500/10 px-2 py-1 text-xs font-bold text-purple-400 hover:bg-purple-500/20"
                 >
@@ -660,7 +657,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
               <Receipt className="h-4 w-4" /> Configuration Facturation
             </h3>
-            
+
             <div className="space-y-4">
               {/* Raison Sociale */}
               <div>
@@ -669,7 +666,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <input
                     type="text"
                     value={editedOffer.billingName || ''}
-                    onChange={(e) => setEditedOffer({...editedOffer, billingName: e.target.value})}
+                    onChange={(e) => setEditedOffer({ ...editedOffer, billingName: e.target.value })}
                     placeholder="Ex: ACME SAS"
                     className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
                   />
@@ -685,7 +682,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <input
                     type="text"
                     value={editedOffer.billingAddress || ''}
-                    onChange={(e) => setEditedOffer({...editedOffer, billingAddress: e.target.value})}
+                    onChange={(e) => setEditedOffer({ ...editedOffer, billingAddress: e.target.value })}
                     placeholder="Ex: 123 Rue de la Paix"
                     className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
                   />
@@ -702,7 +699,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <input
                       type="text"
                       value={editedOffer.billingCity || ''}
-                      onChange={(e) => setEditedOffer({...editedOffer, billingCity: e.target.value})}
+                      onChange={(e) => setEditedOffer({ ...editedOffer, billingCity: e.target.value })}
                       className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                     />
                   ) : (
@@ -715,7 +712,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <input
                       type="text"
                       value={editedOffer.billingZip || ''}
-                      onChange={(e) => setEditedOffer({...editedOffer, billingZip: e.target.value})}
+                      onChange={(e) => setEditedOffer({ ...editedOffer, billingZip: e.target.value })}
                       className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                     />
                   ) : (
@@ -728,7 +725,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <input
                       type="text"
                       value={editedOffer.billingCountry || ''}
-                      onChange={(e) => setEditedOffer({...editedOffer, billingCountry: e.target.value})}
+                      onChange={(e) => setEditedOffer({ ...editedOffer, billingCountry: e.target.value })}
                       className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                     />
                   ) : (
@@ -744,7 +741,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <input
                     type="text"
                     value={editedOffer.siret || ''}
-                    onChange={(e) => setEditedOffer({...editedOffer, siret: e.target.value})}
+                    onChange={(e) => setEditedOffer({ ...editedOffer, siret: e.target.value })}
                     placeholder="123 456 789 00012"
                     className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
                   />
@@ -761,7 +758,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <input
                       type="email"
                       value={editedOffer.billingEmail || ''}
-                      onChange={(e) => setEditedOffer({...editedOffer, billingEmail: e.target.value})}
+                      onChange={(e) => setEditedOffer({ ...editedOffer, billingEmail: e.target.value })}
                       className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                     />
                   ) : (
@@ -774,7 +771,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <input
                       type="text"
                       value={editedOffer.billingPhone || ''}
-                      onChange={(e) => setEditedOffer({...editedOffer, billingPhone: e.target.value})}
+                      onChange={(e) => setEditedOffer({ ...editedOffer, billingPhone: e.target.value })}
                       className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                     />
                   ) : (
@@ -816,33 +813,33 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
             {/* 2. SÉLECTION DE LA FORMULE PAR DÉFAUT (NOUVEAU) */}
             <div className="mb-6">
-               <label className="mb-1.5 flex items-center gap-2 text-xs font-medium text-slate-500 uppercase">
-                 <BoxSelect className="h-3 w-3" /> Formule par défaut (Prospects Entrants)
-               </label>
-               {isEditing ? (
-                 <select
-                   value={editedOffer.defaultFormulaId || ''}
-                   onChange={(e) => setEditedOffer({ ...editedOffer, defaultFormulaId: e.target.value })}
-                   className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-                 >
-                   <option value="">-- Aucune formule (ou 1ère par défaut) --</option>
-                   {(editedOffer.formulas || []).map((f) => (
-                     <option key={f.id} value={f.id}>
-                       {f.name} ({parseFloat(f.price).toLocaleString()}€)
-                     </option>
-                   ))}
-                 </select>
-               ) : (
-                 <div className="rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm text-slate-300">
-                   {editedOffer.defaultFormulaId 
-                     ? (editedOffer.formulas?.find(f => f.id === editedOffer.defaultFormulaId)?.name || 'Formule introuvable')
-                     : <span className="text-slate-500 italic">Aucune sélectionnée (par défaut)</span>
-                   }
-                 </div>
-               )}
-               <p className="mt-1.5 text-[10px] text-slate-500">
-                 Cette formule sera automatiquement assignée aux prospects arrivant via le Webhook ci-dessous.
-               </p>
+              <label className="mb-1.5 flex items-center gap-2 text-xs font-medium text-slate-500 uppercase">
+                <BoxSelect className="h-3 w-3" /> Formule par défaut (Prospects Entrants)
+              </label>
+              {isEditing ? (
+                <select
+                  value={editedOffer.defaultFormulaId || ''}
+                  onChange={(e) => setEditedOffer({ ...editedOffer, defaultFormulaId: e.target.value })}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="">-- Aucune formule (ou 1ère par défaut) --</option>
+                  {(editedOffer.formulas || []).map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name} ({parseFloat(f.price).toLocaleString()}€)
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm text-slate-300">
+                  {editedOffer.defaultFormulaId
+                    ? (editedOffer.formulas?.find(f => f.id === editedOffer.defaultFormulaId)?.name || 'Formule introuvable')
+                    : <span className="text-slate-500 italic">Aucune sélectionnée (par défaut)</span>
+                  }
+                </div>
+              )}
+              <p className="mt-1.5 text-[10px] text-slate-500">
+                Cette formule sera automatiquement assignée aux prospects arrivant via le Webhook ci-dessous.
+              </p>
             </div>
 
             {/* 3. Webhook Info (Helper) - AVEC BOUTON COPIER */}
@@ -851,21 +848,21 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <Info className="h-5 w-5 text-blue-400 mt-0.5" />
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold text-blue-100">Configuration Webhook iClosed</h4>
-                  
+
                   {/* --- TEXTE SPÉCIFIQUE ICLOSED --- */}
                   <p className="mt-1 text-xs text-blue-300/80 leading-relaxed">
                     Allez dans <strong>iClosed &gt; Paramètres &gt; Développeur &gt; Webhooks</strong> et collez l'URL ci-dessous.
                   </p>
-                  
+
                   {/* --- ALERTE PROPRIÉTAIRE --- */}
                   <div className="mt-2 flex items-start gap-2 rounded border border-orange-500/20 bg-orange-500/10 p-2 text-[11px] text-orange-300">
                     <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
                     <span>
-                      <strong>Attention :</strong> Si le menu "Développeur" n'apparaît pas, c'est que vous n'avez pas les droits. 
+                      <strong>Attention :</strong> Si le menu "Développeur" n'apparaît pas, c'est que vous n'avez pas les droits.
                       Seul le <strong>Propriétaire</strong> de l'organisation iClosed peut configurer les Webhooks.
                     </span>
                   </div>
-                  
+
                   {/* URL + COPY BUTTON */}
                   <div className="mt-3 flex items-center gap-2">
                     <div className="flex-1 rounded border border-blue-500/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
@@ -879,30 +876,30 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       {hasCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                     </button>
                   </div>
-                   {editedOffer.defaultFormulaId && (
-                     <p className="mt-2 text-[10px] text-emerald-400/80 flex items-center gap-1">
-                       <Check className="h-3 w-3" /> L'ID de la formule a été ajouté à l'URL.
-                     </p>
-                   )}
+                  {editedOffer.defaultFormulaId && (
+                    <p className="mt-2 text-[10px] text-emerald-400/80 flex items-center gap-1">
+                      <Check className="h-3 w-3" /> L'ID de la formule a été ajouté à l'URL.
+                    </p>
+                  )}
 
-                   {/* INTEGRATION SUPADEMO ICLOSED (VISIBLE SEULEMENT EN ÉDITION) */}
-                   {isEditing && (editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
-                     <div className="mt-4 rounded-lg border border-blue-500/20 overflow-hidden bg-slate-900/50">
-                        <div style={{ position: 'relative', boxSizing: 'content-box', width: '100%', aspectRatio: '1.86' }}>
-                          <iframe 
-                            src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1" 
-                            loading="lazy" 
-                            title="Configurer le Webhook iClosed" 
-                            allow="clipboard-write" 
-                            frameBorder="0" 
-                            webkitAllowFullScreen 
-                            mozAllowFullScreen 
-                            allowFullScreen 
-                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                          />
-                        </div>
-                     </div>
-                   )}
+                  {/* INTEGRATION SUPADEMO ICLOSED (VISIBLE SEULEMENT EN ÉDITION) */}
+                  {isEditing && (editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
+                    <div className="mt-4 rounded-lg border border-blue-500/20 overflow-hidden bg-slate-900/50">
+                      <div style={{ position: 'relative', boxSizing: 'content-box', width: '100%', aspectRatio: '1.86' }}>
+                        <iframe
+                          src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1"
+                          loading="lazy"
+                          title="Configurer le Webhook iClosed"
+                          allow="clipboard-write"
+                          frameBorder="0"
+                          webkitAllowFullScreen
+                          mozAllowFullScreen
+                          allowFullScreen
+                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               </div>
