@@ -1,17 +1,8 @@
-import { Smartphone } from 'lucide-react'
-import { ComingSoon } from '../components/ComingSoon'
+
+import { ComingSoon } from './ComingSoon'
 
 export function TelephonyPage() {
   return (
-    <ComingSoon
-      icon={Smartphone}
-      title="Téléphonie & SMS Intégrés"
-      description="Plus besoin de votre téléphone personnel. Centralisez toutes vos communications directement dans CloseOS."
-      features={[
-        'Numéro virtuel professionnel dédié',
-        'Appels et SMS synchronisés avec le CRM',
-        'Enregistrement automatique des conversations',
-      ]}
-    />
+    <ComingSoon />
   )
 }
