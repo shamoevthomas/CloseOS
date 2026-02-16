@@ -19,6 +19,7 @@ export interface Meeting {
   phone?: string
   notes?: string
   video_link?: string
+  cal_booking_uid?: string
 }
 
 interface MeetingsContextType {

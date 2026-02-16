@@ -21,7 +21,9 @@ import {
    Edit2,
    MapPin,
    AlertCircle,
-   RefreshCw
+   RefreshCw,
+   CalendarClock,
+   XCircle
 } from 'lucide-react'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { usePrivacy } from '../contexts/PrivacyContext'
@@ -95,6 +97,7 @@ export function RendezVous() {
    const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null)
    const [isDeleting, setIsDeleting] = useState(false)
    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+   const [isCancellingBooking, setIsCancellingBooking] = useState(false)
 
    // URL de base
    const baseUrl = window.location.origin.includes('localhost')
@@ -161,6 +164,7 @@ export function RendezVous() {
                if (calPhone && !m.phone) enrichUpdates.phone = String(calPhone);
                if (calNotes && !m.notes) enrichUpdates.notes = String(calNotes);
                if (calVideoLink && !m.video_link) enrichUpdates.video_link = calVideoLink;
+               if (calData.uid && !m.cal_booking_uid) enrichUpdates.cal_booking_uid = calData.uid;
 
                // Sync status
                if (['CANCELLED', 'REJECTED'].includes(calData.status)) {
@@ -224,7 +228,8 @@ export function RendezVous() {
                   email: calEmail,
                   phone: calPhone ? String(calPhone) : null,
                   notes: calNotes ? String(calNotes) : null,
-                  video_link: calVideoLink || null
+                  video_link: calVideoLink || null,
+                  cal_booking_uid: b.uid || null
                }]);
 
                if (!error) importCount++;
@@ -550,6 +555,44 @@ export function RendezVous() {
    const handleUpdateStatus = async (newStatus: string) => {
       if (!selectedMeeting) return; setIsUpdatingStatus(true);
       try { await supabase.from('meetings').update({ status: newStatus }).eq('id', selectedMeeting.id); setSelectedMeeting({ ...selectedMeeting, status: newStatus }); if (refreshMeetings) refreshMeetings(); } catch (err) { alert("Erreur maj statut"); } finally { setIsUpdatingStatus(false); }
+   };
+
+   const handleCancelBooking = async () => {
+      if (!selectedMeeting) return;
+      if (!window.confirm('Êtes-vous sûr de vouloir annuler ce rendez-vous ?')) return;
+      setIsCancellingBooking(true);
+      try {
+         // 1. Annuler sur Cal.com si on a le booking UID
+         if (selectedMeeting.cal_booking_uid && calAccessToken) {
+            const cancelUrl = `/api/cal-proxy?url=${encodeURIComponent(`/v2/bookings/${selectedMeeting.cal_booking_uid}/cancel`)}`;
+            const res = await fetch(cancelUrl, {
+               method: 'POST',
+               headers: { 'Authorization': `Bearer ${calAccessToken}`, 'Content-Type': 'application/json' },
+               body: JSON.stringify({ cancellationReason: 'Annulé depuis CloseOS' })
+            });
+            if (!res.ok) {
+               console.warn('Cal.com cancel response:', res.status, await res.text());
+            }
+         }
+         // 2. Mettre à jour en DB
+         await supabase.from('meetings').update({ status: 'Annulé' }).eq('id', selectedMeeting.id);
+         setSelectedMeeting({ ...selectedMeeting, status: 'Annulé' });
+         if (refreshMeetings) refreshMeetings();
+      } catch (err) {
+         console.error('Erreur annulation:', err);
+         alert('Erreur lors de l\'annulation.');
+      } finally {
+         setIsCancellingBooking(false);
+      }
+   };
+
+   const handleRescheduleBooking = () => {
+      if (!selectedMeeting?.cal_booking_uid) {
+         alert('Pas de lien de replanification disponible pour ce rendez-vous.');
+         return;
+      }
+      const rescheduleUrl = `https://app.cal.com/reschedule/${selectedMeeting.cal_booking_uid}`;
+      window.open(rescheduleUrl, '_blank', 'noopener,noreferrer');
    };
 
    const handleDeleteAllPast = async () => {
@@ -1341,6 +1384,26 @@ export function RendezVous() {
                         }} className="w-full flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20">
                            <Video className="h-5 w-5" /> Rejoindre l'appel
                         </button>
+                     )}
+                     {/* Annuler & Reporter */}
+                     {selectedMeeting.status?.toLowerCase() !== 'annulé' && selectedMeeting.status?.toLowerCase() !== 'cancelled' && (
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                           <button
+                              onClick={handleRescheduleBooking}
+                              disabled={!selectedMeeting.cal_booking_uid}
+                              className="flex items-center justify-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 py-3 font-bold text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              title={!selectedMeeting.cal_booking_uid ? 'Pas de lien Cal.com disponible' : 'Reporter ce rendez-vous'}
+                           >
+                              <CalendarClock className="h-4 w-4" /> Reporter
+                           </button>
+                           <button
+                              onClick={handleCancelBooking}
+                              disabled={isCancellingBooking}
+                              className="flex items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 py-3 font-bold text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                           >
+                              {isCancellingBooking ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />} Annuler
+                           </button>
+                        </div>
                      )}
                      <button onClick={() => setSelectedMeeting(null)} className="w-full rounded-2xl border border-slate-800 bg-slate-800/50 py-4 font-bold text-slate-300 hover:bg-slate-800">Fermer</button>
                   </div>
