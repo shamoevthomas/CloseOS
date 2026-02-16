@@ -85,6 +85,19 @@ function OnboardingWrapper() {
 function AuthenticatedApp() {
   const { user, loading } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
+  const location = useLocation()
+
+  // Check for password reset param
+  if (user && !loading && !isSettingsOpen) {
+    const params = new URLSearchParams(location.search);
+    if (params.get('reset_password') === 'true') {
+      // Remove param from URL without reload
+      window.history.replaceState({}, '', window.location.pathname);
+      setSettingsInitialTab('security');
+      setIsSettingsOpen(true);
+    }
+  }
 
   if (loading) {
     return (
@@ -174,7 +187,8 @@ function AuthenticatedApp() {
           <OnboardingWrapper />
           <SettingsModal
             isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
+            onClose={() => { setIsSettingsOpen(false); setSettingsInitialTab('profile'); }}
+            initialTab={settingsInitialTab}
           />
         </>
       )}

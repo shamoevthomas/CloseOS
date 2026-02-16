@@ -29,13 +29,14 @@ import { CancellationRetentionModal } from './CancellationRetentionModal'
 interface SettingsModalProps {
   isOpen: boolean
   onClose: () => void
+  initialTab?: 'profile' | 'security' | 'subscription' | 'support' | 'delete_account'
 }
 
-export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: SettingsModalProps) {
   const { user, updateProfile, updatePassword } = useAuth()
 
   // Retrait de 'timezone' des onglets possibles
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'mail' | 'subscription' | 'support' | 'delete_account'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'support' | 'delete_account'>(initialTab)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
@@ -56,7 +57,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     newPassword: '',
     confirmPassword: '',
     currentPassword: '', // AJOUT
-    newEmail: '',
+
     avatar_url: '',
     deletion_scheduled_at: null as string | null
   })
@@ -84,6 +85,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
     fetchProfileData()
   }, [user, isOpen, activeTab])
+
+  // Reset tab when opening
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab)
+    }
+  }, [isOpen, initialTab])
 
   if (!isOpen) return null
 
@@ -250,42 +258,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   }
 
-  const handleUpdateEmail = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formData.newEmail || formData.newEmail === user?.email) {
-      setMessage({ type: 'error', text: 'Veuillez entrer une nouvelle adresse email différente.' })
-      return
-    }
-    setLoading(true)
-    setMessage({ type: '', text: '' })
 
-    try {
-      // Appel API personnalisé pour envoyer le lien de confirmation
-      const response = await fetch('/api/request-email-change', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user?.id,
-          newEmail: formData.newEmail
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de la demande.");
-      }
-
-      setMessage({ type: 'success', text: 'Un lien de confirmation a été envoyé à votre adresse ACTUELLE (support@closeos.fr). Vérifiez vos spams.' })
-      setFormData(prev => ({ ...prev, newEmail: '' }))
-
-    } catch (error: any) {
-      console.error(error);
-      setMessage({ type: 'error', text: error.message })
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleCancelDeletion = async () => {
     if (!window.confirm("Voulez-vous vraiment annuler la suppression de votre compte ?")) return;
@@ -400,9 +373,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <button onClick={() => setActiveTab('profile')} className={tabButtonClass('profile')}>
               <User className="w-4 h-4" /> Profil
             </button>
-            <button onClick={() => setActiveTab('mail')} className={tabButtonClass('mail')}>
-              <Mail className="w-4 h-4" /> Email
-            </button>
+
             {/* RETRAIT DU BOUTON FUSEAU HORAIRE ICI */}
             <button onClick={() => setActiveTab('security')} className={tabButtonClass('security')}>
               <Lock className="w-4 h-4" /> Sécurité
@@ -437,7 +408,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <div>
               <h2 className="text-2xl font-bold text-white text-left">
                 {activeTab === 'profile' && 'Mon Profil'}
-                {activeTab === 'mail' && 'Adresse Email'}
+
                 {/* Retrait du titre Fuseau Horaire */}
                 {activeTab === 'security' && 'Sécurité & Connexion'}
                 {activeTab === 'subscription' && 'Mon Abonnement'}
@@ -446,7 +417,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </h2>
               <p className="text-slate-400 text-sm mt-1 text-left">
                 {activeTab === 'profile' && 'Gérez vos informations personnelles et votre rôle.'}
-                {activeTab === 'mail' && 'Consultez l\'adresse email reliée à votre compte.'}
+
                 {/* Retrait de la description Fuseau Horaire */}
                 {activeTab === 'security' && 'Protégez l\'accès à votre compte CloserOS.'}
                 {activeTab === 'subscription' && 'Gérez votre plan, vos factures et l\'annulation.'}
@@ -565,64 +536,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </form>
             )}
 
-            {/* --- ONGLET MAIL --- */}
-            {activeTab === 'mail' && (
-              <div className="space-y-6 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                <div className="space-y-2 text-left">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Adresse Email actuelle</label>
-                  <div className="relative text-left">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                    <input
-                      type="email"
-                      readOnly
-                      value={user?.email || ''}
-                      className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-slate-400 cursor-default outline-none text-left"
-                    />
-                  </div>
-                </div>
 
-                {isGoogleUser ? (
-                  <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4 text-left">
-                    <div className="p-3 bg-blue-500/20 rounded-xl h-fit">
-                      <Shield className="h-6 w-6 text-blue-400 shrink-0" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-white mb-1 text-lg text-left">Compte Google</h4>
-                      <p className="text-sm text-blue-200/70 leading-relaxed text-left">Votre adresse email est gérée par Google et ne peut pas être modifiée ici.</p>
-                    </div>
-                  </div>
-                ) : (
-                  <form onSubmit={handleUpdateEmail} className="space-y-6 text-left">
-                    <div className="space-y-2 text-left">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Nouvelle adresse email</label>
-                      <div className="relative text-left">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                        <input
-                          type="email"
-                          value={formData.newEmail}
-                          onChange={(e) => setFormData({ ...formData, newEmail: e.target.value })}
-                          className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-left"
-                          placeholder="nouvelle@email.com"
-                          required
-                        />
-                      </div>
-                      <div className="flex items-start gap-2 mt-2 px-1">
-                        <AlertCircle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-                        <p className="text-xs text-amber-300/80 leading-relaxed text-left">Un lien de confirmation sera envoyé à votre adresse <strong>ACTUELLE</strong>. Vous devrez ensuite confirmer votre mot de passe.</p>
-                      </div>
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={loading || !formData.newEmail}
-                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 hover:scale-[1.02]"
-                    >
-                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Mail className="h-5 w-5" />}
-                      Modifier mon adresse email
-                    </button>
-                  </form>
-                )}
-              </div>
-            )}
 
             {/* RETRAIT DE LA SECTION ONGLET FUSEAU HORAIRE ICI */}
 
