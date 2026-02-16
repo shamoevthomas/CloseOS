@@ -812,13 +812,13 @@ export function Agenda() {
   }
 
   return (
-    <div className="relative flex h-full gap-6 p-8 overflow-hidden bg-[#020617] text-slate-100 font-sans">
+    <div className="relative flex h-full gap-6 p-8 overflow-x-auto overflow-y-hidden bg-[#020617] text-slate-100 font-sans">
 
       {/* Background Blobs (Premium Design) */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
 
-      <div className="relative z-10 flex h-full w-full gap-6">
+      <div className="relative z-10 flex h-full min-w-[1000px] w-full gap-6">
         <div className="flex flex-1 flex-col">
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
