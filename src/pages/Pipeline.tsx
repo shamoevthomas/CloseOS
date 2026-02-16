@@ -301,7 +301,7 @@ export function Pipeline() {
                 'flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all whitespace-nowrap',
                 currentOfferTab === 'global'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                  : 'bg-white border border-gray-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
               )}
             >
               <Briefcase className="h-4 w-4" />
@@ -316,7 +316,7 @@ export function Pipeline() {
                   'flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all whitespace-nowrap',
                   currentOfferTab === offer.name
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                    : 'bg-white border border-gray-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white'
+                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
                 )}
               >
                 <span>{offer.name}</span>
@@ -336,28 +336,28 @@ export function Pipeline() {
                 placeholder="Rechercher..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-4 text-xs text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
               />
             </div>
 
-            <div className="flex items-center rounded-lg border border-gray-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-800">
+            <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800 p-1">
               <button
                 onClick={() => setViewMode('pipeline')}
                 title="Vue Pipeline"
                 className={cn(
                   'rounded p-1.5 transition-colors',
-                  viewMode === 'pipeline' ? 'bg-slate-100 text-blue-600 dark:bg-slate-700 dark:text-blue-400' : 'text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  viewMode === 'pipeline' ? 'bg-slate-700 text-blue-400' : 'text-slate-400 hover:text-slate-200'
                 )}
               >
                 <LayoutDashboard className="h-4 w-4" />
               </button>
-              <div className="mx-1 h-4 w-[1px] bg-gray-200 dark:bg-slate-700" />
+              <div className="mx-1 h-4 w-[1px] bg-slate-700" />
               <button
                 onClick={() => setViewMode('list')}
                 title="Vue Liste"
                 className={cn(
                   'rounded p-1.5 transition-colors',
-                  viewMode === 'list' ? 'bg-slate-100 text-blue-600 dark:bg-slate-700 dark:text-blue-400' : 'text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  viewMode === 'list' ? 'bg-slate-700 text-blue-400' : 'text-slate-400 hover:text-slate-200'
                 )}
               >
                 <List className="h-4 w-4" />
@@ -379,7 +379,7 @@ export function Pipeline() {
             <select
               value={stageFilter}
               onChange={(e) => setStageFilter(e.target.value)}
-              className="appearance-none rounded-lg border border-gray-200 bg-white py-1.5 pl-3 pr-8 text-xs text-slate-600 focus:border-blue-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+              className="appearance-none rounded-lg border border-slate-800 bg-slate-900 py-1.5 pl-3 pr-8 text-xs text-slate-300 focus:border-blue-500 focus:outline-none"
             >
               <option value="all">Toutes les étapes</option>
               {ALL_STAGES.map(stage => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
@@ -391,7 +391,7 @@ export function Pipeline() {
             <select
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="appearance-none rounded-lg border border-gray-200 bg-white py-1.5 pl-3 pr-8 text-xs text-slate-600 focus:border-blue-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+              className="appearance-none rounded-lg border border-slate-800 bg-slate-900 py-1.5 pl-3 pr-8 text-xs text-slate-300 focus:border-blue-500 focus:outline-none"
             >
               <option value="all">Toutes les dates</option>
               {getAvailableMonths().map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
@@ -405,7 +405,7 @@ export function Pipeline() {
               <select
                 value={formulaFilter}
                 onChange={(e) => setFormulaFilter(e.target.value)}
-                className="appearance-none rounded-lg border border-gray-200 bg-white py-1.5 pl-3 pr-8 text-xs text-slate-600 focus:border-blue-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+                className="appearance-none rounded-lg border border-slate-800 bg-slate-900 py-1.5 pl-3 pr-8 text-xs text-slate-300 focus:border-blue-500 focus:outline-none"
               >
                 <option value="all">Toutes les formules</option>
                 <option value="none">Sans formule</option>
@@ -443,14 +443,14 @@ export function Pipeline() {
                     <div
                       key={stage.id}
                       className={cn(
-                        'flex flex-col rounded-xl border border-gray-200 bg-gray-50/50 transition-all duration-300 dark:border-slate-800 dark:bg-slate-900/50',
+                        'flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 transition-all duration-300',
                         isCollapsed ? 'w-16' : 'w-80 shrink-0'
                       )}
                     >
                       {/* Header Colonne */}
                       <div
                         onClick={() => toggleColumn(stage.id)}
-                        className="cursor-pointer border-b border-gray-200 p-3 hover:bg-gray-100 transition-colors dark:border-slate-800 dark:hover:bg-slate-800/50"
+                        className="cursor-pointer border-b border-slate-800 p-3 hover:bg-slate-800/50 transition-colors"
                       >
                         <div className="flex items-center justify-between">
                           <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.color)} />
@@ -463,7 +463,7 @@ export function Pipeline() {
 
                         {!isCollapsed && (
                           <div className="mt-2">
-                            <h3 className="font-semibold text-slate-700 dark:text-slate-200">{stage.name}</h3>
+                            <h3 className="font-semibold text-slate-200">{stage.name}</h3>
                             <p className="text-xs font-medium text-blue-400 mt-0.5">
                               <MaskedText value={`${stageTotal.toLocaleString()}€`} type="number" />
                             </p>
@@ -480,7 +480,7 @@ export function Pipeline() {
                               {...provided.droppableProps}
                               className={cn(
                                 "flex-1 space-y-3 overflow-y-auto p-3 min-h-[150px] transition-colors",
-                                snapshot.isDraggingOver ? "bg-blue-50/50 dark:bg-slate-800/30" : ""
+                                snapshot.isDraggingOver ? "bg-slate-800/30" : ""
                               )}
                             >
                               {stageDeals.map((deal, index) => {
@@ -513,7 +513,7 @@ export function Pipeline() {
                                         {...provided.dragHandleProps}
                                         onClick={() => handleOpenDeal(deal)}
                                         className={cn(
-                                          "group relative cursor-pointer rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:border-blue-500/50 hover:bg-gray-50 hover:shadow-md hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800",
+                                          "group relative cursor-pointer rounded-lg border border-slate-800 bg-slate-800/40 p-3 shadow-sm transition-all hover:border-blue-500/50 hover:bg-slate-800 hover:shadow-md hover:-translate-y-1",
                                           snapshot.isDragging ? "opacity-90 rotate-2 scale-105 z-50 shadow-2xl" : ""
                                         )}
                                         style={provided.draggableProps.style}
@@ -521,7 +521,7 @@ export function Pipeline() {
                                         <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-50", stage.color)}></div>
 
                                         <div className="pl-3">
-                                          <h4 className="font-medium text-slate-700 group-hover:text-slate-900 truncate dark:text-slate-200 dark:group-hover:text-white">
+                                          <h4 className="font-medium text-slate-200 group-hover:text-white truncate">
                                             <MaskedText value={mainTitle || 'Sans nom'} type="name" />
                                           </h4>
 
@@ -532,7 +532,7 @@ export function Pipeline() {
                                             </span>
                                           </div>
 
-                                          <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-2 dark:border-slate-700/50">
+                                          <div className="mt-3 flex items-center justify-between border-t border-slate-700/50 pt-2">
                                             <span className="text-xs font-semibold text-blue-400">
                                               <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
                                             </span>
@@ -551,7 +551,7 @@ export function Pipeline() {
                               })}
                               {provided.placeholder}
                               {stageDeals.length === 0 && (
-                                <div className="flex h-20 items-center justify-center rounded border border-dashed border-gray-200 bg-gray-50/50 dark:border-slate-800/50 dark:bg-slate-900/20">
+                                <div className="flex h-20 items-center justify-center rounded border border-dashed border-slate-800/50 bg-slate-900/20">
                                   <span className="text-xs text-slate-600">Vide</span>
                                 </div>
                               )}
@@ -612,10 +612,10 @@ export function Pipeline() {
         </DragDropContext>
       ) : (
         /* --- VUE LISTE (TABLEAU) --- */
-        <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
           <div className="overflow-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-slate-500 sticky top-0 z-10 dark:bg-slate-950 dark:text-slate-400">
+              <thead className="bg-slate-950 text-slate-400 sticky top-0 z-10">
                 <tr>
                   <th className="px-6 py-4 font-semibold">Prospect</th>
                   <th className="px-6 py-4 font-semibold">Offre</th>
@@ -624,7 +624,7 @@ export function Pipeline() {
                   <th className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 text-slate-700 dark:divide-slate-800 dark:text-slate-300">
+              <tbody className="divide-y divide-slate-800 text-slate-300">
                 {filteredDeals.map((deal) => {
                   const stageInfo = getStageInfo(deal.stage)
 
@@ -643,27 +643,27 @@ export function Pipeline() {
                   }
 
                   return (
-                    <tr key={deal.id} onClick={() => handleOpenDeal(deal)} className="group cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                    <tr key={deal.id} onClick={() => handleOpenDeal(deal)} className="group cursor-pointer hover:bg-slate-800/50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800 text-slate-400">
                             {deal.company ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
                           </div>
                           <div>
-                            <p className="font-medium text-slate-900 dark:text-white"><MaskedText value={getDisplayName(deal)} type="name" /></p>
+                            <p className="font-medium text-white"><MaskedText value={getDisplayName(deal)} type="name" /></p>
                             {deal.company && <p className="text-xs text-slate-500">{deal.company}</p>}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{displayOfferName || '-'}</td>
-                      <td className="px-6 py-4 font-mono font-medium text-blue-600 dark:text-blue-400">
+                      <td className="px-6 py-4 text-slate-400">{displayOfferName || '-'}</td>
+                      <td className="px-6 py-4 font-mono font-medium text-blue-400">
                         <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
                       </td>
                       <td className="px-6 py-4">
                         {stageInfo && (
-                          <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 dark:bg-slate-800",
-                            stageInfo.id === 'won' ? 'text-emerald-600 dark:text-emerald-400' :
-                              stageInfo.id === 'lost' ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-300'
+                          <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-800",
+                            stageInfo.id === 'won' ? 'text-emerald-400' :
+                              stageInfo.id === 'lost' ? 'text-red-400' : 'text-slate-300'
                           )}>
                             <span className={cn("h-1.5 w-1.5 rounded-full", stageInfo.color)}></span>
                             {stageInfo.name}

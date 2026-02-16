@@ -2,7 +2,6 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from '../components/Sidebar'
 import { Menu, Coffee } from 'lucide-react'
 import { cn } from '../lib/utils'
-import { ThemeToggle } from '../components/ThemeToggle'
 import { useState } from 'react'
 
 interface LayoutProps {
@@ -33,7 +32,7 @@ export function Layout({ onOpenSettings }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
+    <div className="flex h-screen bg-slate-950 overflow-hidden">
       {/* Sidebar avec gestion du mobile */}
       <Sidebar
         onOpenSettings={onOpenSettings}
@@ -43,21 +42,21 @@ export function Layout({ onOpenSettings }: LayoutProps) {
 
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         {/* Header adapté Mobile & Desktop */}
-        <header className="z-30 border-b border-gray-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md">
+        <header className="z-30 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md">
           <div className="flex h-16 items-center justify-between px-4 sm:px-8">
 
             {/* Bouton Menu Mobile + Titre */}
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white lg:hidden"
+                className="p-2 text-slate-400 hover:text-white lg:hidden"
               >
                 <Menu className="h-6 w-6" />
               </button>
 
               <div className="hidden sm:block">
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">{pageInfo.title}</h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{pageInfo.subtitle}</p>
+                <h1 className="text-xl font-bold text-white">{pageInfo.title}</h1>
+                <p className="text-xs text-slate-500">{pageInfo.subtitle}</p>
               </div>
 
               {/* Logo minimal sur mobile très petit */}
@@ -65,14 +64,12 @@ export function Layout({ onOpenSettings }: LayoutProps) {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
                   <Coffee className="h-4 w-4 text-white" />
                 </div>
-                <h1 className="text-lg font-bold text-slate-900 dark:text-white">{pageInfo.title}</h1>
+                <h1 className="text-lg font-bold text-white">{pageInfo.title}</h1>
               </div>
             </div>
 
             {/* Actions Droite */}
             <div className="flex items-center gap-2 sm:gap-4">
-              <ThemeToggle />
-
               {/* Bouton Discrétion supprimé ici */}
 
               {/* Live Indicator - Caché sur mobile très petit */}
@@ -85,7 +82,7 @@ export function Layout({ onOpenSettings }: LayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 p-4 sm:p-8">
+        <main className="flex-1 overflow-y-auto bg-slate-950 p-4 sm:p-8">
           <Outlet />
         </main>
       </div>

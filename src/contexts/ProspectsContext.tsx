@@ -7,15 +7,12 @@ export interface Prospect {
   user_id: string
   company: string
   contact: string
-  name?: string // Added for compatibility
   firstName?: string
   lastName?: string
   email: string
   phone: string
   value?: number
   offer?: string
-  offerId?: number
-  offer_id?: number // For Supabase compatibility
   stage: string
   notes?: string
   created_at?: string

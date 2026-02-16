@@ -45,147 +45,400 @@ const getEventStyle = (event: any) => {
 
   return {
     backgroundColor: bgColor,
-    color: '#0f172a', // Modifié pour lisibilité sur light mode (slate-900)
-    border: `1px solid ${baseColor}`,
-    borderLeft: `4px solid ${baseColor}`,
+    color: '#ffffff',
+    border: `1px solid ${baseColor}`, // Cadre complet de la couleur
+    borderLeft: `4px solid ${baseColor}`, // Barre latérale plus épaisse
     borderRadius: '4px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    boxShadow: '0 2px 4px rgba(0,0,0,0.2)' // Ombre pour faire ressortir
   }
+}
+
+const getStartHour = (timeString: string) => {
+  if (!timeString) return 0;
+  const start = timeString.split(' - ')[0];
+  const parts = start.split(':');
+  if (parts.length < 2) return 0;
+  return parseInt(parts[0]) + parseInt(parts[1]) / 60;
+}
+
+const getDuration = (timeString: string) => {
+  if (!timeString) return 1;
+  const parts = timeString.split(' - ');
+  if (parts.length < 2) return 1;
+
+  const [startH, startM] = parts[0].split(':').map(Number)
+  const [endH, endM] = parts[1].split(':').map(Number)
+  const startTotal = startH + startM / 60
+  let endTotal = endH + endM / 60
+
+  if (endTotal < startTotal) {
+    endTotal += 24
+  }
+  return endTotal - startTotal
+}
+
+const isOvernightEvent = (timeString: string) => {
+  if (!timeString || !timeString.includes(' - ')) return false;
+  const [start, end] = timeString.split(' - ')
+  const [startH, startM] = start.split(':').map(Number)
+  const [endH, endM] = end.split(':').map(Number)
+  const startTotal = startH + startM / 60
+  const endTotal = endH + endM / 60
+  return endTotal < startTotal
+}
+
+const renderTextWithLinks = (text: string) => {
+  if (!text) return null
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g
+  const parts = text.split(urlRegex)
+
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      const href = part.startsWith('www.') ? `https://${part}` : part
+      return (
+        <a
+          key={index}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      )
+    }
+    return <span key={index}>{part}</span>
+  })
+}
+
+const HOURS = Array.from({ length: 24 }, (_, i) => i)
+
+type ViewMode = 'day' | 'week' | 'month'
+
+const formatDate = (date: Date): string => {
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+const formatShortDayName = (date: Date): string => {
+  return date.toLocaleDateString('fr-FR', { weekday: 'short' })
+}
+
+const get3DayDates = (date: Date): Date[] => {
+  return Array.from({ length: 3 }, (_, i) => {
+    const d = new Date(date)
+    d.setDate(date.getDate() + i)
+    return d
+  })
+}
+
+const getMonthDates = (date: Date): Date[] => {
+  const year = date.getFullYear()
+  const month = date.getMonth()
+  const firstDay = new Date(year, month, 1)
+
+  const startDay = firstDay.getDay()
+  const startOffset = startDay === 0 ? -6 : 1 - startDay
+  const start = new Date(year, month, startOffset)
+
+  const dates: Date[] = []
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start)
+    d.setDate(start.getDate() + i)
+    dates.push(d)
+  }
+  return dates
+}
+
+const isSameDay = (date1: Date, date2: Date): boolean => {
+  return date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+}
+
+const isToday = (date: Date): boolean => {
+  return isSameDay(date, new Date())
 }
 
 export function Agenda() {
   const navigate = useNavigate()
-  const { meetings } = useMeetings()
-  const { login, isConnected, isLoading } = useGoogleCalendar()
-
-  const [view, setView] = useState<'day' | 'week' | 'month'>('week')
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedEvent, setSelectedEvent] = useState<any>(null)
-  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
-  const [isCallSummaryModalOpen, setIsCallSummaryModalOpen] = useState(false)
-  const [isNoAnswerModalOpen, setIsNoAnswerModalOpen] = useState(false)
-  const [isVideoCallOpen, setIsVideoCallOpen] = useState(false)
-  const [editingEventId, setEditingEventId] = useState<number | null>(null)
-  const [showAiToast, setShowAiToast] = useState(false)
-
+  const location = useLocation()
+  const { meetings, deleteMeeting } = useMeetings()
+  const { googleEvents, isConnected, login, isLoading } = useGoogleCalendar()
+  const dateInputRef = useRef<HTMLInputElement>(null)
   const dayViewScrollRef = useRef<HTMLDivElement>(null)
   const weekViewScrollRef = useRef<HTMLDivElement>(null)
-  const dateInputRef = useRef<HTMLInputElement>(null)
 
-  // Dummy data for context
-  const currentProspect = { name: "Prospect Inconnu", avatar: null }
-  const callModeWithAi = false
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [view, setView] = useState<ViewMode>('week')
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [selectedEvent, setSelectedEvent] = useState<typeof meetings[0] | null>(null)
+  const [isVideoCallOpen, setIsVideoCallOpen] = useState(false)
+  const [isCallSummaryModalOpen, setIsCallSummaryModalOpen] = useState(false)
+  const [isNoAnswerModalOpen, setIsNoAnswerModalOpen] = useState(false)
+  const [showAiToast, setShowAiToast] = useState(false)
+  const [callModeWithAi, setCallModeWithAi] = useState(false)
+  const [currentProspect, setCurrentProspect] = useState({ name: '', avatar: '' })
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
+  const [editingEventId, setEditingEventId] = useState<number | null>(null)
 
-  const HOURS = Array.from({ length: 24 }, (_, i) => i)
+  useEffect(() => {
+    const eventIdFromState = (location.state as any)?.eventId;
+    if (eventIdFromState) {
+      const findEvent = () => {
+        const crmEvent = meetings.find(m => String(m.id) === String(eventIdFromState));
+        if (crmEvent) return crmEvent;
 
-  const isToday = (date: Date) => {
-    const today = new Date()
-    return date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-  }
+        const ge = googleEvents.find(g => String(g.id) === String(eventIdFromState));
+        if (ge && ge.start && ge.end) {
+          const isVideo = !!(ge as any).hangoutLink || ge.location?.toLowerCase().includes('meet') || ge.description?.includes('zoom');
+          return {
+            id: ge.id as any,
+            title: ge.title,
+            date: ge.start.toISOString().split('T')[0],
+            time: `${ge.start.getHours().toString().padStart(2, '0')}:${ge.start.getMinutes().toString().padStart(2, '0')} - ${ge.end.getHours().toString().padStart(2, '0')}:${ge.end.getMinutes().toString().padStart(2, '0')}`,
+            type: isVideo ? 'video' : 'meeting',
+            contact: ge.title,
+            status: 'scheduled' as const,
+            isGoogleEvent: true,
+            location: ge.location || '',
+            description: ge.description || '',
+            hangoutLink: (ge as any).hangoutLink
+          };
+        }
+        return null;
+      };
 
-  const getMeetingsForDate = (date: Date) => {
-    return meetings.filter(m => new Date(m.date).toDateString() === date.toDateString())
-  }
-
-  const getAllDayEventsForDate = (date: Date): any[] => []
-
-  const getCurrentTimePosition = () => {
-    const now = new Date()
-    return (now.getHours() * 60 + now.getMinutes()) * (80 / 60)
-  }
-
-  const formatDate = (date: Date) => date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-  const formatShortDayName = (date: Date) => date.toLocaleDateString('fr-FR', { weekday: 'short' })
-
-  const get3DayDates = (date: Date) => {
-    const dates = []
-    // 7 days for week view
-    const start = new Date(date)
-    start.setDate(date.getDate() - date.getDay() + 1) // Monday
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(start)
-      d.setDate(start.getDate() + i)
-      dates.push(d)
+      const eventToOpen = findEvent();
+      if (eventToOpen) {
+        setSelectedEvent(eventToOpen as any);
+        const eventDate = new Date(eventToOpen.date);
+        if (!isSameDay(currentDate, eventDate)) {
+          setCurrentDate(eventDate);
+        }
+        window.history.replaceState({}, document.title);
+      }
     }
-    return dates
-  }
+  }, [location.state, meetings, googleEvents, currentDate]);
 
-  const goToToday = () => setCurrentDate(new Date())
-  const goToPrev = () => {
-    const newDate = new Date(currentDate)
-    if (view === 'day') newDate.setDate(currentDate.getDate() - 1)
-    else if (view === 'week') newDate.setDate(currentDate.getDate() - 7)
-    else newDate.setMonth(currentDate.getMonth() - 1)
-    setCurrentDate(newDate)
-  }
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 60000)
+    return () => clearInterval(timer)
+  }, [])
+
   const goToNext = () => {
     const newDate = new Date(currentDate)
-    if (view === 'day') newDate.setDate(currentDate.getDate() + 1)
-    else if (view === 'week') newDate.setDate(currentDate.getDate() + 7)
-    else newDate.setMonth(currentDate.getMonth() + 1)
+    if (view === 'day') {
+      newDate.setDate(newDate.getDate() + 1)
+    } else if (view === 'week') {
+      newDate.setDate(newDate.getDate() + 2)
+    } else if (view === 'month') {
+      newDate.setMonth(newDate.getMonth() + 1)
+    }
     setCurrentDate(newDate)
   }
-  const handlePrevRange = goToPrev
-  const handleNextRange = goToNext
-  const handleDatePickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.value) setCurrentDate(new Date(e.target.value))
-  }
-  const getTitle = () => {
-    return currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+
+  const goToPrev = () => {
+    const newDate = new Date(currentDate)
+    if (view === 'day') {
+      newDate.setDate(newDate.getDate() - 1)
+    } else if (view === 'week') {
+      newDate.setDate(newDate.getDate() - 2)
+    } else if (view === 'month') {
+      newDate.setMonth(newDate.getMonth() - 1)
+    }
+    setCurrentDate(newDate)
   }
 
-  const handleCreateEvent = () => setIsCreateEventModalOpen(true)
-  const handleCallEnd = () => setIsVideoCallOpen(false)
-  const handleCallSummarySubmit = () => setIsCallSummaryModalOpen(false)
-  const handleMarkAsNoShow = () => setIsNoAnswerModalOpen(false)
-  const handleNavigateToProspect = (id: number) => navigate(`/contacts/${id}`)
-  const handleEditEvent = () => {
-    if (selectedEvent) {
-      setEditingEventId(selectedEvent.id)
-      setIsCreateEventModalOpen(true)
-      setSelectedEvent(null)
+  const goToToday = () => {
+    setCurrentDate(new Date())
+  }
+
+  const handlePrevRange = () => {
+    const newDate = new Date(currentDate)
+    newDate.setDate(newDate.getDate() - 2)
+    setCurrentDate(newDate)
+  }
+
+  const handleNextRange = () => {
+    const newDate = new Date(currentDate)
+    newDate.setDate(newDate.getDate() + 2)
+    setCurrentDate(newDate)
+  }
+
+  const handleDatePickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedDate = new Date(e.target.value)
+    if (!isNaN(selectedDate.getTime())) {
+      setCurrentDate(selectedDate)
     }
   }
+
+  const getTitle = () => {
+    if (view === 'day') {
+      return formatDate(currentDate)
+    } else if (view === 'week') {
+      const weekDates = get3DayDates(currentDate)
+      const start = weekDates[0]
+      const end = weekDates[2]
+      if (start.getMonth() === end.getMonth()) {
+        return `${start.getDate()} - ${end.getDate()} ${start.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`
+      } else {
+        return `${start.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`
+      }
+    } else {
+      return currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    }
+  }
+
+  const getCurrentTimePosition = () => {
+    const now = currentTime
+    const minutesSinceMidnight = now.getHours() * 60 + now.getMinutes()
+    const totalMinutesInDay = 24 * 60
+    const percentage = (minutesSinceMidnight / totalMinutesInDay) * 100
+    return percentage
+  }
+
+  useEffect(() => {
+    if (view === 'day' && dayViewScrollRef.current) {
+      const now = new Date()
+      const currentHour = now.getHours()
+      const scrollToHour = Math.max(0, currentHour - 2)
+      const scrollPosition = scrollToHour * 80
+      dayViewScrollRef.current.scrollTop = scrollPosition
+    } else if (view === 'week' && weekViewScrollRef.current) {
+      const now = new Date()
+      const currentHour = now.getHours()
+      const scrollToHour = Math.max(0, currentHour - 2)
+      const scrollPosition = scrollToHour * 80
+      weekViewScrollRef.current.scrollTop = scrollPosition
+    }
+  }, [view])
+
+  const getMeetingsForDate = (date: Date) => {
+    const localMeetings = meetings.filter(meeting => {
+      try {
+        if (!meeting || !meeting.date) return false
+        if (meeting.status === 'cancelled') return false;
+        const parts = meeting.date.split('-')
+        if (parts.length !== 3) return false
+        const [year, month, day] = parts.map(Number)
+        const meetingDate = new Date(year, month - 1, day)
+        return isSameDay(meetingDate, date)
+      } catch (error) {
+        return false
+      }
+    })
+
+    const existingSignatures = new Set(
+      localMeetings.map(m => {
+        const start = m.time?.split(' - ')[0] || '';
+        return `${start}-${(m.title || m.contact || '').substring(0, 5).toLowerCase()}`;
+      })
+    );
+
+    const googleMeetingsForDate = googleEvents
+      .filter(event => {
+        try {
+          if (!event || !event.start) return false
+          if (event.allDay) return false
+          return isSameDay(event.start, date)
+        } catch (error) {
+          return false
+        }
+      })
+      .map(event => {
+        try {
+          if (!event.start || !event.end) return null
+          const startTime = `${event.start.getHours().toString().padStart(2, '0')}:${event.start.getMinutes().toString().padStart(2, '0')}`
+          const endTime = `${event.end.getHours().toString().padStart(2, '0')}:${event.end.getMinutes().toString().padStart(2, '0')}`
+
+          const signature = `${startTime}-${(event.title || '').substring(0, 5).toLowerCase()}`;
+          if (existingSignatures.has(signature)) return null;
+
+          const isVideo = !!(event as any).hangoutLink || event.location?.toLowerCase().includes('meet') || event.description?.includes('zoom');
+
+          return {
+            id: event.id as any,
+            title: event.title,
+            date: event.start.toISOString().split('T')[0],
+            time: `${startTime} - ${endTime}`,
+            type: isVideo ? 'video' : 'meeting' as const,
+            prospect: event.description || '',
+            contact: event.title,
+            prospectId: 0,
+            status: 'scheduled' as const,
+            isGoogleEvent: true,
+            color: event.color,
+            description: event.description || '',
+            location: event.location || '',
+            hangoutLink: (event as any).hangoutLink
+          }
+        } catch (error) {
+          return null
+        }
+      })
+      .filter((event): event is NonNullable<typeof event> => event !== null)
+
+    return [...localMeetings, ...googleMeetingsForDate]
+  }
+
+  const getTodayMeetings = () => {
+    const today = new Date()
+    return getMeetingsForDate(today)
+  }
+
+  const getAllDayEventsForDate = (date: Date) => {
+    return googleEvents.filter(event => {
+      if (!event.allDay) return false
+      return isSameDay(event.start, date)
+    })
+  }
+
+  const isShortEvent = (duration: number) => duration < 0.75
+
+  const handleNavigateToProspect = (prospectId: number) => {
+    navigate('/pipeline', { state: { prospectId } })
+  }
+
+  const handleCallEnd = (wasAiActive: boolean, wasAnswered: boolean) => {
+    if (!wasAnswered) {
+      setIsNoAnswerModalOpen(true)
+    } else {
+      if (wasAiActive) {
+        setShowAiToast(true)
+        setTimeout(() => setShowAiToast(false), 4000)
+      } else {
+        setIsCallSummaryModalOpen(true)
+      }
+    }
+  }
+
+  const handleCallSummarySubmit = (data: CallSummaryData) => {
+    setIsCallSummaryModalOpen(false)
+  }
+
+  const handleMarkAsNoShow = () => {
+    setIsNoAnswerModalOpen(false)
+  }
+
+  const handleCreateEvent = () => {
+    setEditingEventId(null)
+    setIsCreateEventModalOpen(true)
+  }
+
+  const handleEditEvent = () => {
+    if (!selectedEvent) return
+    setEditingEventId(selectedEvent.id)
+    setIsCreateEventModalOpen(true)
+  }
+
   const handleDeleteEvent = () => {
+    if (!selectedEvent) return
+    deleteMeeting(selectedEvent.id)
     setSelectedEvent(null)
   }
-
-  const renderTextWithLinks = (text: string) => text
-
-  const getStartHour = (event: any) => {
-    if (!event.time) return 0
-    const [start] = event.time.split(' - ')
-    const [h, m] = start.split(':').map(Number)
-    return h + m / 60
-  }
-  const isOvernightEvent = (event: any) => false
-  const getDuration = (event: any) => 60
-  const isShortEvent = (event: any) => getDuration(event) < 30
-  const getTodayMeetings = () => getMeetingsForDate(new Date())
-
-  const getMonthDates = () => {
-    const year = currentDate.getFullYear()
-    const month = currentDate.getMonth()
-    const firstDay = new Date(year, month, 1)
-
-    // Add days from prev month to start on Monday
-    let day = firstDay.getDay()
-    day = day === 0 ? 6 : day - 1 // Make Monday 0
-
-    const start = new Date(firstDay)
-    start.setDate(start.getDate() - day)
-
-    const dates = []
-    for (let i = 0; i < 42; i++) {
-      const d = new Date(start)
-      d.setDate(start.getDate() + i)
-      dates.push(d)
-    }
-    return dates
-  }
-  const monthDates = getMonthDates()
 
   const renderDayView = () => {
     const dayMeetings = getMeetingsForDate(currentDate)
@@ -194,22 +447,22 @@ export function Agenda() {
     const currentTimePos = getCurrentTimePosition()
 
     return (
-      <div className="flex flex-col flex-1 rounded-3xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/40 backdrop-blur-md overflow-hidden" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+      <div className="flex flex-col flex-1 rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md overflow-hidden" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         {allDayEvents.length > 0 && (
-          <div className="border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900/60 p-3">
-            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Toute la journée</div>
+          <div className="border-b border-white/5 bg-slate-900/60 p-3">
+            <div className="text-xs font-semibold text-slate-400 mb-2">Toute la journée</div>
             <div className="space-y-1.5">
               {allDayEvents.map(event => (
                 <div
                   key={event.id}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all hover:bg-slate-800/50"
                   style={{
                     backgroundColor: 'rgba(59, 130, 246, 0.15)',
                     borderLeft: '3px solid #3b82f6'
                   }}
                 >
-                  <CalendarIcon className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                  <span className="text-sm font-medium text-slate-900 dark:text-white truncate">{event.title}</span>
+                  <CalendarIcon className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                  <span className="text-sm font-medium text-white truncate">{event.title}</span>
                 </div>
               ))}
             </div>
@@ -218,9 +471,9 @@ export function Agenda() {
 
         <div ref={dayViewScrollRef} className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="relative min-h-[1920px]">
-            <div className="absolute left-0 top-0 w-16 border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-transparent">
+            <div className="absolute left-0 top-0 w-16 border-r border-white/5">
               {HOURS.map((hour) => (
-                <div key={hour} className="h-20 border-b border-slate-200 dark:border-white/5 px-2 py-1">
+                <div key={hour} className="h-20 border-b border-white/5 px-2 py-1">
                   <span className="text-xs font-medium text-slate-500">
                     {hour.toString().padStart(2, '0')}:00
                   </span>
@@ -228,9 +481,9 @@ export function Agenda() {
               ))}
             </div>
 
-            <div className="absolute inset-0 left-16 bg-white dark:bg-transparent">
+            <div className="absolute inset-0 left-16">
               {HOURS.map((hour) => (
-                <div key={hour} className="h-20 border-b border-slate-200 dark:border-white/5" />
+                <div key={hour} className="h-20 border-b border-white/5" />
               ))}
 
               {showCurrentTimeLine && currentTimePos >= 0 && currentTimePos <= 100 && (
@@ -246,7 +499,6 @@ export function Agenda() {
               )}
 
               {dayMeetings.map((event) => {
-                // ... mapping logic remains same 
                 const startHour = getStartHour(event.time)
                 const isOvernight = isOvernightEvent(event.time)
                 let duration = getDuration(event.time)
@@ -260,40 +512,30 @@ export function Agenda() {
                 const top = startHour * 80
                 const height = actualHeight
                 const isShort = isShortEvent(duration)
-                const style = getEventStyle(event) // style handles color
+                const style = getEventStyle(event)
 
                 return (
                   <div
                     key={event.id}
                     onClick={() => setSelectedEvent(event)}
                     className="absolute left-2 right-2 cursor-pointer overflow-hidden px-2 py-1 transition-all hover:shadow-lg hover:brightness-110 rounded-md"
-                    style={{ top: `${top}px`, height: `${height}px`, ...style, color: event.isGoogleEvent ? '#000' : '#fff' }}
+                    style={{ top: `${top}px`, height: `${height}px`, ...style }}
                   >
-                    {/* Force text color update in logic or here? `getEventStyle` returns color. */}
-                    {/* I updated getEventStyle to return specific colors. Google event returns black. Closeros event returns white. */}
-                    {/* Wait, closely check logic. Closeros event returns color: '#ffffff'. */}
-                    {/* If light mode, white text on colored bg is fine IF bg is dark enough. 
-                            My bgColor is `rgba(..., 0.15)`. White text on 0.15 opacity is BAD on white background.
-                            I need to fix `getEventStyle` to return dark text for light mode or make bg darker.
-                            
-                            Let's adjust `getEventStyle` again.
-                        */}
-                    {/* ... content ... */}
                     {isShort ? (
                       <div className="flex h-full items-center">
-                        <p className="truncate text-xs font-semibold text-slate-900 dark:text-white">
+                        <p className="truncate text-xs font-semibold">
                           <MaskedText value={event.contact || 'Inconnu'} type="name" />
                         </p>
                       </div>
                     ) : (
                       <div className="flex h-full flex-col overflow-hidden">
-                        <p className="truncate text-xs font-semibold opacity-90 text-slate-900 dark:text-white">
+                        <p className="truncate text-xs font-semibold opacity-90">
                           {event.time?.split(' - ')[0] || event.time} - {isOvernight ? '→' : event.time?.split(' - ')[1]}
                         </p>
-                        <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white">
+                        <p className="mt-0.5 truncate text-sm font-bold">
                           <MaskedText value={event.contact || 'Inconnu'} type="name" />
                         </p>
-                        <p className="truncate text-xs opacity-80 text-slate-900 dark:text-white">
+                        <p className="truncate text-xs opacity-80">
                           {event.title?.split(' - ')[0] || 'Sans titre'}
                         </p>
                       </div>
@@ -316,25 +558,25 @@ export function Agenda() {
     return (
       <div
         ref={weekViewScrollRef}
-        className="flex-1 overflow-y-auto rounded-3xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/40 backdrop-blur-md custom-scrollbar"
+        className="flex-1 overflow-y-auto rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md custom-scrollbar"
         style={{ maxHeight: 'calc(100vh - 280px)' }}
       >
-        <div className="sticky top-0 z-20 flex border-b border-slate-200 dark:border-white/5 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
-          <div className="w-16 border-r border-slate-200 dark:border-white/5" />
+        <div className="sticky top-0 z-20 flex border-b border-white/5 bg-slate-900/90 backdrop-blur-md">
+          <div className="w-16 border-r border-white/5" />
           {weekDates.map((date, index) => (
             <div
               key={index}
               className={cn(
-                'flex-1 border-r border-slate-200 dark:border-white/5 p-3 text-center',
-                isToday(date) && 'bg-blue-50 dark:bg-blue-500/10'
+                'flex-1 border-r border-white/5 p-3 text-center',
+                isToday(date) && 'bg-blue-500/10'
               )}
             >
-              <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              <div className="text-xs font-medium text-slate-400">
                 {formatShortDayName(date)}
               </div>
               <div className={cn(
                 'mt-1 text-lg font-bold',
-                isToday(date) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-white'
+                isToday(date) ? 'text-blue-400' : 'text-white'
               )}>
                 {date.getDate()}
               </div>
@@ -342,25 +584,25 @@ export function Agenda() {
           ))}
         </div>
 
-        <div className="sticky top-[73px] z-10 flex border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-16 border-r border-slate-200 dark:border-white/5 p-2">
-            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Toute la journée</span>
+        <div className="sticky top-[73px] z-10 flex border-b border-white/5 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-16 border-r border-white/5 p-2">
+            <span className="text-[10px] font-semibold text-slate-400">Toute la journée</span>
           </div>
           {weekDates.map((date, dayIndex) => {
             const allDayEvents = getAllDayEventsForDate(date)
             return (
-              <div key={dayIndex} className="relative flex-1 border-r border-slate-200 dark:border-white/5 p-1.5 min-h-[40px]">
+              <div key={dayIndex} className="relative flex-1 border-r border-white/5 p-1.5 min-h-[40px]">
                 {allDayEvents.map(event => (
                   <div
                     key={event.id}
-                    className="mb-1 px-2 py-1 rounded text-[10px] font-medium truncate cursor-pointer transition-all hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                    className="mb-1 px-2 py-1 rounded text-[10px] font-medium truncate cursor-pointer transition-all hover:bg-slate-800/50"
                     style={{
                       backgroundColor: 'rgba(59, 130, 246, 0.15)',
                       borderLeft: '3px solid #3b82f6',
-                      color: '#0f172a' // Text dark by default for readability? Dark mode needs white.
+                      color: '#ffffff'
                     }}
                   >
-                    <span className="text-slate-900 dark:text-white">{event.title}</span>
+                    {event.title}
                   </div>
                 ))}
               </div>
@@ -369,9 +611,9 @@ export function Agenda() {
         </div>
 
         <div className="relative min-h-[1920px]">
-          <div className="absolute left-0 top-0 w-16 border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-transparent">
+          <div className="absolute left-0 top-0 w-16 border-r border-white/5">
             {HOURS.map((hour) => (
-              <div key={hour} className="h-20 border-b border-slate-200 dark:border-white/5 px-2 py-1">
+              <div key={hour} className="h-20 border-b border-white/5 px-2 py-1">
                 <span className="text-xs font-medium text-slate-500">
                   {hour.toString().padStart(2, '0')}:00
                 </span>
@@ -379,48 +621,105 @@ export function Agenda() {
             ))}
           </div>
 
-          <div className="absolute inset-0 left-16 flex bg-white dark:bg-transparent">
+          <div className="absolute inset-0 left-16 flex">
             {weekDates.map((date, dayIndex) => {
-              // ... loops ...
               const dayMeetings = getMeetingsForDate(date)
-              // ...
-              // return ...
+              const previousDate = dayIndex > 0 ? weekDates[dayIndex - 1] : null
+              const previousDayMeetings = previousDate ? getMeetingsForDate(previousDate) : []
+              const overnightContinuations = previousDayMeetings.filter(event => isOvernightEvent(event.time))
+
               return (
-                <div key={dayIndex} className="relative flex-1 border-r border-slate-200 dark:border-white/5">
+                <div key={dayIndex} className="relative flex-1 border-r border-white/5">
                   {HOURS.map((hour) => (
-                    <div key={hour} className="h-20 border-b border-slate-200 dark:border-white/5" />
+                    <div key={hour} className="h-20 border-b border-white/5" />
                   ))}
 
-                  {/* ... Red Line ... */}
+                  {dayIndex === todayIndex && currentTimePos >= 0 && currentTimePos <= 100 && (
+                    <div
+                      className="absolute left-0 right-0 z-10"
+                      style={{ top: `${currentTimePos}%` }}
+                    >
+                      <div className="flex items-center">
+                        <div className="h-3 w-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+                        <div className="h-0.5 flex-1 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+                      </div>
+                    </div>
+                  )}
 
-                  {/* ... Overnight Events ... */}
+                  {overnightContinuations.map((event) => {
+                    const parts = event.time?.split(' - ') || [];
+                    const end = parts[1] || parts[0] || '00:00';
+                    const [endH, endM] = end?.split(':').map(Number) || [0, 0];
+                    const endHour = endH + endM / 60
+                    const top = 0
+                    const height = endHour * 80
+                    const isShort = isShortEvent(endHour)
+                    const style = getEventStyle(event)
+
+                    return (
+                      <div
+                        key={`overnight-${event.id}`}
+                        onClick={() => setSelectedEvent(event)}
+                        className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg hover:brightness-110 rounded-md"
+                        style={{ top: `${top}px`, height: `${height}px`, ...style }}
+                      >
+                        {isShort ? (
+                          <div className="flex h-full items-center">
+                            <p className="truncate text-[10px] font-semibold">
+                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="flex h-full flex-col overflow-hidden">
+                            <p className="truncate text-[10px] font-semibold opacity-90">→ {end}</p>
+                            <p className="truncate text-xs font-bold">
+                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
 
                   {dayMeetings.map((event) => {
-                    const start = getStartHour(event)
-                    const duration = getDuration(event)
-                    const top = start * 80
-                    const height = (duration / 60) * 80
+                    const startHour = getStartHour(event.time)
+                    const isOvernight = isOvernightEvent(event.time)
+                    let duration = getDuration(event.time)
+                    let actualHeight = duration * 80
+
+                    if (isOvernight) {
+                      const hoursUntilMidnight = 24 - startHour
+                      actualHeight = hoursUntilMidnight * 80
+                    }
+
+                    const top = startHour * 80
+                    const height = actualHeight
+                    const isShort = isShortEvent(duration)
                     const style = getEventStyle(event)
-                    // ...
+
                     return (
                       <div
                         key={event.id}
-                        // ...
-                        style={{ top: `${top}px`, height: `${height}px`, ...style }}
+                        onClick={() => setSelectedEvent(event)}
                         className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1 py-0.5 transition-all hover:shadow-lg hover:brightness-110 rounded-md"
+                        style={{ top: `${top}px`, height: `${height}px`, ...style }}
                       >
-                        {/* Text colors fix */}
-                        {/* The style has color: #ffffff or #000000. 
-                             If it's Google Event -> White bg -> Black text. Good.
-                             If it's Closeros Event -> Tinted bg (0.15 alpha) -> White text? 
-                             White text on 0.15 alpha on White bg is invisible.
-                             I need to change `getEventStyle` to return black text for non-google events in light mode?
-                             But `getEventStyle` returns static object.
-                             
-                             I should remove `color` from `getEventStyle` for non-google events 
-                             and use Tailwind classes `text-slate-900 dark:text-white`.
-                          */}
-                        {/* ... */}
+                        {isShort ? (
+                          <div className="flex h-full items-center">
+                            <p className="truncate text-[10px] font-semibold">
+                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="flex h-full flex-col overflow-hidden">
+                            <p className="truncate text-[10px] font-semibold opacity-90">
+                              {event.time?.split(' - ')[0] || event.time}{isOvernight ? ' →' : ''}
+                            </p>
+                            <p className="truncate text-xs font-bold">
+                              <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
@@ -434,65 +733,66 @@ export function Agenda() {
   }
 
   const renderMonthView = () => {
-    // ...
+    const monthDates = getMonthDates(currentDate)
+    const currentMonth = currentDate.getMonth()
+
     return (
-      <div className="flex-1 overflow-auto rounded-3xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/40 backdrop-blur-md">
-        <div className="grid grid-cols-7 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900/60">
+      <div className="flex-1 overflow-auto rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md">
+        <div className="grid grid-cols-7 border-b border-white/5 bg-slate-900/60">
           {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
-            <div key={day} className="border-r border-slate-200 dark:border-white/5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <div key={day} className="border-r border-white/5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
               {day}
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 bg-white dark:bg-transparent">
+        <div className="grid grid-cols-7">
           {monthDates.map((date, index) => {
-            const isCurrentMonth = date.getMonth() === currentDate.getMonth()
+            const isCurrentMonth = date.getMonth() === currentMonth
             const today = isToday(date)
-            const dayEvents = getMeetingsForDate(date)
+            const dayMeetings = getMeetingsForDate(date)
+            const visibleMeetings = dayMeetings.slice(0, 3)
+            const hiddenCount = dayMeetings.length - visibleMeetings.length
 
             return (
               <div
                 key={index}
-                onClick={() => {
-                  setCurrentDate(date)
-                  setView('day')
-                }}
                 className={cn(
-                  'min-h-[120px] cursor-pointer border-b border-r border-slate-200 dark:border-white/5 p-2 transition-colors',
-                  !isCurrentMonth && 'bg-slate-50 dark:bg-slate-900/30 text-slate-400 dark:text-slate-600',
-                  today && 'bg-blue-50 dark:bg-blue-500/5',
-                  isCurrentMonth && !today && 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                  'min-h-[120px] border-b border-r border-white/5 p-2 transition-colors',
+                  !isCurrentMonth && 'bg-slate-900/30',
+                  today && 'bg-blue-500/5',
+                  isCurrentMonth && !today && 'hover:bg-white/5'
                 )}
               >
                 <div className={cn(
-                  'mb-2 flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold',
-                  today
-                    ? 'bg-blue-600 text-white'
-                    : isCurrentMonth
-                      ? 'text-slate-700 dark:text-white'
-                      : 'text-slate-400 dark:text-slate-600'
+                  'mb-2 flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold',
+                  today && 'bg-blue-500 text-white shadow-lg shadow-blue-500/30',
+                  !today && isCurrentMonth && 'text-white',
+                  !today && !isCurrentMonth && 'text-slate-600'
                 )}>
                   {date.getDate()}
                 </div>
 
                 <div className="space-y-1">
-                  {dayEvents.slice(0, 3).map(event => (
-                    <div
-                      key={event.id}
-                      className="truncate rounded px-1.5 py-0.5 text-[10px] font-medium"
-                      style={{
-                        backgroundColor: (event as any).isGoogleEvent ? '#dbeafe' : 'rgba(59, 130, 246, 0.15)',
-                        color: (event as any).isGoogleEvent ? '#1e40af' : '#60a5fa',
-                        borderLeft: '2px solid #3b82f6'
-                      }}
-                    >
-                      {event.time?.split(' - ')[0]} {event.title}
-                    </div>
-                  ))}
-                  {dayEvents.length > 3 && (
-                    <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400 pl-1">
-                      + {dayEvents.length - 3} autres
+                  {visibleMeetings.map((event) => {
+                    const style = getEventStyle(event)
+                    return (
+                      <div
+                        key={event.id}
+                        onClick={() => setSelectedEvent(event)}
+                        className="cursor-pointer px-1.5 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm rounded-sm"
+                        style={style}
+                      >
+                        <div className="truncate">
+                          {event.time?.split(' - ')[0] || event.time} <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  {hiddenCount > 0 && (
+                    <div className="px-1.5 text-[10px] font-medium text-slate-500">
+                      + {hiddenCount} autre{hiddenCount > 1 ? 's' : ''}
                     </div>
                   )}
                 </div>
