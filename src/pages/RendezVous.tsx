@@ -109,72 +109,106 @@ export function RendezVous() {
    // 1. Chargement initial (OAuth) + Auto-Refresh
 
 
-   // --- FONCTION DE SYNCHRONISATION PUISSANTE ---
+   // --- FONCTION DE SYNCHRONISATION PUISSANTE (UPDATE + IMPORT) ---
    const runDeepSync = async (bookings: any[]) => {
-      if (!meetings || meetings.length === 0 || !bookings || bookings.length === 0) return 0;
+      if (!bookings || bookings.length === 0) return 0;
 
-      // Normalisation agressive (minuscule, sans accents, sans caractères spéciaux)
+      // Récupérer la vérité terrain (DB) pour éviter les doublons/race conditions
+      let currentMeetings = meetings || [];
+      if (user) {
+         const { data: dbMeetings } = await supabase.from('meetings').select('*').eq('user_id', user.id);
+         if (dbMeetings) currentMeetings = dbMeetings;
+      }
+
+      // Normalisation
       const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '') : '';
       let updatesCount = 0;
+      let importCount = 0;
 
-      console.log("🔄 Démarrage Deep Sync...");
+      console.log(`🔄 Démarrage Deep Sync sur ${bookings.length} éléments (avec ${currentMeetings.length} en base)...`);
 
-      for (const m of meetings) {
-         // Ignorer si déjà annulé
-         if (['annule', 'cancelled', 'rejected', 'termine'].includes(normalize(m.status || ''))) continue;
+      // 1. UPDATE status des existants
+      if (currentMeetings.length > 0) {
+         for (const m of currentMeetings) {
+            if (['annule', 'cancelled', 'rejected', 'termine'].includes(normalize(m.status || ''))) continue;
 
-         const dbDate = parseISO(m.date);
-         const dbContact = normalize(m.contact || '');
+            const dbDate = parseISO(m.date);
+            const dbContact = normalize(m.contact || '');
 
-         // Chercher le booking correspondant
-         const calData = bookings.find((b: any) => {
-            const apiDate = parseISO(b.startTime);
-            const dayDiff = Math.abs(differenceInDays(dbDate, apiDate));
+            const calData = bookings.find((b: any) => {
+               const apiDate = parseISO(b.startTime);
+               const dayDiff = Math.abs(differenceInDays(dbDate, apiDate));
+               if (dayDiff > 1) return false;
 
-            // 1. Date doit être proche (+/- 1 jour)
-            if (dayDiff > 1) return false;
+               const attendees = b.attendees || [];
+               const title = normalize(b.title || '');
 
-            // 2. Matching de nom/email
-            const attendees = b.attendees || [];
-            const title = normalize(b.title || '');
-            const description = normalize(b.description || '');
-
-            const isAttendeeMatch = attendees.some((att: any) => {
-               const apiName = normalize(att.name || '');
-               const apiEmail = normalize(att.email || '');
-               return (dbContact && (apiName.includes(dbContact) || dbContact.includes(apiName))) ||
-                  (m.description && apiEmail && normalize(m.description).includes(apiEmail));
+               return attendees.some((att: any) => {
+                  const apiName = normalize(att.name || '');
+                  return (dbContact && (apiName.includes(dbContact) || dbContact.includes(apiName)));
+               }) || (dbContact && title.includes(dbContact));
             });
 
-            const isTitleMatch = dbContact && title.includes(dbContact);
-            const isDescMatch = dbContact && description.includes(dbContact);
-
-            return isAttendeeMatch || isTitleMatch || isDescMatch;
-         });
-
-         // Si match trouvé ET statut Annulé/Rejeté
-         if (calData && ['CANCELLED', 'REJECTED'].includes(calData.status)) {
-            console.log(`❌ Rendez-vous annulé détecté pour ${m.contact}. Mise à jour BDD...`);
-
-            // Mise à jour BDD
-            const { error } = await supabase.from('meetings').update({ status: 'Annulé' }).eq('id', m.id);
-
-            if (!error) {
+            if (calData && ['CANCELLED', 'REJECTED'].includes(calData.status)) {
+               console.log(`❌ Annulation détectée pour ${m.contact}`);
+               await supabase.from('meetings').update({ status: 'Annulé' }).eq('id', m.id);
                updatesCount++;
-            } else {
-               console.error("Erreur update Supabase:", error);
             }
          }
       }
 
-      if (updatesCount > 0) {
-         if (refreshMeetings) await refreshMeetings();
-         console.log(`✅ ${updatesCount} statuts mis à jour.`);
-      } else {
-         console.log("Aucune mise à jour nécessaire.");
+      // 2. IMPORT des manquants
+      if (user) {
+         for (const b of bookings) {
+            // Ignorer les annulés/rejetés pour l'import initial (sauf si on veut tout l'historique)
+            if (['CANCELLED', 'REJECTED'].includes(b.status)) continue;
+
+            const apiDate = parseISO(b.startTime);
+            const apiDateStr = format(apiDate, 'yyyy-MM-dd');
+            const apiTimeStr = format(apiDate, 'HH:mm');
+            const endTimeStr = format(parseISO(b.endTime), 'HH:mm');
+            const fullTimeStr = `${apiTimeStr} - ${endTimeStr}`;
+
+            const contactName = b.attendees?.[0]?.name || b.title || 'Prospect Inconnu';
+            const contactNorm = normalize(contactName);
+
+            // Vérifier si existe déjà en DB
+            const exists = currentMeetings.some((m: any) => {
+               const dayDiff = Math.abs(differenceInDays(parseISO(m.date), apiDate));
+               if (dayDiff > 0) return false; // Doit être le même jour
+
+               const dbContact = normalize(m.contact || '');
+               // Match strict sur le nom ou l'heure EXACTE si nom incertain
+               return (dbContact && (contactNorm.includes(dbContact) || dbContact.includes(contactNorm))) || (m.time.startsWith(apiTimeStr));
+            });
+
+            if (!exists) {
+               console.log(`📥 Import nouveau RDV: ${contactName} le ${apiDateStr}`);
+
+               const { error } = await supabase.from('meetings').insert([{
+                  user_id: user.id,
+                  contact: contactName,
+                  title: b.title || `RDV avec ${contactName}`,
+                  date: apiDateStr,
+                  time: fullTimeStr,
+                  type: 'video', // Défaut
+                  status: 'upcoming',
+                  location: b.location || 'Cal.com',
+                  description: b.description || 'Importé depuis Cal.com'
+               }]);
+
+               if (!error) importCount++;
+               else console.error("Erreur import:", error);
+            }
+         }
       }
 
-      return updatesCount;
+      if (updatesCount > 0 || importCount > 0) {
+         if (refreshMeetings) await refreshMeetings();
+         console.log(`✅ Sync terminée: ${updatesCount} updates, ${importCount} imports.`);
+      }
+
+      return updatesCount + importCount;
    };
 
    // 2. Connexion OAuth (v2)
@@ -189,7 +223,6 @@ export function RendezVous() {
    // 3. Fetch Events (OAuth)
    const fetchEventTypes = async (accessToken: string) => {
       setIsLoadingEvents(true)
-      console.log("DEBUG: Fetching Event Types with Token:", accessToken ? (accessToken.substring(0, 10) + "...") : "MISSING");
       try {
          // Attempt V2 API
          const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent('/v2/event-types')}`, {
@@ -260,21 +293,35 @@ export function RendezVous() {
       if (manualTrigger) setIsSyncing(true);
 
       try {
-         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent('/v2/bookings?limit=100&status=CANCELLED,ACCEPTED,REJECTED')}`, {
+         // On récupère tout (pas de filtre status ici pour bien tout analyser)
+         const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent('/v2/bookings?limit=100')}`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
          })
          const data = await response.json()
          console.log("V2 Bookings Response:", data);
 
-         const bookings = data.status === "success" && data.data ? data.data : data.bookings;
+         let bookings: any[] = [];
 
-         if (bookings) {
+         if (data.status === "success" || data.data) {
+            if (Array.isArray(data.data)) {
+               bookings = data.data;
+            } else if (data.data?.bookings) {
+               bookings = data.data.bookings;
+            } else if (data.data?.rows) {
+               bookings = data.data.rows;
+            }
+         } else if (data.bookings) {
+            bookings = data.bookings;
+         }
+
+         if (bookings && bookings.length > 0) {
             setCalBookings(bookings);
-            // Lancer la synchro DB immédiatement après récupération
             const count = await runDeepSync(bookings);
             if (manualTrigger) {
-               alert(`Synchronisation terminée : ${count} rendez-vous mis à jour.`);
+               alert(`Synchronisation terminée : ${count} changements.`);
             }
+         } else {
+            console.log("Aucun booking trouvé dans la réponse API");
          }
       } catch (error) {
          console.error("Erreur fetch Bookings Cal.com:", error);
