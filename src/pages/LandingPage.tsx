@@ -489,15 +489,17 @@ export function LandingPage() {
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-red-900/30 text-center">
-                  <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1">PERTE ESTIMÉE</p>
-                  {/* MODIFICATION 2 : 35H + SOUS-TITRE */}
-                  <div className="text-4xl font-black text-white">
-                    35h<span className="text-lg text-slate-500 font-medium">/mois</span>
+                  <div className="mb-6">
+                    <div className="text-lg font-bold text-white">~150 kg <span className="text-sm font-normal text-slate-400">de CO2 émis / an</span></div>
+                    <p className="text-[10px] text-red-300/70 mt-1 leading-tight">(Multitude d'interfaces chargées + Serveurs + RAM)</p>
                   </div>
 
-                  <div className="pt-6 border-t border-red-900/30 mt-6">
-                    <div className="text-2xl font-bold text-white">~150 kg <span className="text-sm font-normal text-slate-400">de CO2 émis / an</span></div>
-                    <p className="text-[10px] text-red-300/70 mt-1 leading-tight">(Multitude d'interfaces chargées + Serveurs + RAM)</p>
+                  <div className="pt-6 border-t border-red-900/30">
+                    <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1">PERTE ESTIMÉE</p>
+                    {/* MODIFICATION 2 : 35H + SOUS-TITRE */}
+                    <div className="text-4xl font-black text-white">
+                      35h<span className="text-lg text-slate-500 font-medium">/mois</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -552,17 +554,9 @@ export function LandingPage() {
 
                 <div className="mt-8 pt-8 border-t border-blue-500/20 text-center relative overflow-hidden">
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-blue-500/50 blur-[2px]"></div>
-                  <p className="text-blue-400 text-sm font-medium uppercase tracking-widest mb-1">Offre Founder</p>
-                  <div className="text-5xl font-black text-white tracking-tight">
-                    29€<span className="text-lg text-slate-500 font-medium">/mois</span>
-                  </div>
-                  <p className="text-emerald-400 text-xs font-bold mt-2 flex items-center justify-center gap-1">
-                    <Zap className="w-3 h-3" />
-                    Récupérez 1h de vie / jour
-                  </p>
 
-                  <div className="pt-6 border-t border-blue-500/20 mt-6 group relative cursor-help">
-                    <div className="text-2xl font-bold text-white">~50 kg <span className="text-sm font-normal text-slate-400">de CO2 émis / an</span></div>
+                  <div className="mb-6 group relative cursor-help">
+                    <div className="text-lg font-bold text-white">~50 kg <span className="text-sm font-normal text-slate-400">de CO2 émis / an</span></div>
                     <p className="text-xs text-emerald-400/80 mt-1 leading-snug">
                       Économisez ~100 kg de CO2 par an. CloseOS consomme drastiquement moins de ressources serveur et de batterie que 10 onglets ouverts en permanence
                     </p>
@@ -572,6 +566,17 @@ export function LandingPage() {
                       Passer à CloseOS économise ~100 kg de CO2 par an et par closer. C'est l'équivalent de 600 km en voiture évités, juste en fermant vos onglets.
                       <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 border-b border-r border-slate-700 rotate-45"></div>
                     </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-blue-500/20 relative z-10">
+                    <p className="text-blue-400 text-sm font-medium uppercase tracking-widest mb-1">Offre Founder</p>
+                    <div className="text-5xl font-black text-white tracking-tight">
+                      29€<span className="text-lg text-slate-500 font-medium">/mois</span>
+                    </div>
+                    <p className="text-emerald-400 text-xs font-bold mt-2 flex items-center justify-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      Récupérez 1h de vie / jour
+                    </p>
                   </div>
                 </div>
               </div>
