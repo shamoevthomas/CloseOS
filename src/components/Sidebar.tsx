@@ -34,10 +34,10 @@ const navigation = [
   { name: 'Offres', href: '/offers', icon: Briefcase },
   { name: 'Agenda', href: '/agenda', icon: Calendar },
   { name: 'Rendez-vous', href: '/rendez-vous', icon: CalendarCheck },
-  { name: 'Appels', href: '/calls', icon: Video },
+  { name: 'Appels', href: '/appels', icon: Video },
   { name: 'Téléphonie', href: '/telephony', icon: Smartphone },
   { name: 'Rapport', href: '/ai-coach', icon: FileText },
-  { name: 'Factures', href: '/invoices', icon: CreditCard },
+  { name: 'Factures', href: '/factures', icon: CreditCard },
   { name: 'KPI', href: '/kpi', icon: BarChart3 },
 ]
 

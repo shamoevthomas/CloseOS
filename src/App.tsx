@@ -154,11 +154,11 @@ function AuthenticatedApp() {
           <Route path="contacts" element={<Contacts />} />
           <Route path="offers" element={<Offers />} />
           <Route path="agenda" element={<AgendaErrorBoundary><Agenda /></AgendaErrorBoundary>} />
-          <Route path="calls" element={<CallsPage />} />
+          <Route path="appels" element={<CallsPage />} />
           <Route path="appels/:id" element={<CallDetails />} />
           <Route path="telephony" element={<TelephonyPage />} />
           <Route path="ai-coach" element={<AICoachPage />} />
-          <Route path="invoices" element={<InvoicesPage />} />
+          <Route path="factures" element={<InvoicesPage />} />
           <Route path="kpi" element={<KPIPage />} />
           <Route path="rendez-vous" element={<RendezVous />} />
           <Route path="messages" element={<MessagesPage />} />
