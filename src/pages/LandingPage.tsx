@@ -97,6 +97,13 @@ export function LandingPage() {
 
         <div className="relative mx-auto max-w-7xl px-6 text-center z-10">
 
+          {/* 👇 AJOUT : BADGE ENVIRONNEMENT */}
+          <div className="flex justify-center mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300 hover:bg-emerald-500/20 transition-colors cursor-default">
+              🌱 Engagé pour l'environnement
+            </div>
+          </div>
+
           {/* 👇 MODIFICATION : DOUBLE BULLE AVEC RGPD */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300 hover:bg-blue-500/20 transition-colors cursor-default">
@@ -487,6 +494,11 @@ export function LandingPage() {
                   <div className="text-4xl font-black text-white">
                     35h<span className="text-lg text-slate-500 font-medium">/mois</span>
                   </div>
+
+                  <div className="pt-6 border-t border-red-900/30 mt-6">
+                    <div className="text-2xl font-bold text-white">~150 kg <span className="text-sm font-normal text-slate-400">de CO2 émis / an</span></div>
+                    <p className="text-[10px] text-red-300/70 mt-1 leading-tight">(Multitude d'interfaces chargées + Serveurs + RAM)</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -548,6 +560,19 @@ export function LandingPage() {
                     <Zap className="w-3 h-3" />
                     Récupérez 1h de vie / jour
                   </p>
+
+                  <div className="pt-6 border-t border-blue-500/20 mt-6 group relative cursor-help">
+                    <div className="text-2xl font-bold text-white">~50 kg <span className="text-sm font-normal text-slate-400">de CO2 émis / an</span></div>
+                    <p className="text-xs text-emerald-400/80 mt-1 leading-snug">
+                      Économisez ~100 kg de CO2 par an. CloseOS consomme drastiquement moins de ressources serveur et de batterie que 10 onglets ouverts en permanence
+                    </p>
+
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-xl text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                      Passer à CloseOS économise ~100 kg de CO2 par an et par closer. C'est l'équivalent de 600 km en voiture évités, juste en fermant vos onglets.
+                      <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 border-b border-r border-slate-700 rotate-45"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -669,6 +694,9 @@ export function LandingPage() {
                   >
                     Démarrer en Starter
                   </Link>
+                  <p className="mt-3 text-[10px] text-center text-slate-600">
+                    1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
+                  </p>
                 </div>
 
                 {/* PLAN FOUNDER */}
@@ -722,6 +750,9 @@ export function LandingPage() {
 
                   <p className="mt-4 text-xs text-center text-slate-500">
                     Carte bancaire requise. <strong>Aucun prélèvement avant le lancement officiel</strong> + 7 jours d'essai offerts.
+                  </p>
+                  <p className="mt-3 text-[10px] text-center text-slate-500/60">
+                    1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
                   </p>
                 </div>
               </>
