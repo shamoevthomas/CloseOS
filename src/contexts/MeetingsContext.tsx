@@ -6,15 +6,19 @@ export interface Meeting {
   id: number
   user_id: string
   prospectId?: number
-  date: string 
-  time: string 
-  type: 'call' | 'video' | 'meeting' | 'event' | 'other' // Types mis à jour
+  date: string
+  time: string
+  type: 'call' | 'video' | 'meeting' | 'event' | 'other'
   title: string
   contact: string
   status: 'upcoming' | 'completed' | 'cancelled' | 'scheduled'
   description?: string
   location?: string
-  is_internal?: boolean // Nouveau champ
+  is_internal?: boolean
+  email?: string
+  phone?: string
+  notes?: string
+  video_link?: string
 }
 
 interface MeetingsContextType {
@@ -76,7 +80,11 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
         status: meetingData.status || 'upcoming',
         description: meetingData.description,
         location: meetingData.location,
-        is_internal: meetingData.is_internal || false // Enregistrement du type interne/externe
+        is_internal: meetingData.is_internal || false,
+        email: meetingData.email || null,
+        phone: meetingData.phone || null,
+        notes: meetingData.notes || null,
+        video_link: meetingData.video_link || null,
       }
 
       const { data, error } = await supabase
@@ -85,11 +93,11 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
         .select()
 
       if (error) throw error
-      
+
       if (data) {
         setMeetings((prev) => [...prev, data[0]].sort((a, b) => a.date.localeCompare(b.date)))
       }
-      
+
       return { data, error: null }
     } catch (error) {
       console.error('Erreur creation RDV:', error)
@@ -132,7 +140,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   const getNextMeeting = (prospectId: number): Meeting | null => {
     const now = new Date()
     return meetings
-      .filter(m => 
+      .filter(m =>
         m.status === 'upcoming' &&
         new Date(m.date + 'T' + (m.time.includes(' - ') ? m.time.split(' - ')[0] : m.time)) > now
       )
