@@ -14,7 +14,9 @@ import {
   Link as LinkIcon,
   Plus,
   ChevronDown,
-  Clock // Ajout pour le style
+  Clock, // Ajout pour le style
+  Pencil,
+  Check
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
@@ -34,26 +36,64 @@ export function CallsPage() {
   const navigate = useNavigate()
   const { prospects, updateProspect } = useProspects()
   const { contacts: internalContacts } = useInternalContacts()
-  const { callHistory, addCallLog, clearHistory } = useCalls()
+  const { callHistory, addCallLog, clearHistory, refreshHistory } = useCalls()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [isNewCallModalOpen, setIsNewCallModalOpen] = useState(false)
   const [callType, setCallType] = useState<'prospect' | 'internal'>('prospect')
   const [selectedContactId, setSelectedContactId] = useState<number | null>(null)
   const [selectedContactSearch, setSelectedContactSearch] = useState('')
-  
+
   // Modale de préparation Meet
   const [isMeetModalOpen, setIsMeetModalOpen] = useState(false)
-  const [meetLinkInput, setMeetLinkInput] = useState('') 
+  const [meetLinkInput, setMeetLinkInput] = useState('')
 
   // --- GESTION DES SCRIPTS MULTIPLES ---
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false)
   const [scripts, setScripts] = useState<Script[]>([])
+  const [isSavingScript, setIsSavingScript] = useState(false)
+
   // Typage strict pour l'ID sélectionné
   const [selectedScriptId, setSelectedScriptId] = useState<string | number | 'new'>('new')
   const [scriptContent, setScriptContent] = useState('')
   const [scriptTitle, setScriptTitle] = useState('')
-  const [isSavingScript, setIsSavingScript] = useState(false)
+  const [editingCallId, setEditingCallId] = useState<number | null>(null)
+  const [editingName, setEditingName] = useState('')
+
+  const startEditing = (call: any) => {
+    setEditingCallId(call.id)
+    setEditingName(call.contactName)
+  }
+
+  const cancelEditing = () => {
+    setEditingCallId(null)
+    setEditingName('')
+  }
+
+  const saveCallName = async () => {
+    if (!editingCallId || !editingName.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('call_history')
+        .update({ contactName: editingName })
+        .eq('id', editingCallId)
+
+      if (error) throw error
+
+      setEditingCallId(null)
+      setEditingName('')
+      refreshHistory()
+      // Actually context is exposed line 37: `const { callHistory, addCallLog, clearHistory } = useCalls()`
+      // I should check if `refreshHistory` is available in `useCalls`.
+      // Looking at `CallsContext.tsx`, `refreshHistory` IS available in the provider value! 
+      // I need to update the destructuring line 37.
+
+    } catch (err) {
+      console.error("Failed to rename call", err)
+      alert("Erreur lors du renommage")
+    }
+  }
 
   // 1. Chargement des scripts à l'ouverture de la modale
   useEffect(() => {
@@ -103,11 +143,11 @@ export function CallsPage() {
       setScriptTitle('')
     } else {
       const script = scripts.find(s => String(s.id) === val)
-      
+
       if (script) {
         setSelectedScriptId(script.id)
-        setScriptContent(script.content || '') 
-        setScriptTitle(script.title || '')     
+        setScriptContent(script.content || '')
+        setScriptTitle(script.title || '')
       }
     }
   }
@@ -115,8 +155,8 @@ export function CallsPage() {
   // 4. Sauvegarde
   const handleSaveScript = async () => {
     if (!scriptTitle.trim()) {
-        alert("Veuillez donner un titre à votre script")
-        return
+      alert("Veuillez donner un titre à votre script")
+      return
     }
 
     setIsSavingScript(true)
@@ -134,28 +174,28 @@ export function CallsPage() {
       if (selectedScriptId === 'new') {
         // INSERT
         const { data, error } = await supabase
-            .from('user_scripts')
-            .insert([scriptData])
-            .select()
-        
+          .from('user_scripts')
+          .insert([scriptData])
+          .select()
+
         if (error) throw error
         if (data) {
-            setScripts([...scripts, data[0]])
-            setSelectedScriptId(data[0].id)
+          setScripts([...scripts, data[0]])
+          setSelectedScriptId(data[0].id)
         }
       } else {
         // UPDATE
         const { error } = await supabase
-            .from('user_scripts')
-            .update(scriptData)
-            .eq('id', selectedScriptId)
+          .from('user_scripts')
+          .update(scriptData)
+          .eq('id', selectedScriptId)
 
         if (error) throw error
-        
+
         // Mise à jour locale
         setScripts(scripts.map(s => s.id === selectedScriptId ? { ...s, title: scriptTitle, content: scriptContent } : s))
       }
-      
+
       alert("Script sauvegardé !")
 
     } catch (error) {
@@ -172,23 +212,23 @@ export function CallsPage() {
     if (!confirm("Voulez-vous vraiment supprimer ce script ?")) return
 
     try {
-        const { error } = await supabase.from('user_scripts').delete().eq('id', selectedScriptId)
-        if (error) throw error
+      const { error } = await supabase.from('user_scripts').delete().eq('id', selectedScriptId)
+      if (error) throw error
 
-        const newScripts = scripts.filter(s => s.id !== selectedScriptId)
-        setScripts(newScripts)
-        
-        if (newScripts.length > 0) {
-            setSelectedScriptId(newScripts[0].id)
-            setScriptContent(newScripts[0].content || '')
-            setScriptTitle(newScripts[0].title || '')
-        } else {
-            setSelectedScriptId('new')
-            setScriptContent('')
-            setScriptTitle('')
-        }
+      const newScripts = scripts.filter(s => s.id !== selectedScriptId)
+      setScripts(newScripts)
+
+      if (newScripts.length > 0) {
+        setSelectedScriptId(newScripts[0].id)
+        setScriptContent(newScripts[0].content || '')
+        setScriptTitle(newScripts[0].title || '')
+      } else {
+        setSelectedScriptId('new')
+        setScriptContent('')
+        setScriptTitle('')
+      }
     } catch (error) {
-        console.error("Erreur suppression", error)
+      console.error("Erreur suppression", error)
     }
   }
 
@@ -213,10 +253,10 @@ export function CallsPage() {
 
   const prepareCall = (contactId: number | null, type: 'prospect' | 'internal') => {
     if (contactId === null) {
-        setSelectedContactId(null)
+      setSelectedContactId(null)
     } else {
-        setSelectedContactId(contactId)
-        setCallType(type)
+      setSelectedContactId(contactId)
+      setCallType(type)
     }
     setIsNewCallModalOpen(false)
     setIsMeetModalOpen(true)
@@ -233,19 +273,19 @@ export function CallsPage() {
     let type = callType
 
     if (selectedContactId) {
-       if (callType === 'prospect') {
-          const p = prospects.find(x => x.id === selectedContactId)
-          if (p) {
-              contactName = p.contact
-              finalContactId = p.id
-          }
-       } else {
-          const c = internalContacts.find(x => x.id === selectedContactId)
-          if (c) {
-              contactName = c.name
-              finalContactId = c.id
-          }
-       }
+      if (callType === 'prospect') {
+        const p = prospects.find(x => x.id === selectedContactId)
+        if (p) {
+          contactName = p.contact
+          finalContactId = p.id
+        }
+      } else {
+        const c = internalContacts.find(x => x.id === selectedContactId)
+        if (c) {
+          contactName = c.name
+          finalContactId = c.id
+        }
+      }
     }
 
     const newCall = await addCallLog({
@@ -259,14 +299,12 @@ export function CallsPage() {
     })
 
     let callDbId = Date.now();
-    if (newCall) {
-        if (typeof newCall.id !== 'undefined') {
-            callDbId = newCall.id;
-        } else if (Array.isArray(newCall) && newCall.length > 0) {
-            callDbId = newCall[0].id;
-        } else if (newCall.data && Array.isArray(newCall.data) && newCall.data.length > 0) {
-            callDbId = newCall.data[0].id;
-        }
+    if (newCall && newCall.data) {
+      if (Array.isArray(newCall.data) && newCall.data.length > 0) {
+        callDbId = newCall.data[0].id;
+      } else if ((newCall.data as any).id) {
+        callDbId = (newCall.data as any).id;
+      }
     }
 
     setIsMeetModalOpen(false)
@@ -295,7 +333,7 @@ export function CallsPage() {
 
   return (
     <div className="relative min-h-screen bg-[#020617] p-8 overflow-hidden font-sans text-slate-100">
-      
+
       {/* Background Blobs (Style Landing Page) */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
@@ -349,10 +387,10 @@ export function CallsPage() {
               <h2 className="text-2xl font-bold text-white">Appels Récents</h2>
               <p className="text-slate-400 text-sm mt-1">Retrouvez l'historique de vos communications</p>
             </div>
-            
+
             {callHistory.length > 0 && (
               <button
-                onClick={() => { if(confirm('Tout supprimer ?')) clearHistory() }}
+                onClick={() => { if (confirm('Tout supprimer ?')) clearHistory() }}
                 className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/20 transition-colors"
               >
                 <Trash2 className="h-4 w-4" /> Supprimer historique
@@ -368,8 +406,29 @@ export function CallsPage() {
                     <Video className="h-6 w-6 text-blue-400" />
                   </div>
                   <div>
-                    <p className="font-bold text-white text-lg"><MaskedText value={call.contactName} type="name" /></p>
-                    {/* 👇 MODIFICATION ICI : Suppression de call.duration */}
+                    {editingCallId === call.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          className="bg-slate-900 border border-blue-500 rounded px-2 py-1 text-white text-lg font-bold outline-none"
+                          autoFocus
+                        />
+                        <button onClick={saveCallName} className="p-1 hover:bg-emerald-500/20 rounded text-emerald-400"><Check className="h-4 w-4" /></button>
+                        <button onClick={cancelEditing} className="p-1 hover:bg-red-500/20 rounded text-red-400"><X className="h-4 w-4" /></button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group/title">
+                        <p className="font-bold text-white text-lg"><MaskedText value={call.contactName} type="name" /></p>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); startEditing(call); }}
+                          className="opacity-0 group-hover/title:opacity-100 p-1 hover:bg-white/10 rounded text-slate-500 hover:text-white transition-all"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
                     <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-1">
                       <Clock className="h-3 w-3" />
                       {formatTimeAgo(call.date)}
@@ -385,10 +444,10 @@ export function CallsPage() {
               </div>
             ))}
             {callHistory.length === 0 && (
-                <div className="py-16 text-center text-slate-500 border border-dashed border-white/10 rounded-3xl bg-slate-900/20">
-                    <Video className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                    <p>Aucun appel récent.</p>
-                </div>
+              <div className="py-16 text-center text-slate-500 border border-dashed border-white/10 rounded-3xl bg-slate-900/20">
+                <Video className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                <p>Aucun appel récent.</p>
+              </div>
             )}
           </div>
         </div>
@@ -399,52 +458,52 @@ export function CallsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsMeetModalOpen(false)} />
           <div className="relative w-full max-w-lg rounded-3xl bg-slate-900 shadow-2xl border border-white/10 p-8 animate-in fade-in zoom-in-95">
-             <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
-                <h3 className="text-xl font-bold text-white">🎥 Préparer l'appel</h3>
-                <button onClick={() => setIsMeetModalOpen(false)} className="rounded-xl p-2 text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
-                    <X className="h-5 w-5"/>
-                </button>
-             </div>
-             
-             <div className="space-y-6">
-                <div className="rounded-2xl bg-blue-500/10 border border-blue-500/20 p-5">
-                    <div className="flex items-start gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-500/30">1</div>
-                        <div className="flex-1">
-                            <p className="font-bold text-white">Ouvrir Google Meet</p>
-                            <p className="text-sm text-slate-400 mt-1">Ouvrez votre salle de réunion dans un nouvel onglet.</p>
-                            <button onClick={openMeetTab} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20">
-                                <ExternalLink className="h-4 w-4" /> Ouvrir Meet
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
+              <h3 className="text-xl font-bold text-white">🎥 Préparer l'appel</h3>
+              <button onClick={() => setIsMeetModalOpen(false)} className="rounded-xl p-2 text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-                <div className="rounded-2xl bg-purple-500/10 border border-purple-500/20 p-5">
-                    <div className="flex items-start gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-500 text-white font-bold text-sm shadow-lg shadow-purple-500/30">2</div>
-                        <div className="flex-1">
-                            <p className="font-bold text-white">Lancer le Cockpit</p>
-                            <p className="text-sm text-slate-400 mt-1">Accédez à votre script, prenez des notes et enregistrez l'écran.</p>
-                            
-                            <div className="mt-4 relative">
-                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                                <input 
-                                    type="text" 
-                                    value={meetLinkInput}
-                                    onChange={(e) => setMeetLinkInput(e.target.value)}
-                                    placeholder="Lien Meet (optionnel)"
-                                    className="w-full rounded-xl border border-white/10 bg-slate-800 py-3 pl-10 pr-4 text-sm text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-slate-600"
-                                />
-                            </div>
-
-                            <button onClick={startCockpit} className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-base font-bold text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]">
-                                <Video className="h-5 w-5" /> 🚀 Lancer le Cockpit
-                            </button>
-                        </div>
-                    </div>
+            <div className="space-y-6">
+              <div className="rounded-2xl bg-blue-500/10 border border-blue-500/20 p-5">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-500/30">1</div>
+                  <div className="flex-1">
+                    <p className="font-bold text-white">Ouvrir Google Meet</p>
+                    <p className="text-sm text-slate-400 mt-1">Ouvrez votre salle de réunion dans un nouvel onglet.</p>
+                    <button onClick={openMeetTab} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20">
+                      <ExternalLink className="h-4 w-4" /> Ouvrir Meet
+                    </button>
+                  </div>
                 </div>
-             </div>
+              </div>
+
+              <div className="rounded-2xl bg-purple-500/10 border border-purple-500/20 p-5">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-500 text-white font-bold text-sm shadow-lg shadow-purple-500/30">2</div>
+                  <div className="flex-1">
+                    <p className="font-bold text-white">Lancer le Cockpit</p>
+                    <p className="text-sm text-slate-400 mt-1">Accédez à votre script, prenez des notes et enregistrez l'écran.</p>
+
+                    <div className="mt-4 relative">
+                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                      <input
+                        type="text"
+                        value={meetLinkInput}
+                        onChange={(e) => setMeetLinkInput(e.target.value)}
+                        placeholder="Lien Meet (optionnel)"
+                        className="w-full rounded-xl border border-white/10 bg-slate-800 py-3 pl-10 pr-4 text-sm text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-slate-600"
+                      />
+                    </div>
+
+                    <button onClick={startCockpit} className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-base font-bold text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]">
+                      <Video className="h-5 w-5" /> 🚀 Lancer le Cockpit
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -454,39 +513,39 @@ export function CallsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsScriptModalOpen(false)} />
           <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-slate-900 p-8 shadow-2xl flex flex-col h-[80vh] animate-in fade-in zoom-in-95">
-            
+
             {/* Header avec Selecteur */}
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
               <div className="flex items-center gap-3 flex-1">
                 <div className="p-2 bg-red-500/10 rounded-xl border border-red-500/20">
-                    <FileText className="h-6 w-6 text-red-500" />
+                  <FileText className="h-6 w-6 text-red-500" />
                 </div>
                 <div className="flex-1">
-                    <label className="text-xs text-slate-500 block mb-1 font-bold uppercase tracking-wider">Script sélectionné</label>
-                    <div className="flex gap-2">
-                        <div className="relative flex-1 max-w-xs">
-                            <select 
-                                value={selectedScriptId} 
-                                onChange={(e) => handleScriptChange(e.target.value)}
-                                className="w-full appearance-none bg-slate-950 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 pr-8 focus:outline-none focus:border-red-500 transition-colors cursor-pointer hover:border-slate-600 font-medium"
-                            >
-                                <option value="new">+ Nouveau Script</option>
-                                {scripts.map(s => (
-                                    <option key={s.id} value={s.id}>{s.title}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                        </div>
-                        {selectedScriptId !== 'new' && (
-                            <button 
-                                onClick={handleDeleteScript}
-                                className="p-2.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors border border-transparent hover:border-red-500/20"
-                                title="Supprimer ce script"
-                            >
-                                <Trash2 className="h-5 w-5" />
-                            </button>
-                        )}
+                  <label className="text-xs text-slate-500 block mb-1 font-bold uppercase tracking-wider">Script sélectionné</label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1 max-w-xs">
+                      <select
+                        value={selectedScriptId}
+                        onChange={(e) => handleScriptChange(e.target.value)}
+                        className="w-full appearance-none bg-slate-950 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 pr-8 focus:outline-none focus:border-red-500 transition-colors cursor-pointer hover:border-slate-600 font-medium"
+                      >
+                        <option value="new">+ Nouveau Script</option>
+                        {scripts.map(s => (
+                          <option key={s.id} value={s.id}>{s.title}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
                     </div>
+                    {selectedScriptId !== 'new' && (
+                      <button
+                        onClick={handleDeleteScript}
+                        className="p-2.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors border border-transparent hover:border-red-500/20"
+                        title="Supprimer ce script"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
               <button onClick={() => setIsScriptModalOpen(false)} className="text-slate-400 hover:text-white self-start sm:self-center bg-slate-800 p-2 rounded-xl hover:bg-slate-700 transition-colors">
@@ -496,21 +555,21 @@ export function CallsPage() {
 
             {/* Corps du script (Titre + Contenu) */}
             <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                <div>
-                    <input 
-                        type="text" 
-                        value={scriptTitle}
-                        onChange={(e) => setScriptTitle(e.target.value)}
-                        placeholder="Titre du script (ex: Cold Call, Closing...)"
-                        className="w-full bg-transparent border-none text-2xl font-bold text-white placeholder-slate-600 focus:outline-none focus:ring-0 px-0"
-                    />
-                </div>
-                <textarea
+              <div>
+                <input
+                  type="text"
+                  value={scriptTitle}
+                  onChange={(e) => setScriptTitle(e.target.value)}
+                  placeholder="Titre du script (ex: Cold Call, Closing...)"
+                  className="w-full bg-transparent border-none text-2xl font-bold text-white placeholder-slate-600 focus:outline-none focus:ring-0 px-0"
+                />
+              </div>
+              <textarea
                 value={scriptContent}
                 onChange={(e) => setScriptContent(e.target.value)}
                 className="flex-1 w-full rounded-2xl border border-white/5 bg-slate-950/50 p-6 text-slate-300 focus:border-red-500/50 focus:outline-none resize-none leading-relaxed custom-scrollbar"
                 placeholder="Rédigez votre script ici..."
-                />
+              />
             </div>
 
             {/* Footer Actions */}
@@ -531,14 +590,14 @@ export function CallsPage() {
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={handleCloseNewCallModal} />
           <div className="relative w-full max-w-lg rounded-3xl bg-slate-900 shadow-2xl border border-white/10 p-8 animate-in fade-in zoom-in-95">
             <h2 className="text-2xl font-bold text-white mb-6">Qui appeler ?</h2>
-            
+
             <div className="flex gap-2 mb-4 p-1 bg-slate-950 rounded-xl border border-slate-800">
               <button onClick={() => setCallType('prospect')} className={cn("flex-1 py-2.5 rounded-lg text-sm font-bold transition-all", callType === 'prospect' ? "bg-slate-800 text-white shadow-lg" : "text-slate-400 hover:text-slate-200")}>Prospect</button>
               <button onClick={() => setCallType('internal')} className={cn("flex-1 py-2.5 rounded-lg text-sm font-bold transition-all", callType === 'internal' ? "bg-slate-800 text-white shadow-lg" : "text-slate-400 hover:text-slate-200")}>Interne</button>
             </div>
-            
-            <input type="text" placeholder="Rechercher..." value={selectedContactSearch} onChange={e => setSelectedContactSearch(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3.5 text-white mb-4 focus:border-emerald-500 focus:outline-none transition-colors placeholder-slate-600"/>
-            
+
+            <input type="text" placeholder="Rechercher..." value={selectedContactSearch} onChange={e => setSelectedContactSearch(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3.5 text-white mb-4 focus:border-emerald-500 focus:outline-none transition-colors placeholder-slate-600" />
+
             <div className="max-h-48 overflow-y-auto space-y-1 mb-6 pr-2 custom-scrollbar">
               {getContactList().map(c => (
                 <button key={(c as any).id} onClick={() => setSelectedContactId((c as any).id)} className={cn("w-full text-left p-3 rounded-xl transition-colors border border-transparent font-medium", selectedContactId === (c as any).id ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "hover:bg-slate-800 text-slate-300")}>
@@ -546,10 +605,10 @@ export function CallsPage() {
                 </button>
               ))}
               {getContactList().length === 0 && (
-                  <p className="text-center text-slate-500 text-sm py-4 italic">Aucun contact trouvé</p>
+                <p className="text-center text-slate-500 text-sm py-4 italic">Aucun contact trouvé</p>
               )}
             </div>
-            
+
             <button onClick={() => prepareCall(selectedContactId, callType)} disabled={!selectedContactId} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-600/20">
               Préparer l'appel
             </button>

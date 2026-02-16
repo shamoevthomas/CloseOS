@@ -671,7 +671,7 @@ export function RendezVous() {
          </div>
          <div className="rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden shadow-xl">
             <table className="w-full">
-               <thead className="bg-slate-800/50"><tr className="border-b border-slate-800 text-xs font-bold uppercase tracking-widest text-slate-500 text-left"><th className="px-6 py-4">Date & Heure</th><th className="px-6 py-4">Prospect</th><th className="px-6 py-4">Lieu</th><th className="px-6 py-4">Statut</th><th className="px-6 py-4 text-right">Détails</th></tr></thead>
+               <thead className="bg-slate-800/50"><tr className="border-b border-slate-800 text-xs font-bold uppercase tracking-widest text-slate-500 text-left"><th className="px-6 py-4">Date & Heure</th><th className="px-6 py-4">Contact</th><th className="px-6 py-4">Lieu</th><th className="px-6 py-4">Statut</th><th className="px-6 py-4 text-right">Détails</th></tr></thead>
                <tbody className="divide-y divide-slate-800">
                   {data.length === 0 ? (<tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium italic">{emptyText}</td></tr>) : (
                      data.map((m: any) => (

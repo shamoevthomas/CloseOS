@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
     Monitor, PhoneOff, ChevronDown, ExternalLink, FileText,
-    Briefcase, BookOpen, ScrollText, Tag, Mic, Video, Settings
+    Briefcase, BookOpen, ScrollText, Tag, Mic, Video, Settings,
+    MessageSquare // Ajout pour le chat/notes si besoin
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
