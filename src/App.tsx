@@ -196,6 +196,8 @@ function AuthenticatedApp() {
   )
 }
 
+import { Analytics } from "@vercel/analytics/react"
+
 function App() {
   return (
     <BrowserRouter>
@@ -209,6 +211,7 @@ function App() {
                     <MessagesProvider>
                       <NotificationsProvider>
                         <AuthenticatedApp />
+                        <Analytics />
                       </NotificationsProvider>
                     </MessagesProvider>
                   </CallsProvider>
