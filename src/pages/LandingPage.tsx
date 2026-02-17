@@ -552,7 +552,7 @@ export function LandingPage() {
                   </div>
                 </div>
 
-                <div className="mt-8 pt-8 border-t border-blue-500/20 text-center relative overflow-hidden">
+                <div className="mt-8 pt-8 border-t border-blue-500/20 text-center relative">
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-blue-500/50 blur-[2px]"></div>
 
                   <div className="mb-6 group relative cursor-help">
