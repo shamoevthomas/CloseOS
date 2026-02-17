@@ -229,10 +229,10 @@ export const CheckoutStarter = () => {
 
               <div className="space-y-4 mb-8">
                 {[
-                  "7 jours d'essai gratuit",
-                  "Pipeline de vente illimité",
-                  "Agenda & Booking intégré",
-                  "Facturation automatisée",
+                  "Pipeline Visuel illimité",
+                  "Agenda & Booking (Liens de rdv)",
+                  "Facturation (Générateur PDF)",
+                  "KPIs (CA, Conversion, Ventes)",
                   "Support standard email"
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 text-slate-300 text-sm font-medium">

@@ -233,10 +233,11 @@ export const CheckoutForm = () => {
 
               <div className="space-y-4 mb-8">
                 {[
-                  "7 jours d'essai gratuit au lancement",
-                  "Accès complet illimité (CRM, Agenda)",
-                  "Badge Founder exclusif",
-                  "Support prioritaire 24/7"
+                  "Tout inclus (Starter +)",
+                  "KPI Avancés (Evolution, Objectifs)",
+                  "Call Room & Scripts Interactifs",
+                  "Automatisations (Factures & CRM)",
+                  "Badges Founder & Support Prioritaire"
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 text-slate-300 text-sm font-medium">
                     <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />

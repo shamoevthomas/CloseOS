@@ -27,7 +27,7 @@ import {
   PlusCircle,
   Sheet,
   Clock,
-  MinusCircle
+
 } from 'lucide-react'
 
 function FAQItem({ question, children }: { question: string, children: React.ReactNode }) {
@@ -709,19 +709,19 @@ export function LandingPage() {
                   <ul className="space-y-4 mb-8 flex-1">
                     <li className="flex gap-3 text-sm text-slate-300">
                       <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                      <span>Pipeline de vente illimité</span>
+                      <span><strong>CRM & Pipeline</strong> illimité</span>
                     </li>
                     <li className="flex gap-3 text-sm text-slate-300">
                       <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                      <span>Agenda & Booking intégré</span>
+                      <span><strong>Agenda & Booking</strong> (Liens de rdv)</span>
                     </li>
                     <li className="flex gap-3 text-sm text-slate-300">
                       <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                      <span>Facturation automatisée</span>
+                      <span><strong>Facturation</strong> (Générateur PDF)</span>
                     </li>
                     <li className="flex gap-3 text-sm text-slate-300">
                       <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                      <span>Support standard par email</span>
+                      <span><strong>KPIs Globaux</strong> (CA, Ventes)</span>
                     </li>
                   </ul>
                   <Link
@@ -761,19 +761,31 @@ export function LandingPage() {
                   <ul className="space-y-4 mb-4 flex-1">
                     <li className="flex gap-3 text-sm text-white font-medium">
                       <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span>Toutes les fonctionnalités Starter</span>
+                      <span>Tout ce qui est inclus dans Starter</span>
                     </li>
                     <li className="flex gap-3 text-sm text-white font-medium">
                       <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span>Synchronisation CRM (HubSpot, etc.)</span>
+                      <span><strong>KPI Avancés</strong> (Evolution, Objectifs)</span>
                     </li>
                     <li className="flex gap-3 text-sm text-white font-medium">
                       <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span>Accès prioritaire aux futures IA</span>
+                      <span><strong>Call Room</strong> (Scripts & Notes)</span>
                     </li>
                     <li className="flex gap-3 text-sm text-white font-medium">
                       <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span>Badge "Membre Fondateur"</span>
+                      <span><strong>Envoi Factures Automatique</strong></span>
+                    </li>
+                    <li className="flex gap-3 text-sm text-white font-medium">
+                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                      <span><strong>Automatisations</strong> (Sync CRM, etc.)</span>
+                    </li>
+                    <li className="flex gap-3 text-sm text-white font-medium">
+                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                      <span><strong>Enregistrement</strong> Vidéo/Audio</span>
+                    </li>
+                    <li className="flex gap-3 text-sm text-white font-medium">
+                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                      <span>Badge "Founder" & Support Prio</span>
                     </li>
                   </ul>
 
