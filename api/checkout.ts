@@ -43,9 +43,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}&plan=${plan || 'founder'}`,
 
-        subscription_data: {
-          trial_period_days: 7,
-        },
+        subscription_data:
+          // MODE LANCEMENT : Si on est avant le 1er Mars, l'essai va jusqu'au 8 Mars
+          new Date() < new Date('2026-03-01T00:00:00Z')
+            ? {
+              // Essai étendu jusqu'au 8 mars (7 jours après le lancement)
+              trial_end: Math.floor(new Date('2026-03-08T00:00:00Z').getTime() / 1000),
+            }
+            : {
+              // Sinon essai standard 7 jours
+              trial_period_days: 7,
+            },
       });
 
       res.status(200).json({ clientSecret: session.client_secret });
