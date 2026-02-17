@@ -331,6 +331,9 @@ export function LandingPage() {
                 <h3 className="text-2xl font-bold text-white mb-3">Sync CRM (HubSpot, Pipedrive, iClosed)</h3>
                 <p className="text-slate-400 mb-6 max-w-lg leading-relaxed">
                   Synchronisation native avec iClosed, HubSpot et Pipedrive. Vos leads et vos deals circulent en temps réel. Oubliez la double saisie manuelle et automatisez 100% de votre suivi.
+                  <span className="block mt-2 text-xs text-slate-500 italic">
+                    (PS: pour iClosed, voir la FAQ)
+                  </span>
                 </p>
               </div>
             </div>
@@ -1019,6 +1022,15 @@ export function LandingPage() {
               </p>
               <p className="mt-2">
                 En prenant votre accès aujourd'hui, vous <strong className="text-white">bloquez ce prix à vie</strong>. Même quand l'abonnement passera à 69€/mois pour les futurs clients, vous continuerez de payer 29€.
+              </p>
+            </FAQItem>
+
+            <FAQItem question="Est-ce que iClosed est intégré ?">
+              <p>
+                <strong className="text-white">Partiellement.</strong> Contrairement aux standards du marché (HubSpot, Pipedrive), iClosed ne dispose pas d'une API publique ouverte permettant une synchronisation totale.
+              </p>
+              <p className="mt-2">
+                <strong className="text-white">Concrètement :</strong> CloseOS reçoit bien vos nouveaux leads et vos ventes venant d'iClosed (via Webhook), mais ne peut pas aller modifier des informations <em>dans</em> iClosed. La synchronisation se fait donc à sens unique (iClosed vers CloseOS).
               </p>
             </FAQItem>
           </div>
