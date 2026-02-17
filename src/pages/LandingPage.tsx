@@ -26,8 +26,38 @@ import {
   Building2,
   PlusCircle,
   Sheet,
-  Clock
+  Clock,
+  MinusCircle
 } from 'lucide-react'
+
+function FAQItem({ question, children }: { question: string, children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="border-b border-white/5 last:border-0">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between gap-4 py-4 text-left hover:text-white transition-colors group"
+      >
+        <span className="font-bold text-lg text-slate-200 group-hover:text-white transition-colors">
+          {question}
+        </span>
+        <div className={`p-2 rounded-full border border-white/10 bg-white/5 transition-all duration-300 ${isOpen ? 'rotate-180 bg-blue-600 border-blue-500' : 'group-hover:bg-white/10'}`}>
+          <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-white transition-colors" />
+        </div>
+      </button>
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100 pb-6' : 'grid-rows-[0fr] opacity-0'}`}
+      >
+        <div className="overflow-hidden">
+          <div className="text-slate-400 leading-relaxed text-sm pr-12">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function LandingPage() {
   const [pricingTab, setPricingTab] = useState<'closer' | 'agency' | 'enterprise'>('closer');
@@ -904,77 +934,41 @@ export function LandingPage() {
           </div>
 
           <div className="space-y-4">
-            {/* FAQ ITEM 1 */}
-            <details className="group [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer items-center justify-between gap-1.5 rounded-lg bg-slate-900 p-6 text-white border border-slate-800 hover:border-blue-500/30 transition-all">
-                <h3 className="font-bold">Est-ce que je peux connecter Calendly ?</h3>
-                <div className="white-space-nowrap">
-                  <ChevronRight className="h-5 w-5 transition duration-300 group-open:rotate-90" />
-                </div>
-              </summary>
-              <div className="mt-4 px-6 text-slate-400 leading-relaxed text-sm">
-                <p>
-                  <strong className="text-white">Non, et c'est un choix assumé.</strong> Calendly impose un abonnement payant pour permettre les intégrations, une pratique que nous trouvons injuste.
-                  Pour vous offrir la meilleure expérience sans surcoût, nous avons intégré <strong className="text-white">Cal.com</strong> (la référence Open Source).
-                </p>
-                <p className="mt-2">
-                  Résultat : vous profitez d'un système de booking ultra-performant, synchronisé à votre agenda, sans avoir à payer un abonnement "Pro" à Calendly juste pour qu'il accepte de parler à votre CRM.
-                </p>
-              </div>
-            </details>
+            <FAQItem question="Est-ce que je peux connecter Calendly ?">
+              <p>
+                <strong className="text-white">Non, et c'est un choix assumé.</strong> Calendly impose un abonnement payant pour permettre les intégrations, une pratique que nous trouvons injuste.
+                Pour vous offrir la meilleure expérience sans surcoût, nous avons intégré <strong className="text-white">Cal.com</strong> (la référence Open Source).
+              </p>
+              <p className="mt-2">
+                Résultat : vous profitez d'un système de booking ultra-performant, synchronisé à votre agenda, sans avoir à payer un abonnement "Pro" à Calendly juste pour qu'il accepte de parler à votre CRM.
+              </p>
+            </FAQItem>
 
-            {/* FAQ ITEM 2 */}
-            <details className="group [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer items-center justify-between gap-1.5 rounded-lg bg-slate-900 p-6 text-white border border-slate-800 hover:border-emerald-500/30 transition-all">
-                <h3 className="font-bold">Comment CloseOS s'engage pour l'environnement ?</h3>
-                <div className="white-space-nowrap">
-                  <ChevronRight className="h-5 w-5 transition duration-300 group-open:rotate-90" />
-                </div>
-              </summary>
-              <div className="mt-4 px-6 text-slate-400 leading-relaxed text-sm">
-                <p>Nous prônons la <strong className="text-emerald-400">"Performance Responsable"</strong>. Concrètement :</p>
-                <ul className="list-disc pl-5 mt-2 space-y-1">
-                  <li><strong className="text-white">Sobriété numérique :</strong> En remplaçant 10 outils par 1 seul, nous réduisons la consommation d'énergie serveur nécessaire à votre activité.</li>
-                  <li><strong className="text-white">Action financière :</strong> Nous reversons automatiquement <strong className="text-white">1,5% de votre abonnement</strong> via <em>Stripe Climate</em> pour financer des technologies de pointe d'élimination du CO2. Closer avec nous, c'est aussi contribuer.</li>
-                </ul>
-              </div>
-            </details>
+            <FAQItem question="Comment CloseOS s'engage pour l'environnement ?">
+              <p>Nous prônons la <strong className="text-emerald-400">"Performance Responsable"</strong>. Concrètement :</p>
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li><strong className="text-white">Sobriété numérique :</strong> En remplaçant 10 outils par 1 seul, nous réduisons la consommation d'énergie serveur nécessaire à votre activité.</li>
+                <li><strong className="text-white">Action financière :</strong> Nous reversons automatiquement <strong className="text-white">1,5% de votre abonnement</strong> via <em>Stripe Climate</em> pour financer des technologies de pointe d'élimination du CO2. Closer avec nous, c'est aussi contribuer.</li>
+              </ul>
+            </FAQItem>
 
-            {/* FAQ ITEM 3 */}
-            <details className="group [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer items-center justify-between gap-1.5 rounded-lg bg-slate-900 p-6 text-white border border-slate-800 hover:border-blue-500/30 transition-all">
-                <h3 className="font-bold">Pourquoi payer CloseOS alors que je peux le faire moi-même sur Excel/Notion ?</h3>
-                <div className="white-space-nowrap">
-                  <ChevronRight className="h-5 w-5 transition duration-300 group-open:rotate-90" />
-                </div>
-              </summary>
-              <div className="mt-4 px-6 text-slate-400 leading-relaxed text-sm">
-                <p>
-                  Parce que le "bricolage" vous coûte des ventes. Excel n'envoie pas de rappels automatiques, Notion ne génère pas vos liens de visio et ne synchronise pas vos appels.
-                </p>
-                <p className="mt-2">
-                  CloseOS n'est pas un simple tableau de note, c'est un <strong className="text-white">système actif</strong> qui élimine 80% de votre administratif. Le temps que vous ne passez plus à configurer vos outils est du temps réinvesti pour signer des contrats.
-                </p>
-              </div>
-            </details>
+            <FAQItem question="Pourquoi payer CloseOS alors que je peux le faire moi-même sur Excel/Notion ?">
+              <p>
+                Parce que le "bricolage" vous coûte des ventes. Excel n'envoie pas de rappels automatiques, Notion ne génère pas vos liens de visio et ne synchronise pas vos appels.
+              </p>
+              <p className="mt-2">
+                CloseOS n'est pas un simple tableau de note, c'est un <strong className="text-white">système actif</strong> qui élimine 80% de votre administratif. Le temps que vous ne passez plus à configurer vos outils est du temps réinvesti pour signer des contrats.
+              </p>
+            </FAQItem>
 
-            {/* FAQ ITEM 4 */}
-            <details className="group [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer items-center justify-between gap-1.5 rounded-lg bg-slate-900 p-6 text-white border border-slate-800 hover:border-purple-500/30 transition-all">
-                <h3 className="font-bold">Pourquoi l'offre Founder est-elle à 29€ au lieu de 69€ ?</h3>
-                <div className="white-space-nowrap">
-                  <ChevronRight className="h-5 w-5 transition duration-300 group-open:rotate-90" />
-                </div>
-              </summary>
-              <div className="mt-4 px-6 text-slate-400 leading-relaxed text-sm">
-                <p>
-                  <strong className="text-white">C'est une offre de lancement limitée.</strong> Nous récompensons nos premiers utilisateurs ("Early Adopters") avec ce tarif préférentiel.
-                </p>
-                <p className="mt-2">
-                  En prenant votre accès aujourd'hui, vous <strong className="text-white">bloquez ce prix à vie</strong>. Même quand l'abonnement passera à 69€/mois pour les futurs clients, vous continuerez de payer 29€.
-                </p>
-              </div>
-            </details>
+            <FAQItem question="Pourquoi l'offre Founder est-elle à 29€ au lieu de 69€ ?">
+              <p>
+                <strong className="text-white">C'est une offre de lancement limitée.</strong> Nous récompensons nos premiers utilisateurs ("Early Adopters") avec ce tarif préférentiel.
+              </p>
+              <p className="mt-2">
+                En prenant votre accès aujourd'hui, vous <strong className="text-white">bloquez ce prix à vie</strong>. Même quand l'abonnement passera à 69€/mois pour les futurs clients, vous continuerez de payer 29€.
+              </p>
+            </FAQItem>
           </div>
         </div>
       </section>
