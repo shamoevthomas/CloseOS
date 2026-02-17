@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Cal, { getCalApi } from "@calcom/embed-react";
+import { PricingComparisonTable } from '../components/PricingComparisonTable';
 import {
   ArrowRight,
   CheckCircle2,
@@ -907,6 +908,9 @@ export function LandingPage() {
 
         </div>
       </section>
+
+      {/* COMPARISON TABLE */}
+      {pricingTab === 'closer' && <PricingComparisonTable />}
 
       {/* --- SECTION DEMO / CAL.COM --- */}
       <section id="demo" className="py-32 relative bg-slate-900/20 border-t border-white/5">
