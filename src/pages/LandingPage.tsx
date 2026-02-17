@@ -220,13 +220,13 @@ export function LandingPage() {
             Synchronisation native avec vos outils préférés
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Cal.com</div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Hubspot</div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Pipedrive</div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Cal.com</div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
           </div>
         </div>
       </section>
