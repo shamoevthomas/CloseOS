@@ -689,6 +689,16 @@ export function LandingPage() {
                 </span>
               </span>
             </div>
+            {/* BOUTON COMPARATIF (DÉPLACÉ ICI) */}
+            {pricingTab === 'closer' && (
+              <button
+                onClick={() => setIsComparisonOpen(true)}
+                className="mt-8 px-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition-all border border-slate-700 hover:border-slate-600 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200"
+              >
+                <Sheet className="h-5 w-5" />
+                Voir le comparatif détaillé des offres
+              </button>
+            )}
           </div>
 
           {/* CONTENU DES ONGLETS */}
@@ -909,14 +919,6 @@ export function LandingPage() {
                 </div>
               </div>
 
-              {/* Bouton Comparatif */}
-              <button
-                onClick={() => setIsComparisonOpen(true)}
-                className="px-5 py-3 rounded-2xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                <Sheet className="h-4 w-4" />
-                Voir le comparatif détaillé
-              </button>
             </div>
           )}
 
