@@ -19,7 +19,7 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 const stripe = new Stripe(stripeSecretKey, {
-    apiVersion: '2023-10-16',
+    apiVersion: '2025-01-27.acacia' as any,
     httpClient: Stripe.createFetchHttpClient(), // Required for Edge
 });
 
@@ -104,50 +104,128 @@ export default async function handler(req: Request) {
     }
 
     // Handle the event
-    if (event.type === 'customer.subscription.updated') {
-        const subscription = event.data.object as Stripe.Subscription;
+    switch (event.type) {
 
-        // Check if cancellation was just scheduled
-        // prev attribute might be in event.data.previous_attributes?
-        // Stripe sends `previous_attributes` in the event wrapper top level, but `constructEvent` returns the event object.
-        // Actually event.data.previous_attributes is where we check.
+        // 1. PAIEMENT RÉUSSI (Première fois)
+        case 'checkout.session.completed': {
+            const session = event.data.object as Stripe.Checkout.Session;
+            console.log(`💰 Checkout completed for session ${session.id}`);
 
-        // Wait, `constructEvent` returns a typed event. 
-        // We need to cast or access dynamic properties for previous_attributes? 
-        // In the Stripe Node lib, `event.data.previous_attributes` exists.
+            // On récupère le customerId et l'email
+            const customerId = session.customer as string;
+            const customerEmail = session.customer_details?.email;
+            const subscriptionId = session.subscription as string;
 
-        const previousAttributes = (event.data as any).previous_attributes;
-        const wasNotCanceled = previousAttributes?.cancel_at_period_end === false; // It was false before
-        const isNowCanceled = subscription.cancel_at_period_end === true;       // It is true now
+            if (!customerEmail) {
+                console.error('❌ No email found in session');
+                break;
+            }
 
-        if (wasNotCanceled && isNowCanceled) {
-            console.log(`Subscription ${subscription.id} marked for cancellation.`);
+            // On cherche le user Supabase avec cet email
+            // (Note: s'il s'est inscrit AVANT de payer, on le trouve. S'il s'inscrit APRÈS, on ne le trouve pas encore)
+            // C'est là que la page /return joue son rôle pour forcer l'inscription avec le même email.
+            // On peut tenter de créer un "prospect" ou juste attendre qu'il s'inscrive.
+            // ICI: On va tenter de mettre à jour le profil existant.
 
-            // Retrieve User from Stripe Customer ID
-            const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
+            // On cherche dans auth.users (via admin)
+            // Malheureusement on ne peut pas search auth.users id by email facilement sans une fonction RPC secure ou admin.
+            // MAIS on a accès à supabaseAdmin.auth.admin.listUsers() ou nous pouvons supposer qu'il est dans profiles si inscrit.
 
-            // Query Supabase for this customer
-            const { data: profile, error: profileError } = await supabaseAdmin
+            // On va essayer de trouver le profil via l'email (si on a stocké l'email dans profiles, ce qu'on devrait faire)
+            const { data: profile } = await supabaseAdmin
                 .from('profiles')
-                .select('id, full_name, email') // Assuming email is in profiles, otherwise needed from auth
-                .eq('stripe_customer_id', customerId)
+                .select('id')
+                .eq('email', customerEmail)
                 .single();
 
             if (profile) {
-                // Determine email
-                let emailToUse = profile.email;
-                if (!emailToUse) {
-                    const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(profile.id);
-                    emailToUse = user?.email;
-                }
-
-                if (emailToUse) {
-                    await sendRetentionEmail(emailToUse, profile.id, profile.full_name || 'utilisateur');
-                    console.log(`Retention email sent to ${emailToUse}`);
-                }
+                console.log(`✅ User found: ${profile.id}. Linking Stripe Customer...`);
+                await supabaseAdmin
+                    .from('profiles')
+                    .update({
+                        stripe_customer_id: customerId,
+                        stripe_subscription_id: subscriptionId,
+                        subscription_status: 'active', // ou 'trialing' si période d'essai
+                        plan: 'founder', // Pour l'instant on force founder, ou on lit les metadata
+                    })
+                    .eq('id', profile.id);
             } else {
-                console.error('Profile not found for stripe customer:', customerId);
+                console.log(`⚠️ User not found for email ${customerEmail}. They might register later.`);
+                // Optionnel : Stocker dans une table 'pending_subscriptions' si on veut être très robuste.
+                // Pour le MVP : On compte sur le fait que l'utilisateur va s'inscrire avec cet email.
+                // Au moment de l'inscription, on pourrait checker Stripe.
             }
+            break;
+        }
+
+        // 2. PAIEMENT RÉCURRENT RÉUSSI
+        case 'invoice.payment_succeeded': {
+            const invoice = event.data.object as any;
+            const subscriptionId = invoice.subscription as string;
+            const customerId = invoice.customer as string;
+
+            console.log(`💸 Payment succeeded for invoice ${invoice.id}`);
+
+            await supabaseAdmin
+                .from('profiles')
+                .update({
+                    subscription_status: 'active',
+                    current_period_end: new Date((invoice.lines.data[0].period.end * 1000)).toISOString()
+                })
+                .eq('stripe_customer_id', customerId);
+            break;
+        }
+
+        // 3. MISE À JOUR ABONNEMENT (Annulation, Pause, Changement de plan...)
+        case 'customer.subscription.updated': {
+            const subscription = event.data.object as any;
+            const customerId = subscription.customer as string;
+
+            console.log(`🔄 Subscription updated: ${subscription.status}`);
+
+            await supabaseAdmin
+                .from('profiles')
+                .update({
+                    subscription_status: subscription.status,
+                    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                    stripe_subscription_id: subscription.id
+                })
+                .eq('stripe_customer_id', customerId);
+
+            // Logique de Rétention (Email si annulation demandée)
+            const previousAttributes = (event.data as any).previous_attributes;
+            const wasNotCanceled = previousAttributes?.cancel_at_period_end === false;
+            const isNowCanceled = subscription.cancel_at_period_end === true;
+
+            if (wasNotCanceled && isNowCanceled) {
+                const { data: profile } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id, full_name, email')
+                    .eq('stripe_customer_id', customerId)
+                    .single();
+
+                if (profile?.email) {
+                    await sendRetentionEmail(profile.email, profile.id, profile.full_name || 'utilisateur');
+                }
+            }
+            break;
+        }
+
+        // 4. ABONNEMENT SUPPRIMÉ (Fin définitive)
+        case 'customer.subscription.deleted': {
+            const subscription = event.data.object as Stripe.Subscription;
+            const customerId = subscription.customer as string;
+
+            console.log(`🚫 Subscription deleted for customer ${customerId}`);
+
+            await supabaseAdmin
+                .from('profiles')
+                .update({
+                    subscription_status: 'canceled',
+                    plan: null // On retire le plan ? Ou on laisse 'founder' mais en canceled ?
+                })
+                .eq('stripe_customer_id', customerId);
+            break;
         }
     }
 

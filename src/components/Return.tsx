@@ -7,14 +7,14 @@ export function Return() {
   const [status, setStatus] = useState<string | null>(null);
   const [customerEmail, setCustomerEmail] = useState('');
   const [loadingStripe, setLoadingStripe] = useState(true);
-  
+
   // 👇 On récupère le paramètre "plan" de l'URL (envoyé par Stripe)
   const [searchParams] = useSearchParams();
-  const plan = searchParams.get('plan'); 
+  const plan = searchParams.get('plan');
   const isStarter = plan === 'starter'; // Ajout de la variable helper
 
   // États pour l'inscription
-  const { register, loginWithGoogle } = useAuth();
+  const { register, loginWithGoogle, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'password' | 'google'>('password');
   const [name, setName] = useState('');
@@ -24,13 +24,13 @@ export function Return() {
 
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
-    
+
     // 👇👇👇 LA PORTE DÉROBÉE DU FONDATEUR 👇👇👇
     if (searchParams.get('admin_bypass') === 'true') {
       setStatus('complete');
-      setCustomerEmail('admin@closeos.fr'); 
+      setCustomerEmail('admin@closeos.fr');
       setLoadingStripe(false);
-      return; 
+      return;
     }
     // 👆👆👆 FIN DE LA PORTE DÉROBÉE 👆👆👆
 
@@ -50,14 +50,14 @@ export function Return() {
 
   // 👇 FONCTION D'ENVOI D'EMAIL (BREVO) AJOUTÉE ICI
   const sendWelcomeEmail = async (email: string, userName: string) => {
-    
-    const subject = isStarter 
-      ? "Bienvenue sur CloseOS Starter 🚀" 
+
+    const subject = isStarter
+      ? "Bienvenue sur CloseOS Starter 🚀"
       : "Bienvenue dans l'Élite CloseOS 💎";
 
     const title = isStarter ? "Pack Starter Activé" : "Membre Founder Confirmé";
-    
-    const subtext = isStarter 
+
+    const subtext = isStarter
       ? "Votre période d'essai de 7 jours est réservée. Préparez-vous à closer."
       : "Vous avez sécurisé votre accès à vie. Vous faites partie des premiers.";
 
@@ -98,7 +98,7 @@ export function Return() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sender: { name: "Thomas de CloseOS", email: "support@closeos.fr" }, 
+          sender: { name: "Thomas de CloseOS", email: "support@closeos.fr" },
           to: [{ email: email, name: userName }],
           subject: subject,
           htmlContent: htmlContent
@@ -117,14 +117,14 @@ export function Return() {
     setAuthLoading(true);
 
     try {
-      const result = await register({ 
-        email: customerEmail, 
+      const result = await register({
+        email: customerEmail,
         password,
         options: {
-          data: { 
+          data: {
             full_name: name,
             // 👇 LOGIQUE : Si le plan est 'starter', il n'est pas founder
-            is_founder: plan !== 'starter' 
+            is_founder: plan !== 'starter'
           }
         }
       });
@@ -133,6 +133,24 @@ export function Return() {
         setError(result.error.message);
         setAuthLoading(false);
       } else {
+        // 👇 SYNC FORCÉE DE L'ABONNEMENT (pour éviter d'attendre le webhook)
+        if (result.data?.user) {
+          try {
+            await fetch('/api/sync-subscription', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: result.data.user.id,
+                email: customerEmail
+              })
+            });
+            // 👇 UPDATE STATE AUTH
+            await refreshProfile();
+          } catch (syncErr) {
+            console.error("Erreur sync abo", syncErr);
+          }
+        }
+
         // 👇 ENVOI DE L'EMAIL AJOUTÉ ICI
         await sendWelcomeEmail(customerEmail, name);
 
@@ -180,36 +198,34 @@ export function Return() {
   return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4 font-sans selection:bg-blue-500/30">
       <div className="w-full max-w-lg bg-[#0B1121] border border-emerald-500/20 rounded-3xl p-8 shadow-2xl shadow-emerald-900/10 animate-in fade-in zoom-in duration-500">
-        
+
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center p-3 bg-emerald-500/10 rounded-full mb-4 ring-1 ring-emerald-500/20 shadow-lg shadow-emerald-500/10">
             <CheckCircle2 className="w-10 h-10 text-emerald-500" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Paiement réussi !</h1>
           <p className="text-slate-400">
-             {/* Texte dynamique selon le plan */}
-             {plan === 'starter' ? "Bienvenue membre Starter." : "Bienvenue dans l'Élite."} Finalisez votre compte pour accéder à votre espace.
+            {/* Texte dynamique selon le plan */}
+            {plan === 'starter' ? "Bienvenue membre Starter." : "Bienvenue dans l'Élite."} Finalisez votre compte pour accéder à votre espace.
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl mb-6">
           <button
             onClick={() => setActiveTab('password')}
-            className={`py-2.5 px-4 rounded-lg text-sm font-bold transition-all ${
-              activeTab === 'password'
-                ? 'bg-slate-800 text-white shadow-lg border border-slate-700'
-                : 'text-slate-500 hover:text-slate-300'
-            }`}
+            className={`py-2.5 px-4 rounded-lg text-sm font-bold transition-all ${activeTab === 'password'
+              ? 'bg-slate-800 text-white shadow-lg border border-slate-700'
+              : 'text-slate-500 hover:text-slate-300'
+              }`}
           >
             Mot de passe
           </button>
           <button
             onClick={() => setActiveTab('google')}
-            className={`py-2.5 px-4 rounded-lg text-sm font-bold transition-all ${
-              activeTab === 'google'
-                ? 'bg-slate-800 text-white shadow-lg border border-slate-700'
-                : 'text-slate-500 hover:text-slate-300'
-            }`}
+            className={`py-2.5 px-4 rounded-lg text-sm font-bold transition-all ${activeTab === 'google'
+              ? 'bg-slate-800 text-white shadow-lg border border-slate-700'
+              : 'text-slate-500 hover:text-slate-300'
+              }`}
           >
             Google
           </button>
@@ -289,7 +305,7 @@ export function Return() {
               <br />
               <span className="text-xs text-slate-500">(L'email doit correspondre à celui utilisé pour le paiement)</span>
             </p>
-            
+
             <button
               onClick={handleGoogleLogin}
               disabled={authLoading}

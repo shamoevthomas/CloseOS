@@ -51,7 +51,7 @@ import { SubscriptionRetention } from './pages/SubscriptionRetention'
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth()
+  const { user, loading, isFounder } = useAuth()
 
   if (loading) {
     return (
@@ -63,6 +63,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/login" replace />
+  }
+
+  // 👇 VÉRIFICATION ABONNEMENT
+  // Si l'utilisateur n'est pas "founder" (ni admin), il est redirigé vers le paiement.
+  if (!isFounder) {
+    return <Navigate to="/checkout" replace />
   }
 
   return <>{children}</>
@@ -128,7 +134,16 @@ function AuthenticatedApp() {
         <Route path="/checkout" element={<CheckoutForm />} />
         <Route path="/checkout-starter" element={<CheckoutStarter />} />
         <Route path="/return" element={<Return />} />
-        <Route path="/welcome-founder" element={<WelcomeFounder />} />
+        <Route path="/return" element={<Return />} />
+        <Route
+          path="/welcome-founder"
+          element={
+            <ProtectedRoute>
+              <WelcomeFounder />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/confirm-email-change" element={<ConfirmEmailUpdate />} />
         <Route path="/confirm-email-change" element={<ConfirmEmailUpdate />} />
         <Route path="/retention" element={<SubscriptionRetention />} />
 
