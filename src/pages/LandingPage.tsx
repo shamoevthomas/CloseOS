@@ -70,6 +70,7 @@ export function LandingPage() {
             <a href="#comparison" className="hover:text-white transition-colors">Comparatif</a>
             <a href="#pricing" className="text-white font-semibold transition-colors">Tarifs</a>
             <a href="#demo" className="hover:text-white transition-colors">Démo</a>
+            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </div>
           <div className="flex items-center gap-4">
             <Link
@@ -891,6 +892,90 @@ export function LandingPage() {
           <p className="mt-8 text-sm text-slate-500">
             Garanti 0% pression commerciale. 100% valeur ajoutée.
           </p>
+        </div>
+      </section>
+
+      {/* --- FAQ SECTION --- */}
+      <section id="faq" className="py-24 bg-slate-950 relative border-t border-white/5">
+        <div className="mx-auto max-w-3xl px-6 relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">Questions Fréquentes</h2>
+            <p className="text-slate-400 mt-4">Tout ce que vous devez savoir avant de commencer.</p>
+          </div>
+
+          <div className="space-y-4">
+            {/* FAQ ITEM 1 */}
+            <details className="group [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer items-center justify-between gap-1.5 rounded-lg bg-slate-900 p-6 text-white border border-slate-800 hover:border-blue-500/30 transition-all">
+                <h3 className="font-bold">Est-ce que je peux connecter Calendly ?</h3>
+                <div className="white-space-nowrap">
+                  <ChevronRight className="h-5 w-5 transition duration-300 group-open:rotate-90" />
+                </div>
+              </summary>
+              <div className="mt-4 px-6 text-slate-400 leading-relaxed text-sm">
+                <p>
+                  <strong className="text-white">Non, et c'est un choix assumé.</strong> Calendly impose un abonnement payant pour permettre les intégrations, une pratique que nous trouvons injuste.
+                  Pour vous offrir la meilleure expérience sans surcoût, nous avons intégré <strong className="text-white">Cal.com</strong> (la référence Open Source).
+                </p>
+                <p className="mt-2">
+                  Résultat : vous profitez d'un système de booking ultra-performant, synchronisé à votre agenda, sans avoir à payer un abonnement "Pro" à Calendly juste pour qu'il accepte de parler à votre CRM.
+                </p>
+              </div>
+            </details>
+
+            {/* FAQ ITEM 2 */}
+            <details className="group [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer items-center justify-between gap-1.5 rounded-lg bg-slate-900 p-6 text-white border border-slate-800 hover:border-emerald-500/30 transition-all">
+                <h3 className="font-bold">Comment CloseOS s'engage pour l'environnement ?</h3>
+                <div className="white-space-nowrap">
+                  <ChevronRight className="h-5 w-5 transition duration-300 group-open:rotate-90" />
+                </div>
+              </summary>
+              <div className="mt-4 px-6 text-slate-400 leading-relaxed text-sm">
+                <p>Nous prônons la <strong className="text-emerald-400">"Performance Responsable"</strong>. Concrètement :</p>
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                  <li><strong className="text-white">Sobriété numérique :</strong> En remplaçant 10 outils par 1 seul, nous réduisons la consommation d'énergie serveur nécessaire à votre activité.</li>
+                  <li><strong className="text-white">Action financière :</strong> Nous reversons automatiquement <strong className="text-white">1,5% de votre abonnement</strong> via <em>Stripe Climate</em> pour financer des technologies de pointe d'élimination du CO2. Closer avec nous, c'est aussi contribuer.</li>
+                </ul>
+              </div>
+            </details>
+
+            {/* FAQ ITEM 3 */}
+            <details className="group [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer items-center justify-between gap-1.5 rounded-lg bg-slate-900 p-6 text-white border border-slate-800 hover:border-blue-500/30 transition-all">
+                <h3 className="font-bold">Pourquoi payer CloseOS alors que je peux le faire moi-même sur Excel/Notion ?</h3>
+                <div className="white-space-nowrap">
+                  <ChevronRight className="h-5 w-5 transition duration-300 group-open:rotate-90" />
+                </div>
+              </summary>
+              <div className="mt-4 px-6 text-slate-400 leading-relaxed text-sm">
+                <p>
+                  Parce que le "bricolage" vous coûte des ventes. Excel n'envoie pas de rappels automatiques, Notion ne génère pas vos liens de visio et ne synchronise pas vos appels.
+                </p>
+                <p className="mt-2">
+                  CloseOS n'est pas un simple tableau de note, c'est un <strong className="text-white">système actif</strong> qui élimine 80% de votre administratif. Le temps que vous ne passez plus à configurer vos outils est du temps réinvesti pour signer des contrats.
+                </p>
+              </div>
+            </details>
+
+            {/* FAQ ITEM 4 */}
+            <details className="group [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer items-center justify-between gap-1.5 rounded-lg bg-slate-900 p-6 text-white border border-slate-800 hover:border-purple-500/30 transition-all">
+                <h3 className="font-bold">Pourquoi l'offre Founder est-elle à 29€ au lieu de 69€ ?</h3>
+                <div className="white-space-nowrap">
+                  <ChevronRight className="h-5 w-5 transition duration-300 group-open:rotate-90" />
+                </div>
+              </summary>
+              <div className="mt-4 px-6 text-slate-400 leading-relaxed text-sm">
+                <p>
+                  <strong className="text-white">C'est une offre de lancement limitée.</strong> Nous récompensons nos premiers utilisateurs ("Early Adopters") avec ce tarif préférentiel.
+                </p>
+                <p className="mt-2">
+                  En prenant votre accès aujourd'hui, vous <strong className="text-white">bloquez ce prix à vie</strong>. Même quand l'abonnement passera à 69€/mois pour les futurs clients, vous continuerez de payer 29€.
+                </p>
+              </div>
+            </details>
+          </div>
         </div>
       </section>
 
