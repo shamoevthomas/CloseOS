@@ -298,9 +298,9 @@ export function LandingPage() {
                 <div className="h-12 w-12 rounded-lg bg-purple-500/20 flex items-center justify-center mb-6 ring-1 ring-purple-500/30">
                   <CalendarCheck className="h-6 w-6 text-purple-400" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-3">Agenda & Booking (Cal.com & Calendly)</h3>
+                <h3 className="text-2xl font-bold text-white mb-3">Agenda & Booking (Cal.com & Google)</h3>
                 <p className="text-slate-400 mb-6 max-w-md leading-relaxed">
-                  Connectez vos outils existants. Vos rendez-vous Cal.com et Calendly remontent automatiquement dans votre Pipeline et votre Agenda CloseOS.
+                  Connectez vos outils existants. Vos rendez-vous Cal.com et Google Calendar remontent automatiquement dans votre Pipeline et votre Agenda CloseOS.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Sync Bi-directionnelle</span>
@@ -314,9 +314,9 @@ export function LandingPage() {
               <div className="h-12 w-12 rounded-lg bg-emerald-500/20 flex items-center justify-center mb-6 ring-1 ring-emerald-500/30">
                 <FileText className="h-6 w-6 text-emerald-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Facturation Auto</h3>
+              <h3 className="text-xl font-bold text-white mb-3">Facturation Auto & Paiement CB</h3>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Générez vos factures de commissions en un clic. Suivez les paiements, exportez en PDF.
+                Générez vos factures de commissions en un clic. Créez des liens de paiement CB sécurisés et envoyez automatiquement la facture à votre infopreneur.
               </p>
             </div>
 
