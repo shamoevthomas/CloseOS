@@ -25,11 +25,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = (credentials: any) => supabase.auth.signInWithPassword(credentials);
   const register = (credentials: any) => supabase.auth.signUp(credentials);
-  const loginWithGoogle = () => supabase.auth.signInWithOAuth({ 
-    provider: 'google', 
-    options: { redirectTo: window.location.origin } 
-  });
-  
+  const loginWithGoogle = () => {
+    // 👇 LOGIQUE DE REDIRECTION FORCÉE
+    // Si on n'est pas en local, on force la redirection vers le domaine officiel
+    const redirectTo = window.location.hostname === 'localhost'
+      ? 'http://localhost:5173'
+      : 'https://closeos.fr';
+
+    return supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      }
+    });
+  };
+
   const updateProfile = async (updates: any) => {
     const { data, error } = await supabase.auth.updateUser({
       data: updates
@@ -47,16 +61,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => supabase.auth.signOut();
 
   return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated: !!user, 
-      user, 
-      loading, 
-      login, 
-      register, 
-      loginWithGoogle, 
+    <AuthContext.Provider value={{
+      isAuthenticated: !!user,
+      user,
+      loading,
+      login,
+      register,
+      loginWithGoogle,
       updateProfile,
       updatePassword,
-      logout 
+      logout
     }}>
       {children}
     </AuthContext.Provider>
