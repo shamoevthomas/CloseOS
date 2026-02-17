@@ -1,6 +1,6 @@
 import { CheckCircle2, XCircle } from 'lucide-react';
 
-export function PricingComparisonTable() {
+export function PricingComparisonTable({ isModal = false }: { isModal?: boolean }) {
     const features = [
         {
             category: "Fondations",
@@ -85,10 +85,62 @@ export function PricingComparisonTable() {
         }
     ];
 
+    if (isModal) {
+        return (
+            <div className="bg-slate-950 p-6 rounded-2xl">
+                <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold text-white mb-2">Comparatif Détaillé</h2>
+                    <p className="text-slate-400 text-sm">Tout ce qui est inclus dans chaque offre.</p>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr>
+                                <th className="p-3 w-1/2"></th>
+                                <th className="p-3 text-center">
+                                    <span className="block text-lg font-bold text-white mb-1">Starter</span>
+                                </th>
+                                <th className="p-3 text-center ">
+                                    <span className="block text-lg font-bold text-blue-400 mb-1">Founder</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800 border-t border-slate-800">
+                            {features.map((section, sIdx) => (
+                                <>
+                                    <tr key={`section-${sIdx}`} className="bg-slate-900/30">
+                                        <td colSpan={3} className="py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                                            {section.category}
+                                        </td>
+                                    </tr>
+                                    {section.items.map((feature, fIdx) => (
+                                        <tr key={`feat-${sIdx}-${fIdx}`} className="hover:bg-slate-900/20 transition-colors">
+                                            <td className="p-3">
+                                                <div className="font-semibold text-slate-200 text-sm">{feature.name}</div>
+                                                <div className="text-xs text-slate-500 mt-0.5">{feature.description}</div>
+                                            </td>
+                                            <td className="p-3 text-center align-middle">
+                                                {renderValue(feature.starter)}
+                                            </td>
+                                            <td className="p-3 text-center align-middle bg-blue-500/5">
+                                                {renderValue(feature.founder, true)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <section className="py-20 bg-slate-950 border-t border-slate-900">
             <div className="max-w-5xl mx-auto px-6">
                 <div className="text-center mb-16">
+
                     <h2 className="text-3xl font-bold text-white mb-4">Comparatif Détaillé</h2>
                     <p className="text-slate-400">Tout ce qui est inclus dans chaque offre.</p>
                 </div>

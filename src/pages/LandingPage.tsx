@@ -28,6 +28,7 @@ import {
   PlusCircle,
   Sheet,
   Clock,
+  X,
 
 } from 'lucide-react'
 
@@ -64,6 +65,7 @@ export function LandingPage() {
   const [pricingTab, setPricingTab] = useState<'closer' | 'agency' | 'enterprise'>('closer');
   // État pour le cycle de facturation
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
   // Fonction pour calculer le prix (arrondi) avec -15% si annuel
   const calculatePrice = (price: number) => {
@@ -889,9 +891,12 @@ export function LandingPage() {
 
           </div>
 
-          {/* MODIFICATION 5 : ENCART OPTION VOIP CACHÉ SI PAS CLOSER + PRIX DYNAMIQUE */}
+
+          {/* MODIFICATION 5 : ENCART OPTION VOIP + BOUTON COMPARATIF */}
           {pricingTab === 'closer' && (
-            <div className="mt-8 flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+            <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+
+              {/* Option VoIP */}
               <div className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-900/20 border border-blue-500/30 shadow-lg shadow-blue-500/5">
                 <div className="p-2 rounded-lg bg-blue-500/20">
                   <PlusCircle className="h-5 w-5 text-blue-400" />
@@ -903,14 +908,43 @@ export function LandingPage() {
                   </p>
                 </div>
               </div>
+
+              {/* Bouton Comparatif */}
+              <button
+                onClick={() => setIsComparisonOpen(true)}
+                className="px-5 py-3 rounded-2xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                <Sheet className="h-4 w-4" />
+                Voir le comparatif détaillé
+              </button>
             </div>
           )}
 
         </div>
       </section>
 
-      {/* COMPARISON TABLE */}
-      {pricingTab === 'closer' && <PricingComparisonTable />}
+      {/* COMPARISON MODAL */}
+      {isComparisonOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-950 rounded-2xl border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setIsComparisonOpen(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors z-10"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <PricingComparisonTable isModal={true} />
+            <div className="p-6 border-t border-slate-900 bg-slate-950/50 sticky bottom-0 text-center">
+              <button
+                onClick={() => setIsComparisonOpen(false)}
+                className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Fermer le comparatif
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- SECTION DEMO / CAL.COM --- */}
       <section id="demo" className="py-32 relative bg-slate-900/20 border-t border-white/5">
