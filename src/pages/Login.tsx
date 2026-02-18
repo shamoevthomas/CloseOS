@@ -3,7 +3,6 @@ import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader2, LogIn, X, Check, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,7 +10,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Forgot Password State
@@ -68,22 +67,13 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin
-        }
-      });
-
-      if (error) setError(error.message);
-    } catch (err) {
-      setError("Impossible de lancer la connexion Google.");
-    } finally {
-      setGoogleLoading(false);
-    }
+  const handleGoogleLogin = () => {
+    // Pour éviter que des personnes non passées par le checkout
+    // puissent créer un compte via Google, on désactive
+    // temporairement cette option.
+    setError(
+      "La connexion Google est réservée aux membres déjà inscrits après paiement. Utilise l'email et le mot de passe créés après ton achat."
+    );
   };
 
   return (

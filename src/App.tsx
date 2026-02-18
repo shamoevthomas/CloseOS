@@ -14,7 +14,6 @@ import { NotificationsProvider } from './contexts/NotificationsContext'
 
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
-import { OnboardingModal } from './components/OnboardingModal'
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 import { CheckoutForm } from './components/CheckoutForm'
@@ -101,30 +100,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 // Wrapper pour cacher l'onboarding sur certaines pages
 function OnboardingWrapper() {
-  const location = useLocation();
-  const { isAdmin } = useAuth(); // 👇 CHECK ADMIN
-
-  // 👇 PERIODE DE LANCEMENT : On désactive l'onboarding pour tout le monde sauf admin
-  // Car l'outil est fermé, donc on ne veut pas configurer le profil maintenant.
-  const isMaintenance = new Date() < LAUNCH_DATE;
-  if (isMaintenance && !isAdmin) {
-    return null;
-  }
-
-  // 👇 AJOUT de '/coming-soon' pour que l'onboarding ne s'ouvre pas dessus
-  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/coming-soon', '/maintenance'];
-
-  // Check startsWith to be safer (e.g. /welcome-founder?plan=starter)
-  // Actually location.pathname is just the path, but let's be robust.
-  if (hiddenPaths.some(path => location.pathname === path || location.pathname.startsWith(path + '/'))) {
-    return null;
-  }
-
-  return <OnboardingModal />;
+  // L'onboarding doit rester totalement caché tant que le dashboard
+  // n'est pas ouvert au public.
+  return null;
 }
 
 function AuthenticatedApp() {
-  const { user, loading, isAdmin } = useAuth()
+  const { user, loading, isAdmin, isFounder } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
   const location = useLocation()
@@ -164,10 +146,19 @@ function AuthenticatedApp() {
   return (
     <>
       <Routes>
-        {/* 👇 REDIRECTION PRINCIPALE : Si connecté, on va sur /coming-soon au lieu de /dashboard */}
+        {/* 👇 ROUTE D'ACCUEIL
+            - Non connecté : Landing
+            - Founder/Admin connecté : Coming Soon
+            - Connecté mais non founder : on reste sur la Landing (pas d'accès privilégié) */}
         <Route
           path="/"
-          element={user ? <Navigate to="/coming-soon" replace /> : <LandingPage />}
+          element={
+            !user
+              ? <LandingPage />
+              : (isFounder || isAdmin)
+                ? <Navigate to="/coming-soon" replace />
+                : <LandingPage />
+          }
         />
 
         {/* Page de Maintenance */}
