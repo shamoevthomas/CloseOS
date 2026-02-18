@@ -8,7 +8,7 @@ import { CheckCircle2, ShieldCheck, ArrowLeft, Rocket, Square, CheckSquare, Aler
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { DemoExitModal } from '../components/DemoExitModal'; // 👈 IMPORT DU MODAL
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_live_51SxnxC33xpuYLywqRhYvxhWrChlI3Ckjj1AfJLqRQJQwaXNyVLuLAPaURbnEcrKRAQJTneB3ZjhUHSHuFQ9Xekdt00k1ho4IEt');
 
 export const CheckoutStarter = () => {
   const [clientSecret, setClientSecret] = useState('');
