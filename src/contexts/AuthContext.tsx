@@ -8,8 +8,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null); // Stocke les données de la table profiles
   const [loading, setLoading] = useState(true);
 
-  // ADMIN BYPASS : shamoovthomas@gmail.com
-  const isAdmin = user?.email === 'shamoovthomas@gmail.com';
+
+
+  // ADMIN BYPASS LOGIC
+  const [adminBypass] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('admin') === 'thomas') {
+        localStorage.setItem('admin_bypass', 'true');
+        // Clean URL optionally? No, let's keep it simple.
+        return true;
+      }
+      return localStorage.getItem('admin_bypass') === 'true';
+    }
+    return false;
+  });
+
+  // ADMIN BYPASS : shamoovthomas@gmail.com OR local bypass
+  const isAdmin = user?.email === 'shamoovthomas@gmail.com' || adminBypass;
 
   // LOGIQUE D'ACCÈS : 
   // - Admin : Accès total
