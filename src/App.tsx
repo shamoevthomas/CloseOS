@@ -57,6 +57,7 @@ const LAUNCH_DATE = new Date('2026-02-18T11:00:00+01:00'); // Mercredi 18/02 11h
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isFounder, isAdmin } = useAuth()
   const location = useLocation();
+  const currentPath = location.pathname;
 
   if (loading) {
     return (
@@ -70,6 +71,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     // Exigence: à chaque retour sur le site (nouveau chargement), l'utilisateur est déconnecté
     // et doit être ramené à la landing.
     return <Navigate to="/" replace />
+  }
+
+  // ⚙️ EXCEPTION: l'écran "welcome-founder" doit rester accessible
+  // juste après le paiement/inscription, même si le profil n'est pas
+  // encore marqué founder (webhook Stripe pas encore passé).
+  if (currentPath === '/welcome-founder') {
+    return <>{children}</>;
   }
 
   // 👇 PERIODE DE LANCEMENT (La tool est fermée pour tout le monde sauf admin)
