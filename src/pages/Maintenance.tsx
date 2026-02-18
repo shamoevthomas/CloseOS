@@ -1,6 +1,37 @@
+import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 
 export function Maintenance() {
+    const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+
+    useEffect(() => {
+        const target = new Date('2026-02-18T11:00:00+01:00').getTime();
+
+        const updateTimer = () => {
+            const now = new Date().getTime();
+            const difference = target - now;
+
+            if (difference > 0) {
+                const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+                setTimeLeft({ hours, minutes, seconds });
+            } else {
+                setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+                // Auto-refresh at launch
+                if (difference > -5000) { // Only refresh if we just crossed the line
+                    window.location.reload();
+                }
+            }
+        };
+
+        const interval = setInterval(updateTimer, 1000);
+        updateTimer(); // Initial call
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const format = (n: number) => n.toString().padStart(2, '0');
 
     return (
         <div className="min-h-screen bg-[#020617] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -20,13 +51,19 @@ export function Maintenance() {
                     Lancement Imminent
                 </h1>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                     <p className="text-xl text-slate-400">
                         Nous finalisons les derniers détails avant l'ouverture officielle.
                     </p>
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono">
-                        <Clock className="w-4 h-4" />
-                        <span>Rendez-vous Mercredi 18/02 à 11h00</span>
+
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-3xl md:text-4xl font-bold shadow-lg shadow-blue-500/5 tracking-wider">
+                            <Clock className="w-6 h-6 md:w-8 md:h-8 animate-pulse text-blue-500" />
+                            <span>
+                                {format(timeLeft.hours)} : {format(timeLeft.minutes)} : {format(timeLeft.seconds)}
+                            </span>
+                        </div>
+                        <span className="text-sm text-slate-500 font-mono">Rendez-vous Mercredi 18/02 à 11h00</span>
                     </div>
                 </div>
 
