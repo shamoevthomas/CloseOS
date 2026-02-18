@@ -14,6 +14,7 @@ import { NotificationsProvider } from './contexts/NotificationsContext'
 
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
+import { OnboardingModal } from './components/OnboardingModal'
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 import { CheckoutForm } from './components/CheckoutForm'
@@ -47,10 +48,6 @@ import { CGU } from './pages/CGU'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
 import { SubscriptionRetention } from './pages/SubscriptionRetention'
-
-import { Maintenance } from './pages/Maintenance';
-
-const LAUNCH_DATE = new Date('2026-02-18T11:00:00+01:00'); // Mercredi 18/02 11h Paris
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -100,29 +97,25 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 // Wrapper pour cacher l'onboarding sur certaines pages
 function OnboardingWrapper() {
-  // L'onboarding doit rester totalement caché tant que le dashboard
-  // n'est pas ouvert au public.
-  return null;
+  const location = useLocation();
+
+  // 👇 AJOUT de '/coming-soon' pour que l'onboarding ne s'ouvre pas dessus
+  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/coming-soon'];
+
+  // Check startsWith to be safer (e.g. /welcome-founder?plan=starter)
+  // Actually location.pathname is just the path, but let's be robust.
+  if (hiddenPaths.some(path => location.pathname === path || location.pathname.startsWith(path + '/'))) {
+    return null;
+  }
+
+  return <OnboardingModal />;
 }
 
 function AuthenticatedApp() {
-  const { user, loading, isAdmin, isFounder } = useAuth()
+  const { user, loading } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
   const location = useLocation()
-
-  // 👇 CHECK MAINTENANCE GLOBALE (Avant 11h)
-  const isMaintenance = new Date() < LAUNCH_DATE;
-
-  if (isMaintenance && !isAdmin && location.pathname !== '/maintenance' && location.pathname !== '/login') {
-    // Autoriser login pour l'admin
-    return <Navigate to="/maintenance" replace />;
-  }
-
-  // Si maintenance passée, on empêche l'accès à la page maintenance
-  if (!isMaintenance && location.pathname === '/maintenance') {
-    return <Navigate to="/" replace />;
-  }
 
   // Check for password reset param
   if (user && !loading && !isSettingsOpen) {
@@ -146,23 +139,11 @@ function AuthenticatedApp() {
   return (
     <>
       <Routes>
-        {/* 👇 ROUTE D'ACCUEIL
-            - Non connecté : Landing
-            - Founder/Admin connecté : Coming Soon
-            - Connecté mais non founder : on reste sur la Landing (pas d'accès privilégié) */}
+        {/* 👇 REDIRECTION PRINCIPALE : Si connecté, on va sur /coming-soon au lieu de /dashboard */}
         <Route
           path="/"
-          element={
-            !user
-              ? <LandingPage />
-              : (isFounder || isAdmin)
-                ? <Navigate to="/coming-soon" replace />
-                : <LandingPage />
-          }
+          element={user ? <Navigate to="/coming-soon" replace /> : <LandingPage />}
         />
-
-        {/* Page de Maintenance */}
-        <Route path="/maintenance" element={<Maintenance />} />
 
         {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />
