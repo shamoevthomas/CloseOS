@@ -146,7 +146,8 @@ export default async function handler(req: Request) {
                         stripe_customer_id: customerId,
                         stripe_subscription_id: subscriptionId,
                         subscription_status: 'active', // ou 'trialing' si période d'essai
-                        plan: 'founder', // Pour l'instant on force founder, ou on lit les metadata
+                        plan: session.metadata?.plan || 'founder', // On récupère le plan depuis les metadata (ou fallback founder)
+                        has_voip: session.metadata?.voip === 'true', // 👇 Récupération de l'option VoIP
                     })
                     .eq('id', profile.id);
             } else {

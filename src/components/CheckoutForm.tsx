@@ -71,7 +71,8 @@ export const CheckoutForm = () => {
       body: JSON.stringify({
         lineItems,
         plan: 'founder',
-        referralCode: appliedCode
+        referralCode: appliedCode,
+        isVoip: isVoipSelected // 👇 Ajout de l'option VoIP
       }),
     })
       .then(async (res) => {

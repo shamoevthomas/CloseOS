@@ -61,7 +61,8 @@ export default async function handler(req: Request) {
                     stripe_customer_id: customer.id,
                     stripe_subscription_id: activeSub.id,
                     subscription_status: activeSub.status,
-                    plan: 'founder', // On force founder pour le moment
+                    plan: activeSub.metadata?.plan || 'founder', // On récupère le plan depuis les metadata (ou fallback founder)
+                    has_voip: activeSub.metadata?.voip === 'true', // 👇 Récupération de l'option VoIP
                     current_period_end: new Date((activeSub as any).current_period_end * 1000).toISOString()
                 })
                 .eq('id', userId);

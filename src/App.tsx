@@ -49,9 +49,14 @@ import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
 import { SubscriptionRetention } from './pages/SubscriptionRetention'
 
+import { Maintenance } from './pages/Maintenance';
+
+const LAUNCH_DATE = new Date('2026-02-18T11:00:00+01:00'); // Mercredi 18/02 11h Paris
+
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, isFounder } = useAuth()
+  const { user, loading, isFounder, isAdmin } = useAuth()
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -65,10 +70,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />
   }
 
-  // 👇 VÉRIFICATION ABONNEMENT
-  // Si l'utilisateur n'est pas "founder" (ni admin), il est redirigé vers le paiement.
-  if (!isFounder) {
-    return <Navigate to="/checkout" replace />
+  // 👇 PERIODE DE LANCEMENT (La tool est fermée pour tout le monde sauf admin)
+  // Même les founders sont redirigés vers Coming Soon.
+  if (!isAdmin) {
+    if (isFounder) {
+      // Si on essaie d'accéder à une page interne (dashboard etc) -> Coming Soon
+      // Sauf si on est DEJA sur coming-soon ou welcome-founder
+      const specializedPaths = ['/coming-soon', '/welcome-founder', '/return'];
+      if (!specializedPaths.includes(location.pathname)) {
+        return <Navigate to="/coming-soon" replace />
+      }
+    } else {
+      // Si pas founder -> Redirect vers Landing (section pricing idéalement)
+      return <Navigate to="/" replace />
+    }
   }
 
   return <>{children}</>
@@ -79,7 +94,7 @@ function OnboardingWrapper() {
   const location = useLocation()
 
   // 👇 AJOUT de '/coming-soon' pour que l'onboarding ne s'ouvre pas dessus
-  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/coming-soon'];
+  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/coming-soon', '/maintenance'];
 
   if (hiddenPaths.includes(location.pathname)) {
     return null;
@@ -89,10 +104,23 @@ function OnboardingWrapper() {
 }
 
 function AuthenticatedApp() {
-  const { user, loading } = useAuth()
+  const { user, loading, isAdmin } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
   const location = useLocation()
+
+  // 👇 CHECK MAINTENANCE GLOBALE (Avant 11h)
+  const isMaintenance = new Date() < LAUNCH_DATE;
+
+  if (isMaintenance && !isAdmin && location.pathname !== '/maintenance' && location.pathname !== '/login') {
+    // Autoriser login pour l'admin
+    return <Navigate to="/maintenance" replace />;
+  }
+
+  // Si maintenance passée, on empêche l'accès à la page maintenance
+  if (!isMaintenance && location.pathname === '/maintenance') {
+    return <Navigate to="/" replace />;
+  }
 
   // Check for password reset param
   if (user && !loading && !isSettingsOpen) {
@@ -121,6 +149,9 @@ function AuthenticatedApp() {
           path="/"
           element={user ? <Navigate to="/coming-soon" replace /> : <LandingPage />}
         />
+
+        {/* Page de Maintenance */}
+        <Route path="/maintenance" element={<Maintenance />} />
 
         {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />

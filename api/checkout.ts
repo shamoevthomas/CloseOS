@@ -12,9 +12,9 @@ const PARTNER_CODES: Record<string, string> = {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     try {
-      const { lineItems, plan, referralCode } = req.body;
+      const { lineItems, plan, referralCode, isVoip } = req.body; // 👇 Ajout de isVoip
 
-      console.log("Session pour:", plan, "| Code saisi:", referralCode);
+      console.log("Session pour:", plan, "| Code saisi:", referralCode, "| VoIP:", isVoip);
 
       // 👇 LOGIQUE CORRIGÉE
       const discounts = [];
@@ -41,19 +41,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // On applique la réduction
         discounts: discounts.length > 0 ? discounts : undefined,
 
+        metadata: {
+          plan: plan || 'founder', // 👇 Stockage du plan dans les métadonnées de la session
+          voip: isVoip ? 'true' : 'false' // 👇 Stockage de l'option VoIP
+        },
+
         return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}&plan=${plan || 'founder'}`,
 
-        subscription_data:
+        subscription_data: {
+          // 👇 Stockage du plan dans les métadonnées de l'abonnement (pour sync-subscription)
+          metadata: {
+            plan: plan || 'founder',
+            voip: isVoip ? 'true' : 'false' // 👇 Stockage de l'option VoIP
+          },
           // MODE LANCEMENT : Si on est avant le 1er Mars, l'essai va jusqu'au 8 Mars
-          new Date() < new Date('2026-03-01T00:00:00Z')
-            ? {
-              // Essai étendu jusqu'au 8 mars (7 jours après le lancement)
-              trial_end: Math.floor(new Date('2026-03-08T00:00:00Z').getTime() / 1000),
-            }
-            : {
-              // Sinon essai standard 7 jours
-              trial_period_days: 7,
-            },
+          trial_end: new Date() < new Date('2026-03-01T00:00:00Z')
+            ? Math.floor(new Date('2026-03-08T00:00:00Z').getTime() / 1000)
+            : undefined,
+          trial_period_days: new Date() < new Date('2026-03-01T00:00:00Z')
+            ? undefined
+            : 7,
+        },
       });
 
       res.status(200).json({ clientSecret: session.client_secret });
