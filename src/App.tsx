@@ -91,12 +91,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 // Wrapper pour cacher l'onboarding sur certaines pages
 function OnboardingWrapper() {
-  const location = useLocation()
+  const location = useLocation();
+  const { isAdmin } = useAuth(); // 👇 CHECK ADMIN
+
+  // 👇 PERIODE DE LANCEMENT : On désactive l'onboarding pour tout le monde sauf admin
+  // Car l'outil est fermé, donc on ne veut pas configurer le profil maintenant.
+  const isMaintenance = new Date() < LAUNCH_DATE;
+  if (isMaintenance && !isAdmin) {
+    return null;
+  }
 
   // 👇 AJOUT de '/coming-soon' pour que l'onboarding ne s'ouvre pas dessus
   const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/coming-soon', '/maintenance'];
 
-  if (hiddenPaths.includes(location.pathname)) {
+  // Check startsWith to be safer (e.g. /welcome-founder?plan=starter)
+  // Actually location.pathname is just the path, but let's be robust.
+  if (hiddenPaths.some(path => location.pathname === path || location.pathname.startsWith(path + '/'))) {
     return null;
   }
 
