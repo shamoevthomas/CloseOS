@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock } from 'lucide-react';
+import { Clock, MessageCircle, Linkedin } from 'lucide-react';
 
 export function Maintenance() {
     const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
@@ -44,7 +44,7 @@ export function Maintenance() {
             <div className="z-10 text-center max-w-2xl mx-auto space-y-8 animate-in fade-in zoom-in duration-700">
 
                 <div className="inline-flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl mb-6">
-                    <img src="/logo_closeos.png" alt="CloseOS" className="h-12 w-auto" />
+                    <img src="/logo.PNG" alt="CloseOS" className="h-12 w-auto" />
                 </div>
 
                 <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
@@ -67,25 +67,29 @@ export function Maintenance() {
                     </div>
                 </div>
 
-                <div className="pt-8">
-                    <div className="relative">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-xl blur opacity-25"></div>
-                        <div className="relative bg-slate-900 border border-slate-800 rounded-xl p-6">
-                            <p className="text-slate-300 mb-4">Rejoignez la liste d'attente prioritaire</p>
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <input
-                                    type="email"
-                                    placeholder="votre@email.com"
-                                    disabled
-                                    className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-slate-500 cursor-not-allowed"
-                                    value="Inscription bientôt ouverte"
-                                />
-                                <button disabled className="bg-slate-800 text-slate-500 px-6 py-3 rounded-lg font-medium cursor-not-allowed">
-                                    S m'inscrire
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div className="pt-8 grid gap-4 w-full max-w-md mx-auto">
+                    <a
+                        href="https://whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group relative flex items-center justify-center gap-3 w-full bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/20 text-[#25D366] px-6 py-4 rounded-xl font-medium transition-all duration-300 hover:scale-[1.02]"
+                    >
+                        <MessageCircle className="w-5 h-5" />
+                        <span>Rejoindre le groupe WhatsApp</span>
+                        <span className="bg-[#25D366] text-[#020617] text-xs font-bold px-2 py-0.5 rounded-full ml-2 animate-pulse">
+                            -15% OFF
+                        </span>
+                    </a>
+
+                    <a
+                        href="https://www.linkedin.com/in/thomas-shamoev-570885237/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-3 w-full bg-[#0077b5]/10 hover:bg-[#0077b5]/20 border border-[#0077b5]/20 text-[#0077b5] px-6 py-4 rounded-xl font-medium transition-all duration-300 hover:scale-[1.02]"
+                    >
+                        <Linkedin className="w-5 h-5" />
+                        <span>Me suivre sur LinkedIn</span>
+                    </a>
                 </div>
             </div>
         </div>
