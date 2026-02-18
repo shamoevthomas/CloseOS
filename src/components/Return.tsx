@@ -23,6 +23,12 @@ export function Return() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // 👇 PROTECTION IFRAME : Si on est chargé dans une iframe (ex: Stripe Embedded), on sort !
+    if (window.self !== window.top && window.top) {
+      window.top.location.href = window.location.href;
+      return;
+    }
+
     const sessionId = searchParams.get('session_id');
 
     // 👇👇👇 LA PORTE DÉROBÉE DU FONDATEUR 👇👇👇
