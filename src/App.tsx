@@ -67,7 +67,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    // Exigence: à chaque retour sur le site (nouveau chargement), l'utilisateur est déconnecté
+    // et doit être ramené à la landing.
+    return <Navigate to="/" replace />
   }
 
   // 👇 PERIODE DE LANCEMENT (La tool est fermée pour tout le monde sauf admin)

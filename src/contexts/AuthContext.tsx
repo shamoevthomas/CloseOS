@@ -13,13 +13,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ADMIN BYPASS LOGIC
   const [adminBypass] = useState(() => {
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('admin') === 'thomas') {
-        localStorage.setItem('admin_bypass', 'true');
-        // Clean URL optionally? No, let's keep it simple.
-        return true;
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('admin') === 'thomas') {
+          localStorage.setItem('admin_bypass', 'true');
+          // Clean URL optionally? No, let's keep it simple.
+          return true;
+        }
+        return localStorage.getItem('admin_bypass') === 'true';
+      } catch {
+        // Si localStorage est bloqué (ex: navigation privée / règles navigateur),
+        // on désactive le bypass au lieu de casser l'auth.
+        return false;
       }
-      return localStorage.getItem('admin_bypass') === 'true';
     }
     return false;
   });
@@ -53,17 +59,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Récupération de la session initiale
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        fetchProfile(currentUser.id);
-      } else {
+    let isMounted = true;
+
+    const init = async () => {
+      try {
+        // Force un état "déconnecté" à chaque nouveau chargement (retour sur le site),
+        // sauf pendant un callback OAuth (sinon on annule le login).
+        const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
+        const hasOAuthCallback =
+          !!url &&
+          (url.searchParams.has('code') ||
+            url.searchParams.has('error') ||
+            url.hash.includes('access_token=') ||
+            url.hash.includes('refresh_token='));
+
+        if (!hasOAuthCallback) {
+          await supabase.auth.signOut({ scope: 'local' });
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        const currentUser = session?.user ?? null;
+
+        if (!isMounted) return;
+        setUser(currentUser);
+
+        if (currentUser) {
+          fetchProfile(currentUser.id);
+        } else {
+          setProfile(null);
+        }
+      } catch (err) {
+        console.error('Erreur init auth:', err);
+        if (!isMounted) return;
+        setUser(null);
         setProfile(null);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-      setLoading(false);
-    });
+    };
+
+    init();
 
     // Écoute des changements d'état (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -80,7 +115,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = (credentials: any) => supabase.auth.signInWithPassword(credentials);
