@@ -51,9 +51,7 @@ import { SubscriptionRetention } from './pages/SubscriptionRetention'
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, isFounder, isAdmin } = useAuth()
-  const location = useLocation();
-  const currentPath = location.pathname;
+  const { loading } = useAuth()
 
   if (loading) {
     return (
@@ -61,37 +59,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     )
-  }
-
-  // Si pas d'utilisateur ET pas d'admin (email admin ou bypass global),
-  // on renvoie à la landing. Si isAdmin est vrai (y compris via ?admin=thomas),
-  // on laisse passer même sans session Supabase.
-  if (!user && !isAdmin) {
-    return <Navigate to="/" replace />
-  }
-
-  // ⚙️ EXCEPTION: l'écran "welcome-founder" doit rester accessible
-  // juste après le paiement/inscription, même si le profil n'est pas
-  // encore marqué founder (webhook Stripe pas encore passé).
-  if (currentPath === '/welcome-founder') {
-    return <>{children}</>;
-  }
-
-  // 👇 PERIODE DE LANCEMENT (La tool est fermée pour tout le monde sauf admin)
-  // Même les founders sont redirigés vers Coming Soon.
-  // isAdmin (email admin ou bypass) contourne entièrement ce bloc.
-  if (!isAdmin) {
-    if (isFounder) {
-      // Si on essaie d'accéder à une page interne (dashboard etc) -> Coming Soon
-      // Sauf si on est DEJA sur coming-soon ou welcome-founder
-      const specializedPaths = ['/coming-soon', '/welcome-founder', '/return'];
-      if (!specializedPaths.includes(location.pathname)) {
-        return <Navigate to="/coming-soon" replace />
-      }
-    } else {
-      // Si pas founder -> Redirect vers Landing (section pricing idéalement)
-      return <Navigate to="/" replace />
-    }
   }
 
   return <>{children}</>
@@ -114,7 +81,7 @@ function OnboardingWrapper() {
 }
 
 function AuthenticatedApp() {
-  const { user, loading, isAdmin } = useAuth()
+  const { loading } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
   const location = useLocation()
@@ -141,14 +108,9 @@ function AuthenticatedApp() {
   return (
     <>
       <Routes>
-        {/* 👇 REDIRECTION PRINCIPALE : Si connecté, on va sur /coming-soon au lieu de /dashboard */}
         <Route
           path="/"
-          element={
-            user
-              ? (isAdmin ? <Navigate to="/dashboard" replace /> : <Navigate to="/coming-soon" replace />)
-              : <LandingPage />
-          }
+          element={<LandingPage />}
         />
 
         {/* Routes Publiques */}

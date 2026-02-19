@@ -8,38 +8,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null); // Stocke les données de la table profiles
   const [loading, setLoading] = useState(true);
 
+  // Rôle admin simple : basé uniquement sur l'email
+  const isAdmin = user?.email === 'shamoovthomas@gmail.com';
 
-
-  // ADMIN BYPASS LOGIC
-  // Active le mode admin si l'URL courante contient ?admin=thomas
-  // et mémorise ce flag dans localStorage pour les rechargements / callbacks externes (Cal.com, etc.).
-  const [adminBypass] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('admin') === 'thomas') {
-          localStorage.setItem('admin_bypass', 'true');
-          return true;
-        }
-        return localStorage.getItem('admin_bypass') === 'true';
-      } catch {
-        // Si localStorage est bloqué (ex: navigation privée / règles navigateur),
-        // on désactive le bypass au lieu de casser l'auth.
-        return false;
-      }
-    }
-    return false;
-  });
-
-  // ADMIN BYPASS : shamoovthomas@gmail.com OR local bypass
-  const isAdmin = user?.email === 'shamoovthomas@gmail.com' || adminBypass;
-
-  // LOGIQUE D'ACCÈS : 
-  // - Admin : Accès total
-  // - Founder : Accès total (subscription_status = 'active' ou 'trialing')
-  // - Autres : Accès restreint
+  // Founder : basé sur le statut d'abonnement
   const subscriptionStatus = profile?.subscription_status;
-  const isFounder = isAdmin || (subscriptionStatus === 'active' || subscriptionStatus === 'trialing');
+  const isFounder = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -64,21 +38,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const init = async () => {
       try {
-        // Force un état "déconnecté" à chaque nouveau chargement (retour sur le site),
-        // sauf pendant un callback OAuth (sinon on annule le login)
-        // OU lorsqu'on utilise le bypass admin via ?admin=thomas (on garde alors la session).
-        const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
-        const hasOAuthCallback =
-          !!url &&
-          (url.searchParams.has('code') ||
-            url.searchParams.has('error') ||
-            url.hash.includes('access_token=') ||
-            url.hash.includes('refresh_token='));
-
-        if (!hasOAuthCallback && !adminBypass) {
-          await supabase.auth.signOut({ scope: 'local' });
-        }
-
         const { data: { session } } = await supabase.auth.getSession();
         const currentUser = session?.user ?? null;
 
