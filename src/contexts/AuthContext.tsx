@@ -35,10 +35,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const SAFETY_TIMEOUT_MS = 5000; // Évite le chargement infini si getSession bloque
 
     const init = async () => {
+      timeoutId = setTimeout(() => {
+        if (isMounted) setLoading(false);
+      }, SAFETY_TIMEOUT_MS);
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        clearTimeout(timeoutId);
+
         const currentUser = session?.user ?? null;
 
         if (!isMounted) return;
@@ -51,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         console.error('Erreur init auth:', err);
+        clearTimeout(timeoutId);
         if (!isMounted) return;
         setUser(null);
         setProfile(null);
@@ -87,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       isMounted = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);
