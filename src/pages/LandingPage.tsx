@@ -11,7 +11,6 @@ import {
   ChevronRight,
   Play,
   XCircle,
-  LogIn,
   MessageSquare,
   FileText,
   Smartphone,
@@ -106,13 +105,6 @@ export function LandingPage() {
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              to="/login"
-              className="group flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
-            >
-              <LogIn className="h-4 w-4 text-slate-500 group-hover:text-white transition-colors" />
-              <span className="hidden sm:inline">Se connecter</span>
-            </Link>
             <Link
               to={`/checkout?billing=${billingCycle}`}
               className="hidden sm:flex group items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-950 transition-all hover:bg-blue-50 hover:scale-105 active:scale-95"
