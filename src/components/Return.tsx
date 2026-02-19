@@ -90,7 +90,7 @@ export function Return() {
           </div>
 
           <div style="text-align: center; margin-top: 30px;">
-            <a href="https://close-os.vercel.app/" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accéder à mon Espace</a>
+            <a href="https://closeos.fr/" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accéder à mon Espace</a>
           </div>
         </div>
         <p style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 20px;">

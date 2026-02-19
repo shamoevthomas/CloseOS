@@ -50,7 +50,7 @@ export default async function handler(req: any, res: any) {
 
     // 3. On génère le lien magique "Onboarding" de Stripe
     // ⚠️ Assure-toi que ta page factures est bien sur l'URL /invoices ou change le chemin ci-dessous
-    const origin = req.headers.origin || 'https://close-os.vercel.app';
+    const origin = req.headers.origin || 'https://closeos.fr';
     
     const accountLink = await stripe.accountLinks.create({
       account: accountId,

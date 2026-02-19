@@ -44,7 +44,7 @@ export default async function handler(req: Request) {
 
         // Générer le lien de récupération
         // redirectTo pointe vers le dashboard avec un paramètre pour ouvrir le modal de sécurité
-        const redirectTo = `${process.env.VITE_APP_URL || 'https://closeros-mvp.vercel.app'}/dashboard?reset_password=true`;
+        const redirectTo = `${process.env.VITE_APP_URL || 'https://closeos.fr'}/dashboard?reset_password=true`;
 
         const { data, error } = await supabaseAdmin.auth.admin.generateLink({
             type: 'recovery',

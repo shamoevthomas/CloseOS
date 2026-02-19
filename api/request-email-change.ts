@@ -80,7 +80,7 @@ export default async function handler(req: Request) {
         }
 
         // Lien de confirmation AVEC userId
-        const baseUrl = process.env.VITE_APP_URL || 'https://closeros-mvp.vercel.app';
+        const baseUrl = process.env.VITE_APP_URL || 'https://closeos.fr';
         const confirmLink = `${baseUrl}/confirm-email-change?token=${token}&userId=${userId}`;
 
         // Envoyer l'email à l'ADRESSE ACTUELLE

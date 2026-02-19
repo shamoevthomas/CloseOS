@@ -128,7 +128,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
   // --- CALCUL DE L'URL WEBHOOK INTELLIGENTE ---
   const baseUrl = window.location.origin.includes('localhost')
-    ? 'https://close-os.vercel.app'
+    ? 'https://closeos.fr'
     : window.location.origin
 
   // On ajoute &formula_id=XYZ si une formule par défaut est sélectionnée

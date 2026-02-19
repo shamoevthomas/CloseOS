@@ -99,10 +99,10 @@ export function RendezVous() {
    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
    const [isCancellingBooking, setIsCancellingBooking] = useState(false)
 
-   // URL de base
+   // URL de base (même domaine que la session Supabase pour éviter la déconnexion au retour OAuth)
    const baseUrl = window.location.origin.includes('localhost')
       ? 'http://localhost:5173'
-      : 'https://close-os.vercel.app'
+      : 'https://closeos.fr'
 
    const webhookUrl = user?.id
       ? `${baseUrl}/api/cal-webhook?user_id=${user.id}`
@@ -248,10 +248,10 @@ export function RendezVous() {
       return updatesCount + importCount;
    };
 
-   // 2. Connexion OAuth (v2)
+   // 2. Connexion OAuth (v2) — redirect_uri doit être sur le même domaine que l'app pour garder la session
    const handleConnectCal = () => {
       const clientId = '452e83a06c630a84cba92ab72cd43735c78ee8b5b691f488de432201b2d951ba'
-      const redirectUri = `https://close-os.vercel.app/api/cal-callback`
+      const redirectUri = `${baseUrl}/api/cal-callback`
       const state = user?.id
 
       window.location.href = `https://app.cal.com/auth/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`
