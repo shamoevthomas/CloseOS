@@ -160,6 +160,11 @@ export function Return() {
         // 👇 ENVOI DE L'EMAIL AJOUTÉ ICI
         await sendWelcomeEmail(customerEmail, name);
 
+        // 👇 FirstPromoter : suivi parrainage à l'inscription
+        if (typeof window !== 'undefined' && (window as any).fpr) {
+          (window as any).fpr("referral", { email: customerEmail });
+        }
+
         // 👇 REDIRECTION : On transmet le plan à la page suivante
         navigate(plan === 'starter' ? '/welcome-founder?plan=starter' : '/welcome-founder');
       }
@@ -172,6 +177,8 @@ export function Return() {
   const handleGoogleLogin = async () => {
     setAuthLoading(true);
     try {
+      // FirstPromoter : stocker l'email pour le suivi après le callback OAuth
+      sessionStorage.setItem("fpr_pending_email", customerEmail);
       const { error } = await loginWithGoogle();
       if (error) setError(error.message);
       // Note : Pour Google, la redirection dépend de la configuration Supabase, 

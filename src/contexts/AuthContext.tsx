@@ -66,6 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
+      // FirstPromoter : suivi parrainage après connexion Google (callback OAuth)
+      if (currentUser && typeof window !== "undefined") {
+        const pendingEmail = sessionStorage.getItem("fpr_pending_email");
+        if (pendingEmail && (window as any).fpr) {
+          (window as any).fpr("referral", { email: pendingEmail });
+          sessionStorage.removeItem("fpr_pending_email");
+        }
+      }
+
       if (currentUser) {
         // En cas de LOGIN ou TOKEN REFRESH, on recharge le profil pour avoir le statut à jour
         await fetchProfile(currentUser.id);
