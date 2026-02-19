@@ -649,7 +649,7 @@ export function RendezVous() {
    }
 
    // --- RENDU ---
-   const MeetingTable = ({ data, title, icon: Icon, emptyText, showDeleteAction, onRefresh }: any) => (
+   const MeetingTable = ({ data, title, icon: Icon, emptyText, showDeleteAction, onRefresh, loading }: any) => (
       <div className="mb-12">
          <div className="mb-4 flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
@@ -673,7 +673,9 @@ export function RendezVous() {
             <table className="w-full">
                <thead className="bg-slate-800/50"><tr className="border-b border-slate-800 text-xs font-bold uppercase tracking-widest text-slate-500 text-left"><th className="px-6 py-4">Date & Heure</th><th className="px-6 py-4">Contact</th><th className="px-6 py-4">Lieu</th><th className="px-6 py-4">Statut</th><th className="px-6 py-4 text-right">Détails</th></tr></thead>
                <tbody className="divide-y divide-slate-800">
-                  {data.length === 0 ? (<tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium italic">{emptyText}</td></tr>) : (
+                  {loading ? (
+                     <tr><td colSpan={5} className="px-6 py-12 text-center"><div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div></td></tr>
+                  ) : data.length === 0 ? (<tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium italic">{emptyText}</td></tr>) : (
                      data.map((m: any) => (
                         <tr key={m.id} onClick={() => setSelectedMeeting(m)} className="cursor-pointer hover:bg-slate-800/40 transition-colors">
                            <td className="px-6 py-4"><div className="flex items-center gap-3 text-white"><div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg bg-slate-800 border border-slate-700 font-bold"><span className="text-[10px] text-blue-500 uppercase">{safeFormat(m.date, 'MMM')}</span><span className="text-sm">{safeFormat(m.date, 'dd')}</span></div><div><div className="font-bold">{safeFormat(m.date, 'eeee d MMMM')}</div><div className="text-xs text-slate-500">{m.time}</div></div></div></td>
@@ -744,8 +746,7 @@ export function RendezVous() {
    }, [user])
 
 
-   if (meetingsLoading) return <div className="flex h-screen items-center justify-center bg-slate-950"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div></div>
-
+   // Ne plus bloquer toute la page : afficher le contenu immédiatement, loading uniquement sur les tableaux
    return (
       <div className="h-full overflow-y-auto bg-slate-950 p-8 text-left">
          <div className="mx-auto max-w-6xl">
@@ -837,8 +838,9 @@ export function RendezVous() {
                icon={Calendar}
                emptyText="Aucun rendez-vous synchronisé."
                onRefresh={calAccessToken ? () => fetchCalBookings(calAccessToken, true) : undefined}
+               loading={meetingsLoading}
             />
-            <MeetingTable data={pastMeetings} title="Historique" icon={History} emptyText="Aucun historique disponible." showDeleteAction={true} />
+            <MeetingTable data={pastMeetings} title="Historique" icon={History} emptyText="Aucun historique disponible." showDeleteAction={true} loading={meetingsLoading} />
          </div>
 
          {/* --- GRANDE MODALE DE CONFIGURATION --- */}

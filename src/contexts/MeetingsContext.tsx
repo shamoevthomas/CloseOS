@@ -47,6 +47,9 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     }
 
     setLoading(true)
+    const SAFETY_TIMEOUT_MS = 8000
+    const timeoutId = setTimeout(() => setLoading(false), SAFETY_TIMEOUT_MS)
+
     try {
       const { data, error } = await supabase
         .from('meetings')
@@ -59,6 +62,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Erreur chargement RDV:', error)
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
     }
   }
