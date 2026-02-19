@@ -63,9 +63,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!user) {
-    // Exigence: à chaque retour sur le site (nouveau chargement), l'utilisateur est déconnecté
-    // et doit être ramené à la landing.
+  // Si pas d'utilisateur ET pas d'admin bypass, on renvoie à la landing.
+  // Mais si isAdmin est vrai (email admin OU ?admin=thomas), on laisse passer
+  // même sans session Supabase (bypass complet de la connexion).
+  if (!user && !isAdmin) {
     return <Navigate to="/" replace />
   }
 
