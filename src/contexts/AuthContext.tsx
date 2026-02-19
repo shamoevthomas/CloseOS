@@ -55,7 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const init = async () => {
       try {
         // Force un état "déconnecté" à chaque nouveau chargement (retour sur le site),
-        // sauf pendant un callback OAuth (sinon on annule le login).
+        // sauf pendant un callback OAuth (sinon on annule le login)
+        // OU lorsqu'on utilise le bypass admin via ?admin=thomas (on garde alors la session).
         const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
         const hasOAuthCallback =
           !!url &&
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             url.hash.includes('access_token=') ||
             url.hash.includes('refresh_token='));
 
-        if (!hasOAuthCallback) {
+        if (!hasOAuthCallback && !adminBypass) {
           await supabase.auth.signOut({ scope: 'local' });
         }
 
