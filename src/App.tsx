@@ -51,7 +51,7 @@ import { SubscriptionRetention } from './pages/SubscriptionRetention'
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { loading } = useAuth()
+  const { user, loading } = useAuth()
 
   if (loading) {
     return (
@@ -59,6 +59,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     )
+  }
+
+  // Si non connecté, redirection vers la landing
+  if (!user) {
+    return <Navigate to="/" replace />
   }
 
   return <>{children}</>

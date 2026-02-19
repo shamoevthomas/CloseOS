@@ -9,10 +9,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Objectif: à chaque retour (nouveau chargement), l'utilisateur est déconnecté
-    // => pas de session persistée dans le navigateur.
-    persistSession: false,
-    autoRefreshToken: false,
+    persistSession: true,
+    autoRefreshToken: true,
     detectSessionInUrl: true,
   },
 })
