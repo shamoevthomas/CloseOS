@@ -54,8 +54,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isFounder, isAdmin } = useAuth()
   const location = useLocation();
   const currentPath = location.pathname;
-  const searchParams = new URLSearchParams(location.search);
-  const hasAdminUrlBypass = searchParams.get('admin') === 'thomas';
 
   if (loading) {
     return (
@@ -65,10 +63,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // Si pas d'utilisateur ET pas d'admin bypass dans l'URL, on renvoie à la landing.
-  // Mais si hasAdminUrlBypass est vrai (?admin=thomas), on laisse passer
-  // même sans session Supabase (bypass complet de la connexion).
-  if (!user && !hasAdminUrlBypass) {
+  // Si pas d'utilisateur ET pas d'admin (email admin ou bypass global),
+  // on renvoie à la landing. Si isAdmin est vrai (y compris via ?admin=thomas),
+  // on laisse passer même sans session Supabase.
+  if (!user && !isAdmin) {
     return <Navigate to="/" replace />
   }
 
@@ -81,8 +79,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // 👇 PERIODE DE LANCEMENT (La tool est fermée pour tout le monde sauf admin)
   // Même les founders sont redirigés vers Coming Soon.
-  // isAdmin (email admin) ou hasAdminUrlBypass (?admin=thomas) contournent entièrement ce bloc.
-  if (!isAdmin && !hasAdminUrlBypass) {
+  // isAdmin (email admin ou bypass) contourne entièrement ce bloc.
+  if (!isAdmin) {
     if (isFounder) {
       // Si on essaie d'accéder à une page interne (dashboard etc) -> Coming Soon
       // Sauf si on est DEJA sur coming-soon ou welcome-founder
