@@ -10,15 +10,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
 
-  // ADMIN BYPASS LOGIC (uniquement via le paramètre d'URL courant, sans persistance)
+  // ADMIN BYPASS LOGIC
+  // Active le mode admin si l'URL courante contient ?admin=thomas
+  // et mémorise ce flag dans localStorage pour les rechargements / callbacks externes (Cal.com, etc.).
   const [adminBypass] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('admin') === 'thomas';
-    } catch {
-      return false;
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('admin') === 'thomas') {
+          localStorage.setItem('admin_bypass', 'true');
+          return true;
+        }
+        return localStorage.getItem('admin_bypass') === 'true';
+      } catch {
+        // Si localStorage est bloqué (ex: navigation privée / règles navigateur),
+        // on désactive le bypass au lieu de casser l'auth.
+        return false;
+      }
     }
+    return false;
   });
 
   // ADMIN BYPASS : shamoovthomas@gmail.com OR local bypass
