@@ -81,7 +81,7 @@ function OnboardingWrapper() {
 }
 
 function AuthenticatedApp() {
-  const { loading } = useAuth()
+  const { user, loading } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
   const location = useLocation()
