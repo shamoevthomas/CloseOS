@@ -78,6 +78,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // 👇 PERIODE DE LANCEMENT (La tool est fermée pour tout le monde sauf admin)
   // Même les founders sont redirigés vers Coming Soon.
+  // isAdmin (email admin ou ?admin=thomas) contourne entièrement ce bloc.
   if (!isAdmin) {
     if (isFounder) {
       // Si on essaie d'accéder à une page interne (dashboard etc) -> Coming Soon
@@ -112,7 +113,7 @@ function OnboardingWrapper() {
 }
 
 function AuthenticatedApp() {
-  const { user, loading } = useAuth()
+  const { user, loading, isAdmin } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
   const location = useLocation()
@@ -142,7 +143,11 @@ function AuthenticatedApp() {
         {/* 👇 REDIRECTION PRINCIPALE : Si connecté, on va sur /coming-soon au lieu de /dashboard */}
         <Route
           path="/"
-          element={user ? <Navigate to="/coming-soon" replace /> : <LandingPage />}
+          element={
+            user
+              ? (isAdmin ? <Navigate to="/dashboard" replace /> : <Navigate to="/coming-soon" replace />)
+              : <LandingPage />
+          }
         />
 
         {/* Routes Publiques */}
