@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 
 // Imports des Contextes
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -85,6 +85,15 @@ function AuthenticatedApp() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
   const location = useLocation()
+  const navigate = useNavigate()
+
+  // Si un utilisateur est connecté et se retrouve sur la racine '/',
+  // on le redirige automatiquement vers son dashboard.
+  useEffect(() => {
+    if (!loading && user && location.pathname === '/') {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [user, loading, location.pathname, navigate])
 
   // Check for password reset param
   if (user && !loading && !isSettingsOpen) {
