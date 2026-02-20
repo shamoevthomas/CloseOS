@@ -1,10 +1,12 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Target, MessageCircle, LogOut } from 'lucide-react';
+import { Target, MessageCircle, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useState } from 'react';
 
 export function WelcomeFounder() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // 👇 DÉTECTION DU PLAN (Starter ou Founder)
   const [searchParams] = useSearchParams();
@@ -23,6 +25,10 @@ export function WelcomeFounder() {
 
   // Fonction pour gérer la vraie déconnexion
   const handleLogout = async () => {
+    setIsLoggingOut(true);
+    // Délai de 2 secondes pour l'effet "premium" demandé par l'utilisateur
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     try {
       await logout(); // On détruit la session
       navigate('/', { replace: true });  // On renvoie vers la landing page publique
@@ -63,8 +69,8 @@ export function WelcomeFounder() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* BADGE QUI CHANGE DE COULEUR ET DE TEXTE */}
             <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-widest mb-6 ${isStarter
-                ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
-                : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+              ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+              : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
               }`}>
               <Target className="h-3 w-3" />
               {isStarter ? "Espace Starter Activé" : "Place Founder Sécurisée"}
@@ -91,7 +97,7 @@ export function WelcomeFounder() {
               className="absolute top-0 left-0 w-full h-full"
               title="Bienvenue"
               frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-m edia; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             ></iframe>
           </div>
@@ -131,6 +137,14 @@ export function WelcomeFounder() {
 
         </div>
       </main>
+
+      {/* OVERLAY DE DÉCONNEXION */}
+      {isLoggingOut && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617] animate-in fade-in duration-300">
+          <Loader2 className="h-10 w-10 text-blue-500 animate-spin mb-4" />
+          <p className="text-white font-medium text-lg animate-pulse">Déconnexion sécurisée...</p>
+        </div>
+      )}
     </div>
   );
 }

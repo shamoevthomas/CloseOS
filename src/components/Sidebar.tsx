@@ -18,7 +18,8 @@ import {
   X,
   FileText,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState, useEffect } from 'react' // Modification ici : ajout de useEffect
@@ -51,12 +52,17 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const { counts, clearBadge } = useNotifications()
 
   // État pour stocker l'avatar récupéré en base de données
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
 
   const handleLogout = async () => {
+    setIsLoggingOut(true)
+    // Délai de 2 secondes pour l'effet "premium" demandé par l'utilisateur
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
     try {
       await logout()
       navigate('/', { replace: true })
@@ -248,6 +254,14 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
           </button>
         </div>
       </div>
+
+      {/* OVERLAY DE DÉCONNEXION */}
+      {isLoggingOut && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617] animate-in fade-in duration-300">
+          <Loader2 className="h-10 w-10 text-blue-500 animate-spin mb-4" />
+          <p className="text-white font-medium text-lg animate-pulse">Déconnexion sécurisée...</p>
+        </div>
+      )}
     </>
   )
 }
