@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Loader2, Lock, User, Mail, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { trackFirstPromoterReferral } from '../lib/firstpromoter';
 
 export function Return() {
   const [status, setStatus] = useState<string | null>(null);
@@ -160,10 +161,8 @@ export function Return() {
         // 👇 ENVOI DE L'EMAIL AJOUTÉ ICI
         await sendWelcomeEmail(customerEmail, name);
 
-        // 👇 FirstPromoter : suivi parrainage à l'inscription
-        if (typeof window !== 'undefined' && (window as any).fpr) {
-          (window as any).fpr("referral", { email: customerEmail });
-        }
+        // 👇 FirstPromoter : suivi parrainage à l'inscription (attend que le script soit chargé)
+        await trackFirstPromoterReferral(customerEmail);
 
         // 👇 REDIRECTION : On transmet le plan à la page suivante
         navigate(plan === 'starter' ? '/welcome-founder?plan=starter' : '/welcome-founder');

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { trackFirstPromoterReferral } from '../lib/firstpromoter';
 
 const AuthContext = createContext<any>(null);
 
@@ -78,9 +79,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // FirstPromoter : suivi parrainage après connexion Google (callback OAuth)
       if (currentUser && typeof window !== "undefined") {
         const pendingEmail = sessionStorage.getItem("fpr_pending_email");
-        if (pendingEmail && (window as any).fpr) {
-          (window as any).fpr("referral", { email: pendingEmail });
-          sessionStorage.removeItem("fpr_pending_email");
+        if (pendingEmail) {
+          trackFirstPromoterReferral(pendingEmail).then(() => {
+            sessionStorage.removeItem("fpr_pending_email");
+          });
         }
       }
 
