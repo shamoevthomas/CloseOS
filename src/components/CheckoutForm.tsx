@@ -66,6 +66,12 @@ export const CheckoutForm = () => {
       lineItems.push({ price: PRICE_VOIP, quantity: 1 });
     }
 
+    // Promotekit: récupérer l'ID de referral côté client si disponible
+    const promotekitReferral =
+      typeof window !== 'undefined' && (window as any).promotekit_referral
+        ? (window as any).promotekit_referral
+        : null;
+
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -73,7 +79,8 @@ export const CheckoutForm = () => {
         lineItems,
         plan: 'founder',
         referralCode: appliedCode,
-        isVoip: isVoipSelected // 👇 Ajout de l'option VoIP
+        isVoip: isVoipSelected, // 👇 Ajout de l'option VoIP
+        promotekitReferral,
       }),
     })
       .then(async (res) => {

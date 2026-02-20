@@ -12,7 +12,7 @@ const PARTNER_CODES: Record<string, string> = {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     try {
-      const { lineItems, plan, referralCode, isVoip } = req.body; // 👇 Ajout de isVoip
+      const { lineItems, plan, referralCode, isVoip, promotekitReferral } = req.body; // 👇 Ajout de isVoip et Promotekit
 
       console.log("Session pour:", plan, "| Code saisi:", referralCode, "| VoIP:", isVoip);
 
@@ -43,7 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         metadata: {
           plan: plan || 'founder', // 👇 Stockage du plan dans les métadonnées de la session
-          voip: isVoip ? 'true' : 'false' // 👇 Stockage de l'option VoIP
+          voip: isVoip ? 'true' : 'false', // 👇 Stockage de l'option VoIP
+          ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
         },
 
         return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}&plan=${plan || 'founder'}`,
@@ -52,7 +53,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // 👇 Stockage du plan dans les métadonnées de l'abonnement (pour sync-subscription)
           metadata: {
             plan: plan || 'founder',
-            voip: isVoip ? 'true' : 'false' // 👇 Stockage de l'option VoIP
+            voip: isVoip ? 'true' : 'false', // 👇 Stockage de l'option VoIP
+            ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
           },
           // MODE LANCEMENT : Si on est avant le 1er Mars, l'essai va jusqu'au 8 Mars
           trial_end: new Date() < new Date('2026-03-01T00:00:00Z')
