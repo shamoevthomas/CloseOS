@@ -26,6 +26,7 @@ interface LocalProspect {
   phone: string
   offer?: string
   offerId?: number
+  created_at?: string
 }
 
 export function Contacts() {
@@ -55,7 +56,8 @@ export function Contacts() {
       dateAdded: '2024-01-01',
       email: 'sarah@techinno.com',
       phone: '+33 6 12 34 56 78',
-      offer: 'Genix'
+      offer: 'Genix',
+      created_at: '2024-01-01T10:00:00Z'
     },
     {
       id: 2,
@@ -69,7 +71,8 @@ export function Contacts() {
       dateAdded: '2024-01-05',
       email: 'marc@digitalvent.io',
       phone: '+33 7 98 76 54 32',
-      offer: 'Bodymind'
+      offer: 'Bodymind',
+      created_at: '2024-01-05T14:30:00Z'
     },
     {
       id: 3,
@@ -83,7 +86,8 @@ export function Contacts() {
       dateAdded: '2024-01-10',
       email: 'emma@globalsol.com',
       phone: '+33 6 45 67 89 01',
-      offer: 'Genix'
+      offer: 'Genix',
+      created_at: '2024-01-10T09:15:00Z'
     }
   ])
 
@@ -441,7 +445,7 @@ export function Contacts() {
                             <p className="text-sm text-slate-400">{formatRelativeTime(lastContact)}</p>
                           </td>
                           <td className="px-6 py-4">
-                            <p className="text-sm text-slate-400">{formatDate(dateAdded)}</p>
+                            <p className="text-sm text-slate-400">{formatDate(prospect.created_at || prospect.dateAdded)}</p>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all">

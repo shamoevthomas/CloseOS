@@ -13,7 +13,7 @@ import { supabase } from '../lib/supabase'
 export function InvoicesPage() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
-  
+
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [savedInvoices, setSavedInvoices] = useState<any[]>([])
@@ -47,22 +47,22 @@ export function InvoicesPage() {
   // On recharge aussi quand le détail se ferme pour être sûr d'avoir le nouveau statut
   useEffect(() => {
     fetchInvoices()
-  }, [isGeneratorOpen, isDetailOpen]) 
+  }, [isGeneratorOpen, isDetailOpen])
 
   useEffect(() => {
     if (searchParams.get('stripe_connected') === 'true') {
       const confirmConnection = async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-           await supabase
+          await supabase
             .from('profiles')
             .update({ stripe_connected: true })
             .eq('id', user.id);
-           
-           const newUrl = window.location.pathname;
-           window.history.replaceState({}, document.title, newUrl);
-           
-           setIsStripeConnectOpen(true);
+
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
+
+          setIsStripeConnectOpen(true);
         }
       };
       confirmConnection();
@@ -87,13 +87,13 @@ export function InvoicesPage() {
 
   // --- 🚀 NOUVEAU CALCUL : PAIEMENTS EN ATTENTE ---
   const pendingStats = useMemo(() => {
-    const pendingInvoices = savedInvoices.filter(inv => 
-      ['en_attente', 'retard', 'autre'].includes(inv.status) || 
+    const pendingInvoices = savedInvoices.filter(inv =>
+      ['en_attente', 'retard', 'autre'].includes(inv.status) ||
       inv.status === 'en attente' // Compatibilité au cas où
     );
-    
+
     const totalPending = pendingInvoices.reduce((sum, inv) => sum + (inv.amount_ttc || 0), 0);
-    
+
     return {
       amount: totalPending,
       count: pendingInvoices.length
@@ -108,20 +108,20 @@ export function InvoicesPage() {
 
     const start = new Date(startDate)
     const end = new Date(endDate)
-    end.setHours(23, 59, 59, 999) 
+    end.setHours(23, 59, 59, 999)
 
     const activeDealsInPeriod = prospects.filter((prospect) => {
       if (prospect.stage !== 'won') return false
 
       const isCorrectOffer = prospect.offerId === selectedOffer.id ||
-                             String(prospect.offerId) === String(selectedOffer.id) ||
-                             prospect.offer === selectedOffer.name ||
-                             prospect.title?.includes(selectedOffer.name)
+        String(prospect.offerId) === String(selectedOffer.id) ||
+        prospect.offer === selectedOffer.name ||
+        prospect.title?.includes(selectedOffer.name)
 
       if (!isCorrectOffer) return false
 
-      const dealDate = new Date(prospect.lastContact || prospect.dateAdded)
-      
+      const dealDate = new Date(prospect.lastContact || prospect.dateAdded || prospect.created_at || '')
+
       if (prospect.payment_type !== 'installments' && (!prospect.installments || prospect.installments <= 1)) {
         return dealDate >= start && dealDate <= end
       }
@@ -138,14 +138,14 @@ export function InvoicesPage() {
 
     const revenue = activeDealsInPeriod.reduce((sum, prospect) => {
       const fullValue = prospect.value || 0
-      
+
       if (prospect.payment_type !== 'installments' && (!prospect.installments || prospect.installments <= 1)) {
         return sum + fullValue
       } else {
         const monthlyValue = fullValue / (prospect.installments || 1)
         let installmentsInPeriod = 0
-        const dealDate = new Date(prospect.lastContact || prospect.dateAdded)
-        
+        const dealDate = new Date(prospect.lastContact || prospect.dateAdded || prospect.created_at || '')
+
         for (let i = 0; i < (prospect.installments || 1); i++) {
           const installmentDate = new Date(dealDate)
           installmentDate.setMonth(installmentDate.getMonth() + i)
@@ -174,8 +174,8 @@ export function InvoicesPage() {
           }
         }
       }
-      
-      let rate = 0.10 
+
+      let rate = 0.10
       const commissionStr = String(selectedOffer?.commission || "10")
       const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
       if (match) rate = parseFloat(match[1]) / 100
@@ -210,8 +210,8 @@ export function InvoicesPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'payé': return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-      case 'envoyée': return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'; 
-      case 'générée': return 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'; 
+      case 'envoyée': return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+      case 'générée': return 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20';
       case 'retard': return 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
       case 'en attente': return 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
       case 'en_attente': return 'bg-amber-500/10 text-amber-400 border border-amber-500/20'; // Correction doublon
@@ -221,13 +221,13 @@ export function InvoicesPage() {
 
   return (
     <div className="relative min-h-screen bg-[#020617] p-8 overflow-hidden font-sans text-slate-100" onClick={() => setActiveTooltip(null)}>
-      
+
       {/* Background Blobs (Style Landing Page) */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
 
       <div className="relative mx-auto max-w-7xl space-y-8 z-10">
-        
+
         {/* HEADER */}
         <div className="flex flex-col md:flex-row items-start justify-between gap-6">
           <div>
@@ -263,10 +263,10 @@ export function InvoicesPage() {
         {/* DATE PICKER (Glass) */}
         <div className="flex flex-col md:flex-row items-center gap-6 rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md shadow-xl">
           <div className="flex items-center gap-3">
-             <div className="p-3 rounded-xl bg-purple-500/20 border border-purple-500/20">
-                <Calendar className="h-5 w-5 text-purple-400" />
-             </div>
-             <span className="font-bold text-white">Période :</span>
+            <div className="p-3 rounded-xl bg-purple-500/20 border border-purple-500/20">
+              <Calendar className="h-5 w-5 text-purple-400" />
+            </div>
+            <span className="font-bold text-white">Période :</span>
           </div>
           <div className="flex items-center gap-4 flex-1">
             <div className="flex-1">
@@ -298,11 +298,10 @@ export function InvoicesPage() {
               <button
                 key={offer.id}
                 onClick={() => setSelectedOfferId(offer.id)}
-                className={`whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-bold transition-all shadow-lg ${
-                  selectedOfferId === offer.id
+                className={`whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-bold transition-all shadow-lg ${selectedOfferId === offer.id
                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-purple-500/20'
                     : 'border border-white/10 bg-slate-900/50 text-slate-400 hover:bg-slate-800 hover:text-white backdrop-blur-sm'
-                }`}
+                  }`}
               >
                 {offer.name}
               </button>
@@ -325,7 +324,7 @@ export function InvoicesPage() {
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 font-medium bg-slate-800/50 rounded-lg px-2 py-1 inline-block border border-white/5">
-                    {stats.dealsCount} deal(s) actif(s)
+                  {stats.dealsCount} deal(s) actif(s)
                 </p>
               </div>
 
@@ -340,7 +339,7 @@ export function InvoicesPage() {
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 font-medium bg-slate-800/50 rounded-lg px-2 py-1 inline-block border border-white/5">
-                    Taux: {selectedOffer.commission}
+                  Taux: {selectedOffer.commission}
                 </p>
               </div>
 
@@ -359,7 +358,7 @@ export function InvoicesPage() {
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 font-medium bg-slate-800/50 rounded-lg px-2 py-1 inline-block border border-white/5">
-                    Par deal/mensualité
+                  Par deal/mensualité
                 </p>
               </div>
 
@@ -374,7 +373,7 @@ export function InvoicesPage() {
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 font-medium bg-slate-800/50 rounded-lg px-2 py-1 inline-block border border-white/5">
-                    {pendingStats.count} facture(s)
+                  {pendingStats.count} facture(s)
                 </p>
               </div>
             </div>
@@ -382,11 +381,11 @@ export function InvoicesPage() {
             {/* DÉTAILS DE FACTURE (Glass) */}
             <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-md shadow-xl">
               <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-2">
-                  <Info className="h-5 w-5 text-blue-400" />
-                  Détails de la période
+                <Info className="h-5 w-5 text-blue-400" />
+                Détails de la période
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                
+
                 {/* COMPTANT */}
                 <div className="relative p-6 rounded-2xl bg-slate-800/30 border border-white/5">
                   <div className="flex items-center justify-between mb-4">
@@ -394,13 +393,13 @@ export function InvoicesPage() {
                       <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
                       <h4 className="font-bold text-slate-200">Paiement Comptant</h4>
                       <div className="relative">
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'cash' ? null : 'cash'); }}
                           className="rounded-full bg-slate-700 text-slate-400 p-1 hover:text-white transition-colors"
                         >
                           <Info className="h-4 w-4" />
                         </button>
-                        
+
                         {activeTooltip === 'cash' && (
                           <div className="absolute left-0 top-8 z-50 w-72 rounded-2xl border border-white/10 bg-slate-900 p-4 shadow-2xl backdrop-blur-xl">
                             <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Liste des clients (Comptant)</h5>
@@ -426,7 +425,7 @@ export function InvoicesPage() {
                     <span className="text-2xl font-bold text-white">{stats.cashDeals.length}</span>
                   </div>
                   <div className="h-3 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
-                    <div 
+                    <div
                       className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(16,185,129,0.4)]"
                       style={{ width: stats.dealsCount > 0 ? `${(stats.cashDeals.length / stats.dealsCount) * 100}%` : '0%' }}
                     ></div>
@@ -443,7 +442,7 @@ export function InvoicesPage() {
                       <div className="h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
                       <h4 className="font-bold text-slate-200">Paiement en plusieurs fois</h4>
                       <div className="relative">
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'installments' ? null : 'installments'); }}
                           className="rounded-full bg-slate-700 text-slate-400 p-1 hover:text-white transition-colors"
                         >
@@ -485,7 +484,7 @@ export function InvoicesPage() {
                     <span className="text-2xl font-bold text-white">{stats.installmentDeals.length}</span>
                   </div>
                   <div className="h-3 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
-                    <div 
+                    <div
                       className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(59,130,246,0.4)]"
                       style={{ width: stats.dealsCount > 0 ? `${(stats.installmentDeals.length / stats.dealsCount) * 100}%` : '0%' }}
                     ></div>
@@ -521,10 +520,10 @@ export function InvoicesPage() {
 
         <div className="mt-12">
           <h2 className="mb-6 text-2xl font-bold text-white flex items-center gap-3">
-              <span className="w-2 h-8 rounded-full bg-purple-500"></span>
-              Historique des factures
+            <span className="w-2 h-8 rounded-full bg-purple-500"></span>
+            Historique des factures
           </h2>
-          
+
           <div className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md shadow-2xl flex flex-col">
             <div className="overflow-y-auto max-h-[400px] custom-scrollbar">
               <table className="w-full text-left text-sm text-slate-300 relative border-collapse">
@@ -540,9 +539,9 @@ export function InvoicesPage() {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {savedInvoices.map((inv) => (
-                    <tr 
-                      key={inv.id} 
-                      onClick={() => { setSelectedInvoice(inv); setIsDetailOpen(true); }} 
+                    <tr
+                      key={inv.id}
+                      onClick={() => { setSelectedInvoice(inv); setIsDetailOpen(true); }}
                       className="transition-colors hover:bg-white/5 cursor-pointer group"
                     >
                       <td className="px-6 py-5 font-mono font-medium text-purple-400 group-hover:text-purple-300 transition-colors">{inv.invoice_number}</td>
@@ -557,21 +556,21 @@ export function InvoicesPage() {
                           {inv.status}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-right" onClick={(e) => e.stopPropagation()}> 
+                      <td className="px-6 py-5 text-right" onClick={(e) => e.stopPropagation()}>
                         {inv.pdf_url && (
                           <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <a 
-                              href={inv.pdf_url} 
-                              target="_blank" 
+                            <a
+                              href={inv.pdf_url}
+                              target="_blank"
                               rel="noreferrer"
                               className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-purple-400 transition-colors"
                               title="Voir"
                             >
                               <Eye className="h-5 w-5" />
                             </a>
-                            <a 
-                              href={inv.pdf_url} 
-                              download 
+                            <a
+                              href={inv.pdf_url}
+                              download
                               className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-emerald-400 transition-colors"
                               title="Télécharger"
                             >
@@ -595,39 +594,39 @@ export function InvoicesPage() {
           </div>
         </div>
 
-      {isGeneratorOpen && selectedOffer && (
-        <InvoiceGeneratorModal
-          offer={selectedOffer}
-          deals={stats.deals || []}
-          commission={stats.commission}
-          startDate={startDate}
-          endDate={endDate}
-          onClose={() => setIsGeneratorOpen(false)}
+        {isGeneratorOpen && selectedOffer && (
+          <InvoiceGeneratorModal
+            offer={selectedOffer}
+            deals={stats.deals || []}
+            commission={stats.commission}
+            startDate={startDate}
+            endDate={endDate}
+            onClose={() => setIsGeneratorOpen(false)}
+          />
+        )}
+
+        <PaymentMethodsModal
+          isOpen={isPaymentMethodsOpen}
+          onClose={() => setIsPaymentMethodsOpen(false)}
         />
-      )}
 
-      <PaymentMethodsModal
-        isOpen={isPaymentMethodsOpen}
-        onClose={() => setIsPaymentMethodsOpen(false)}
-      />
+        <IssuerProfilesModal
+          isOpen={isIssuerProfilesOpen}
+          onClose={() => setIsIssuerProfilesOpen(false)}
+        />
 
-      <IssuerProfilesModal
-        isOpen={isIssuerProfilesOpen}
-        onClose={() => setIsIssuerProfilesOpen(false)}
-      />
+        <StripeConnectModal
+          isOpen={isStripeConnectOpen}
+          onClose={() => setIsStripeConnectOpen(false)}
+        />
 
-      <StripeConnectModal
-        isOpen={isStripeConnectOpen}
-        onClose={() => setIsStripeConnectOpen(false)}
-      />
-
-      <InvoiceDetailModal
-        invoice={selectedInvoice}
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        onUpdate={fetchInvoices}
-      />
-    </div>
+        <InvoiceDetailModal
+          invoice={selectedInvoice}
+          isOpen={isDetailOpen}
+          onClose={() => setIsDetailOpen(false)}
+          onUpdate={fetchInvoices}
+        />
+      </div>
     </div>
   )
 }

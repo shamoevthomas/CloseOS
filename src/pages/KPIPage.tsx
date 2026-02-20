@@ -315,7 +315,7 @@ export function KPIPage() {
     }
 
     if (viewMode === 'month') {
-      const pDate = prospect.dateAdded ? new Date(prospect.dateAdded) : new Date();
+      const pDate = (prospect.created_at || prospect.dateAdded) ? new Date(prospect.created_at || prospect.dateAdded) : new Date();
       if (pDate.getMonth() !== currentDate.getMonth() || pDate.getFullYear() !== currentDate.getFullYear()) return false;
     }
     return true;
@@ -490,7 +490,7 @@ export function KPIPage() {
 
     chartSourceData.forEach(item => {
       const date = hasContextData
-        ? (item.dateAdded ? new Date(item.dateAdded) : new Date())
+        ? (item.created_at || item.dateAdded ? new Date(item.created_at || item.dateAdded) : new Date())
         : getDealDate(item);
 
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;

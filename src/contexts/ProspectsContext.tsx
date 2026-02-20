@@ -19,8 +19,11 @@ export interface Prospect {
   dateAdded?: string
   last_contact?: string
   lastContact?: string
-  // AJOUT ICI : La nouvelle colonne
   formula_id?: string
+  offerId?: number
+  payment_type?: string
+  installments?: number
+  title?: string
 
   call_notes?: {
     id: string
