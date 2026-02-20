@@ -18,6 +18,8 @@
 
 /* Hide CookieYes banner on specific pages */
 body.hide-cookieyes .cky-consent-container,
-body.hide-cookieyes .cky-revisit-consent {
+body.hide-cookieyes .cky-btn-revisit-wrapper,
+body.hide-cookieyes .cky-revisit-consent,
+body.hide-cookieyes .cky-overlay {
   display: none !important;
 }
