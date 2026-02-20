@@ -1071,11 +1071,11 @@ export function LandingPage() {
           <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-500">
             <span>© 2026 CloseOS.fr</span>
             <span className="hidden sm:inline">•</span>
-            <Link to="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
+            <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</a>
             <span className="hidden sm:inline">•</span>
-            <Link to="/cgu" className="hover:text-white transition-colors">CGV & CGU</Link>
+            <a href="/cgu" className="hover:text-white transition-colors">CGV & CGU</a>
             <span className="hidden sm:inline">•</span>
-            <Link to="/confidentialite" className="hover:text-white transition-colors">Confidentialité</Link>
+            <a href="/confidentialite" className="hover:text-white transition-colors">Politique de Confidentialité</a>
           </div>
 
           <div className="flex gap-6">
