@@ -100,6 +100,35 @@ function AuthenticatedApp() {
     }
   }, [user, loading, location.pathname, navigate])
 
+  // Gestion de la visibilité de la bulle CookieYes
+  useEffect(() => {
+    // Pages où la bulle doit être visible
+    const visiblePaths = ['/', '/checkout', '/checkout-starter', '/welcome-founder'];
+    const isVisiblePath = visiblePaths.some(path =>
+      location.pathname === path || location.pathname.startsWith(path + '/')
+    );
+
+    const toggleCookieYes = () => {
+      if (window.cookieyes) {
+        if (isVisiblePath) {
+          window.cookieyes.showBanner();
+        } else {
+          window.cookieyes.hideBanner();
+        }
+      }
+    };
+
+    // Appliquer immédiatement si possible
+    toggleCookieYes();
+
+    // S'abonner à l'événement de chargement si non prêt
+    document.addEventListener('cookieyes_banner_load', toggleCookieYes);
+
+    return () => {
+      document.removeEventListener('cookieyes_banner_load', toggleCookieYes);
+    };
+  }, [location.pathname]);
+
   // Check for password reset param
   if (user && !loading && !isSettingsOpen) {
     const params = new URLSearchParams(location.search);

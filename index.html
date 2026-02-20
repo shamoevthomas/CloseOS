@@ -3,11 +3,8 @@
 
 <head>
   <!-- Start cookieyes banner -->
-  <script
-    id="cookieyes"
-    type="text/javascript"
-    src="https://cdn-cookieyes.com/client_data/e7fb9a198c41139782e3f8609587c29b/script.js"
-  ></script>
+  <script id="cookieyes" type="text/javascript"
+    src="https://cdn-cookieyes.com/client_data/e7fb9a198c41139782e3f8609587c29b/script.js"></script>
   <!-- End cookieyes banner -->
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-CD3VW4QM4Z" type="text/plain"
@@ -55,8 +52,8 @@
 
   <!-- FirstPromoter - Script de suivi principal -->
   <script>
-    (function(w){w.fpr=w.fpr||function(){w.fpr.q=w.fpr.q||[];w.fpr.q[arguments[0]=='set'?'unshift':'push'](arguments);};})(window);
-    fpr("init", {cid: "w4zvzyd4"});
+    (function (w) { w.fpr = w.fpr || function () { w.fpr.q = w.fpr.q || []; w.fpr.q[arguments[0] == 'set' ? 'unshift' : 'push'](arguments); }; })(window);
+    fpr("init", { cid: "w4zvzyd4" });
     fpr("click");
     // Marquer que le script est prêt
     window.fprReady = true;
@@ -64,11 +61,46 @@
   <script src="https://cdn.firstpromoter.com/fpr.js" async onload="window.fprScriptLoaded = true;"></script>
 
   <!-- Promotekit - Script d'affiliation -->
-  <script
-    async
-    src="https://cdn.promotekit.com/promotekit.js"
-    data-promotekit="da9294d4-89d4-41a6-9838-7ba2ae155ba6"
-  ></script>
+  <script async src="https://cdn.promotekit.com/promotekit.js"
+    data-promotekit="da9294d4-89d4-41a6-9838-7ba2ae155ba6"></script>
+  <!-- Custom Tracking Script -->
+  <script>
+    (function () {
+      var d = "closeos.fr";
+      var u = "https://yydewzqxvteemubkdmrh.supabase.co/functions/v1/track";
+      var s = sessionStorage.getItem("_tk_sid") || Math.random().toString(36).slice(2);
+      sessionStorage.setItem("_tk_sid", s);
+      var cc = "";
+      fetch("https://get.geojs.io/v1/ip/country.json").then(function (r) { return r.json(); }).then(function (d) { cc = d.country || ""; }).catch(function () { });
+      function send(data) {
+        if (cc) data.country = cc;
+        var b = JSON.stringify(data);
+        if (navigator.sendBeacon) { navigator.sendBeacon(u, new Blob([b], { type: "text/plain" })); }
+        else { fetch(u, { method: "POST", headers: { "Content-Type": "text/plain" }, body: b, keepalive: true }).catch(function () { }); }
+      }
+      function t() {
+        var q = new URLSearchParams(location.search);
+        send({
+          domain: d, path: location.pathname, referrer: document.referrer,
+          screen_width: screen.width, session_id: s,
+          utm_source: q.get("utm_source") || "", utm_medium: q.get("utm_medium") || "", utm_campaign: q.get("utm_campaign") || ""
+        });
+      }
+      if (document.readyState === "complete") { t(); } else { window.addEventListener("load", t); }
+      var p = history.pushState;
+      history.pushState = function () { p.apply(history, arguments); t(); };
+      window.addEventListener("popstate", t);
+      document.addEventListener("click", function (e) {
+        var el = e.target.closest("button,a,[role=button],[data-track]");
+        if (!el) return;
+        var txt = (el.innerText || "").trim().slice(0, 80);
+        send({
+          domain: d, path: location.pathname, session_id: s, type: "event",
+          event_name: "click", element_tag: el.tagName.toLowerCase(), element_text: txt
+        });
+      }, true);
+    })();
+  </script>
 </head>
 
 <body>
