@@ -57,8 +57,14 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/login')
+    try {
+      await logout()
+      navigate('/', { replace: true })
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error)
+      // Rediriger quand même vers la landing
+      navigate('/', { replace: true })
+    }
   }
 
   // Récupération directe de l'avatar depuis Supabase

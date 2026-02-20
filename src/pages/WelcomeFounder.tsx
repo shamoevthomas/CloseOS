@@ -25,9 +25,11 @@ export function WelcomeFounder() {
   const handleLogout = async () => {
     try {
       await logout(); // On détruit la session
-      navigate('/');  // On renvoie vers la landing page publique
+      navigate('/', { replace: true });  // On renvoie vers la landing page publique
     } catch (error) {
       console.error("Erreur lors de la déconnexion:", error);
+      // Rediriger quand même vers la landing en cas d'erreur
+      navigate('/', { replace: true });
     }
   };
 

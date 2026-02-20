@@ -9,9 +9,11 @@ export function ComingSoon() {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (error) {
       console.error("Erreur déconnexion:", error);
+      // Rediriger quand même vers la landing en cas d'erreur
+      navigate('/', { replace: true });
     }
   };
 
