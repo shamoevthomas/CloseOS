@@ -16,10 +16,21 @@
   }
 }
 
-/* Hide CookieYes banner on specific pages */
-body.hide-cookieyes .cky-consent-container,
-body.hide-cookieyes .cky-btn-revisit-wrapper,
-body.hide-cookieyes .cky-revisit-consent,
-body.hide-cookieyes .cky-overlay {
+/* 
+ * CookieYes Visibility Control
+ * By default, hide the banner and revisit button anywhere.
+ * Show them ONLY when body has .show-cookieyes class.
+ */
+.cky-consent-container,
+.cky-btn-revisit-wrapper,
+.cky-revisit-consent,
+.cky-overlay {
   display: none !important;
+}
+
+body.show-cookieyes .cky-consent-container,
+body.show-cookieyes .cky-btn-revisit-wrapper,
+body.show-cookieyes .cky-revisit-consent,
+body.show-cookieyes .cky-overlay {
+  display: block !important;
 }

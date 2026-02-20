@@ -102,16 +102,22 @@ function AuthenticatedApp() {
 
   // Gestion de la visibilité de la bulle CookieYes
   useEffect(() => {
-    // Pages où la bulle doit être visible
+    // Pages où la bulle DOIT être visible
     const visiblePaths = ['/', '/checkout', '/checkout-starter', '/welcome-founder'];
+
+    // On normalise le pathname pour éviter les soucis de trailing slash
+    const normalizedPath = location.pathname.endsWith('/') && location.pathname !== '/'
+      ? location.pathname.slice(0, -1)
+      : location.pathname;
+
     const isVisiblePath = visiblePaths.some(path =>
-      location.pathname === path || location.pathname.startsWith(path + '/')
+      normalizedPath === path || normalizedPath.startsWith(path + '/')
     );
 
     if (isVisiblePath) {
-      document.body.classList.remove('hide-cookieyes');
+      document.body.classList.add('show-cookieyes');
     } else {
-      document.body.classList.add('hide-cookieyes');
+      document.body.classList.remove('show-cookieyes');
     }
   }, [location.pathname]);
 
