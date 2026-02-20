@@ -85,8 +85,8 @@ export function Return() {
             <h3 style="color: #0f172a; margin-top: 0; font-size: 14px; text-transform: uppercase;">🚀 Prochaines étapes :</h3>
             <ul style="font-size: 15px; line-height: 1.6; padding-left: 20px; margin-bottom: 0; color: #334155;">
               <li>Rejoignez le canal WhatsApp (lien sur votre espace).</li>
-              <li>Surveillez vos emails pour l'ouverture officielle.</li>
-              <li><strong>Rappel :</strong> L'essai gratuit ne débute que le jour du lancement.</li>
+              <li>Surveillez vos emails pour l'ouverture officielle le <strong>1er Mars</strong>.</li>
+              <li><strong>Rappel :</strong> L'accès au logiciel ouvrira le 1er Mars et votre essai gratuit ne débutera qu'à ce moment-là.</li>
             </ul>
           </div>
 
