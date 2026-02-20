@@ -153,9 +153,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { data, error };
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Met à jour l'état local immédiatement pour éviter les redirections indésirables
+    setUser(null);
     setProfile(null);
-    return supabase.auth.signOut();
+    await supabase.auth.signOut();
   };
 
   return (

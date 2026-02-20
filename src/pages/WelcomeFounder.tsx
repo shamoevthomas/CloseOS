@@ -1,4 +1,4 @@
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Target, MessageCircle, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext'; 
 
@@ -40,10 +40,10 @@ export function WelcomeFounder() {
       <nav className="border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           
-          {/* Logo seul (sans texte en double) et cliquable vers l'accueil */}
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-             <img src="/logo.PNG" alt="CloseOS" className="h-8 w-auto" />
-          </Link>
+          {/* Logo seul (non cliquable) */}
+          <div className="flex items-center gap-2">
+            <img src="/logo.PNG" alt="CloseOS" className="h-8 w-auto" />
+          </div>
 
           {/* Vraie déconnexion */}
           <button 
