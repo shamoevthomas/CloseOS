@@ -108,25 +108,11 @@ function AuthenticatedApp() {
       location.pathname === path || location.pathname.startsWith(path + '/')
     );
 
-    const toggleCookieYes = () => {
-      if (window.cookieyes) {
-        if (isVisiblePath) {
-          window.cookieyes.showBanner();
-        } else {
-          window.cookieyes.hideBanner();
-        }
-      }
-    };
-
-    // Appliquer immédiatement si possible
-    toggleCookieYes();
-
-    // S'abonner à l'événement de chargement si non prêt
-    document.addEventListener('cookieyes_banner_load', toggleCookieYes);
-
-    return () => {
-      document.removeEventListener('cookieyes_banner_load', toggleCookieYes);
-    };
+    if (isVisiblePath) {
+      document.body.classList.remove('hide-cookieyes');
+    } else {
+      document.body.classList.add('hide-cookieyes');
+    }
   }, [location.pathname]);
 
   // Check for password reset param

@@ -15,3 +15,9 @@
     @apply bg-slate-950 text-slate-100;
   }
 }
+
+/* Hide CookieYes banner on specific pages */
+body.hide-cookieyes .cky-consent-container,
+body.hide-cookieyes .cky-revisit-consent {
+  display: none !important;
+}
