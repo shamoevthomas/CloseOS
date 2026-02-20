@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Briefcase, Euro, Calendar, Archive, ChevronDown, ChevronUp } from 'lucide-react'
+import { Briefcase, Info, Plus, ChevronRight, LayoutTemplate } from 'lucide-react'
 import { OfferDetailModal, type Offer } from '../components/OfferDetailModal'
 import { useOffers } from '../contexts/OffersContext'
 
@@ -64,10 +64,11 @@ export function Offers() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-extrabold text-white tracking-tight">Catalogue d'Offres</h2>
-            <p className="mt-1 text-slate-400">
-              {activeOffers.length} offre{activeOffers.length > 1 ? 's' : ''} active
-              {activeOffers.length > 1 ? 's' : ''}
+            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-white">
+              Catalogue <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400">d'Offres</span>
+            </h2>
+            <p className="mt-2 text-slate-400 text-sm font-medium">
+              {activeOffers.length} {activeOffers.length > 1 ? 'offres actives' : 'offre active'} au total
             </p>
           </div>
 
@@ -92,39 +93,50 @@ export function Offers() {
                 <div
                   key={offer.id}
                   onClick={() => setSelectedOffer(offer)}
-                  className="group cursor-pointer rounded-3xl border border-white/5 bg-slate-900/40 p-6 transition-all hover:bg-slate-800/60 hover:border-blue-500/30 hover:shadow-2xl backdrop-blur-md relative overflow-hidden"
+                  className="group cursor-pointer rounded-3xl border border-white/5 bg-slate-900/40 p-7 transition-all duration-500 hover:bg-slate-900/80 hover:border-blue-500/30 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] hover:-translate-y-1 backdrop-blur-xl relative overflow-hidden flex flex-col h-full"
                 >
-                  <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-                    <Briefcase className="w-24 h-24 text-blue-500" />
+                  <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none transform group-hover:scale-110 duration-500">
+                    <Briefcase className="w-32 h-32 text-blue-500" />
                   </div>
 
                   <div className="mb-6 flex items-start justify-between relative z-10">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/20 border border-blue-500/20 text-blue-400">
-                      <Briefcase className="h-6 w-6" />
+                    <div className="h-12 w-12 rounded-2xl bg-blue-500/20 flex items-center justify-center ring-1 ring-blue-500/30 group-hover:ring-blue-500/50 transition-all">
+                      <Briefcase className="h-6 w-6 text-blue-400" />
                     </div>
-                    <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-400 uppercase tracking-wide">
-                      Active
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-[10px] font-black text-emerald-400 uppercase tracking-widest shadow-sm">
+                        Active
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="relative z-10">
-                    <h4 className="mb-2 text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
+                  <div className="relative z-10 flex flex-col flex-1">
+                    <h4 className="mb-2 text-xl font-black text-white group-hover:text-blue-400 transition-colors tracking-tight">
                       {offer.name}
                     </h4>
-                    <p className="mb-6 line-clamp-2 text-sm text-slate-400 leading-relaxed">
+                    <p className="mb-8 line-clamp-2 text-sm text-slate-400 leading-relaxed font-medium">
                       {offer.description}
                     </p>
 
-                    <div className="space-y-3 border-t border-white/5 pt-4">
+                    <div className="mt-auto pt-6 border-t border-white/5 space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Prix</span>
-                        <span className="text-base font-bold text-white">{offer.price}€</span>
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Valeur Offre</span>
+                        </div>
+                        <span className="text-lg font-black text-white">{offer.price}€</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Commission</span>
-                        <span className="text-sm font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
-                          {offer.commission}%
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Votre Commission</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base font-black text-blue-400">{offer.commission}%</span>
+                          <span className="text-[10px] font-bold text-slate-600 bg-slate-800/50 px-2 py-0.5 rounded border border-slate-700/50">
+                            Net
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
