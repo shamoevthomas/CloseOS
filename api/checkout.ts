@@ -3,11 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
-// 👇 ICI : TA LISTE DE CODES
-// L'ID commence par 'promo_', c'est donc un Promotion Code.
-const PARTNER_CODES: Record<string, string> = {
-  'TEKA15': 'promo_1SzEOZ33xpuYLywqw0ns1FaJ',
-};
+// 
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
@@ -16,19 +12,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       console.log("Session pour:", plan, "| Code saisi:", referralCode, "| VoIP:", isVoip);
 
-      // 👇 LOGIQUE CORRIGÉE
-      const discounts = [];
+      let discounts: any[] = [];
+      let percentOff = 0; // On stocke la réduction pour l'envoyer au frontend
 
       if (referralCode) {
         const cleanCode = referralCode.trim().toUpperCase();
-        const promoId = PARTNER_CODES[cleanCode];
 
-        if (promoId) {
-          console.log("✅ Code trouvé ! Application du code promo:", promoId);
-          // ⚠️ CHANGEMENT ICI : on utilise 'promotion_code' au lieu de 'coupon'
-          discounts.push({ promotion_code: promoId });
+        // 1. On interroge Stripe dynamiquement
+        const promoCodes = await stripe.promotionCodes.list({
+          code: cleanCode,
+          active: true, // On s'assure qu'il est valide
+          limit: 1
+        });
+
+        if (promoCodes.data.length > 0) {
+          const promo = promoCodes.data[0];
+          console.log("✅ Code trouvé ! Application du code promo:", promo.id);
+          discounts.push({ promotion_code: promo.id });
+          percentOff = (promo.promotion.coupon as Stripe.Coupon).percent_off || 0; // On récupère le pourcentage
         } else {
-          console.log("❌ Code inconnu");
+          console.log("❌ Code inconnu ou expiré");
         }
       }
 
@@ -66,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       });
 
-      res.status(200).json({ clientSecret: session.client_secret });
+      res.status(200).json({ clientSecret: session.client_secret, percentOff });
     } catch (err: any) {
       console.error("ERREUR STRIPE:", err.message);
       // On renvoie l'erreur exacte pour le débug

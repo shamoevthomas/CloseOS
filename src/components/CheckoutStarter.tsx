@@ -82,8 +82,16 @@ export const CheckoutStarter = () => {
       })
       .then((data) => {
         setClientSecret(data.clientSecret);
+        setDisplayDiscount(data.percentOff || 0); // 👈 On affiche le vrai % renvoyé par Stripe
         setLoading(false);
         setIsApplyingCode(false);
+
+        // Si l'utilisateur a tapé un code mais que Stripe renvoie 0%, c'est invalide
+        if (appliedCode && !data.percentOff) {
+          alert("Ce code promo n'existe pas ou est inactif.");
+          setAppliedCode(''); // On réinitialise
+          setReferralCode('');
+        }
       })
       .catch((err) => {
         console.error(err);
@@ -97,21 +105,14 @@ export const CheckoutStarter = () => {
     fetchClientSecret();
   }, [isVoipSelected, isYearly, appliedCode]);
 
-  const CODE_CONFIG: Record<string, number> = {
-    'TEKA15': 15,
-  };
 
   const handleApplyCode = () => {
     if (referralCode.trim() !== appliedCode) {
       setIsApplyingCode(true);
       const cleanCode = referralCode.trim().toUpperCase();
       setAppliedCode(cleanCode);
-
-      if (CODE_CONFIG[cleanCode]) {
-        setDisplayDiscount(CODE_CONFIG[cleanCode]);
-      } else {
-        setDisplayDiscount(0);
-      }
+      // On ne calcule plus le pourcentage ici. 
+      // Le useEffect va détecter le changement de appliedCode et lancer fetchClientSecret.
     }
   };
 
