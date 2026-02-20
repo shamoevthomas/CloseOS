@@ -22,7 +22,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const promoCodes = await stripe.promotionCodes.list({
           code: cleanCode,
           active: true, // On s'assure qu'il est valide
-          limit: 1
+          limit: 1,
+          expand: ['data.promotion.coupon']
         });
 
         if (promoCodes.data.length > 0) {

@@ -59,6 +59,7 @@ export const CheckoutStarter = () => {
     : basePrice;
 
   const fetchClientSecret = () => {
+    setClientSecret(''); // 👈 Reset pour forcer l'unmount et éviter l'erreur "multiple objects"
     setLoading(true);
     const lineItems = [{ price: PRICE_STARTER, quantity: 1 }];
 
@@ -333,6 +334,7 @@ export const CheckoutStarter = () => {
             ) : (
               <div className="relative h-full w-full">
                 <EmbeddedCheckoutProvider
+                  key={clientSecret}
                   stripe={stripePromise}
                   options={{ clientSecret }}
                 >
