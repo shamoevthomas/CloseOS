@@ -248,10 +248,10 @@ export function RendezVous() {
       return updatesCount + importCount;
    };
 
-   // 2. Connexion OAuth (v2) — redirect_uri doit être sur le même domaine que l'app pour garder la session
+   // 2. Connexion OAuth (v2)
    const handleConnectCal = () => {
       const clientId = '452e83a06c630a84cba92ab72cd43735c78ee8b5b691f488de432201b2d951ba'
-      const redirectUri = `${baseUrl}/api/cal-callback`
+      const redirectUri = `https://close-os.vercel.app/api/cal-callback` // On utilise le domaine validé par Cal.com
       const state = user?.id
 
       window.location.href = `https://app.cal.com/auth/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`
