@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Plus, Briefcase, Euro, Calendar, Archive, ChevronDown, ChevronUp, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Briefcase, Euro, Calendar, Archive, ChevronDown, ChevronUp } from 'lucide-react'
 import { OfferDetailModal, type Offer } from '../components/OfferDetailModal'
 import { useOffers } from '../contexts/OffersContext'
 
@@ -10,26 +10,6 @@ export function Offers() {
 
   // État pour la modale de confirmation
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-
-  // Feedback notifications
-  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('hubspot_connected') === 'true') {
-      setNotification({ type: 'success', message: 'HubSpot connecté avec succès !' })
-      window.history.replaceState({}, '', window.location.pathname)
-    } else if (params.get('hubspot_error')) {
-      const err = params.get('hubspot_error')
-      let msg = 'Erreur inconnue'
-      if (err === 'missing_params') msg = 'Paramètres manquants'
-      if (err === 'token_exchange_failed') msg = 'Impossible d\'échanger le jeton HubSpot'
-      if (err === 'db_update_failed') msg = 'Impossible d\'enregistrer le jeton dans votre profil'
-
-      setNotification({ type: 'error', message: `Erreur de connexion HubSpot: ${msg}` })
-      window.history.replaceState({}, '', window.location.pathname)
-    }
-  }, [])
 
   // --- LOGIQUE DE TRI AUTOMATIQUE (NOUVEAU) ---
   const isExpired = (offer: Offer) => {
@@ -81,17 +61,6 @@ export function Offers() {
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
 
       <div className="relative mx-auto max-w-7xl space-y-8 z-10">
-
-        {/* Global Notifications */}
-        {notification && (
-          <div className={`mb-4 p-4 rounded-xl border flex items-center gap-3 shadow-lg ${notification.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'
-            }`}>
-            {notification.type === 'success' ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-            <span className="font-semibold text-sm">{notification.message}</span>
-            <button onClick={() => setNotification(null)} className="ml-auto text-xs opacity-70 hover:opacity-100">Fermer</button>
-          </div>
-        )}
-
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
