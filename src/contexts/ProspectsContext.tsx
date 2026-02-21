@@ -95,7 +95,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
       console.log(`[HubSpot] ${isUpdate ? 'Updating' : 'Pushing'} contact to HubSpot...`)
 
-      fetch('/api/hubspot/push-contact', {
+      fetch('/api/hubspot?action=push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
