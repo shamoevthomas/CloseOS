@@ -23,7 +23,7 @@ export default async function handler(req: Request) {
         );
 
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-            apiVersion: '2023-10-16',
+            apiVersion: '2026-01-28.clover',
             httpClient: Stripe.createFetchHttpClient(),
         });
 
@@ -60,7 +60,7 @@ export default async function handler(req: Request) {
 
         return new Response(JSON.stringify({
             success: true,
-            cancel_at: subscription.current_period_end
+            cancel_at: subscription.items.data[0].current_period_end
         }), {
             status: 200,
             headers: { 'content-type': 'application/json' }

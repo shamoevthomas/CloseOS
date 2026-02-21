@@ -19,7 +19,7 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 const stripe = new Stripe(stripeSecretKey, {
-    apiVersion: '2023-10-16',
+    apiVersion: '2026-01-28.clover',
 });
 
 // Helper for sending email directly (since importing local file might be tricky in edge runtime if not bundled correctly, but let's try direct fetch)
@@ -90,7 +90,7 @@ export default async function handler(req: Request) {
             if (subscriptions.data.length > 0) {
                 const sub = subscriptions.data[0];
                 // Schedule for end of period
-                scheduledAt = new Date(sub.current_period_end * 1000);
+                scheduledAt = new Date(sub.items.data[0].current_period_end * 1000);
                 isDelayed = true;
             }
         }
