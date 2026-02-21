@@ -7,7 +7,7 @@ export const config = {
 const CAL_CLIENT_ID = '452e83a06c630a84cba92ab72cd43735c78ee8b5b691f488de432201b2d951ba';
 const CAL_CLIENT_SECRET = process.env.CAL_CLIENT_SECRET || '44133f701370e512c37bcefd37317b7e9d150632c7e3ec85f34b2a86bb9614be';
 // MUST match the exact URI configured in Cal.com OAuth App dashboard
-const CAL_REDIRECT_URI = 'https://close-os.vercel.app/api/cal-callback';
+const CAL_REDIRECT_URI = 'https://closeos.fr/api/cal-callback';
 
 export default async function handler(req: Request) {
   // Use closeos.fr for sending the user back to the app UI
