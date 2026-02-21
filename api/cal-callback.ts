@@ -5,22 +5,28 @@ export const config = {
 };
 
 const CAL_CLIENT_ID = '452e83a06c630a84cba92ab72cd43735c78ee8b5b691f488de432201b2d951ba';
-const CAL_CLIENT_SECRET = process.env.CAL_CLIENT_SECRET || '44133f701370e512c37bcefd37317b7e9d150632c7e3ec85f34b2a86bb9614be';
-// Même domaine que l'app pour garder la session au retour OAuth (ex: closeos.fr)
-const APP_URL = process.env.APP_URL || 'https://closeos.fr';
-const CAL_REDIRECT_URI = `${APP_URL}/api/cal-callback`;
+const CAL_CLIENT_SECRET = '44133f701370e512c37bcefd37317b7e9d150632c7e3ec85f34b2a86bb9614be';
 
 export default async function handler(req: Request) {
+  let appUrl = process.env.APP_URL || 'https://closeos.fr';
+
   try {
     const url = new URL(req.url);
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || url.host;
+    const protocol = req.headers.get('x-forwarded-proto') || url.protocol.replace(':', '');
+    if (host) {
+      appUrl = `${protocol}://${host}`;
+    }
+
     const code = url.searchParams.get('code');
     const state = url.searchParams.get('state');
     const error = url.searchParams.get('error');
+    const calRedirectUri = `${appUrl}/api/cal-callback`;
 
     // Handle OAuth errors
     if (error) {
       console.error('Cal.com OAuth error:', error);
-      return Response.redirect(`${APP_URL}/rendez-vous?error=cal_auth_failed`);
+      return Response.redirect(`${appUrl}/rendez-vous?error=cal_auth_failed`);
     }
 
     if (!code || !state) {
@@ -38,14 +44,14 @@ export default async function handler(req: Request) {
         client_secret: CAL_CLIENT_SECRET,
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: CAL_REDIRECT_URI,
+        redirect_uri: calRedirectUri,
       }),
     });
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
       console.error('Token exchange failed:', errorData);
-      return Response.redirect(`${APP_URL}/rendez-vous?error=token_exchange_failed`);
+      return Response.redirect(`${appUrl}/rendez-vous?error=token_exchange_failed`);
     }
 
     const tokens = await tokenResponse.json();
@@ -92,16 +98,16 @@ export default async function handler(req: Request) {
 
     if (updateError) {
       console.error('Database update failed:', updateError);
-      return Response.redirect(`${APP_URL}/rendez-vous?error=db_update_failed`);
+      return Response.redirect(`${appUrl}/rendez-vous?error=db_update_failed`);
     }
 
     console.log(`Cal.com OAuth successful for user ${userId}, username: ${calUsername}`);
 
     // Redirect back to the rendez-vous page with success
-    return Response.redirect(`${APP_URL}/rendez-vous?cal_connected=true`);
+    return Response.redirect(`${appUrl}/rendez-vous?cal_connected=true`);
 
   } catch (error: any) {
     console.error('Cal.com OAuth callback error:', error);
-    return Response.redirect(`${APP_URL}/rendez-vous?error=unexpected_error`);
+    return Response.redirect(`${appUrl}/rendez-vous?error=unexpected_error`);
   }
 }
