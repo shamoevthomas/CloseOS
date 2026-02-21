@@ -69,25 +69,50 @@ async function getValidToken(supabase: any, userId: string): Promise<string | nu
 }
 
 // --- STAGE MAPPERS ---
-function mapHubspotToCloseos(lifecycle: string | null): string {
-    if (!lifecycle) return 'prospect';
-    const lc = lifecycle.toLowerCase();
+// CloseOS stages: prospect, qualified, followup, won, lost, noshow
+// HubSpot: lifecyclestage + hs_lead_status
+
+function mapHubspotToCloseos(lifecycle: string | null, leadStatus?: string | null): string {
+    const lc = (lifecycle || '').toLowerCase();
+    const ls = (leadStatus || '').toLowerCase();
+
+    // Check lead status first for more specific mapping
+    if (ls === 'no show' || ls === 'noshow') return 'noshow';
+    if (ls === 'won' || ls === 'gagné') return 'won';
+    if (ls === 'unqualified' || ls === 'non qualifié' || ls === 'bad timing' || ls === 'mauvais timing') return 'lost';
+    if (ls === 'open deal' || ls === 'transaction ouverte' || ls === 'in progress' || ls === 'en cours') {
+        if (lc === 'opportunity') return 'followup';
+        return 'qualified';
+    }
+
+    // Fall back to lifecycle stage
+    if (lc === 'customer') return 'won';
+    if (lc === 'opportunity') return 'followup';
+    if (lc === 'salesqualifiedlead') return 'qualified';
+    if (lc === 'marketingqualifiedlead') return 'qualified';
     if (['subscriber', 'lead'].includes(lc)) return 'prospect';
-    if (['marketingqualifiedlead', 'salesqualifiedlead', 'opportunity'].includes(lc)) return 'qualified';
-    if (['customer', 'evangelist'].includes(lc)) return 'won';
+    if (lc === 'evangelist') return 'won';
     if (lc === 'other') return 'lost';
+
     return 'prospect';
 }
 
-function mapCloseosToHubspot(stage: string): string {
+function mapCloseosToHubspot(stage: string): { lifecyclestage: string; hs_lead_status: string } {
     switch (stage) {
-        case 'prospect': return 'lead';
-        case 'qualified': return 'salesqualifiedlead';
-        case 'won': return 'customer';
-        case 'followup': return 'salesqualifiedlead';
-        case 'noshow': return 'lead';
-        case 'lost': return 'other';
-        default: return 'lead';
+        case 'prospect':
+            return { lifecyclestage: 'lead', hs_lead_status: 'NEW' };
+        case 'qualified':
+            return { lifecyclestage: 'salesqualifiedlead', hs_lead_status: 'IN_PROGRESS' };
+        case 'followup':
+            return { lifecyclestage: 'opportunity', hs_lead_status: 'OPEN_DEAL' };
+        case 'won':
+            return { lifecyclestage: 'customer', hs_lead_status: 'WON' };
+        case 'lost':
+            return { lifecyclestage: 'other', hs_lead_status: 'UNQUALIFIED' };
+        case 'noshow':
+            return { lifecyclestage: 'other', hs_lead_status: 'NO_SHOW' };
+        default:
+            return { lifecyclestage: 'lead', hs_lead_status: 'NEW' };
     }
 }
 
@@ -196,7 +221,7 @@ async function handleSync(req: VercelRequest, res: VercelResponse) {
     // Fetch all contacts (paginated)
     let allContacts: any[] = [];
     let after: string | undefined = undefined;
-    const properties = 'firstname,lastname,email,phone,company,lifecyclestage';
+    const properties = 'firstname,lastname,email,phone,company,lifecyclestage,hs_lead_status';
 
     do {
         const url = new URL('https://api.hubapi.com/crm/v3/objects/contacts');
@@ -250,7 +275,7 @@ async function handleSync(req: VercelRequest, res: VercelResponse) {
         const email = props.email || '';
         const phone = props.phone || '';
         const company = props.company || '';
-        const stage = mapHubspotToCloseos(props.lifecyclestage);
+        const stage = mapHubspotToCloseos(props.lifecyclestage, props.hs_lead_status);
 
         const existingById = existingByHubspotId.get(hubspotId);
         const existingByMail = email ? existingByEmail.get(email.toLowerCase()) : null;
@@ -305,7 +330,11 @@ async function handlePush(req: VercelRequest, res: VercelResponse) {
     if (email) properties.email = email;
     if (phone) properties.phone = phone;
     if (company) properties.company = company;
-    if (stage) properties.lifecyclestage = mapCloseosToHubspot(stage);
+    if (stage) {
+        const mapped = mapCloseosToHubspot(stage);
+        properties.lifecyclestage = mapped.lifecyclestage;
+        properties.hs_lead_status = mapped.hs_lead_status;
+    }
 
     let contactId = hubspot_contact_id;
 
@@ -412,7 +441,7 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
             if (!accessToken) continue;
 
             const contactRes = await fetch(
-                `https://api.hubapi.com/crm/v3/objects/contacts/${hubspotContactId}?properties=firstname,lastname,email,phone,company,lifecyclestage`,
+                `https://api.hubapi.com/crm/v3/objects/contacts/${hubspotContactId}?properties=firstname,lastname,email,phone,company,lifecyclestage,hs_lead_status`,
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
 
@@ -428,7 +457,7 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
             const email = props.email || '';
             const phone = props.phone || '';
             const company = props.company || '';
-            const stage = mapHubspotToCloseos(props.lifecyclestage);
+            const stage = mapHubspotToCloseos(props.lifecyclestage, props.hs_lead_status);
             const fullName = `${firstName} ${lastName}`.trim() || email || 'Contact HubSpot';
 
             // Find the user's HubSpot offer
@@ -461,7 +490,34 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
 
         // --- PROPERTY CHANGE: update existing prospect ---
         if (subscriptionType === 'contact.propertyChange' && propertyName === 'lifecyclestage') {
-            const newStage = mapHubspotToCloseos(propertyValue);
+            // Fetch contact to get full details including hs_lead_status
+            const accessTokenForStatus = await getValidToken(supabase, '');
+            let leadStatus = null;
+
+            // Try to get lead_status from the portal's user
+            const { data: portalProfile } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('hubspot_portal_id', String(event.portalId || portalId))
+                .single();
+
+            if (portalProfile) {
+                const token = await getValidToken(supabase, portalProfile.id);
+                if (token) {
+                    try {
+                        const contactDetailRes = await fetch(
+                            `https://api.hubapi.com/crm/v3/objects/contacts/${hubspotContactId}?properties=hs_lead_status`,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        if (contactDetailRes.ok) {
+                            const detail = await contactDetailRes.json();
+                            leadStatus = detail.properties?.hs_lead_status;
+                        }
+                    } catch (e) { }
+                }
+            }
+
+            const newStage = mapHubspotToCloseos(propertyValue, leadStatus);
 
             const { data: prospect } = await supabase
                 .from('prospects')

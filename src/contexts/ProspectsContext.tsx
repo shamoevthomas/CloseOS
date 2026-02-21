@@ -48,6 +48,14 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (user) fetchProspects()
+
+    // Auto-refresh every 2 minutes for HubSpot sync
+    if (user) {
+      const interval = setInterval(() => {
+        fetchProspects()
+      }, 120000) // 2 minutes
+      return () => clearInterval(interval)
+    }
   }, [user])
 
   async function fetchProspects() {
