@@ -169,31 +169,24 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   useEffect(() => {
     const checkHubspot = async () => {
       if (!user) return
-      const { data } = await supabase.from('profiles').select('hubspot_access_token, hubspot_stage_mapping').eq('id', user.id).single()
-      setHubspotConnected(!!data?.hubspot_access_token)
-      if (data?.hubspot_stage_mapping) {
-        try {
-          const parsed = typeof data.hubspot_stage_mapping === 'string'
-            ? JSON.parse(data.hubspot_stage_mapping)
-            : data.hubspot_stage_mapping
-          setHubspotMapping({ ...DEFAULT_HUBSPOT_MAPPING, ...parsed })
-        } catch (e) {
-          console.error('Failed to parse hubspot mapping', e)
+      const { data, error } = await supabase.from('profiles').select('hubspot_access_token, hubspot_stage_mapping').eq('id', user.id).single()
+
+      if (!error) {
+        setHubspotConnected(!!data?.hubspot_access_token)
+        if (data?.hubspot_stage_mapping) {
+          try {
+            const parsed = typeof data.hubspot_stage_mapping === 'string'
+              ? JSON.parse(data.hubspot_stage_mapping)
+              : data.hubspot_stage_mapping
+            setHubspotMapping({ ...DEFAULT_HUBSPOT_MAPPING, ...parsed })
+          } catch (e) {
+            console.error('Failed to parse hubspot mapping', e)
+          }
         }
       }
     }
     checkHubspot()
-
-    // Check URL params for hubspot_connected
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('hubspot_connected') === 'true') {
-      setHubspotConnected(true)
-      window.history.replaceState({}, '', window.location.pathname)
-    } else if (params.get('hubspot_error')) {
-      alert('Erreur connexion HubSpot: ' + params.get('hubspot_error'))
-      window.history.replaceState({}, '', window.location.pathname)
-    }
-  }, [user])
+  }, [user, offer.id])
 
   // HubSpot OAuth
   const handleConnectHubspot = (e?: React.MouseEvent) => {
