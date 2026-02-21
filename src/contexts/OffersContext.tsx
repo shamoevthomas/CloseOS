@@ -56,6 +56,9 @@ export interface Offer {
   siret?: string
   billingEmail?: string
   billingPhone?: string
+  // CHAMPS COMMISSION + FIXE
+  hasFixedFee?: boolean
+  fixedFeeAmount?: string
   // NOUVEAUX CHAMPS CRM
   crmProvider?: 'iclosed' | 'hubspot' | 'other'
   crmApiKey?: string
@@ -88,10 +91,10 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       company: offer.company,
       status: offer.status,
       target: offer.target,
-      
+
       startDate: offer.startDate || offer.start_date,
       endDate: offer.endDate || offer.end_date,
-      
+
       price: offer.price,
       commission: offer.commission,
       description: offer.description,
@@ -99,7 +102,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       contacts: offer.contacts || [],
       formulas: offer.formulas || [],
       notes: offer.notes,
-      
+
       // Mapping Facturation
       billingName: offer.billing_name,
       billingAddress: offer.billing_address,
@@ -114,9 +117,13 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       crmProvider: offer.crm_provider || 'iclosed',
       crmApiKey: offer.crm_api_key,
       crmMapping: offer.crm_mapping || {},
-      
+
+      // Mapping Commission + Fixe
+      hasFixedFee: offer.has_fixed_fee || false,
+      fixedFeeAmount: offer.fixed_fee_amount || '',
+
       // AJOUT : Lecture de la formule par défaut
-      defaultFormulaId: offer.default_formula_id 
+      defaultFormulaId: offer.default_formula_id
     }))
   }
 
@@ -137,16 +144,20 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     if (offer.crmProvider !== undefined) dbData.crm_provider = offer.crmProvider
     if (offer.crmApiKey !== undefined) dbData.crm_api_key = offer.crmApiKey
     if (offer.crmMapping !== undefined) dbData.crm_mapping = offer.crmMapping
-    
+
     // AJOUT : Mapping Formule par défaut vers snake_case
     if (offer.defaultFormulaId !== undefined) dbData.default_formula_id = offer.defaultFormulaId
-    
+
+    // Mapping Commission + Fixe vers snake_case
+    if (offer.hasFixedFee !== undefined) dbData.has_fixed_fee = offer.hasFixedFee
+    if (offer.fixedFeeAmount !== undefined) dbData.fixed_fee_amount = offer.fixedFeeAmount
+
     // Nettoyage des clés camelCase pour ne pas polluer
     const keysToRemove = [
-      'billingName', 'billingAddress', 'billingCity', 'billingZip', 
+      'billingName', 'billingAddress', 'billingCity', 'billingZip',
       'billingCountry', 'billingEmail', 'billingPhone',
       'crmProvider', 'crmApiKey', 'crmMapping',
-      'defaultFormulaId' // AJOUT : On nettoie la clé camelCase
+      'defaultFormulaId', 'hasFixedFee', 'fixedFeeAmount'
     ]
     keysToRemove.forEach(k => delete dbData[k])
 
@@ -195,7 +206,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
         .select()
 
       if (error) throw error
-      
+
       if (data) {
         const newOffer = mapFromDb(data)[0]
         setOffers((prev) => [...prev, newOffer])
@@ -221,7 +232,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
         .eq('user_id', user.id)
 
       if (error) throw error
-      
+
       setOffers((prev) =>
         prev.map((offer) => (offer.id === id ? { ...offer, ...updates } : offer))
       )
@@ -244,7 +255,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
         .eq('user_id', user.id)
 
       if (error) throw error
-      
+
       setOffers((prev) => prev.filter((offer) => offer.id !== id))
       return { error: null }
     } catch (error) {

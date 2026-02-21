@@ -70,6 +70,9 @@ export interface Offer {
   siret?: string
   billingEmail?: string
   billingPhone?: string
+  // CHAMPS COMMISSION + FIXE
+  hasFixedFee?: boolean
+  fixedFeeAmount?: string
   // NOUVEAUX CHAMPS CRM
   crmProvider?: 'iclosed' | 'hubspot' | 'other'
   crmApiKey?: string
@@ -326,8 +329,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 )}
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${offer.status === 'active'
-                      ? 'bg-emerald-500/10 text-emerald-400'
-                      : 'bg-slate-500/10 text-slate-400'
+                    ? 'bg-emerald-500/10 text-emerald-400'
+                    : 'bg-slate-500/10 text-slate-400'
                     }`}
                 >
                   {offer.status === 'active' ? 'Active' : 'Archivée'}
@@ -402,8 +405,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <button
                   onClick={() => setEditedOffer({ ...editedOffer, target: 'B2C' })}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${editedOffer.target === 'B2C'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
                     }`}
                 >
                   <User className="h-4 w-4" />
@@ -412,8 +415,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <button
                   onClick={() => setEditedOffer({ ...editedOffer, target: 'B2B' })}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${editedOffer.target === 'B2B'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
                     }`}
                 >
                   <Building2 className="h-4 w-4" />
@@ -657,6 +660,55 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
               <Receipt className="h-4 w-4" /> Configuration Facturation
             </h3>
+
+            {/* Toggle Commission + Fixe */}
+            <div className="mb-4 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-white">Type de rémunération</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {editedOffer.hasFixedFee ? 'Commission + Fixe' : 'Commission uniquement'}
+                  </p>
+                </div>
+                {isEditing ? (
+                  <button
+                    onClick={() => setEditedOffer({ ...editedOffer, hasFixedFee: !editedOffer.hasFixedFee, fixedFeeAmount: editedOffer.hasFixedFee ? '' : (editedOffer.fixedFeeAmount || '') })}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editedOffer.hasFixedFee ? 'bg-blue-500' : 'bg-slate-700'
+                      }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${editedOffer.hasFixedFee ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                    />
+                  </button>
+                ) : (
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${offer.hasFixedFee
+                      ? 'bg-blue-500/10 text-blue-400'
+                      : 'bg-slate-500/10 text-slate-400'
+                    }`}>
+                    {offer.hasFixedFee ? 'Commission + Fixe' : 'Commission'}
+                  </span>
+                )}
+              </div>
+
+              {/* Champ Montant Fixe (visible uniquement si activé) */}
+              {editedOffer.hasFixedFee && (
+                <div className="mt-3">
+                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Montant Fixe (€)</label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      value={editedOffer.fixedFeeAmount || ''}
+                      onChange={(e) => setEditedOffer({ ...editedOffer, fixedFeeAmount: e.target.value })}
+                      placeholder="Ex: 500"
+                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-emerald-400 font-bold placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="text-sm font-bold text-emerald-400">{parseFloat(offer.fixedFeeAmount || '0').toLocaleString()}€</p>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="space-y-4">
               {/* Raison Sociale */}
