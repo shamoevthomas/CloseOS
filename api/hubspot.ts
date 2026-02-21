@@ -133,7 +133,7 @@ async function handleCallback(req: VercelRequest, res: VercelResponse) {
     const supabase = getSupabase();
     const { code, state } = req.query;
 
-    if (!code || !state) return res.redirect('/app/offers?hubspot_error=missing_params');
+    if (!code || !state) return res.redirect('/offers?hubspot_error=missing_params');
 
     const userId = state as string;
     console.log('[HubSpot] OAuth callback for user:', userId);
@@ -153,7 +153,7 @@ async function handleCallback(req: VercelRequest, res: VercelResponse) {
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
         console.error('[HubSpot] Token exchange failed:', tokenData);
-        return res.redirect('/app/offers?hubspot_error=token_exchange_failed');
+        return res.redirect('/offers?hubspot_error=token_exchange_failed');
     }
 
     const accountRes = await fetch('https://api.hubapi.com/oauth/v1/access-tokens/' + tokenData.access_token);
@@ -171,10 +171,10 @@ async function handleCallback(req: VercelRequest, res: VercelResponse) {
 
     if (updateError) {
         console.error('[HubSpot] DB update error:', updateError);
-        return res.redirect('/app/offers?hubspot_error=db_update_failed');
+        return res.redirect('/offers?hubspot_error=db_update_failed');
     }
 
-    return res.redirect('/app/offers?hubspot_connected=true');
+    return res.redirect('/offers?hubspot_connected=true');
 }
 
 // ============================================================
