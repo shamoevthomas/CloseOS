@@ -34,7 +34,7 @@ export default async function handler(req: Request) {
     }
 
     // Exchange authorization code for access token
-    const tokenResponse = await fetch('https://api.cal.com/v2/oauth/token', {
+    const tokenResponse = await fetch('https://api.cal.com/v2/auth/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
