@@ -102,11 +102,8 @@ function AuthenticatedApp() {
 
   // Gestion de la visibilité de la bulle CookieYes
   useEffect(() => {
-    // Pages où la bulle doit être visible
-    const visiblePaths = ['/', '/checkout', '/checkout-starter', '/welcome-founder'];
-    const isVisiblePath = visiblePaths.some(path =>
-      location.pathname === path || location.pathname.startsWith(path + '/')
-    );
+    // La bulle CookieYes n'est visible que sur la landing page
+    const isVisiblePath = location.pathname === '/';
 
     if (isVisiblePath) {
       document.body.classList.remove('hide-cookieyes');
