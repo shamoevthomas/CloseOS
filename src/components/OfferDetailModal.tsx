@@ -202,7 +202,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     const redirectUri = 'https://www.closeos.fr/api/hubspot/callback'
     const scopes = 'crm.objects.contacts.write oauth crm.objects.deals.read crm.objects.deals.write crm.objects.contacts.read'
     const state = user?.id
-    window.open(`https://app-eu1.hubspot.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${state}`, '_blank')
+    window.location.href = `https://app-eu1.hubspot.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${state}`
   }
 
   // HubSpot Sync
