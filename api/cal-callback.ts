@@ -97,8 +97,8 @@ export default async function handler(req: Request) {
       console.error('Failed to fetch Cal.com user info:', e);
     }
 
-    // Calculate token expiration (timestamp in ms)
-    const expiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
+    // Calculate token expiration as Unix timestamp in ms (column is bigint)
+    const expiresAt = Date.now() + (expires_in || 3600) * 1000;
 
     // State contains the user_id
     const userId = state;
