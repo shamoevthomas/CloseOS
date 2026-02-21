@@ -21,6 +21,7 @@ export interface Prospect {
   lastContact?: string
   // AJOUT ICI : La nouvelle colonne
   formula_id?: string
+  hubspot_contact_id?: string
 
   call_notes?: {
     id: string
@@ -66,6 +67,62 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Helper: push prospect to HubSpot if the offer uses HubSpot CRM
+  const pushToHubspotIfNeeded = async (prospect: any, isUpdate = false) => {
+    if (!user) return
+    try {
+      // Check if this prospect's offer uses HubSpot
+      const offerName = prospect.offer?.split(' - ')[0]
+      if (!offerName) return
+
+      const { data: offerData } = await supabase
+        .from('offers')
+        .select('crm_provider')
+        .eq('user_id', user.id)
+        .eq('name', offerName)
+        .single()
+
+      if (offerData?.crm_provider !== 'hubspot') return
+
+      // Check if user has HubSpot connected
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('hubspot_access_token')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile?.hubspot_access_token) return
+
+      console.log(`[HubSpot] ${isUpdate ? 'Updating' : 'Pushing'} contact to HubSpot...`)
+
+      fetch('/api/hubspot/push-contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          prospect_id: prospect.id,
+          firstName: prospect.firstName || prospect.first_name,
+          lastName: prospect.lastName || prospect.last_name,
+          email: prospect.email,
+          phone: prospect.phone,
+          company: prospect.company,
+          stage: prospect.stage,
+          hubspot_contact_id: prospect.hubspot_contact_id,
+        }),
+      }).then(res => res.json()).then(data => {
+        if (data.hubspot_contact_id && !prospect.hubspot_contact_id) {
+          // Update local state with the new HubSpot ID
+          setProspects(prev => prev.map(p =>
+            p.id === prospect.id ? { ...p, hubspot_contact_id: data.hubspot_contact_id } : p
+          ))
+        }
+        console.log('[HubSpot] Push result:', data)
+      }).catch(err => console.error('[HubSpot] Push error:', err))
+    } catch (err) {
+      console.error('[HubSpot] Push check error:', err)
+    }
+  }
+
   const addProspect = async (prospect: Omit<Prospect, 'id' | 'user_id'>) => {
     if (!user) return
     try {
@@ -75,7 +132,12 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
         .select()
 
       if (error) throw error
-      if (data) setProspects(prev => [data[0], ...prev])
+      if (data) {
+        setProspects(prev => [data[0], ...prev])
+
+        // Auto-push to HubSpot if offer uses HubSpot CRM
+        pushToHubspotIfNeeded(data[0])
+      }
     } catch (error) {
       console.error('Erreur ajout:', error)
     }
@@ -97,6 +159,11 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       }
 
       setProspects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
+
+      // If stage changed, push to HubSpot
+      if (updates.stage && data?.[0]) {
+        pushToHubspotIfNeeded(data[0], true)
+      }
     } catch (error) {
       console.error('Erreur update:', error)
     }

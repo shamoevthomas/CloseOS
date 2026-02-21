@@ -17,14 +17,18 @@ import {
   UserPlus,
   Check,
   Receipt,
-  Link,       // Icône pour le CRM
-  Info,       // Icône info
-  Copy,       // Icône pour copier
-  BoxSelect,   // Icône pour la sélection de formule
-  AlertTriangle // Icône pour l'avertissement
+  Link,
+  Info,
+  Copy,
+  BoxSelect,
+  AlertTriangle,
+  Loader2,
+  RefreshCw
 } from 'lucide-react'
 import { ContactSelector } from './ContactSelector'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 
 export interface OfferContact {
   id: number
@@ -105,6 +109,7 @@ const calculateCommission = (price: string, commission: string): number => {
 
 export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDetailModalProps) {
   const { contacts: globalContacts, addContact } = useInternalContacts()
+  const { user } = useAuth()
 
   const [isEditing, setIsEditing] = useState(false)
 
@@ -113,6 +118,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
   // État pour le feedback de copie
   const [hasCopied, setHasCopied] = useState(false)
+
+  // États HubSpot
+  const [hubspotConnected, setHubspotConnected] = useState(false)
+  const [isSyncingHubspot, setIsSyncingHubspot] = useState(false)
+  const [hubspotSyncResult, setHubspotSyncResult] = useState<{ imported: number; updated: number } | null>(null)
 
   const [editedOffer, setEditedOffer] = useState<Offer>(() => {
     if (!offer.formulas || offer.formulas.length === 0) {
@@ -143,6 +153,71 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   useEffect(() => {
     setEditedOffer(offer)
   }, [offer])
+
+  // Check if HubSpot is connected for this user
+  useEffect(() => {
+    const checkHubspot = async () => {
+      if (!user) return
+      const { data } = await supabase.from('profiles').select('hubspot_access_token').eq('id', user.id).single()
+      setHubspotConnected(!!data?.hubspot_access_token)
+    }
+    checkHubspot()
+
+    // Check URL params for hubspot_connected
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('hubspot_connected') === 'true') {
+      setHubspotConnected(true)
+      window.history.replaceState({}, '', window.location.pathname)
+    } else if (params.get('hubspot_error')) {
+      alert('Erreur connexion HubSpot: ' + params.get('hubspot_error'))
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [user])
+
+  // HubSpot OAuth
+  const handleConnectHubspot = () => {
+    const clientId = '4ffa6fe0-353d-4275-9998-2bada782b56c'
+    const redirectUri = 'https://www.closeos.fr/api/hubspot/callback'
+    const scopes = 'crm.objects.contacts.write oauth crm.objects.deals.read crm.objects.deals.write crm.objects.contacts.read'
+    const state = user?.id
+    window.location.href = `https://app-eu1.hubspot.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${state}`
+  }
+
+  // HubSpot Sync
+  const handleSyncHubspot = async () => {
+    if (!user) return
+    setIsSyncingHubspot(true)
+    setHubspotSyncResult(null)
+    try {
+      const res = await fetch('/api/hubspot/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, offer_id: offer.id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setHubspotSyncResult({ imported: data.imported, updated: data.updated })
+      } else {
+        alert('Erreur sync HubSpot: ' + (data.error || 'Erreur inconnue'))
+      }
+    } catch (e: any) {
+      alert('Erreur sync HubSpot: ' + e.message)
+    } finally {
+      setIsSyncingHubspot(false)
+    }
+  }
+
+  // HubSpot Disconnect
+  const handleDisconnectHubspot = async () => {
+    if (!user || !window.confirm('Déconnecter HubSpot ?')) return
+    await supabase.from('profiles').update({
+      hubspot_access_token: null,
+      hubspot_refresh_token: null,
+      hubspot_token_expires_at: null,
+      hubspot_portal_id: null,
+    }).eq('id', user.id)
+    setHubspotConnected(false)
+  }
 
   const handleSave = () => {
     const mainFormula = editedOffer.formulas && editedOffer.formulas.length > 0
@@ -683,8 +758,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   </button>
                 ) : (
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${offer.hasFixedFee
-                      ? 'bg-blue-500/10 text-blue-400'
-                      : 'bg-slate-500/10 text-slate-400'
+                    ? 'bg-blue-500/10 text-blue-400'
+                    : 'bg-slate-500/10 text-slate-400'
                     }`}>
                     {offer.hasFixedFee ? 'Commission + Fixe' : 'Commission'}
                   </span>
@@ -851,14 +926,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                   >
                     <option value="iclosed">iClosed</option>
-                    <option value="hubspot" disabled>HubSpot (Bientôt)</option>
+                    <option value="hubspot">HubSpot</option>
                     <option value="other" disabled>Autre / Webhook Custom</option>
                   </select>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${offer.crmProvider === 'iclosed' ? 'bg-purple-500' : 'bg-slate-500'}`} />
-                  <p className="text-sm font-medium text-white capitalize">{offer.crmProvider || 'iClosed'}</p>
+                  <div className={`h-2 w-2 rounded-full ${offer.crmProvider === 'iclosed' ? 'bg-purple-500' : offer.crmProvider === 'hubspot' ? 'bg-orange-500' : 'bg-slate-500'}`} />
+                  <p className="text-sm font-medium text-white capitalize">{offer.crmProvider === 'hubspot' ? 'HubSpot' : offer.crmProvider || 'iClosed'}</p>
                 </div>
               )}
             </div>
@@ -895,67 +970,128 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             </div>
 
             {/* 3. Webhook Info (Helper) - AVEC BOUTON COPIER */}
-            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
-              <div className="flex items-start gap-3">
-                <Info className="h-5 w-5 text-blue-400 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-blue-100">Configuration Webhook iClosed</h4>
+            {/* 3. CRM-specific Config */}
+            {(editedOffer.crmProvider === 'hubspot') ? (
+              /* --- HUBSPOT CONFIG --- */
+              <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-3">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-orange-400 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-orange-100">Configuration HubSpot</h4>
 
-                  {/* --- TEXTE SPÉCIFIQUE ICLOSED --- */}
-                  <p className="mt-1 text-xs text-blue-300/80 leading-relaxed">
-                    Allez dans <strong>iClosed &gt; Paramètres &gt; Développeur &gt; Webhooks</strong> et collez l'URL ci-dessous.
-                  </p>
-
-                  {/* --- ALERTE PROPRIÉTAIRE --- */}
-                  <div className="mt-2 flex items-start gap-2 rounded border border-orange-500/20 bg-orange-500/10 p-2 text-[11px] text-orange-300">
-                    <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
-                    <span>
-                      <strong>Attention :</strong> Si le menu "Développeur" n'apparaît pas, c'est que vous n'avez pas les droits.
-                      Seul le <strong>Propriétaire</strong> de l'organisation iClosed peut configurer les Webhooks.
-                    </span>
-                  </div>
-
-                  {/* URL + COPY BUTTON */}
-                  <div className="mt-3 flex items-center gap-2">
-                    <div className="flex-1 rounded border border-blue-500/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
-                      {webhookUrl}
-                    </div>
-                    <button
-                      onClick={handleCopyWebhook}
-                      className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
-                      title="Copier l'URL"
-                    >
-                      {hasCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {editedOffer.defaultFormulaId && (
-                    <p className="mt-2 text-[10px] text-emerald-400/80 flex items-center gap-1">
-                      <Check className="h-3 w-3" /> L'ID de la formule a été ajouté à l'URL.
-                    </p>
-                  )}
-
-                  {/* INTEGRATION SUPADEMO ICLOSED (VISIBLE SEULEMENT EN ÉDITION) */}
-                  {isEditing && (editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
-                    <div className="mt-4 rounded-lg border border-blue-500/20 overflow-hidden bg-slate-900/50">
-                      <div style={{ position: 'relative', boxSizing: 'content-box', width: '100%', aspectRatio: '1.86' }}>
-                        <iframe
-                          src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1"
-                          loading="lazy"
-                          title="Configurer le Webhook iClosed"
-                          allow="clipboard-write"
-                          frameBorder="0"
-                          webkitAllowFullScreen
-                          mozAllowFullScreen
-                          allowFullScreen
-                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                        />
+                    {!hubspotConnected ? (
+                      <div className="mt-3">
+                        <p className="text-xs text-orange-300/80 leading-relaxed mb-3">
+                          Connectez votre compte HubSpot pour synchroniser automatiquement vos contacts et deals.
+                        </p>
+                        <button
+                          onClick={handleConnectHubspot}
+                          className="w-full flex justify-center items-center gap-2 rounded-xl bg-orange-600 py-3 text-sm font-bold text-white hover:bg-orange-700 transition-all shadow-lg"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Connecter HubSpot
+                        </button>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        {/* Connected status */}
+                        <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2">
+                          <div className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-emerald-400" />
+                            <span className="text-sm font-semibold text-emerald-400">HubSpot Connecté</span>
+                          </div>
+                          <button onClick={handleDisconnectHubspot} className="text-xs text-slate-500 hover:text-white underline">Déconnecter</button>
+                        </div>
 
+                        {/* Sync button */}
+                        <button
+                          onClick={handleSyncHubspot}
+                          disabled={isSyncingHubspot}
+                          className="w-full flex items-center justify-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-300 hover:bg-orange-500/20 transition-all disabled:opacity-50"
+                        >
+                          {isSyncingHubspot ? (
+                            <><Loader2 className="h-4 w-4 animate-spin" /> Synchronisation en cours...</>
+                          ) : (
+                            <><RefreshCw className="h-4 w-4" /> Synchroniser les contacts HubSpot</>
+                          )}
+                        </button>
+
+                        {/* Sync result */}
+                        {hubspotSyncResult && (
+                          <div className="rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-300">
+                            ✅ {hubspotSyncResult.imported} contacts importés, {hubspotSyncResult.updated} mis à jour
+                          </div>
+                        )}
+
+                        <p className="text-[10px] text-orange-300/60">
+                          La synchronisation importe tous les contacts HubSpot dans le pipeline de cette offre.
+                          Les changements de statut sont synchronisés dans les deux sens.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* --- ICLOSED CONFIG (webhook) --- */
+              <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-blue-400 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-blue-100">Configuration Webhook iClosed</h4>
+
+                    <p className="mt-1 text-xs text-blue-300/80 leading-relaxed">
+                      Allez dans <strong>iClosed &gt; Paramètres &gt; Développeur &gt; Webhooks</strong> et collez l'URL ci-dessous.
+                    </p>
+
+                    <div className="mt-2 flex items-start gap-2 rounded border border-orange-500/20 bg-orange-500/10 p-2 text-[11px] text-orange-300">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                      <span>
+                        <strong>Attention :</strong> Si le menu "Développeur" n'apparaît pas, c'est que vous n'avez pas les droits.
+                        Seul le <strong>Propriétaire</strong> de l'organisation iClosed peut configurer les Webhooks.
+                      </span>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <div className="flex-1 rounded border border-blue-500/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
+                        {webhookUrl}
+                      </div>
+                      <button
+                        onClick={handleCopyWebhook}
+                        className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                        title="Copier l'URL"
+                      >
+                        {hasCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {editedOffer.defaultFormulaId && (
+                      <p className="mt-2 text-[10px] text-emerald-400/80 flex items-center gap-1">
+                        <Check className="h-3 w-3" /> L'ID de la formule a été ajouté à l'URL.
+                      </p>
+                    )}
+
+                    {isEditing && (editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
+                      <div className="mt-4 rounded-lg border border-blue-500/20 overflow-hidden bg-slate-900/50">
+                        <div style={{ position: 'relative', boxSizing: 'content-box', width: '100%', aspectRatio: '1.86' }}>
+                          <iframe
+                            src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1"
+                            loading="lazy"
+                            title="Configurer le Webhook iClosed"
+                            allow="clipboard-write"
+                            frameBorder="0"
+                            webkitAllowFullScreen
+                            mozAllowFullScreen
+                            allowFullScreen
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Zone D - Resources */}
