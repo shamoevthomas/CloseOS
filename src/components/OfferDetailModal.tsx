@@ -139,6 +139,17 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     return offer
   })
 
+  // --- MAPPING HUBSPOT ---
+  const DEFAULT_HUBSPOT_MAPPING: Record<string, { lifecyclestage: string; hs_lead_status: string }> = {
+    prospect: { lifecyclestage: 'lead', hs_lead_status: 'new' },
+    qualified: { lifecyclestage: 'salesqualifiedlead', hs_lead_status: 'in_progress' },
+    followup: { lifecyclestage: 'opportunity', hs_lead_status: 'open_deal' },
+    won: { lifecyclestage: 'customer', hs_lead_status: 'won' },
+    lost: { lifecyclestage: 'other', hs_lead_status: 'unqualified' },
+    noshow: { lifecyclestage: 'other', hs_lead_status: 'no_show' },
+  }
+  const [hubspotMapping, setHubspotMapping] = useState(DEFAULT_HUBSPOT_MAPPING)
+
   // --- CALCUL DE L'URL WEBHOOK INTELLIGENTE ---
   const baseUrl = window.location.origin.includes('localhost')
     ? 'https://closeos.fr'
@@ -158,8 +169,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   useEffect(() => {
     const checkHubspot = async () => {
       if (!user) return
-      const { data } = await supabase.from('profiles').select('hubspot_access_token').eq('id', user.id).single()
+      const { data } = await supabase.from('profiles').select('hubspot_access_token, hubspot_stage_mapping').eq('id', user.id).single()
       setHubspotConnected(!!data?.hubspot_access_token)
+      if (data?.hubspot_stage_mapping) {
+        try {
+          const parsed = typeof data.hubspot_stage_mapping === 'string'
+            ? JSON.parse(data.hubspot_stage_mapping)
+            : data.hubspot_stage_mapping
+          setHubspotMapping({ ...DEFAULT_HUBSPOT_MAPPING, ...parsed })
+        } catch (e) {
+          console.error('Failed to parse hubspot mapping', e)
+        }
+      }
     }
     checkHubspot()
 
@@ -228,6 +249,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
       ...editedOffer,
       price: mainFormula.price,
       commission: mainFormula.commission
+    }
+
+    // Save mapping to profile if HubSpot is selected
+    if (finalOffer.crmProvider === 'hubspot' && user) {
+      supabase.from('profiles').update({
+        hubspot_stage_mapping: hubspotMapping
+      }).eq('id', user.id).then()
     }
 
     onUpdate(finalOffer)
@@ -1003,11 +1031,68 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           <button onClick={handleDisconnectHubspot} className="text-xs text-slate-500 hover:text-white underline">Déconnecter</button>
                         </div>
 
+                        {/* Mapping Configuration */}
+                        {isEditing && (
+                          <div className="mt-4 pt-4 border-t border-slate-800 space-y-3">
+                            <h4 className="text-xs font-semibold text-slate-300 uppercase">Configuration du Mapping</h4>
+
+                            <div className="rounded border border-blue-500/20 bg-blue-500/10 p-2.5 text-[11px] text-blue-300 leading-relaxed">
+                              <Info className="inline-block h-3 w-3 mr-1 -mt-0.5" />
+                              Pour trouver ces valeurs dans HubSpot : allez dans <strong>Paramètres (⚙️) &gt; Propriétés</strong>, cherchez <strong>Statut du lead (hs_lead_status)</strong> et <strong>Phase du cycle de vie (lifecyclestage)</strong>. Cliquez sur la propriété pour voir les <u>valeurs internes</u> des options existantes et copiez-les exactement ci-dessous.
+                            </div>
+
+                            <div className="space-y-2 relative">
+                              <table className="w-full text-left text-xs text-slate-400 border-separate border-spacing-y-1">
+                                <thead>
+                                  <tr>
+                                    <th className="font-medium pb-1 w-1/3">Statut CloseOS</th>
+                                    <th className="font-medium pb-1 w-1/3">Phase du cycle de vie</th>
+                                    <th className="font-medium pb-1 w-1/3">Statut du lead</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {Object.entries(hubspotMapping).map(([key, value]) => (
+                                    <tr key={key}>
+                                      <td className="py-1">
+                                        <div className="font-semibold text-slate-300 capitalize">{key}</div>
+                                      </td>
+                                      <td className="py-1 pr-1">
+                                        <input
+                                          type="text"
+                                          value={value.lifecyclestage}
+                                          onChange={(e) => setHubspotMapping(prev => ({
+                                            ...prev,
+                                            [key]: { ...prev[key], lifecyclestage: e.target.value }
+                                          }))}
+                                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 focus:border-blue-500 focus:outline-none placeholder-slate-600"
+                                          placeholder="Ex: lead"
+                                        />
+                                      </td>
+                                      <td className="py-1">
+                                        <input
+                                          type="text"
+                                          value={value.hs_lead_status}
+                                          onChange={(e) => setHubspotMapping(prev => ({
+                                            ...prev,
+                                            [key]: { ...prev[key], hs_lead_status: e.target.value }
+                                          }))}
+                                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 focus:border-blue-500 focus:outline-none placeholder-slate-600"
+                                          placeholder="Ex: new"
+                                        />
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Sync button */}
                         <button
                           onClick={handleSyncHubspot}
                           disabled={isSyncingHubspot}
-                          className="w-full flex items-center justify-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-300 hover:bg-orange-500/20 transition-all disabled:opacity-50"
+                          className="w-full flex items-center justify-center gap-2 mt-4 rounded-lg border border-orange-500/30 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-300 hover:bg-orange-500/20 transition-all disabled:opacity-50"
                         >
                           {isSyncingHubspot ? (
                             <><Loader2 className="h-4 w-4 animate-spin" /> Synchronisation en cours...</>
@@ -1023,7 +1108,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           </div>
                         )}
 
-                        <p className="text-[10px] text-orange-300/60">
+                        <p className="text-[10px] text-orange-300/60 mt-1">
                           La synchronisation importe tous les contacts HubSpot dans le pipeline de cette offre.
                           Les changements de statut sont synchronisés dans les deux sens.
                         </p>
