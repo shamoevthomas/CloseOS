@@ -196,7 +196,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   }, [user])
 
   // HubSpot OAuth
-  const handleConnectHubspot = () => {
+  const handleConnectHubspot = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
     const clientId = '4ffa6fe0-353d-4275-9998-2bada782b56c'
     const redirectUri = 'https://www.closeos.fr/api/hubspot/callback'
     const scopes = 'crm.objects.contacts.write oauth crm.objects.deals.read crm.objects.deals.write crm.objects.contacts.read'
@@ -1013,6 +1014,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           Connectez votre compte HubSpot pour synchroniser automatiquement vos contacts et deals.
                         </p>
                         <button
+                          type="button"
                           onClick={handleConnectHubspot}
                           className="w-full flex justify-center items-center gap-2 rounded-xl bg-orange-600 py-3 text-sm font-bold text-white hover:bg-orange-700 transition-all shadow-lg"
                         >
