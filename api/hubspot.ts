@@ -376,10 +376,91 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
     const events = Array.isArray(req.body) ? req.body : [req.body];
 
     for (const event of events) {
-        const { subscriptionType, objectId, propertyName, propertyValue } = event;
+        const { subscriptionType, objectId, propertyName, propertyValue, portalId } = event;
+        const hubspotContactId = String(objectId);
 
+        // --- CONTACT CREATION: auto-import new contact ---
+        if (subscriptionType === 'contact.creation') {
+            console.log(`[HubSpot Webhook] New contact created: ${hubspotContactId}, portal: ${portalId}`);
+
+            // Find user by portal_id
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('id, hubspot_access_token')
+                .eq('hubspot_portal_id', String(portalId))
+                .single();
+
+            if (!profile?.hubspot_access_token) {
+                console.log('[HubSpot Webhook] No user found for portal:', portalId);
+                continue;
+            }
+
+            // Check if prospect already exists
+            const { data: existing } = await supabase
+                .from('prospects')
+                .select('id')
+                .eq('hubspot_contact_id', hubspotContactId)
+                .maybeSingle();
+
+            if (existing) {
+                console.log('[HubSpot Webhook] Contact already exists as prospect:', existing.id);
+                continue;
+            }
+
+            // Fetch contact details from HubSpot
+            const accessToken = await getValidToken(supabase, profile.id);
+            if (!accessToken) continue;
+
+            const contactRes = await fetch(
+                `https://api.hubapi.com/crm/v3/objects/contacts/${hubspotContactId}?properties=firstname,lastname,email,phone,company,lifecyclestage`,
+                { headers: { Authorization: `Bearer ${accessToken}` } }
+            );
+
+            if (!contactRes.ok) {
+                console.error('[HubSpot Webhook] Failed to fetch contact:', await contactRes.text());
+                continue;
+            }
+
+            const contactData = await contactRes.json();
+            const props = contactData.properties || {};
+            const firstName = props.firstname || '';
+            const lastName = props.lastname || '';
+            const email = props.email || '';
+            const phone = props.phone || '';
+            const company = props.company || '';
+            const stage = mapHubspotToCloseos(props.lifecyclestage);
+            const fullName = `${firstName} ${lastName}`.trim() || email || 'Contact HubSpot';
+
+            // Find the user's HubSpot offer
+            const { data: hubspotOffer } = await supabase
+                .from('offers')
+                .select('id, name')
+                .eq('user_id', profile.id)
+                .eq('crm_provider', 'hubspot')
+                .limit(1)
+                .maybeSingle();
+
+            await supabase.from('prospects').insert([{
+                user_id: profile.id,
+                contact: fullName,
+                firstName: firstName || null,
+                lastName: lastName || null,
+                email: email || null,
+                phone: phone || null,
+                company: company || null,
+                offer: hubspotOffer?.name || 'HubSpot',
+                offer_id: hubspotOffer?.id || null,
+                stage,
+                value: 0,
+                hubspot_contact_id: hubspotContactId,
+                integration_type: 'hubspot',
+            }]);
+
+            console.log(`[HubSpot Webhook] Auto-imported contact: ${fullName} (${email})`);
+        }
+
+        // --- PROPERTY CHANGE: update existing prospect ---
         if (subscriptionType === 'contact.propertyChange' && propertyName === 'lifecyclestage') {
-            const hubspotContactId = String(objectId);
             const newStage = mapHubspotToCloseos(propertyValue);
 
             const { data: prospect } = await supabase

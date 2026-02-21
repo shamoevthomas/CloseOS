@@ -71,29 +71,47 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   const pushToHubspotIfNeeded = async (prospect: any, isUpdate = false) => {
     if (!user) return
     try {
-      // Check if this prospect's offer uses HubSpot
-      const offerName = prospect.offer?.split(' - ')[0]
-      if (!offerName) return
+      // Strategy: check if this prospect's offer uses HubSpot
+      let isHubspot = false
 
-      const { data: offerData } = await supabase
-        .from('offers')
-        .select('crm_provider')
-        .eq('user_id', user.id)
-        .eq('name', offerName)
-        .single()
+      // Try by offer_id first (most reliable)
+      if (prospect.offer_id) {
+        const { data: offerData } = await supabase
+          .from('offers')
+          .select('crm_provider')
+          .eq('id', prospect.offer_id)
+          .single()
+        isHubspot = offerData?.crm_provider === 'hubspot'
+      }
 
-      if (offerData?.crm_provider !== 'hubspot') return
+      // Fallback: try by offer name
+      if (!isHubspot && prospect.offer) {
+        const offerName = prospect.offer.split(' - ')[0]?.trim()
+        if (offerName) {
+          const { data: offerData } = await supabase
+            .from('offers')
+            .select('crm_provider')
+            .eq('user_id', user.id)
+            .ilike('name', offerName)
+            .maybeSingle()
+          isHubspot = offerData?.crm_provider === 'hubspot'
+        }
+      }
 
-      // Check if user has HubSpot connected
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('hubspot_access_token')
-        .eq('id', user.id)
-        .single()
+      // Fallback 2: check if ANY of user's offers use HubSpot
+      if (!isHubspot && !prospect.offer_id && !prospect.offer) {
+        const { data: offers } = await supabase
+          .from('offers')
+          .select('crm_provider')
+          .eq('user_id', user.id)
+          .eq('crm_provider', 'hubspot')
+          .limit(1)
+        isHubspot = !!(offers && offers.length > 0)
+      }
 
-      if (!profile?.hubspot_access_token) return
+      if (!isHubspot) return
 
-      console.log(`[HubSpot] ${isUpdate ? 'Updating' : 'Pushing'} contact to HubSpot...`)
+      console.log(`[HubSpot] ${isUpdate ? 'Updating' : 'Pushing'} contact to HubSpot...`, prospect.email || prospect.contact)
 
       fetch('/api/hubspot/push', {
         method: 'POST',
@@ -101,8 +119,8 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           user_id: user.id,
           prospect_id: prospect.id,
-          firstName: prospect.firstName || prospect.first_name,
-          lastName: prospect.lastName || prospect.last_name,
+          firstName: prospect.firstName || prospect.first_name || prospect.contact?.split(' ')[0],
+          lastName: prospect.lastName || prospect.last_name || prospect.contact?.split(' ').slice(1).join(' '),
           email: prospect.email,
           phone: prospect.phone,
           company: prospect.company,
@@ -111,7 +129,6 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
         }),
       }).then(res => res.json()).then(data => {
         if (data.hubspot_contact_id && !prospect.hubspot_contact_id) {
-          // Update local state with the new HubSpot ID
           setProspects(prev => prev.map(p =>
             p.id === prospect.id ? { ...p, hubspot_contact_id: data.hubspot_contact_id } : p
           ))
