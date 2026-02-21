@@ -698,14 +698,19 @@ export function RendezVous() {
          if (!user) return
 
          try {
-            const { data } = await supabase.from('profiles').select('cal_access_token, cal_token_expires_at, cal_username').eq('id', user.id).single()
+            const { data } = await supabase.from('profiles').select('cal_access_token, cal_refresh_token, cal_token_expires_at, cal_username').eq('id', user.id).single()
 
             if (data?.cal_access_token) {
                let token = data.cal_access_token;
 
-               // Check Expiration (with 5 min buffer)
-               if (data.cal_token_expires_at && Date.now() > (new Date(data.cal_token_expires_at).getTime() - 300000)) {
-                  console.log("Token expired or expiring soon. Refreshing...");
+               // Check Expiration: cal_token_expires_at is a bigint (Unix ms timestamp)
+               const expiresAt = typeof data.cal_token_expires_at === 'number'
+                  ? data.cal_token_expires_at
+                  : parseInt(data.cal_token_expires_at || '0', 10);
+               const isExpiredOrExpiring = expiresAt > 0 && Date.now() > (expiresAt - 300000);
+
+               if (isExpiredOrExpiring && data.cal_refresh_token) {
+                  console.log("[Cal] Token expired or expiring soon. Refreshing...");
                   try {
                      const refreshRes = await fetch('/api/refresh-cal-token', {
                         method: 'POST',
@@ -715,10 +720,12 @@ export function RendezVous() {
                      const refreshData = await refreshRes.json();
                      if (refreshData.access_token) {
                         token = refreshData.access_token;
-                        console.log("Token refreshed successfully.");
+                        console.log("[Cal] Token refreshed successfully.");
+                     } else {
+                        console.warn("[Cal] Refresh returned no token, using existing.");
                      }
                   } catch (e) {
-                     console.error("Failed to refresh token", e);
+                     console.error("[Cal] Failed to refresh token, using existing:", e);
                   }
                }
 
@@ -730,19 +737,58 @@ export function RendezVous() {
                await fetchCalBookings(token, false)
             }
          } catch (err) {
-            console.error("Error fetching profile:", err);
+            console.error("[Cal] Error fetching profile:", err);
          }
       }
-      fetchProfile()
 
       // Check URL params for OAuth success/error
       const params = new URLSearchParams(window.location.search)
       if (params.get('cal_connected') === 'true') {
-         setIsConfigModalOpen(true)
-         window.history.replaceState({}, '', window.location.pathname) // Clean URL
-      } else if (params.get('cal_error')) {
-         alert("Erreur connexion Cal.com: " + params.get('cal_error'))
+         // Clean URL immediately
+         window.history.replaceState({}, '', window.location.pathname)
+         // Wait a moment to ensure the DB was updated by the callback, then fetch
+         setTimeout(() => {
+            fetchProfile().then(() => setIsConfigModalOpen(true))
+         }, 500)
+      } else if (params.get('error')) {
+         const error = params.get('error')
+         window.history.replaceState({}, '', window.location.pathname)
+         alert("Erreur connexion Cal.com: " + error)
+         fetchProfile()
+      } else {
+         fetchProfile()
       }
+
+      // Auto-refresh token every 45 minutes to prevent silent disconnects
+      const refreshInterval = setInterval(async () => {
+         if (!user) return
+         try {
+            const { data } = await supabase.from('profiles').select('cal_access_token, cal_token_expires_at').eq('id', user.id).single()
+            if (!data?.cal_access_token) return
+
+            const expiresAt = typeof data.cal_token_expires_at === 'number'
+               ? data.cal_token_expires_at
+               : parseInt(data.cal_token_expires_at || '0', 10);
+
+            if (expiresAt > 0 && Date.now() > (expiresAt - 600000)) {
+               console.log("[Cal] Auto-refreshing token...");
+               const refreshRes = await fetch('/api/refresh-cal-token', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ user_id: user.id })
+               });
+               const refreshData = await refreshRes.json();
+               if (refreshData.access_token) {
+                  setCalAccessToken(refreshData.access_token);
+                  console.log("[Cal] Auto-refresh successful.");
+               }
+            }
+         } catch (e) {
+            console.error("[Cal] Auto-refresh error:", e);
+         }
+      }, 45 * 60 * 1000) // Every 45 minutes
+
+      return () => clearInterval(refreshInterval)
    }, [user])
 
 
@@ -896,7 +942,21 @@ export function RendezVous() {
                                     <p className="text-xs text-emerald-500/70">@{calUsername || 'Utilisateur'}</p>
                                  </div>
                               </div>
-                              <button onClick={() => { if (window.confirm('Déconnecter ?')) setCalAccessToken(null) }} className="text-xs font-bold text-slate-500 hover:text-white underline">Déconnecter</button>
+                              <button onClick={async () => {
+                                 if (window.confirm('Déconnecter votre compte Cal.com ?')) {
+                                    setCalAccessToken(null)
+                                    setCalUsername('')
+                                    setEventTypes([])
+                                    if (user) {
+                                       await supabase.from('profiles').update({
+                                          cal_access_token: null,
+                                          cal_refresh_token: null,
+                                          cal_token_expires_at: null,
+                                          cal_username: null
+                                       }).eq('id', user.id)
+                                    }
+                                 }
+                              }} className="text-xs font-bold text-slate-500 hover:text-white underline">Déconnecter</button>
                            </div>
                         )}
                      </section>
