@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const HUBSPOT_CLIENT_ID = '4ffa6fe0-353d-4275-9998-2bada782b56c';
 const HUBSPOT_CLIENT_SECRET = '146b5732-0bda-4768-b4b1-c8f5a519e56f';
-const HUBSPOT_REDIRECT_URI = 'https://www.closeos.fr/api/hubspot?action=callback';
+const HUBSPOT_REDIRECT_URI = 'https://www.closeos.fr/api/hubspot/callback';
 
 function getSupabase() {
     return createClient(

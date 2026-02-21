@@ -177,7 +177,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   // HubSpot OAuth
   const handleConnectHubspot = () => {
     const clientId = '4ffa6fe0-353d-4275-9998-2bada782b56c'
-    const redirectUri = 'https://www.closeos.fr/api/hubspot?action=callback'
+    const redirectUri = 'https://www.closeos.fr/api/hubspot/callback'
     const scopes = 'crm.objects.contacts.write oauth crm.objects.deals.read crm.objects.deals.write crm.objects.contacts.read'
     const state = user?.id
     window.location.href = `https://app-eu1.hubspot.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${state}`
@@ -189,7 +189,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     setIsSyncingHubspot(true)
     setHubspotSyncResult(null)
     try {
-      const res = await fetch('/api/hubspot?action=sync', {
+      const res = await fetch('/api/hubspot/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id, offer_id: offer.id }),

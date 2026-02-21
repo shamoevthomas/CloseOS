@@ -7,6 +7,26 @@
   ],
   "rewrites": [
     {
+      "source": "/api/hubspot/callback",
+      "destination": "/api/hubspot?action=callback"
+    },
+    {
+      "source": "/api/hubspot/sync",
+      "destination": "/api/hubspot?action=sync"
+    },
+    {
+      "source": "/api/hubspot/push",
+      "destination": "/api/hubspot?action=push"
+    },
+    {
+      "source": "/api/hubspot/refresh",
+      "destination": "/api/hubspot?action=refresh"
+    },
+    {
+      "source": "/api/hubspot/webhook",
+      "destination": "/api/hubspot?action=webhook"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
