@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let isMounted = true;
     let timeoutId: ReturnType<typeof setTimeout>;
-    const SAFETY_TIMEOUT_MS = 5000; // Évite le chargement infini si getSession bloque
+    const SAFETY_TIMEOUT_MS = 5000;
 
     const init = async () => {
       timeoutId = setTimeout(() => {
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }, SAFETY_TIMEOUT_MS);
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         clearTimeout(timeoutId);
 
         const currentUser = session?.user ?? null;
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(currentUser);
 
         if (currentUser) {
-          fetchProfile(currentUser.id);
+          await fetchProfile(currentUser.id);
         } else {
           setProfile(null);
         }
@@ -71,12 +71,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     init();
 
-    // Écoute des changements d'état (login/logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
+
+      if (!isMounted) return;
+
       setUser(currentUser);
 
-      // FirstPromoter : suivi parrainage après connexion Google (callback OAuth)
+      // FirstPromoter : suivi parrainage après connexion Google
       if (currentUser && typeof window !== "undefined") {
         const pendingEmail = sessionStorage.getItem("fpr_pending_email");
         if (pendingEmail) {
@@ -87,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (currentUser) {
-        // En cas de LOGIN ou TOKEN REFRESH, on recharge le profil pour avoir le statut à jour
+        // En cas de LOGIN ou TOKEN REFRESH, on recharge le profil
         await fetchProfile(currentUser.id);
       } else {
         setProfile(null);

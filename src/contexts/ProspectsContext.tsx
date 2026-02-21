@@ -60,11 +60,13 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   }, [user])
 
   async function loadProspects(showLoading = true) {
+    if (!user) return
     try {
       if (showLoading) setLoading(true)
       const { data, error } = await supabase
         .from('prospects')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -72,7 +74,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Erreur chargement:', error)
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }
 
