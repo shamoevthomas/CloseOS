@@ -47,12 +47,21 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
 
   useEffect(() => {
-    if (user) fetchProspects()
+    if (user) loadProspects()
   }, [user])
 
-  async function fetchProspects() {
+  // Auto-refresh toutes les 10 secondes pour voir les nouveaux imports HubSpot
+  useEffect(() => {
+    if (!user) return
+    const interval = setInterval(() => {
+      loadProspects(false) // false to avoid triggering the global loading state and flashing the UI
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [user])
+
+  async function loadProspects(showLoading = true) {
     try {
-      setLoading(true)
+      if (showLoading) setLoading(true)
       const { data, error } = await supabase
         .from('prospects')
         .select('*')

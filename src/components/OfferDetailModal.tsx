@@ -1029,6 +1029,54 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                         </p>
                       </div>
                     )}
+
+                    {/* --- MAPPING PERSONNALISÉ HUBSPOT --- */}
+                    {isEditing && (
+                      <div className="mt-6 border-t border-orange-500/20 pt-4">
+                        <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-orange-400">
+                          Mapping Personnalisé (Statuts HubSpot)
+                        </h5>
+                        <p className="mb-4 text-[10px] text-orange-300/80 leading-relaxed">
+                          Par défaut, CloseOS gère automatiquement les statuts classiques.
+                          Pour les étapes <strong>Gagné</strong> et <strong>No Show</strong>, indiquez la valeur exacte
+                          du <em>Statut du lead</em> (ou de l'<em>Étape du cycle de vie</em>) configurée dans votre HubSpot.
+                        </p>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="mb-1.5 block text-xs font-medium text-orange-300">
+                              Statut pour "Gagné" (ex: Client, Gagné)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="ex: Client"
+                              value={editedOffer.crmMapping?.hubspotWonStatus || ''}
+                              onChange={(e) => setEditedOffer({
+                                ...editedOffer,
+                                crmMapping: { ...editedOffer.crmMapping, hubspotWonStatus: e.target.value }
+                              })}
+                              className="w-full rounded-lg border border-orange-500/30 bg-orange-950/30 px-3 py-2 text-sm text-orange-100 placeholder-orange-500/50 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-1.5 block text-xs font-medium text-orange-300">
+                              Statut pour "No Show" (ex: No Show, Autre)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="ex: No Show"
+                              value={editedOffer.crmMapping?.hubspotNoShowStatus || ''}
+                              onChange={(e) => setEditedOffer({
+                                ...editedOffer,
+                                crmMapping: { ...editedOffer.crmMapping, hubspotNoShowStatus: e.target.value }
+                              })}
+                              className="w-full rounded-lg border border-orange-500/30 bg-orange-950/30 px-3 py-2 text-sm text-orange-100 placeholder-orange-500/50 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
