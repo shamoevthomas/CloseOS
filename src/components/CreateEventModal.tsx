@@ -235,15 +235,15 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800 text-left">
+      <div className="relative w-full max-w-md max-h-[90vh] flex flex-col rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800 text-left">
 
-        {/* HEADER */}
-        <div className="flex items-center justify-between border-b border-slate-800 p-6">
+        {/* HEADER - sticky */}
+        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20">
-              <Calendar className="h-5 w-5 text-blue-400" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/20">
+              <Calendar className="h-4 w-4 text-blue-400" />
             </div>
-            <h3 className="text-lg font-bold text-white">
+            <h3 className="text-base font-bold text-white">
               {editingEvent ? 'Modifier le RDV' : 'Programmer un RDV'}
             </h3>
           </div>
@@ -252,231 +252,237 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 p-6">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-y-auto space-y-3 px-5 py-4 custom-scrollbar">
 
-          {/* TOGGLE RELIER À UN CONTACT */}
-          <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15">
-                <User className="h-4 w-4 text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white">Relier à un contact</p>
-                <p className="text-[10px] text-slate-500">Associer un prospect ou contact au RDV</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => { setLinkContact(!linkContact); if (linkContact) { setSelectedContact(null); setSearchQuery('') } }}
-              className={cn(
-                'relative h-6 w-11 rounded-full transition-colors duration-200',
-                linkContact ? 'bg-emerald-600' : 'bg-slate-600'
-              )}
-            >
-              <span
-                className={cn(
-                  'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200',
-                  linkContact && 'translate-x-5'
-                )}
-              />
-            </button>
-          </div>
-
-          {/* CONTACT SELECTOR (visible when linkContact is ON) */}
-          {linkContact && (
-            <>
-              {/* TOGGLE INTERNE / EXTERNE */}
-              <div className="flex p-1 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                <button
-                  type="button"
-                  onClick={() => { setIsInternal(false); setSelectedContact(null); setSearchQuery('') }}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all",
-                    !isInternal ? "bg-blue-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
-                  )}
-                >
-                  <Globe size={14} /> Externe
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setIsInternal(true); setSelectedContact(null); setSearchQuery('') }}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all",
-                    isInternal ? "bg-purple-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
-                  )}
-                >
-                  <Users size={14} /> Interne
-                </button>
-              </div>
-
-              <div className="relative" ref={dropdownRef}>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
-                  {isInternal ? 'Contact Interne' : 'Prospect'}
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => { setSearchQuery(e.target.value); setIsDropdownOpen(true) }}
-                      onFocus={() => setIsDropdownOpen(true)}
-                      placeholder={isInternal ? "Chercher un contact..." : "Chercher un prospect..."}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-10 text-sm text-white focus:border-blue-500 outline-none transition-all"
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-50">
-                      <ChevronDown className="h-4 w-4 text-slate-500" />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => isInternal ? setShowAddInternalModal(true) : setShowProspectModal(true)}
-                    className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Nouveau
-                  </button>
-                </div>
-
-                {isDropdownOpen && (
-                  <div className="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-700 bg-slate-800 shadow-xl custom-scrollbar">
-                    {filteredContacts.length > 0 ? (
-                      filteredContacts.map((contact) => (
-                        <button
-                          key={contact.id}
-                          type="button"
-                          onClick={() => handleSelectContact(contact)}
-                          className="flex w-full items-center gap-3 border-b border-slate-700/50 px-4 py-3 text-left transition-colors hover:bg-slate-700 last:border-0"
-                        >
-                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-white uppercase">
-                            {contact.name?.charAt(0)}
-                          </div>
-                          <span className="text-sm font-medium text-white">{contact.name}</span>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-4 py-6 text-center text-xs text-slate-500 italic">Aucun contact trouvé</div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-
-            </>
-          )}
-
-          {/* TITRE */}
-          <div>
-            <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Titre de la session *</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Point Hebdo"
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 outline-none transition-all"
-              required
-            />
-          </div>
-          {/* DATE & HEURE */}
-          <div className="rounded-xl border border-slate-700 bg-slate-800/30 p-4 space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="h-4 w-4 text-blue-400" />
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Date & Horaire</span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2.5 text-sm text-white focus:border-blue-500 outline-none transition-all"
-                  required
-                />
-              </div>
-              <div className="flex items-center gap-2 flex-1">
-                <div className="relative flex-1">
-                  <Clock className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full rounded-lg border border-slate-600 bg-slate-900 pl-8 pr-2 py-2.5 text-sm text-white outline-none focus:border-blue-500 transition-all"
-                    required
-                  />
-                </div>
-                <span className="text-slate-500 font-bold text-xs">→</span>
-                <div className="relative flex-1">
-                  <Clock className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full rounded-lg border border-slate-600 bg-slate-900 pl-8 pr-2 py-2.5 text-sm text-white outline-none focus:border-blue-500 transition-all"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {date && startTime && endTime && (
-              <p className="text-[11px] text-slate-500 pl-1">
-                📅 {new Date(date + 'T00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}, de {startTime} à {endTime}
-              </p>
-            )}
-          </div>
-
-          {/* GOOGLE MEET TOGGLE : Uniquement pour Appel / Visio et si Google connecté */}
-          {selectedCategory === 'call_video' && isGoogleConnected && (
-            <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3">
+            {/* TOGGLE RELIER À UN CONTACT */}
+            <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2.5">
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15">
-                  <Video className="h-4 w-4 text-blue-400" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15">
+                  <User className="h-4 w-4 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white">Créer un Google Meet</p>
-                  <p className="text-[10px] text-slate-500">Un lien visio sera généré automatiquement</p>
+                  <p className="text-sm font-bold text-white">Relier à un contact</p>
+                  <p className="text-[10px] text-slate-500">Associer un prospect ou contact au RDV</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setCreateGoogleMeet(!createGoogleMeet)}
+                onClick={() => { setLinkContact(!linkContact); if (linkContact) { setSelectedContact(null); setSearchQuery('') } }}
                 className={cn(
                   'relative h-6 w-11 rounded-full transition-colors duration-200',
-                  createGoogleMeet ? 'bg-blue-600' : 'bg-slate-600'
+                  linkContact ? 'bg-emerald-600' : 'bg-slate-600'
                 )}
               >
                 <span
                   className={cn(
                     'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200',
-                    createGoogleMeet && 'translate-x-5'
+                    linkContact && 'translate-x-5'
                   )}
                 />
               </button>
             </div>
-          )}
 
-          {selectedCategory === 'call_video' && !isGoogleConnected && (
-            <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 px-4 py-3">
-              <p className="text-xs text-slate-500 italic">Connectez votre Google Calendar dans l'Agenda pour générer des liens Google Meet automatiquement.</p>
+            {/* CONTACT SELECTOR (visible when linkContact is ON) */}
+            {linkContact && (
+              <>
+                {/* TOGGLE INTERNE / EXTERNE */}
+                <div className="flex p-1 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                  <button
+                    type="button"
+                    onClick={() => { setIsInternal(false); setSelectedContact(null); setSearchQuery('') }}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all",
+                      !isInternal ? "bg-blue-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
+                    )}
+                  >
+                    <Globe size={14} /> Externe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setIsInternal(true); setSelectedContact(null); setSearchQuery('') }}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all",
+                      isInternal ? "bg-purple-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
+                    )}
+                  >
+                    <Users size={14} /> Interne
+                  </button>
+                </div>
+
+                <div className="relative" ref={dropdownRef}>
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
+                    {isInternal ? 'Contact Interne' : 'Prospect'}
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setIsDropdownOpen(true) }}
+                        onFocus={() => setIsDropdownOpen(true)}
+                        placeholder={isInternal ? "Chercher un contact..." : "Chercher un prospect..."}
+                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-10 text-sm text-white focus:border-blue-500 outline-none transition-all"
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-50">
+                        <ChevronDown className="h-4 w-4 text-slate-500" />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => isInternal ? setShowAddInternalModal(true) : setShowProspectModal(true)}
+                      className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Nouveau
+                    </button>
+                  </div>
+
+                  {isDropdownOpen && (
+                    <div className="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-700 bg-slate-800 shadow-xl custom-scrollbar">
+                      {filteredContacts.length > 0 ? (
+                        filteredContacts.map((contact) => (
+                          <button
+                            key={contact.id}
+                            type="button"
+                            onClick={() => handleSelectContact(contact)}
+                            className="flex w-full items-center gap-3 border-b border-slate-700/50 px-4 py-3 text-left transition-colors hover:bg-slate-700 last:border-0"
+                          >
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-white uppercase">
+                              {contact.name?.charAt(0)}
+                            </div>
+                            <span className="text-sm font-medium text-white">{contact.name}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-6 text-center text-xs text-slate-500 italic">Aucun contact trouvé</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+
+              </>
+            )}
+
+            {/* TITRE */}
+            <div>
+              <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Titre de la session *</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Point Hebdo"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 outline-none transition-all"
+                required
+              />
             </div>
-          )}
+            {/* DATE & HEURE */}
+            <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-3 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-3.5 w-3.5 text-blue-400" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Date & Horaire</span>
+              </div>
 
-          {/* DESCRIPTION (Facultatif désormais) */}
-          <div>
-            <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
-              {selectedCategory === 'call_video' ? 'Notes du RDV' : "Détails de l'événement"} (Optionnel)
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Saisir les informations..."
-              rows={3}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 outline-none resize-none"
-            />
-          </div>
+              <div>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-blue-500 outline-none transition-all"
+                  required
+                />
+              </div>
 
-          {/* ACTIONS */}
-          <div className="flex gap-3 pt-4">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Clock className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-blue-400/60" />
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="w-full rounded-lg border border-slate-600 bg-slate-900 pl-8 pr-2 py-2 text-sm text-white outline-none focus:border-blue-500 transition-all"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col items-center gap-0.5 px-1">
+                  <div className="w-3 h-px bg-slate-600" />
+                  <span className="text-[9px] text-slate-500 font-bold">à</span>
+                  <div className="w-3 h-px bg-slate-600" />
+                </div>
+                <div className="relative flex-1">
+                  <Clock className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-blue-400/60" />
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="w-full rounded-lg border border-slate-600 bg-slate-900 pl-8 pr-2 py-2 text-sm text-white outline-none focus:border-blue-500 transition-all"
+                    required
+                  />
+                </div>
+              </div>
+
+              {date && startTime && endTime && (
+                <p className="text-[10px] text-slate-500 pl-0.5">
+                  📅 {new Date(date + 'T00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}, de {startTime} à {endTime}
+                </p>
+              )}
+            </div>
+
+            {/* GOOGLE MEET TOGGLE : Uniquement pour Appel / Visio et si Google connecté */}
+            {selectedCategory === 'call_video' && isGoogleConnected && (
+              <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2.5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15">
+                    <Video className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Créer un Google Meet</p>
+                    <p className="text-[10px] text-slate-500">Un lien visio sera généré automatiquement</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCreateGoogleMeet(!createGoogleMeet)}
+                  className={cn(
+                    'relative h-6 w-11 rounded-full transition-colors duration-200',
+                    createGoogleMeet ? 'bg-blue-600' : 'bg-slate-600'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200',
+                      createGoogleMeet && 'translate-x-5'
+                    )}
+                  />
+                </button>
+              </div>
+            )}
+
+            {selectedCategory === 'call_video' && !isGoogleConnected && (
+              <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 px-4 py-3">
+                <p className="text-xs text-slate-500 italic">Connectez votre Google Calendar dans l'Agenda pour générer des liens Google Meet automatiquement.</p>
+              </div>
+            )}
+
+            {/* DESCRIPTION */}
+            <div>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">
+                {selectedCategory === 'call_video' ? 'Notes du RDV' : "Détails de l'événement"} (Optionnel)
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Saisir les informations..."
+                rows={2}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 outline-none resize-none"
+              />
+            </div>
+
+          </div>{/* end scrollable content */}
+
+          {/* ACTIONS - sticky bottom */}
+          <div className="flex gap-3 border-t border-slate-800 px-5 py-4 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}
