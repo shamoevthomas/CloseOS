@@ -26,7 +26,7 @@ interface GoogleCalendarContextType {
   logout: () => void
   isLoading: boolean
   refreshEvents: () => void
-  createEvent: (event: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string }) => Promise<boolean>
+  createEvent: (event: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean }) => Promise<{ success: boolean; hangoutLink?: string }>
 }
 
 const GoogleCalendarContext = createContext<GoogleCalendarContextType | undefined>(undefined)
@@ -127,34 +127,53 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
     scope: 'https://www.googleapis.com/auth/calendar.events',
   })
 
-  const createEvent = async (eventData: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string }): Promise<boolean> => {
-    if (!accessToken) return false
+  const createEvent = async (eventData: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean }): Promise<{ success: boolean; hangoutLink?: string }> => {
+    if (!accessToken) return { success: false }
     try {
       const startDateTime = `${eventData.date}T${eventData.startTime}:00`
       const endDateTime = `${eventData.date}T${eventData.endTime}:00`
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
 
-      await axios.post(
+      const body: any = {
+        summary: eventData.title,
+        description: eventData.description || '',
+        location: eventData.location || '',
+        start: { dateTime: startDateTime, timeZone: tz },
+        end: { dateTime: endDateTime, timeZone: tz },
+      }
+
+      // Demander la création automatique d'un lien Google Meet
+      if (eventData.withGoogleMeet) {
+        body.conferenceData = {
+          createRequest: {
+            requestId: `closeos-${Date.now()}`,
+            conferenceSolutionKey: { type: 'hangoutsMeet' },
+          },
+        }
+      }
+
+      const response = await axios.post(
         'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+        body,
         {
-          summary: eventData.title,
-          description: eventData.description || '',
-          location: eventData.location || '',
-          start: { dateTime: startDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-          end: { dateTime: endDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-        },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+          headers: { Authorization: `Bearer ${accessToken}` },
+          params: eventData.withGoogleMeet ? { conferenceDataVersion: 1 } : {},
+        }
       )
+
+      // Récupérer le lien Meet généré
+      const hangoutLink = response.data?.hangoutLink || response.data?.conferenceData?.entryPoints?.[0]?.uri
 
       // Rafraîchir les événements après création
       await fetchEvents(accessToken)
-      return true
+      return { success: true, hangoutLink }
     } catch (error: any) {
       console.error('Erreur création événement Google:', error)
       if (error.response?.status === 401 && userId) {
         localStorage.removeItem(getStorageKey(userId))
         setAccessToken(null)
       }
-      return false
+      return { success: false }
     }
   }
 

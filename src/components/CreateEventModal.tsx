@@ -4,7 +4,7 @@ import { cn } from '../lib/utils'
 import { useMeetings, type Meeting } from '../contexts/MeetingsContext'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
-import { createDailyRoom } from '../services/dailyService'
+
 import { supabase } from '../lib/supabase'
 
 interface CreateEventModalProps {
@@ -31,7 +31,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
   const [type, setType] = useState<Meeting['type']>('call')
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
-  const [isGeneratingLink, setIsGeneratingLink] = useState(false)
+  const [createGoogleMeet, setCreateGoogleMeet] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -72,6 +72,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
       setIsInternal(editingEvent.is_internal || false)
       setDescription(editingEvent.description || '')
       setLocation(editingEvent.location || '')
+      setCreateGoogleMeet(false)
 
       if (editingEvent.contact) {
         setSearchQuery(editingEvent.contact)
@@ -85,6 +86,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
       setType('call')
       setDescription('')
       setLocation('')
+      setCreateGoogleMeet(false)
       setSearchQuery('')
       setSelectedContact(null)
       setSelectedCategory('call_video')
@@ -121,17 +123,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
     setIsDropdownOpen(false)
   }
 
-  const handleGenerateDailyLink = async () => {
-    setIsGeneratingLink(true)
-    try {
-      const roomUrl = await createDailyRoom()
-      setLocation(roomUrl)
-    } catch (error) {
-      alert('❌ Erreur lien visio')
-    } finally {
-      setIsGeneratingLink(false)
-    }
-  }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -172,20 +164,26 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
         const { error } = await updateMeeting(editingEvent.id, payload)
         if (error) throw error
       } else {
-        const { error } = await addMeeting(payload)
-        if (error) throw error
-
         // Sync avec Google Calendar si connecté
         if (isGoogleConnected) {
-          await createGoogleEvent({
+          const result = await createGoogleEvent({
             title: payload.contact ? `${title} - ${payload.contact}` : title,
             date,
             startTime,
             endTime,
             description,
             location: payload.location,
+            withGoogleMeet: createGoogleMeet,
           })
+
+          // Si un lien Meet a été généré, on le sauvegarde dans le meeting
+          if (result.hangoutLink) {
+            payload.location = result.hangoutLink
+          }
         }
+
+        const { error } = await addMeeting(payload)
+        if (error) throw error
       }
       onClose()
     } catch (error: any) {
@@ -271,7 +269,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setIsDropdownOpen(true) }}
                   onFocus={() => setIsDropdownOpen(true)}
-                  placeholder={isInternal ? "Chercher Emilie, Kylian..." : "Chercher un prospect..."}
+                  placeholder={isInternal ? "Chercher un contact..." : "Chercher un prospect..."}
                   className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-10 text-sm text-white focus:border-blue-500 outline-none transition-all"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-50">
@@ -353,28 +351,39 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
             </div>
           </div>
 
-          {/* VISIO : Uniquement pour Appel / Visio */}
-          {selectedCategory === 'call_video' && (
-            <div>
-              <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Lien de réunion</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="URL ou Lieu"
-                  className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleGenerateDailyLink}
-                  disabled={isGeneratingLink}
-                  className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-500 disabled:opacity-50 transition-all"
-                >
-                  {isGeneratingLink ? <Loader2 size={14} className="animate-spin" /> : <Video size={14} />}
-                  Visio
-                </button>
+          {/* GOOGLE MEET TOGGLE : Uniquement pour Appel / Visio et si Google connecté */}
+          {selectedCategory === 'call_video' && isGoogleConnected && (
+            <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15">
+                  <Video className="h-4 w-4 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Créer un Google Meet</p>
+                  <p className="text-[10px] text-slate-500">Un lien visio sera généré automatiquement</p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setCreateGoogleMeet(!createGoogleMeet)}
+                className={cn(
+                  'relative h-6 w-11 rounded-full transition-colors duration-200',
+                  createGoogleMeet ? 'bg-blue-600' : 'bg-slate-600'
+                )}
+              >
+                <span
+                  className={cn(
+                    'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200',
+                    createGoogleMeet && 'translate-x-5'
+                  )}
+                />
+              </button>
+            </div>
+          )}
+
+          {selectedCategory === 'call_video' && !isGoogleConnected && (
+            <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 px-4 py-3">
+              <p className="text-xs text-slate-500 italic">Connectez votre Google Calendar dans l'Agenda pour générer des liens Google Meet automatiquement.</p>
             </div>
           )}
 
