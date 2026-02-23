@@ -31,7 +31,7 @@ const InternalContactsContext = createContext<InternalContactsContextType | unde
 export function InternalContactsProvider({ children }: { children: ReactNode }) {
   const [contacts, setContacts] = useState<InternalContact[]>([])
   const [loading, setLoading] = useState(true)
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
 
   // 1. Charger les contacts depuis Supabase filtrés par utilisateur
   const fetchContacts = async () => {
@@ -57,8 +57,9 @@ export function InternalContactsProvider({ children }: { children: ReactNode }) 
   }
 
   useEffect(() => {
+    if (authLoading) return
     fetchContacts()
-  }, [user])
+  }, [user, authLoading])
 
   // 2. Ajouter un contact lié à l'utilisateur
   const addContact = async (contactData: Omit<InternalContact, 'id' | 'user_id'>) => {

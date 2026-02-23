@@ -37,7 +37,7 @@ const MeetingsContext = createContext<MeetingsContextType | undefined>(undefined
 export function MeetingsProvider({ children }: { children: ReactNode }) {
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [loading, setLoading] = useState(true)
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
 
   const fetchMeetings = async () => {
     if (!user) {
@@ -68,8 +68,9 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    if (authLoading) return
     fetchMeetings()
-  }, [user])
+  }, [user, authLoading])
 
   const addMeeting = async (meetingData: any) => {
     if (!user) return { data: null, error: 'Non authentifié' }

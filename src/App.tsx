@@ -11,6 +11,7 @@ import { InternalContactsProvider } from './contexts/InternalContactsContext'
 import { CallsProvider } from './contexts/CallsContext'
 import { MessagesProvider } from './contexts/MessagesContext'
 import { NotificationsProvider } from './contexts/NotificationsContext'
+import { GoogleCalendarProvider } from './contexts/GoogleCalendarContext'
 
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
@@ -228,24 +229,26 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <PrivacyProvider>
-          <ProspectsProvider>
-            <InternalContactsProvider>
-              <OffersProvider>
-                <MeetingsProvider>
-                  <CallsProvider>
-                    <MessagesProvider>
-                      <NotificationsProvider>
-                        <AuthenticatedApp />
-                        <Analytics />
-                      </NotificationsProvider>
-                    </MessagesProvider>
-                  </CallsProvider>
-                </MeetingsProvider>
-              </OffersProvider>
-            </InternalContactsProvider>
-          </ProspectsProvider>
-        </PrivacyProvider>
+        <GoogleCalendarProvider>
+          <PrivacyProvider>
+            <ProspectsProvider>
+              <InternalContactsProvider>
+                <OffersProvider>
+                  <MeetingsProvider>
+                    <CallsProvider>
+                      <MessagesProvider>
+                        <NotificationsProvider>
+                          <AuthenticatedApp />
+                          <Analytics />
+                        </NotificationsProvider>
+                      </MessagesProvider>
+                    </CallsProvider>
+                  </MeetingsProvider>
+                </OffersProvider>
+              </InternalContactsProvider>
+            </ProspectsProvider>
+          </PrivacyProvider>
+        </GoogleCalendarProvider>
       </AuthProvider>
     </BrowserRouter>
   )

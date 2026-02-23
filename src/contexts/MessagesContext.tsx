@@ -34,7 +34,7 @@ const MessagesContext = createContext<MessagesContextType | undefined>(undefined
 export function MessagesProvider({ children }: { children: ReactNode }) {
   const [threads, setThreads] = useState<Thread[]>([])
   const [loading, setLoading] = useState(true)
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
 
   // 1. Charger les conversations depuis Supabase
   const fetchThreads = async () => {
@@ -62,8 +62,9 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    if (authLoading) return
     fetchThreads()
-  }, [user])
+  }, [user, authLoading])
 
   // 2. Envoyer un message (et mettre à jour le thread)
   const sendMessage = async (threadId: string, text: string) => {

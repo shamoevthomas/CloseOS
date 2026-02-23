@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { useGoogleLogin } from '@react-oauth/google'
 // @ts-ignore
 import axios from 'axios'
-import { supabase } from '../lib/supabase'
+import { useAuth } from './AuthContext'
 
 interface GoogleCalendarEvent {
   id: string
@@ -34,40 +34,23 @@ const getStorageKey = (userId: string) => `closeros_google_token_${userId}`
 const GOOGLE_BLUE = '#4285F4'
 
 export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
-  const [userId, setUserId] = useState<string | null>(null)
+  const { user, loading: authLoading } = useAuth()
+  const userId = user?.id ?? null
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  // Charger le token depuis localStorage quand l'utilisateur change
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUserId(user.id)
-        const savedToken = localStorage.getItem(getStorageKey(user.id))
-        setAccessToken(savedToken)
-      } else {
-        setUserId(null)
-        setAccessToken(null)
-        setGoogleEvents([])
-      }
+    if (authLoading) return
+    if (userId) {
+      const savedToken = localStorage.getItem(getStorageKey(userId))
+      setAccessToken(savedToken)
+    } else {
+      setAccessToken(null)
+      setGoogleEvents([])
     }
-
-    checkUser()
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        setUserId(session.user.id)
-        setAccessToken(localStorage.getItem(getStorageKey(session.user.id)))
-      } else {
-        setUserId(null)
-        setAccessToken(null)
-        setGoogleEvents([])
-      }
-    })
-
-    return () => authListener.subscription.unsubscribe()
-  }, [])
+  }, [userId, authLoading])
 
   const fetchEvents = async (token: string) => {
     if (!token) return
@@ -95,7 +78,7 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
 
       const events: GoogleCalendarEvent[] = response.data.items.map((item: any) => {
         const isAllDay = !item.start.dateTime && !!item.start.date
-        
+
         // LOGIQUE GOOGLE MEET : Si pas de lieu mais un lien visio, on l'indique
         let finalLocation = item.location || ''
         if (!finalLocation && item.hangoutLink) {
