@@ -28,7 +28,7 @@ import {
   Sheet,
   Clock,
   X,
-
+  Menu,
 } from 'lucide-react'
 
 function FAQItem({ question, children }: { question: string, children: React.ReactNode }) {
@@ -65,6 +65,7 @@ export function LandingPage() {
   // État pour le cycle de facturation
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Fonction pour calculer le prix (arrondi) avec -15% si annuel
   const calculatePrice = (price: number) => {
@@ -112,6 +113,50 @@ export function LandingPage() {
               Devenir Founder
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
+            {/* Hamburger mobile */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5 text-white" /> : <Menu className="h-5 w-5 text-white" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Menu mobile déroulant */}
+        <div
+          className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+            }`}
+        >
+          <div className="border-t border-white/5 bg-[#020617]/95 backdrop-blur-xl px-6 py-4 flex flex-col gap-1">
+            {[
+              { href: '#features', label: 'Fonctionnalités' },
+              { href: '#integrations', label: 'Intégrations' },
+              { href: '#comparison', label: 'Comparatif' },
+              { href: '#pricing', label: 'Tarifs' },
+              { href: '#demo', label: 'Démo' },
+              { href: '#faq', label: 'FAQ' },
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-3 px-4 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                {item.label}
+              </a>
+            ))}
+            <div className="mt-2 pt-3 border-t border-white/5">
+              <Link
+                to={`/checkout?billing=${billingCycle}`}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white text-slate-950 font-bold text-sm hover:bg-blue-50 transition-colors"
+              >
+                Devenir Founder
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
