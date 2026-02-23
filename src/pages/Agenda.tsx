@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus, Video, Phone, MapPin, Clock, X, Edit2, Trash2, Sparkles, ExternalLink, Calendar as CalendarIcon, FileText } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Video, Phone, MapPin, Clock, X, Edit2, Trash2, Sparkles, ExternalLink, Calendar as CalendarIcon, FileText, Copy, Check } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
 import { VideoCallOverlay } from '../components/VideoCallOverlay'
@@ -201,6 +201,7 @@ export function Agenda() {
   const [currentProspect] = useState({ name: '', avatar: '' })
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
   const [editingEventId, setEditingEventId] = useState<number | null>(null)
+  const [copiedLink, setCopiedLink] = useState(false)
 
   useEffect(() => {
     const eventIdFromState = (location.state as any)?.eventId;
@@ -1119,20 +1120,50 @@ export function Agenda() {
                     </p>
                   </div>
 
-                  {(selectedEvent.location || (selectedEvent as any).location) && (() => {
-                    const locationUrl = selectedEvent.location || (selectedEvent as any).location
-                    return (
-                      <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
-                        <MapPin className="mt-0.5 h-5 w-5 text-emerald-400" />
-                        <div className="flex-1">
-                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Lieu</p>
-                          <p className="mt-1 text-base font-medium text-white break-all">
-                            {locationUrl}
-                          </p>
+                  {(() => {
+                    const meetingLink = (selectedEvent as any).hangoutLink || (selectedEvent as any).meetingUrl || (selectedEvent as any).link || (selectedEvent.location?.startsWith('http') ? selectedEvent.location : null)
+                    if (meetingLink) {
+                      return (
+                        <div className="flex items-start gap-4 rounded-xl bg-blue-500/5 border border-blue-500/20 p-4 backdrop-blur-sm">
+                          <Video className="mt-0.5 h-5 w-5 text-blue-400 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">Lien de visio</p>
+                            <p className="mt-1 text-sm font-medium text-white break-all font-mono">
+                              {meetingLink}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(meetingLink)
+                              setCopiedLink(true)
+                              setTimeout(() => setCopiedLink(false), 2000)
+                            }}
+                            className={cn(
+                              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all flex-shrink-0',
+                              copiedLink
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white border border-white/10'
+                            )}
+                          >
+                            {copiedLink ? <><Check className="h-3.5 w-3.5" /> Copié</> : <><Copy className="h-3.5 w-3.5" /> Copier</>}
+                          </button>
                         </div>
-                      </div>
-                    )
+                      )
+                    }
+                    return null
                   })()}
+
+                  {selectedEvent.location && !selectedEvent.location.startsWith('http') && (
+                    <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
+                      <MapPin className="mt-0.5 h-5 w-5 text-emerald-400" />
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Lieu</p>
+                        <p className="mt-1 text-base font-medium text-white break-all">
+                          {selectedEvent.location}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {(selectedEvent.description || (selectedEvent as any).description) && (
                     <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">

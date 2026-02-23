@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Calendar, Video, Phone, MapPin, FileText, Loader2, Search, ChevronDown, User, Globe, Users } from 'lucide-react'
+import { X, Calendar, Video, Phone, MapPin, FileText, Loader2, Search, ChevronDown, User, Globe, Users, Plus } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useMeetings, type Meeting } from '../contexts/MeetingsContext'
 import { useProspects } from '../contexts/ProspectsContext'
@@ -23,6 +23,12 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
   const [isInternal, setIsInternal] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<'call_video' | 'event' | 'other'>('call_video')
   const [internalContactsList, setInternalContactsList] = useState<any[]>([])
+  const [linkContact, setLinkContact] = useState(false)
+  const [showQuickCreate, setShowQuickCreate] = useState(false)
+  const [quickCreateName, setQuickCreateName] = useState('')
+  const [quickCreateEmail, setQuickCreateEmail] = useState('')
+  const [quickCreatePhone, setQuickCreatePhone] = useState('')
+  const [isQuickCreating, setIsQuickCreating] = useState(false)
 
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
@@ -53,6 +59,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
       setSelectedContact({ id: prospectId, name: prospectName })
       setSearchQuery(prospectName)
       setIsInternal(false)
+      setLinkContact(true)
     }
   }, [prospectId, prospectName, isOpen])
 
@@ -73,6 +80,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
       setDescription(editingEvent.description || '')
       setLocation(editingEvent.location || '')
       setCreateGoogleMeet(false)
+      setLinkContact(!!editingEvent.contact)
 
       if (editingEvent.contact) {
         setSearchQuery(editingEvent.contact)
@@ -87,6 +95,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
       setDescription('')
       setLocation('')
       setCreateGoogleMeet(false)
+      setLinkContact(false)
       setSearchQuery('')
       setSelectedContact(null)
       setSelectedCategory('call_video')
@@ -123,6 +132,33 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
     setIsDropdownOpen(false)
   }
 
+  const handleQuickCreate = async () => {
+    if (!quickCreateName.trim()) return alert('Veuillez entrer un nom.')
+    setIsQuickCreating(true)
+    try {
+      if (isInternal) {
+        const { data, error } = await supabase.from('internal_contacts').insert({ name: quickCreateName, email: quickCreateEmail, phone: quickCreatePhone }).select().single()
+        if (error) throw error
+        setInternalContactsList(prev => [...prev, data])
+        setSelectedContact({ id: data.id, name: data.name })
+        setSearchQuery(data.name)
+      } else {
+        const { data, error } = await supabase.from('prospects').insert({ contact: quickCreateName, email: quickCreateEmail, phone: quickCreatePhone, company: '', stage: 'lead' }).select().single()
+        if (error) throw error
+        setSelectedContact({ id: data.id, name: data.contact })
+        setSearchQuery(data.contact)
+      }
+      setShowQuickCreate(false)
+      setQuickCreateName('')
+      setQuickCreateEmail('')
+      setQuickCreatePhone('')
+    } catch (error: any) {
+      alert(`Erreur : ${error.message}`)
+    } finally {
+      setIsQuickCreating(false)
+    }
+  }
+
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -133,9 +169,9 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
       return alert('Veuillez remplir le titre, la date et les heures.')
     }
 
-    // VALIDATION : Contact obligatoire SAUF si catégorie "Autre"
-    if (selectedCategory !== 'other' && !searchQuery) {
-      return alert('Veuillez sélectionner un contact ou prospect pour ce type de rendez-vous.')
+    // VALIDATION : Contact obligatoire si linkContact est activé
+    if (linkContact && !searchQuery) {
+      return alert('Veuillez sélectionner un contact ou prospect.')
     }
 
     setIsSubmitting(true)
@@ -153,10 +189,9 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
         type: finalType,
         description,
         location: selectedCategory === 'call_video' ? location : '',
-        // Si "Autre", pas de contact (vide), sinon contact sélectionné
-        contact: selectedCategory === 'other' ? '' : (selectedContact?.name || searchQuery),
-        prospectId: (selectedCategory === 'other' || isInternal) ? null : (selectedContact?.id || null),
-        is_internal: isInternal,
+        contact: linkContact ? (selectedContact?.name || searchQuery) : '',
+        prospectId: (!linkContact || isInternal) ? null : (selectedContact?.id || null),
+        is_internal: linkContact ? isInternal : false,
         status: 'upcoming' as const
       }
 
@@ -215,90 +250,161 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
 
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
 
-          {/* TOGGLE INTERNE / EXTERNE (Caché si "Autre") */}
-          {selectedCategory !== 'other' && (
-            <div className="flex p-1 bg-slate-800/50 rounded-xl border border-slate-700/50">
-              <button
-                type="button"
-                onClick={() => { setIsInternal(false); setSelectedContact(null); setSearchQuery('') }}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all",
-                  !isInternal ? "bg-blue-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
-                )}
-              >
-                <Globe size={14} /> Externe
-              </button>
-              <button
-                type="button"
-                onClick={() => { setIsInternal(true); setSelectedContact(null); setSearchQuery('') }}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all",
-                  isInternal ? "bg-purple-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
-                )}
-              >
-                <Users size={14} /> Interne
-              </button>
+          {/* TOGGLE RELIER À UN CONTACT */}
+          <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15">
+                <User className="h-4 w-4 text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">Relier à un contact</p>
+                <p className="text-[10px] text-slate-500">Associer un prospect ou contact au RDV</p>
+              </div>
             </div>
-          )}
-
-          {/* SÉLECTEUR DE CATÉGORIE */}
-          <div className="grid grid-cols-3 gap-2">
-            <button type="button" onClick={() => setSelectedCategory('call_video')} className={cn('flex flex-col items-center gap-2 rounded-lg border p-3 transition-all', selectedCategory === 'call_video' ? 'border-blue-500 bg-blue-500/10 text-blue-400' : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600')}>
-              <Video className="h-5 w-5" />
-              <span className="text-[10px] font-bold uppercase">Appel / Visio</span>
-            </button>
-            <button type="button" onClick={() => setSelectedCategory('event')} className={cn('flex flex-col items-center gap-2 rounded-lg border p-3 transition-all', selectedCategory === 'event' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600')}>
-              <Calendar className="h-5 w-5" />
-              <span className="text-[10px] font-bold uppercase">Événement</span>
-            </button>
-            <button type="button" onClick={() => setSelectedCategory('other')} className={cn('flex flex-col items-center gap-2 rounded-lg border p-3 transition-all', selectedCategory === 'other' ? 'border-purple-500 bg-purple-500/10 text-purple-400' : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600')}>
-              <Users className="h-5 w-5" />
-              <span className="text-[10px] font-bold uppercase">Autre</span>
+            <button
+              type="button"
+              onClick={() => { setLinkContact(!linkContact); if (linkContact) { setSelectedContact(null); setSearchQuery('') } }}
+              className={cn(
+                'relative h-6 w-11 rounded-full transition-colors duration-200',
+                linkContact ? 'bg-emerald-600' : 'bg-slate-600'
+              )}
+            >
+              <span
+                className={cn(
+                  'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200',
+                  linkContact && 'translate-x-5'
+                )}
+              />
             </button>
           </div>
 
-          {/* SÉLECTEUR DE CONTACT (Masqué si "Autre") */}
-          {selectedCategory !== 'other' && (
-            <div className="relative" ref={dropdownRef}>
-              <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
-                {isInternal ? 'Contact Interne (CRM) *' : 'Prospect (CRM) *'}
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setIsDropdownOpen(true) }}
-                  onFocus={() => setIsDropdownOpen(true)}
-                  placeholder={isInternal ? "Chercher un contact..." : "Chercher un prospect..."}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-10 text-sm text-white focus:border-blue-500 outline-none transition-all"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-50">
-                  <ChevronDown className="h-4 w-4 text-slate-500" />
-                </div>
+          {/* CONTACT SELECTOR (visible when linkContact is ON) */}
+          {linkContact && (
+            <>
+              {/* TOGGLE INTERNE / EXTERNE */}
+              <div className="flex p-1 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                <button
+                  type="button"
+                  onClick={() => { setIsInternal(false); setSelectedContact(null); setSearchQuery('') }}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all",
+                    !isInternal ? "bg-blue-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
+                  )}
+                >
+                  <Globe size={14} /> Externe
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsInternal(true); setSelectedContact(null); setSearchQuery('') }}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all",
+                    isInternal ? "bg-purple-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
+                  )}
+                >
+                  <Users size={14} /> Interne
+                </button>
               </div>
 
-              {isDropdownOpen && (
-                <div className="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-700 bg-slate-800 shadow-xl custom-scrollbar">
-                  {filteredContacts.length > 0 ? (
-                    filteredContacts.map((contact) => (
-                      <button
-                        key={contact.id}
-                        type="button"
-                        onClick={() => handleSelectContact(contact)}
-                        className="flex w-full items-center gap-3 border-b border-slate-700/50 px-4 py-3 text-left transition-colors hover:bg-slate-700 last:border-0"
-                      >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-white uppercase">
-                          {contact.name?.charAt(0)}
-                        </div>
-                        <span className="text-sm font-medium text-white">{contact.name}</span>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="px-4 py-6 text-center text-xs text-slate-500 italic">Aucun contact trouvé</div>
-                  )}
+              <div className="relative" ref={dropdownRef}>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
+                  {isInternal ? 'Contact Interne' : 'Prospect'}
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => { setSearchQuery(e.target.value); setIsDropdownOpen(true) }}
+                      onFocus={() => setIsDropdownOpen(true)}
+                      placeholder={isInternal ? "Chercher un contact..." : "Chercher un prospect..."}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-10 text-sm text-white focus:border-blue-500 outline-none transition-all"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-50">
+                      <ChevronDown className="h-4 w-4 text-slate-500" />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickCreate(!showQuickCreate)}
+                    className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Nouveau
+                  </button>
+                </div>
+
+                {isDropdownOpen && (
+                  <div className="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-700 bg-slate-800 shadow-xl custom-scrollbar">
+                    {filteredContacts.length > 0 ? (
+                      filteredContacts.map((contact) => (
+                        <button
+                          key={contact.id}
+                          type="button"
+                          onClick={() => handleSelectContact(contact)}
+                          className="flex w-full items-center gap-3 border-b border-slate-700/50 px-4 py-3 text-left transition-colors hover:bg-slate-700 last:border-0"
+                        >
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-white uppercase">
+                            {contact.name?.charAt(0)}
+                          </div>
+                          <span className="text-sm font-medium text-white">{contact.name}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-6 text-center text-xs text-slate-500 italic">Aucun contact trouvé</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* QUICK CREATE FORM */}
+              {showQuickCreate && (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
+                  <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                    {isInternal ? 'Nouveau contact interne' : 'Nouveau prospect'}
+                  </p>
+                  <input
+                    type="text"
+                    value={quickCreateName}
+                    onChange={(e) => setQuickCreateName(e.target.value)}
+                    placeholder="Nom *"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="email"
+                      value={quickCreateEmail}
+                      onChange={(e) => setQuickCreateEmail(e.target.value)}
+                      placeholder="Email"
+                      className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none"
+                    />
+                    <input
+                      type="tel"
+                      value={quickCreatePhone}
+                      onChange={(e) => setQuickCreatePhone(e.target.value)}
+                      placeholder="Téléphone"
+                      className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickCreate(false)}
+                      className="flex-1 rounded-lg border border-slate-700 bg-slate-800/50 py-2 text-xs font-bold text-slate-400 hover:text-white transition-all"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleQuickCreate}
+                      disabled={isQuickCreating}
+                      className="flex-1 rounded-lg bg-emerald-600 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all"
+                    >
+                      {isQuickCreating ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'Créer'}
+                    </button>
+                  </div>
                 </div>
               )}
-            </div>
+            </>
           )}
 
           {/* TITRE ET DATE */}
