@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react'
 // Imports des Contextes
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { PrivacyProvider } from './contexts/PrivacyContext'
-import { MeetingsProvider } from './contexts/MeetingsContext'
-import { ProspectsProvider } from './contexts/ProspectsContext'
-import { OffersProvider } from './contexts/OffersContext'
-import { InternalContactsProvider } from './contexts/InternalContactsContext'
-import { CallsProvider } from './contexts/CallsContext'
-import { MessagesProvider } from './contexts/MessagesContext'
-import { NotificationsProvider } from './contexts/NotificationsContext'
+import { MeetingsProvider, useMeetings } from './contexts/MeetingsContext'
+import { ProspectsProvider, useProspects } from './contexts/ProspectsContext'
+import { OffersProvider, useOffers } from './contexts/OffersContext'
+import { InternalContactsProvider, useInternalContacts } from './contexts/InternalContactsContext'
+import { CallsProvider, useCalls } from './contexts/CallsContext'
+import { MessagesProvider, useMessages } from './contexts/MessagesContext'
+import { NotificationsProvider, useNotifications } from './contexts/NotificationsContext'
 import { GoogleCalendarProvider } from './contexts/GoogleCalendarContext'
 
 // Imports des Composants
@@ -61,15 +61,28 @@ function SmartHome() {
 }
 
 // Composant de protection des routes
+// Attend que l'auth ET les données soient chargées avant d'afficher l'interface
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const { loading: prospectsLoading } = useProspects()
+  const { loading: offersLoading } = useOffers()
+  const { loading: meetingsLoading } = useMeetings()
+  const { loading: callsLoading } = useCalls()
+  const { loading: messagesLoading } = useMessages()
+  const { loading: contactsLoading } = useInternalContacts()
+  const { loading: notificationsLoading } = useNotifications()
 
-  if (loading) return <LoadingScreen />
+  // Auth en cours → loading screen
+  if (authLoading) return <LoadingScreen />
 
   // Si non connecté, redirection vers la landing
-  if (!user) {
-    return <Navigate to="/" replace />
-  }
+  if (!user) return <Navigate to="/" replace />
+
+  // Données en cours de chargement → loading screen
+  const dataLoading = prospectsLoading || offersLoading || meetingsLoading ||
+    callsLoading || messagesLoading || contactsLoading || notificationsLoading
+
+  if (dataLoading) return <LoadingScreen />
 
   return <>{children}</>
 }
