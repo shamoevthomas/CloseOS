@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Calendar, Video, Phone, MapPin, FileText, Loader2, Search, ChevronDown, User, Globe, Users, Plus } from 'lucide-react'
+import { X, Calendar, Video, Phone, MapPin, FileText, Loader2, Search, ChevronDown, User, Globe, Users, Plus, UserPlus } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useMeetings, type Meeting } from '../contexts/MeetingsContext'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
-
+import { useInternalContacts } from '../contexts/InternalContactsContext'
+import { CreateProspectModal } from './CreateProspectModal'
 import { supabase } from '../lib/supabase'
 
 interface CreateEventModalProps {
@@ -19,16 +20,15 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
   const { addMeeting, updateMeeting } = useMeetings()
   const { prospects } = useProspects()
   const { isConnected: isGoogleConnected, createEvent: createGoogleEvent } = useGoogleCalendar()
+  const { addContact: addInternalContact } = useInternalContacts()
 
   const [isInternal, setIsInternal] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<'call_video' | 'event' | 'other'>('call_video')
   const [internalContactsList, setInternalContactsList] = useState<any[]>([])
   const [linkContact, setLinkContact] = useState(false)
-  const [showQuickCreate, setShowQuickCreate] = useState(false)
-  const [quickCreateName, setQuickCreateName] = useState('')
-  const [quickCreateEmail, setQuickCreateEmail] = useState('')
-  const [quickCreatePhone, setQuickCreatePhone] = useState('')
-  const [isQuickCreating, setIsQuickCreating] = useState(false)
+  const [showProspectModal, setShowProspectModal] = useState(false)
+  const [showAddInternalModal, setShowAddInternalModal] = useState(false)
+  const [newInternalContact, setNewInternalContact] = useState({ name: '', role: '', email: '', phone: '' })
 
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
@@ -132,31 +132,26 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
     setIsDropdownOpen(false)
   }
 
-  const handleQuickCreate = async () => {
-    if (!quickCreateName.trim()) return alert('Veuillez entrer un nom.')
-    setIsQuickCreating(true)
-    try {
-      if (isInternal) {
-        const { data, error } = await supabase.from('internal_contacts').insert({ name: quickCreateName, email: quickCreateEmail, phone: quickCreatePhone }).select().single()
-        if (error) throw error
-        setInternalContactsList(prev => [...prev, data])
-        setSelectedContact({ id: data.id, name: data.name })
-        setSearchQuery(data.name)
-      } else {
-        const { data, error } = await supabase.from('prospects').insert({ contact: quickCreateName, email: quickCreateEmail, phone: quickCreatePhone, company: '', stage: 'lead' }).select().single()
-        if (error) throw error
-        setSelectedContact({ id: data.id, name: data.contact })
-        setSearchQuery(data.contact)
-      }
-      setShowQuickCreate(false)
-      setQuickCreateName('')
-      setQuickCreateEmail('')
-      setQuickCreatePhone('')
-    } catch (error: any) {
-      alert(`Erreur : ${error.message}`)
-    } finally {
-      setIsQuickCreating(false)
+  const handleProspectCreated = (prospectData: any) => {
+    const fullName = `${prospectData.firstName || ''} ${prospectData.lastName || ''}`.trim() || prospectData.contact
+    setSelectedContact({ id: null, name: fullName })
+    setSearchQuery(fullName)
+    setShowProspectModal(false)
+  }
+
+  const handleAddInternalContact = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newInternalContact.name || !newInternalContact.role || !newInternalContact.email || !newInternalContact.phone) {
+      return alert('Veuillez remplir tous les champs')
     }
+    await addInternalContact(newInternalContact)
+    // Refresh internal contacts list
+    const { data } = await supabase.from('internal_contacts').select('*')
+    if (data) setInternalContactsList(data)
+    setSelectedContact({ id: null, name: newInternalContact.name })
+    setSearchQuery(newInternalContact.name)
+    setNewInternalContact({ name: '', role: '', email: '', phone: '' })
+    setShowAddInternalModal(false)
   }
 
 
@@ -325,7 +320,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowQuickCreate(!showQuickCreate)}
+                    onClick={() => isInternal ? setShowAddInternalModal(true) : setShowProspectModal(true)}
                     className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all"
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -356,54 +351,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
                 )}
               </div>
 
-              {/* QUICK CREATE FORM */}
-              {showQuickCreate && (
-                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
-                  <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                    {isInternal ? 'Nouveau contact interne' : 'Nouveau prospect'}
-                  </p>
-                  <input
-                    type="text"
-                    value={quickCreateName}
-                    onChange={(e) => setQuickCreateName(e.target.value)}
-                    placeholder="Nom *"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="email"
-                      value={quickCreateEmail}
-                      onChange={(e) => setQuickCreateEmail(e.target.value)}
-                      placeholder="Email"
-                      className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none"
-                    />
-                    <input
-                      type="tel"
-                      value={quickCreatePhone}
-                      onChange={(e) => setQuickCreatePhone(e.target.value)}
-                      placeholder="Téléphone"
-                      className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowQuickCreate(false)}
-                      className="flex-1 rounded-lg border border-slate-700 bg-slate-800/50 py-2 text-xs font-bold text-slate-400 hover:text-white transition-all"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleQuickCreate}
-                      disabled={isQuickCreating}
-                      className="flex-1 rounded-lg bg-emerald-600 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all"
-                    >
-                      {isQuickCreating ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'Créer'}
-                    </button>
-                  </div>
-                </div>
-              )}
+
             </>
           )}
 
@@ -526,6 +474,97 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
           </div>
         </form>
       </div>
+
+      {/* MODAL: Créer un prospect */}
+      <CreateProspectModal
+        isOpen={showProspectModal}
+        onClose={() => setShowProspectModal(false)}
+        onSubmit={handleProspectCreated}
+      />
+
+      {/* MODAL: Créer un contact interne */}
+      {showAddInternalModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowAddInternalModal(false)}
+          />
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-slate-800 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-800 p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/20 border border-purple-500/20">
+                  <UserPlus className="h-5 w-5 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Nouveau Contact Interne</h3>
+              </div>
+              <button onClick={() => setShowAddInternalModal(false)} className="text-slate-400 hover:text-white transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAddInternalContact} className="space-y-4 p-6">
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Nom complet</label>
+                <input
+                  type="text"
+                  value={newInternalContact.name}
+                  onChange={(e) => setNewInternalContact({ ...newInternalContact, name: e.target.value })}
+                  placeholder="Ex: Jean Dupont"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Rôle/Poste</label>
+                <input
+                  type="text"
+                  value={newInternalContact.role}
+                  onChange={(e) => setNewInternalContact({ ...newInternalContact, role: e.target.value })}
+                  placeholder="Ex: Directeur Commercial"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Email</label>
+                <input
+                  type="email"
+                  value={newInternalContact.email}
+                  onChange={(e) => setNewInternalContact({ ...newInternalContact, email: e.target.value })}
+                  placeholder="Ex: jean.dupont@closeros.com"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Téléphone</label>
+                <input
+                  type="tel"
+                  value={newInternalContact.phone}
+                  onChange={(e) => setNewInternalContact({ ...newInternalContact, phone: e.target.value })}
+                  placeholder="Ex: +33 6 12 34 56 78"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddInternalModal(false)}
+                  className="flex-1 rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-sm font-bold text-slate-300 transition-all hover:bg-slate-800 hover:text-white"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl bg-purple-600 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-purple-500 shadow-lg shadow-purple-600/20"
+                >
+                  Ajouter
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
