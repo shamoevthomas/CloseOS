@@ -29,6 +29,7 @@ export function CallsProvider({ children }: { children: ReactNode }) {
   const [callHistory, setCallHistory] = useState<CallLog[]>([])
   const [loading, setLoading] = useState(true)
   const { user, loading: authLoading } = useAuth()
+  const userId = user?.id
 
   // 1. Charger l'historique des appels depuis Supabase (filtré par utilisateur)
   const fetchCallHistory = async () => {
@@ -58,7 +59,7 @@ export function CallsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading) return
     fetchCallHistory()
-  }, [user, authLoading])
+  }, [userId, authLoading])
 
   // 2. Ajouter un appel à l'historique Cloud
   const addCallLog = async (logData: Omit<CallLog, 'id' | 'user_id'>) => {

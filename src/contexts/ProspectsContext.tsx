@@ -45,25 +45,26 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [loading, setLoading] = useState(true)
   const { user, loading: authLoading } = useAuth()
+  const userId = user?.id
 
   useEffect(() => {
     if (authLoading) return // Attendre que l'auth soit résolue
-    if (user) {
+    if (userId) {
       loadProspects()
     } else {
       setProspects([])
       setLoading(false)
     }
-  }, [user, authLoading])
+  }, [userId, authLoading])
 
   // Auto-refresh toutes les 10 secondes pour voir les nouveaux imports HubSpot
   useEffect(() => {
-    if (authLoading || !user) return
+    if (authLoading || !userId) return
     const interval = setInterval(() => {
       loadProspects(false)
     }, 10000)
     return () => clearInterval(interval)
-  }, [user, authLoading])
+  }, [userId, authLoading])
 
   async function loadProspects(showLoading = true) {
     if (!user) return

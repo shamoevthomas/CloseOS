@@ -81,6 +81,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
   const [offers, setOffers] = useState<Offer[]>([])
   const [loading, setLoading] = useState(true)
   const { user, loading: authLoading } = useAuth()
+  const userId = user?.id
 
   // --- TRADUCTEUR 1 : Base de données -> Application ---
   const mapFromDb = (data: any[]): Offer[] => {
@@ -192,7 +193,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading) return
     fetchOffers()
-  }, [user, authLoading])
+  }, [userId, authLoading])
 
   // 2. Ajouter une offre
   const addOffer = async (offerData: Omit<Offer, 'id' | 'user_id'>) => {

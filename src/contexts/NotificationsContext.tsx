@@ -36,6 +36,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [counts, setCounts] = useState<NotificationCounts>({ messages: 0, calls: 0 })
   const [loading, setLoading] = useState(true)
   const { user, loading: authLoading } = useAuth()
+  const userId = user?.id
 
   // 1. Charger les notifications existantes depuis la base
   const fetchNotifications = async () => {
@@ -106,7 +107,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   // Initialisation au chargement de l'utilisateur
   useEffect(() => {
     if (authLoading) return
-    if (user) {
+    if (userId) {
       fetchNotifications().then((currentNotifs) => {
         syncRecentBookings(currentNotifs)
       })
@@ -114,17 +115,17 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       setNotifications([])
       setLoading(false)
     }
-  }, [user, authLoading])
+  }, [userId, authLoading])
 
   // 3. Écoute Real-time (pour les RDV pris pendant que l'app est ouverte)
   useEffect(() => {
-    if (authLoading || !user) return
+    if (authLoading || !userId) return
 
     const channel = supabase
       .channel('meetings-monitor')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'meetings', filter: `user_id=eq.${user.id}` },
+        { event: 'INSERT', schema: 'public', table: 'meetings', filter: `user_id=eq.${userId}` },
         (payload) => {
           console.log("⚡ Nouveau RDV reçu en direct !", payload.new)
           addNotification({
@@ -137,7 +138,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [user, authLoading])
+  }, [userId, authLoading])
 
   // Fonction pour insérer une notification en base
   const addNotification = async (notifData: Omit<Notification, 'id' | 'read' | 'time' | 'user_id'>) => {
