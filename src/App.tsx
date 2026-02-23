@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
 // Imports des Contextes
@@ -18,6 +18,7 @@ import { SettingsModal } from './components/settings/SettingsModal'
 import { OnboardingModal } from './components/OnboardingModal'
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
+import { LoadingScreen } from './components/LoadingScreen'
 import { CheckoutForm } from './components/CheckoutForm'
 import { CheckoutStarter } from './components/CheckoutStarter'
 import { Return } from './components/Return'
@@ -50,17 +51,20 @@ import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
 import { SubscriptionRetention } from './pages/SubscriptionRetention'
 
+// Page d'accueil intelligente : loading screen si auth en cours, sinon landing ou redirect
+function SmartHome() {
+  const { user, loading } = useAuth()
+
+  if (loading) return <LoadingScreen />
+  if (user) return <Navigate to="/dashboard" replace />
+  return <LandingPage />
+}
+
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    )
-  }
+  if (loading) return <LoadingScreen />
 
   // Si non connecté, redirection vers la landing
   if (!user) {
@@ -91,15 +95,6 @@ function AuthenticatedApp() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
   const location = useLocation()
-  const navigate = useNavigate()
-
-  // Si un utilisateur est connecté et se retrouve sur la racine '/',
-  // on le redirige automatiquement vers son dashboard.
-  useEffect(() => {
-    if (!loading && user && location.pathname === '/') {
-      navigate('/dashboard', { replace: true })
-    }
-  }, [user, loading, location.pathname, navigate])
 
   // Gestion de la visibilité de la bulle CookieYes
   useEffect(() => {
@@ -131,7 +126,7 @@ function AuthenticatedApp() {
       <Routes>
         <Route
           path="/"
-          element={<LandingPage />}
+          element={<SmartHome />}
         />
 
         {/* Routes Publiques */}
