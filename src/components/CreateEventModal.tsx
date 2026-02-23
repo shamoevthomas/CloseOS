@@ -3,6 +3,7 @@ import { X, Calendar, Video, Phone, MapPin, FileText, Loader2, Search, ChevronDo
 import { cn } from '../lib/utils'
 import { useMeetings, type Meeting } from '../contexts/MeetingsContext'
 import { useProspects } from '../contexts/ProspectsContext'
+import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
 import { createDailyRoom } from '../services/dailyService'
 import { supabase } from '../lib/supabase'
 
@@ -16,7 +17,8 @@ interface CreateEventModalProps {
 
 export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, editingEvent }: CreateEventModalProps) {
   const { addMeeting, updateMeeting } = useMeetings()
-  const { prospects } = useProspects() 
+  const { prospects } = useProspects()
+  const { isConnected: isGoogleConnected, createEvent: createGoogleEvent } = useGoogleCalendar()
 
   const [isInternal, setIsInternal] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<'call_video' | 'event' | 'other'>('call_video')
@@ -61,11 +63,11 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
       const [start, end] = editingEvent.time.split(' - ')
       setStartTime(start || '')
       setEndTime(end || '')
-      
+
       if (editingEvent.type === 'event') setSelectedCategory('event')
       else if (editingEvent.type === 'other') setSelectedCategory('other')
       else setSelectedCategory('call_video')
-      
+
       setType(editingEvent.type)
       setIsInternal(editingEvent.is_internal || false)
       setDescription(editingEvent.description || '')
@@ -104,7 +106,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
 
   if (!isOpen) return null
 
-  const currentList = isInternal 
+  const currentList = isInternal
     ? internalContactsList.map(c => ({ id: c.id, name: c.name || 'Sans nom' }))
     : prospects.map(p => ({ id: p.id, name: p.contact || p.title || 'Prospect' }))
 
@@ -133,7 +135,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // VALIDATION : Titre et Dates obligatoires
     if (!title || !date || !startTime || !endTime) {
       return alert('Veuillez remplir le titre, la date et les heures.')
@@ -145,11 +147,11 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
     }
 
     setIsSubmitting(true)
-    
+
     let finalType: Meeting['type'] = 'call'
     if (selectedCategory === 'event') finalType = 'event'
     else if (selectedCategory === 'other') finalType = 'other'
-    else finalType = type 
+    else finalType = type
 
     try {
       const payload = {
@@ -172,6 +174,18 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
       } else {
         const { error } = await addMeeting(payload)
         if (error) throw error
+
+        // Sync avec Google Calendar si connecté
+        if (isGoogleConnected) {
+          await createGoogleEvent({
+            title: payload.contact ? `${title} - ${payload.contact}` : title,
+            date,
+            startTime,
+            endTime,
+            description,
+            location: payload.location,
+          })
+        }
       }
       onClose()
     } catch (error: any) {
@@ -185,7 +199,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800 text-left">
-        
+
         {/* HEADER */}
         <div className="flex items-center justify-between border-b border-slate-800 p-6">
           <div className="flex items-center gap-3">
@@ -202,11 +216,11 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
-          
+
           {/* TOGGLE INTERNE / EXTERNE (Caché si "Autre") */}
           {selectedCategory !== 'other' && (
             <div className="flex p-1 bg-slate-800/50 rounded-xl border border-slate-700/50">
-              <button 
+              <button
                 type="button"
                 onClick={() => { setIsInternal(false); setSelectedContact(null); setSearchQuery('') }}
                 className={cn(
@@ -216,7 +230,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
               >
                 <Globe size={14} /> Externe
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => { setIsInternal(true); setSelectedContact(null); setSearchQuery('') }}
                 className={cn(

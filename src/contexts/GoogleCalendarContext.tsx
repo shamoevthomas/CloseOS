@@ -25,7 +25,8 @@ interface GoogleCalendarContextType {
   login: () => void
   logout: () => void
   isLoading: boolean
-  refreshEvents: () => void // AJOUT : Pour forcer le rafraîchissement
+  refreshEvents: () => void
+  createEvent: (event: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string }) => Promise<boolean>
 }
 
 const GoogleCalendarContext = createContext<GoogleCalendarContextType | undefined>(undefined)
@@ -123,8 +124,39 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
       }
     },
     onError: () => alert('Erreur lors de la connexion à Google Calendar'),
-    scope: 'https://www.googleapis.com/auth/calendar.readonly',
+    scope: 'https://www.googleapis.com/auth/calendar.events',
   })
+
+  const createEvent = async (eventData: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string }): Promise<boolean> => {
+    if (!accessToken) return false
+    try {
+      const startDateTime = `${eventData.date}T${eventData.startTime}:00`
+      const endDateTime = `${eventData.date}T${eventData.endTime}:00`
+
+      await axios.post(
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+        {
+          summary: eventData.title,
+          description: eventData.description || '',
+          location: eventData.location || '',
+          start: { dateTime: startDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+          end: { dateTime: endDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      )
+
+      // Rafraîchir les événements après création
+      await fetchEvents(accessToken)
+      return true
+    } catch (error: any) {
+      console.error('Erreur création événement Google:', error)
+      if (error.response?.status === 401 && userId) {
+        localStorage.removeItem(getStorageKey(userId))
+        setAccessToken(null)
+      }
+      return false
+    }
+  }
 
   const logout = () => {
     if (userId) localStorage.removeItem(getStorageKey(userId))
@@ -147,6 +179,7 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
         logout,
         isLoading,
         refreshEvents: () => accessToken && fetchEvents(accessToken),
+        createEvent,
       }}
     >
       {children}
