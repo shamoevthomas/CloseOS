@@ -165,6 +165,21 @@ const isToday = (date: Date): boolean => {
   return isSameDay(date, new Date())
 }
 
+// --- HELPERS GOOGLE CALENDAR ---
+const getGoogleDate = (dateField: any): Date | null => {
+  if (!dateField) return null;
+  if (dateField instanceof Date) return dateField;
+  if (typeof dateField === 'string') return new Date(dateField);
+  if (dateField.dateTime) return new Date(dateField.dateTime);
+  if (dateField.date) return new Date(dateField.date);
+  return null;
+}
+
+const isGoogleAllDay = (event: any): boolean => {
+  if (event.allDay !== undefined) return event.allDay;
+  return !!(event.start && event.start.date && !event.start.dateTime);
+}
+
 export function Agenda() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -196,14 +211,18 @@ export function Agenda() {
 
         const ge = googleEvents.find(g => String(g.id) === String(eventIdFromState));
         if (ge && ge.start && ge.end) {
+          const startDate = getGoogleDate(ge.start);
+          const endDate = getGoogleDate(ge.end);
+          if (!startDate || !endDate) return null;
           const isVideo = !!(ge as any).hangoutLink || ge.location?.toLowerCase().includes('meet') || ge.description?.includes('zoom');
+          const eventTitle = ge.title || (ge as any).summary || 'Sans titre';
           return {
             id: ge.id as any,
-            title: ge.title,
-            date: ge.start.toISOString().split('T')[0],
-            time: `${ge.start.getHours().toString().padStart(2, '0')}:${ge.start.getMinutes().toString().padStart(2, '0')} - ${ge.end.getHours().toString().padStart(2, '0')}:${ge.end.getMinutes().toString().padStart(2, '0')}`,
+            title: eventTitle,
+            date: startDate.toISOString().split('T')[0],
+            time: `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')} - ${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`,
             type: isVideo ? 'video' : 'meeting',
-            contact: ge.title,
+            contact: eventTitle,
             status: 'scheduled' as const,
             isGoogleEvent: true,
             location: ge.location || '',
@@ -347,31 +366,43 @@ export function Agenda() {
       .filter(event => {
         try {
           if (!event || !event.start) return false
-          if (event.allDay) return false
-          return isSameDay(event.start, date)
+          if (isGoogleAllDay(event)) return false
+
+          const startDate = getGoogleDate(event.start)
+          if (!startDate) return false
+
+          return isSameDay(startDate, date)
         } catch (error) {
+          console.error("Erreur filtrage date Google:", error)
           return false
         }
       })
       .map(event => {
         try {
-          if (!event.start || !event.end) return null
-          const startTime = `${event.start.getHours().toString().padStart(2, '0')}:${event.start.getMinutes().toString().padStart(2, '0')}`
-          const endTime = `${event.end.getHours().toString().padStart(2, '0')}:${event.end.getMinutes().toString().padStart(2, '0')}`
+          const startDate = getGoogleDate(event.start)
+          const endDate = getGoogleDate(event.end)
 
-          const signature = `${startTime}-${(event.title || '').substring(0, 5).toLowerCase()}`;
+          if (!startDate || !endDate) return null
+
+          const startTime = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`
+          const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`
+
+          // Google utilise souvent 'summary' à la place de 'title'
+          const eventTitle = event.title || (event as any).summary || 'Sans titre'
+
+          const signature = `${startTime}-${(eventTitle).substring(0, 5).toLowerCase()}`;
           if (existingSignatures.has(signature)) return null;
 
           const isVideo = !!(event as any).hangoutLink || event.location?.toLowerCase().includes('meet') || event.description?.includes('zoom');
 
           return {
             id: event.id as any,
-            title: event.title,
-            date: event.start.toISOString().split('T')[0],
+            title: eventTitle,
+            date: startDate.toISOString().split('T')[0],
             time: `${startTime} - ${endTime}`,
             type: isVideo ? 'video' : 'meeting' as const,
             prospect: event.description || '',
-            contact: event.title,
+            contact: eventTitle,
             prospectId: 0,
             status: 'scheduled' as const,
             isGoogleEvent: true,
@@ -381,6 +412,7 @@ export function Agenda() {
             hangoutLink: (event as any).hangoutLink
           }
         } catch (error) {
+          console.error("Erreur mapping Google:", error)
           return null
         }
       })
@@ -396,8 +428,10 @@ export function Agenda() {
 
   const getAllDayEventsForDate = (date: Date) => {
     return googleEvents.filter(event => {
-      if (!event.allDay) return false
-      return isSameDay(event.start, date)
+      if (!isGoogleAllDay(event)) return false
+      const startDate = getGoogleDate(event.start)
+      if (!startDate) return false
+      return isSameDay(startDate, date)
     })
   }
 
