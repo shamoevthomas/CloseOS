@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Calendar, Video, Phone, MapPin, FileText, Loader2, Search, ChevronDown, User, Globe, Users, Plus, UserPlus } from 'lucide-react'
+import { X, Calendar, Video, Phone, MapPin, FileText, Loader2, Search, ChevronDown, User, Globe, Users, Plus, UserPlus, Clock } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useMeetings, type Meeting } from '../contexts/MeetingsContext'
 import { useProspects } from '../contexts/ProspectsContext'
@@ -87,10 +87,19 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
         setSelectedContact({ id: editingEvent.prospectId || null, name: editingEvent.contact })
       }
     } else if (!prospectId) {
+      // Defaults : date = aujourd'hui, heure = prochain créneau arrondi
+      const now = new Date()
+      const todayStr = now.toISOString().split('T')[0]
+      const mins = now.getMinutes()
+      const roundedMins = mins < 30 ? 30 : 0
+      const startH = mins < 30 ? now.getHours() : now.getHours() + 1
+      const endH = startH + 1
+      const pad = (n: number) => n.toString().padStart(2, '0')
+
       setTitle('')
-      setDate('')
-      setStartTime('')
-      setEndTime('')
+      setDate(todayStr)
+      setStartTime(`${pad(startH)}:${pad(roundedMins)}`)
+      setEndTime(`${pad(endH)}:${pad(roundedMins)}`)
       setType('call')
       setDescription('')
       setLocation('')
@@ -355,54 +364,65 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
             </>
           )}
 
-          {/* TITRE ET DATE */}
-          <div className="grid gap-4">
-            <div>
-              <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Titre de la session *</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Point Hebdo"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 outline-none transition-all"
-                required
-              />
+          {/* TITRE */}
+          <div>
+            <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Titre de la session *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex: Point Hebdo"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 outline-none transition-all"
+              required
+            />
+          </div>
+          {/* DATE & HEURE */}
+          <div className="rounded-xl border border-slate-700 bg-slate-800/30 p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Calendar className="h-4 w-4 text-blue-400" />
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Date & Horaire</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Date *</label>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 outline-none"
+                  className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2.5 text-sm text-white focus:border-blue-500 outline-none transition-all"
                   required
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="mb-2 block text-[10px] font-bold uppercase text-slate-500">Début *</label>
+              <div className="flex items-center gap-2 flex-1">
+                <div className="relative flex-1">
+                  <Clock className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
                   <input
                     type="time"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-2 text-xs text-white outline-none"
+                    className="w-full rounded-lg border border-slate-600 bg-slate-900 pl-8 pr-2 py-2.5 text-sm text-white outline-none focus:border-blue-500 transition-all"
                     required
                   />
                 </div>
-                <div>
-                  <label className="mb-2 block text-[10px] font-bold uppercase text-slate-500">Fin *</label>
+                <span className="text-slate-500 font-bold text-xs">→</span>
+                <div className="relative flex-1">
+                  <Clock className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
                   <input
                     type="time"
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-2 text-xs text-white outline-none"
+                    className="w-full rounded-lg border border-slate-600 bg-slate-900 pl-8 pr-2 py-2.5 text-sm text-white outline-none focus:border-blue-500 transition-all"
                     required
                   />
                 </div>
               </div>
             </div>
+
+            {date && startTime && endTime && (
+              <p className="text-[11px] text-slate-500 pl-1">
+                📅 {new Date(date + 'T00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}, de {startTime} à {endTime}
+              </p>
+            )}
           </div>
 
           {/* GOOGLE MEET TOGGLE : Uniquement pour Appel / Visio et si Google connecté */}
