@@ -82,6 +82,33 @@ export function LandingPage() {
     })();
   }, [])
 
+  useEffect(() => {
+    const d = document;
+    // Check if script already exists to avoid duplicates during HMR
+    if (!d.getElementById('lovable-chatbot-script')) {
+      const s = d.createElement('script');
+      s.id = 'lovable-chatbot-script';
+      s.src = 'https://chatbotts.lovable.app/chatbot-widget.js';
+      s.setAttribute('data-chatbot-id', 'acb35233-a6de-4738-9ba0-7e25c82c2a61');
+      s.setAttribute('data-supabase-url', 'https://mkxcircbzcsjamslijde.supabase.co');
+      s.setAttribute('data-supabase-key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1reGNpcmNiemNzamFtc2xpamRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjM0MDAsImV4cCI6MjA4NzQ5OTQwMH0.9-abq1tEFsmjfRkLJjrkXlG3z-9o2HKYjyp5eBIl178');
+      d.body.appendChild(s);
+    }
+
+    return () => {
+      // Cleanup script and any potential wrapper elements when navigating away
+      const script = d.getElementById('lovable-chatbot-script');
+      if (script) {
+        script.remove();
+      }
+      // Attempt to identify and remove the chat widget container
+      const widget = d.querySelector('chat-widget, lovable-chat, #chatbot-container, [data-chatbot-id]');
+      if (widget) {
+        widget.remove();
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 overflow-x-hidden">
 
