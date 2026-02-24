@@ -84,7 +84,7 @@ export function LandingPage() {
 
   useEffect(() => {
     const s = document.createElement('script');
-    s.src = 'https://chatbotts.lovable.app/chatbot-widget.js';
+    s.src = '/chatbot-widget.js';
     s.setAttribute('data-chatbot-id', 'acb35233-a6de-4738-9ba0-7e25c82c2a61');
     s.setAttribute('data-supabase-url', 'https://mkxcircbzcsjamslijde.supabase.co');
     s.setAttribute('data-supabase-key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1reGNpcmNiemNzamFtc2xpamRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjM0MDAsImV4cCI6MjA4NzQ5OTQwMH0.9-abq1tEFsmjfRkLJjrkXlG3z-9o2HKYjyp5eBIl178');
