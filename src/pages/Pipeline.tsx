@@ -4,17 +4,15 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-p
 import {
   User,
   ChevronDown,
-  Phone,
-  Mail,
   Calendar,
   Trash2,
   Search,
-  Filter,
   Plus,
   Edit2,
   LayoutDashboard,
   List,
-  Briefcase
+  Briefcase,
+  RefreshCw
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
@@ -65,7 +63,17 @@ type ViewMode = 'pipeline' | 'list'
 
 export function Pipeline() {
   const location = useLocation()
-  const { prospects: pipelineDealsFromContext, updateProspect, addProspect, deleteProspect } = useProspects()
+  const {
+    prospects: pipelineDealsFromContext,
+    updateProspect,
+    addProspect,
+    deleteProspect,
+    syncHubspot,
+    isSyncingHubspot,
+    hubspotConnected,
+    hasHubspotOffer,
+    nextSyncSeconds
+  } = useProspects()
   const { offers } = useOffers()
 
   const pipelineDeals = pipelineDealsFromContext || []
@@ -99,7 +107,7 @@ export function Pipeline() {
     const state = location.state as { prospectId?: number } | null
     if (state?.prospectId && pipelineDeals) {
       const deal = pipelineDeals.find(d => d.id === state.prospectId)
-      if (deal) handleOpenDeal(deal)
+      if (deal) setSelectedDeal(deal)
       window.history.replaceState({}, document.title)
     }
   }, [location.state, pipelineDeals])
@@ -266,12 +274,6 @@ export function Pipeline() {
 
     handleUpdateProspect(selectedDeal.id, {
       stage: newStage,
-      lastInteraction: {
-        type: 'call',
-        date: new Date().toISOString(),
-        status: data.outcome,
-        summary: data.notes || 'Appel terminé',
-      },
       notes: data.notes || selectedDeal.notes
     })
     setIsCallSummaryModalOpen(false)
@@ -280,19 +282,16 @@ export function Pipeline() {
   const handleMarkAsNoShow = () => {
     if (!selectedDeal) return
     handleUpdateProspect(selectedDeal.id, {
-      stage: 'noshow',
-      lastInteraction: { type: 'call-attempt', date: new Date().toISOString(), summary: 'Pas de réponse - No Show' }
+      stage: 'noshow'
     })
     setIsNoAnswerModalOpen(false)
   }
 
   return (
-    <div className="flex h-full flex-col p-8">
-
+    <div className="flex h-full flex-col p-8 overflow-hidden">
       {/* HEADER */}
-      <div className="mb-8">
+      <div className="mb-8 shrink-0">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-
           {/* Onglets des Offres (Filtrés) */}
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
             <button
@@ -308,7 +307,7 @@ export function Pipeline() {
               Vue Globale
             </button>
 
-            {activeOffers.map((offer) => (
+            {activeOffers.map((offer: any) => (
               <button
                 key={offer.name}
                 onClick={() => { setCurrentOfferTab(offer.name); setFormulaFilter('all') }}
@@ -364,6 +363,27 @@ export function Pipeline() {
               </button>
             </div>
 
+            {/* HubSpot Sync Button */}
+            {hubspotConnected && hasHubspotOffer && (
+              <button
+                onClick={() => syncHubspot()}
+                disabled={isSyncingHubspot}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all",
+                  isSyncingHubspot
+                    ? "bg-orange-500/10 border-orange-500/30 text-orange-400 opacity-70"
+                    : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-orange-500/30 hover:text-orange-400"
+                )}
+                title={`Prochaine synchro : ${Math.floor(nextSyncSeconds / 60)}:${(nextSyncSeconds % 60).toString().padStart(2, '0')}`}
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", isSyncingHubspot && "animate-spin text-orange-400")} />
+                {!isSyncingHubspot && (
+                  <span className="hidden lg:inline">{Math.floor(nextSyncSeconds / 60)}:{(nextSyncSeconds % 60).toString().padStart(2, '0')}</span>
+                )}
+                <span className="hidden sm:inline">{isSyncingHubspot ? "Synchro..." : "Synchro HubSpot"}</span>
+              </button>
+            )}
+
             <button
               onClick={() => setIsNewProspectModalOpen(true)}
               className="flex items-center justify-center rounded-lg bg-blue-600 p-2 text-white hover:bg-blue-700 transition-colors"
@@ -374,7 +394,7 @@ export function Pipeline() {
         </div>
 
         {/* Filtres secondaires */}
-        <div className="mt-4 flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
+        <div className="mt-6 flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
           <div className="relative">
             <select
               value={stageFilter}
@@ -409,7 +429,7 @@ export function Pipeline() {
               >
                 <option value="all">Toutes les formules</option>
                 <option value="none">Sans formule</option>
-                {getAvailableFormulas().map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                {getAvailableFormulas().map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
               <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500 pointer-events-none" />
             </div>
@@ -417,278 +437,254 @@ export function Pipeline() {
         </div>
       </div>
 
-
       {/* --- CONTENT AREA --- */}
-      {viewMode === 'pipeline' ? (
-        // WRAPPER DRAG & DROP
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex-1 space-y-8 overflow-y-auto pr-2">
+      <div className="flex-1 overflow-hidden">
+        {viewMode === 'pipeline' ? (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="h-full flex flex-col space-y-8 overflow-y-auto pr-2 custom-scrollbar">
+              {/* FLUX ACTIF */}
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">Flux Actif</h2>
+                  <span className="text-xs text-slate-500">
+                    {ACTIVE_STAGES.reduce((sum, stage) => sum + getDealsForStage(stage.id).length, 0)} prospects
+                  </span>
+                </div>
 
-            {/* FLUX ACTIF */}
-            <div>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">Flux Actif</h2>
-                <span className="text-xs text-slate-500">
-                  {ACTIVE_STAGES.reduce((sum, stage) => sum + getDealsForStage(stage.id).length, 0)} prospects
-                </span>
+                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                  {ACTIVE_STAGES.map((stage) => {
+                    const stageDeals = getDealsForStage(stage.id)
+                    const stageTotal = getTotalForStage(stage.id)
+                    const isCollapsed = collapsedColumns.has(stage.id)
+
+                    return (
+                      <div
+                        key={stage.id}
+                        className={cn(
+                          'flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 transition-all duration-300',
+                          isCollapsed ? 'w-16' : 'w-80 shrink-0'
+                        )}
+                      >
+                        {/* Header Colonne */}
+                        <div
+                          onClick={() => toggleColumn(stage.id)}
+                          className="cursor-pointer border-b border-slate-800 p-3 hover:bg-slate-800/50 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.color)} />
+                            {!isCollapsed && (
+                              <span className="text-xs font-semibold text-slate-500">
+                                {stageDeals.length}
+                              </span>
+                            )}
+                          </div>
+
+                          {!isCollapsed && (
+                            <div className="mt-2">
+                              <h3 className="font-semibold text-slate-200">{stage.name}</h3>
+                              <p className="text-xs font-medium text-blue-400 mt-0.5">
+                                <MaskedText value={`${stageTotal.toLocaleString()}€`} type="number" />
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* ZONE DROPPABLE */}
+                        {!isCollapsed && (
+                          <Droppable droppableId={stage.id}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className={cn(
+                                  "flex-1 space-y-3 p-3 min-h-[150px] transition-colors",
+                                  snapshot.isDraggingOver ? "bg-slate-800/30" : ""
+                                )}
+                              >
+                                {stageDeals.map((deal, index) => {
+                                  const isB2B = deal.company && deal.company !== 'N/A'
+                                  const displayName = getDisplayName(deal)
+                                  const mainTitle = isB2B ? deal.company : displayName
+
+                                  let displayValue = getSmartValue(deal)
+                                  let displayOfferName = deal.offer
+
+                                  const subTitle = isB2B ? displayName : displayOfferName
+
+                                  return (
+                                    <Draggable key={deal.id} draggableId={deal.id.toString()} index={index}>
+                                      {(provided, snapshot) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          onClick={() => handleOpenDeal(deal)}
+                                          className={cn(
+                                            "group relative cursor-pointer rounded-lg border border-slate-800 bg-slate-800/40 p-3 shadow-sm transition-all hover:border-blue-500/50 hover:bg-slate-800 hover:shadow-md hover:-translate-y-1",
+                                            snapshot.isDragging ? "opacity-90 rotate-2 scale-105 z-50 shadow-2xl" : ""
+                                          )}
+                                          style={provided.draggableProps.style}
+                                        >
+                                          <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-50", stage.color)}></div>
+
+                                          <div className="pl-3">
+                                            <h4 className="font-medium text-slate-200 group-hover:text-white truncate">
+                                              <MaskedText value={mainTitle || 'Sans nom'} type="name" />
+                                            </h4>
+
+                                            <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                              {isB2B ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                                              <span className="truncate">
+                                                <MaskedText value={subTitle || ''} type="name" />
+                                              </span>
+                                            </div>
+
+                                            <div className="mt-3 flex items-center justify-between border-t border-slate-700/50 pt-2">
+                                              <span className="text-xs font-semibold text-blue-400">
+                                                <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
+                                              </span>
+
+                                              {currentOfferTab === 'global' && displayOfferName && (
+                                                <span className="max-w-[80px] truncate rounded bg-slate-950 px-1.5 py-0.5 text-[10px] text-slate-500">
+                                                  {displayOfferName}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  )
+                                })}
+                                {provided.placeholder}
+                                {stageDeals.length === 0 && (
+                                  <div className="flex h-20 items-center justify-center rounded border border-dashed border-slate-800/50 bg-slate-900/20">
+                                    <span className="text-xs text-slate-600">Vide</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </Droppable>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
 
-              <div className="flex gap-4 overflow-x-auto pb-4">
-                {ACTIVE_STAGES.map((stage) => {
-                  const stageDeals = getDealsForStage(stage.id)
-                  const stageTotal = getTotalForStage(stage.id)
-                  const isCollapsed = collapsedColumns.has(stage.id)
-
-                  return (
-                    <div
-                      key={stage.id}
-                      className={cn(
-                        'flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 transition-all duration-300',
-                        isCollapsed ? 'w-16' : 'w-80 shrink-0'
-                      )}
-                    >
-                      {/* Header Colonne */}
+              {/* FLUX INACTIF */}
+              <div className="pt-4 border-t border-slate-800/50">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-600">Flux Inactif</h2>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                  {INACTIVE_STAGES.map((stage) => {
+                    const stageDeals = getDealsForStage(stage.id)
+                    const isCollapsed = collapsedColumns.has(stage.id)
+                    return (
                       <div
-                        onClick={() => toggleColumn(stage.id)}
-                        className="cursor-pointer border-b border-slate-800 p-3 hover:bg-slate-800/50 transition-colors"
+                        key={stage.id}
+                        className={cn(
+                          'flex flex-col rounded-xl border border-slate-800/30 bg-slate-900/20 transition-all',
+                          isCollapsed ? 'w-16' : 'w-72 shrink-0'
+                        )}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.color)} />
-                          {!isCollapsed && (
-                            <span className="text-xs font-semibold text-slate-500">
-                              {stageDeals.length}
-                            </span>
-                          )}
+                        <div
+                          onClick={() => toggleColumn(stage.id)}
+                          className="cursor-pointer border-b border-slate-800/30 p-3 hover:bg-slate-800/30"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className={cn('h-2 w-2 rounded-full opacity-50', stage.color)} />
+                            {!isCollapsed && <span className="text-xs text-slate-600">{stageDeals.length}</span>}
+                          </div>
+                          {!isCollapsed && <h3 className="mt-1 font-semibold text-slate-500">{stage.name}</h3>}
                         </div>
 
                         {!isCollapsed && (
-                          <div className="mt-2">
-                            <h3 className="font-semibold text-slate-200">{stage.name}</h3>
-                            <p className="text-xs font-medium text-blue-400 mt-0.5">
-                              <MaskedText value={`${stageTotal.toLocaleString()}€`} type="number" />
-                            </p>
+                          <div className="space-y-2 p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                            {stageDeals.map((deal) => (
+                              <div key={deal.id} onClick={() => handleOpenDeal(deal)} className="cursor-pointer rounded border border-slate-800/30 bg-slate-900/40 p-2 opacity-60 hover:opacity-100">
+                                <p className="text-sm text-slate-400"><MaskedText value={getDisplayName(deal)} type="name" /></p>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </DragDropContext>
+        ) : (
+          /* --- VUE LISTE (TABLEAU) --- */
+          <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+            <div className="overflow-auto custom-scrollbar">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-950 text-slate-400 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-6 py-4 font-semibold">Prospect</th>
+                    <th className="px-6 py-4 font-semibold">Offre</th>
+                    <th className="px-6 py-4 font-semibold">Montant</th>
+                    <th className="px-6 py-4 font-semibold">Étape</th>
+                    <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800 text-slate-300">
+                  {filteredDeals.map((deal) => {
+                    const stageInfo = getStageInfo(deal.stage)
+                    let displayValue = getSmartValue(deal)
+                    let displayOfferName = deal.offer
 
-                      {/* ZONE DROPPABLE */}
-                      {!isCollapsed && (
-                        <Droppable droppableId={stage.id}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              className={cn(
-                                "flex-1 space-y-3 overflow-y-auto p-3 min-h-[150px] transition-colors",
-                                snapshot.isDraggingOver ? "bg-slate-800/30" : ""
-                              )}
-                            >
-                              {stageDeals.map((deal, index) => {
-                                const isB2B = deal.company && deal.company !== 'N/A'
-                                const displayName = getDisplayName(deal)
-                                const mainTitle = isB2B ? deal.company : displayName
-
-                                let displayValue = deal.value || 0
-                                let displayOfferName = deal.offer
-
-                                if ((displayValue === 0) && deal.formula_id) {
-                                  const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
-                                  if (parentOffer && parentOffer.formulas) {
-                                    const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
-                                    if (formula) {
-                                      displayValue = parsePrice(formula.price)
-                                      displayOfferName = `${parentOffer.name} - ${formula.name}`
-                                    }
-                                  }
-                                }
-
-                                const subTitle = isB2B ? displayName : displayOfferName
-
-                                return (
-                                  <Draggable key={deal.id} draggableId={deal.id.toString()} index={index}>
-                                    {(provided, snapshot) => (
-                                      <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        {...provided.dragHandleProps}
-                                        onClick={() => handleOpenDeal(deal)}
-                                        className={cn(
-                                          "group relative cursor-pointer rounded-lg border border-slate-800 bg-slate-800/40 p-3 shadow-sm transition-all hover:border-blue-500/50 hover:bg-slate-800 hover:shadow-md hover:-translate-y-1",
-                                          snapshot.isDragging ? "opacity-90 rotate-2 scale-105 z-50 shadow-2xl" : ""
-                                        )}
-                                        style={provided.draggableProps.style}
-                                      >
-                                        <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-50", stage.color)}></div>
-
-                                        <div className="pl-3">
-                                          <h4 className="font-medium text-slate-200 group-hover:text-white truncate">
-                                            <MaskedText value={mainTitle || 'Sans nom'} type="name" />
-                                          </h4>
-
-                                          <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                                            {isB2B ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
-                                            <span className="truncate">
-                                              <MaskedText value={subTitle || ''} type="name" />
-                                            </span>
-                                          </div>
-
-                                          <div className="mt-3 flex items-center justify-between border-t border-slate-700/50 pt-2">
-                                            <span className="text-xs font-semibold text-blue-400">
-                                              <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
-                                            </span>
-
-                                            {currentOfferTab === 'global' && displayOfferName && (
-                                              <span className="max-w-[80px] truncate rounded bg-slate-950 px-1.5 py-0.5 text-[10px] text-slate-500">
-                                                {displayOfferName}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                )
-                              })}
-                              {provided.placeholder}
-                              {stageDeals.length === 0 && (
-                                <div className="flex h-20 items-center justify-center rounded border border-dashed border-slate-800/50 bg-slate-900/20">
-                                  <span className="text-xs text-slate-600">Vide</span>
-                                </div>
-                              )}
+                    return (
+                      <tr key={deal.id} onClick={() => handleOpenDeal(deal)} className="group cursor-pointer hover:bg-slate-800/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800 text-slate-400">
+                              {deal.company ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
                             </div>
+                            <div>
+                              <p className="font-medium text-white"><MaskedText value={getDisplayName(deal)} type="name" /></p>
+                              {deal.company && <p className="text-xs text-slate-500">{deal.company}</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-slate-400">{displayOfferName || '-'}</td>
+                        <td className="px-6 py-4 font-mono font-medium text-blue-400">
+                          <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
+                        </td>
+                        <td className="px-6 py-4">
+                          {stageInfo && (
+                            <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-800/50 border border-slate-800",
+                              stageInfo.id === 'won' ? 'text-emerald-400 border-emerald-500/20' :
+                                stageInfo.id === 'lost' ? 'text-red-400 border-red-500/20' : 'text-slate-300'
+                            )}>
+                              <span className={cn("h-1.5 w-1.5 rounded-full", stageInfo.color)}></span>
+                              {stageInfo.name}
+                            </span>
                           )}
-                        </Droppable>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* FLUX INACTIF (Sans Drag & Drop pour l'instant, ou design allégé) */}
-            <div className="pt-4 border-t border-slate-800/50">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-600">Flux Inactif</h2>
-              </div>
-              <div className="flex gap-4 overflow-x-auto pb-4">
-                {INACTIVE_STAGES.map((stage) => {
-                  const stageDeals = getDealsForStage(stage.id)
-                  const isCollapsed = collapsedColumns.has(stage.id)
-                  return (
-                    <div
-                      key={stage.id}
-                      className={cn(
-                        'flex flex-col rounded-xl border border-slate-800/30 bg-slate-900/20 transition-all',
-                        isCollapsed ? 'w-16' : 'w-72 shrink-0'
-                      )}
-                    >
-                      <div
-                        onClick={() => toggleColumn(stage.id)}
-                        className="cursor-pointer border-b border-slate-800/30 p-3 hover:bg-slate-800/30"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className={cn('h-2 w-2 rounded-full opacity-50', stage.color)} />
-                          {!isCollapsed && <span className="text-xs text-slate-600">{stageDeals.length}</span>}
-                        </div>
-                        {!isCollapsed && <h3 className="mt-1 font-semibold text-slate-500">{stage.name}</h3>}
-                      </div>
-
-                      {!isCollapsed && (
-                        <div className="space-y-2 p-2 max-h-[300px] overflow-y-auto">
-                          {stageDeals.map((deal) => (
-                            <div key={deal.id} onClick={() => handleOpenDeal(deal)} className="cursor-pointer rounded border border-slate-800/30 bg-slate-900/40 p-2 opacity-60 hover:opacity-100">
-                              <p className="text-sm text-slate-400"><MaskedText value={getDisplayName(deal)} type="name" /></p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-          </div>
-        </DragDropContext>
-      ) : (
-        /* --- VUE LISTE (TABLEAU) --- */
-        <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-          <div className="overflow-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-950 text-slate-400 sticky top-0 z-10">
-                <tr>
-                  <th className="px-6 py-4 font-semibold">Prospect</th>
-                  <th className="px-6 py-4 font-semibold">Offre</th>
-                  <th className="px-6 py-4 font-semibold">Montant</th>
-                  <th className="px-6 py-4 font-semibold">Étape</th>
-                  <th className="px-6 py-4 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800 text-slate-300">
-                {filteredDeals.map((deal) => {
-                  const stageInfo = getStageInfo(deal.stage)
-
-                  let displayValue = deal.value || 0
-                  let displayOfferName = deal.offer
-
-                  if ((displayValue === 0) && deal.formula_id) {
-                    const parentOffer = offers.find(o => o.name === (deal.offer || '').split(' - ')[0])
-                    if (parentOffer && parentOffer.formulas) {
-                      const formula = parentOffer.formulas.find(f => f.id === deal.formula_id)
-                      if (formula) {
-                        displayValue = parsePrice(formula.price)
-                        displayOfferName = `${parentOffer.name} - ${formula.name}`
-                      }
-                    }
-                  }
-
-                  return (
-                    <tr key={deal.id} onClick={() => handleOpenDeal(deal)} className="group cursor-pointer hover:bg-slate-800/50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800 text-slate-400">
-                            {deal.company ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal) }} className="p-2 hover:text-blue-400 transition-colors"><Edit2 className="h-4 w-4" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); if (confirm('Supprimer ?')) handleDelete(deal.id) }} className="p-2 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
                           </div>
-                          <div>
-                            <p className="font-medium text-white"><MaskedText value={getDisplayName(deal)} type="name" /></p>
-                            {deal.company && <p className="text-xs text-slate-500">{deal.company}</p>}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-400">{displayOfferName || '-'}</td>
-                      <td className="px-6 py-4 font-mono font-medium text-blue-400">
-                        <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
-                      </td>
-                      <td className="px-6 py-4">
-                        {stageInfo && (
-                          <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-800",
-                            stageInfo.id === 'won' ? 'text-emerald-400' :
-                              stageInfo.id === 'lost' ? 'text-red-400' : 'text-slate-300'
-                          )}>
-                            <span className={cn("h-1.5 w-1.5 rounded-full", stageInfo.color)}></span>
-                            {stageInfo.name}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal) }} className="p-2 hover:text-blue-400"><Edit2 className="h-4 w-4" /></button>
-                          <button onClick={(e) => { e.stopPropagation(); if (confirm('Supprimer ?')) handleDelete(deal.id) }} className="p-2 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-            {filteredDeals.length === 0 && (
-              <div className="py-12 text-center text-slate-500">
-                <p>Aucun prospect dans cette vue.</p>
-              </div>
-            )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              {filteredDeals.length === 0 && (
+                <div className="py-20 text-center text-slate-500">
+                  <p className="text-lg font-medium">Aucun prospect</p>
+                  <p className="mt-1 text-sm">Essayez de modifier vos filtres ou effectuez une recherche.</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* MODALS */}
       {selectedDeal && (
@@ -709,10 +705,8 @@ export function Pipeline() {
         onSubmit={(prospectData) => {
           addProspect({
             ...prospectData,
-            title: `${prospectData.offer} - ${prospectData.company}`,
-            probability: 40,
-            dateAdded: new Date(),
-            lastContact: new Date(),
+            dateAdded: new Date().toISOString(),
+            lastContact: new Date().toISOString(),
             offer: currentOfferTab !== 'global' ? currentOfferTab : prospectData.offer
           })
           setIsNewProspectModalOpen(false)
@@ -765,4 +759,19 @@ export function Pipeline() {
   )
 }
 
-function Building2(props: any) { return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2" /><path d="M9 22v-4h6v4" /><path d="M8 6h.01" /><path d="M16 6h.01" /><path d="M8 10h.01" /><path d="M16 10h.01" /><path d="M8 14h.01" /><path d="M16 14h.01" /><path d="M8 18h.01" /><path d="M16 18h.01" /></svg> }
+function Building2(props: any) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="16" height="20" x="4" y="2" rx="2" ry="2" />
+      <path d="M9 22v-4h6v4" />
+      <path d="M8 6h.01" />
+      <path d="M16 6h.01" />
+      <path d="M8 10h.01" />
+      <path d="M16 10h.01" />
+      <path d="M8 14h.01" />
+      <path d="M16 14h.01" />
+      <path d="M8 18h.01" />
+      <path d="M16 18h.01" />
+    </svg>
+  )
+}

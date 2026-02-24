@@ -31,13 +31,13 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 
 export interface OfferContact {
-  id: number
+  id: string | number
   name: string
   role: string
 }
 
 export interface OfferResource {
-  id: number
+  id: string | number
   name: string
   url: string
   type: 'script' | 'payment' | 'drive' | 'other'

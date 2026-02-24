@@ -37,9 +37,17 @@ interface ProspectsContextType {
   updateProspect: (id: number, updates: Partial<Prospect>) => Promise<void>
   deleteProspect: (id: number) => Promise<void>
   loading: boolean
+  // New HubSpot fields
+  syncHubspot: (offer_id?: number) => Promise<void>
+  isSyncingHubspot: boolean
+  hubspotConnected: boolean
+  hasHubspotOffer: boolean
+  nextSyncSeconds: number
 }
 
 const ProspectsContext = createContext<ProspectsContextType | undefined>(undefined)
+
+const SYNC_INTERVAL_SECONDS = 120 // 2 minutes
 
 export function ProspectsProvider({ children }: { children: ReactNode }) {
   const [prospects, setProspects] = useState<Prospect[]>([])
@@ -47,17 +55,54 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id
 
+  // HubSpot states
+  const [isSyncingHubspot, setIsSyncingHubspot] = useState(false)
+  const [hubspotConnected, setHubspotConnected] = useState(false)
+  const [hasHubspotOffer, setHasHubspotOffer] = useState(false)
+  const [nextSyncSeconds, setNextSyncSeconds] = useState(SYNC_INTERVAL_SECONDS)
+
   useEffect(() => {
     if (authLoading) return // Attendre que l'auth soit résolue
     if (userId) {
       loadProspects()
+      checkHubspotStatus()
     } else {
       setProspects([])
       setLoading(false)
+      setHubspotConnected(false)
+      setHasHubspotOffer(false)
     }
   }, [userId, authLoading])
 
-  // Auto-refresh toutes les 10 secondes pour voir les nouveaux imports HubSpot
+  // Check HubSpot connection and offer status
+  async function checkHubspotStatus() {
+    if (!userId) return
+
+    try {
+      // Check profile connection
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('hubspot_access_token')
+        .eq('id', userId)
+        .single()
+
+      setHubspotConnected(!!profile?.hubspot_access_token)
+
+      // Check for HubSpot offers
+      const { data: offers } = await supabase
+        .from('offers')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('crm_provider', 'hubspot')
+        .limit(1)
+
+      setHasHubspotOffer(!!(offers && offers.length > 0))
+    } catch (error) {
+      console.error('Erreur check status HubSpot:', error)
+    }
+  }
+
+  // Auto-refresh toutes les 10 secondes pour voir les nouveaux imports HubSpot (en DB)
   useEffect(() => {
     if (authLoading || !userId) return
     const interval = setInterval(() => {
@@ -65,6 +110,27 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     }, 10000)
     return () => clearInterval(interval)
   }, [userId, authLoading])
+
+  // HubSpot Auto-Sync Timer and Action
+  useEffect(() => {
+    if (authLoading || !userId || !hubspotConnected || !hasHubspotOffer) {
+      setNextSyncSeconds(SYNC_INTERVAL_SECONDS)
+      return
+    }
+
+    const timer = setInterval(() => {
+      setNextSyncSeconds(prev => {
+        if (prev <= 1) {
+          // Trigger sync
+          syncHubspot()
+          return SYNC_INTERVAL_SECONDS
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [userId, authLoading, hubspotConnected, hasHubspotOffer])
 
   async function loadProspects(showLoading = true) {
     if (!user) return
@@ -82,6 +148,31 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       console.error('Erreur chargement:', error)
     } finally {
       if (showLoading) setLoading(false)
+    }
+  }
+
+  const syncHubspot = async (offer_id?: number) => {
+    if (!user || isSyncingHubspot) return
+
+    setIsSyncingHubspot(true)
+    try {
+      const res = await fetch('/api/hubspot/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, offer_id }),
+      })
+
+      if (res.ok) {
+        setNextSyncSeconds(SYNC_INTERVAL_SECONDS)
+        await loadProspects(false)
+      } else {
+        const data = await res.json()
+        console.error('Erreur sync HubSpot:', data.error)
+      }
+    } catch (error) {
+      console.error('Erreur sync HubSpot:', error)
+    } finally {
+      setIsSyncingHubspot(false)
     }
   }
 
@@ -219,7 +310,18 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ProspectsContext.Provider value={{ prospects, addProspect, updateProspect, deleteProspect, loading }}>
+    <ProspectsContext.Provider value={{
+      prospects,
+      addProspect,
+      updateProspect,
+      deleteProspect,
+      loading,
+      syncHubspot,
+      isSyncingHubspot,
+      hubspotConnected,
+      hasHubspotOffer,
+      nextSyncSeconds
+    }}>
       {children}
     </ProspectsContext.Provider>
   )
