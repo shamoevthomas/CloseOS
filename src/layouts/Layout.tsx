@@ -55,17 +55,9 @@ export function Layout({ onOpenSettings }: LayoutProps) {
                 <Menu className="h-6 w-6" />
               </button>
 
-              <div className="hidden sm:flex items-center gap-4">
-                <div>
-                  <h1 className="text-xl font-bold text-white">{pageInfo.title}</h1>
-                  <p className="text-xs text-slate-500">{pageInfo.subtitle}</p>
-                </div>
-
-                {/* Warning Beta Bubble */}
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] sm:text-xs font-bold text-red-400">
-                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 animate-pulse" />
-                  <span>Bêta : Bugs possibles ? Envoyez un screen à <a href="mailto:support@closeos.fr" className="underline hover:text-red-300">support@closeos.fr</a></span>
-                </div>
+              <div className="hidden sm:block">
+                <h1 className="text-xl font-bold text-white">{pageInfo.title}</h1>
+                <p className="text-xs text-slate-500">{pageInfo.subtitle}</p>
               </div>
 
               {/* Logo minimal sur mobile très petit */}
@@ -79,7 +71,11 @@ export function Layout({ onOpenSettings }: LayoutProps) {
 
             {/* Actions Droite */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Bouton Discrétion supprimé ici */}
+              {/* Warning Beta Bubble */}
+              <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] sm:text-xs font-bold text-red-400">
+                <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 animate-pulse" />
+                <span>Bêta : Bugs possibles ? Envoyez un screen à <a href="mailto:support@closeos.fr" className="underline hover:text-red-300">support@closeos.fr</a></span>
+              </div>
 
               {/* Live Indicator - Caché sur mobile très petit */}
               <div className="hidden items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 xs:flex">
