@@ -16,11 +16,11 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/offers': { title: 'Mes Offres', subtitle: 'Gérez vos services' },
   '/agenda': { title: 'Agenda', subtitle: 'Votre emploi du temps' },
   '/kpi': { title: 'KPI', subtitle: 'Analysez vos perfs' },
-  '/calls': { title: 'Appels', subtitle: 'Gestion vidéo' },
+  '/appels': { title: 'Appels', subtitle: 'Gestion vidéo' },
   '/messages': { title: 'Messages', subtitle: 'Communication' },
   '/telephony': { title: 'Téléphonie', subtitle: 'Centralisez vos échanges' },
   '/ai-coach': { title: 'Coach IA', subtitle: 'Optimisez vos ventes' },
-  '/invoices': { title: 'Factures', subtitle: 'Suivez vos paiements' },
+  '/factures': { title: 'Factures', subtitle: 'Suivez vos paiements' },
   '/rendez-vous': { title: 'Rendez-vous', subtitle: 'Gérez vos créneaux' }
 }
 

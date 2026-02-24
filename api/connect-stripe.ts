@@ -54,8 +54,8 @@ export default async function handler(req: any, res: any) {
 
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${origin}/invoices`, // S'il annule
-      return_url: `${origin}/invoices?stripe_connected=true`, // S'il réussit
+      refresh_url: `${origin}/factures`, // S'il annule
+      return_url: `${origin}/factures?stripe_connected=true`, // S'il réussit
       type: 'account_onboarding',
     });
 
