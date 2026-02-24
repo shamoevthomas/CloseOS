@@ -27,3 +27,19 @@ body.hide-cookieyes #cookieyes {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* Chatbot visibility overrides */
+#chatbot-widget-panel .cw-msg.bot {
+  color: #0f172a !important;
+  /* text-slate-900 */
+}
+
+#chatbot-widget-panel .cw-input-area input {
+  color: #0f172a !important;
+  /* text-slate-900 */
+}
+
+#chatbot-widget-panel .cw-input-area input::placeholder {
+  color: #64748b !important;
+  /* text-slate-500 */
+}
