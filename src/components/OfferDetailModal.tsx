@@ -799,7 +799,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
             {isEditing ? (
               <ContactSelector
-                selectedContactIds={editedOffer.contacts.map((c) => Number(c.id))}
+                selectedContactIds={editedOffer.contacts.map((c) => c.id)}
                 onAdd={(contactId) => {
                   const globalContact = globalContacts.find((c) => c.id === contactId)
                   if (globalContact) {
@@ -1323,7 +1323,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                             src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1"
                             loading="lazy"
                             title="Configurer le Webhook iClosed"
-                            allow="clipboard-write; fullscreen"
+                            allow="clipboard-write"
+                            frameBorder="0"
+                            webkitAllowFullScreen
+                            mozAllowFullScreen
                             allowFullScreen
                             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
                           />
@@ -1366,7 +1369,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           </a>
                         </div>
                         <button
-                          onClick={() => handleRemoveResource(Number(resource.id))}
+                          onClick={() => handleRemoveResource(resource.id)}
                           className="rounded p-1.5 text-red-400 transition-colors hover:bg-red-400/10"
                         >
                           <Trash2 className="h-4 w-4" />
