@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from '../components/Sidebar'
-import { Menu, Coffee } from 'lucide-react'
+import { Menu, Coffee, AlertTriangle } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState } from 'react'
 
@@ -9,7 +9,8 @@ interface LayoutProps {
 }
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
-  '/': { title: 'Cockpit', subtitle: "Vue d'ensemble de vos performances" },
+  '/': { title: 'Dashboard', subtitle: "Vue d'ensemble de vos performances" },
+  '/dashboard': { title: 'Dashboard', subtitle: "Vue d'ensemble de vos performances" },
   '/pipeline': { title: 'Pipeline', subtitle: 'Suivez vos deals' },
   '/contacts': { title: 'Contacts', subtitle: 'Gérez vos prospects' },
   '/offers': { title: 'Mes Offres', subtitle: 'Gérez vos services' },
@@ -54,9 +55,17 @@ export function Layout({ onOpenSettings }: LayoutProps) {
                 <Menu className="h-6 w-6" />
               </button>
 
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-bold text-white">{pageInfo.title}</h1>
-                <p className="text-xs text-slate-500">{pageInfo.subtitle}</p>
+              <div className="hidden sm:flex items-center gap-4">
+                <div>
+                  <h1 className="text-xl font-bold text-white">{pageInfo.title}</h1>
+                  <p className="text-xs text-slate-500">{pageInfo.subtitle}</p>
+                </div>
+
+                {/* Warning Beta Bubble */}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] sm:text-xs font-bold text-red-400">
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 animate-pulse" />
+                  <span>Bêta : Bugs possibles ? Envoyez un screen à <a href="mailto:support@closeos.fr" className="underline hover:text-red-300">support@closeos.fr</a></span>
+                </div>
               </div>
 
               {/* Logo minimal sur mobile très petit */}

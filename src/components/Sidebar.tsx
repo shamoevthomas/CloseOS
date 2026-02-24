@@ -29,7 +29,7 @@ import { supabase } from '../lib/supabase' // Ajout de l'import supabase
 
 // Mise à jour de la navigation
 const navigation = [
-  { name: 'Cockpit', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Pipeline', href: '/pipeline', icon: GitBranch },
   { name: 'Contacts', href: '/contacts', icon: Users },
   { name: 'Offres', href: '/offers', icon: Briefcase },

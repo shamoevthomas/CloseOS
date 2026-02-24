@@ -325,7 +325,7 @@ export function Dashboard() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Cockpit</h1>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">Dashboard</h1>
             <p className="text-slate-400 mt-1">Vue d'ensemble de vos performances</p>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/50 border border-slate-800 backdrop-blur-sm">
