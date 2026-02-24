@@ -78,10 +78,10 @@ export interface Offer {
   hasFixedFee?: boolean
   fixedFeeAmount?: string
   // NOUVEAUX CHAMPS CRM
-  crmProvider?: 'iclosed' | 'hubspot' | 'other'
+  crmProvider?: 'iclosed' | 'hubspot' | 'pipedrive' | 'other'
   crmApiKey?: string
   crmMapping?: { [key: string]: string | undefined }
-  defaultFormulaId?: string // NOUVEAU CHAMP : ID de la formule par défaut
+  defaultFormulaId?: string
 }
 
 interface OfferDetailModalProps {
@@ -123,6 +123,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const [hubspotConnected, setHubspotConnected] = useState(false)
   const [isSyncingHubspot, setIsSyncingHubspot] = useState(false)
   const [hubspotSyncResult, setHubspotSyncResult] = useState<{ imported: number; updated: number } | null>(null)
+
+  // États Pipedrive
+  const [pipedriveConnected, setPipedriveConnected] = useState(false)
+  const [isSyncingPipedrive, setIsSyncingPipedrive] = useState(false)
+  const [pipedriveSyncResult, setPipedriveSyncResult] = useState<{ imported: number; updated: number } | null>(null)
+  const [pipedrivePipelines, setPipedrivePipelines] = useState<any[]>([])
+  const [pipedriveStages, setPipedriveStages] = useState<any[]>([])
+  const [pipedriveMappings, setPipedriveMappings] = useState<{ [key: string]: number }>({})
 
   const [editedOffer, setEditedOffer] = useState<Offer>(() => {
     if (!offer.formulas || offer.formulas.length === 0) {
@@ -205,6 +213,108 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     } finally {
       setIsSyncingHubspot(false)
     }
+  }
+
+  // Check if Pipedrive is connected
+  useEffect(() => {
+    const checkPipedrive = async () => {
+      if (!user) return
+      const { data } = await supabase.from('profiles').select('pipedrive_access_token').eq('id', user.id).single()
+      setPipedriveConnected(!!data?.pipedrive_access_token)
+    }
+    checkPipedrive()
+
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('pipedrive_connected') === 'true') {
+      setPipedriveConnected(true)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [user])
+
+  // Load Pipedrive mapping and metadata
+  useEffect(() => {
+    const loadMapping = async () => {
+      if (!user || editedOffer.crmProvider !== 'pipedrive') return
+      const { data } = await supabase.from('pipedrive_stage_mapping').select('*').eq('offer_id', offer.id)
+      if (data) {
+        const m: any = {}
+        data.forEach((row: any) => m[row.closeos_stage] = row.pipedrive_stage_id)
+        setPipedriveMappings(m)
+      }
+    }
+    loadMapping()
+  }, [user, editedOffer.crmProvider, offer.id])
+
+  useEffect(() => {
+    const fetchPipedriveMeta = async () => {
+      if (!user || !pipedriveConnected || editedOffer.crmProvider !== 'pipedrive') return
+      try {
+        const res = await fetch(`/api/pipedrive?action=pipelines&user_id=${user.id}`)
+        const data = await res.json()
+        if (data.pipelines) setPipedrivePipelines(data.pipelines)
+        if (data.stages) setPipedriveStages(data.stages)
+      } catch (err) {
+        console.error('Error fetching Pipedrive meta:', err)
+      }
+    }
+    fetchPipedriveMeta()
+  }, [user, pipedriveConnected, editedOffer.crmProvider])
+
+  const handleConnectPipedrive = () => {
+    const clientId = 'd8a07042c2506596'
+    const redirectUri = 'https://www.closeos.fr/api/pipedrive/callback'
+    const state = user?.id
+    window.location.href = `https://oauth.pipedrive.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`
+  }
+
+  const handleSyncPipedrive = async () => {
+    if (!user) return
+    setIsSyncingPipedrive(true)
+    setPipedriveSyncResult(null)
+    try {
+      const res = await fetch('/api/pipedrive?action=sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, offer_id: offer.id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setPipedriveSyncResult({ imported: data.imported, updated: data.updated })
+      } else {
+        alert('Erreur sync Pipedrive: ' + (data.error || 'Erreur inconnue'))
+      }
+    } catch (e: any) {
+      alert('Erreur sync Pipedrive: ' + e.message)
+    } finally {
+      setIsSyncingPipedrive(false)
+    }
+  }
+
+  const handleUpdatePipedriveMapping = async (coStage: string, pStageId: number) => {
+    const newMappings = { ...pipedriveMappings, [coStage]: pStageId }
+    setPipedriveMappings(newMappings)
+
+    // Auto-save mapping
+    try {
+      await fetch('/api/pipedrive?action=saveMapping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user?.id, offer_id: offer.id, mappings: newMappings })
+      })
+    } catch (err) {
+      console.error('Error saving Pipedrive mapping:', err)
+    }
+  }
+
+  const handleDisconnectPipedrive = async () => {
+    if (!user || !window.confirm('Déconnecter Pipedrive ?')) return
+    await supabase.from('profiles').update({
+      pipedrive_access_token: null,
+      pipedrive_refresh_token: null,
+      pipedrive_token_expires_at: null,
+      pipedrive_api_domain: null,
+    }).eq('id', user.id)
+    setPipedriveConnected(false)
   }
 
   // HubSpot Disconnect
@@ -927,16 +1037,102 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   >
                     <option value="iclosed">iClosed</option>
                     <option value="hubspot">HubSpot</option>
+                    <option value="pipedrive">Pipedrive</option>
                     <option value="other" disabled>Autre / Webhook Custom</option>
                   </select>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${offer.crmProvider === 'iclosed' ? 'bg-purple-500' : offer.crmProvider === 'hubspot' ? 'bg-orange-500' : 'bg-slate-500'}`} />
-                  <p className="text-sm font-medium text-white capitalize">{offer.crmProvider === 'hubspot' ? 'HubSpot' : offer.crmProvider || 'iClosed'}</p>
+                  <div className={`h-2 w-2 rounded-full ${offer.crmProvider === 'iclosed' ? 'bg-purple-500' :
+                      offer.crmProvider === 'hubspot' ? 'bg-orange-500' :
+                        offer.crmProvider === 'pipedrive' ? 'bg-green-500' :
+                          'bg-slate-500'
+                    }`} />
+                  <p className="text-sm font-medium text-white capitalize">
+                    {offer.crmProvider === 'hubspot' ? 'HubSpot' :
+                      offer.crmProvider === 'pipedrive' ? 'Pipedrive' :
+                        offer.crmProvider || 'iClosed'}
+                  </p>
                 </div>
               )}
             </div>
+
+            {/* --- PIPEDRIVE CONFIG --- */}
+            {editedOffer.crmProvider === 'pipedrive' && (
+              <div className="mb-6 space-y-4">
+                {!pipedriveConnected ? (
+                  <button
+                    onClick={handleConnectPipedrive}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-green-600 py-2.5 text-sm font-bold text-white hover:bg-green-500 transition-all shadow-lg"
+                  >
+                    <Link className="h-4 w-4" /> Connecter Pipedrive
+                  </button>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between rounded-lg border border-green-500/20 bg-green-500/5 p-3">
+                      <div className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-400" />
+                        <span className="text-sm font-semibold text-green-400">Pipedrive Connecté</span>
+                      </div>
+                      <button onClick={handleDisconnectPipedrive} className="text-xs text-slate-500 hover:text-white underline">Déconnecter</button>
+                    </div>
+
+                    {/* Sync button */}
+                    <button
+                      onClick={handleSyncPipedrive}
+                      disabled={isSyncingPipedrive}
+                      className="w-full flex items-center justify-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 py-2.5 text-sm font-semibold text-green-300 hover:bg-green-500/20 transition-all disabled:opacity-50"
+                    >
+                      {isSyncingPipedrive ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Synchro en cours...</>
+                      ) : (
+                        <><RefreshCw className="h-4 w-4" /> Synchroniser Pipedrive</>
+                      )}
+                    </button>
+
+                    {/* Mapping UI */}
+                    <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+                      <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Mapping des étapes Pipedrive</h5>
+                      <div className="space-y-4">
+                        {[
+                          { id: 'prospect', name: 'Prospect' },
+                          { id: 'qualified', name: 'Qualifié' },
+                          { id: 'won', name: 'Gagné' },
+                          { id: 'followup', name: 'Follow Up' },
+                          { id: 'noshow', name: 'No Show' },
+                          { id: 'lost', name: 'Perdu' }
+                        ].map(stage => (
+                          <div key={stage.id}>
+                            <label className="mb-1.5 block text-[10px] font-bold uppercase text-slate-500">{stage.name}</label>
+                            <select
+                              value={pipedriveMappings[stage.id] || ''}
+                              onChange={(e) => handleUpdatePipedriveMapping(stage.id, Number(e.target.value))}
+                              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-green-500 focus:outline-none"
+                            >
+                              <option value="">Sélectionner une étape Pipedrive</option>
+                              {pipedrivePipelines.map(pipe => (
+                                <optgroup key={pipe.id} label={pipe.name}>
+                                  {pipedriveStages.filter(s => s.pipeline_id === pipe.id).map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                  ))}
+                                </optgroup>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sync result */}
+                    {pipedriveSyncResult && (
+                      <div className="rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-300">
+                        ✅ {pipedriveSyncResult.imported} deals importés, {pipedriveSyncResult.updated} mis à jour
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 2. SÉLECTION DE LA FORMULE PAR DÉFAUT (NOUVEAU) */}
             <div className="mb-6">

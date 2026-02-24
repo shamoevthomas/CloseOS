@@ -27,6 +27,30 @@
       "destination": "/api/hubspot?action=webhook"
     },
     {
+      "source": "/api/pipedrive/callback",
+      "destination": "/api/pipedrive?action=callback"
+    },
+    {
+      "source": "/api/pipedrive/sync",
+      "destination": "/api/pipedrive?action=sync"
+    },
+    {
+      "source": "/api/pipedrive/push",
+      "destination": "/api/pipedrive?action=push"
+    },
+    {
+      "source": "/api/pipedrive/webhook",
+      "destination": "/api/pipedrive?action=webhook"
+    },
+    {
+      "source": "/api/pipedrive/pipelines",
+      "destination": "/api/pipedrive?action=pipelines"
+    },
+    {
+      "source": "/api/pipedrive/saveMapping",
+      "destination": "/api/pipedrive?action=saveMapping"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

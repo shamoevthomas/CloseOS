@@ -37,11 +37,15 @@ interface ProspectsContextType {
   updateProspect: (id: number, updates: Partial<Prospect>) => Promise<void>
   deleteProspect: (id: number) => Promise<void>
   loading: boolean
-  // New HubSpot fields
+  // CRM fields
   syncHubspot: (offer_id?: number) => Promise<void>
+  syncPipedrive: (offer_id?: number) => Promise<void>
   isSyncingHubspot: boolean
+  isSyncingPipedrive: boolean
   hubspotConnected: boolean
+  pipedriveConnected: boolean
   hasHubspotOffer: boolean
+  hasPipedriveOffer: boolean
   nextSyncSeconds: number
 }
 
@@ -55,50 +59,55 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id
 
-  // HubSpot states
+  // CRM states
   const [isSyncingHubspot, setIsSyncingHubspot] = useState(false)
+  const [isSyncingPipedrive, setIsSyncingPipedrive] = useState(false)
   const [hubspotConnected, setHubspotConnected] = useState(false)
+  const [pipedriveConnected, setPipedriveConnected] = useState(false)
   const [hasHubspotOffer, setHasHubspotOffer] = useState(false)
+  const [hasPipedriveOffer, setHasPipedriveOffer] = useState(false)
   const [nextSyncSeconds, setNextSyncSeconds] = useState(SYNC_INTERVAL_SECONDS)
 
   useEffect(() => {
     if (authLoading) return // Attendre que l'auth soit résolue
     if (userId) {
       loadProspects()
-      checkHubspotStatus()
+      checkCrmStatus()
     } else {
       setProspects([])
       setLoading(false)
       setHubspotConnected(false)
+      setPipedriveConnected(false)
       setHasHubspotOffer(false)
+      setHasPipedriveOffer(false)
     }
   }, [userId, authLoading])
 
-  // Check HubSpot connection and offer status
-  async function checkHubspotStatus() {
+  // Check CRM connection and offer status
+  async function checkCrmStatus() {
     if (!userId) return
 
     try {
       // Check profile connection
       const { data: profile } = await supabase
         .from('profiles')
-        .select('hubspot_access_token')
+        .select('hubspot_access_token, pipedrive_access_token')
         .eq('id', userId)
         .single()
 
       setHubspotConnected(!!profile?.hubspot_access_token)
+      setPipedriveConnected(!!profile?.pipedrive_access_token)
 
-      // Check for HubSpot offers
+      // Check for CRM offers
       const { data: offers } = await supabase
         .from('offers')
-        .select('id')
+        .select('crm_provider')
         .eq('user_id', userId)
-        .eq('crm_provider', 'hubspot')
-        .limit(1)
 
-      setHasHubspotOffer(!!(offers && offers.length > 0))
+      setHasHubspotOffer(!!offers?.some(o => o.crm_provider === 'hubspot'))
+      setHasPipedriveOffer(!!offers?.some(o => o.crm_provider === 'pipedrive'))
     } catch (error) {
-      console.error('Erreur check status HubSpot:', error)
+      console.error('Erreur check status CRM:', error)
     }
   }
 
@@ -176,6 +185,31 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const syncPipedrive = async (offer_id?: number) => {
+    if (!user || isSyncingPipedrive) return
+
+    setIsSyncingPipedrive(true)
+    try {
+      const res = await fetch('/api/pipedrive?action=sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, offer_id }),
+      })
+
+      if (res.ok) {
+        setNextSyncSeconds(SYNC_INTERVAL_SECONDS)
+        await loadProspects(false)
+      } else {
+        const data = await res.json()
+        console.error('Erreur sync Pipedrive:', data.error)
+      }
+    } catch (error) {
+      console.error('Erreur sync Pipedrive:', error)
+    } finally {
+      setIsSyncingPipedrive(false)
+    }
+  }
+
   // Helper: push prospect to HubSpot if the offer uses HubSpot CRM
   const pushToHubspotIfNeeded = async (prospect: any, isUpdate = false) => {
     if (!user) return
@@ -249,6 +283,40 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const pushToPipedriveIfNeeded = async (prospect: any) => {
+    if (!user) return
+    try {
+      let isPipedrive = false
+      if (prospect.offer_id) {
+        const { data: offerData } = await supabase
+          .from('offers')
+          .select('crm_provider')
+          .eq('id', prospect.offer_id)
+          .single()
+        isPipedrive = offerData?.crm_provider === 'pipedrive'
+      }
+
+      if (!isPipedrive) return
+
+      console.log(`[Pipedrive] Pushing deal to Pipedrive...`, prospect.email)
+
+      fetch('/api/pipedrive?action=push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          prospect_id: prospect.id,
+          contact: prospect.contact,
+          email: prospect.email,
+          stage: prospect.stage,
+          value: prospect.value
+        }),
+      }).catch(err => console.error('[Pipedrive] Push error:', err))
+    } catch (err) {
+      console.error('[Pipedrive] Push check error:', err)
+    }
+  }
+
   const addProspect = async (prospect: Omit<Prospect, 'id' | 'user_id'>) => {
     if (!user) return
     try {
@@ -261,8 +329,9 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       if (data) {
         setProspects(prev => [data[0], ...prev])
 
-        // Auto-push to HubSpot if offer uses HubSpot CRM
+        // Auto-push to CRM if configured
         pushToHubspotIfNeeded(data[0])
+        pushToPipedriveIfNeeded(data[0])
       }
     } catch (error) {
       console.error('Erreur ajout:', error)
@@ -286,9 +355,10 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
       setProspects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
 
-      // If stage changed, push to HubSpot
+      // If stage changed, push to CRM
       if (updates.stage && data?.[0]) {
         pushToHubspotIfNeeded(data[0], true)
+        pushToPipedriveIfNeeded(data[0])
       }
     } catch (error) {
       console.error('Erreur update:', error)
@@ -317,9 +387,13 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       deleteProspect,
       loading,
       syncHubspot,
+      syncPipedrive,
       isSyncingHubspot,
+      isSyncingPipedrive,
       hubspotConnected,
+      pipedriveConnected,
       hasHubspotOffer,
+      hasPipedriveOffer,
       nextSyncSeconds
     }}>
       {children}
