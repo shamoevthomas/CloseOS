@@ -497,7 +497,7 @@ export function Pipeline() {
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
                                 className={cn(
-                                  "flex-1 space-y-3 p-3 min-h-[150px] transition-colors",
+                                  "space-y-3 p-3 max-h-[250px] overflow-y-auto custom-scrollbar transition-colors",
                                   snapshot.isDraggingOver ? "bg-slate-800/30" : ""
                                 )}
                               >
