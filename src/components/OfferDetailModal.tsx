@@ -799,7 +799,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
             {isEditing ? (
               <ContactSelector
-                selectedContactIds={editedOffer.contacts.map((c) => c.id)}
+                selectedContactIds={editedOffer.contacts.map((c) => Number(c.id))}
                 onAdd={(contactId) => {
                   const globalContact = globalContacts.find((c) => c.id === contactId)
                   if (globalContact) {
@@ -1044,9 +1044,9 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               ) : (
                 <div className="flex items-center gap-2">
                   <div className={`h-2 w-2 rounded-full ${offer.crmProvider === 'iclosed' ? 'bg-purple-500' :
-                      offer.crmProvider === 'hubspot' ? 'bg-orange-500' :
-                        offer.crmProvider === 'pipedrive' ? 'bg-green-500' :
-                          'bg-slate-500'
+                    offer.crmProvider === 'hubspot' ? 'bg-orange-500' :
+                      offer.crmProvider === 'pipedrive' ? 'bg-green-500' :
+                        'bg-slate-500'
                     }`} />
                   <p className="text-sm font-medium text-white capitalize">
                     {offer.crmProvider === 'hubspot' ? 'HubSpot' :
@@ -1167,7 +1167,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
             {/* 3. Webhook Info (Helper) - AVEC BOUTON COPIER */}
             {/* 3. CRM-specific Config */}
-            {(editedOffer.crmProvider === 'hubspot') ? (
+            {editedOffer.crmProvider === 'hubspot' && (
               /* --- HUBSPOT CONFIG --- */
               <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-3">
                 <div className="flex items-start gap-3">
@@ -1276,7 +1276,9 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   </div>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {(editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
               /* --- ICLOSED CONFIG (webhook) --- */
               <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
                 <div className="flex items-start gap-3">
@@ -1321,10 +1323,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                             src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1"
                             loading="lazy"
                             title="Configurer le Webhook iClosed"
-                            allow="clipboard-write"
-                            frameBorder="0"
-                            webkitAllowFullScreen
-                            mozAllowFullScreen
+                            allow="clipboard-write; fullscreen"
                             allowFullScreen
                             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
                           />
@@ -1367,7 +1366,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           </a>
                         </div>
                         <button
-                          onClick={() => handleRemoveResource(resource.id)}
+                          onClick={() => handleRemoveResource(Number(resource.id))}
                           className="rounded p-1.5 text-red-400 transition-colors hover:bg-red-400/10"
                         >
                           <Trash2 className="h-4 w-4" />
