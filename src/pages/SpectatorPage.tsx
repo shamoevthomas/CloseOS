@@ -9,7 +9,6 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Coffee
 } from 'lucide-react'
 import {
   AreaChart,
@@ -109,6 +108,54 @@ export function SpectatorPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [storedPassword, setStoredPassword] = useState('')
+  const [passwordRequired, setPasswordRequired] = useState<boolean | null>(null)
+  const [initialChecking, setInitialChecking] = useState(true)
+
+  // Step 1: Check if password is required for this link
+  useEffect(() => {
+    if (!token) {
+      setInitialChecking(false)
+      setError('Lien invalide.')
+      return
+    }
+
+    const checkLink = async () => {
+      try {
+        const { data: result, error: rpcError } = await supabase.rpc('check_share_link', {
+          p_token: token
+        })
+
+        if (rpcError) {
+          console.error('check_share_link error:', rpcError)
+          setError('Ce lien n\'est plus actif ou n\'existe pas.')
+          setInitialChecking(false)
+          return
+        }
+
+        if (result?.error === 'invalid_token') {
+          setError('Ce lien n\'est plus actif ou n\'existe pas.')
+          setInitialChecking(false)
+          return
+        }
+
+        const pwdRequired = result?.password_required === true
+        setPasswordRequired(pwdRequired)
+
+        if (!pwdRequired) {
+          // No password needed, fetch data directly
+          await fetchData('')
+        }
+
+        setInitialChecking(false)
+      } catch (err) {
+        console.error('Error checking link:', err)
+        setError('Erreur de chargement. Veuillez réessayer.')
+        setInitialChecking(false)
+      }
+    }
+
+    checkLink()
+  }, [token])
 
   const fetchData = useCallback(async (pwd: string) => {
     if (!token) return
@@ -116,21 +163,37 @@ export function SpectatorPage() {
     setError(null)
 
     try {
-      const { data: result, error: rpcError } = await supabase.rpc('get_spectator_data', {
-        p_token: token,
-        p_password: pwd
-      })
+      const rpcParams: any = { p_token: token }
+      if (pwd) {
+        rpcParams.p_password = pwd
+      }
 
-      if (rpcError) throw rpcError
+      const { data: result, error: rpcError } = await supabase.rpc('get_spectator_data', rpcParams)
+
+      if (rpcError) {
+        console.error('get_spectator_data error:', rpcError)
+        setError('Erreur de chargement. Veuillez réessayer.')
+        setAuthenticated(false)
+        setLoading(false)
+        return
+      }
 
       if (result?.error === 'invalid_token') {
         setError('Ce lien n\'est plus actif ou n\'existe pas.')
         setAuthenticated(false)
+        setLoading(false)
+        return
+      }
+      if (result?.error === 'password_required') {
+        setError('Mot de passe requis.')
+        setAuthenticated(false)
+        setLoading(false)
         return
       }
       if (result?.error === 'invalid_password') {
         setError('Mot de passe incorrect.')
         setAuthenticated(false)
+        setLoading(false)
         return
       }
 
@@ -138,7 +201,7 @@ export function SpectatorPage() {
       setAuthenticated(true)
       setStoredPassword(pwd)
     } catch (err: any) {
-      setError('Erreur de chargement. Veuillez reessayer.')
+      setError('Erreur de chargement. Veuillez réessayer.')
       console.error(err)
     } finally {
       setLoading(false)
@@ -147,7 +210,7 @@ export function SpectatorPage() {
 
   // Auto-refresh data every 15 seconds
   useEffect(() => {
-    if (!authenticated || !storedPassword) return
+    if (!authenticated) return
     const interval = setInterval(() => {
       fetchData(storedPassword)
     }, 15000)
@@ -255,17 +318,47 @@ export function SpectatorPage() {
     return result
   }, [data])
 
-  // ====== LOGIN SCREEN ======
-  if (!authenticated) {
+  // ====== INITIAL LOADING ======
+  if (initialChecking) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="text-center">
+          <img src="/logo.PNG" alt="CloseOS" className="h-12 mx-auto mb-4" />
+          <div className="flex items-center gap-2 text-slate-400">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-blue-500" />
+            <span className="text-sm">Chargement...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ====== ERROR STATE (invalid link) ======
+  if (error && !authenticated && passwordRequired === null) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm text-center">
+          <img src="/logo.PNG" alt="CloseOS" className="h-12 mx-auto mb-6" />
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+            <p className="text-sm text-red-400">{error}</p>
+          </div>
+          <p className="mt-6 text-center text-xs text-slate-600">
+            Performances partagées via CloseOS
+          </p>
+        </div>
+        <CloseOSBadge />
+      </div>
+    )
+  }
+
+  // ====== LOGIN SCREEN (password required) ======
+  if (!authenticated && passwordRequired === true) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           {/* Logo */}
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
-              <Coffee className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-white">CloseOS</span>
+          <div className="flex items-center justify-center mb-8">
+            <img src="/logo.PNG" alt="CloseOS" className="h-12" />
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
@@ -275,7 +368,7 @@ export function SpectatorPage() {
               </div>
               <h1 className="text-lg font-bold text-white">Page Spectateur</h1>
               <p className="text-sm text-slate-400 mt-1">
-                Entrez le mot de passe pour acceder aux performances
+                Entrez le mot de passe pour accéder aux performances
               </p>
             </div>
 
@@ -307,13 +400,13 @@ export function SpectatorPage() {
                 disabled={loading || !password}
                 className="w-full rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                {loading ? 'Verification...' : 'Acceder'}
+                {loading ? 'Vérification...' : 'Accéder'}
               </button>
             </form>
           </div>
 
           <p className="mt-6 text-center text-xs text-slate-600">
-            Performances partagees via CloseOS
+            Performances partagées via CloseOS
           </p>
         </div>
         <CloseOSBadge />
@@ -321,25 +414,36 @@ export function SpectatorPage() {
     )
   }
 
-  // ====== MAIN SPECTATOR VIEW ======
-  if (!data || !kpis) return null
+  // ====== LOADING DATA (no password required, waiting for data) ======
+  if (!data || !kpis) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="text-center">
+          <img src="/logo.PNG" alt="CloseOS" className="h-12 mx-auto mb-4" />
+          <div className="flex items-center gap-2 text-slate-400">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-blue-500" />
+            <span className="text-sm">Chargement des performances...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const { profile } = data
 
+  // ====== MAIN SPECTATOR VIEW ======
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Header */}
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
         <div className="mx-auto max-w-7xl flex items-center justify-between px-4 sm:px-8 h-16">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600">
-              <Coffee className="h-4 w-4 text-white" />
-            </div>
+            <img src="/logo.PNG" alt="CloseOS" className="h-9" />
             <div>
               <h1 className="text-sm font-bold text-white">
                 {profile?.full_name || 'Closer'}
               </h1>
-              <p className="text-[10px] text-slate-500">Performances en temps reel</p>
+              <p className="text-[10px] text-slate-500">Performances en temps réel</p>
             </div>
           </div>
           <div className="flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-1.5">
@@ -353,7 +457,7 @@ export function SpectatorPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <KpiCard
-            label="Cash encaisse"
+            label="Cash encaissé"
             value={`${formatCurrency(kpis.revenue)}€`}
             icon={DollarSign}
             color="text-emerald-400"

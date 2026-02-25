@@ -17,7 +17,10 @@
       "Bash(git push origin main)",
       "Bash(npx vercel --prod 2>&1)",
       "Bash(find /Users/thomasshamoev/closeros-mvp/api -type f -name \"*.ts\" 2>/dev/null | head -20)",
-      "Bash(grep -r \"useState.*loading\\\\|setLoading\\\\|isLoading\" /Users/thomasshamoev/closeros-mvp/src/components/*.tsx 2>/dev/null | head -20)"
+      "Bash(grep -r \"useState.*loading\\\\|setLoading\\\\|isLoading\" /Users/thomasshamoev/closeros-mvp/src/components/*.tsx 2>/dev/null | head -20)",
+      "Bash(git add src/contexts/ProspectsContext.tsx src/contexts/OffersContext.tsx src/contexts/MeetingsContext.tsx src/pages/Pipeline.tsx)",
+      "Bash(git commit -m \"$\\(cat <<'EOF'\nfix: replace polling with Supabase Realtime and fix state management bugs\n\n- Replace 10s polling with Realtime subscriptions on prospects, offers, and meetings tables\n- Add optimistic updates with rollback on error for prospect mutations\n- Await addProspect before closing modal to prevent ghost entries\n- Enable Realtime publication on Supabase for prospects, offers, meetings tables\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(vercel --prod 2>&1)"
     ]
   }
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Share2, Copy, Check, Trash2, X, Eye, EyeOff, Link2, Users, Mail } from 'lucide-react'
+import { Share2, Copy, Check, Trash2, X, Eye, EyeOff, Link2, Users, Mail, Shield, ShieldOff } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -9,6 +9,7 @@ interface ShareLink {
   token: string
   is_active: boolean
   created_at: string
+  password_required?: boolean
 }
 
 interface SpectatorLead {
@@ -27,6 +28,7 @@ export function SharePerformanceButton() {
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState<'link' | 'leads'>('link')
+  const [passwordRequired, setPasswordRequired] = useState(false)
 
   useEffect(() => {
     if (user && isOpen) {
@@ -39,7 +41,7 @@ export function SharePerformanceButton() {
     if (!user) return
     const { data } = await supabase
       .from('share_links')
-      .select('id, token, is_active, created_at')
+      .select('id, token, is_active, created_at, password_required')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .limit(1)
@@ -70,14 +72,22 @@ export function SharePerformanceButton() {
   }
 
   const handleCreate = async () => {
-    if (!password || password.length < 4) return
+    // If password is required, validate it
+    if (passwordRequired && (!password || password.length < 4)) return
     setLoading(true)
     try {
       const { data, error } = await supabase.rpc('create_share_link', {
-        p_password: password
+        p_password: passwordRequired ? password : null,
+        p_password_required: passwordRequired
       })
       if (error) throw error
-      setActiveLink({ id: data.id, token: data.token, is_active: true, created_at: new Date().toISOString() })
+      setActiveLink({
+        id: data.id,
+        token: data.token,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        password_required: passwordRequired
+      })
       setPassword('')
       copyLink(data.token)
     } catch (err) {
@@ -183,6 +193,17 @@ export function SharePerformanceButton() {
                         <div className="flex items-center gap-2 mb-3">
                           <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                           <span className="text-xs font-semibold text-emerald-400">Lien actif</span>
+                          {activeLink.password_required ? (
+                            <span className="ml-auto flex items-center gap-1 text-[10px] text-amber-400">
+                              <Shield className="h-3 w-3" />
+                              Protégé
+                            </span>
+                          ) : (
+                            <span className="ml-auto flex items-center gap-1 text-[10px] text-slate-500">
+                              <ShieldOff className="h-3 w-3" />
+                              Accès libre
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2">
@@ -212,48 +233,88 @@ export function SharePerformanceButton() {
                         className="w-full flex items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
                       >
                         <Trash2 className="h-4 w-4" />
-                        Revoquer le lien
+                        Révoquer le lien
                       </button>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       <p className="text-sm text-slate-400">
-                        Creez un lien securise pour partager vos performances en lecture seule.
+                        Créez un lien pour partager vos performances en lecture seule.
                       </p>
 
-                      {/* Password input */}
-                      <div>
-                        <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                          Mot de passe de protection
-                        </label>
-                        <div className="relative">
-                          <input
-                            type={showPassword ? 'text' : 'password'}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Min. 4 caracteres"
-                            className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-                          />
-                          <button
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                          >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
+                      {/* Password required switch */}
+                      <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {passwordRequired ? (
+                            <Shield className="h-4 w-4 text-blue-400" />
+                          ) : (
+                            <ShieldOff className="h-4 w-4 text-slate-500" />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-white">Protéger par un mot de passe</p>
+                            <p className="text-[10px] text-slate-500">
+                              {passwordRequired
+                                ? 'Un mot de passe sera demandé pour accéder'
+                                : 'Le lien sera accessible sans mot de passe'
+                              }
+                            </p>
+                          </div>
                         </div>
-                        {password.length > 0 && password.length < 4 && (
-                          <p className="mt-1 text-[10px] text-red-400">Minimum 4 caracteres</p>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPasswordRequired(!passwordRequired)
+                            if (passwordRequired) setPassword('')
+                          }}
+                          className={cn(
+                            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none',
+                            passwordRequired ? 'bg-blue-600' : 'bg-slate-600'
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                              passwordRequired ? 'translate-x-6' : 'translate-x-1'
+                            )}
+                          />
+                        </button>
                       </div>
+
+                      {/* Password input (only when switch is on) */}
+                      {passwordRequired && (
+                        <div>
+                          <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                            Mot de passe de protection
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showPassword ? 'text' : 'password'}
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              placeholder="Min. 4 caractères"
+                              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                            />
+                            <button
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                            >
+                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
+                          {password.length > 0 && password.length < 4 && (
+                            <p className="mt-1 text-[10px] text-red-400">Minimum 4 caractères</p>
+                          )}
+                        </div>
+                      )}
 
                       {/* Create button */}
                       <button
                         onClick={handleCreate}
-                        disabled={loading || password.length < 4}
+                        disabled={loading || (passwordRequired && password.length < 4)}
                         className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Share2 className="h-4 w-4" />
-                        {loading ? 'Creation...' : 'Generer le lien de partage'}
+                        {loading ? 'Création...' : 'Générer le lien de partage'}
                       </button>
                     </div>
                   )}
@@ -265,7 +326,7 @@ export function SharePerformanceButton() {
                     <div className="py-8 text-center">
                       <Users className="mx-auto h-10 w-10 text-slate-600 mb-3" />
                       <p className="text-sm text-slate-400">Aucun lead pour le moment</p>
-                      <p className="text-xs text-slate-600 mt-1">Les emails collectes via votre page spectateur apparaitront ici</p>
+                      <p className="text-xs text-slate-600 mt-1">Les emails collectés via votre page spectateur apparaîtront ici</p>
                     </div>
                   ) : (
                     <div className="max-h-64 overflow-y-auto space-y-2 custom-scrollbar">
