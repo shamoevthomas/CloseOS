@@ -11,6 +11,8 @@ import {
   Menu,
   X,
   User,
+  BarChart3,
+  Kanban,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -32,6 +34,7 @@ import { EmailCapturePopup } from '../components/EmailCapturePopup'
 
 interface SpectatorData {
   share_link_id: string
+  shared_view: 'kpi' | 'pipeline' | 'both'
   profile: { full_name: string; avatar_url: string | null }
   prospects: SpectatorProspect[]
   offers: SpectatorOffer[]
@@ -69,12 +72,12 @@ type PageStatus = 'checking' | 'needsPassword' | 'loading' | 'ready' | 'error'
 // ============================================================================
 
 const STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-400', borderColor: 'border-blue-500/20' },
-  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-400', borderColor: 'border-purple-500/20' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-emerald-400', borderColor: 'border-emerald-500/20' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-400', borderColor: 'border-orange-500/20' },
-  { id: 'noshow', name: 'No Show', color: 'bg-slate-600', textColor: 'text-slate-400', borderColor: 'border-slate-600/20' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-400', borderColor: 'border-red-500/20' },
+  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-400' },
+  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-400' },
+  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-emerald-400' },
+  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-400' },
+  { id: 'noshow', name: 'No Show', color: 'bg-slate-600', textColor: 'text-slate-400' },
+  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-400' },
 ]
 
 const parsePrice = (priceString: string): number => {
@@ -112,8 +115,10 @@ export function SpectatorPage() {
   const [status, setStatus] = useState<PageStatus>('checking')
   const [storedPassword, setStoredPassword] = useState('')
   const [kpiDrawerOpen, setKpiDrawerOpen] = useState(false)
+  // For 'both' view: which tab is actively showing in the main area
+  const [activeTab, setActiveTab] = useState<'pipeline' | 'kpi'>('pipeline')
 
-  // ====== Single useEffect for initial load — no external dependencies ======
+  // ====== Single useEffect for initial load ======
   useEffect(() => {
     if (!token) {
       setError('Lien invalide.')
@@ -125,7 +130,6 @@ export function SpectatorPage() {
 
     const init = async () => {
       try {
-        // Step 1: Check if password is required
         const { data: checkResult, error: checkError } = await supabase.rpc('check_share_link', {
           p_token: token
         })
@@ -145,7 +149,7 @@ export function SpectatorPage() {
           return
         }
 
-        // Step 2: No password needed, fetch data directly
+        // No password needed, fetch data directly
         setStatus('loading')
         const { data: spectatorResult, error: spectatorError } = await supabase.rpc('get_spectator_data', {
           p_token: token
@@ -167,6 +171,10 @@ export function SpectatorPage() {
         }
 
         setData(spectatorResult)
+        // Set initial active tab based on shared_view
+        if (spectatorResult?.shared_view === 'kpi') {
+          setActiveTab('kpi')
+        }
         setStatus('ready')
       } catch (err) {
         if (cancelled) return
@@ -180,7 +188,7 @@ export function SpectatorPage() {
     return () => { cancelled = true }
   }, [token])
 
-  // ====== Auto-refresh data every 15 seconds when ready ======
+  // ====== Auto-refresh ======
   useEffect(() => {
     if (status !== 'ready' || !token) return
     const interval = setInterval(async () => {
@@ -192,7 +200,7 @@ export function SpectatorPage() {
           setData(result)
         }
       } catch {
-        // silently fail on refresh
+        // silently fail
       }
     }, 15000)
     return () => clearInterval(interval)
@@ -211,7 +219,6 @@ export function SpectatorPage() {
       })
 
       if (rpcError) {
-        console.error('Login error:', rpcError)
         setError('Erreur de chargement. Veuillez réessayer.')
         setStatus('needsPassword')
         return
@@ -235,6 +242,9 @@ export function SpectatorPage() {
 
       setData(result)
       setStoredPassword(password)
+      if (result?.shared_view === 'kpi') {
+        setActiveTab('kpi')
+      }
       setStatus('ready')
     } catch (err) {
       console.error('Login error:', err)
@@ -335,6 +345,11 @@ export function SpectatorPage() {
     return result
   }, [data])
 
+  // Derive what views are allowed
+  const sharedView = data?.shared_view || 'both'
+  const showPipeline = sharedView === 'pipeline' || sharedView === 'both'
+  const showKpi = sharedView === 'kpi' || sharedView === 'both'
+
   // ============================================================================
   // RENDER STATES
   // ============================================================================
@@ -345,8 +360,6 @@ export function SpectatorPage() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="text-center space-y-6">
           <img src="/logo.PNG" alt="CloseOS" className="h-14 mx-auto drop-shadow-lg" />
-
-          {/* Animated loading bars */}
           <div className="flex flex-col items-center gap-3 w-64 mx-auto">
             <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
               <div className="h-full bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600 rounded-full animate-loading-bar" />
@@ -355,8 +368,6 @@ export function SpectatorPage() {
               {status === 'checking' ? 'Vérification du lien...' : 'Chargement des performances...'}
             </p>
           </div>
-
-          {/* Skeleton preview */}
           <div className="w-72 mx-auto space-y-3 opacity-30">
             <div className="grid grid-cols-2 gap-2">
               <div className="h-16 rounded-xl bg-slate-800 animate-pulse" />
@@ -366,16 +377,13 @@ export function SpectatorPage() {
             </div>
           </div>
         </div>
-
         <style>{`
           @keyframes loading-bar {
             0% { width: 0%; margin-left: 0; }
             50% { width: 70%; margin-left: 15%; }
             100% { width: 0%; margin-left: 100%; }
           }
-          .animate-loading-bar {
-            animation: loading-bar 1.5s ease-in-out infinite;
-          }
+          .animate-loading-bar { animation: loading-bar 1.5s ease-in-out infinite; }
         `}</style>
       </div>
     )
@@ -408,7 +416,6 @@ export function SpectatorPage() {
           <div className="flex items-center justify-center mb-8">
             <img src="/logo.PNG" alt="CloseOS" className="h-14 drop-shadow-lg" />
           </div>
-
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
             <div className="text-center mb-6">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-500/10">
@@ -419,7 +426,6 @@ export function SpectatorPage() {
                 Entrez le mot de passe pour accéder aux performances
               </p>
             </div>
-
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="relative">
                 <input
@@ -438,11 +444,7 @@ export function SpectatorPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-
-              {error && (
-                <p className="text-sm text-red-400 text-center">{error}</p>
-              )}
-
+              {error && <p className="text-sm text-red-400 text-center">{error}</p>}
               <button
                 type="submit"
                 disabled={!password}
@@ -452,17 +454,14 @@ export function SpectatorPage() {
               </button>
             </form>
           </div>
-
-          <p className="mt-6 text-center text-xs text-slate-600">
-            Performances partagées via CloseOS
-          </p>
+          <p className="mt-6 text-center text-xs text-slate-600">Performances partagées via CloseOS</p>
         </div>
         <CloseOSBadge />
       </div>
     )
   }
 
-  // ====== MAIN SPECTATOR VIEW (status === 'ready') ======
+  // ====== MAIN SPECTATOR VIEW ======
   if (!data || !kpis) return null
 
   const { profile } = data
@@ -482,233 +481,245 @@ export function SpectatorPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Tab switcher — only when 'both' views */}
+            {sharedView === 'both' && (
+              <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800 p-1">
+                <button
+                  onClick={() => setActiveTab('pipeline')}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                    activeTab === 'pipeline' ? 'bg-slate-700 text-blue-400' : 'text-slate-400 hover:text-slate-200'
+                  )}
+                >
+                  <Kanban className="h-3.5 w-3.5" />
+                  Pipeline
+                </button>
+                <button
+                  onClick={() => setActiveTab('kpi')}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                    activeTab === 'kpi' ? 'bg-slate-700 text-blue-400' : 'text-slate-400 hover:text-slate-200'
+                  )}
+                >
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  KPIs
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-1.5">
               <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
               <span className="text-xs font-medium text-blue-400">Live</span>
             </div>
-            {/* Hamburger menu for KPIs */}
-            <button
-              onClick={() => setKpiDrawerOpen(true)}
-              className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:border-blue-500/30 hover:text-blue-400 transition-all"
-            >
-              <Menu className="h-4 w-4" />
-              <span className="hidden sm:inline">KPIs</span>
-            </button>
+            {/* Hamburger for KPIs — only for pipeline-only view */}
+            {sharedView === 'pipeline' && (
+              <button
+                onClick={() => setKpiDrawerOpen(true)}
+                className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:border-blue-500/30 hover:text-blue-400 transition-all"
+              >
+                <Menu className="h-4 w-4" />
+                <span className="hidden sm:inline">KPIs</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 sm:px-8 py-8 space-y-6">
-        {/* ====== PIPELINE (PRIORITY) ====== */}
-        <div>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-bold text-white">Pipeline</h2>
-            <span className="text-xs text-slate-500">{data.prospects.length} prospects au total</span>
-          </div>
+        {/* ====== PIPELINE VIEW ====== */}
+        {(showPipeline && (sharedView !== 'both' || activeTab === 'pipeline')) && (
+          <PipelineView
+            prospects={data.prospects}
+            pipelineByStage={pipelineByStage}
+          />
+        )}
 
-          {/* Pipeline columns */}
-          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-            {STAGES.map(stage => {
-              const deals = pipelineByStage[stage.id] || []
-              return (
-                <div
-                  key={stage.id}
-                  className="w-64 shrink-0 flex flex-col rounded-xl border border-slate-800 bg-slate-900/50"
-                >
-                  {/* Column header */}
-                  <div className="border-b border-slate-800 p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.color)} />
-                        <h3 className="text-sm font-semibold text-slate-200">{stage.name}</h3>
-                      </div>
-                      <span className={cn(
-                        'flex h-6 min-w-[24px] items-center justify-center rounded-full px-2 text-xs font-bold',
-                        deals.length > 0 ? `${stage.textColor} bg-slate-800` : 'text-slate-600 bg-slate-800/50'
-                      )}>
-                        {deals.length}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Cards */}
-                  <div className="space-y-2 p-3 max-h-[400px] overflow-y-auto custom-scrollbar">
-                    {deals.length === 0 && (
-                      <div className="flex h-20 items-center justify-center rounded-lg border border-dashed border-slate-800/50 bg-slate-900/20">
-                        <span className="text-xs text-slate-600">Vide</span>
-                      </div>
-                    )}
-                    {deals.map(deal => {
-                      const isB2B = deal.company && deal.company !== 'N/A'
-                      const displayName = getDisplayName(deal)
-                      return (
-                        <div
-                          key={deal.id}
-                          className="relative rounded-lg border border-slate-800 bg-slate-800/40 p-3 transition-all hover:border-slate-700 hover:bg-slate-800/60"
-                        >
-                          <div className={cn('absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-60', stage.color)} />
-                          <div className="pl-3">
-                            <h4 className="text-sm font-medium text-slate-200 truncate">
-                              {isB2B ? deal.company : displayName}
-                            </h4>
-                            <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-                              <User className="h-3 w-3" />
-                              <span className="truncate">{isB2B ? displayName : (deal.offer || '')}</span>
-                            </div>
-                            {deal.value > 0 && (
-                              <div className="mt-2 pt-2 border-t border-slate-700/50">
-                                <span className="text-xs font-semibold text-blue-400">
-                                  {formatCurrency(deal.value)}€
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        {/* ====== KPI VIEW ====== */}
+        {(showKpi && (sharedView !== 'both' || activeTab === 'kpi')) && (
+          <KpiView
+            kpis={kpis}
+            chartData={chartData}
+          />
+        )}
       </main>
 
-      {/* ====== KPI DRAWER (slide from right) ====== */}
+      {/* ====== KPI DRAWER (only for pipeline-only view) ====== */}
       {kpiDrawerOpen && (
         <div className="fixed inset-0 z-50">
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setKpiDrawerOpen(false)}
-          />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setKpiDrawerOpen(false)} />
           <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl overflow-y-auto animate-slide-in-right">
-            {/* Drawer header */}
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-800 bg-slate-900/95 backdrop-blur-sm px-6 py-4">
               <h2 className="text-lg font-bold text-white">Statistiques</h2>
-              <button
-                onClick={() => setKpiDrawerOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-              >
+              <button onClick={() => setKpiDrawerOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
-
-            <div className="p-6 space-y-6">
-              {/* KPI Cards */}
-              <div className="grid grid-cols-2 gap-3">
-                <KpiCard
-                  label="Cash encaissé"
-                  value={`${formatCurrency(kpis.revenue)}€`}
-                  icon={DollarSign}
-                  color="text-emerald-400"
-                  bgColor="bg-emerald-500/10"
-                />
-                <KpiCard
-                  label="Ventes"
-                  value={String(kpis.sales)}
-                  icon={Award}
-                  color="text-blue-400"
-                  bgColor="bg-blue-500/10"
-                />
-                <KpiCard
-                  label="Taux de closing"
-                  value={`${kpis.conversion.toFixed(1)}%`}
-                  icon={Target}
-                  color="text-purple-400"
-                  bgColor="bg-purple-500/10"
-                />
-                <KpiCard
-                  label="Commissions"
-                  value={`${formatCurrency(kpis.commissions)}€`}
-                  icon={TrendingUp}
-                  color="text-orange-400"
-                  bgColor="bg-orange-500/10"
-                />
-              </div>
-
-              {/* Secondary stats */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-3 text-center">
-                  <p className="text-xl font-bold text-white">{kpis.leads}</p>
-                  <p className="text-[10px] text-slate-500 mt-1">Total</p>
-                </div>
-                <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-3 text-center">
-                  <p className="text-xl font-bold text-white">{kpis.active}</p>
-                  <p className="text-[10px] text-slate-500 mt-1">En cours</p>
-                </div>
-                <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-3 text-center">
-                  <p className="text-xl font-bold text-white">{kpis.noShowRate.toFixed(1)}%</p>
-                  <p className="text-[10px] text-slate-500 mt-1">No show</p>
-                </div>
-              </div>
-
-              {/* Chart */}
-              {chartData.length > 0 && (
-                <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-4">
-                  <h3 className="text-sm font-bold text-white mb-4">Évolution du CA</h3>
-                  <div className="h-52">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData}>
-                        <defs>
-                          <linearGradient id="colorRevenueDrawer" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                        <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                          formatter={(value: number) => [`${formatCurrency(value)}€`, 'CA']}
-                        />
-                        <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenueDrawer)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
+            <div className="p-6">
+              <KpiView kpis={kpis} chartData={chartData} />
             </div>
           </div>
         </div>
       )}
 
-      {/* Drawer animation styles */}
       <style>{`
         @keyframes slide-in-right {
           from { transform: translateX(100%); }
           to { transform: translateX(0); }
         }
-        .animate-slide-in-right {
-          animation: slide-in-right 0.25s ease-out;
-        }
+        .animate-slide-in-right { animation: slide-in-right 0.25s ease-out; }
       `}</style>
 
-      {/* Email capture popup */}
-      <EmailCapturePopup
-        closerName={profile?.full_name || 'ce closer'}
-        shareLinkId={data.share_link_id}
-      />
-
-      {/* Viral badge */}
+      <EmailCapturePopup closerName={profile?.full_name || 'ce closer'} shareLinkId={data.share_link_id} />
       <CloseOSBadge />
     </div>
   )
 }
 
 // ============================================================================
-// SUB-COMPONENTS
+// PIPELINE VIEW
+// ============================================================================
+
+function PipelineView({ prospects, pipelineByStage }: {
+  prospects: SpectatorProspect[]
+  pipelineByStage: Record<string, SpectatorProspect[]>
+}) {
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-base font-bold text-white">Pipeline</h2>
+        <span className="text-xs text-slate-500">{prospects.length} prospects au total</span>
+      </div>
+      <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+        {STAGES.map(stage => {
+          const deals = pipelineByStage[stage.id] || []
+          return (
+            <div key={stage.id} className="w-64 shrink-0 flex flex-col rounded-xl border border-slate-800 bg-slate-900/50">
+              <div className="border-b border-slate-800 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.color)} />
+                    <h3 className="text-sm font-semibold text-slate-200">{stage.name}</h3>
+                  </div>
+                  <span className={cn(
+                    'flex h-6 min-w-[24px] items-center justify-center rounded-full px-2 text-xs font-bold',
+                    deals.length > 0 ? `${stage.textColor} bg-slate-800` : 'text-slate-600 bg-slate-800/50'
+                  )}>
+                    {deals.length}
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2 p-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                {deals.length === 0 && (
+                  <div className="flex h-20 items-center justify-center rounded-lg border border-dashed border-slate-800/50 bg-slate-900/20">
+                    <span className="text-xs text-slate-600">Vide</span>
+                  </div>
+                )}
+                {deals.map(deal => {
+                  const isB2B = deal.company && deal.company !== 'N/A'
+                  const displayName = getDisplayName(deal)
+                  return (
+                    <div key={deal.id} className="relative rounded-lg border border-slate-800 bg-slate-800/40 p-3 transition-all hover:border-slate-700 hover:bg-slate-800/60">
+                      <div className={cn('absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-60', stage.color)} />
+                      <div className="pl-3">
+                        <h4 className="text-sm font-medium text-slate-200 truncate">
+                          {isB2B ? deal.company : displayName}
+                        </h4>
+                        <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                          <User className="h-3 w-3" />
+                          <span className="truncate">{isB2B ? displayName : (deal.offer || '')}</span>
+                        </div>
+                        {deal.value > 0 && (
+                          <div className="mt-2 pt-2 border-t border-slate-700/50">
+                            <span className="text-xs font-semibold text-blue-400">
+                              {formatCurrency(deal.value)}€
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// KPI VIEW
+// ============================================================================
+
+function KpiView({ kpis, chartData }: {
+  kpis: { revenue: number; commissions: number; sales: number; leads: number; active: number; conversion: number; noShowRate: number }
+  chartData: { name: string; revenue: number; ventes: number }[]
+}) {
+  return (
+    <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <KpiCard label="Cash encaissé" value={`${formatCurrency(kpis.revenue)}€`} icon={DollarSign} color="text-emerald-400" bgColor="bg-emerald-500/10" />
+        <KpiCard label="Ventes" value={String(kpis.sales)} icon={Award} color="text-blue-400" bgColor="bg-blue-500/10" />
+        <KpiCard label="Taux de closing" value={`${kpis.conversion.toFixed(1)}%`} icon={Target} color="text-purple-400" bgColor="bg-purple-500/10" />
+        <KpiCard label="Commissions" value={`${formatCurrency(kpis.commissions)}€`} icon={TrendingUp} color="text-orange-400" bgColor="bg-orange-500/10" />
+      </div>
+
+      {/* Secondary stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-center">
+          <p className="text-2xl font-bold text-white">{kpis.leads}</p>
+          <p className="text-xs text-slate-500 mt-1">Total prospects</p>
+        </div>
+        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-center">
+          <p className="text-2xl font-bold text-white">{kpis.active}</p>
+          <p className="text-xs text-slate-500 mt-1">Deals en cours</p>
+        </div>
+        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-center">
+          <p className="text-2xl font-bold text-white">{kpis.noShowRate.toFixed(1)}%</p>
+          <p className="text-xs text-slate-500 mt-1">Taux no show</p>
+        </div>
+      </div>
+
+      {/* Chart */}
+      {chartData.length > 0 && (
+        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
+          <h3 className="text-sm font-bold text-white mb-4">Évolution du CA</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorRevenueSpec" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', color: '#fff' }}
+                  formatter={(value: number) => [`${formatCurrency(value)}€`, 'CA']}
+                />
+                <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenueSpec)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================================================
+// CARD COMPONENT
 // ============================================================================
 
 function KpiCard({ label, value, icon: Icon, color, bgColor }: {
-  label: string
-  value: string
-  icon: any
-  color: string
-  bgColor: string
+  label: string; value: string; icon: any; color: string; bgColor: string
 }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-4">
+    <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
       <div className="flex items-center justify-between mb-2">
         <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl', bgColor)}>
           <Icon className={cn('h-4 w-4', color)} />

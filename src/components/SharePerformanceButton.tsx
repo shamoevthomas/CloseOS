@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Share2, Copy, Check, Trash2, X, Eye, EyeOff, Link2, Users, Mail, Shield, ShieldOff } from 'lucide-react'
+import { Share2, Copy, Check, Trash2, X, Eye, EyeOff, Link2, Mail, Shield, ShieldOff, BarChart3, Kanban, Layers } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -10,6 +10,7 @@ interface ShareLink {
   is_active: boolean
   created_at: string
   password_required?: boolean
+  shared_view?: string
 }
 
 interface SpectatorLead {
@@ -17,6 +18,14 @@ interface SpectatorLead {
   email: string
   created_at: string
 }
+
+type SharedView = 'kpi' | 'pipeline' | 'both'
+
+const VIEW_OPTIONS: { value: SharedView; label: string; icon: any; desc: string }[] = [
+  { value: 'both', label: 'Les deux', icon: Layers, desc: 'Pipeline + KPIs' },
+  { value: 'pipeline', label: 'Pipeline', icon: Kanban, desc: 'Uniquement le pipeline' },
+  { value: 'kpi', label: 'KPIs', icon: BarChart3, desc: 'Uniquement les statistiques' },
+]
 
 export function SharePerformanceButton() {
   const { user } = useAuth()
@@ -29,6 +38,7 @@ export function SharePerformanceButton() {
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState<'link' | 'leads'>('link')
   const [passwordRequired, setPasswordRequired] = useState(false)
+  const [sharedView, setSharedView] = useState<SharedView>('both')
 
   useEffect(() => {
     if (user && isOpen) {
@@ -41,7 +51,7 @@ export function SharePerformanceButton() {
     if (!user) return
     const { data } = await supabase
       .from('share_links')
-      .select('id, token, is_active, created_at, password_required')
+      .select('id, token, is_active, created_at, password_required, shared_view')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .limit(1)
@@ -57,7 +67,6 @@ export function SharePerformanceButton() {
       .select('id, email, created_at, share_link_id')
       .order('created_at', { ascending: false })
 
-    // Filter leads that belong to user's share links
     if (data && data.length > 0) {
       const { data: links } = await supabase
         .from('share_links')
@@ -72,13 +81,13 @@ export function SharePerformanceButton() {
   }
 
   const handleCreate = async () => {
-    // If password is required, validate it
     if (passwordRequired && (!password || password.length < 4)) return
     setLoading(true)
     try {
       const { data, error } = await supabase.rpc('create_share_link', {
         p_password: passwordRequired ? password : null,
-        p_password_required: passwordRequired
+        p_password_required: passwordRequired,
+        p_shared_view: sharedView
       })
       if (error) throw error
       setActiveLink({
@@ -86,7 +95,8 @@ export function SharePerformanceButton() {
         token: data.token,
         is_active: true,
         created_at: new Date().toISOString(),
-        password_required: passwordRequired
+        password_required: passwordRequired,
+        shared_view: sharedView
       })
       setPassword('')
       copyLink(data.token)
@@ -129,6 +139,11 @@ export function SharePerformanceButton() {
     return `${origin}/view/${activeLink.token}`
   }
 
+  const getViewLabel = (view?: string) => {
+    const opt = VIEW_OPTIONS.find(o => o.value === view)
+    return opt?.desc || 'Pipeline + KPIs'
+  }
+
   return (
     <>
       <button
@@ -139,14 +154,14 @@ export function SharePerformanceButton() {
         <span className="hidden sm:inline">Partager</span>
       </button>
 
-      {/* Modal */}
+      {/* Modal — centered with portal-like fixed positioning */}
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ margin: 0 }}>
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           />
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden" style={{ position: 'relative', margin: 'auto' }}>
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
               <div>
@@ -183,7 +198,7 @@ export function SharePerformanceButton() {
             </div>
 
             {/* Content */}
-            <div className="p-6">
+            <div className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
               {tab === 'link' ? (
                 <>
                   {activeLink ? (
@@ -221,9 +236,14 @@ export function SharePerformanceButton() {
                           </button>
                         </div>
 
-                        <p className="mt-2 text-[10px] text-slate-500">
-                          Actif depuis le {new Date(activeLink.created_at).toLocaleDateString('fr-FR')}
-                        </p>
+                        <div className="mt-2 flex items-center justify-between">
+                          <p className="text-[10px] text-slate-500">
+                            Actif depuis le {new Date(activeLink.created_at).toLocaleDateString('fr-FR')}
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            Vue : {getViewLabel(activeLink.shared_view)}
+                          </p>
+                        </div>
                       </div>
 
                       {/* Revoke */}
@@ -237,12 +257,42 @@ export function SharePerformanceButton() {
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                       <p className="text-sm text-slate-400">
                         Créez un lien pour partager vos performances en lecture seule.
                       </p>
 
-                      {/* Password required switch */}
+                      {/* View selection */}
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 mb-2">
+                          Contenu à partager
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {VIEW_OPTIONS.map(opt => {
+                            const Icon = opt.icon
+                            const isSelected = sharedView === opt.value
+                            return (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => setSharedView(opt.value)}
+                                className={cn(
+                                  'flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all text-center',
+                                  isSelected
+                                    ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                                    : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+                                )}
+                              >
+                                <Icon className={cn('h-5 w-5', isSelected ? 'text-blue-400' : 'text-slate-500')} />
+                                <span className="text-xs font-semibold">{opt.label}</span>
+                                <span className="text-[9px] leading-tight opacity-60">{opt.desc}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Password switch */}
                       <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3">
                         <div className="flex items-center gap-3">
                           {passwordRequired ? (
@@ -254,8 +304,8 @@ export function SharePerformanceButton() {
                             <p className="text-sm font-medium text-white">Protéger par un mot de passe</p>
                             <p className="text-[10px] text-slate-500">
                               {passwordRequired
-                                ? 'Un mot de passe sera demandé pour accéder'
-                                : 'Le lien sera accessible sans mot de passe'
+                                ? 'Un mot de passe sera demandé'
+                                : 'Accessible sans mot de passe'
                               }
                             </p>
                           </div>
@@ -280,7 +330,7 @@ export function SharePerformanceButton() {
                         </button>
                       </div>
 
-                      {/* Password input (only when switch is on) */}
+                      {/* Password input */}
                       {passwordRequired && (
                         <div>
                           <label className="block text-xs font-medium text-slate-400 mb-1.5">
@@ -324,7 +374,7 @@ export function SharePerformanceButton() {
                 <div className="space-y-3">
                   {leads.length === 0 ? (
                     <div className="py-8 text-center">
-                      <Users className="mx-auto h-10 w-10 text-slate-600 mb-3" />
+                      <Mail className="mx-auto h-10 w-10 text-slate-600 mb-3" />
                       <p className="text-sm text-slate-400">Aucun lead pour le moment</p>
                       <p className="text-xs text-slate-600 mt-1">Les emails collectés via votre page spectateur apparaîtront ici</p>
                     </div>
