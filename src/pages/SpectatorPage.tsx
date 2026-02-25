@@ -1,14 +1,16 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   DollarSign,
   Target,
   Award,
   TrendingUp,
-  Users,
   Lock,
   Eye,
   EyeOff,
+  Menu,
+  X,
+  User,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -60,17 +62,19 @@ interface SpectatorOffer {
   endDate: string | null
 }
 
+type PageStatus = 'checking' | 'needsPassword' | 'loading' | 'ready' | 'error'
+
 // ============================================================================
 // HELPERS
 // ============================================================================
 
 const STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
-  { id: 'qualified', name: 'Qualifie', color: 'bg-purple-500' },
-  { id: 'won', name: 'Gagne', color: 'bg-emerald-500' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' },
-  { id: 'noshow', name: 'No Show', color: 'bg-slate-600' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500' },
+  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-400', borderColor: 'border-blue-500/20' },
+  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-400', borderColor: 'border-purple-500/20' },
+  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-emerald-400', borderColor: 'border-emerald-500/20' },
+  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-400', borderColor: 'border-orange-500/20' },
+  { id: 'noshow', name: 'No Show', color: 'bg-slate-600', textColor: 'text-slate-400', borderColor: 'border-slate-600/20' },
+  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-400', borderColor: 'border-red-500/20' },
 ]
 
 const parsePrice = (priceString: string): number => {
@@ -103,123 +107,140 @@ export function SpectatorPage() {
   const { token } = useParams<{ token: string }>()
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [authenticated, setAuthenticated] = useState(false)
   const [data, setData] = useState<SpectatorData | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<PageStatus>('checking')
   const [storedPassword, setStoredPassword] = useState('')
-  const [passwordRequired, setPasswordRequired] = useState<boolean | null>(null)
-  const [initialChecking, setInitialChecking] = useState(true)
+  const [kpiDrawerOpen, setKpiDrawerOpen] = useState(false)
 
-  // Step 1: Check if password is required for this link
+  // ====== Single useEffect for initial load — no external dependencies ======
   useEffect(() => {
     if (!token) {
-      setInitialChecking(false)
       setError('Lien invalide.')
+      setStatus('error')
       return
     }
 
-    const checkLink = async () => {
+    let cancelled = false
+
+    const init = async () => {
       try {
-        const { data: result, error: rpcError } = await supabase.rpc('check_share_link', {
+        // Step 1: Check if password is required
+        const { data: checkResult, error: checkError } = await supabase.rpc('check_share_link', {
           p_token: token
         })
 
-        if (rpcError) {
-          console.error('check_share_link error:', rpcError)
+        if (cancelled) return
+
+        if (checkError || checkResult?.error === 'invalid_token') {
           setError('Ce lien n\'est plus actif ou n\'existe pas.')
-          setInitialChecking(false)
+          setStatus('error')
           return
         }
 
-        if (result?.error === 'invalid_token') {
-          setError('Ce lien n\'est plus actif ou n\'existe pas.')
-          setInitialChecking(false)
+        const needsPwd = checkResult?.password_required === true
+
+        if (needsPwd) {
+          setStatus('needsPassword')
           return
         }
 
-        const pwdRequired = result?.password_required === true
-        setPasswordRequired(pwdRequired)
+        // Step 2: No password needed, fetch data directly
+        setStatus('loading')
+        const { data: spectatorResult, error: spectatorError } = await supabase.rpc('get_spectator_data', {
+          p_token: token
+        })
 
-        if (!pwdRequired) {
-          // No password needed, fetch data directly
-          await fetchData('')
+        if (cancelled) return
+
+        if (spectatorError) {
+          console.error('get_spectator_data error:', spectatorError)
+          setError('Erreur de chargement. Veuillez réessayer.')
+          setStatus('error')
+          return
         }
 
-        setInitialChecking(false)
+        if (spectatorResult?.error) {
+          setError('Ce lien n\'est plus actif ou n\'existe pas.')
+          setStatus('error')
+          return
+        }
+
+        setData(spectatorResult)
+        setStatus('ready')
       } catch (err) {
-        console.error('Error checking link:', err)
+        if (cancelled) return
+        console.error('Init error:', err)
         setError('Erreur de chargement. Veuillez réessayer.')
-        setInitialChecking(false)
+        setStatus('error')
       }
     }
 
-    checkLink()
+    init()
+    return () => { cancelled = true }
   }, [token])
 
-  const fetchData = useCallback(async (pwd: string) => {
-    if (!token) return
-    setLoading(true)
+  // ====== Auto-refresh data every 15 seconds when ready ======
+  useEffect(() => {
+    if (status !== 'ready' || !token) return
+    const interval = setInterval(async () => {
+      try {
+        const params: any = { p_token: token }
+        if (storedPassword) params.p_password = storedPassword
+        const { data: result } = await supabase.rpc('get_spectator_data', params)
+        if (result && !result.error) {
+          setData(result)
+        }
+      } catch {
+        // silently fail on refresh
+      }
+    }, 15000)
+    return () => clearInterval(interval)
+  }, [status, token, storedPassword])
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!token || !password) return
     setError(null)
+    setStatus('loading')
 
     try {
-      const rpcParams: any = { p_token: token }
-      if (pwd) {
-        rpcParams.p_password = pwd
-      }
-
-      const { data: result, error: rpcError } = await supabase.rpc('get_spectator_data', rpcParams)
+      const { data: result, error: rpcError } = await supabase.rpc('get_spectator_data', {
+        p_token: token,
+        p_password: password
+      })
 
       if (rpcError) {
-        console.error('get_spectator_data error:', rpcError)
+        console.error('Login error:', rpcError)
         setError('Erreur de chargement. Veuillez réessayer.')
-        setAuthenticated(false)
-        setLoading(false)
+        setStatus('needsPassword')
         return
       }
 
-      if (result?.error === 'invalid_token') {
-        setError('Ce lien n\'est plus actif ou n\'existe pas.')
-        setAuthenticated(false)
-        setLoading(false)
+      if (result?.error === 'invalid_password') {
+        setError('Mot de passe incorrect.')
+        setStatus('needsPassword')
         return
       }
       if (result?.error === 'password_required') {
         setError('Mot de passe requis.')
-        setAuthenticated(false)
-        setLoading(false)
+        setStatus('needsPassword')
         return
       }
-      if (result?.error === 'invalid_password') {
-        setError('Mot de passe incorrect.')
-        setAuthenticated(false)
-        setLoading(false)
+      if (result?.error) {
+        setError('Ce lien n\'est plus actif ou n\'existe pas.')
+        setStatus('error')
         return
       }
 
       setData(result)
-      setAuthenticated(true)
-      setStoredPassword(pwd)
-    } catch (err: any) {
+      setStoredPassword(password)
+      setStatus('ready')
+    } catch (err) {
+      console.error('Login error:', err)
       setError('Erreur de chargement. Veuillez réessayer.')
-      console.error(err)
-    } finally {
-      setLoading(false)
+      setStatus('needsPassword')
     }
-  }, [token])
-
-  // Auto-refresh data every 15 seconds
-  useEffect(() => {
-    if (!authenticated) return
-    const interval = setInterval(() => {
-      fetchData(storedPassword)
-    }, 15000)
-    return () => clearInterval(interval)
-  }, [authenticated, storedPassword, fetchData])
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault()
-    fetchData(password)
   }
 
   // ====== KPI Calculations ======
@@ -273,10 +294,6 @@ export function SpectatorPage() {
       active: active.length,
       conversion,
       noShowRate,
-      won,
-      lost,
-      noShow,
-      activeProspects: active
     }
   }, [data])
 
@@ -295,10 +312,10 @@ export function SpectatorPage() {
       }
     })
 
-    const monthNames = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec']
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
     return Object.entries(grouped)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, val]) => ({
+      .map(([, val]) => ({
         name: monthNames[val.date.getMonth()],
         revenue: val.revenue,
         ventes: val.won
@@ -318,47 +335,78 @@ export function SpectatorPage() {
     return result
   }, [data])
 
-  // ====== INITIAL LOADING ======
-  if (initialChecking) {
+  // ============================================================================
+  // RENDER STATES
+  // ============================================================================
+
+  // ====== CHECKING / LOADING ======
+  if (status === 'checking' || status === 'loading') {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="text-center">
-          <img src="/logo.PNG" alt="CloseOS" className="h-12 mx-auto mb-4" />
-          <div className="flex items-center gap-2 text-slate-400">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-blue-500" />
-            <span className="text-sm">Chargement...</span>
+        <div className="text-center space-y-6">
+          <img src="/logo.PNG" alt="CloseOS" className="h-14 mx-auto drop-shadow-lg" />
+
+          {/* Animated loading bars */}
+          <div className="flex flex-col items-center gap-3 w-64 mx-auto">
+            <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600 rounded-full animate-loading-bar" />
+            </div>
+            <p className="text-sm text-slate-400 animate-pulse">
+              {status === 'checking' ? 'Vérification du lien...' : 'Chargement des performances...'}
+            </p>
+          </div>
+
+          {/* Skeleton preview */}
+          <div className="w-72 mx-auto space-y-3 opacity-30">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="h-16 rounded-xl bg-slate-800 animate-pulse" />
+              <div className="h-16 rounded-xl bg-slate-800 animate-pulse delay-75" />
+              <div className="h-16 rounded-xl bg-slate-800 animate-pulse delay-150" />
+              <div className="h-16 rounded-xl bg-slate-800 animate-pulse delay-200" />
+            </div>
           </div>
         </div>
+
+        <style>{`
+          @keyframes loading-bar {
+            0% { width: 0%; margin-left: 0; }
+            50% { width: 70%; margin-left: 15%; }
+            100% { width: 0%; margin-left: 100%; }
+          }
+          .animate-loading-bar {
+            animation: loading-bar 1.5s ease-in-out infinite;
+          }
+        `}</style>
       </div>
     )
   }
 
-  // ====== ERROR STATE (invalid link) ======
-  if (error && !authenticated && passwordRequired === null) {
+  // ====== ERROR ======
+  if (status === 'error') {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm text-center">
-          <img src="/logo.PNG" alt="CloseOS" className="h-12 mx-auto mb-6" />
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-            <p className="text-sm text-red-400">{error}</p>
+        <div className="w-full max-w-sm text-center space-y-6">
+          <img src="/logo.PNG" alt="CloseOS" className="h-14 mx-auto drop-shadow-lg" />
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
+              <X className="h-6 w-6 text-red-400" />
+            </div>
+            <p className="text-sm text-red-400 font-medium">{error}</p>
           </div>
-          <p className="mt-6 text-center text-xs text-slate-600">
-            Performances partagées via CloseOS
-          </p>
+          <p className="text-xs text-slate-600">Performances partagées via CloseOS</p>
         </div>
         <CloseOSBadge />
       </div>
     )
   }
 
-  // ====== LOGIN SCREEN (password required) ======
-  if (!authenticated && passwordRequired === true) {
+  // ====== PASSWORD LOGIN ======
+  if (status === 'needsPassword') {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
-          {/* Logo */}
           <div className="flex items-center justify-center mb-8">
-            <img src="/logo.PNG" alt="CloseOS" className="h-12" />
+            <img src="/logo.PNG" alt="CloseOS" className="h-14 drop-shadow-lg" />
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
@@ -379,13 +427,13 @@ export function SpectatorPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Mot de passe"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 pr-10 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 pr-10 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none transition-colors"
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -397,10 +445,10 @@ export function SpectatorPage() {
 
               <button
                 type="submit"
-                disabled={loading || !password}
+                disabled={!password}
                 className="w-full rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                {loading ? 'Vérification...' : 'Accéder'}
+                Accéder
               </button>
             </form>
           </div>
@@ -414,24 +462,11 @@ export function SpectatorPage() {
     )
   }
 
-  // ====== LOADING DATA (no password required, waiting for data) ======
-  if (!data || !kpis) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="text-center">
-          <img src="/logo.PNG" alt="CloseOS" className="h-12 mx-auto mb-4" />
-          <div className="flex items-center gap-2 text-slate-400">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-blue-500" />
-            <span className="text-sm">Chargement des performances...</span>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // ====== MAIN SPECTATOR VIEW (status === 'ready') ======
+  if (!data || !kpis) return null
 
   const { profile } = data
 
-  // ====== MAIN SPECTATOR VIEW ======
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Header */}
@@ -446,116 +481,91 @@ export function SpectatorPage() {
               <p className="text-[10px] text-slate-500">Performances en temps réel</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-1.5">
-            <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
-            <span className="text-xs font-medium text-blue-400">Live</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-1.5">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+              <span className="text-xs font-medium text-blue-400">Live</span>
+            </div>
+            {/* Hamburger menu for KPIs */}
+            <button
+              onClick={() => setKpiDrawerOpen(true)}
+              className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:border-blue-500/30 hover:text-blue-400 transition-all"
+            >
+              <Menu className="h-4 w-4" />
+              <span className="hidden sm:inline">KPIs</span>
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-8 py-8 space-y-8">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KpiCard
-            label="Cash encaissé"
-            value={`${formatCurrency(kpis.revenue)}€`}
-            icon={DollarSign}
-            color="text-emerald-400"
-            bgColor="bg-emerald-500/10"
-          />
-          <KpiCard
-            label="Ventes"
-            value={String(kpis.sales)}
-            icon={Award}
-            color="text-blue-400"
-            bgColor="bg-blue-500/10"
-          />
-          <KpiCard
-            label="Taux de closing"
-            value={`${kpis.conversion.toFixed(1)}%`}
-            icon={Target}
-            color="text-purple-400"
-            bgColor="bg-purple-500/10"
-          />
-          <KpiCard
-            label="Commissions"
-            value={`${formatCurrency(kpis.commissions)}€`}
-            icon={TrendingUp}
-            color="text-orange-400"
-            bgColor="bg-orange-500/10"
-          />
-        </div>
-
-        {/* Secondary stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-center">
-            <p className="text-2xl font-bold text-white">{kpis.leads}</p>
-            <p className="text-xs text-slate-500 mt-1">Total prospects</p>
-          </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-center">
-            <p className="text-2xl font-bold text-white">{kpis.active}</p>
-            <p className="text-xs text-slate-500 mt-1">Deals en cours</p>
-          </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-center">
-            <p className="text-2xl font-bold text-white">{kpis.noShowRate.toFixed(1)}%</p>
-            <p className="text-xs text-slate-500 mt-1">Taux no show</p>
-          </div>
-        </div>
-
-        {/* Revenue chart */}
-        {chartData.length > 0 && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-            <h2 className="text-sm font-bold text-white mb-4">Evolution du CA</h2>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', color: '#fff' }}
-                    formatter={(value: number) => [`${formatCurrency(value)}€`, 'CA']}
-                  />
-                  <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* Pipeline Overview */}
+      <main className="mx-auto max-w-7xl px-4 sm:px-8 py-8 space-y-6">
+        {/* ====== PIPELINE (PRIORITY) ====== */}
         <div>
-          <h2 className="text-sm font-bold text-white mb-4">Pipeline</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-bold text-white">Pipeline</h2>
+            <span className="text-xs text-slate-500">{data.prospects.length} prospects au total</span>
+          </div>
+
+          {/* Pipeline columns */}
+          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
             {STAGES.map(stage => {
               const deals = pipelineByStage[stage.id] || []
               return (
-                <div key={stage.id} className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className={cn('h-2.5 w-2.5 rounded-full', stage.color)} />
-                    <span className="text-xs font-semibold text-slate-400">{stage.name}</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">{deals.length}</p>
-                  <div className="mt-3 space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
-                    {deals.slice(0, 5).map(deal => (
-                      <div key={deal.id} className="rounded-lg bg-slate-800/40 px-2.5 py-1.5">
-                        <p className="text-xs text-slate-300 truncate">{getDisplayName(deal)}</p>
-                        {deal.value > 0 && (
-                          <p className="text-[10px] font-medium text-blue-400 mt-0.5">
-                            {formatCurrency(deal.value)}€
-                          </p>
-                        )}
+                <div
+                  key={stage.id}
+                  className="w-64 shrink-0 flex flex-col rounded-xl border border-slate-800 bg-slate-900/50"
+                >
+                  {/* Column header */}
+                  <div className="border-b border-slate-800 p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.color)} />
+                        <h3 className="text-sm font-semibold text-slate-200">{stage.name}</h3>
                       </div>
-                    ))}
-                    {deals.length > 5 && (
-                      <p className="text-[10px] text-slate-600 text-center">+{deals.length - 5} autres</p>
+                      <span className={cn(
+                        'flex h-6 min-w-[24px] items-center justify-center rounded-full px-2 text-xs font-bold',
+                        deals.length > 0 ? `${stage.textColor} bg-slate-800` : 'text-slate-600 bg-slate-800/50'
+                      )}>
+                        {deals.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Cards */}
+                  <div className="space-y-2 p-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                    {deals.length === 0 && (
+                      <div className="flex h-20 items-center justify-center rounded-lg border border-dashed border-slate-800/50 bg-slate-900/20">
+                        <span className="text-xs text-slate-600">Vide</span>
+                      </div>
                     )}
+                    {deals.map(deal => {
+                      const isB2B = deal.company && deal.company !== 'N/A'
+                      const displayName = getDisplayName(deal)
+                      return (
+                        <div
+                          key={deal.id}
+                          className="relative rounded-lg border border-slate-800 bg-slate-800/40 p-3 transition-all hover:border-slate-700 hover:bg-slate-800/60"
+                        >
+                          <div className={cn('absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-60', stage.color)} />
+                          <div className="pl-3">
+                            <h4 className="text-sm font-medium text-slate-200 truncate">
+                              {isB2B ? deal.company : displayName}
+                            </h4>
+                            <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                              <User className="h-3 w-3" />
+                              <span className="truncate">{isB2B ? displayName : (deal.offer || '')}</span>
+                            </div>
+                            {deal.value > 0 && (
+                              <div className="mt-2 pt-2 border-t border-slate-700/50">
+                                <span className="text-xs font-semibold text-blue-400">
+                                  {formatCurrency(deal.value)}€
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )
@@ -563,6 +573,116 @@ export function SpectatorPage() {
           </div>
         </div>
       </main>
+
+      {/* ====== KPI DRAWER (slide from right) ====== */}
+      {kpiDrawerOpen && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setKpiDrawerOpen(false)}
+          />
+          <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl overflow-y-auto animate-slide-in-right">
+            {/* Drawer header */}
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-800 bg-slate-900/95 backdrop-blur-sm px-6 py-4">
+              <h2 className="text-lg font-bold text-white">Statistiques</h2>
+              <button
+                onClick={() => setKpiDrawerOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* KPI Cards */}
+              <div className="grid grid-cols-2 gap-3">
+                <KpiCard
+                  label="Cash encaissé"
+                  value={`${formatCurrency(kpis.revenue)}€`}
+                  icon={DollarSign}
+                  color="text-emerald-400"
+                  bgColor="bg-emerald-500/10"
+                />
+                <KpiCard
+                  label="Ventes"
+                  value={String(kpis.sales)}
+                  icon={Award}
+                  color="text-blue-400"
+                  bgColor="bg-blue-500/10"
+                />
+                <KpiCard
+                  label="Taux de closing"
+                  value={`${kpis.conversion.toFixed(1)}%`}
+                  icon={Target}
+                  color="text-purple-400"
+                  bgColor="bg-purple-500/10"
+                />
+                <KpiCard
+                  label="Commissions"
+                  value={`${formatCurrency(kpis.commissions)}€`}
+                  icon={TrendingUp}
+                  color="text-orange-400"
+                  bgColor="bg-orange-500/10"
+                />
+              </div>
+
+              {/* Secondary stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-3 text-center">
+                  <p className="text-xl font-bold text-white">{kpis.leads}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">Total</p>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-3 text-center">
+                  <p className="text-xl font-bold text-white">{kpis.active}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">En cours</p>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-3 text-center">
+                  <p className="text-xl font-bold text-white">{kpis.noShowRate.toFixed(1)}%</p>
+                  <p className="text-[10px] text-slate-500 mt-1">No show</p>
+                </div>
+              </div>
+
+              {/* Chart */}
+              {chartData.length > 0 && (
+                <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-4">
+                  <h3 className="text-sm font-bold text-white mb-4">Évolution du CA</h3>
+                  <div className="h-52">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="colorRevenueDrawer" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                        <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
+                          formatter={(value: number) => [`${formatCurrency(value)}€`, 'CA']}
+                        />
+                        <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenueDrawer)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Drawer animation styles */}
+      <style>{`
+        @keyframes slide-in-right {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.25s ease-out;
+        }
+      `}</style>
 
       {/* Email capture popup */}
       <EmailCapturePopup
@@ -588,14 +708,14 @@ function KpiCard({ label, value, icon: Icon, color, bgColor }: {
   bgColor: string
 }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', bgColor)}>
-          <Icon className={cn('h-5 w-5', color)} />
+    <div className="rounded-xl border border-slate-800 bg-slate-800/30 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl', bgColor)}>
+          <Icon className={cn('h-4 w-4', color)} />
         </div>
       </div>
-      <p className="text-xl sm:text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-slate-500 mt-1">{label}</p>
+      <p className="text-lg font-bold text-white">{value}</p>
+      <p className="text-[10px] text-slate-500 mt-0.5">{label}</p>
     </div>
   )
 }
