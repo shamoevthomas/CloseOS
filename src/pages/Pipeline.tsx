@@ -24,6 +24,7 @@ import { ProspectView } from '../components/ProspectView'
 import { CreateProspectModal } from '../components/CreateProspectModal'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
+import { SharePerformanceButton } from '../components/SharePerformanceButton'
 
 // Nouvelles étapes avec sections
 const ACTIVE_STAGES = [
@@ -328,6 +329,8 @@ export function Pipeline() {
 
           {/* Contrôles Secondaires */}
           <div className="flex items-center gap-3">
+            <SharePerformanceButton />
+
             <div className="relative hidden md:block w-64">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <input

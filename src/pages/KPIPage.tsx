@@ -34,6 +34,7 @@ import { useOffers } from '../contexts/OffersContext';
 import { useProspects } from '../contexts/ProspectsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { SharePerformanceButton } from '../components/SharePerformanceButton';
 
 interface KpiFormulaEntry {
   name: string;
@@ -572,6 +573,7 @@ export function KPIPage() {
             >
               <Settings className="w-4 h-4" /> Configurer mes KPI
             </button>
+            <SharePerformanceButton />
           </div>
         </div>
 

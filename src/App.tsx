@@ -50,6 +50,7 @@ import { CGU } from './pages/CGU'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
 import { SubscriptionRetention } from './pages/SubscriptionRetention'
+import { SpectatorPage } from './pages/SpectatorPage'
 
 // Page d'accueil intelligente : loading screen si auth en cours, sinon landing ou redirect
 function SmartHome() {
@@ -133,6 +134,7 @@ function AuthenticatedApp() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
+        <Route path="/view/:token" element={<SpectatorPage />} />
         <Route path="/mentions-legales" element={<Legal />} />
         <Route path="/cgu" element={<CGU />} />
         <Route path="/confidentialite" element={<PrivacyPolicy />} /> {/* 👇 AJOUT ROUTE CONFIDENTIALITÉ */}
