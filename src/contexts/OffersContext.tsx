@@ -195,6 +195,42 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     fetchOffers()
   }, [userId, authLoading])
 
+  // Supabase Realtime : écoute les changements sur la table offers
+  useEffect(() => {
+    if (authLoading || !userId) return
+
+    const channel = supabase
+      .channel('offers-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'offers', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setOffers(prev => {
+            if (prev.some(o => o.id === payload.new.id)) return prev
+            return [...prev, mapFromDb([payload.new])[0]]
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'offers', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          const updated = mapFromDb([payload.new])[0]
+          setOffers(prev => prev.map(o => o.id === updated.id ? updated : o))
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'offers', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setOffers(prev => prev.filter(o => o.id !== payload.old.id))
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [userId, authLoading])
+
   // 2. Ajouter une offre
   const addOffer = async (offerData: Omit<Offer, 'id' | 'user_id'>) => {
     if (!user) return { data: null, error: 'Non authentifié' }

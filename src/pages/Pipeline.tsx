@@ -705,14 +705,18 @@ export function Pipeline() {
       <CreateProspectModal
         isOpen={isNewProspectModalOpen}
         onClose={() => setIsNewProspectModalOpen(false)}
-        onSubmit={(prospectData) => {
-          addProspect({
-            ...prospectData,
-            dateAdded: new Date().toISOString(),
-            lastContact: new Date().toISOString(),
-            offer: currentOfferTab !== 'global' ? currentOfferTab : prospectData.offer
-          })
-          setIsNewProspectModalOpen(false)
+        onSubmit={async (prospectData) => {
+          try {
+            await addProspect({
+              ...prospectData,
+              dateAdded: new Date().toISOString(),
+              lastContact: new Date().toISOString(),
+              offer: currentOfferTab !== 'global' ? currentOfferTab : prospectData.offer
+            })
+            setIsNewProspectModalOpen(false)
+          } catch {
+            // L'erreur est déjà loguée dans addProspect
+          }
         }}
       />
 

@@ -111,13 +111,42 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Auto-refresh toutes les 10 secondes pour voir les nouveaux imports HubSpot (en DB)
+  // Supabase Realtime : écoute les changements sur la table prospects en temps réel
   useEffect(() => {
     if (authLoading || !userId) return
-    const interval = setInterval(() => {
-      loadProspects(false)
-    }, 10000)
-    return () => clearInterval(interval)
+
+    const channel = supabase
+      .channel('prospects-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'prospects', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setProspects(prev => {
+            // Éviter les doublons (si on a déjà ajouté via optimistic update)
+            if (prev.some(p => p.id === payload.new.id)) return prev
+            return [payload.new as Prospect, ...prev]
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'prospects', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setProspects(prev =>
+            prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } as Prospect : p)
+          )
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'prospects', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setProspects(prev => prev.filter(p => p.id !== payload.old.id))
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [userId, authLoading])
 
   // HubSpot Auto-Sync Timer and Action
@@ -319,63 +348,65 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
   const addProspect = async (prospect: Omit<Prospect, 'id' | 'user_id'>) => {
     if (!user) return
-    try {
-      const { data, error } = await supabase
-        .from('prospects')
-        .insert([{ ...prospect, user_id: user.id }])
-        .select()
+    const { data, error } = await supabase
+      .from('prospects')
+      .insert([{ ...prospect, user_id: user.id }])
+      .select()
 
-      if (error) throw error
-      if (data) {
-        setProspects(prev => [data[0], ...prev])
+    if (error) {
+      console.error('Erreur ajout prospect:', error)
+      throw error
+    }
+    if (data) {
+      setProspects(prev => {
+        if (prev.some(p => p.id === data[0].id)) return prev
+        return [data[0], ...prev]
+      })
 
-        // Auto-push to CRM if configured
-        pushToHubspotIfNeeded(data[0])
-        pushToPipedriveIfNeeded(data[0])
-      }
-    } catch (error) {
-      console.error('Erreur ajout:', error)
+      // Auto-push to CRM if configured
+      pushToHubspotIfNeeded(data[0])
+      pushToPipedriveIfNeeded(data[0])
     }
   }
 
   const updateProspect = async (id: number, updates: Partial<Prospect>) => {
-    try {
-      console.log("💾 Envoi à Supabase...", { id, updates })
+    // Optimistic update immédiat
+    setProspects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
 
-      const { data, error } = await supabase
-        .from('prospects')
-        .update(updates)
-        .eq('id', id)
-        .select()
+    const { data, error } = await supabase
+      .from('prospects')
+      .update(updates)
+      .eq('id', id)
+      .select()
 
-      if (error) {
-        console.error("❌ Erreur Supabase:", error.message)
-        throw error
-      }
+    if (error) {
+      console.error('Erreur update prospect:', error.message)
+      // Rollback : recharger les données fraîches
+      loadProspects(false)
+      return
+    }
 
-      setProspects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
-
-      // If stage changed, push to CRM
-      if (updates.stage && data?.[0]) {
-        pushToHubspotIfNeeded(data[0], true)
-        pushToPipedriveIfNeeded(data[0])
-      }
-    } catch (error) {
-      console.error('Erreur update:', error)
+    // If stage changed, push to CRM
+    if (updates.stage && data?.[0]) {
+      pushToHubspotIfNeeded(data[0], true)
+      pushToPipedriveIfNeeded(data[0])
     }
   }
 
   const deleteProspect = async (id: number) => {
-    try {
-      const { error } = await supabase
-        .from('prospects')
-        .delete()
-        .eq('id', id)
+    // Optimistic update immédiat
+    const previousProspects = prospects
+    setProspects(prev => prev.filter(p => p.id !== id))
 
-      if (error) throw error
-      setProspects(prev => prev.filter(p => p.id !== id))
-    } catch (error) {
-      console.error('Erreur suppression:', error)
+    const { error } = await supabase
+      .from('prospects')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Erreur suppression prospect:', error)
+      // Rollback
+      setProspects(previousProspects)
     }
   }
 

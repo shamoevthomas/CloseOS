@@ -73,6 +73,43 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     fetchMeetings()
   }, [userId, authLoading])
 
+  // Supabase Realtime : écoute les changements sur la table meetings
+  useEffect(() => {
+    if (authLoading || !userId) return
+
+    const channel = supabase
+      .channel('meetings-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'meetings', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setMeetings(prev => {
+            if (prev.some(m => m.id === payload.new.id)) return prev
+            return [...prev, payload.new as Meeting].sort((a, b) => a.date.localeCompare(b.date))
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'meetings', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setMeetings(prev =>
+            prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } as Meeting : m)
+          )
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'meetings', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setMeetings(prev => prev.filter(m => m.id !== payload.old.id))
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [userId, authLoading])
+
   const addMeeting = async (meetingData: any) => {
     if (!user) return { data: null, error: 'Non authentifié' }
 
