@@ -4,7 +4,18 @@
       "Bash(npm run build:*)",
       "Bash(npm install:*)",
       "Bash(ls:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(grep -r \"interface\\\\|type \" /Users/thomasshamoev/closeros-mvp/src/contexts/*.tsx | head -30)",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__list_extensions",
+      "mcp__supabase__apply_migration",
+      "Bash(npx vite build 2>&1 | tail -20)",
+      "mcp__supabase__get_advisors",
+      "Bash(git add src/components/CloseOSBadge.tsx src/components/EmailCapturePopup.tsx src/components/SharePerformanceButton.tsx src/pages/SpectatorPage.tsx src/App.tsx src/pages/KPIPage.tsx src/pages/Pipeline.tsx)",
+      "Bash(git commit -m \"$\\(cat <<'EOF'\nfeat: add spectator mode with public share links, KPI view, and lead capture\n\nClosers can share a password-protected read-only view of their pipeline\nand KPIs via a unique link. Includes email capture popup after 10s,\nviral \"Tracked on CloseOS\" badge, and auto-refresh every 15s.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push origin main)",
+      "Bash(npx vercel --prod 2>&1)"
     ]
   }
 }
