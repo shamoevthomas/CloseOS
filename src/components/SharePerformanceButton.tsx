@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Share2, Copy, Check, Trash2, X, Eye, EyeOff, Link2, Mail, Shield, ShieldOff, BarChart3, Kanban, Layers } from 'lucide-react'
+import { Share2, Copy, Check, Trash2, X, Eye, EyeOff, Link2, Mail, Shield, ShieldOff, BarChart3, Kanban, Layers, ChevronDown } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useOffers } from '../contexts/OffersContext'
 
 interface ShareLink {
   id: string
@@ -11,6 +12,7 @@ interface ShareLink {
   created_at: string
   password_required?: boolean
   shared_view?: string
+  shared_offer?: string | null
 }
 
 interface SpectatorLead {
@@ -23,41 +25,46 @@ type SharedView = 'kpi' | 'pipeline' | 'both'
 
 const VIEW_OPTIONS: { value: SharedView; label: string; icon: any; desc: string }[] = [
   { value: 'both', label: 'Les deux', icon: Layers, desc: 'Pipeline + KPIs' },
-  { value: 'pipeline', label: 'Pipeline', icon: Kanban, desc: 'Uniquement le pipeline' },
-  { value: 'kpi', label: 'KPIs', icon: BarChart3, desc: 'Uniquement les statistiques' },
+  { value: 'pipeline', label: 'Pipeline', icon: Kanban, desc: 'Le pipeline' },
+  { value: 'kpi', label: 'KPIs', icon: BarChart3, desc: 'Les statistiques' },
 ]
 
 export function SharePerformanceButton() {
   const { user } = useAuth()
+  const { offers } = useOffers()
   const [isOpen, setIsOpen] = useState(false)
-  const [activeLink, setActiveLink] = useState<ShareLink | null>(null)
+  const [activeLinks, setActiveLinks] = useState<ShareLink[]>([])
   const [leads, setLeads] = useState<SpectatorLead[]>([])
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState<'link' | 'leads'>('link')
   const [passwordRequired, setPasswordRequired] = useState(false)
   const [sharedView, setSharedView] = useState<SharedView>('both')
+  const [sharedOffer, setSharedOffer] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  const activeOffers = offers.filter(o => o.status === 'active')
 
   useEffect(() => {
     if (user && isOpen) {
-      loadActiveLink()
+      loadActiveLinks()
       loadLeads()
     }
   }, [user, isOpen])
 
-  const loadActiveLink = async () => {
+  const loadActiveLinks = async () => {
     if (!user) return
     const { data } = await supabase
       .from('share_links')
-      .select('id, token, is_active, created_at, password_required, shared_view')
+      .select('id, token, is_active, created_at, password_required, shared_view, shared_offer')
       .eq('user_id', user.id)
       .eq('is_active', true)
-      .limit(1)
-      .maybeSingle()
+      .order('created_at', { ascending: false })
+      .limit(2)
 
-    setActiveLink(data)
+    setActiveLinks(data || [])
   }
 
   const loadLeads = async () => {
@@ -83,21 +90,29 @@ export function SharePerformanceButton() {
   const handleCreate = async () => {
     if (passwordRequired && (!password || password.length < 4)) return
     setLoading(true)
+    setErrorMsg(null)
     try {
       const { data, error } = await supabase.rpc('create_share_link', {
         p_password: passwordRequired ? password : null,
         p_password_required: passwordRequired,
-        p_shared_view: sharedView
+        p_shared_view: sharedView,
+        p_shared_offer: sharedOffer
       })
       if (error) throw error
-      setActiveLink({
+      if (data?.error === 'max_links_reached') {
+        setErrorMsg('Maximum 2 liens actifs. Révoquez un lien pour en créer un nouveau.')
+        return
+      }
+      const newLink: ShareLink = {
         id: data.id,
         token: data.token,
         is_active: true,
         created_at: new Date().toISOString(),
         password_required: passwordRequired,
-        shared_view: sharedView
-      })
+        shared_view: sharedView,
+        shared_offer: sharedOffer
+      }
+      setActiveLinks(prev => [newLink, ...prev])
       setPassword('')
       copyLink(data.token)
     } catch (err) {
@@ -107,12 +122,13 @@ export function SharePerformanceButton() {
     }
   }
 
-  const handleRevoke = async () => {
+  const handleRevoke = async (linkId: string) => {
     setLoading(true)
     try {
-      const { error } = await supabase.rpc('revoke_share_link')
+      const { error } = await supabase.rpc('revoke_share_link', { p_link_id: linkId })
       if (error) throw error
-      setActiveLink(null)
+      setActiveLinks(prev => prev.filter(l => l.id !== linkId))
+      setErrorMsg(null)
     } catch (err) {
       console.error('Error revoking share link:', err)
     } finally {
@@ -121,28 +137,28 @@ export function SharePerformanceButton() {
   }
 
   const copyLink = (token?: string) => {
-    const t = token || activeLink?.token
-    if (!t) return
+    if (!token) return
     const origin = window.location.hostname === 'localhost'
       ? 'http://localhost:5173'
       : 'https://closeos.fr'
-    navigator.clipboard.writeText(`${origin}/view/${t}`)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    navigator.clipboard.writeText(`${origin}/view/${token}`)
+    setCopied(token)
+    setTimeout(() => setCopied(null), 2000)
   }
 
-  const getShareUrl = () => {
-    if (!activeLink) return ''
+  const getShareUrl = (token: string) => {
     const origin = window.location.hostname === 'localhost'
       ? 'http://localhost:5173'
       : 'https://closeos.fr'
-    return `${origin}/view/${activeLink.token}`
+    return `${origin}/view/${token}`
   }
 
   const getViewLabel = (view?: string) => {
     const opt = VIEW_OPTIONS.find(o => o.value === view)
-    return opt?.desc || 'Pipeline + KPIs'
+    return opt?.label || 'Les deux'
   }
+
+  const canCreate = activeLinks.length < 2
 
   return (
     <>
@@ -154,14 +170,14 @@ export function SharePerformanceButton() {
         <span className="hidden sm:inline">Partager</span>
       </button>
 
-      {/* Modal — centered with portal-like fixed positioning */}
+      {/* Modal — truly centered above everything */}
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ margin: 0 }}>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center" style={{ margin: 0, padding: '1rem' }}>
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           />
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden" style={{ position: 'relative', margin: 'auto' }}>
+          <div className="relative w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
               <div>
@@ -200,67 +216,95 @@ export function SharePerformanceButton() {
             {/* Content */}
             <div className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
               {tab === 'link' ? (
-                <>
-                  {activeLink ? (
-                    <div className="space-y-4">
-                      {/* Active link display */}
-                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-xs font-semibold text-emerald-400">Lien actif</span>
-                          {activeLink.password_required ? (
-                            <span className="ml-auto flex items-center gap-1 text-[10px] text-amber-400">
-                              <Shield className="h-3 w-3" />
-                              Protégé
+                <div className="space-y-5">
+                  {/* Active links */}
+                  {activeLinks.length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Liens actifs ({activeLinks.length}/2)</h3>
+                      {activeLinks.map(link => (
+                        <div key={link.id} className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-xs font-semibold text-emerald-400">
+                              {link.shared_offer || 'Global'}
                             </span>
-                          ) : (
-                            <span className="ml-auto flex items-center gap-1 text-[10px] text-slate-500">
-                              <ShieldOff className="h-3 w-3" />
-                              Accès libre
-                            </span>
-                          )}
+                            <span className="text-[10px] text-slate-500">• {getViewLabel(link.shared_view)}</span>
+                            {link.password_required ? (
+                              <span className="ml-auto flex items-center gap-1 text-[10px] text-amber-400">
+                                <Shield className="h-3 w-3" />
+                              </span>
+                            ) : (
+                              <span className="ml-auto flex items-center gap-1 text-[10px] text-slate-500">
+                                <ShieldOff className="h-3 w-3" />
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-1.5">
+                            <input
+                              readOnly
+                              value={getShareUrl(link.token)}
+                              className="flex-1 bg-transparent text-[11px] text-slate-300 outline-none truncate"
+                            />
+                            <button
+                              onClick={() => copyLink(link.token)}
+                              className="flex items-center gap-1 rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-blue-700 transition-colors shrink-0"
+                            >
+                              {copied === link.token ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                              {copied === link.token ? 'Copié' : 'Copier'}
+                            </button>
+                          </div>
+                          <div className="mt-2 flex items-center justify-between">
+                            <p className="text-[10px] text-slate-500">
+                              {new Date(link.created_at).toLocaleDateString('fr-FR')}
+                            </p>
+                            <button
+                              onClick={() => handleRevoke(link.id)}
+                              disabled={loading}
+                              className="flex items-center gap-1 text-[10px] text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Révoquer
+                            </button>
+                          </div>
                         </div>
-
-                        <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2">
-                          <input
-                            readOnly
-                            value={getShareUrl()}
-                            className="flex-1 bg-transparent text-xs text-slate-300 outline-none truncate"
-                          />
-                          <button
-                            onClick={() => copyLink()}
-                            className="flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors"
-                          >
-                            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                            {copied ? 'Copié' : 'Copier'}
-                          </button>
-                        </div>
-
-                        <div className="mt-2 flex items-center justify-between">
-                          <p className="text-[10px] text-slate-500">
-                            Actif depuis le {new Date(activeLink.created_at).toLocaleDateString('fr-FR')}
-                          </p>
-                          <p className="text-[10px] text-slate-500">
-                            Vue : {getViewLabel(activeLink.shared_view)}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Revoke */}
-                      <button
-                        onClick={handleRevoke}
-                        disabled={loading}
-                        className="w-full flex items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Révoquer le lien
-                      </button>
+                      ))}
                     </div>
-                  ) : (
-                    <div className="space-y-5">
+                  )}
+
+                  {/* Create new link form */}
+                  {canCreate ? (
+                    <div className="space-y-4">
+                      {activeLinks.length > 0 && (
+                        <div className="border-t border-slate-800 pt-4">
+                          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Nouveau lien</h3>
+                        </div>
+                      )}
+
                       <p className="text-sm text-slate-400">
                         Créez un lien pour partager vos performances en lecture seule.
                       </p>
+
+                      {/* Offer selection */}
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                          Offre à partager
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={sharedOffer || 'global'}
+                            onChange={(e) => setSharedOffer(e.target.value === 'global' ? null : e.target.value)}
+                            className="w-full appearance-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 pr-10 text-sm text-white focus:border-blue-500 focus:outline-none transition-colors"
+                          >
+                            <option value="global">🌐 Global — Toutes les offres</option>
+                            {activeOffers.map(offer => (
+                              <option key={offer.name} value={offer.name}>
+                                📦 {offer.name}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                        </div>
+                      </div>
 
                       {/* View selection */}
                       <div>
@@ -285,7 +329,6 @@ export function SharePerformanceButton() {
                               >
                                 <Icon className={cn('h-5 w-5', isSelected ? 'text-blue-400' : 'text-slate-500')} />
                                 <span className="text-xs font-semibold">{opt.label}</span>
-                                <span className="text-[9px] leading-tight opacity-60">{opt.desc}</span>
                               </button>
                             )
                           })}
@@ -303,10 +346,7 @@ export function SharePerformanceButton() {
                           <div>
                             <p className="text-sm font-medium text-white">Protéger par un mot de passe</p>
                             <p className="text-[10px] text-slate-500">
-                              {passwordRequired
-                                ? 'Un mot de passe sera demandé'
-                                : 'Accessible sans mot de passe'
-                              }
+                              {passwordRequired ? 'Un mot de passe sera demandé' : 'Accessible sans mot de passe'}
                             </p>
                           </div>
                         </div>
@@ -321,21 +361,16 @@ export function SharePerformanceButton() {
                             passwordRequired ? 'bg-blue-600' : 'bg-slate-600'
                           )}
                         >
-                          <span
-                            className={cn(
-                              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                              passwordRequired ? 'translate-x-6' : 'translate-x-1'
-                            )}
-                          />
+                          <span className={cn(
+                            'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                            passwordRequired ? 'translate-x-6' : 'translate-x-1'
+                          )} />
                         </button>
                       </div>
 
                       {/* Password input */}
                       {passwordRequired && (
                         <div>
-                          <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                            Mot de passe de protection
-                          </label>
                           <div className="relative">
                             <input
                               type={showPassword ? 'text' : 'password'}
@@ -357,6 +392,11 @@ export function SharePerformanceButton() {
                         </div>
                       )}
 
+                      {/* Error message */}
+                      {errorMsg && (
+                        <p className="text-sm text-red-400 text-center">{errorMsg}</p>
+                      )}
+
                       {/* Create button */}
                       <button
                         onClick={handleCreate}
@@ -367,8 +407,16 @@ export function SharePerformanceButton() {
                         {loading ? 'Création...' : 'Générer le lien de partage'}
                       </button>
                     </div>
+                  ) : (
+                    /* Max links reached */
+                    activeLinks.length >= 2 && (
+                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-center">
+                        <p className="text-sm text-amber-400 font-medium">Maximum 2 liens atteint</p>
+                        <p className="text-xs text-slate-500 mt-1">Révoquez un lien existant pour en créer un nouveau.</p>
+                      </div>
+                    )
                   )}
-                </>
+                </div>
               ) : (
                 /* Leads tab */
                 <div className="space-y-3">

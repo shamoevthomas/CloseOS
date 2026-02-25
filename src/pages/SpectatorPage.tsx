@@ -35,6 +35,7 @@ import { EmailCapturePopup } from '../components/EmailCapturePopup'
 interface SpectatorData {
   share_link_id: string
   shared_view: 'kpi' | 'pipeline' | 'both'
+  shared_offer: string | null
   profile: { full_name: string; avatar_url: string | null }
   prospects: SpectatorProspect[]
   offers: SpectatorOffer[]
@@ -477,7 +478,9 @@ export function SpectatorPage() {
               <h1 className="text-sm font-bold text-white">
                 {profile?.full_name || 'Closer'}
               </h1>
-              <p className="text-[10px] text-slate-500">Performances en temps réel</p>
+              <p className="text-[10px] text-slate-500">
+                {data.shared_offer ? `Offre : ${data.shared_offer}` : 'Performances en temps réel'}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -699,7 +702,7 @@ function KpiView({ kpis, chartData }: {
                 <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', color: '#fff' }}
-                  formatter={(value: number) => [`${formatCurrency(value)}€`, 'CA']}
+                  formatter={(value: any) => [`${formatCurrency(Number(value))}€`, 'CA']}
                 />
                 <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenueSpec)" />
               </AreaChart>
