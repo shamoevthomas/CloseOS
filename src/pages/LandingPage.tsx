@@ -374,22 +374,21 @@ export function LandingPage() {
               </div>
             </div>
 
-            <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-purple-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
-              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:rotate-12 group-hover:scale-110">
-                <CalendarCheck className="w-64 h-64 text-purple-500" />
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-purple-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
+              <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <CalendarCheck className="w-32 h-32 text-purple-500" />
               </div>
               <div className="relative z-10">
                 <div className="h-12 w-12 rounded-lg bg-purple-500/20 flex items-center justify-center mb-6 ring-1 ring-purple-500/30">
                   <CalendarCheck className="h-6 w-6 text-purple-400" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-3">Agenda & Booking (Google Calendar)</h3>
-                <p className="text-slate-400 mb-6 max-w-md leading-relaxed">
-                  Connectez votre Google Calendar. Vos rendez-vous et créneaux de booking remontent automatiquement dans votre Pipeline et votre Agenda CloseOS.
+                <h3 className="text-xl font-bold text-white mb-3">Agenda & Booking</h3>
+                <p className="text-slate-400 text-sm leading-relaxed mb-4">
+                  Connectez votre Google Calendar. Vos rendez-vous et créneaux de booking remontent automatiquement dans votre Pipeline.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Sync Bi-directionnelle</span>
-                  <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Intégration native</span>
-                  <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Centralisation</span>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-300">Sync Bi-directionnelle</span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-300">Intégration native</span>
                 </div>
               </div>
             </div>
@@ -404,20 +403,17 @@ export function LandingPage() {
               </p>
             </div>
 
-            <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#E11D48]/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
-              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500">
-                <Zap className="w-64 h-64 text-[#E11D48]" />
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#E11D48]/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
+              <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Zap className="w-32 h-32 text-[#E11D48]" />
               </div>
               <div className="relative z-10">
                 <div className="h-12 w-12 rounded-lg bg-[#E11D48]/20 flex items-center justify-center mb-6 ring-1 ring-[#E11D48]/30">
                   <Zap className="h-6 w-6 text-[#E11D48]" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-3">Sync CRM (HubSpot, Pipedrive, iClosed)</h3>
-                <p className="text-slate-400 mb-6 max-w-lg leading-relaxed">
-                  Synchronisation native avec iClosed, HubSpot et Pipedrive. Vos leads et vos deals circulent en temps réel. Oubliez la double saisie manuelle et automatisez 100% de votre suivi.
-                  <span className="block mt-2 text-xs text-slate-500 italic">
-                    (PS: pour iClosed, voir la FAQ)
-                  </span>
+                <h3 className="text-xl font-bold text-white mb-3">Sync CRM</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Synchronisation native avec iClosed, HubSpot et Pipedrive. Oubliez la double saisie manuelle et automatisez votre suivi.
                 </p>
               </div>
             </div>
