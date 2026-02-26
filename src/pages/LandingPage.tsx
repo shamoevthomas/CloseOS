@@ -217,6 +217,12 @@ export function LandingPage() {
             CRM, Agenda, Booking, VoIP, Facturation, Visio, KPIs... CloseOS réunit TOUT ce dont vous avez besoin pour closer davantage, et gagner plus.
           </p>
 
+          <div className="flex items-center justify-center gap-2 mb-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-250">
+            <span className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-sm font-medium text-violet-300">
+              🔗 Partagez votre profil de closer en un lien — KPIs, Pipeline, performances en temps réel
+            </span>
+          </div>
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
             <Link
               to={`/checkout?billing=${billingCycle}`}
@@ -329,12 +335,43 @@ export function LandingPage() {
 
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-orange-500/30 transition-all duration-500 group hover:bg-slate-900/80">
               <div className="h-12 w-12 rounded-lg bg-orange-500/20 flex items-center justify-center mb-6 ring-1 ring-orange-500/30">
-                <TrendingUp className="h-6 w-6 text-orange-400" />
+                <div className="h-6 w-6 text-orange-400 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
               </div>
               <h3 className="text-xl font-bold text-white mb-3">Pipeline & Offres</h3>
               <p className="text-slate-400 text-sm leading-relaxed mb-4">
                 Vue Kanban fluide. Configurez vos offres (prix, commissions, formules) et laissez l'outil calculer vos gains à chaque deal déplacé.
               </p>
+            </div>
+
+            <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-violet-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
+              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
+                <Users className="w-64 h-64 text-violet-500" />
+              </div>
+              <div className="relative z-10">
+                <div className="h-12 w-12 rounded-lg bg-violet-500/20 flex items-center justify-center mb-6 ring-1 ring-violet-500/30">
+                  <ArrowRight className="h-6 w-6 text-violet-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">Votre Profil de Closer en Temps Réel</h3>
+                <p className="text-slate-400 mb-6 max-w-lg leading-relaxed">
+                  Générez un lien de partage unique en un clic. Configurez exactement ce que vous voulez exposer : KPIs seuls, Pipeline complet, ou les deux. Protégez-le par mot de passe si besoin.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                  <div className="rounded-xl bg-violet-500/5 border border-violet-500/20 p-4">
+                    <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">🔗 Lien Bio</p>
+                    <p className="text-sm text-slate-400 leading-relaxed">Mettez le lien dans votre bio LinkedIn ou Instagram. Les infopreneurs tombent dessus, voient vos stats, vous contactent.</p>
+                  </div>
+                  <div className="rounded-xl bg-violet-500/5 border border-violet-500/20 p-4">
+                    <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">⚡ Réponse Instantanée</p>
+                    <p className="text-sm text-slate-400 leading-relaxed">"Montre-moi tes performances." Vous envoyez le lien. Fini les captures d'écran, les tableaux Excel et les pavés WhatsApp.</p>
+                  </div>
+                  <div className="rounded-xl bg-violet-500/5 border border-violet-500/20 p-4">
+                    <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">👁️ Suivi Infopreneur</p>
+                    <p className="text-sm text-slate-400 leading-relaxed">Votre infopreneur suit votre pipeline et vos KPIs sans avoir besoin d'un compte. Transparence totale, confiance maximale.</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-purple-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
