@@ -700,6 +700,7 @@ export function LandingPage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white sm:text-5xl">Rejoignez l'Élite.</h2>
             <p className="text-slate-400 mt-4 text-lg">Choisissez l'outil qui va doubler votre taux de closing.</p>
+            <p className="text-white mt-4 text-2xl font-bold">Essai gratuit 7 jours. Annulez à tout moment.</p>
           </div>
 
           {/* SELECTEUR D'ONGLETS & SWITCH */}
