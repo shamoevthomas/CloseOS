@@ -100,8 +100,8 @@ export function LandingPage() {
 
       {/* BANDEAU OFFRE */}
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
-        🚀 OFFRE DE PRÉLANCEMENT : Rejoignez les Founders pour 29€/mois à VIE (au lieu de 69€).
-        <span className="hidden sm:inline"> L'essai gratuit débutera au lancement officiel.</span>
+        🚀 OUVERTURE LE 1ER MARS : Profitez de l'Offre Founder à 29€/mois à VIE.
+        <span className="hidden sm:inline"> Votre essai gratuit de 7 jours débutera le 1er mars.</span>
       </div>
 
       {/* NAVBAR */}
