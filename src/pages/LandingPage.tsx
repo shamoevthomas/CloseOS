@@ -244,11 +244,10 @@ export function LandingPage() {
           <div className="mt-8 flex items-center justify-center gap-3 text-sm font-medium text-slate-400 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
             <div className="flex -space-x-3">
               {[
-                "https://api.dicebear.com/7.x/avataaars/svg?seed=closer1",
-                "https://api.dicebear.com/7.x/avataaars/svg?seed=closer2",
-                "https://api.dicebear.com/7.x/avataaars/svg?seed=closer3",
-                "https://api.dicebear.com/7.x/avataaars/svg?seed=closer4",
-                "https://api.dicebear.com/7.x/avataaars/svg?seed=closer5"
+                "/U1.jpg",
+                "/U2.jpeg",
+                "/U3.jpeg",
+                "/U4.jpeg"
               ].map((src, i) => (
                 <div key={i} className="h-8 w-8 rounded-full border-2 border-[#020617] relative z-0 hover:z-10 transition-all hover:scale-110">
                   <img src={src} alt="Closer" className="h-full w-full rounded-full object-cover" />
@@ -259,7 +258,7 @@ export function LandingPage() {
               <div className="flex text-amber-400 gap-0.5">
                 {[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 fill-current" />)}
               </div>
-              <span>Produit validé par <strong className="text-white">+70 closers</strong></span>
+              <span>Produit validé par <strong className="text-white">150 closers</strong></span>
             </div>
           </div>
 
