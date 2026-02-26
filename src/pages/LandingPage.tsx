@@ -219,7 +219,7 @@ export function LandingPage() {
 
           <div className="flex items-center justify-center gap-2 mb-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-250">
             <span className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-sm font-medium text-violet-300">
-              🔗 Partagez votre profil de closer en un lien — KPIs, Pipeline, performances en temps réel
+              🔗 Centralisez tout votre flux. Automatisez chaque étape de votre closing.
             </span>
           </div>
 
