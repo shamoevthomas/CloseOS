@@ -60,7 +60,6 @@ function FAQItem({ question, children }: { question: string, children: React.Rea
 }
 
 export function LandingPage() {
-  const [pricingTab, setPricingTab] = useState<'closer' | 'agency' | 'enterprise'>('closer');
   // État pour le cycle de facturation
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
@@ -703,38 +702,7 @@ export function LandingPage() {
             <p className="text-white mt-4 text-2xl font-bold">Essai gratuit 7 jours. Annulez à tout moment.</p>
           </div>
 
-          {/* SELECTEUR D'ONGLETS & SWITCH */}
           <div className="flex flex-col items-center mb-12">
-            <div className="inline-flex p-1 bg-slate-900 rounded-xl border border-slate-800 mb-6">
-              <button
-                onClick={() => setPricingTab('closer')}
-                className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${pricingTab === 'closer'
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
-              >
-                Closer Indépendant
-              </button>
-              <button
-                onClick={() => setPricingTab('agency')}
-                className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${pricingTab === 'agency'
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
-              >
-                Agence
-              </button>
-              <button
-                onClick={() => setPricingTab('enterprise')}
-                className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${pricingTab === 'enterprise'
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
-              >
-                Entreprise / Infopreneur
-              </button>
-            </div>
-
             {/* SWITCH MOIS / ANNÉE */}
             <div className="flex items-center justify-center gap-4">
               <span
@@ -764,239 +732,143 @@ export function LandingPage() {
                 </span>
               </span>
             </div>
-            {/* BOUTON COMPARATIF (DÉPLACÉ ICI) */}
-            {pricingTab === 'closer' && (
-              <button
-                onClick={() => setIsComparisonOpen(true)}
-                className="mt-8 px-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition-all border border-slate-700 hover:border-slate-600 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200"
-              >
-                <Sheet className="h-5 w-5" />
-                Voir le comparatif détaillé des offres
-              </button>
-            )}
+
+            {/* BOUTON COMPARATIF */}
+            <button
+              onClick={() => setIsComparisonOpen(true)}
+              className="mt-8 px-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition-all border border-slate-700 hover:border-slate-600 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200"
+            >
+              <Sheet className="h-5 w-5" />
+              Voir le comparatif détaillé des offres
+            </button>
           </div>
 
-          {/* CONTENU DES ONGLETS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start max-w-5xl mx-auto">
-
-            {pricingTab === 'closer' && (
-              <>
-                {/* PLAN STARTER */}
-                <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 flex flex-col h-full opacity-80 hover:opacity-100 transition-opacity animate-in fade-in zoom-in duration-300">
-                  <div className="mb-6">
-                    <h3 className="text-xl font-bold text-white">PACK STARTER</h3>
-                    <p className="mt-2 text-slate-400 text-sm">Le système complet pour organiser votre closing et encaisser vos premières commissions.</p>
-                    <div className="mt-4 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-white">{calculatePrice(39)}€</span>
-                      <span className="text-slate-500">/mois</span>
-                    </div>
-                    {billingCycle === 'yearly' && (
-                      <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
-                    )}
-                  </div>
-                  <ul className="space-y-4 mb-8 flex-1">
-                    <li className="flex gap-3 text-sm text-slate-300">
-                      <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                      <span><strong>CRM & Pipeline</strong> illimité</span>
-                    </li>
-                    <li className="flex gap-3 text-sm text-slate-300">
-                      <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                      <span><strong>Agenda & Booking</strong> (Liens de rdv)</span>
-                    </li>
-                    <li className="flex gap-3 text-sm text-slate-300">
-                      <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                      <span><strong>Facturation</strong> (Générateur PDF)</span>
-                    </li>
-                    <li className="flex gap-3 text-sm text-slate-300">
-                      <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                      <span><strong>KPIs Globaux</strong> (CA, Ventes)</span>
-                    </li>
-                  </ul>
-                  <Link
-                    to={`/checkout-starter?billing=${billingCycle}`}
-                    className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors block"
-                  >
-                    Démarrer en Starter
-                  </Link>
-                  <p className="mt-3 text-[10px] text-center text-slate-600">
-                    1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
-                  </p>
+            {/* PLAN STARTER */}
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 flex flex-col h-full opacity-80 hover:opacity-100 transition-opacity animate-in fade-in zoom-in duration-300">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-white">PACK STARTER</h3>
+                <p className="mt-2 text-slate-400 text-sm">Le système complet pour organiser votre closing et encaisser vos premières commissions.</p>
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-white">{calculatePrice(39)}€</span>
+                  <span className="text-slate-500">/mois</span>
                 </div>
-
-                {/* PLAN FOUNDER */}
-                <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 scale-105 relative z-10 flex flex-col h-full animate-in fade-in zoom-in duration-300 delay-75">
-                  <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
-                    <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                      OFFRE PRÉLANCEMENT
-                    </span>
-                  </div>
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-2xl font-bold text-white">PACK FOUNDER</h3>
-                      <Star className="h-5 w-5 text-yellow-400 fill-yellow-400 animate-pulse" />
-                    </div>
-                    <p className="mt-2 text-blue-200 text-sm">L'expérience ultime. Accès à vie, IA et communauté privée.</p>
-                    <div className="mt-4 flex items-baseline gap-2">
-                      <span className="text-5xl font-extrabold text-white">{calculatePrice(29)}€</span>
-                      {/* MODIFICATION 3 : PRIX BARRÉ RESTE 69€ */}
-                      <span className="text-slate-400 line-through text-lg">69€</span>
-                      <span className="text-slate-500">/mois à vie</span>
-                    </div>
-                    {billingCycle === 'yearly' && (
-                      <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
-                    )}
-                  </div>
-                  <ul className="space-y-4 mb-4 flex-1">
-                    <li className="flex gap-3 text-sm text-white font-medium">
-                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span>Tout ce qui est inclus dans Starter</span>
-                    </li>
-                    <li className="flex gap-3 text-sm text-white font-medium">
-                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span><strong>KPI Avancés</strong> (Evolution, Objectifs)</span>
-                    </li>
-                    <li className="flex gap-3 text-sm text-white font-medium">
-                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span><strong>Call Room</strong> (Scripts & Notes)</span>
-                    </li>
-                    <li className="flex gap-3 text-sm text-white font-medium">
-                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span><strong>Envoi Factures Automatique</strong></span>
-                    </li>
-                    <li className="flex gap-3 text-sm text-white font-medium">
-                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span><strong>Automatisations</strong> (Sync CRM, etc.)</span>
-                    </li>
-                    <li className="flex gap-3 text-sm text-white font-medium">
-                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span><strong>Enregistrement</strong> Vidéo/Audio</span>
-                    </li>
-                    <li className="flex gap-3 text-sm text-white font-medium">
-                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span>Badge "Founder" & Support Prio</span>
-                    </li>
-                  </ul>
-
-                  <Link
-                    to={`/checkout?billing=${billingCycle}`}
-                    className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-50 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
-                  >
-                    Sécuriser ma place à {calculatePrice(29)}€
-                  </Link>
-
-                  <p className="mt-4 text-xs text-center text-slate-500">
-                    Carte bancaire requise. <strong>Aucun prélèvement avant le lancement officiel</strong> + 7 jours d'essai offerts.
-                  </p>
-                  <p className="mt-3 text-[10px] text-center text-slate-500/60">
-                    1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
-                  </p>
-                </div>
-              </>
-            )}
-
-            {pricingTab === 'agency' && (
-              <div className="col-span-1 md:col-span-2 rounded-3xl border border-indigo-500/30 bg-indigo-950/10 p-10 flex flex-col items-center text-center animate-in fade-in zoom-in duration-300 relative group overflow-hidden">
-                <div className="absolute inset-0 bg-red-600/80 backdrop-blur-[2px] z-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <span className="text-white text-2xl font-bold uppercase tracking-widest border-2 border-white/50 px-6 py-3 rounded-xl bg-red-950/50 -rotate-2">
-                    Prochainement
-                  </span>
-                </div>
-
-                <div className="h-16 w-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center mb-6">
-                  <Users className="h-8 w-8 text-indigo-400" />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4">Offre Agence & Réseaux</h3>
-                <p className="text-slate-300 max-w-lg mb-8">
-                  Dédiée aux agences de closing. Pilotez plusieurs équipes, gérez l'attribution des leads et analysez la rentabilité de chaque closer en temps réel.
-                </p>
-                {/* MODIFICATION 4 : GAP AUGMENTÉ */}
-                <div className="grid md:grid-cols-2 gap-10 w-full max-w-2xl mb-10 text-left">
-                  <div className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-indigo-400 shrink-0" />
-                    <span className="text-sm text-slate-300">Dashboard Superviseur</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-indigo-400 shrink-0" />
-                    <span className="text-sm text-slate-300">Attribution auto des leads</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-indigo-400 shrink-0" />
-                    <span className="text-sm text-slate-300">Facturation centralisée</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-indigo-400 shrink-0" />
-                    <span className="text-sm text-slate-300">Onboarding prioritaire</span>
-                  </div>
-                </div>
-                <a href="mailto:support@closeos.fr?subject=Demande%20Agence" className="px-8 py-4 rounded-xl bg-white text-indigo-950 font-bold hover:bg-indigo-50 transition-colors">
-                  Contacter l'équipe Sales
-                </a>
+                {billingCycle === 'yearly' && (
+                  <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
+                )}
               </div>
-            )}
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span><strong>CRM & Pipeline</strong> illimité</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span><strong>Agenda & Booking</strong> (Liens de rdv)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span><strong>Facturation</strong> (Générateur PDF)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span><strong>KPIs Globaux</strong> (CA, Ventes)</span>
+                </li>
+              </ul>
+              <Link
+                to={`/checkout-starter?billing=${billingCycle}`}
+                className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors block"
+              >
+                Démarrer en Starter
+              </Link>
+              <p className="mt-3 text-[10px] text-center text-slate-600">
+                1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
+              </p>
+            </div>
 
-            {pricingTab === 'enterprise' && (
-              <div className="col-span-1 md:col-span-2 rounded-3xl border border-emerald-500/30 bg-emerald-950/10 p-10 flex flex-col items-center text-center animate-in fade-in zoom-in duration-300 relative group overflow-hidden">
-                <div className="absolute inset-0 bg-red-600/80 backdrop-blur-[2px] z-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <span className="text-white text-2xl font-bold uppercase tracking-widest border-2 border-white/50 px-6 py-3 rounded-xl bg-red-950/50 -rotate-2">
-                    Prochainement
-                  </span>
-                </div>
-
-                <div className="h-16 w-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center mb-6">
-                  <Building2 className="h-8 w-8 text-emerald-400" />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4">Pour Infopreneurs & Entreprises</h3>
-                <p className="text-slate-300 max-w-lg mb-8">
-                  Pour les business qui scalent. Management d'équipe centralisé, attribution auto des leads et messagerie interne pour un pilotage à 360°.
-                </p>
-                {/* MODIFICATION 4 : GAP AUGMENTÉ */}
-                <div className="grid md:grid-cols-2 gap-10 w-full max-w-2xl mb-10 text-left">
-                  <div className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <span className="text-sm text-slate-300">Intégration CRM sur-mesure</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <span className="text-sm text-slate-300">API & Webhooks dédiés</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <span className="text-sm text-slate-300">SLA & Support 24/7</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <span className="text-sm text-slate-300">Audit de process offert</span>
-                  </div>
-                </div>
-                <a href="mailto:support@closeos.fr?subject=Demande%20Entreprise" className="px-8 py-4 rounded-xl bg-white text-emerald-950 font-bold hover:bg-emerald-50 transition-colors">
-                  Parler à un expert
-                </a>
+            {/* PLAN FOUNDER */}
+            <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 scale-105 relative z-10 flex flex-col h-full animate-in fade-in zoom-in duration-300 delay-75">
+              <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                  OFFRE PRÉLANCEMENT
+                </span>
               </div>
-            )}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-2xl font-bold text-white">PACK FOUNDER</h3>
+                  <Star className="h-5 w-5 text-yellow-400 fill-yellow-400 animate-pulse" />
+                </div>
+                <p className="mt-2 text-blue-200 text-sm">L'expérience ultime. Accès à vie, IA et communauté privée.</p>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-5xl font-extrabold text-white">{calculatePrice(29)}€</span>
+                  <span className="text-slate-400 line-through text-lg">69€</span>
+                  <span className="text-slate-500">/mois à vie</span>
+                </div>
+                {billingCycle === 'yearly' && (
+                  <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
+                )}
+              </div>
+              <ul className="space-y-4 mb-4 flex-1">
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span>Tout ce qui est inclus dans Starter</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>KPI Avancés</strong> (Evolution, Objectifs)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>Call Room</strong> (Scripts & Notes)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>Envoi Factures Automatique</strong></span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>Automatisations</strong> (Sync CRM, etc.)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>Enregistrement</strong> Vidéo/Audio</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span>Badge "Founder" & Support Prio</span>
+                </li>
+              </ul>
 
+              <Link
+                to={`/checkout?billing=${billingCycle}`}
+                className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-50 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
+              >
+                Sécuriser ma place à {calculatePrice(29)}€
+              </Link>
+
+              <p className="mt-4 text-xs text-center text-slate-500">
+                Carte bancaire requise. <strong>Aucun prélèvement avant le lancement officiel</strong> + 7 jours d'essai offerts.
+              </p>
+              <p className="mt-3 text-[10px] text-center text-slate-500/60">
+                1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
+              </p>
+            </div>
           </div>
 
-
-          {/* MODIFICATION 5 : ENCART OPTION VOIP + BOUTON COMPARATIF */}
-          {pricingTab === 'closer' && (
-            <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-
-              {/* Option VoIP */}
-              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-900/20 border border-blue-500/30 shadow-lg shadow-blue-500/5">
-                <div className="p-2 rounded-lg bg-blue-500/20">
-                  <PlusCircle className="h-5 w-5 text-blue-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-white">Option VoIP & Enregistrements</p>
-                  <p className="text-xs text-blue-300">
-                    Ajoutez la téléphonie à votre plan pour <span className="text-white font-bold">+{billingCycle === 'yearly' ? '7' : '10'}€/mois</span>
-                  </p>
-                </div>
+          <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+            {/* Option VoIP */}
+            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-900/20 border border-blue-500/30 shadow-lg shadow-blue-500/5">
+              <div className="p-2 rounded-lg bg-blue-500/20">
+                <PlusCircle className="h-5 w-5 text-blue-400" />
               </div>
-
+              <div className="text-left">
+                <p className="text-sm font-bold text-white">Option VoIP & Enregistrements</p>
+                <p className="text-xs text-blue-300">
+                  Ajoutez la téléphonie à votre plan pour <span className="text-white font-bold">+{billingCycle === 'yearly' ? '7' : '10'}€/mois</span>
+                </p>
+              </div>
             </div>
-          )}
-
+          </div>
         </div>
       </section>
 
@@ -1171,6 +1043,6 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
-    </div>
+    </div >
   )
 }
