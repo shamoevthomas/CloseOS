@@ -9,7 +9,6 @@ import {
   Zap,
   BarChart3,
   ChevronRight,
-  Play,
   XCircle,
   MessageSquare,
   FileText,
@@ -209,17 +208,14 @@ export function LandingPage() {
 
 
           <h1 className="mx-auto max-w-5xl text-5xl font-extrabold tracking-tight text-white sm:text-7xl mb-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-            Jongler entre 10 outils,<br />
+            Arrêtez de gérer.<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400 animate-gradient-x">
-              c'est terminé.
+              Commencez à encaisser.
             </span>
-            <br />
-            Reprenez 1h de closing par jour.
           </h1>
 
           <p className="mx-auto max-w-2xl text-lg text-slate-400 mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 leading-relaxed">
-            CRM, Agenda, Booking, VoIP, Facturation, Visio, KPIs...<br />
-            <strong className="text-white">CloseOS</strong> réunit TOUT ce dont vous avez besoin pour closer dans une seule interface.
+            CRM, Agenda, Booking, VoIP, Facturation, Visio, KPIs... CloseOS réunit TOUT ce dont vous avez besoin pour closer davantage, et gagner plus.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
@@ -230,24 +226,24 @@ export function LandingPage() {
               <Zap className="h-5 w-5 fill-current" />
               Profiter de l'offre Founder
             </Link>
-            <a
-              href="#demo"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 font-semibold text-lg hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
-            >
-              <Play className="h-5 w-5" />
-              Voir la démo
+            <a href="#demo" className="text-sm text-slate-500 hover:text-slate-300 underline transition-colors">
+              Voir la démo d'abord
             </a>
           </div>
+
+          <p className="text-xs text-slate-500 mt-3">
+            🔒 Offre Founder = tarif 29€/mois bloqué à vie. Prix normal : 69€/mois après lancement.
+          </p>
 
           {/* 👇 AJOUT : SOCIAL PROOF AVEC VRAIES PHOTOS */}
           <div className="mt-8 flex items-center justify-center gap-3 text-sm font-medium text-slate-400 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
             <div className="flex -space-x-3">
               {[
-                "https://randomuser.me/api/portraits/men/32.jpg",
-                "https://randomuser.me/api/portraits/women/44.jpg",
-                "https://randomuser.me/api/portraits/men/86.jpg",
-                "https://randomuser.me/api/portraits/women/68.jpg",
-                "https://randomuser.me/api/portraits/men/45.jpg"
+                "https://api.dicebear.com/7.x/avataaars/svg?seed=closer1",
+                "https://api.dicebear.com/7.x/avataaars/svg?seed=closer2",
+                "https://api.dicebear.com/7.x/avataaars/svg?seed=closer3",
+                "https://api.dicebear.com/7.x/avataaars/svg?seed=closer4",
+                "https://api.dicebear.com/7.x/avataaars/svg?seed=closer5"
               ].map((src, i) => (
                 <div key={i} className="h-8 w-8 rounded-full border-2 border-[#020617] relative z-0 hover:z-10 transition-all hover:scale-110">
                   <img src={src} alt="Closer" className="h-full w-full rounded-full object-cover" />
@@ -514,6 +510,29 @@ export function LandingPage() {
                   </div>
                 </div>
 
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS SECTION */}
+      <section className="py-16 border-t border-white/5">
+        <div className="mx-auto max-w-4xl px-6 text-center">
+          <p className="text-xs font-bold text-slate-500 mb-10 uppercase tracking-widest">Ce que disent les closers</p>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="rounded-2xl bg-slate-900/50 border border-white/5 p-6 text-left">
+              <p className="text-slate-300 text-sm leading-relaxed">"Avant CloseOS je passais 2h par jour sur Excel et Notion. Maintenant tout est au même endroit, je me concentre uniquement sur mes appels."</p>
+              <div className="mt-4 flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-xs font-bold text-blue-400">A</div>
+                <span className="text-sm font-semibold text-white">Antoine R. — Closer freelance</span>
+              </div>
+            </div>
+            <div className="rounded-2xl bg-slate-900/50 border border-white/5 p-6 text-left">
+              <p className="text-slate-300 text-sm leading-relaxed">"Le lien de partage KPI c'est ce qui m'a permis de décrocher mon deuxième contrat. L'infopreneur voyait mes stats en temps réel."</p>
+              <div className="mt-4 flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-xs font-bold text-purple-400">S</div>
+                <span className="text-sm font-semibold text-white">Sarah M. — Closer & Setter</span>
               </div>
             </div>
           </div>
