@@ -548,28 +548,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS SECTION */}
-      <section className="py-16 border-t border-white/5">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <p className="text-xs font-bold text-slate-500 mb-10 uppercase tracking-widest">Ce que disent les closers</p>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="rounded-2xl bg-slate-900/50 border border-white/5 p-6 text-left">
-              <p className="text-slate-300 text-sm leading-relaxed">"Avant CloseOS je passais 2h par jour sur Excel et Notion. Maintenant tout est au même endroit, je me concentre uniquement sur mes appels."</p>
-              <div className="mt-4 flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-xs font-bold text-blue-400">A</div>
-                <span className="text-sm font-semibold text-white">Antoine R. — Closer freelance</span>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-slate-900/50 border border-white/5 p-6 text-left">
-              <p className="text-slate-300 text-sm leading-relaxed">"Le lien de partage KPI c'est ce qui m'a permis de décrocher mon deuxième contrat. L'infopreneur voyait mes stats en temps réel."</p>
-              <div className="mt-4 flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-xs font-bold text-purple-400">S</div>
-                <span className="text-sm font-semibold text-white">Sarah M. — Closer & Setter</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* COMPARISON SECTION */}
       <section id="comparison" className="py-24 bg-slate-950/50 border-y border-white/5 relative overflow-hidden">
