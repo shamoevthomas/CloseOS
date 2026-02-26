@@ -247,7 +247,7 @@ export function LandingPage() {
                 "/U1.jpg",
                 "/U2.jpg",
                 "/U3.jpg",
-                "/U4.jpeg"
+                "/U1.png"
               ].map((src, i) => (
                 <div key={i} className="h-8 w-8 rounded-full border-2 border-[#020617] relative z-0 hover:z-10 transition-all hover:scale-110">
                   <img src={src} alt="Closer" className="h-full w-full rounded-full object-cover" />
