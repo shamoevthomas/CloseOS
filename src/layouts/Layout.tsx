@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from '../components/Sidebar'
+import { ReminderBell } from '../components/ReminderBell'
 import { Menu, Coffee, AlertTriangle } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState } from 'react'
@@ -72,6 +73,9 @@ export function Layout({ onOpenSettings }: LayoutProps) {
 
             {/* Actions Droite */}
             <div className="flex items-center gap-2 sm:gap-4">
+              {/* Notification Bell */}
+              <ReminderBell />
+
               {/* Warning Beta Bubble */}
               <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] sm:text-xs font-bold text-red-400">
                 <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 animate-pulse" />
