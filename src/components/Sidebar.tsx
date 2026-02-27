@@ -19,7 +19,8 @@ import {
   FileText,
   Sparkles,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Bell
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState, useEffect } from 'react' // Modification ici : ajout de useEffect
@@ -40,6 +41,7 @@ const navigation = [
   { name: 'Rapport', href: '/ai-coach', icon: FileText },
   { name: 'Factures', href: '/factures', icon: CreditCard },
   { name: 'KPI', href: '/kpi', icon: BarChart3 },
+  { name: 'Rappels', href: '/reminders', icon: Bell },
 ]
 
 interface SidebarProps {

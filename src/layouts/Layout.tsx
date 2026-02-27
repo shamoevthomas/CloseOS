@@ -21,7 +21,8 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/telephony': { title: 'Téléphonie', subtitle: 'Centralisez vos échanges' },
   '/ai-coach': { title: 'Coach IA', subtitle: 'Optimisez vos ventes' },
   '/factures': { title: 'Factures', subtitle: 'Suivez vos paiements' },
-  '/rendez-vous': { title: 'Rendez-vous', subtitle: 'Gérez vos créneaux' }
+  '/rendez-vous': { title: 'Rendez-vous', subtitle: 'Gérez vos créneaux' },
+  '/reminders': { title: 'Rappels', subtitle: 'Gérez vos rappels' }
 }
 
 export function Layout({ onOpenSettings }: LayoutProps) {

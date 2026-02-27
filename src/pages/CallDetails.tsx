@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom' // Ajout useLocation
-import { ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign, Calendar, Award, UserPlus, X, Tag, LayoutList, PenTool } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign, Calendar, Award, UserPlus, X, Tag, LayoutList, PenTool, Bell, Loader2 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useCalls } from '../contexts/CallsContext'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
+import { useMeetings } from '../contexts/MeetingsContext'
+import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
 import { supabase } from '../lib/supabase'
 
 // Helper to parse price from offer string (e.g., "4 997€" -> 4997)
@@ -89,8 +91,11 @@ export function CallDetails() {
   const { prospects, updateProspect, addProspect } = useProspects()
   const { offers } = useOffers()
 
+  const { addMeeting } = useMeetings()
+  const { isConnected: isGoogleConnected, createEvent: createGoogleEvent } = useGoogleCalendar()
+
   // --- NOUVEAU STATE POUR LES ONGLETS ---
-  const [activeTab, setActiveTab] = useState<'qualification' | 'notes'>('qualification')
+  const [activeTab, setActiveTab] = useState<'qualification' | 'notes' | 'reminder'>('qualification')
 
   // Form state
   const [selectedOutcome, setSelectedOutcome] = useState<'won' | 'lost' | 'followup' | 'noshow' | null>(null)
@@ -110,6 +115,14 @@ export function CallDetails() {
   // Lost fields
   const [lostReason, setLostReason] = useState('')
   const [lostReasonOther, setLostReasonOther] = useState('')
+
+  // Reminder fields
+  const [reminderTitle, setReminderTitle] = useState('')
+  const [reminderDescription, setReminderDescription] = useState('')
+  const [reminderDate, setReminderDate] = useState('')
+  const [reminderTime, setReminderTime] = useState('')
+  const [isSavingReminder, setIsSavingReminder] = useState(false)
+  const [reminderToast, setReminderToast] = useState(false)
 
   // --- NOUVEAUX ETATS POUR LA CREATION DE PROSPECT ---
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -409,6 +422,45 @@ export function CallDetails() {
         await updateProspect(prospect.id, updates)
       }
 
+      // 📅 SYNC FOLLOW-UP → AGENDA + GOOGLE CALENDAR
+      if (selectedOutcome === 'followup' && followupDate) {
+        try {
+          const followupDateTime = new Date(followupDate)
+          const dateStr = followupDateTime.toISOString().split('T')[0]
+          const startTimeStr = followupDateTime.toTimeString().slice(0, 5)
+          const endHour = new Date(followupDateTime.getTime() + 60 * 60 * 1000)
+          const endTimeStr = endHour.toTimeString().slice(0, 5)
+          const eventTitle = `Follow up — ${prospect.contact}`
+
+          // 1. Créer dans la table meetings (Agenda CloserOS)
+          await addMeeting({
+            title: eventTitle,
+            date: dateStr,
+            time: `${startTimeStr} - ${endTimeStr}`,
+            type: 'call',
+            contact: prospect.contact,
+            prospectId: prospect.id,
+            status: 'upcoming',
+            description: `Follow up automatique — Motif: ${followupReason === 'Autre' ? followupReasonOther : followupReason}`,
+          })
+
+          // 2. Sync avec Google Calendar si connecté
+          if (isGoogleConnected) {
+            await createGoogleEvent({
+              title: eventTitle,
+              date: dateStr,
+              startTime: startTimeStr,
+              endTime: endTimeStr,
+              description: `Follow up — Motif: ${followupReason === 'Autre' ? followupReasonOther : followupReason}`,
+            })
+          }
+
+          console.log('📅 Follow-up synced to Agenda + Google Calendar')
+        } catch (syncError) {
+          console.error('Erreur sync follow-up:', syncError)
+        }
+      }
+
       // Log to console for KPI tracking
       console.log('📊 KPI Data:', {
         outcome: selectedOutcome,
@@ -431,6 +483,44 @@ export function CallDetails() {
       alert('Erreur lors de la sauvegarde')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // --- HANDLER SAUVEGARDE RAPPEL ---
+  const handleSaveReminder = async () => {
+    if (!reminderTitle || !reminderDate || !reminderTime) return
+    setIsSavingReminder(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Non connecté')
+
+      const reminderDateTime = `${reminderDate}T${reminderTime}:00`
+
+      const { error } = await supabase.from('reminders').insert([{
+        user_id: user.id,
+        call_id: call ? Number(call.id) : null,
+        title: reminderTitle,
+        description: reminderDescription || null,
+        reminder_date: reminderDateTime,
+        is_done: false,
+      }])
+
+      if (error) throw error
+
+      // Reset form
+      setReminderTitle('')
+      setReminderDescription('')
+      setReminderDate('')
+      setReminderTime('')
+
+      // Show toast
+      setReminderToast(true)
+      setTimeout(() => setReminderToast(false), 3000)
+    } catch (error) {
+      console.error('Erreur création rappel:', error)
+      alert('Erreur lors de la création du rappel')
+    } finally {
+      setIsSavingReminder(false)
     }
   }
 
@@ -532,7 +622,7 @@ export function CallDetails() {
                 Qualification
                 {activeTab === 'qualification' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-400 rounded-t-full" />}
             </button>
-            <button 
+            <button
                 onClick={() => setActiveTab('notes')}
                 className={cn(
                     "pb-3 px-2 text-sm font-medium flex items-center gap-2 transition-all relative",
@@ -542,6 +632,17 @@ export function CallDetails() {
                 <PenTool className="h-4 w-4" />
                 Notes d'appel
                 {activeTab === 'notes' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-400 rounded-t-full" />}
+            </button>
+            <button
+                onClick={() => setActiveTab('reminder')}
+                className={cn(
+                    "pb-3 px-2 text-sm font-medium flex items-center gap-2 transition-all relative",
+                    activeTab === 'reminder' ? "text-blue-400" : "text-gray-400 hover:text-gray-200"
+                )}
+            >
+                <Bell className="h-4 w-4" />
+                Programmer un rappel
+                {activeTab === 'reminder' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-400 rounded-t-full" />}
             </button>
         </div>
 
@@ -874,6 +975,93 @@ export function CallDetails() {
                 </div>
             )}
 
+            {/* ONGLET 3: PROGRAMMER UN RAPPEL */}
+            {activeTab === 'reminder' && (
+                <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Bell className="h-5 w-5 text-orange-400" />
+                        <h3 className="text-sm font-semibold text-white">Programmer un rappel</h3>
+                    </div>
+
+                    {/* Titre */}
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-white">
+                            Titre <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={reminderTitle}
+                            onChange={(e) => setReminderTitle(e.target.value)}
+                            placeholder="Ex: Rappeler Jean pour le contrat"
+                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                        />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-white">
+                            Description <span className="text-gray-500">(optionnel)</span>
+                        </label>
+                        <textarea
+                            value={reminderDescription}
+                            onChange={(e) => setReminderDescription(e.target.value)}
+                            placeholder="Détails supplémentaires..."
+                            rows={3}
+                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all resize-none"
+                        />
+                    </div>
+
+                    {/* Date & Heure */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                                <Calendar className="h-4 w-4" />
+                                Date <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                                type="date"
+                                value={reminderDate}
+                                onChange={(e) => setReminderDate(e.target.value)}
+                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                                <Clock className="h-4 w-4" />
+                                Heure <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                                type="time"
+                                value={reminderTime}
+                                onChange={(e) => setReminderTime(e.target.value)}
+                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Bouton Enregistrer */}
+                    <button
+                        onClick={handleSaveReminder}
+                        disabled={!reminderTitle || !reminderDate || !reminderTime || isSavingReminder}
+                        className={cn(
+                            'w-full rounded-lg px-6 py-3 text-sm font-semibold text-white transition-all mt-2',
+                            reminderTitle && reminderDate && reminderTime && !isSavingReminder
+                                ? 'bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-500/20'
+                                : 'bg-gray-700 cursor-not-allowed opacity-50'
+                        )}
+                    >
+                        {isSavingReminder ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Enregistrement...
+                            </span>
+                        ) : (
+                            'Enregistrer le rappel'
+                        )}
+                    </button>
+                </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-800 mt-6">
                 <button
@@ -967,6 +1155,15 @@ export function CallDetails() {
         </div>
       )}
 
+      {/* TOAST RAPPEL */}
+      {reminderToast && (
+        <div className="fixed bottom-6 right-6 z-[200] animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 shadow-2xl backdrop-blur-md">
+            <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+            <span className="text-sm font-semibold text-emerald-400">Rappel programmé</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

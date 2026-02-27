@@ -51,6 +51,7 @@ import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
 import { SubscriptionRetention } from './pages/SubscriptionRetention'
 import { SpectatorPage } from './pages/SpectatorPage'
+import { RemindersPage } from './pages/RemindersPage'
 
 // Page d'accueil intelligente : loading screen si auth en cours, sinon landing ou redirect
 function SmartHome() {
@@ -199,6 +200,7 @@ function AuthenticatedApp() {
           <Route path="kpi" element={<KPIPage />} />
           <Route path="rendez-vous" element={<RendezVous />} />
           <Route path="messages" element={<MessagesPage />} />
+          <Route path="reminders" element={<RemindersPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
 
           {/* Si page inconnue, on renvoie vers coming-soon pour l'instant */}
