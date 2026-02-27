@@ -383,11 +383,12 @@ export function LandingPage() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">Agenda & Booking</h3>
                 <p className="text-slate-400 text-sm leading-relaxed mb-4">
-                  Connectez votre Google Calendar. Vos rendez-vous et créneaux de booking remontent automatiquement dans votre Pipeline.
+                  Connectez votre Google Calendar. Vos rendez-vous et créneaux de booking remontent automatiquement dans votre Pipeline. Programmez des rappels sur vos appels directement depuis votre pipeline.
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-300">Sync Bi-directionnelle</span>
                   <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-300">Intégration native</span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-300">Rappels intégrés</span>
                 </div>
               </div>
             </div>
@@ -783,6 +784,10 @@ export function LandingPage() {
                 <li className="flex gap-3 text-sm text-slate-300">
                   <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
                   <span><strong>KPIs Globaux</strong> (CA, Ventes)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span><strong>Rappels programmables</strong></span>
                 </li>
               </ul>
               <Link

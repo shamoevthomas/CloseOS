@@ -237,6 +237,7 @@ export const CheckoutStarter = () => {
                   "Agenda & Booking (Liens de rdv)",
                   "Facturation (Générateur PDF)",
                   "KPIs (CA, Conversion, Ventes)",
+                  "Rappels programmables",
                   "Support standard email"
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 text-slate-300 text-sm font-medium">

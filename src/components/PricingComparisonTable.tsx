@@ -35,6 +35,12 @@ export function PricingComparisonTable({ isModal = false }: { isModal?: boolean 
             category: "Performance & Scaling",
             items: [
                 {
+                    name: "Rappels programmables",
+                    description: "Programmez des rappels sur vos appels et prospects",
+                    starter: true,
+                    founder: true
+                },
+                {
                     name: "Envoi automatique des factures",
                     description: "Email automatique à l'infopreneur/agence",
                     starter: false,
