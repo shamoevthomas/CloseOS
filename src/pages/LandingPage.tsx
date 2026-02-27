@@ -798,9 +798,12 @@ export function LandingPage() {
 
             {/* PLAN FOUNDER */}
             <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 scale-105 relative z-10 flex flex-col h-full animate-in fade-in zoom-in duration-300 delay-75">
-              <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                  OFFRE PRÉLANCEMENT
+              <div className="absolute -top-3 right-6 flex flex-col items-end gap-1">
+                <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg">
+                  🔥 -58% PRÉLANCEMENT
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-red-500/90 text-white text-[10px] font-bold uppercase tracking-wide">
+                  Offre valable jusqu'au 10 mars
                 </span>
               </div>
               <div className="mb-6">
