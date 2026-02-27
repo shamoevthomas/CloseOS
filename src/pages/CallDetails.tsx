@@ -487,9 +487,12 @@ export function CallDetails() {
   }
 
   // --- HANDLER SAUVEGARDE RAPPEL ---
+  const [reminderError, setReminderError] = useState('')
+
   const handleSaveReminder = async () => {
     if (!reminderTitle || !reminderDate || !reminderTime) return
     setIsSavingReminder(true)
+    setReminderError('')
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Non connecté')
@@ -516,12 +519,11 @@ export function CallDetails() {
       // Show toast
       setReminderToast(true)
       setTimeout(() => setReminderToast(false), 3000)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur création rappel:', error)
-      alert('Erreur lors de la création du rappel')
-    } finally {
-      setIsSavingReminder(false)
+      setReminderError(error?.message || 'Erreur lors de la création du rappel. Vérifiez votre connexion et désactivez votre bloqueur de pub.')
     }
+    setIsSavingReminder(false)
   }
 
   return (
@@ -1038,6 +1040,13 @@ export function CallDetails() {
                             />
                         </div>
                     </div>
+
+                    {/* Message d'erreur */}
+                    {reminderError && (
+                        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
+                            <p className="text-sm text-red-400">{reminderError}</p>
+                        </div>
+                    )}
 
                     {/* Bouton Enregistrer */}
                     <button
