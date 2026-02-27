@@ -102,6 +102,14 @@ export function LandingPage() {
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
         🚀 OUVERTURE LE 1ER MARS : Profitez de l'Offre Founder à 29€/mois à VIE.
         <span className="hidden sm:inline"> Votre essai gratuit de 7 jours débutera le 1er mars.</span>
+        <a
+          href="https://www.whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-3 underline underline-offset-2 hover:text-blue-100 transition-colors whitespace-nowrap"
+        >
+          📲 Rejoindre la communauté
+        </a>
       </div>
 
       {/* NAVBAR */}
@@ -233,6 +241,20 @@ export function LandingPage() {
             </Link>
             <a href="#demo" className="text-sm text-slate-500 hover:text-slate-300 underline transition-colors">
               Voir la démo d'abord
+            </a>
+          </div>
+
+          <div className="mt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+            <a
+              href="https://www.whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors group"
+            >
+              <span className="text-green-400">📲</span>
+              <span className="underline underline-offset-2 group-hover:text-green-400 transition-colors">
+                Rejoindre la communauté WhatsApp pour suivre le lancement
+              </span>
             </a>
           </div>
 
@@ -381,7 +403,7 @@ export function LandingPage() {
                 <div className="h-12 w-12 rounded-lg bg-purple-500/20 flex items-center justify-center mb-6 ring-1 ring-purple-500/30">
                   <CalendarCheck className="h-6 w-6 text-purple-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">Agenda & Booking</h3>
+                <h3 className="text-xl font-bold text-white mb-3">Agenda & Booking & Rappel</h3>
                 <p className="text-slate-400 text-sm leading-relaxed mb-4">
                   Connectez votre Google Calendar. Vos rendez-vous et créneaux de booking remontent automatiquement dans votre Pipeline. Programmez des rappels sur vos appels directement depuis votre pipeline.
                 </p>
