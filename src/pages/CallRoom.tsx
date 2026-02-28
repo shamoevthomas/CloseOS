@@ -6,6 +6,7 @@ import {
     MessageSquare // Ajout pour le chat/notes si besoin
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
 
 // Interfaces pour les données
@@ -26,6 +27,7 @@ interface Offer {
 }
 
 export default function CallRoom() {
+    const { user } = useAuth();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const callId = searchParams.get('id');
@@ -55,8 +57,9 @@ export default function CallRoom() {
 
     // --- 1. CHARGEMENT DES DONNÉES (Scripts & Offres) ---
     useEffect(() => {
+        let isMounted = true;
+
         async function loadData() {
-            const { data: { user } = {} } = await supabase.auth.getUser();
             if (!user) return;
 
             // A. Charger les scripts
@@ -65,6 +68,8 @@ export default function CallRoom() {
                 .select('*')
                 .eq('user_id', user.id)
                 .order('id', { ascending: true });
+
+            if (!isMounted) return;
 
             if (scriptsData && scriptsData.length > 0) {
                 setScripts(scriptsData);
@@ -80,13 +85,16 @@ export default function CallRoom() {
                 .select('*')
                 .eq('status', 'active');
 
+            if (!isMounted) return;
+
             if (offersData && offersData.length > 0) {
                 setOffers(offersData);
                 setSelectedOfferId(offersData[0].id);
             }
         }
         loadData();
-    }, []);
+        return () => { isMounted = false };
+    }, [user?.id]);
 
     // Changement de script
     useEffect(() => {

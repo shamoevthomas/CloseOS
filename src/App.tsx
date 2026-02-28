@@ -146,7 +146,6 @@ function AuthenticatedApp() {
         <Route path="/checkout" element={<CheckoutForm />} />
         <Route path="/checkout-starter" element={<CheckoutStarter />} />
         <Route path="/return" element={<Return />} />
-        <Route path="/return" element={<Return />} />
         <Route
           path="/welcome-founder"
           element={
@@ -155,7 +154,6 @@ function AuthenticatedApp() {
             </ProtectedRoute>
           }
         />
-        <Route path="/confirm-email-change" element={<ConfirmEmailUpdate />} />
         <Route path="/confirm-email-change" element={<ConfirmEmailUpdate />} />
         <Route path="/retention" element={<SubscriptionRetention />} />
 

@@ -21,31 +21,32 @@ export function ReminderBell() {
   const [dismissed, setDismissed] = useState<Set<number>>(new Set())
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const fetchTodayReminders = async () => {
-    if (!user) return
-
-    const now = new Date()
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString()
-
-    const { data, error } = await supabase
-      .from('reminders')
-      .select('id, title, description, reminder_date, is_done')
-      .eq('user_id', user.id)
-      .eq('is_done', false)
-      .lte('reminder_date', endOfDay)
-      .order('reminder_date', { ascending: true })
-
-    if (!error && data) {
-      setReminders(data)
-    }
-  }
-
   useEffect(() => {
+    let isMounted = true
+
+    const fetchTodayReminders = async () => {
+      if (!user) return
+
+      const now = new Date()
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString()
+
+      const { data, error } = await supabase
+        .from('reminders')
+        .select('id, title, description, reminder_date, is_done')
+        .eq('user_id', user.id)
+        .eq('is_done', false)
+        .lte('reminder_date', endOfDay)
+        .order('reminder_date', { ascending: true })
+
+      if (!error && data && isMounted) {
+        setReminders(data)
+      }
+    }
+
     fetchTodayReminders()
     // Refresh every 60 seconds
     const interval = setInterval(fetchTodayReminders, 60000)
-    return () => clearInterval(interval)
+    return () => { isMounted = false; clearInterval(interval) }
   }, [user?.id])
 
   // Close dropdown on outside click

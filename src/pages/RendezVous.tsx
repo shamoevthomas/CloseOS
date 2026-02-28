@@ -694,11 +694,14 @@ export function RendezVous() {
 
    // 1. Chargement initial (OAuth) + Auto-Refresh
    useEffect(() => {
+      let isMounted = true;
+
       const fetchProfile = async () => {
          if (!user) return
 
          try {
             const { data } = await supabase.from('profiles').select('cal_access_token, cal_refresh_token, cal_token_expires_at, cal_username').eq('id', user.id).single()
+            if (!isMounted) return;
 
             if (data?.cal_access_token) {
                let token = data.cal_access_token;
@@ -717,6 +720,7 @@ export function RendezVous() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ user_id: user.id })
                      });
+                     if (!isMounted) return;
                      const refreshData = await refreshRes.json();
                      if (refreshData.access_token) {
                         token = refreshData.access_token;
@@ -729,11 +733,14 @@ export function RendezVous() {
                   }
                }
 
+               if (!isMounted) return;
                setCalAccessToken(token)
                if (data.cal_username) setCalUsername(data.cal_username)
 
                await fetchEventTypes(token)
+               if (!isMounted) return;
                await fetchCalProfile(token)
+               if (!isMounted) return;
                await fetchCalBookings(token, false)
             }
          } catch (err) {
@@ -748,7 +755,8 @@ export function RendezVous() {
          window.history.replaceState({}, '', window.location.pathname)
          // Wait a moment to ensure the DB was updated by the callback, then fetch
          setTimeout(() => {
-            fetchProfile().then(() => setIsConfigModalOpen(true))
+            if (!isMounted) return;
+            fetchProfile().then(() => { if (isMounted) setIsConfigModalOpen(true) })
          }, 500)
       } else if (params.get('error')) {
          const error = params.get('error')
@@ -761,10 +769,10 @@ export function RendezVous() {
 
       // Auto-refresh token every 45 minutes to prevent silent disconnects
       const refreshInterval = setInterval(async () => {
-         if (!user) return
+         if (!user || !isMounted) return
          try {
             const { data } = await supabase.from('profiles').select('cal_access_token, cal_token_expires_at').eq('id', user.id).single()
-            if (!data?.cal_access_token) return
+            if (!data?.cal_access_token || !isMounted) return
 
             const expiresAt = typeof data.cal_token_expires_at === 'number'
                ? data.cal_token_expires_at
@@ -777,6 +785,7 @@ export function RendezVous() {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ user_id: user.id })
                });
+               if (!isMounted) return;
                const refreshData = await refreshRes.json();
                if (refreshData.access_token) {
                   setCalAccessToken(refreshData.access_token);
@@ -788,7 +797,7 @@ export function RendezVous() {
          }
       }, 45 * 60 * 1000) // Every 45 minutes
 
-      return () => clearInterval(refreshInterval)
+      return () => { isMounted = false; clearInterval(refreshInterval) }
    }, [user])
 
 

@@ -41,27 +41,30 @@ export function RemindersPage() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
 
-  const fetchReminders = async () => {
-    if (!user) return
-    setLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('reminders')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('reminder_date', { ascending: true })
-
-      if (error) throw error
-      setReminders(data || [])
-    } catch (error) {
-      console.error('Erreur chargement rappels:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    let isMounted = true
+
+    const fetchReminders = async () => {
+      if (!user) return
+      setLoading(true)
+      try {
+        const { data, error } = await supabase
+          .from('reminders')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('reminder_date', { ascending: true })
+
+        if (error) throw error
+        if (isMounted) setReminders(data || [])
+      } catch (error) {
+        console.error('Erreur chargement rappels:', error)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
     fetchReminders()
+    return () => { isMounted = false }
   }, [user?.id])
 
   const handleMarkDone = async (id: number) => {

@@ -10,10 +10,12 @@ import { StripeConnectModal } from '../components/StripeConnectModal'
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal'
 import { AutoInvoiceConfigModal } from '../components/AutoInvoiceConfigModal'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 
 export function InvoicesPage() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
+  const { user } = useAuth()
 
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -52,24 +54,25 @@ export function InvoicesPage() {
   }, [isGeneratorOpen, isDetailOpen])
 
   useEffect(() => {
-    if (searchParams.get('stripe_connected') === 'true') {
+    let isMounted = true;
+    if (searchParams.get('stripe_connected') === 'true' && user) {
       const confirmConnection = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase
-            .from('profiles')
-            .update({ stripe_connected: true })
-            .eq('id', user.id);
+        await supabase
+          .from('profiles')
+          .update({ stripe_connected: true })
+          .eq('id', user.id);
 
-          const newUrl = window.location.pathname;
-          window.history.replaceState({}, document.title, newUrl);
+        if (!isMounted) return;
 
-          setIsStripeConnectOpen(true);
-        }
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+
+        setIsStripeConnectOpen(true);
       };
       confirmConnection();
     }
-  }, [searchParams]);
+    return () => { isMounted = false };
+  }, [searchParams, user?.id]);
 
   const isExpired = (offer: any) => {
     if (!offer.endDate) return false

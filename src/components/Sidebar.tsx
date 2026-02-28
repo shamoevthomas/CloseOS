@@ -91,7 +91,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
       }
     }
     fetchAvatar()
-  }, [user?.id, onOpenSettings]) // Se rafraîchit si l'ID change ou si on ferme les réglages
+  }, [user?.id]) // Se rafraîchit si l'ID change
 
   const fullName = user?.user_metadata?.full_name || 'Utilisateur';
   const userRole = user?.user_metadata?.role || 'Membre';

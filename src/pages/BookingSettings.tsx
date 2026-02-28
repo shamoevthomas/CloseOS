@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Clock, Calendar, Link2, Copy, Check, ExternalLink, Save, ArrowLeft, Edit2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import { cn } from '../lib/utils'
 
 interface BookingType {
@@ -34,6 +35,7 @@ const DAYS = [
 ]
 
 export function BookingSettings() {
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'types' | 'availability'>('types')
   const [loading, setLoading] = useState(true)
 
@@ -53,14 +55,12 @@ export function BookingSettings() {
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null)
 
   useEffect(() => {
-    loadData()
-  }, [])
+    let isMounted = true
 
-  async function loadData() {
-    try {
-      setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+    async function loadData() {
+      try {
+        setLoading(true)
+        if (!user) return
 
       // 1. Charger les types d'événements
       const { data: types } = await supabase
@@ -69,6 +69,7 @@ export function BookingSettings() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: true })
 
+      if (!isMounted) return
       if (types) setBookingTypes(types)
 
       // 2. Charger les disponibilités globales
@@ -78,6 +79,7 @@ export function BookingSettings() {
         .eq('user_id', user.id)
         .single()
 
+      if (!isMounted) return
       if (settings) {
         setAvailability(settings.availability || DEFAULT_AVAILABILITY)
         setMinLeadTime(settings.min_lead_time || 2)
@@ -85,9 +87,13 @@ export function BookingSettings() {
     } catch (error) {
       console.error('Erreur chargement:', error)
     } finally {
-      setLoading(false)
+      if (isMounted) setLoading(false)
     }
-  }
+    }
+
+    loadData()
+    return () => { isMounted = false }
+  }, [user?.id])
 
   const handleSaveType = async () => {
     if (!currentType.title || !currentType.slug || !currentType.duration) {
@@ -96,7 +102,6 @@ export function BookingSettings() {
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
       // Nettoyage du slug
@@ -146,7 +151,6 @@ export function BookingSettings() {
 
   const handleSaveAvailability = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
       const { error } = await supabase
