@@ -76,6 +76,7 @@ export const CheckoutForm = () => {
         plan: 'founder',
         referralCode: appliedCode,
         promotekitReferral,
+        referral_code: localStorage.getItem('referral_code') ?? '',
       }),
     })
       .then(async (res) => {

@@ -69,6 +69,7 @@ export const CheckoutStarter = () => {
         lineItems,
         plan: 'starter',
         referralCode: appliedCode,
+        referral_code: localStorage.getItem('referral_code') ?? '',
       }),
     })
       .then(async (res) => {
