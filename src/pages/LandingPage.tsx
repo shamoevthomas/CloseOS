@@ -74,6 +74,14 @@ export function LandingPage() {
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const via = params.get('via');
+    if (via) {
+      localStorage.setItem('referral_code', via);
+    }
+  }, []);
+
+  useEffect(() => {
     const s = document.createElement('script');
     s.src = '/chatbot-widget.js';
     s.setAttribute('data-chatbot-id', 'acb35233-a6de-4738-9ba0-7e25c82c2a61');
