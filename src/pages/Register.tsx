@@ -32,7 +32,7 @@ export default function Register() {
         setError(result.error.message);
         setLoading(false);
       } else {
-        navigate('/');
+        navigate('/welcome-founder');
       }
     } catch (err: any) {
       setError("Une erreur est survenue.");

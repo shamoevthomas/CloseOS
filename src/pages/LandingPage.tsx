@@ -100,16 +100,7 @@ export function LandingPage() {
 
       {/* BANDEAU OFFRE */}
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
-        🚀 OUVERTURE LE 1ER MARS : Profitez de l'Offre Founder à 29€/mois à VIE.
-        <span className="hidden sm:inline"> Votre essai gratuit de 7 jours débutera le 1er mars.</span>
-        <a
-          href="https://www.whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-3 underline underline-offset-2 hover:text-blue-100 transition-colors whitespace-nowrap"
-        >
-          📲 Rejoindre la communauté
-        </a>
+        🚀 Testez CloseOS gratuitement pendant 7 jours — Aucune carte bancaire requise.
       </div>
 
       {/* NAVBAR */}
@@ -128,10 +119,10 @@ export function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             <Link
-              to={`/checkout?billing=${billingCycle}`}
+              to="/register"
               className="hidden sm:flex group items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-950 transition-all hover:bg-blue-50 hover:scale-105 active:scale-95"
             >
-              Devenir Founder
+              Commencer gratuitement
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             {/* Hamburger mobile */}
@@ -170,11 +161,11 @@ export function LandingPage() {
             ))}
             <div className="mt-2 pt-3 border-t border-white/5">
               <Link
-                to={`/checkout?billing=${billingCycle}`}
+                to="/register"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white text-slate-950 font-bold text-sm hover:bg-blue-50 transition-colors"
               >
-                Devenir Founder
+                Commencer gratuitement
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -235,11 +226,11 @@ export function LandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
             <Link
-              to={`/checkout?billing=${billingCycle}`}
+              to="/register"
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-blue-600 text-white font-bold text-lg hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-1 flex items-center justify-center gap-2"
             >
               <Zap className="h-5 w-5 fill-current" />
-              Profiter de l'offre Founder
+              Commencer gratuitement
             </Link>
             <a href="#demo" className="text-sm text-slate-500 hover:text-slate-300 underline transition-colors">
               Voir la démo d'abord
@@ -261,7 +252,7 @@ export function LandingPage() {
           </div>
 
           <p className="text-xs text-slate-500 mt-3">
-            🔒 Offre Founder = tarif 29€/mois bloqué à vie. Prix normal : 69€/mois après lancement.
+            🔒 Aucune carte bancaire requise. 7 jours pour tester sans engagement.
           </p>
 
           {/* 👇 AJOUT : SOCIAL PROOF AVEC VRAIES PHOTOS */}
@@ -734,7 +725,7 @@ export function LandingPage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white sm:text-5xl">Rejoignez l'Élite.</h2>
             <p className="text-slate-400 mt-4 text-lg">Choisissez l'outil qui va doubler votre taux de closing.</p>
-            <p className="text-white mt-4 text-2xl font-bold">Essai gratuit 7 jours. Annulez à tout moment.</p>
+            <p className="text-white mt-4 text-2xl font-bold">Testez gratuitement 7 jours. Aucune carte bancaire requise.</p>
           </div>
 
           <div className="flex flex-col items-center mb-12">
@@ -815,10 +806,10 @@ export function LandingPage() {
                 </li>
               </ul>
               <Link
-                to={`/checkout-starter?billing=${billingCycle}`}
+                to="/register"
                 className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors block"
               >
-                Démarrer en Starter
+                Commencer gratuitement
               </Link>
               <p className="mt-3 text-[10px] text-center text-slate-600">
                 1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
@@ -882,14 +873,14 @@ export function LandingPage() {
               </ul>
 
               <Link
-                to={`/checkout?billing=${billingCycle}`}
+                to="/register"
                 className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-50 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
               >
-                Sécuriser ma place à {calculatePrice(29)}€
+                Commencer gratuitement
               </Link>
 
               <p className="mt-4 text-xs text-center text-slate-500">
-                Carte bancaire requise. <strong>Aucun prélèvement avant le lancement officiel</strong> + 7 jours d'essai offerts.
+                Aucune CB requise. 7 jours gratuits.
               </p>
               <p className="mt-3 text-[10px] text-center text-slate-500/60">
                 1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
@@ -904,7 +895,7 @@ export function LandingPage() {
                 <PlusCircle className="h-5 w-5 text-blue-400" />
               </div>
               <div className="text-left">
-                <p className="text-sm font-bold text-white">Option VoIP & Enregistrements</p>
+                <p className="text-sm font-bold text-white">Option VoIP </p>
                 <p className="text-xs text-blue-300 font-bold uppercase tracking-wider">
                   Arrive prochainement
                 </p>
@@ -1036,17 +1027,17 @@ export function LandingPage() {
           </p>
           <div className="flex flex-col items-center justify-center gap-4">
             <Link
-              to={`/checkout?billing=${billingCycle}`}
+              to="/register"
               className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-slate-950 font-bold text-lg hover:bg-blue-50 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/10"
             >
-              Profiter de l'offre Founder ({calculatePrice(29)}€/mois)
+              Commencer gratuitement
               <ChevronRight className="h-5 w-5" />
             </Link>
             <Link
-              to={`/checkout-starter?billing=${billingCycle}`}
+              to="/register"
               className="text-slate-500 hover:text-white text-sm underline transition-colors mt-2"
             >
-              Ou démarrer avec le Pack Starter (39€/mois)
+              Ou démarrer avec le Pack Starter
             </Link>
           </div>
           <p className="mt-6 text-sm text-slate-500">
