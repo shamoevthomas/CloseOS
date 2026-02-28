@@ -15,7 +15,7 @@ export const CheckoutStarter = () => {
   const [clientSecret, setClientSecret] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isVoipSelected, setIsVoipSelected] = useState(false);
+
 
   // ÉTATS CODE PROMO
   const [referralCode, setReferralCode] = useState('');
@@ -47,10 +47,7 @@ export const CheckoutStarter = () => {
     ? "price_1Sz1Cj33xpuYLywq7Lkx6GKp"
     : "price_1SyYFA33xpuYLywqHtV34VGE";
 
-  // ✅ IDS VOIP (Mis à jour)
-  const PRICE_VOIP = isYearly
-    ? "price_1T0mG633xpuYLywq8yhJmMPv" // VoIP Annuel 7€/mois
-    : "price_1T0mFQ33xpuYLywq6UJANiK5"; // VoIP Mensuel 10€/mois
+
 
   // CALCUL VISUEL
   const basePrice = isYearly ? 33 : 39;
@@ -63,9 +60,7 @@ export const CheckoutStarter = () => {
     setLoading(true);
     const lineItems = [{ price: PRICE_STARTER, quantity: 1 }];
 
-    if (isVoipSelected) {
-      lineItems.push({ price: PRICE_VOIP, quantity: 1 });
-    }
+
 
     fetch("/api/checkout", {
       method: "POST",
@@ -74,7 +69,6 @@ export const CheckoutStarter = () => {
         lineItems,
         plan: 'starter',
         referralCode: appliedCode,
-        isVoip: isVoipSelected // 👇 Ajout de l'option VoIP
       }),
     })
       .then(async (res) => {
@@ -104,7 +98,7 @@ export const CheckoutStarter = () => {
 
   useEffect(() => {
     fetchClientSecret();
-  }, [isVoipSelected, isYearly, appliedCode]);
+  }, [isYearly, appliedCode]);
 
 
   const handleApplyCode = () => {
@@ -247,24 +241,7 @@ export const CheckoutStarter = () => {
                 ))}
               </div>
 
-              <div
-                className={`p-4 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${isVoipSelected ? 'bg-blue-500/20 border-blue-500' : 'bg-slate-900/50 border-slate-700 hover:border-slate-500'}`}
-                onClick={() => setIsVoipSelected(!isVoipSelected)}
-              >
-                <div className={`mt-1 h-5 w-5 rounded border flex items-center justify-center transition-colors ${isVoipSelected ? 'bg-blue-500 border-blue-500' : 'border-slate-500'}`}>
-                  {isVoipSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className={`font-bold text-sm ${isVoipSelected ? 'text-white' : 'text-slate-300'}`}>Ajouter l'option VoIP & Records</span>
-                    <span className="text-sm font-bold text-white">
-                      {isYearly ? "+7€" : "+10€"}
-                      <span className="text-slate-500 font-normal text-xs">{isYearly ? "/mois (84€/an)" : "/mois"}</span>
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400">Appels illimités depuis la plateforme + enregistrement automatique.</p>
-                </div>
-              </div>
+
             </div>
 
             <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
