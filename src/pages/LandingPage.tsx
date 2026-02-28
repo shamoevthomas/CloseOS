@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import Cal, { getCalApi } from "@calcom/embed-react";
+
 import { PricingComparisonTable } from '../components/PricingComparisonTable';
 import {
   ArrowRight,
@@ -74,13 +74,6 @@ export function LandingPage() {
   };
 
   useEffect(() => {
-    (async function () {
-      const cal = await getCalApi({ "namespace": "demo-closeos-decouvrez-la-plateforme" });
-      cal("ui", { "theme": "dark", "hideEventTypeDetails": false, "layout": "month_view" });
-    })();
-  }, [])
-
-  useEffect(() => {
     const s = document.createElement('script');
     s.src = '/chatbot-widget.js';
     s.setAttribute('data-chatbot-id', 'acb35233-a6de-4738-9ba0-7e25c82c2a61');
@@ -114,7 +107,6 @@ export function LandingPage() {
             <a href="#integrations" className="hover:text-white transition-colors">Intégrations</a>
             <a href="#comparison" className="hover:text-white transition-colors">Comparatif</a>
             <a href="#pricing" className="text-white font-semibold transition-colors">Tarifs</a>
-            <a href="#demo" className="hover:text-white transition-colors">Démo</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </div>
           <div className="flex items-center gap-4">
@@ -147,7 +139,6 @@ export function LandingPage() {
               { href: '#integrations', label: 'Intégrations' },
               { href: '#comparison', label: 'Comparatif' },
               { href: '#pricing', label: 'Tarifs' },
-              { href: '#demo', label: 'Démo' },
               { href: '#faq', label: 'FAQ' },
             ].map((item) => (
               <a
@@ -232,9 +223,6 @@ export function LandingPage() {
               <Zap className="h-5 w-5 fill-current" />
               Commencer gratuitement
             </Link>
-            <a href="#demo" className="text-sm text-slate-500 hover:text-slate-300 underline transition-colors">
-              Voir la démo d'abord
-            </a>
           </div>
 
           <div className="mt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
@@ -927,35 +915,6 @@ export function LandingPage() {
           </div>
         </div>
       )}
-
-      {/* --- SECTION DEMO / CAL.COM --- */}
-      <section id="demo" className="py-32 relative bg-slate-900/20 border-t border-white/5">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-sm font-medium text-blue-300 mb-6">
-            <Video className="h-4 w-4" />
-            Démo Personnalisée
-          </div>
-          <h2 className="text-3xl font-bold text-white sm:text-5xl mb-6">
-            Voyez la machine en action.
-          </h2>
-          <p className="text-lg text-slate-400 mb-12 max-w-2xl mx-auto">
-            Vous avez des doutes ? Prenez 15 min avec moi pour une démo en direct et on regarde ensemble comment CloseOS peut booster votre business.
-          </p>
-
-          <div className="rounded-3xl border border-slate-800 bg-[#020617] overflow-hidden shadow-2xl shadow-blue-500/10 h-[700px]">
-            <Cal
-              namespace="demo-closeos-decouvrez-la-plateforme"
-              calLink="thomas-sh-ipdmni/demo-closeos-decouvrez-la-plateforme"
-              style={{ width: "100%", height: "100%", overflow: "scroll" }}
-              config={{ "layout": "month_view", "useSlotsViewOnSmallScreen": "true", "theme": "dark" }}
-            />
-          </div>
-
-          <p className="mt-8 text-sm text-slate-500">
-            Garanti 0% pression commerciale. 100% valeur ajoutée.
-          </p>
-        </div>
-      </section>
 
       {/* --- FAQ SECTION --- */}
       <section id="faq" className="py-24 bg-slate-950 relative border-t border-white/5">
