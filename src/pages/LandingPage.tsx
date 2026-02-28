@@ -1017,7 +1017,9 @@ export function LandingPage() {
             <span className="hidden sm:inline">•</span>
             <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</a>
             <span className="hidden sm:inline">•</span>
-            <a href="/cgu" className="hover:text-white transition-colors">CGV & CGU</a>
+            <a href="/cgu" className="hover:text-white transition-colors">CGU</a>
+            <span className="hidden sm:inline">•</span>
+            <a href="/cgv" className="hover:text-white transition-colors">CGV</a>
             <span className="hidden sm:inline">•</span>
             <a href="/confidentialite" className="hover:text-white transition-colors">Politique de Confidentialité</a>
           </div>
