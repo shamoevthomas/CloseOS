@@ -215,10 +215,12 @@ export function LandingPage() {
 
 
           <h1 className="mx-auto max-w-5xl text-5xl font-extrabold tracking-tight text-white sm:text-7xl mb-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-            Jongler entre 10 logiciels, c'est terminé.<br />
+            Jongler entre 10 outils,<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400 animate-gradient-x">
-              Finissez votre call. CloseOS s'occupe du reste.
+              c'est terminé.
             </span>
+            <br />
+            Reprenez 35H de closing par mois.
           </h1>
 
           <p className="mx-auto max-w-2xl text-lg text-slate-400 mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 leading-relaxed">
