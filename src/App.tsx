@@ -47,6 +47,7 @@ import { Legal } from './pages/Legal'
 import { WelcomeFounder } from './pages/WelcomeFounder'
 import { ComingSoon } from './pages/ComingSoon'
 import { CGU } from './pages/CGU'
+import { CGV } from './pages/CGV'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
 import { SubscriptionRetention } from './pages/SubscriptionRetention'
@@ -138,6 +139,7 @@ function AuthenticatedApp() {
         <Route path="/view/:token" element={<SpectatorPage />} />
         <Route path="/mentions-legales" element={<Legal />} />
         <Route path="/cgu" element={<CGU />} />
+        <Route path="/cgv" element={<CGV />} />
         <Route path="/confidentialite" element={<PrivacyPolicy />} /> {/* 👇 AJOUT ROUTE CONFIDENTIALITÉ */}
 
         {/* Routes Paiement & Onboarding */}
