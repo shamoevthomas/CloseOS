@@ -101,7 +101,7 @@ export function LandingPage() {
 
       {/* BANDEAU OFFRE */}
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
-        🚀 Testez CloseOS gratuitement pendant 7 jours — Aucune carte bancaire requise.
+        🚀 Testez CloseOS gratuitement pendant 10 jours — Aucune carte bancaire requise.
       </div>
 
       {/* NAVBAR */}
@@ -248,7 +248,7 @@ export function LandingPage() {
           </div>
 
           <p className="text-xs text-slate-500 mt-3">
-            🔒 Aucune carte bancaire requise. 7 jours pour tester sans engagement.
+            🔒 Aucune carte bancaire requise. 10 jours pour tester sans engagement.
           </p>
 
           {/* 👇 AJOUT : SOCIAL PROOF AVEC VRAIES PHOTOS */}
@@ -721,7 +721,7 @@ export function LandingPage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white sm:text-5xl">Rejoignez l'Élite.</h2>
             <p className="text-slate-400 mt-4 text-lg">Choisissez l'outil qui va doubler votre taux de closing.</p>
-            <p className="text-white mt-4 text-2xl font-bold">Testez gratuitement 7 jours. Aucune carte bancaire requise.</p>
+            <p className="text-white mt-4 text-2xl font-bold">Testez gratuitement 10 jours. Aucune carte bancaire requise.</p>
           </div>
 
           <div className="flex flex-col items-center mb-12">
@@ -876,7 +876,7 @@ export function LandingPage() {
               </Link>
 
               <p className="mt-4 text-xs text-center text-slate-500">
-                Aucune CB requise. 7 jours gratuits.
+                Aucune CB requise. 10 jours gratuits.
               </p>
               <p className="mt-3 text-[10px] text-center text-slate-500/60">
                 1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
@@ -1008,7 +1008,7 @@ export function LandingPage() {
             </Link>
           </div>
           <p className="mt-6 text-sm text-slate-500">
-            7 jours d'essai gratuit. Pas de prélèvement immédiat.
+            10 jours d'essai gratuit. Pas de prélèvement immédiat.
           </p>
         </div>
       </section>

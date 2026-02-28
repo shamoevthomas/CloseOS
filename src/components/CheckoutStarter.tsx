@@ -296,7 +296,7 @@ export const CheckoutStarter = () => {
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800">
               <ShieldCheck className="h-10 w-10 text-slate-600" />
               <p className="text-xs text-slate-500 leading-tight">
-                Paiement sécurisé par Stripe. Prélèvement automatique après 7 jours d'essai. Annulable à tout moment.
+                Paiement sécurisé par Stripe. Prélèvement automatique après 10 jours d'essai. Annulable à tout moment.
               </p>
             </div>
           </div>

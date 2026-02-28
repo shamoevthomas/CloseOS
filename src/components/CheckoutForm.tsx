@@ -306,7 +306,7 @@ export const CheckoutForm = () => {
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800">
               <ShieldCheck className="h-10 w-10 text-blue-500/50" />
               <p className="text-xs text-slate-500 leading-tight">
-                Paiement sécurisé par Stripe. Vos données sont cryptées et le prélèvement ne commencera qu'après vos 7 jours d'essai.
+                Paiement sécurisé par Stripe. Vos données sont cryptées et le prélèvement ne commencera qu'après vos 10 jours d'essai.
               </p>
             </div>
           </div>

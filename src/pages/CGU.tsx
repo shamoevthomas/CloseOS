@@ -43,10 +43,10 @@ export const CGU = () => {
           <section>
             <h2 className="text-xl font-bold text-white mb-4">3. Période d'Essai Gratuit</h2>
             <p>
-              Toute inscription ouvre droit à une période d'essai gratuit de <strong>7 jours</strong>. Durant cette période, aucune carte bancaire n'est requise et aucun prélèvement n'est effectué. L'inscription gratuite ne constitue pas un contrat commercial et n'engage pas l'Utilisateur à souscrire un abonnement payant.
+              Toute inscription ouvre droit à une période d'essai gratuit de <strong>10 jours</strong>. Durant cette période, aucune carte bancaire n'est requise et aucun prélèvement n'est effectué. L'inscription gratuite ne constitue pas un contrat commercial et n'engage pas l'Utilisateur à souscrire un abonnement payant.
             </p>
             <p className="mt-2">
-              À l'issue des 7 jours, l'Utilisateur peut choisir de souscrire à un abonnement payant. Les conditions commerciales applicables sont décrites dans les Conditions Générales de Vente (CGV), distinctes des présentes CGU, et acceptées au moment de la souscription payante.
+              À l'issue des 10 jours, l'Utilisateur peut choisir de souscrire à un abonnement payant. Les conditions commerciales applicables sont décrites dans les Conditions Générales de Vente (CGV), distinctes des présentes CGU, et acceptées au moment de la souscription payante.
             </p>
           </section>
 

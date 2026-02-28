@@ -26,7 +26,7 @@ export const CGV = () => {
               Les présentes Conditions Générales de Vente (ci-après "CGV") régissent exclusivement la relation commerciale entre <strong>Thomas Shamoev</strong>, Entrepreneur Individuel, immatriculé au RNE sous le numéro SIREN <strong>993 427 509</strong>, dont le siège social est situé au <strong>4 Rue des Coquelicots, 68120 Pfastatt, France</strong> (ci-après le "Prestataire"), et toute personne souscrivant à un abonnement payant CloseOS (ci-après le "Client").
             </p>
             <p className="mt-2">
-              Les CGV s'appliquent uniquement à partir du moment où le Client souscrit à un abonnement payant, à l'issue de la période d'essai gratuit de 7 jours. Elles sont distinctes des Conditions Générales d'Utilisation (CGU) acceptées lors de la création du compte.
+              Les CGV s'appliquent uniquement à partir du moment où le Client souscrit à un abonnement payant, à l'issue de la période d'essai gratuit de 10 jours. Elles sont distinctes des Conditions Générales d'Utilisation (CGU) acceptées lors de la création du compte.
             </p>
             <p className="mt-2">
               Le Service est destiné exclusivement à des professionnels (Closers, Agences, Indépendants). En souscrivant, le Client reconnaît agir à des fins professionnelles.
@@ -36,13 +36,13 @@ export const CGV = () => {
           <section>
             <h2 className="text-xl font-bold text-white mb-4">2. Période d'Essai et Souscription Payante</h2>
             <p>
-              Avant toute souscription payante, le Client bénéficie d'une <strong>période d'essai gratuit de 7 jours</strong>, sans carte bancaire requise. Durant cette période, aucun contrat commercial n'est conclu et aucun prélèvement n'est effectué.
+              Avant toute souscription payante, le Client bénéficie d'une <strong>période d'essai gratuit de 10 jours</strong>, sans carte bancaire requise. Durant cette période, aucun contrat commercial n'est conclu et aucun prélèvement n'est effectué.
             </p>
             <p className="mt-2">
               À l'issue de la période d'essai, le Client peut choisir librement de souscrire à l'un des abonnements payants proposés. La souscription payante est effectuée via la page de paiement sécurisée de CloseOS. Le contrat commercial est conclu au moment où le Client valide son paiement via Stripe.
             </p>
             <p className="mt-2">
-              Si le Client ne souscrit pas à l'issue des 7 jours, son accès au Service est automatiquement suspendu. Ses données sont conservées pendant 30 jours supplémentaires, puis définitivement supprimées.
+              Si le Client ne souscrit pas à l'issue des 10 jours, son accès au Service est automatiquement suspendu. Ses données sont conservées pendant 30 jours supplémentaires, puis définitivement supprimées.
             </p>
           </section>
 

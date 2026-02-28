@@ -80,7 +80,7 @@ export default function Register() {
           <div className="mb-8 text-center">
             <h2 className="mb-3 text-2xl font-bold text-white">Créer un compte</h2>
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-500/20 bg-blue-500/10 text-xs font-bold text-blue-300 mb-4">
-              7 jours gratuits — Aucune CB requise
+              10 jours gratuits — Aucune CB requise
             </span>
             <p className="text-slate-400">Commencez à closer comme un pro</p>
           </div>

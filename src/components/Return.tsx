@@ -65,7 +65,7 @@ export function Return() {
     const title = isStarter ? "Pack Starter Activé" : "Membre Founder Confirmé";
 
     const subtext = isStarter
-      ? "Votre période d'essai de 7 jours est réservée. Préparez-vous à closer."
+      ? "Votre période d'essai de 10 jours est réservée. Préparez-vous à closer."
       : "Vous avez sécurisé votre accès à vie. Vous faites partie des premiers.";
 
     const htmlContent = `
