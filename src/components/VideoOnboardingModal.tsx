@@ -12,14 +12,16 @@ export function VideoOnboardingModal({ isOpen, onClose }: VideoOnboardingModalPr
   if (!isOpen) return null;
 
   const handleClose = async () => {
+    // Fermer immédiatement pour la réactivité UI
+    onClose();
+
+    // Mettre à jour en arrière-plan sans bloquer
     try {
       await updateProfile({
         video_onboarding_watched: true
       });
-      onClose();
     } catch (error) {
       console.error("Erreur lors de la mise à jour du flag vidéo:", error);
-      onClose();
     }
   };
 
