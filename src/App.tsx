@@ -95,7 +95,8 @@ function AuthenticatedApp() {
   const { user, loading } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
-  const [isVideoOnboardingOpen, setIsVideoOnboardingOpen] = useState(false)
+  const [isVideoOnboardingOpen, setIsVideoOnboardingOpen] = useState(false);
+  const [hasBeenDismissed, setHasBeenDismissed] = useState(false);
   const location = useLocation()
 
   // Gestion de la visibilité de la bulle CookieYes
@@ -121,7 +122,8 @@ function AuthenticatedApp() {
       } else if (
         user.user_metadata?.onboarding_completed === true &&
         user.user_metadata?.video_onboarding_watched !== true &&
-        !isVideoOnboardingOpen
+        !isVideoOnboardingOpen &&
+        !hasBeenDismissed
       ) {
         setIsVideoOnboardingOpen(true);
       }
@@ -223,7 +225,10 @@ function AuthenticatedApp() {
           }} />
           <VideoOnboardingModal
             isOpen={isVideoOnboardingOpen}
-            onClose={() => setIsVideoOnboardingOpen(false)}
+            onClose={() => {
+              setIsVideoOnboardingOpen(false);
+              setHasBeenDismissed(true);
+            }}
           />
           <SettingsModal
             isOpen={isSettingsOpen}
