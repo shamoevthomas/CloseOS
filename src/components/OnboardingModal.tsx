@@ -6,7 +6,11 @@ import Cropper from 'react-easy-crop';
 import getCroppedImg from '../lib/image-crop';
 import { countries } from '../lib/countries';
 
-export function OnboardingModal() {
+interface OnboardingModalProps {
+  onComplete?: () => void;
+}
+
+export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
   const { user, updateProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -113,6 +117,7 @@ export function OnboardingModal() {
         onboarding_completed: true
       });
       // Le rafraîchissement se fait via le changement d'état du contexte Auth
+      onComplete?.();
     } catch (error) {
       console.error("Erreur onboarding:", error);
     } finally {

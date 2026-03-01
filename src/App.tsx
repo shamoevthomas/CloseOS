@@ -15,6 +15,7 @@ import { NotificationsProvider } from './contexts/NotificationsContext'
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
 import { OnboardingModal } from './components/OnboardingModal'
+import { VideoOnboardingModal } from './components/VideoOnboardingModal'
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 import { CheckoutForm } from './components/CheckoutForm'
@@ -70,25 +71,23 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 // Wrapper pour cacher l'onboarding sur certaines pages
-function OnboardingWrapper() {
+function OnboardingWrapper({ onComplete }: { onComplete?: () => void }) {
   const location = useLocation();
 
-  // 👇 AJOUT de '/coming-soon' pour que l'onboarding ne s'ouvre pas dessus
-  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/coming-soon'];
+  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return'];
 
-  // Check startsWith to be safer (e.g. /welcome-founder?plan=starter)
-  // Actually location.pathname is just the path, but let's be robust.
   if (hiddenPaths.some(path => location.pathname === path || location.pathname.startsWith(path + '/'))) {
     return null;
   }
 
-  return <OnboardingModal />;
+  return <OnboardingModal onComplete={onComplete} />;
 }
 
 function AuthenticatedApp() {
   const { user, loading } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
+  const [isVideoOnboardingOpen, setIsVideoOnboardingOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -212,14 +211,18 @@ function AuthenticatedApp() {
           <Route path="messages" element={<MessagesPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
 
-          {/* Si page inconnue, on renvoie vers coming-soon pour l'instant */}
-          <Route path="*" element={<Navigate to="/coming-soon" replace />} />
+          {/* Si page inconnue, on renvoie vers le dashboard */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
 
       {user && (
         <>
-          <OnboardingWrapper />
+          <OnboardingWrapper onComplete={() => setIsVideoOnboardingOpen(true)} />
+          <VideoOnboardingModal
+            isOpen={isVideoOnboardingOpen}
+            onClose={() => setIsVideoOnboardingOpen(false)}
+          />
           <SettingsModal
             isOpen={isSettingsOpen}
             onClose={() => { setIsSettingsOpen(false); setSettingsInitialTab('profile'); }}

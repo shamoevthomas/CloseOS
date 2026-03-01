@@ -28,7 +28,7 @@ import {
   Sheet,
   Clock,
   X,
-
+  Menu,
 } from 'lucide-react'
 
 function FAQItem({ question, children }: { question: string, children: React.ReactNode }) {
@@ -65,6 +65,7 @@ export function LandingPage() {
   // État pour le cycle de facturation
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Fonction pour calculer le prix (arrondi) avec -15% si annuel
   const calculatePrice = (price: number) => {
@@ -104,7 +105,13 @@ export function LandingPage() {
             <a href="#demo" className="hover:text-white transition-colors">Démo</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/login"
+              className="hidden sm:flex items-center rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-white transition-all hover:bg-white/10 hover:border-white/40"
+            >
+              Se connecter
+            </Link>
             <Link
               to={`/checkout?billing=${billingCycle}`}
               className="hidden sm:flex group items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-950 transition-all hover:bg-blue-50 hover:scale-105 active:scale-95"
@@ -112,6 +119,57 @@ export function LandingPage() {
               Devenir Founder
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
+            {/* Hamburger mobile */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5 text-white" /> : <Menu className="h-5 w-5 text-white" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Menu mobile déroulant */}
+        <div
+          className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+            }`}
+        >
+          <div className="border-t border-white/5 bg-[#020617]/95 backdrop-blur-xl px-6 py-4 flex flex-col gap-1">
+            {[
+              { href: '#features', label: 'Fonctionnalités' },
+              { href: '#integrations', label: 'Intégrations' },
+              { href: '#comparison', label: 'Comparatif' },
+              { href: '#pricing', label: 'Tarifs' },
+              { href: '#faq', label: 'FAQ' },
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-3 px-4 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                {item.label}
+              </a>
+            ))}
+            <div className="mt-2 pt-3 border-t border-white/5 space-y-2">
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center w-full py-3 rounded-xl border border-white/20 text-white font-bold text-sm hover:bg-white/10 transition-colors"
+              >
+                Se connecter
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white text-slate-950 font-bold text-sm hover:bg-blue-50 transition-colors"
+              >
+                Commencer gratuitement
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
           </div>
         </div>
       </nav>
@@ -170,6 +228,16 @@ export function LandingPage() {
               <Zap className="h-5 w-5 fill-current" />
               Profiter de l'offre Founder
             </Link>
+            <Link
+              to="/login"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl border border-white/20 text-white font-bold text-lg hover:bg-white/10 hover:border-white/40 transition-all flex items-center justify-center gap-2"
+            >
+              Se connecter
+            </Link>
+          </div>
+
+          <div className="mt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+
             <a
               href="#demo"
               className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 font-semibold text-lg hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
