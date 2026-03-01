@@ -41,7 +41,7 @@ export function InvoicesPage() {
   const [activeTooltip, setActiveTooltip] = useState<'cash' | 'installments' | null>(null)
 
   const fetchInvoices = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('invoices')
       .select('*')
       .order('created_at', { ascending: false })
@@ -118,9 +118,12 @@ export function InvoicesPage() {
     const activeDealsInPeriod = prospects.filter((prospect) => {
       if (prospect.stage !== 'won') return false
 
+      const prospectOfferBaseName = prospect.offer?.split(' - ')[0]
+
       const isCorrectOffer = prospect.offer_id === selectedOffer.id ||
         String(prospect.offer_id) === String(selectedOffer.id) ||
         prospect.offer === selectedOffer.name ||
+        prospectOfferBaseName === selectedOffer.name ||
         prospect.title?.includes(selectedOffer.name)
 
       if (!isCorrectOffer) return false
