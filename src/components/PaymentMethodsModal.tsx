@@ -203,7 +203,7 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-3xl max-h-[85vh] flex flex-col rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
         <div className="flex items-center justify-between border-b border-slate-800 p-6 flex-shrink-0">

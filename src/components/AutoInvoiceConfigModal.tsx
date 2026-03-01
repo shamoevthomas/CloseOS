@@ -164,12 +164,12 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
     const selectedOffer = activeOffers.find(o => o.id === selectedOfferId)
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
+            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-slate-800 z-[101]">
                 {/* Close */}
                 <button
                     onClick={onClose}
@@ -207,8 +207,8 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                         key={offer.id}
                                         onClick={() => setSelectedOfferId(offer.id)}
                                         className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-bold transition-all ${selectedOfferId === offer.id
-                                                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/20'
-                                                : 'border border-white/10 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white'
+                                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/20'
+                                            : 'border border-white/10 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white'
                                             }`}
                                     >
                                         {offer.name}

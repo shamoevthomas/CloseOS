@@ -76,18 +76,18 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
 
   const handleDisconnect = async () => {
     if (!confirm("Voulez-vous vraiment déconnecter votre compte Stripe ?")) return;
-    
+
     setConnecting(true);
     if (user) {
-        // Idéalement, faire aussi un appel API pour révoquer le token chez Stripe
-        await supabase
-          .from('profiles')
-          .update({ stripe_connected: false })
-          .eq('id', user.id);
-        
-        setStripeConnected(false);
-        // On garde l'account ID en mémoire au cas où ils se reconnectent, 
-        // ou on le nullifie selon ta préférence. Ici on garde pour faciliter la reconnexion.
+      // Idéalement, faire aussi un appel API pour révoquer le token chez Stripe
+      await supabase
+        .from('profiles')
+        .update({ stripe_connected: false })
+        .eq('id', user.id);
+
+      setStripeConnected(false);
+      // On garde l'account ID en mémoire au cas où ils se reconnectent, 
+      // ou on le nullifie selon ta préférence. Ici on garde pour faciliter la reconnexion.
     }
     setConnecting(false);
   };
@@ -95,9 +95,9 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden">
-        
+
         {/* Header */}
         <div className="p-6 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -128,22 +128,22 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
               <p className="text-sm text-slate-400 mb-6 px-4">
                 Votre compte Stripe est correctement relié. Vous pouvez recevoir des paiements directement sur vos factures.
               </p>
-              
+
               <div className="bg-slate-950 rounded-lg p-3 border border-slate-800 mb-6 text-left flex items-center justify-between">
                 <span className="text-xs text-slate-500 font-mono">ID: {stripeAccountId}</span>
                 <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Connecté</span>
               </div>
 
               <div className="flex gap-3">
-                <button 
-                   onClick={onClose}
-                   className="flex-1 py-2.5 rounded-lg bg-slate-800 text-white font-medium hover:bg-slate-700 transition-colors border border-slate-700"
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-2.5 rounded-lg bg-slate-800 text-white font-medium hover:bg-slate-700 transition-colors border border-slate-700"
                 >
                   Fermer
                 </button>
-                <button 
-                   onClick={handleDisconnect}
-                   className="px-4 py-2.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium"
+                <button
+                  onClick={handleDisconnect}
+                  className="px-4 py-2.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium"
                 >
                   Déconnecter
                 </button>
@@ -177,7 +177,7 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
                   </>
                 )}
               </button>
-              
+
               <p className="text-[10px] text-center text-slate-500 flex items-center justify-center gap-1.5">
                 <AlertCircle className="h-3 w-3" />
                 Redirection sécurisée vers Stripe Connect

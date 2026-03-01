@@ -26,7 +26,7 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
   const [status, setStatus] = useState('');
   const [note, setNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // 🚀 État pour l'envoi d'email
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
@@ -44,7 +44,7 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
     try {
       const { data, error } = await supabase
         .from('invoices')
-        .update({ 
+        .update({
           status: status,
           status_note: status === 'autre' ? note : null
         })
@@ -57,7 +57,7 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
         alert("Impossible de modifier cette facture. Vérifiez vos droits d'accès.");
         return;
       }
-      
+
       onUpdate();
       onClose();
     } catch (err) {
@@ -71,7 +71,7 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
   // 🚀 Fonction d'envoi d'email
   const handleSendEmail = async () => {
     if (!invoice.client_email) return;
-    
+
     setIsSendingEmail(true);
     try {
       // On récupère l'utilisateur courant pour le replyTo (optionnel, sinon support par défaut)
@@ -112,7 +112,7 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
       if (!response.ok) throw new Error("Erreur API Email");
 
       alert(`Facture envoyée à ${invoice.client_email}`);
-      
+
       // Optionnel : Passer le statut en "envoyée" si ce n'est pas déjà fait
       if (status === 'générée') {
         setStatus('envoyée');
@@ -129,20 +129,12 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
     }
   };
 
-  const getStatusColor = (s: string) => {
-    switch (s) {
-      case 'payé': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50';
-      case 'retard': return 'bg-rose-500/20 text-rose-400 border-rose-500/50';
-      case 'en_attente': return 'bg-amber-500/20 text-amber-400 border-amber-500/50';
-      default: return 'bg-slate-700 text-slate-300 border-slate-600';
-    }
-  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-6xl h-[85vh] bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl flex overflow-hidden">
-        
-        <button 
+
+        <button
           onClick={onClose}
           className="absolute top-4 right-4 z-10 p-2 bg-slate-800/50 hover:bg-slate-700 text-white rounded-full transition-colors"
         >
@@ -153,7 +145,7 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
         <div className="w-1/2 h-full bg-slate-950 border-r border-slate-800 p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <FileText className="w-5 h-5 text-indigo-400" /> 
+              <FileText className="w-5 h-5 text-indigo-400" />
               Aperçu du document
             </h3>
             <a href={invoice.pdf_url} target="_blank" rel="noreferrer" className="text-xs flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition-colors">
@@ -180,16 +172,15 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
             <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
               <div className="flex justify-between items-start mb-4">
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Informations Client</h4>
-                
+
                 {/* 🚀 BOUTON EMAIL */}
                 <button
                   onClick={handleSendEmail}
                   disabled={!invoice.client_email || isSendingEmail}
-                  className={`text-xs flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
-                    !invoice.client_email 
-                      ? 'border-slate-700 text-slate-600 cursor-not-allowed bg-slate-800/50' 
-                      : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20'
-                  }`}
+                  className={`text-xs flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${!invoice.client_email
+                    ? 'border-slate-700 text-slate-600 cursor-not-allowed bg-slate-800/50'
+                    : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20'
+                    }`}
                   title={!invoice.client_email ? "Aucun email enregistré pour cette facture" : "Envoyer la facture par mail"}
                 >
                   {isSendingEmail ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
