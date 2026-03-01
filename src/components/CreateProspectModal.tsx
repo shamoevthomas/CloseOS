@@ -23,7 +23,9 @@ interface CreateProspectModalProps {
     phone: string
     company: string
     offer: string
+    offerId?: number // AJOUT : ID de l'offre
     value: number
+    source: string // AJOUT : Source du prospect
     stage: string
   }) => void
 }
@@ -128,6 +130,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
       phone: formData.phone,
       company: isB2B ? formData.company : 'N/A',
       offer: finalOfferName,
+      offerId: formData.offerId ? parseInt(formData.offerId) : undefined,
       value: selectedOfferPrice,
       stage: 'prospect',
     })
@@ -164,7 +167,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
         </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          
+
           {/* NOUVEAU : Prénom et Nom séparés */}
           <div className="grid grid-cols-2 gap-4">
             <div>

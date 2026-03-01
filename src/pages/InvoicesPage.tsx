@@ -17,7 +17,7 @@ export function InvoicesPage() {
   const { offers } = useOffers()
   const { user } = useAuth()
 
-  const [searchParams, setSearchParams] = useSearchParams()
+  // setSearchParams removed as it was unused
 
   const [savedInvoices, setSavedInvoices] = useState<any[]>([])
 
@@ -118,14 +118,14 @@ export function InvoicesPage() {
     const activeDealsInPeriod = prospects.filter((prospect) => {
       if (prospect.stage !== 'won') return false
 
-      const isCorrectOffer = prospect.offerId === selectedOffer.id ||
-        String(prospect.offerId) === String(selectedOffer.id) ||
+      const isCorrectOffer = prospect.offer_id === selectedOffer.id ||
+        String(prospect.offer_id) === String(selectedOffer.id) ||
         prospect.offer === selectedOffer.name ||
         prospect.title?.includes(selectedOffer.name)
 
       if (!isCorrectOffer) return false
 
-      const dealDate = new Date(prospect.lastContact || prospect.dateAdded)
+      const dealDate = new Date(prospect.lastContact || prospect.dateAdded || "")
 
       if (prospect.payment_type !== 'installments' && (!prospect.installments || prospect.installments <= 1)) {
         return dealDate >= start && dealDate <= end
@@ -149,7 +149,7 @@ export function InvoicesPage() {
       } else {
         const monthlyValue = fullValue / (prospect.installments || 1)
         let installmentsInPeriod = 0
-        const dealDate = new Date(prospect.lastContact || prospect.dateAdded)
+        const dealDate = new Date(prospect.lastContact || prospect.dateAdded || "")
 
         for (let i = 0; i < (prospect.installments || 1); i++) {
           const installmentDate = new Date(dealDate)
@@ -170,7 +170,7 @@ export function InvoicesPage() {
         amountInPeriod = fullValue
       } else {
         const monthlyValue = fullValue / (deal.installments || 1)
-        const dealDate = new Date(deal.lastContact || deal.dateAdded)
+        const dealDate = new Date(deal.lastContact || deal.dateAdded || "")
         for (let i = 0; i < (deal.installments || 1); i++) {
           const installmentDate = new Date(dealDate)
           installmentDate.setMonth(installmentDate.getMonth() + i)
@@ -311,8 +311,8 @@ export function InvoicesPage() {
                 key={offer.id}
                 onClick={() => setSelectedOfferId(offer.id)}
                 className={`whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-bold transition-all shadow-lg ${selectedOfferId === offer.id
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-purple-500/20'
-                    : 'border border-white/10 bg-slate-900/50 text-slate-400 hover:bg-slate-800 hover:text-white backdrop-blur-sm'
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-purple-500/20'
+                  : 'border border-white/10 bg-slate-900/50 text-slate-400 hover:bg-slate-800 hover:text-white backdrop-blur-sm'
                   }`}
               >
                 {offer.name}
@@ -422,7 +422,7 @@ export function InvoicesPage() {
                                     <p className="text-sm font-bold text-white">{deal.contact}</p>
                                     <p className="text-xs text-emerald-400 font-medium">{formatCurrency(deal.value || 0)}</p>
                                     <p className="text-[10px] text-slate-500">
-                                      Acheté le : {new Date(deal.lastContact || deal.dateAdded).toLocaleDateString('fr-FR')}
+                                      Acheté le : {new Date(deal.lastContact || deal.dateAdded || "").toLocaleDateString('fr-FR')}
                                     </p>
                                   </div>
                                 ))}
@@ -477,10 +477,10 @@ export function InvoicesPage() {
                                     <p className="text-xs text-blue-400 font-medium">Contrat total: {formatCurrency(deal.value || 0)}</p>
                                     <div className="flex justify-between mt-1">
                                       <p className="text-[10px] text-slate-500">
-                                        Début : {new Date(deal.lastContact || deal.dateAdded).toLocaleDateString('fr-FR')}
+                                        Début : {new Date(deal.lastContact || deal.dateAdded || "").toLocaleDateString('fr-FR')}
                                       </p>
                                       <p className="text-[10px] text-slate-400">
-                                        Fin : {getInstallmentEndDate(deal.lastContact || deal.dateAdded, deal.installments || 1)}
+                                        Fin : {getInstallmentEndDate(deal.lastContact || deal.dateAdded || "", deal.installments || 1)}
                                       </p>
                                     </div>
                                   </div>

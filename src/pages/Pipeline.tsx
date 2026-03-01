@@ -711,7 +711,8 @@ export function Pipeline() {
               ...prospectData,
               dateAdded: new Date().toISOString(),
               lastContact: new Date().toISOString(),
-              offer: currentOfferTab !== 'global' ? currentOfferTab : prospectData.offer
+              offer: currentOfferTab !== 'global' ? currentOfferTab : prospectData.offer,
+              offer_id: prospectData.offerId
             })
             setIsNewProspectModalOpen(false)
           } catch {

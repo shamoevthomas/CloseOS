@@ -13,13 +13,22 @@ export interface Prospect {
   phone: string
   value?: number
   offer?: string
+  offer_id?: number // AJOUT : Pour lien direct avec l'offre
+  offerId?: number // AJOUT : Alias pour compatibilité Contacts
+  title?: string // AJOUT : Pour compatibilité InvoicesPage
+  name?: string // AJOUT : Pour compatibilité Contacts
+  status?: string // AJOUT : Pour compatibilité Contacts
   stage: string
   notes?: string
   created_at?: string
   dateAdded?: string
   last_contact?: string
   lastContact?: string
+  lastInteraction?: string // AJOUT : Pour compatibilité Contacts
   formula_id?: string
+  payment_type?: 'once' | 'installments' | 'cash' | 'comptant' // MIS À JOUR : Pour la facturation
+  installments?: number // AJOUT : Pour la facturation
+  probability?: number // AJOUT : Pour compatibilité Contacts
   hubspot_contact_id?: string
 
   call_notes?: {

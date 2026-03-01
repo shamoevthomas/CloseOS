@@ -11,22 +11,8 @@ import { CreateEventModal } from '../components/CreateEventModal'
 import { MaskedText } from '../components/MaskedText'
 import { cn } from '../lib/utils'
 
-interface LocalProspect {
-  id: number
-  name?: string
-  firstName?: string
-  lastName?: string
-  company: string
+interface LocalProspect extends Prospect {
   status?: string
-  stage?: string
-  lastInteraction?: string
-  lastContact?: Date
-  dateAdded?: string | Date
-  email: string
-  phone: string
-  offer?: string
-  offerId?: number
-  created_at?: string
 }
 
 export function Contacts() {
@@ -46,9 +32,8 @@ export function Contacts() {
   const [localProspects] = useState<LocalProspect[]>([
     {
       id: 1,
-      name: 'Sarah Johnson',
-      firstName: 'Sarah',
-      lastName: 'Johnson',
+      user_id: 'mock-1',
+      contact: 'Sarah Johnson',
       company: 'Tech Innovations Inc',
       status: 'Qualifié',
       stage: 'qualified',
@@ -61,9 +46,8 @@ export function Contacts() {
     },
     {
       id: 2,
-      name: 'Marc Dupont',
-      firstName: 'Marc',
-      lastName: 'Dupont',
+      user_id: 'mock-1',
+      contact: 'Marc Dupont',
       company: 'Digital Ventures',
       status: 'Prospect',
       stage: 'prospect',
@@ -76,9 +60,8 @@ export function Contacts() {
     },
     {
       id: 3,
-      name: 'Emma Williams',
-      firstName: 'Emma',
-      lastName: 'Williams',
+      user_id: 'mock-1',
+      contact: 'Emma Williams',
       company: 'Global Solutions Ltd',
       status: 'Gagné',
       stage: 'won',
@@ -242,8 +225,8 @@ export function Contacts() {
         ...prospectData,
         title: `${prospectData.offer} - ${prospectData.company}`,
         probability: 40,
-        dateAdded: new Date(),
-        lastContact: new Date(),
+        dateAdded: new Date().toISOString(),
+        lastContact: new Date().toISOString(),
       })
     }
 
