@@ -92,7 +92,7 @@ export function Layout({ onOpenSettings }: LayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-950 p-4 sm:p-8">
+        <main className="flex-1 overflow-y-auto bg-slate-950 p-4 sm:p-8 min-h-0">
           <Outlet />
         </main>
       </div>

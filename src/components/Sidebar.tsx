@@ -152,30 +152,6 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
           ))}
         </nav>
 
-        {/* ABONNEMENT STATUS */}
-        <div className="px-4 pb-2">
-          <div className={`rounded-xl border px-3 py-2.5 ${user?.user_metadata?.is_founder ? 'bg-blue-500/10 border-blue-500/20' : 'bg-slate-800/50 border-slate-700'}`}>
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg shrink-0 ${user?.user_metadata?.is_founder ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>
-                {user?.user_metadata?.is_founder ? <Sparkles className="h-4 w-4" /> : <User className="h-4 w-4" />}
-              </div>
-              <div className="min-w-0">
-                <p className={`text-sm font-bold truncate ${user?.user_metadata?.is_founder ? 'text-blue-400' : 'text-slate-300'}`}>
-                  {user?.user_metadata?.is_founder ? 'Plan Founder' : 'Plan Starter'}
-                </p>
-                <p className="text-xs text-slate-500 truncate">
-                  {user?.user_metadata?.is_founder ? 'Membre Élite' : 'Compte Gratuit'}
-                </p>
-              </div>
-            </div>
-            {/* Vérification VoIP (Si présent dans metadata) */}
-            {user?.user_metadata?.voip && (
-              <div className="mt-2 pt-2 border-t border-blue-500/20 text-xs text-blue-400 font-medium flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" /> Option VoIP active
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* BOUTON KO-FI */}
         <div className="px-4 pb-4">

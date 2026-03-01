@@ -473,7 +473,11 @@ export function SpectatorPage() {
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
         <div className="mx-auto max-w-7xl flex items-center justify-between px-4 sm:px-8 h-16">
           <div className="flex items-center gap-3">
-            <img src="/logo.PNG" alt="CloseOS" className="h-9" />
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt={profile?.full_name || 'Closer'} className="h-9 w-9 rounded-full object-cover border border-slate-700" />
+            ) : (
+              <img src="/logo.PNG" alt="CloseOS" className="h-9" />
+            )}
             <div>
               <h1 className="text-sm font-bold text-white">
                 {profile?.full_name || 'Closer'}
