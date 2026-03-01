@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Mail, Phone, User as UserIcon, Briefcase, Edit2, Trash2, Save } from 'lucide-react'
+import { X, Mail, Phone, User as UserIcon, Briefcase, Pencil, Trash2, Save } from 'lucide-react'
 import { type InternalContact } from '../contexts/InternalContactsContext'
 import { useOffers } from '../contexts/OffersContext'
 
@@ -229,7 +229,7 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
                 onClick={() => setIsEditing(true)}
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-all hover:bg-slate-700"
               >
-                <Edit2 className="h-4 w-4" />
+                <Pencil className="h-4 w-4" />
                 Modifier
               </button>
               <button

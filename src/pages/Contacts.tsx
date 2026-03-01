@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, Plus, User, Phone, Mail, Edit2, Trash2, UserPlus, X, Search, Filter, Building2, Calendar, Sparkles } from 'lucide-react'
+import { ChevronDown, Plus, User, Phone, Mail, Pencil, Trash2, UserPlus, X, Search, Filter, Building2, Calendar, Sparkles } from 'lucide-react'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
 import { useOffers } from '../contexts/OffersContext'
@@ -600,7 +600,7 @@ export function Contacts() {
                               className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
                               title="Voir détails"
                             >
-                              <Edit2 className="h-4 w-4" />
+                              <Pencil className="h-4 w-4" />
                             </button>
                             <button
                               onClick={(e) => {

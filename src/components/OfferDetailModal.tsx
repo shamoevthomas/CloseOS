@@ -16,7 +16,7 @@ import {
   Users,
   Save,
   X,
-  Edit2,
+  Pencil,
   Trash2,
   User,
   FileText,
@@ -517,7 +517,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     onClick={() => setIsEditing(true)}
                     className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 transition-all hover:bg-white/10 hover:text-white"
                   >
-                    <Edit2 className="h-4 w-4" />
+                    <Pencil className="h-4 w-4" />
                   </button>
                   {onDelete && (
                     <button

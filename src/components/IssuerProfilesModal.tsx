@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Edit2, Trash2, Building2, Check, Loader2, Star } from 'lucide-react'
+import { X, Plus, Pencil, Trash2, Building2, Check, Loader2, Star } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export interface IssuerProfile {
@@ -146,12 +146,12 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
       await supabase.from('issuer_profiles')
         .update({ is_default: false })
         .eq('user_id', user.id)
-      
+
       // 2. Set le nouveau
       await supabase.from('issuer_profiles')
         .update({ is_default: true })
         .eq('id', id)
-        
+
       await fetchProfiles()
     } catch (err) {
       console.error('Erreur défaut:', err)
@@ -301,7 +301,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                       {!profile.isDefault && (
                         <button onClick={() => setDefault(profile.id)} className="p-2 text-slate-400 hover:text-yellow-400"><Star className="h-4 w-4" /></button>
                       )}
-                      <button onClick={() => handleEdit(profile)} className="p-2 text-slate-400 hover:text-blue-400"><Edit2 className="h-4 w-4" /></button>
+                      <button onClick={() => handleEdit(profile)} className="p-2 text-slate-400 hover:text-blue-400"><Pencil className="h-4 w-4" /></button>
                       <button onClick={() => confirm('Supprimer ?') && deleteProfile(profile.id)} className="p-2 text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </div>

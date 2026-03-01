@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus, Video, Phone, MapPin, Clock, X, Edit2, Trash2, Sparkles, ExternalLink, Calendar as CalendarIcon, FileText, Copy, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Video, Phone, MapPin, Clock, X, Pencil, Trash2, Sparkles, ExternalLink, Calendar as CalendarIcon, FileText, Copy, Check } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
 import { VideoCallOverlay } from '../components/VideoCallOverlay'
@@ -1220,7 +1220,7 @@ export function Agenda() {
                         onClick={handleEditEvent}
                         className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-800/50 px-4 py-2.5 text-sm font-bold text-slate-300 transition-all hover:bg-slate-800 hover:text-white"
                       >
-                        <Edit2 className="h-4 w-4" />
+                        <Pencil className="h-4 w-4" />
                         Modifier
                       </button>
                       <button

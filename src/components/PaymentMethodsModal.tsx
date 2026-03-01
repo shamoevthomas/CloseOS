@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Edit2, Trash2, CreditCard, Building, Repeat, DollarSign, Check, Loader2, Star } from 'lucide-react'
+import { X, Plus, Pencil, Trash2, CreditCard, Building, Repeat, DollarSign, Check, Loader2, Star } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 
@@ -231,7 +231,7 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
                     ))}
                   </div>
                 </div>
-                
+
                 {formType === 'VIREMENT' && (
                   <div className="space-y-3 p-4 bg-slate-950 rounded-lg border border-slate-800">
                     <input type="text" placeholder="Banque" value={formBankName} onChange={e => setFormBankName(e.target.value)} className="w-full bg-slate-900 border-slate-700 rounded-lg p-2 text-white" />
@@ -273,7 +273,7 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
                     </div>
                     <div className="flex items-center gap-2">
                       {!method.isDefault && <button onClick={() => setDefault(method.id)} className="p-2 text-slate-400 hover:text-yellow-400"><Star className="h-4 w-4" /></button>}
-                      <button onClick={() => handleEdit(method)} className="p-2 text-slate-400 hover:text-blue-400"><Edit2 className="h-4 w-4" /></button>
+                      <button onClick={() => handleEdit(method)} className="p-2 text-slate-400 hover:text-blue-400"><Pencil className="h-4 w-4" /></button>
                       <button onClick={() => confirm('Supprimer ?') && deleteMethod(method.id)} className="p-2 text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </div>

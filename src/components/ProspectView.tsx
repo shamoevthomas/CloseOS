@@ -4,7 +4,7 @@ import {
   Phone,
   Mail,
   Calendar,
-  Edit2,
+  Pencil,
   Trash2,
   ExternalLink,
   MessageSquare,
@@ -456,7 +456,7 @@ export function ProspectView({
                           <CreditCard className="h-4 w-4" /> Détails du Paiement
                         </h3>
                         <button onClick={() => setEditingPayment(!editingPayment)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
-                          <Edit2 className="h-3.5 w-3.5" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </button>
                       </div>
 
@@ -535,7 +535,7 @@ export function ProspectView({
                     <div className="mb-3 flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-white">Infos Offre</h3>
                       <button onClick={() => setEditingOffer(!editingOffer)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
-                        <Edit2 className="h-3.5 w-3.5" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {editingOffer ? (
@@ -599,7 +599,7 @@ export function ProspectView({
                     <div className="mb-3 flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-white">Fiche Client</h3>
                       <button onClick={() => setEditingClient(!editingClient)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
-                        <Edit2 className="h-3.5 w-3.5" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {editingClient ? (
@@ -651,7 +651,7 @@ export function ProspectView({
                     <div className="mb-3 flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-white">Notes Internes</h3>
                       <button onClick={() => setEditingNotes(!editingNotes)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
-                        <Edit2 className="h-3.5 w-3.5" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {editingNotes ? (

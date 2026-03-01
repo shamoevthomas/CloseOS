@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Clock, Calendar, Link2, Copy, Check, ExternalLink, Save, ArrowLeft, Edit2 } from 'lucide-react'
+import { Plus, Trash2, Clock, Calendar, Link2, Copy, Check, ExternalLink, Save, ArrowLeft, Pencil } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { cn } from '../lib/utils'
@@ -62,33 +62,33 @@ export function BookingSettings() {
         setLoading(true)
         if (!user) return
 
-      // 1. Charger les types d'événements
-      const { data: types } = await supabase
-        .from('booking_types')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
+        // 1. Charger les types d'événements
+        const { data: types } = await supabase
+          .from('booking_types')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true })
 
-      if (!isMounted) return
-      if (types) setBookingTypes(types)
+        if (!isMounted) return
+        if (types) setBookingTypes(types)
 
-      // 2. Charger les disponibilités globales
-      const { data: settings } = await supabase
-        .from('booking_settings')
-        .select('availability, min_lead_time')
-        .eq('user_id', user.id)
-        .single()
+        // 2. Charger les disponibilités globales
+        const { data: settings } = await supabase
+          .from('booking_settings')
+          .select('availability, min_lead_time')
+          .eq('user_id', user.id)
+          .single()
 
-      if (!isMounted) return
-      if (settings) {
-        setAvailability(settings.availability || DEFAULT_AVAILABILITY)
-        setMinLeadTime(settings.min_lead_time || 2)
+        if (!isMounted) return
+        if (settings) {
+          setAvailability(settings.availability || DEFAULT_AVAILABILITY)
+          setMinLeadTime(settings.min_lead_time || 2)
+        }
+      } catch (error) {
+        console.error('Erreur chargement:', error)
+      } finally {
+        if (isMounted) setLoading(false)
       }
-    } catch (error) {
-      console.error('Erreur chargement:', error)
-    } finally {
-      if (isMounted) setLoading(false)
-    }
     }
 
     loadData()
@@ -270,7 +270,7 @@ export function BookingSettings() {
                           className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
                           title="Modifier"
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteType(type.id)}

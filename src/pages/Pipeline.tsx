@@ -8,7 +8,7 @@ import {
   Trash2,
   Search,
   Plus,
-  Edit2,
+  Pencil,
   LayoutDashboard,
   List,
   Briefcase,
@@ -669,7 +669,7 @@ export function Pipeline() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal) }} className="p-2 hover:text-blue-400 transition-colors"><Edit2 className="h-4 w-4" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal) }} className="p-2 hover:text-blue-400 transition-colors"><Pencil className="h-4 w-4" /></button>
                             <button onClick={(e) => { e.stopPropagation(); if (confirm('Supprimer ?')) handleDelete(deal.id) }} className="p-2 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
                           </div>
                         </td>

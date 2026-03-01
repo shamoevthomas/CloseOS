@@ -18,7 +18,7 @@ import {
    Plus,
    Settings,
    Link as LinkIcon,
-   Edit2,
+   Pencil,
    MapPin,
    AlertCircle,
    RefreshCw,
@@ -866,7 +866,7 @@ export function RendezVous() {
                                     onClick={() => handleOpenEdit(evt)}
                                     className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-600/10 py-2 text-xs font-bold text-blue-400 hover:bg-blue-600/20 transition-colors"
                                  >
-                                    <Edit2 className="h-3 w-3" /> Modifier
+                                    <Pencil className="h-3 w-3" /> Modifier
                                  </button>
                                  <a
                                     href={`https://app.cal.com/event-types/${evt.id}`}
@@ -1171,7 +1171,7 @@ export function RendezVous() {
 
                   <div className="space-y-8">
                      <section className="space-y-4">
-                        <h4 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2"><Edit2 className="h-4 w-4" /> Informations Générales</h4>
+                        <h4 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2"><Pencil className="h-4 w-4" /> Informations Générales</h4>
                         <div className="grid grid-cols-2 gap-4">
                            <div className="col-span-2 md:col-span-1">
                               <label className="block text-xs font-bold text-slate-500 mb-1">Titre</label>
@@ -1434,7 +1434,7 @@ export function RendezVous() {
 
                      {/* Notes */}
                      <div className="p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Edit2 size={10} /> Notes</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-2"><Pencil size={10} /> Notes</p>
                         <p className="text-white text-sm whitespace-pre-wrap">{selectedMeeting.notes || selectedMeeting.description || 'Aucune note'}</p>
                      </div>
                   </div>
