@@ -55,11 +55,19 @@ import { SubscriptionRetention } from './pages/SubscriptionRetention'
 import { SpectatorPage } from './pages/SpectatorPage'
 import { RemindersPage } from './pages/RemindersPage'
 
-// Page d'accueil intelligente : landing immédiate, redirect si connecté
+// Page d'accueil intelligente : landing immédiate si non connecté, loading si session détectée
 function SmartHome() {
   const { user, loading } = useAuth()
 
   if (!loading && user) return <Navigate to="/dashboard" replace />
+  if (!loading && !user) return <LandingPage />
+
+  // Pendant le chargement : si une session Supabase existe en cache → loading screen
+  // Sinon → landing page directement (visiteur non connecté)
+  const hasCachedSession = Object.keys(localStorage).some(
+    k => k.startsWith('sb-') && k.endsWith('-auth-token')
+  )
+  if (hasCachedSession) return <LoadingScreen />
   return <LandingPage />
 }
 
