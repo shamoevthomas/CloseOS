@@ -46,14 +46,13 @@ export function VideoOnboardingModal({ isOpen, onClose }: VideoOnboardingModalPr
               <p className="text-slate-400 leading-relaxed">
                 Merci d'avoir rejoint CloseOS ! Pour tirer le meilleur parti de la plateforme,
                 <span className="text-white font-semibold"> nous vous recommandons fortement de regarder cette vidéo d'onboarding</span>.
-                Elle vous guidera à travers toutes les fonctionnalités essentielles en quelques minutes.
               </p>
             </div>
 
             {/* Vidéo YouTube */}
             <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-slate-700 mb-6">
               <iframe
-                src="https://www.youtube.com/embed/2_3V1mOESZU?autoplay=1&rel=0"
+                src="https://www.youtube.com/embed/q2VlJyerEco?autoplay=1&rel=0"
                 title="Onboarding CloseOS V1"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
