@@ -609,45 +609,46 @@ export function InvoicesPage() {
           </div>
         </div>
 
-        {isGeneratorOpen && selectedOffer && (
-          <InvoiceGeneratorModal
-            offer={selectedOffer}
-            deals={stats.deals || []}
-            commission={stats.commission}
-            startDate={startDate}
-            endDate={endDate}
-            onClose={() => setIsGeneratorOpen(false)}
-          />
-        )}
-
-        <PaymentMethodsModal
-          isOpen={isPaymentMethodsOpen}
-          onClose={() => setIsPaymentMethodsOpen(false)}
-        />
-
-        <IssuerProfilesModal
-          isOpen={isIssuerProfilesOpen}
-          onClose={() => setIsIssuerProfilesOpen(false)}
-        />
-
-        <StripeConnectModal
-          isOpen={isStripeConnectOpen}
-          onClose={() => setIsStripeConnectOpen(false)}
-        />
-
-        <InvoiceDetailModal
-          invoice={selectedInvoice}
-          isOpen={isDetailOpen}
-          onClose={() => setIsDetailOpen(false)}
-          onUpdate={fetchInvoices}
-        />
-
-        <AutoInvoiceConfigModal
-          isOpen={isAutoInvoiceOpen}
-          onClose={() => setIsAutoInvoiceOpen(false)}
-          offers={offers}
-        />
       </div>
+
+      {isGeneratorOpen && selectedOffer && (
+        <InvoiceGeneratorModal
+          offer={selectedOffer}
+          deals={stats.deals || []}
+          commission={stats.commission}
+          startDate={startDate}
+          endDate={endDate}
+          onClose={() => setIsGeneratorOpen(false)}
+        />
+      )}
+
+      <PaymentMethodsModal
+        isOpen={isPaymentMethodsOpen}
+        onClose={() => setIsPaymentMethodsOpen(false)}
+      />
+
+      <IssuerProfilesModal
+        isOpen={isIssuerProfilesOpen}
+        onClose={() => setIsIssuerProfilesOpen(false)}
+      />
+
+      <StripeConnectModal
+        isOpen={isStripeConnectOpen}
+        onClose={() => setIsStripeConnectOpen(false)}
+      />
+
+      <InvoiceDetailModal
+        invoice={selectedInvoice}
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        onUpdate={fetchInvoices}
+      />
+
+      <AutoInvoiceConfigModal
+        isOpen={isAutoInvoiceOpen}
+        onClose={() => setIsAutoInvoiceOpen(false)}
+        offers={offers}
+      />
     </div>
   )
 }

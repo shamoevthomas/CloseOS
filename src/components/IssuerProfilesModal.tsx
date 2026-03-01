@@ -212,8 +212,8 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="absolute inset-0" onClick={onClose} />
       <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
         <div className="flex items-center justify-between border-b border-slate-800 p-6 flex-shrink-0">
           <div>

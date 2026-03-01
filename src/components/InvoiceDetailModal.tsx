@@ -131,7 +131,7 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
 
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-6xl h-[85vh] bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl flex overflow-hidden">
 
         <button
