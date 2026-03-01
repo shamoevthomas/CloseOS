@@ -55,12 +55,11 @@ import { SubscriptionRetention } from './pages/SubscriptionRetention'
 import { SpectatorPage } from './pages/SpectatorPage'
 import { RemindersPage } from './pages/RemindersPage'
 
-// Page d'accueil intelligente : loading screen si auth en cours, sinon landing ou redirect
+// Page d'accueil intelligente : landing immédiate, redirect si connecté
 function SmartHome() {
   const { user, loading } = useAuth()
 
-  if (loading) return <LoadingScreen />
-  if (user) return <Navigate to="/dashboard" replace />
+  if (!loading && user) return <Navigate to="/dashboard" replace />
   return <LandingPage />
 }
 
