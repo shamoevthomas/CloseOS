@@ -110,16 +110,23 @@ function AuthenticatedApp() {
     }
   }, [location.pathname]);
 
-  // Check for password reset param
-  if (user && !loading && !isSettingsOpen) {
-    const params = new URLSearchParams(location.search);
-    if (params.get('reset_password') === 'true') {
-      // Remove param from URL without reload
-      window.history.replaceState({}, '', window.location.pathname);
-      setSettingsInitialTab('security');
-      setIsSettingsOpen(true);
+  // Check for password reset or initial onboarding video
+  useEffect(() => {
+    if (user && !loading) {
+      const params = new URLSearchParams(location.search);
+      if (params.get('reset_password') === 'true') {
+        window.history.replaceState({}, '', window.location.pathname);
+        setSettingsInitialTab('security');
+        setIsSettingsOpen(true);
+      } else if (
+        user.user_metadata?.onboarding_completed === true &&
+        user.user_metadata?.video_onboarding_watched !== true &&
+        !isVideoOnboardingOpen
+      ) {
+        setIsVideoOnboardingOpen(true);
+      }
     }
-  }
+  }, [user, loading, location.search, isVideoOnboardingOpen]);
 
   // Plus de blocage global : la landing et les routes publiques s'affichent immédiatement.
   // Le spinner ne s'affiche que dans ProtectedRoute pour les pages nécessitant une connexion.
@@ -209,7 +216,11 @@ function AuthenticatedApp() {
 
       {user && (
         <>
-          <OnboardingWrapper onComplete={() => setIsVideoOnboardingOpen(true)} />
+          <OnboardingWrapper onComplete={() => {
+            // onComplete est appelé après updateProfile dans OnboardingModal.
+            // Le metadata onboarding_completed sera déjà true.
+            setIsVideoOnboardingOpen(true);
+          }} />
           <VideoOnboardingModal
             isOpen={isVideoOnboardingOpen}
             onClose={() => setIsVideoOnboardingOpen(false)}

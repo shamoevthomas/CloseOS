@@ -20,7 +20,6 @@ import {
   Star,
   ShieldCheck,
   Database,
-  Video,
   Users,
   Building2,
   PlusCircle,
@@ -185,8 +184,8 @@ export function LandingPage() {
         </div>
       </nav>
 
-    {/* HERO SECTION */ }
-    < section className = "relative pt-40 pb-20 overflow-hidden" >
+      {/* HERO SECTION */}
+      < section className="relative pt-40 pb-20 overflow-hidden" >
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/20 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
         <div className="absolute bottom-0 right-0 w-[800px] h-[600px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
 
@@ -295,102 +294,79 @@ export function LandingPage() {
         </div >
       </section >
 
-    {/* INTEGRATIONS BANNER */ }
-    < section id = "integrations" className = "py-12 border-y border-white/5 bg-slate-950/50" >
-      <div className="mx-auto max-w-7xl px-6 text-center">
-        <p className="text-xs font-bold text-slate-500 mb-8 uppercase tracking-widest">
-          Synchronisation native avec vos outils préférés
-        </p>
-        <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
-          <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
-          <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Hubspot</div>
-          <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Pipedrive</div>
-          <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
-          <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
-          <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Cal.com</div>
-          <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
+      {/* INTEGRATIONS BANNER */}
+      < section id="integrations" className="py-12 border-y border-white/5 bg-slate-950/50" >
+        <div className="mx-auto max-w-7xl px-6 text-center">
+          <p className="text-xs font-bold text-slate-500 mb-8 uppercase tracking-widest">
+            Synchronisation native avec vos outils préférés
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Hubspot</div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Pipedrive</div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Cal.com</div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
+          </div>
         </div>
-      </div>
       </section >
 
-    {/* FEATURES GRID */ }
-    < section id = "features" className = "py-32 relative" >
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="mb-20 text-center max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold text-white sm:text-5xl mb-6">Tout est là.<br />Au même endroit.</h2>
-          <p className="text-lg text-slate-400">
-            Arrêtez de perdre du temps à switcher entre les onglets. CloseOS centralise votre flux de travail pour que vous puissiez vous concentrer sur l'essentiel : <span className="text-emerald-400 font-semibold">Le Closing.</span>
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-blue-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
-            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
-              <LayoutDashboard className="w-64 h-64 text-blue-500" />
-            </div>
-            <div className="relative z-10">
-              <div className="h-12 w-12 rounded-lg bg-blue-500/20 flex items-center justify-center mb-6 ring-1 ring-blue-500/30">
-                <BarChart3 className="h-6 w-6 text-blue-400" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-3">Cockpit & KPIs en Temps Réel</h3>
-              <p className="text-slate-400 mb-6 max-w-md leading-relaxed">
-                Votre centre de commandement. Visualisez instantanément vos commissions, votre taux de conversion, et votre pipeline. Si votre performance baisse, vous le voyez tout de suite.
-              </p>
-              <ul className="grid grid-cols-2 gap-2">
-                <li className="flex items-center gap-2 text-sm text-slate-300"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Cash encaissé</li>
-                <li className="flex items-center gap-2 text-sm text-slate-300"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Taux de closing</li>
-                <li className="flex items-center gap-2 text-sm text-slate-300"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Commissions prévisionnelles</li>
-                <li className="flex items-center gap-2 text-sm text-slate-300"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Deals en cours</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#25D366]/30 transition-all duration-500 group hover:bg-slate-900/80 relative overflow-hidden">
-            <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <MessageSquare className="w-32 h-32 text-[#25D366]" />
-            </div>
-            <div className="h-12 w-12 rounded-lg bg-[#25D366]/20 flex items-center justify-center mb-6 ring-1 ring-[#25D366]/30">
-              <Phone className="h-6 w-6 text-[#25D366]" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-3">Téléphonie VoIP & Click-to-WhatsApp</h3>
-            <p className="text-slate-400 text-sm leading-relaxed mb-4">
-              Appelez vos prospects en un clic via Twilio (appels enregistrés).
-              Lancez vos conversations WhatsApp instantanément sans enregistrer le numéro.
-              <span className="block mt-2 text-[#25D366] text-xs font-bold uppercase tracking-wide">
-                🚀 Zéro friction au quotidien
-              </span>
+      {/* FEATURES GRID */}
+      < section id="features" className="py-32 relative" >
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mb-20 text-center max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold text-white sm:text-5xl mb-6">Tout est là.<br />Au même endroit.</h2>
+            <p className="text-lg text-slate-400">
+              Arrêtez de perdre du temps à switcher entre les onglets. CloseOS centralise votre flux de travail pour que vous puissiez vous concentrer sur l'essentiel : <span className="text-emerald-400 font-semibold">Le Closing.</span>
             </p>
           </div>
 
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-orange-500/30 transition-all duration-500 group hover:bg-slate-900/80">
-            <div className="h-12 w-12 rounded-lg bg-orange-500/20 flex items-center justify-center mb-6 ring-1 ring-orange-500/30">
-              <TrendingUp className="h-6 w-6 text-orange-400" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-3">Pipeline & Offres</h3>
-            <p className="text-slate-400 text-sm leading-relaxed mb-4">
-              Vue Kanban fluide. Configurez vos offres (prix, commissions, formules) et laissez l'outil calculer vos gains à chaque deal déplacé.
-            </p>
-          </div>
-
-          <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-purple-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
-            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:rotate-12 group-hover:scale-110">
-              <CalendarCheck className="w-64 h-64 text-purple-500" />
-            </div>
-            <div className="relative z-10">
-              <div className="h-12 w-12 rounded-lg bg-purple-500/20 flex items-center justify-center mb-6 ring-1 ring-purple-500/30">
-                <CalendarCheck className="h-6 w-6 text-purple-400" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* CARD 1 - COCKPIT (Large) */}
+            <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-blue-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
+              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
+                <LayoutDashboard className="w-64 h-64 text-blue-500" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">Agenda & Booking (Google Calendar)</h3>
-              <p className="text-slate-400 mb-6 max-w-md leading-relaxed">
-                Connectez votre Google Calendar. Vos rendez-vous et créneaux de booking remontent automatiquement dans votre Pipeline et votre Agenda CloseOS.
+              <div className="relative z-10">
+                <div className="h-12 w-12 rounded-lg bg-blue-500/20 flex items-center justify-center mb-6 ring-1 ring-blue-500/30">
+                  <BarChart3 className="h-6 w-6 text-blue-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">Cockpit & KPIs en Temps Réel</h3>
+                <p className="text-slate-400 mb-6 max-w-md leading-relaxed">
+                  Votre centre de commandement. Visualisez instantanément vos commissions, votre taux de conversion, et votre pipeline. Si votre performance baisse, vous le voyez tout de suite.
+                </p>
+                <ul className="grid grid-cols-2 gap-2">
+                  <li className="flex items-center gap-2 text-sm text-slate-300"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Cash encaissé</li>
+                  <li className="flex items-center gap-2 text-sm text-slate-300"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Taux de closing</li>
+                  <li className="flex items-center gap-2 text-sm text-slate-300"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Commissions prévisionnelles</li>
+                  <li className="flex items-center gap-2 text-sm text-slate-300"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Deals en cours</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* CARD 2 - VOIP (Small) */}
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#25D366]/30 transition-all duration-500 group hover:bg-slate-900/80 relative overflow-hidden">
+              <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <MessageSquare className="w-32 h-32 text-[#25D366]" />
+              </div>
+              <div className="h-12 w-12 rounded-lg bg-[#25D366]/20 flex items-center justify-center mb-6 ring-1 ring-[#25D366]/30">
+                <Phone className="h-6 w-6 text-[#25D366]" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Téléphonie VoIP & Click-to-WhatsApp</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-4">
+                Appelez vos prospects en un clic via Twilio (appels enregistrés).
+                Lancez vos conversations WhatsApp instantanément sans enregistrer le numéro.
+                <span className="block mt-2 text-[#25D366] text-xs font-bold uppercase tracking-wide">
+                  🚀 Zéro friction au quotidien
+                </span>
               </p>
             </div>
 
+            {/* CARD 3 - PIPELINE (Small) */}
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-orange-500/30 transition-all duration-500 group hover:bg-slate-900/80">
               <div className="h-12 w-12 rounded-lg bg-orange-500/20 flex items-center justify-center mb-6 ring-1 ring-orange-500/30">
-                <div className="h-6 w-6 text-orange-400 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5" />
-                </div>
+                <TrendingUp className="h-6 w-6 text-orange-400" />
               </div>
               <h3 className="text-xl font-bold text-white mb-3">Pipeline & Offres</h3>
               <p className="text-slate-400 text-sm leading-relaxed mb-4">
@@ -398,6 +374,7 @@ export function LandingPage() {
               </p>
             </div>
 
+            {/* CARD 4 - PROFIL CLOSER (Large) */}
             <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-violet-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
                 <Users className="w-64 h-64 text-violet-500" />
@@ -427,6 +404,7 @@ export function LandingPage() {
               </div>
             </div>
 
+            {/* CARD 5 - AGENDA (Small) */}
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-purple-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
               <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <CalendarCheck className="w-32 h-32 text-purple-500" />
@@ -447,6 +425,7 @@ export function LandingPage() {
               </div>
             </div>
 
+            {/* CARD 6 - FACTURATION (Small) */}
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-emerald-500/30 transition-all duration-500 group hover:bg-slate-900/80">
               <div className="h-12 w-12 rounded-lg bg-emerald-500/20 flex items-center justify-center mb-6 ring-1 ring-emerald-500/30">
                 <FileText className="h-6 w-6 text-emerald-400" />
@@ -457,6 +436,7 @@ export function LandingPage() {
               </p>
             </div>
 
+            {/* CARD 7 - SYNC CRM (Small) */}
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#E11D48]/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
               <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <Zap className="w-32 h-32 text-[#E11D48]" />
@@ -467,45 +447,16 @@ export function LandingPage() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">Sync CRM</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  Synchronisation native avec iClosed, HubSpot et Pipedrive. Oubliez la double saisie manuelle et automatisez votre suivi.
+                  Synchronisation native avec iClosed, HubSpot et Pipedrive. Oubliez la double saisie manuelle et automatisez 100% de votre suivi.
                 </p>
               </div>
             </div>
           </div>
-
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-emerald-500/30 transition-all duration-500 group hover:bg-slate-900/80">
-            <div className="h-12 w-12 rounded-lg bg-emerald-500/20 flex items-center justify-center mb-6 ring-1 ring-emerald-500/30">
-              <FileText className="h-6 w-6 text-emerald-400" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-3">Facturation Auto & Paiement CB</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              Générez vos factures de commissions en un clic. Créez des liens de paiement CB sécurisés et envoyez automatiquement la facture à votre infopreneur.
-            </p>
-          </div>
-
-          <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#E11D48]/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
-            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500">
-              <Zap className="w-64 h-64 text-[#E11D48]" />
-            </div>
-            <div className="relative z-10">
-              <div className="h-12 w-12 rounded-lg bg-[#E11D48]/20 flex items-center justify-center mb-6 ring-1 ring-[#E11D48]/30">
-                <Zap className="h-6 w-6 text-[#E11D48]" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-3">Sync CRM (HubSpot, Pipedrive, iClosed)</h3>
-              <p className="text-slate-400 mb-6 max-w-lg leading-relaxed">
-                Synchronisation native avec iClosed, HubSpot et Pipedrive. Vos leads et vos deals circulent en temps réel. Oubliez la double saisie manuelle et automatisez 100% de votre suivi.
-                <span className="block mt-2 text-xs text-slate-500 italic">
-                  (PS: pour iClosed, voir la FAQ)
-                </span>
-              </p>
-            </div>
-          </div>
         </div>
-      </div>
       </section >
 
-    {/* ROADMAP TIMELINE — HORIZONTAL */ }
-    < section className = "py-20 bg-[#0B1121] border-t border-white/5 relative overflow-hidden" >
+      {/* ROADMAP TIMELINE — HORIZONTAL */}
+      < section className="py-20 bg-[#0B1121] border-t border-white/5 relative overflow-hidden" >
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-indigo-600/8 blur-[150px] rounded-full pointer-events-none" />
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-12">
@@ -973,30 +924,30 @@ export function LandingPage() {
         </div>
       </section>
 
-    {/* COMPARISON MODAL */ }
-  {
-    isComparisonOpen && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-950 rounded-2xl border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={() => setIsComparisonOpen(false)}
-            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors z-10"
-          >
-            <X className="h-6 w-6" />
-          </button>
-          <PricingComparisonTable isModal={true} />
-          <div className="p-6 border-t border-slate-900 bg-slate-950/50 sticky bottom-0 text-center">
-            <button
-              onClick={() => setIsComparisonOpen(false)}
-              className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors"
-            >
-              Fermer le comparatif
-            </button>
+      {/* COMPARISON MODAL */}
+      {
+        isComparisonOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-950 rounded-2xl border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setIsComparisonOpen(false)}
+                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors z-10"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              <PricingComparisonTable isModal={true} />
+              <div className="p-6 border-t border-slate-900 bg-slate-950/50 sticky bottom-0 text-center">
+                <button
+                  onClick={() => setIsComparisonOpen(false)}
+                  className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Fermer le comparatif
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    )
-  }
+        )
+      }
 
       {/* --- FAQ SECTION --- */}
       <section id="faq" className="py-24 bg-slate-950 relative border-t border-white/5">
