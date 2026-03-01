@@ -11,66 +11,30 @@ import {
   Copy,
   BoxSelect,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Users,
+  Save,
+  X,
+  Edit2,
+  Trash2,
+  User,
+  FileText,
+  Euro,
+  ExternalLink,
+  Tag,
+  UserPlus,
+  Database,
+  ChevronDown
 } from 'lucide-react'
-import { ContactSelector } from './ContactSelector'
-import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
-import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { ContactSelector } from './ContactSelector'
+import { useInternalContacts } from '../contexts/InternalContactsContext'
+import { useAuth } from '../contexts/AuthContext'
+export { type Offer, type OfferContact, type OfferResource, type OfferFormula } from '../contexts/OffersContext'
+import { type Offer, type OfferContact, type OfferResource, type OfferFormula } from '../contexts/OffersContext'
 
-export interface OfferContact {
-  id: string | number
-  name: string
-  role: string
-}
-
-export interface OfferResource {
-  id: string | number
-  name: string
-  url: string
-  type: 'script' | 'payment' | 'drive' | 'other'
-}
-
-export interface OfferFormula {
-  id: string
-  name: string
-  price: string
-  commission: string
-}
-
-export interface Offer {
-  id: number
-  name: string
-  company: string
-  status: 'active' | 'archived'
-  target: 'B2B' | 'B2C'
-  startDate: string
-  endDate?: string
-  price: string
-  commission: string
-  description: string
-  resources: OfferResource[]
-  contacts: OfferContact[]
-  formulas?: OfferFormula[]
-  notes?: string
-  // CHAMPS DE FACTURATION
-  billingName?: string
-  billingAddress?: string
-  billingCity?: string
-  billingZip?: string
-  billingCountry?: string
-  siret?: string
-  billingEmail?: string
-  billingPhone?: string
-  // CHAMPS COMMISSION + FIXE
-  hasFixedFee?: boolean
-  fixedFeeAmount?: string
-  // NOUVEAUX CHAMPS CRM
-  crmProvider?: 'iclosed' | 'hubspot' | 'pipedrive' | 'other'
-  crmApiKey?: string
-  crmMapping?: { [key: string]: string | undefined }
-  defaultFormulaId?: string
-}
+// Types are now imported from OffersContext
 
 interface OfferDetailModalProps {
   offer: Offer
@@ -826,9 +790,9 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
             {isEditing ? (
               <ContactSelector
-                selectedContactIds={editedOffer.contacts.map((c) => c.id)}
-                onAdd={(contactId) => {
-                  const globalContact = globalContacts.find((c) => c.id === contactId)
+                selectedContactIds={editedOffer.contacts.map((c) => Number(c.id))}
+                onAdd={(contactId: number) => {
+                  const globalContact = globalContacts.find((c) => Number(c.id) === contactId)
                   if (globalContact) {
                     setEditedOffer({
                       ...editedOffer,
@@ -839,10 +803,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     })
                   }
                 }}
-                onRemove={(contactId) => {
+                onRemove={(contactId: number) => {
                   setEditedOffer({
                     ...editedOffer,
-                    contacts: editedOffer.contacts.filter((c) => c.id !== contactId),
+                    contacts: editedOffer.contacts.filter((c) => Number(c.id) !== contactId),
                   })
                 }}
               />
@@ -1061,7 +1025,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <div className="relative">
                   <select
                     value={editedOffer.crmProvider || 'iclosed'}
-                    onChange={(e) => setEditedOffer({ ...editedOffer, crmProvider: e.target.value })}
+                    onChange={(e) => setEditedOffer({ ...editedOffer, crmProvider: e.target.value as any })}
                     className="w-full appearance-none rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white focus:border-blue-500/50 focus:outline-none transition-all"
                   >
                     <option value="iclosed">iClosed</option>

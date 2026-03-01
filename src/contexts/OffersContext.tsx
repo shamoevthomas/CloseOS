@@ -60,7 +60,7 @@ export interface Offer {
   hasFixedFee?: boolean
   fixedFeeAmount?: string
   // NOUVEAUX CHAMPS CRM
-  crmProvider?: 'iclosed' | 'hubspot' | 'other'
+  crmProvider?: 'iclosed' | 'hubspot' | 'pipedrive' | 'other'
   crmApiKey?: string
   crmMapping?: CrmMapping
   defaultFormulaId?: string // AJOUT : Déclaration du champ dans le type
