@@ -102,12 +102,12 @@ function AuthenticatedApp() {
   // Gestion de la visibilité de la bulle CookieYes
   useEffect(() => {
     // La bulle CookieYes n'est visible que sur la landing page
-    const isVisiblePath = location.pathname === '/';
+    const isLanding = location.pathname === '/';
 
-    if (isVisiblePath) {
-      document.body.classList.add('show-cookieyes');
+    if (isLanding) {
+      document.body.classList.remove('hide-cookieyes');
     } else {
-      document.body.classList.remove('show-cookieyes');
+      document.body.classList.add('hide-cookieyes');
     }
   }, [location.pathname]);
 
