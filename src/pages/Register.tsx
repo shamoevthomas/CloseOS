@@ -3,7 +3,6 @@ import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -33,17 +32,6 @@ export default function Register() {
         setError(result.error.message);
         setLoading(false);
       } else {
-        // Sauvegarder le code affilié en base si présent
-        const referralCode = localStorage.getItem('referral_code');
-        if (referralCode) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase
-              .from('profiles')
-              .update({ referral_code: referralCode })
-              .eq('id', user.id);
-          }
-        }
         navigate('/dashboard');
       }
     } catch (err: any) {
