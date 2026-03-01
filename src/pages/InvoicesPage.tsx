@@ -17,7 +17,7 @@ export function InvoicesPage() {
   const { offers } = useOffers()
   const { user } = useAuth()
 
-  // setSearchParams removed as it was unused
+  const [searchParams] = useSearchParams()
 
   const [savedInvoices, setSavedInvoices] = useState<any[]>([])
 

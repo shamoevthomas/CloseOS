@@ -132,6 +132,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
       offer: finalOfferName,
       offerId: formData.offerId ? parseInt(formData.offerId) : undefined,
       value: selectedOfferPrice,
+      source: 'Direct',
       stage: 'prospect',
     })
 
