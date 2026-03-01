@@ -1012,8 +1012,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
           {/* --- CONFIGURATION CRM (SIMPLIFIÉE AVEC FORMULE PAR DÉFAUT) --- */}
           <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
-              <Link className="h-4 w-4" /> Synchronisation CRM
+            <h3 className="mb-4 flex items-center flex-wrap gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+              <span className="flex items-center gap-2">
+                <Link className="h-4 w-4" /> Synchronisation CRM
+              </span>
+              <span className="ml-2 text-[10px] font-bold normal-case text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
+                Note : Les leads précédents ne seront pas importés. Seuls les nouveaux à partir d'aujourd'hui seront synchronisés.
+              </span>
             </h3>
 
             {/* 1. CRM Settings */}
