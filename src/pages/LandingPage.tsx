@@ -100,7 +100,7 @@ export function LandingPage() {
 
       {/* BANDEAU OFFRE */}
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
-        🚀 Testez CloseOS gratuitement pendant 10 jours — Aucune carte bancaire requise.
+        🚀 La V1 de CloseOS est officiellement lancée ! Testez gratuitement pendant 10 jours.
       </div>
 
       {/* NAVBAR */}
@@ -260,7 +260,7 @@ export function LandingPage() {
             >
               <span className="text-green-400">📲</span>
               <span className="underline underline-offset-2 group-hover:text-green-400 transition-colors">
-                Rejoindre la communauté WhatsApp pour suivre le lancement
+                Rejoindre la communauté WhatsApp
               </span>
             </a>
           </div>
@@ -463,7 +463,7 @@ export function LandingPage() {
             <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-400 uppercase tracking-widest">
               Roadmap 2025
             </span>
-            <h2 className="text-3xl sm:text-5xl font-bold text-white mt-6">Le Futur du Closing</h2>
+            <h2 className="text-3xl sm:text-5xl font-bold text-white mt-6">L'Évolution du Closing</h2>
             <p className="text-slate-400 mt-4 max-w-2xl mx-auto text-sm">Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers, agences et infopreneurs.</p>
           </div>
 
@@ -839,7 +839,7 @@ export function LandingPage() {
             <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 scale-105 relative z-10 flex flex-col h-full animate-in fade-in zoom-in duration-300 delay-75">
               <div className="absolute -top-3 right-6 flex flex-col items-end gap-1">
                 <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg">
-                  🔥 -58% PRÉLANCEMENT
+                  🔥 -58% OFFRE DE LANCEMENT
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-red-500/90 text-white text-[10px] font-bold uppercase tracking-wide">
                   Offre valable jusqu'au 10 mars
@@ -990,7 +990,7 @@ export function LandingPage() {
                 <strong className="text-white">C'est une offre de lancement limitée.</strong> Nous récompensons nos premiers utilisateurs ("Early Adopters") avec ce tarif préférentiel.
               </p>
               <p className="mt-2">
-                En prenant votre accès aujourd'hui, vous <strong className="text-white">bloquez ce prix à vie</strong>. Même quand l'abonnement passera à 69€/mois pour les futurs clients, vous continuerez de payer 29€.
+                En prenant votre accès aujourd'hui, vous <strong className="text-white">bloquez ce prix à vie</strong>. Même quand l'abonnement passera à 69€/mois pour les nouveaux clients, vous continuerez de payer 29€.
               </p>
             </FAQItem>
 
