@@ -19,7 +19,8 @@ import {
   FileText,
   Sparkles,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Bell
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState, useEffect } from 'react' // Modification ici : ajout de useEffect
@@ -29,7 +30,7 @@ import { supabase } from '../lib/supabase' // Ajout de l'import supabase
 
 // Mise à jour de la navigation
 const navigation = [
-  { name: 'Cockpit', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Pipeline', href: '/pipeline', icon: GitBranch },
   { name: 'Contacts', href: '/contacts', icon: Users },
   { name: 'Offres', href: '/offers', icon: Briefcase },
@@ -40,6 +41,7 @@ const navigation = [
   { name: 'Rapport', href: '/ai-coach', icon: FileText },
   { name: 'Factures', href: '/factures', icon: CreditCard },
   { name: 'KPI', href: '/kpi', icon: BarChart3 },
+  { name: 'Rappels', href: '/reminders', icon: Bell },
 ]
 
 interface SidebarProps {
@@ -89,7 +91,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
       }
     }
     fetchAvatar()
-  }, [user?.id, onOpenSettings]) // Se rafraîchit si l'ID change ou si on ferme les réglages
+  }, [user?.id]) // Se rafraîchit si l'ID change
 
   const fullName = user?.user_metadata?.full_name || 'Utilisateur';
   const userRole = user?.user_metadata?.role || 'Membre';

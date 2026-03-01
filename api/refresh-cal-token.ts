@@ -5,11 +5,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. Setup Supabase
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const clientId = process.env.VITE_CAL_CLIENT_ID;
-    const clientSecret = process.env.CAL_CLIENT_SECRET;
+    const clientId = '452e83a06c630a84cba92ab72cd43735c78ee8b5b691f488de432201b2d951ba';
+    const clientSecret = '44133f701370e512c37bcefd37317b7e9d150632c7e3ec85f34b2a86bb9614be';
 
-    if (!supabaseUrl || !supabaseServiceKey || !clientId || !clientSecret) {
-        return res.status(500).json({ error: 'Missing environment variables' });
+    if (!supabaseUrl || !supabaseServiceKey) {
+        return res.status(500).json({ error: 'Missing Supabase environment variables' });
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);

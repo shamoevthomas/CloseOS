@@ -33,7 +33,7 @@ export function InvoiceGeneratorModal({
   // Saved payment methods & profiles (fetched from DB)
   const [savedMethods, setSavedMethods] = useState<SavedPaymentMethod[]>([])
   const [savedProfiles, setSavedProfiles] = useState<IssuerProfile[]>([])
-  
+
   // Selection states
   const [selectedMethodId, setSelectedMethodId] = useState<string>('custom')
   const [selectedProfileId, setSelectedProfileId] = useState<string>('custom')
@@ -68,7 +68,7 @@ export function InvoiceGeneratorModal({
   const [isGeneratingLink, setIsGeneratingLink] = useState(false)
   const [generatedLink, setGeneratedLink] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState('')
-  
+
   // --- 🚀 AJOUT : ETAT ENVOI EMAIL ---
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   // ------------------------------------
@@ -88,7 +88,7 @@ export function InvoiceGeneratorModal({
           .select('stripe_account_id, stripe_connected')
           .eq('id', user.id)
           .single()
-        
+
         if (data?.stripe_connected && data?.stripe_account_id) {
           setStripeAccountId(data.stripe_account_id)
           setUseStripePayment(true) // Activé par défaut si connecté
@@ -130,7 +130,7 @@ export function InvoiceGeneratorModal({
             phone: p.phone || '',
             isDefault: p.is_default
           }))
-          
+
           setSavedProfiles(mappedProfiles)
 
           // Appliquer le profil par défaut s'il existe
@@ -194,24 +194,24 @@ export function InvoiceGeneratorModal({
     deals.forEach((deal) => {
       // 1. Déterminer si c'est un paiement échelonné
       const isInstallment = deal.payment_type === 'installments' || (deal.installments && deal.installments > 1)
-      
+
       // 2. Construire le label (Nom offre/formule + Type paiement)
       const formulaName = deal.offer || offer.name
-      const paymentLabel = isInstallment 
-        ? `Mensualité (Paiement en ${deal.installments}x)` 
+      const paymentLabel = isInstallment
+        ? `Mensualité (Paiement en ${deal.installments}x)`
         : 'Paiement Comptant'
-      
+
       const key = `${formulaName}-${paymentLabel}`
-      
+
       // 3. Calculer la part de commission pour ce deal sur la période
       const fullValue = deal.value || 0
       const amountInPeriod = isInstallment ? fullValue / (deal.installments || 1) : fullValue
-      
+
       let rate = 0.10
       const commissionStr = String(offer.commission || '10')
       const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
       if (match) rate = parseFloat(match[1]) / 100
-      
+
       const dealCommission = amountInPeriod * rate
 
       // 4. Agréger les lignes identiques
@@ -231,9 +231,12 @@ export function InvoiceGeneratorModal({
     return Object.values(groups)
   }, [deals, offer])
 
-  // Recalcul du total HT basé sur les lignes détaillées (plus précis)
-  const commissionHT = lineItems.reduce((acc, item) => acc + item.total, 0)
-  
+  // Ligne fixe (si activée sur l'offre)
+  const fixedFeeAmount = offer.hasFixedFee ? parseFloat(offer.fixedFeeAmount || '0') || 0 : 0
+
+  // Recalcul du total HT basé sur les lignes détaillées + fixe
+  const commissionHT = lineItems.reduce((acc, item) => acc + item.total, 0) + fixedFeeAmount
+
   // Calculate TVA if applicable
   const tvaRate = 0.2 // 20% TVA
   const tvaAmount = tvaApplicable ? commissionHT * tvaRate : 0
@@ -355,10 +358,10 @@ export function InvoiceGeneratorModal({
             currency: 'eur',
             title: `Facture ${invoiceNumber}`,
             connectedAccountId: stripeAccountId,
-            clientEmail: offer.billingEmail || undefined 
+            clientEmail: offer.billingEmail || undefined
           })
         })
-        
+
         const data = await response.json()
         if (data.url) {
           setGeneratedLink(data.url)
@@ -444,9 +447,9 @@ export function InvoiceGeneratorModal({
       link.href = URL.createObjectURL(pdfBlob)
       link.download = `${invoiceNumber}.pdf`
       link.click()
-      
+
       onClose()
-      
+
     } catch (err) {
       console.error("Erreur lors de l'enregistrement de la facture:", err)
       alert("Une erreur est survenue lors de l'enregistrement de la facture.")
@@ -456,7 +459,7 @@ export function InvoiceGeneratorModal({
   // --- 🚀 AJOUT : FONCTION D'ENVOI PAR EMAIL ---
   const handleSendEmail = async () => {
     const element = document.getElementById('invoice-preview-content')
-    if (!element || !offer.billingEmail) return 
+    if (!element || !offer.billingEmail) return
 
     setIsSendingEmail(true)
     try {
@@ -468,26 +471,26 @@ export function InvoiceGeneratorModal({
       const fileName = `${Date.now()}-${invoiceNumber}.pdf`
       const { error: uploadError } = await supabase.storage.from('invoice').upload(fileName, pdfBlob)
       if (uploadError) throw uploadError
-      
+
       // 3. Récupération URL publique
       const { data: { publicUrl } } = supabase.storage.from('invoice').getPublicUrl(fileName)
 
       // 4. Enregistrement en base (status 'envoyée')
-      await supabase.from('invoices').insert([{ 
-        invoice_number: invoiceNumber, 
-        offer_name: offer.name, 
-        client_name: offer.billingName || offer.company, 
+      await supabase.from('invoices').insert([{
+        invoice_number: invoiceNumber,
+        offer_name: offer.name,
+        client_name: offer.billingName || offer.company,
         client_email: offer.billingEmail, // 👈 ICI : AJOUT DU MAIL CLIENT AUSSI
-        amount_ht: commissionHT, 
-        amount_ttc: totalTTC, 
-        status: 'envoyée', 
-        pdf_url: publicUrl 
+        amount_ht: commissionHT,
+        amount_ttc: totalTTC,
+        status: 'envoyée',
+        pdf_url: publicUrl
       }])
 
       // 5. Préparation payload pour TON api/send-email.ts existant
       const emailPayload = {
         // L'expéditeur DOIT être ton email Brevo vérifié ou un domaine authentifié
-        sender: { name: "CloseOS Notification", email: "support@closeos.fr" }, 
+        sender: { name: "CloseOS Notification", email: "support@closeos.fr" },
         // L'email du "vrai" émetteur est en Reply-To pour que le client réponde au bon endroit
         replyTo: { email: issuerEmail || "support@closeos.fr", name: issuerCompanyName || "CloseOS" },
         to: [{ email: offer.billingEmail, name: offer.billingName || offer.company }],
@@ -723,7 +726,7 @@ export function InvoiceGeneratorModal({
                   <Download className="h-4 w-4 text-purple-400" />
                   Moyen de paiement principal
                 </h3>
-                
+
                 {savedMethods.length > 0 && (
                   <select value={selectedMethodId} onChange={(e) => handleMethodSelect(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:border-purple-500">
                     <option value="custom">Saisie manuelle...</option>
@@ -842,11 +845,10 @@ export function InvoiceGeneratorModal({
                 <button
                   onClick={handleSendEmail}
                   disabled={!offer.billingEmail || isSendingEmail}
-                  className={`flex items-center gap-2 rounded-lg px-6 py-2 font-semibold text-white transition-all border ${
-                    !offer.billingEmail 
-                      ? 'bg-slate-800/50 border-slate-800 text-slate-500 cursor-not-allowed'
-                      : 'bg-indigo-500 border-indigo-500 hover:bg-indigo-600'
-                  }`}
+                  className={`flex items-center gap-2 rounded-lg px-6 py-2 font-semibold text-white transition-all border ${!offer.billingEmail
+                    ? 'bg-slate-800/50 border-slate-800 text-slate-500 cursor-not-allowed'
+                    : 'bg-indigo-500 border-indigo-500 hover:bg-indigo-600'
+                    }`}
                   title={!offer.billingEmail ? "Aucun email client renseigné" : "Envoyer la facture par mail"}
                 >
                   {isSendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
@@ -949,7 +951,7 @@ export function InvoiceGeneratorModal({
                       <div className="space-y-1 text-sm text-slate-900">
                         {/* Raison Sociale / Nom Facturation */}
                         <p className="font-bold">{offer.billingName || offer.company}</p>
-                        
+
                         {/* Nom de l'offre (Pour le contexte) */}
                         <p className="text-slate-700 font-medium">{offer.name}</p>
 
@@ -1027,6 +1029,22 @@ export function InvoiceGeneratorModal({
                           </td>
                         </tr>
                       ))}
+                      {/* Ligne Fixe (si activée sur l'offre) */}
+                      {fixedFeeAmount > 0 && (
+                        <tr className="border-b border-slate-200 bg-blue-50/50">
+                          <td className="px-4 py-4 text-sm text-slate-900">
+                            <p className="font-medium">Fixe</p>
+                            <p className="mt-1 text-xs text-slate-600">Rémunération fixe mensuelle</p>
+                          </td>
+                          <td className="px-4 py-4 text-center text-sm text-slate-900">1</td>
+                          <td className="px-4 py-4 text-right text-sm text-slate-900">
+                            {formatCurrency(fixedFeeAmount)}
+                          </td>
+                          <td className="px-4 py-4 text-right text-sm font-semibold text-slate-900">
+                            {formatCurrency(fixedFeeAmount)}
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
 
@@ -1060,7 +1078,7 @@ export function InvoiceGeneratorModal({
                 {/* --- FOOTER (BAS DE PAGE) --- */}
                 <div className="mt-auto pt-8 border-t border-slate-200">
                   <div className="flex justify-between items-end">
-                    
+
                     {/* Left - Payment Info (Classique) */}
                     <div className="space-y-3 max-w-[50%]">
                       <p className="text-sm font-semibold text-slate-900">Conditions de règlement</p>
@@ -1134,9 +1152,9 @@ export function InvoiceGeneratorModal({
                           <p className="text-[10px] text-slate-400 mb-2 max-w-[120px]">
                             Scannez pour régler par CB instantanément
                           </p>
-                          <a 
-                            href={generatedLink} 
-                            target="_blank" 
+                          <a
+                            href={generatedLink}
+                            target="_blank"
                             rel="noreferrer"
                             className="inline-block bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-indigo-700 no-underline"
                           >

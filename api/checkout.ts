@@ -1,16 +1,38 @@
 import Stripe from 'stripe';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 // 
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     try {
-      const { lineItems, plan, referralCode, isVoip, promotekitReferral } = req.body; // 👇 Ajout de isVoip et Promotekit
+      const { lineItems, plan, referralCode, isVoip, promotekitReferral, userId, referral_code: frontendReferralCode } = req.body;
 
-      console.log("Session pour:", plan, "| Code saisi:", referralCode, "| VoIP:", isVoip);
+      // Cascade de priorité pour le code affilié : Supabase > localStorage > Promotekit
+      let supabaseReferral = null;
+      if (userId) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('referral_code')
+            .eq('id', userId)
+            .single();
+          supabaseReferral = profile?.referral_code ?? null;
+        } catch {
+          // Si Supabase échoue on continue avec le fallback
+        }
+      }
+      const finalReferral = supabaseReferral || frontendReferralCode || promotekitReferral || '';
+
+      console.log("Session pour:", plan, "| Code saisi:", referralCode, "| VoIP:", isVoip, "| Referral:", finalReferral);
 
       let discounts: any[] = [];
       let percentOff = 0; // On stocke la réduction pour l'envoyer au frontend
@@ -46,18 +68,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         discounts: discounts.length > 0 ? discounts : undefined,
 
         metadata: {
-          plan: plan || 'founder', // 👇 Stockage du plan dans les métadonnées de la session
-          voip: isVoip ? 'true' : 'false', // 👇 Stockage de l'option VoIP
+          plan: plan || 'founder',
+          voip: isVoip ? 'true' : 'false',
+          ...(finalReferral ? { referral_code: String(finalReferral) } : {}),
           ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
         },
 
         return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}&plan=${plan || 'founder'}`,
 
         subscription_data: {
-          // 👇 Stockage du plan dans les métadonnées de l'abonnement (pour sync-subscription)
           metadata: {
             plan: plan || 'founder',
-            voip: isVoip ? 'true' : 'false', // 👇 Stockage de l'option VoIP
+            voip: isVoip ? 'true' : 'false',
+            ...(finalReferral ? { referral_code: String(finalReferral) } : {}),
             ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
           },
           // MODE LANCEMENT : Si on est avant le 1er Mars, l'essai va jusqu'au 8 Mars

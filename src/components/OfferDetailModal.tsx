@@ -5,36 +5,27 @@ import {
   Building2,
   Calendar,
   Check,
-  Copy,
-  ExternalLink,
-  Info,
+  Receipt,
   Link,
-  Plus,
-  Save,
-  Tag,
-  Trash2,
-  User,
-  X,
-  FileText,
-  Database,
-  ChevronDown,
+  Info,
+  Copy,
   BoxSelect,
-  Briefcase,
-  Users,
-  UserPlus,
-  Receipt
+  Loader2,
+  RefreshCw
 } from 'lucide-react'
 import { ContactSelector } from './ContactSelector'
-import { useInternalContacts } from '../contexts/InternalContactsContext'
+import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 
 export interface OfferContact {
-  id: number
+  id: string | number
   name: string
   role: string
 }
 
 export interface OfferResource {
-  id: number
+  id: string | number
   name: string
   url: string
   type: 'script' | 'payment' | 'drive' | 'other'
@@ -71,11 +62,14 @@ export interface Offer {
   siret?: string
   billingEmail?: string
   billingPhone?: string
+  // CHAMPS COMMISSION + FIXE
+  hasFixedFee?: boolean
+  fixedFeeAmount?: string
   // NOUVEAUX CHAMPS CRM
-  crmProvider?: 'iclosed' | 'hubspot' | 'other'
+  crmProvider?: 'iclosed' | 'hubspot' | 'pipedrive' | 'other'
   crmApiKey?: string
   crmMapping?: { [key: string]: string | undefined }
-  defaultFormulaId?: string // NOUVEAU CHAMP : ID de la formule par défaut
+  defaultFormulaId?: string
 }
 
 interface OfferDetailModalProps {
@@ -103,6 +97,7 @@ const calculateCommission = (price: string, commission: string): number => {
 
 export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDetailModalProps) {
   const { contacts: globalContacts, addContact } = useInternalContacts()
+  const { user } = useAuth()
 
   const [isEditing, setIsEditing] = useState(false)
 
@@ -111,6 +106,19 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
   // État pour le feedback de copie
   const [hasCopied, setHasCopied] = useState(false)
+
+  // États HubSpot
+  const [hubspotConnected, setHubspotConnected] = useState(false)
+  const [isSyncingHubspot, setIsSyncingHubspot] = useState(false)
+  const [hubspotSyncResult, setHubspotSyncResult] = useState<{ imported: number; updated: number } | null>(null)
+
+  // États Pipedrive
+  const [pipedriveConnected, setPipedriveConnected] = useState(false)
+  const [isSyncingPipedrive, setIsSyncingPipedrive] = useState(false)
+  const [pipedriveSyncResult, setPipedriveSyncResult] = useState<{ imported: number; updated: number } | null>(null)
+  const [pipedrivePipelines, setPipedrivePipelines] = useState<any[]>([])
+  const [pipedriveStages, setPipedriveStages] = useState<any[]>([])
+  const [pipedriveMappings, setPipedriveMappings] = useState<{ [key: string]: number }>({})
 
   const [editedOffer, setEditedOffer] = useState<Offer>(() => {
     if (!offer.formulas || offer.formulas.length === 0) {
@@ -141,6 +149,173 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   useEffect(() => {
     setEditedOffer(offer)
   }, [offer])
+
+  // Check if HubSpot is connected for this user
+  useEffect(() => {
+    const checkHubspot = async () => {
+      if (!user) return
+      const { data } = await supabase.from('profiles').select('hubspot_access_token').eq('id', user.id).single()
+      setHubspotConnected(!!data?.hubspot_access_token)
+    }
+    checkHubspot()
+
+    // Check URL params for hubspot_connected
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('hubspot_connected') === 'true') {
+      setHubspotConnected(true)
+      window.history.replaceState({}, '', window.location.pathname)
+    } else if (params.get('hubspot_error')) {
+      alert('Erreur connexion HubSpot: ' + params.get('hubspot_error'))
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [user])
+
+  // HubSpot OAuth
+  const handleConnectHubspot = () => {
+    const clientId = '4ffa6fe0-353d-4275-9998-2bada782b56c'
+    const redirectUri = 'https://www.closeos.fr/api/hubspot/callback'
+    const scopes = 'crm.objects.contacts.write oauth crm.objects.deals.read crm.objects.deals.write crm.objects.contacts.read'
+    const state = user?.id
+    window.location.href = `https://app-eu1.hubspot.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${state}`
+  }
+
+  // HubSpot Sync
+  const handleSyncHubspot = async () => {
+    if (!user) return
+    setIsSyncingHubspot(true)
+    setHubspotSyncResult(null)
+    try {
+      const res = await fetch('/api/hubspot/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, offer_id: offer.id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setHubspotSyncResult({ imported: data.imported, updated: data.updated })
+      } else {
+        alert('Erreur sync HubSpot: ' + (data.error || 'Erreur inconnue'))
+      }
+    } catch (e: any) {
+      alert('Erreur sync HubSpot: ' + e.message)
+    } finally {
+      setIsSyncingHubspot(false)
+    }
+  }
+
+  // Check if Pipedrive is connected
+  useEffect(() => {
+    const checkPipedrive = async () => {
+      if (!user) return
+      const { data } = await supabase.from('profiles').select('pipedrive_access_token').eq('id', user.id).single()
+      setPipedriveConnected(!!data?.pipedrive_access_token)
+    }
+    checkPipedrive()
+
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('pipedrive_connected') === 'true') {
+      setPipedriveConnected(true)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [user])
+
+  // Load Pipedrive mapping and metadata
+  useEffect(() => {
+    const loadMapping = async () => {
+      if (!user || editedOffer.crmProvider !== 'pipedrive') return
+      const { data } = await supabase.from('pipedrive_stage_mapping').select('*').eq('offer_id', offer.id)
+      if (data) {
+        const m: any = {}
+        data.forEach((row: any) => m[row.closeos_stage] = row.pipedrive_stage_id)
+        setPipedriveMappings(m)
+      }
+    }
+    loadMapping()
+  }, [user, editedOffer.crmProvider, offer.id])
+
+  useEffect(() => {
+    const fetchPipedriveMeta = async () => {
+      if (!user || !pipedriveConnected || editedOffer.crmProvider !== 'pipedrive') return
+      try {
+        const res = await fetch(`/api/pipedrive?action=pipelines&user_id=${user.id}`)
+        const data = await res.json()
+        if (data.pipelines) setPipedrivePipelines(data.pipelines)
+        if (data.stages) setPipedriveStages(data.stages)
+      } catch (err) {
+        console.error('Error fetching Pipedrive meta:', err)
+      }
+    }
+    fetchPipedriveMeta()
+  }, [user, pipedriveConnected, editedOffer.crmProvider])
+
+  const handleConnectPipedrive = () => {
+    const clientId = 'd8a07042c2506596'
+    const redirectUri = 'https://www.closeos.fr/api/pipedrive/callback'
+    const state = user?.id
+    window.location.href = `https://oauth.pipedrive.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`
+  }
+
+  const handleSyncPipedrive = async () => {
+    if (!user) return
+    setIsSyncingPipedrive(true)
+    setPipedriveSyncResult(null)
+    try {
+      const res = await fetch('/api/pipedrive?action=sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, offer_id: offer.id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setPipedriveSyncResult({ imported: data.imported, updated: data.updated })
+      } else {
+        alert('Erreur sync Pipedrive: ' + (data.error || 'Erreur inconnue'))
+      }
+    } catch (e: any) {
+      alert('Erreur sync Pipedrive: ' + e.message)
+    } finally {
+      setIsSyncingPipedrive(false)
+    }
+  }
+
+  const handleUpdatePipedriveMapping = async (coStage: string, pStageId: number) => {
+    const newMappings = { ...pipedriveMappings, [coStage]: pStageId }
+    setPipedriveMappings(newMappings)
+
+    // Auto-save mapping
+    try {
+      await fetch('/api/pipedrive?action=saveMapping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user?.id, offer_id: offer.id, mappings: newMappings })
+      })
+    } catch (err) {
+      console.error('Error saving Pipedrive mapping:', err)
+    }
+  }
+
+  const handleDisconnectPipedrive = async () => {
+    if (!user || !window.confirm('Déconnecter Pipedrive ?')) return
+    await supabase.from('profiles').update({
+      pipedrive_access_token: null,
+      pipedrive_refresh_token: null,
+      pipedrive_token_expires_at: null,
+      pipedrive_api_domain: null,
+    }).eq('id', user.id)
+    setPipedriveConnected(false)
+  }
+
+  // HubSpot Disconnect
+  const handleDisconnectHubspot = async () => {
+    if (!user || !window.confirm('Déconnecter HubSpot ?')) return
+    await supabase.from('profiles').update({
+      hubspot_access_token: null,
+      hubspot_refresh_token: null,
+      hubspot_token_expires_at: null,
+      hubspot_portal_id: null,
+    }).eq('id', user.id)
+    setHubspotConnected(false)
+  }
 
   const handleSave = () => {
     const mainFormula = editedOffer.formulas && editedOffer.formulas.length > 0
@@ -330,9 +505,9 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <h2 className="text-3xl font-black text-white tracking-tight">{offer.name}</h2>
                 )}
                 <span
-                  className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${offer.status === 'active'
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                    : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${offer.status === 'active'
+                    ? 'bg-emerald-500/10 text-emerald-400'
+                    : 'bg-slate-500/10 text-slate-400'
                     }`}
                 >
                   {offer.status === 'active' ? 'Active' : 'Archivée'}
@@ -412,9 +587,9 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               <div className="flex gap-4">
                 <button
                   onClick={() => setEditedOffer({ ...editedOffer, target: 'B2C' })}
-                  className={`flex flex-1 items-center justify-center gap-3 rounded-2xl px-6 py-4 text-sm font-bold transition-all ${editedOffer.target === 'B2C'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                    : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${editedOffer.target === 'B2C'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
                     }`}
                 >
                   <User className="h-5 w-5" />
@@ -422,9 +597,9 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 </button>
                 <button
                   onClick={() => setEditedOffer({ ...editedOffer, target: 'B2B' })}
-                  className={`flex flex-1 items-center justify-center gap-3 rounded-2xl px-6 py-4 text-sm font-bold transition-all ${editedOffer.target === 'B2B'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                    : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${editedOffer.target === 'B2B'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
                     }`}
                 >
                   <Building2 className="h-5 w-5" />
@@ -698,6 +873,55 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               <Receipt className="h-4 w-4" /> Configuration Facturation
             </h3>
 
+            {/* Toggle Commission + Fixe */}
+            <div className="mb-4 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-white">Type de rémunération</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {editedOffer.hasFixedFee ? 'Commission + Fixe' : 'Commission uniquement'}
+                  </p>
+                </div>
+                {isEditing ? (
+                  <button
+                    onClick={() => setEditedOffer({ ...editedOffer, hasFixedFee: !editedOffer.hasFixedFee, fixedFeeAmount: editedOffer.hasFixedFee ? '' : (editedOffer.fixedFeeAmount || '') })}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editedOffer.hasFixedFee ? 'bg-blue-500' : 'bg-slate-700'
+                      }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${editedOffer.hasFixedFee ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                    />
+                  </button>
+                ) : (
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${offer.hasFixedFee
+                    ? 'bg-blue-500/10 text-blue-400'
+                    : 'bg-slate-500/10 text-slate-400'
+                    }`}>
+                    {offer.hasFixedFee ? 'Commission + Fixe' : 'Commission'}
+                  </span>
+                )}
+              </div>
+
+              {/* Champ Montant Fixe (visible uniquement si activé) */}
+              {editedOffer.hasFixedFee && (
+                <div className="mt-3">
+                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Montant Fixe (€)</label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      value={editedOffer.fixedFeeAmount || ''}
+                      onChange={(e) => setEditedOffer({ ...editedOffer, fixedFeeAmount: e.target.value })}
+                      placeholder="Ex: 500"
+                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-emerald-400 font-bold placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="text-sm font-bold text-emerald-400">{parseFloat(offer.fixedFeeAmount || '0').toLocaleString()}€</p>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="space-y-4">
               {/* Raison Sociale */}
               <div>
@@ -841,7 +1065,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     className="w-full appearance-none rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white focus:border-blue-500/50 focus:outline-none transition-all"
                   >
                     <option value="iclosed">iClosed</option>
-                    <option value="hubspot" disabled>HubSpot (Bientôt)</option>
+                    <option value="hubspot">HubSpot</option>
+                    <option value="pipedrive">Pipedrive</option>
                     <option value="other" disabled>Autre / Webhook Custom</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
@@ -849,12 +1074,97 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
-                  <div className={`h-2.5 w-2.5 rounded-full shadow-[0_0_8px] ${offer.crmProvider === 'iclosed' ? 'bg-purple-500 shadow-purple-500/50' : 'bg-slate-500 shadow-slate-500/50'}`} />
-                  <p className="text-sm font-bold text-white tracking-wide">{offer.crmProvider === 'iclosed' ? 'iClosed' : 'Externe'}</p>
+                <div className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${offer.crmProvider === 'iclosed' ? 'bg-purple-500' :
+                    offer.crmProvider === 'hubspot' ? 'bg-orange-500' :
+                      offer.crmProvider === 'pipedrive' ? 'bg-green-500' :
+                        'bg-slate-500'
+                    }`} />
+                  <p className="text-sm font-medium text-white capitalize">
+                    {offer.crmProvider === 'hubspot' ? 'HubSpot' :
+                      offer.crmProvider === 'pipedrive' ? 'Pipedrive' :
+                        offer.crmProvider || 'iClosed'}
+                  </p>
                 </div>
               )}
             </div>
+
+            {/* --- PIPEDRIVE CONFIG --- */}
+            {editedOffer.crmProvider === 'pipedrive' && (
+              <div className="mb-6 space-y-4">
+                {!pipedriveConnected ? (
+                  <button
+                    onClick={handleConnectPipedrive}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-green-600 py-2.5 text-sm font-bold text-white hover:bg-green-500 transition-all shadow-lg"
+                  >
+                    <Link className="h-4 w-4" /> Connecter Pipedrive
+                  </button>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between rounded-lg border border-green-500/20 bg-green-500/5 p-3">
+                      <div className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-400" />
+                        <span className="text-sm font-semibold text-green-400">Pipedrive Connecté</span>
+                      </div>
+                      <button onClick={handleDisconnectPipedrive} className="text-xs text-slate-500 hover:text-white underline">Déconnecter</button>
+                    </div>
+
+                    {/* Sync button */}
+                    <button
+                      onClick={handleSyncPipedrive}
+                      disabled={isSyncingPipedrive}
+                      className="w-full flex items-center justify-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 py-2.5 text-sm font-semibold text-green-300 hover:bg-green-500/20 transition-all disabled:opacity-50"
+                    >
+                      {isSyncingPipedrive ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Synchro en cours...</>
+                      ) : (
+                        <><RefreshCw className="h-4 w-4" /> Synchroniser Pipedrive</>
+                      )}
+                    </button>
+
+                    {/* Mapping UI */}
+                    <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+                      <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Mapping des étapes Pipedrive</h5>
+                      <div className="space-y-4">
+                        {[
+                          { id: 'prospect', name: 'Prospect' },
+                          { id: 'qualified', name: 'Qualifié' },
+                          { id: 'won', name: 'Gagné' },
+                          { id: 'followup', name: 'Follow Up' },
+                          { id: 'noshow', name: 'No Show' },
+                          { id: 'lost', name: 'Perdu' }
+                        ].map(stage => (
+                          <div key={stage.id}>
+                            <label className="mb-1.5 block text-[10px] font-bold uppercase text-slate-500">{stage.name}</label>
+                            <select
+                              value={pipedriveMappings[stage.id] || ''}
+                              onChange={(e) => handleUpdatePipedriveMapping(stage.id, Number(e.target.value))}
+                              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-green-500 focus:outline-none"
+                            >
+                              <option value="">Sélectionner une étape Pipedrive</option>
+                              {pipedrivePipelines.map(pipe => (
+                                <optgroup key={pipe.id} label={pipe.name}>
+                                  {pipedriveStages.filter(s => s.pipeline_id === pipe.id).map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                  ))}
+                                </optgroup>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sync result */}
+                    {pipedriveSyncResult && (
+                      <div className="rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-300">
+                        ✅ {pipedriveSyncResult.imported} deals importés, {pipedriveSyncResult.updated} mis à jour
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 2. SÉLECTION DE LA FORMULE PAR DÉFAUT (NOUVEAU) */}
             <div className="mb-10 rounded-[20px] border border-white/5 bg-slate-900/30 p-6 backdrop-blur-md">
@@ -893,64 +1203,178 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             </div>
 
             {/* 3. Webhook Info (Helper) - AVEC BOUTON COPIER */}
-            <div className="rounded-[24px] border border-blue-500/20 bg-blue-500/5 p-6 backdrop-blur-sm">
-              <div className="flex items-start gap-4">
-                <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
-                  <Info className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-sm font-black text-blue-100 uppercase tracking-widest">Configuration Webhook iClosed</h4>
+            {/* 3. CRM-specific Config */}
+            {editedOffer.crmProvider === 'hubspot' && (
+              /* --- HUBSPOT CONFIG --- */
+              <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-3">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-orange-400 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-orange-100">Configuration HubSpot</h4>
 
-                  {/* --- TEXTE SPÉCIFIQUE ICLOSED --- */}
-                  <p className="mt-2 text-xs text-blue-300/80 leading-relaxed font-medium">
-                    Allez dans <strong>iClosed &gt; Paramètres &gt; Développeur &gt; Webhooks</strong> et collez l'URL ci-dessous.
-                  </p>
-
-                  {/* --- ALERTE PROPRIÉTAIRE --- */}
-                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-orange-500/20 bg-orange-500/10 p-3 text-[10px] text-orange-300 font-medium">
-                    <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
-                    <span>
-                      <strong>Attention :</strong> Si le menu "Développeur" n'apparaît pas, c'est que vous n'avez pas les droits.
-                      Seul le <strong>Propriétaire</strong> de l'organisation iClosed peut configurer les Webhooks.
-                    </span>
-                  </div>
-
-                  {/* URL + COPY BUTTON */}
-                  <div className="mt-6 flex items-center gap-2">
-                    <div className="flex-1 rounded-xl border border-white/5 bg-slate-950 px-4 py-3 font-mono text-[10px] text-slate-400 overflow-x-auto whitespace-nowrap shadow-inner">
-                      {webhookUrl}
-                    </div>
-                    <button
-                      onClick={handleCopyWebhook}
-                      className="rounded-xl border border-white/10 bg-white/5 p-3 text-slate-400 hover:bg-white/10 hover:text-white transition-all active:scale-90 shadow-lg"
-                      title="Copier l'URL"
-                    >
-                      {hasCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {editedOffer.defaultFormulaId && (
-                    <p className="mt-3 text-[10px] text-emerald-400/80 flex items-center gap-1.5 font-black uppercase tracking-widest">
-                      <Check className="h-3 w-3" /> L'ID de la formule est prêt
-                    </p>
-                  )}
-
-                  {/* INTEGRATION SUPADEMO ICLOSED (VISIBLE SEULEMENT EN ÉDITION) */}
-                  {isEditing && (editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
-                    <div className="mt-6 rounded-2xl border border-white/10 overflow-hidden bg-slate-900/50 shadow-2xl">
-                      <div style={{ position: 'relative', boxSizing: 'content-box', width: '100%', aspectRatio: '1.86' }}>
-                        <iframe
-                          src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1"
-                          loading="lazy"
-                          title="Configurer le Webhook iClosed"
-                          allow="clipboard-write"
-                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                        />
+                    {!hubspotConnected ? (
+                      <div className="mt-3">
+                        <p className="text-xs text-orange-300/80 leading-relaxed mb-3">
+                          Connectez votre compte HubSpot pour synchroniser automatiquement vos contacts et deals.
+                        </p>
+                        <button
+                          onClick={handleConnectHubspot}
+                          className="w-full flex justify-center items-center gap-2 rounded-xl bg-orange-600 py-3 text-sm font-bold text-white hover:bg-orange-700 transition-all shadow-lg"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Connecter HubSpot
+                        </button>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        {/* Connected status */}
+                        <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2">
+                          <div className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-emerald-400" />
+                            <span className="text-sm font-semibold text-emerald-400">HubSpot Connecté</span>
+                          </div>
+                          <button onClick={handleDisconnectHubspot} className="text-xs text-slate-500 hover:text-white underline">Déconnecter</button>
+                        </div>
+
+                        {/* Sync button */}
+                        <button
+                          onClick={handleSyncHubspot}
+                          disabled={isSyncingHubspot}
+                          className="w-full flex items-center justify-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-300 hover:bg-orange-500/20 transition-all disabled:opacity-50"
+                        >
+                          {isSyncingHubspot ? (
+                            <><Loader2 className="h-4 w-4 animate-spin" /> Synchronisation en cours...</>
+                          ) : (
+                            <><RefreshCw className="h-4 w-4" /> Synchroniser les contacts HubSpot</>
+                          )}
+                        </button>
+
+                        {/* Sync result */}
+                        {hubspotSyncResult && (
+                          <div className="rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-300">
+                            ✅ {hubspotSyncResult.imported} contacts importés, {hubspotSyncResult.updated} mis à jour
+                          </div>
+                        )}
+
+                        <p className="text-[10px] text-orange-300/60">
+                          La synchronisation importe tous les contacts HubSpot dans le pipeline de cette offre.
+                          Les changements de statut sont synchronisés dans les deux sens.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* --- MAPPING PERSONNALISÉ HUBSPOT --- */}
+                    {isEditing && (
+                      <div className="mt-6 border-t border-orange-500/20 pt-4">
+                        <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-orange-400">
+                          Mapping Personnalisé (Statuts HubSpot)
+                        </h5>
+                        <p className="mb-4 text-[10px] text-orange-300/80 leading-relaxed">
+                          Par défaut, CloseOS gère automatiquement les statuts classiques.
+                          Pour les étapes <strong>Gagné</strong> et <strong>No Show</strong>, indiquez la valeur exacte
+                          du <em>Statut du lead</em> (ou de l'<em>Étape du cycle de vie</em>) configurée dans votre HubSpot.
+                        </p>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="mb-1.5 block text-xs font-medium text-orange-300">
+                              Statut pour "Gagné" (ex: Client, Gagné)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="ex: Client"
+                              value={editedOffer.crmMapping?.hubspotWonStatus || ''}
+                              onChange={(e) => setEditedOffer({
+                                ...editedOffer,
+                                crmMapping: { ...editedOffer.crmMapping, hubspotWonStatus: e.target.value }
+                              })}
+                              className="w-full rounded-lg border border-orange-500/30 bg-orange-950/30 px-3 py-2 text-sm text-orange-100 placeholder-orange-500/50 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-1.5 block text-xs font-medium text-orange-300">
+                              Statut pour "No Show" (ex: No Show, Autre)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="ex: No Show"
+                              value={editedOffer.crmMapping?.hubspotNoShowStatus || ''}
+                              onChange={(e) => setEditedOffer({
+                                ...editedOffer,
+                                crmMapping: { ...editedOffer.crmMapping, hubspotNoShowStatus: e.target.value }
+                              })}
+                              className="w-full rounded-lg border border-orange-500/30 bg-orange-950/30 px-3 py-2 text-sm text-orange-100 placeholder-orange-500/50 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {(editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
+              /* --- ICLOSED CONFIG (webhook) --- */
+              <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-blue-400 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-blue-100">Configuration Webhook iClosed</h4>
+
+                    <p className="mt-1 text-xs text-blue-300/80 leading-relaxed">
+                      Allez dans <strong>iClosed &gt; Paramètres &gt; Développeur &gt; Webhooks</strong> et collez l'URL ci-dessous.
+                    </p>
+
+                    <div className="mt-2 flex items-start gap-2 rounded border border-orange-500/20 bg-orange-500/10 p-2 text-[11px] text-orange-300">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                      <span>
+                        <strong>Attention :</strong> Si le menu "Développeur" n'apparaît pas, c'est que vous n'avez pas les droits.
+                        Seul le <strong>Propriétaire</strong> de l'organisation iClosed peut configurer les Webhooks.
+                      </span>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <div className="flex-1 rounded border border-blue-500/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
+                        {webhookUrl}
+                      </div>
+                      <button
+                        onClick={handleCopyWebhook}
+                        className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                        title="Copier l'URL"
+                      >
+                        {hasCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {editedOffer.defaultFormulaId && (
+                      <p className="mt-2 text-[10px] text-emerald-400/80 flex items-center gap-1">
+                        <Check className="h-3 w-3" /> L'ID de la formule a été ajouté à l'URL.
+                      </p>
+                    )}
+
+                    {isEditing && (editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
+                      <div className="mt-4 rounded-lg border border-blue-500/20 overflow-hidden bg-slate-900/50">
+                        <div style={{ position: 'relative', boxSizing: 'content-box', width: '100%', aspectRatio: '1.86' }}>
+                          <iframe
+                            src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1"
+                            loading="lazy"
+                            title="Configurer le Webhook iClosed"
+                            allow="clipboard-write"
+                            frameBorder="0"
+                            webkitAllowFullScreen
+                            mozAllowFullScreen
+                            allowFullScreen
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Zone D - Resources */}

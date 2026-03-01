@@ -37,7 +37,8 @@ const MeetingsContext = createContext<MeetingsContextType | undefined>(undefined
 export function MeetingsProvider({ children }: { children: ReactNode }) {
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [loading, setLoading] = useState(true)
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const userId = user?.id
 
   const fetchMeetings = async () => {
     if (!user) {
@@ -68,8 +69,46 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    if (authLoading) return
     fetchMeetings()
-  }, [user])
+  }, [userId, authLoading])
+
+  // Supabase Realtime : écoute les changements sur la table meetings
+  useEffect(() => {
+    if (authLoading || !userId) return
+
+    const channel = supabase
+      .channel('meetings-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'meetings', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setMeetings(prev => {
+            if (prev.some(m => m.id === payload.new.id)) return prev
+            return [...prev, payload.new as Meeting].sort((a, b) => a.date.localeCompare(b.date))
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'meetings', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setMeetings(prev =>
+            prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } as Meeting : m)
+          )
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'meetings', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setMeetings(prev => prev.filter(m => m.id !== payload.old.id))
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [userId, authLoading])
 
   const addMeeting = async (meetingData: any) => {
     if (!user) return { data: null, error: 'Non authentifié' }

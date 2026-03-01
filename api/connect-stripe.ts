@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // Initialisation sécurisée
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: '2023-10-16', // Version de l'API Stripe (facultatif mais recommandé)
+  apiVersion: '2026-01-28.clover', // Version de l'API Stripe (facultatif mais recommandé)
 });
 
 const supabase = createClient(
@@ -51,11 +51,11 @@ export default async function handler(req: any, res: any) {
     // 3. On génère le lien magique "Onboarding" de Stripe
     // ⚠️ Assure-toi que ta page factures est bien sur l'URL /invoices ou change le chemin ci-dessous
     const origin = req.headers.origin || 'https://closeos.fr';
-    
+
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${origin}/invoices`, // S'il annule
-      return_url: `${origin}/invoices?stripe_connected=true`, // S'il réussit
+      refresh_url: `${origin}/factures`, // S'il annule
+      return_url: `${origin}/factures?stripe_connected=true`, // S'il réussit
       type: 'account_onboarding',
     });
 

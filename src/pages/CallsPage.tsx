@@ -22,6 +22,7 @@ import { cn } from '../lib/utils'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
 import { useCalls } from '../contexts/CallsContext'
+import { useAuth } from '../contexts/AuthContext'
 import { MaskedText } from '../components/MaskedText'
 import { supabase } from '../lib/supabase'
 
@@ -34,6 +35,7 @@ interface Script {
 
 export function CallsPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { prospects, updateProspect } = useProspects()
   const { contacts: internalContacts } = useInternalContacts()
   const { callHistory, addCallLog, clearHistory, refreshHistory } = useCalls()
@@ -105,7 +107,6 @@ export function CallsPage() {
   // 2. Fonction de chargement
   const fetchUserScripts = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
       const { data, error } = await supabase
@@ -161,7 +162,6 @@ export function CallsPage() {
 
     setIsSavingScript(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
       const scriptData = {

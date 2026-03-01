@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
 // Imports des Contextes
@@ -11,6 +11,7 @@ import { InternalContactsProvider } from './contexts/InternalContactsContext'
 import { CallsProvider } from './contexts/CallsContext'
 import { MessagesProvider } from './contexts/MessagesContext'
 import { NotificationsProvider } from './contexts/NotificationsContext'
+import { GoogleCalendarProvider } from './contexts/GoogleCalendarContext'
 
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
@@ -18,6 +19,7 @@ import { OnboardingModal } from './components/OnboardingModal'
 import { VideoOnboardingModal } from './components/VideoOnboardingModal'
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
+import { LoadingScreen } from './components/LoadingScreen'
 import { CheckoutForm } from './components/CheckoutForm'
 import { CheckoutStarter } from './components/CheckoutStarter'
 import { Return } from './components/Return'
@@ -46,21 +48,27 @@ import { Legal } from './pages/Legal'
 import { WelcomeFounder } from './pages/WelcomeFounder'
 import { ComingSoon } from './pages/ComingSoon'
 import { CGU } from './pages/CGU'
+import { CGV } from './pages/CGV'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
 import { SubscriptionRetention } from './pages/SubscriptionRetention'
+import { SpectatorPage } from './pages/SpectatorPage'
+import { RemindersPage } from './pages/RemindersPage'
+
+// Page d'accueil intelligente : loading screen si auth en cours, sinon landing ou redirect
+function SmartHome() {
+  const { user, loading } = useAuth()
+
+  if (loading) return <LoadingScreen />
+  if (user) return <Navigate to="/dashboard" replace />
+  return <LandingPage />
+}
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    )
-  }
+  if (loading) return <LoadingScreen />
 
   // Si non connecté, redirection vers la landing
   if (!user) {
@@ -89,29 +97,11 @@ function AuthenticatedApp() {
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
   const [isVideoOnboardingOpen, setIsVideoOnboardingOpen] = useState(false)
   const location = useLocation()
-  const navigate = useNavigate()
-
-  // Si un utilisateur est connecté et se retrouve sur la racine '/',
-  // on le redirige automatiquement vers son dashboard.
-  useEffect(() => {
-    if (!loading && user && location.pathname === '/') {
-      navigate('/dashboard', { replace: true })
-    }
-  }, [user, loading, location.pathname, navigate])
 
   // Gestion de la visibilité de la bulle CookieYes
   useEffect(() => {
-    // Pages où la bulle DOIT être visible
-    const visiblePaths = ['/', '/checkout', '/checkout-starter', '/welcome-founder'];
-
-    // On normalise le pathname pour éviter les soucis de trailing slash
-    const normalizedPath = location.pathname.endsWith('/') && location.pathname !== '/'
-      ? location.pathname.slice(0, -1)
-      : location.pathname;
-
-    const isVisiblePath = visiblePaths.some(path =>
-      normalizedPath === path || normalizedPath.startsWith(path + '/')
-    );
+    // La bulle CookieYes n'est visible que sur la landing page
+    const isVisiblePath = location.pathname === '/';
 
     if (isVisiblePath) {
       document.body.classList.add('show-cookieyes');
@@ -138,21 +128,22 @@ function AuthenticatedApp() {
       <Routes>
         <Route
           path="/"
-          element={<LandingPage />}
+          element={<SmartHome />}
         />
 
         {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
+        <Route path="/view/:token" element={<SpectatorPage />} />
         <Route path="/mentions-legales" element={<Legal />} />
         <Route path="/cgu" element={<CGU />} />
+        <Route path="/cgv" element={<CGV />} />
         <Route path="/confidentialite" element={<PrivacyPolicy />} /> {/* 👇 AJOUT ROUTE CONFIDENTIALITÉ */}
 
         {/* Routes Paiement & Onboarding */}
         <Route path="/checkout" element={<CheckoutForm />} />
         <Route path="/checkout-starter" element={<CheckoutStarter />} />
-        <Route path="/return" element={<Return />} />
         <Route path="/return" element={<Return />} />
         <Route
           path="/welcome-founder"
@@ -162,7 +153,6 @@ function AuthenticatedApp() {
             </ProtectedRoute>
           }
         />
-        <Route path="/confirm-email-change" element={<ConfirmEmailUpdate />} />
         <Route path="/confirm-email-change" element={<ConfirmEmailUpdate />} />
         <Route path="/retention" element={<SubscriptionRetention />} />
 
@@ -209,6 +199,7 @@ function AuthenticatedApp() {
           <Route path="kpi" element={<KPIPage />} />
           <Route path="rendez-vous" element={<RendezVous />} />
           <Route path="messages" element={<MessagesPage />} />
+          <Route path="reminders" element={<RemindersPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
 
           {/* Si page inconnue, on renvoie vers le dashboard */}
@@ -240,24 +231,26 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <PrivacyProvider>
-          <ProspectsProvider>
-            <InternalContactsProvider>
-              <OffersProvider>
-                <MeetingsProvider>
-                  <CallsProvider>
-                    <MessagesProvider>
-                      <NotificationsProvider>
-                        <AuthenticatedApp />
-                        <Analytics />
-                      </NotificationsProvider>
-                    </MessagesProvider>
-                  </CallsProvider>
-                </MeetingsProvider>
-              </OffersProvider>
-            </InternalContactsProvider>
-          </ProspectsProvider>
-        </PrivacyProvider>
+        <GoogleCalendarProvider>
+          <PrivacyProvider>
+            <ProspectsProvider>
+              <InternalContactsProvider>
+                <OffersProvider>
+                  <MeetingsProvider>
+                    <CallsProvider>
+                      <MessagesProvider>
+                        <NotificationsProvider>
+                          <AuthenticatedApp />
+                          <Analytics />
+                        </NotificationsProvider>
+                      </MessagesProvider>
+                    </CallsProvider>
+                  </MeetingsProvider>
+                </OffersProvider>
+              </InternalContactsProvider>
+            </ProspectsProvider>
+          </PrivacyProvider>
+        </GoogleCalendarProvider>
       </AuthProvider>
     </BrowserRouter>
   )

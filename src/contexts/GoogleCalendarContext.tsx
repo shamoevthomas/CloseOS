@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { useGoogleLogin } from '@react-oauth/google'
 // @ts-ignore
 import axios from 'axios'
-import { supabase } from '../lib/supabase'
+import { useAuth } from './AuthContext'
 
 interface GoogleCalendarEvent {
   id: string
@@ -25,7 +25,8 @@ interface GoogleCalendarContextType {
   login: () => void
   logout: () => void
   isLoading: boolean
-  refreshEvents: () => void // AJOUT : Pour forcer le rafraîchissement
+  refreshEvents: () => void
+  createEvent: (event: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean }) => Promise<{ success: boolean; hangoutLink?: string }>
 }
 
 const GoogleCalendarContext = createContext<GoogleCalendarContextType | undefined>(undefined)
@@ -34,40 +35,23 @@ const getStorageKey = (userId: string) => `closeros_google_token_${userId}`
 const GOOGLE_BLUE = '#4285F4'
 
 export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
-  const [userId, setUserId] = useState<string | null>(null)
+  const { user, loading: authLoading } = useAuth()
+  const userId = user?.id ?? null
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  // Charger le token depuis localStorage quand l'utilisateur change
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUserId(user.id)
-        const savedToken = localStorage.getItem(getStorageKey(user.id))
-        setAccessToken(savedToken)
-      } else {
-        setUserId(null)
-        setAccessToken(null)
-        setGoogleEvents([])
-      }
+    if (authLoading) return
+    if (userId) {
+      const savedToken = localStorage.getItem(getStorageKey(userId))
+      setAccessToken(savedToken)
+    } else {
+      setAccessToken(null)
+      setGoogleEvents([])
     }
-
-    checkUser()
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        setUserId(session.user.id)
-        setAccessToken(localStorage.getItem(getStorageKey(session.user.id)))
-      } else {
-        setUserId(null)
-        setAccessToken(null)
-        setGoogleEvents([])
-      }
-    })
-
-    return () => authListener.subscription.unsubscribe()
-  }, [])
+  }, [userId, authLoading])
 
   const fetchEvents = async (token: string) => {
     if (!token) return
@@ -95,7 +79,7 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
 
       const events: GoogleCalendarEvent[] = response.data.items.map((item: any) => {
         const isAllDay = !item.start.dateTime && !!item.start.date
-        
+
         // LOGIQUE GOOGLE MEET : Si pas de lieu mais un lien visio, on l'indique
         let finalLocation = item.location || ''
         if (!finalLocation && item.hangoutLink) {
@@ -140,8 +124,58 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
       }
     },
     onError: () => alert('Erreur lors de la connexion à Google Calendar'),
-    scope: 'https://www.googleapis.com/auth/calendar.readonly',
+    scope: 'https://www.googleapis.com/auth/calendar.events',
   })
+
+  const createEvent = async (eventData: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean }): Promise<{ success: boolean; hangoutLink?: string }> => {
+    if (!accessToken) return { success: false }
+    try {
+      const startDateTime = `${eventData.date}T${eventData.startTime}:00`
+      const endDateTime = `${eventData.date}T${eventData.endTime}:00`
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+      const body: any = {
+        summary: eventData.title,
+        description: eventData.description || '',
+        location: eventData.location || '',
+        start: { dateTime: startDateTime, timeZone: tz },
+        end: { dateTime: endDateTime, timeZone: tz },
+      }
+
+      // Demander la création automatique d'un lien Google Meet
+      if (eventData.withGoogleMeet) {
+        body.conferenceData = {
+          createRequest: {
+            requestId: `closeos-${Date.now()}`,
+            conferenceSolutionKey: { type: 'hangoutsMeet' },
+          },
+        }
+      }
+
+      const response = await axios.post(
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+        body,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          params: eventData.withGoogleMeet ? { conferenceDataVersion: 1 } : {},
+        }
+      )
+
+      // Récupérer le lien Meet généré
+      const hangoutLink = response.data?.hangoutLink || response.data?.conferenceData?.entryPoints?.[0]?.uri
+
+      // Rafraîchir les événements après création
+      await fetchEvents(accessToken)
+      return { success: true, hangoutLink }
+    } catch (error: any) {
+      console.error('Erreur création événement Google:', error)
+      if (error.response?.status === 401 && userId) {
+        localStorage.removeItem(getStorageKey(userId))
+        setAccessToken(null)
+      }
+      return { success: false }
+    }
+  }
 
   const logout = () => {
     if (userId) localStorage.removeItem(getStorageKey(userId))
@@ -164,6 +198,7 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
         logout,
         isLoading,
         refreshEvents: () => accessToken && fetchEvents(accessToken),
+        createEvent,
       }}
     >
       {children}

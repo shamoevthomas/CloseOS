@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import Cal, { getCalApi } from "@calcom/embed-react";
+
 import { PricingComparisonTable } from '../components/PricingComparisonTable';
 import {
   ArrowRight,
@@ -9,7 +9,6 @@ import {
   Zap,
   BarChart3,
   ChevronRight,
-  Play,
   XCircle,
   MessageSquare,
   FileText,
@@ -61,7 +60,6 @@ function FAQItem({ question, children }: { question: string, children: React.Rea
 }
 
 export function LandingPage() {
-  const [pricingTab, setPricingTab] = useState<'closer' | 'agency' | 'enterprise'>('closer');
   // État pour le cycle de facturation
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
@@ -76,19 +74,34 @@ export function LandingPage() {
   };
 
   useEffect(() => {
-    (async function () {
-      const cal = await getCalApi({ "namespace": "demo-closeos-decouvrez-la-plateforme" });
-      cal("ui", { "theme": "dark", "hideEventTypeDetails": false, "layout": "month_view" });
-    })();
-  }, [])
+    const params = new URLSearchParams(window.location.search);
+    const via = params.get('via');
+    if (via) {
+      localStorage.setItem('referral_code', via);
+    }
+  }, []);
+
+  useEffect(() => {
+    const s = document.createElement('script');
+    s.src = '/chatbot-widget.js';
+    s.setAttribute('data-chatbot-id', 'acb35233-a6de-4738-9ba0-7e25c82c2a61');
+    s.setAttribute('data-supabase-url', 'https://mkxcircbzcsjamslijde.supabase.co');
+    s.setAttribute('data-supabase-key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1reGNpcmNiemNzamFtc2xpamRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjM0MDAsImV4cCI6MjA4NzQ5OTQwMH0.9-abq1tEFsmjfRkLJjrkXlG3z-9o2HKYjyp5eBIl178');
+    document.body.appendChild(s);
+
+    return () => {
+      if (document.body.contains(s)) {
+        document.body.removeChild(s);
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 overflow-x-hidden">
 
       {/* BANDEAU OFFRE */}
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
-        🚀 OFFRE DE PRÉLANCEMENT : Rejoignez les Founders pour 29€/mois à VIE (au lieu de 69€).
-        <span className="hidden sm:inline"> L'essai gratuit débutera au lancement officiel.</span>
+        🚀 Testez CloseOS gratuitement pendant 10 jours — Aucune carte bancaire requise.
       </div>
 
       {/* NAVBAR */}
@@ -102,7 +115,6 @@ export function LandingPage() {
             <a href="#integrations" className="hover:text-white transition-colors">Intégrations</a>
             <a href="#comparison" className="hover:text-white transition-colors">Comparatif</a>
             <a href="#pricing" className="text-white font-semibold transition-colors">Tarifs</a>
-            <a href="#demo" className="hover:text-white transition-colors">Démo</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </div>
           <div className="flex items-center gap-3">
@@ -113,10 +125,10 @@ export function LandingPage() {
               Se connecter
             </Link>
             <Link
-              to={`/checkout?billing=${billingCycle}`}
+              to="/register"
               className="hidden sm:flex group items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-950 transition-all hover:bg-blue-50 hover:scale-105 active:scale-95"
             >
-              Devenir Founder
+              Commencer gratuitement
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             {/* Hamburger mobile */}
@@ -132,7 +144,8 @@ export function LandingPage() {
 
         {/* Menu mobile déroulant */}
         <div
-          className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}
+          className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+            }`}
         >
           <div className="border-t border-white/5 bg-[#020617]/95 backdrop-blur-xl px-6 py-4 flex flex-col gap-1">
             {[
@@ -210,21 +223,26 @@ export function LandingPage() {
               c'est terminé.
             </span>
             <br />
-            Reprenez 1h de closing par jour.
+            Reprenez 35H de closing par mois.
           </h1>
 
           <p className="mx-auto max-w-2xl text-lg text-slate-400 mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 leading-relaxed">
-            CRM, Agenda, Booking, VoIP, Facturation, Visio, KPIs...<br />
-            <strong className="text-white">CloseOS</strong> réunit TOUT ce dont vous avez besoin pour closer dans une seule interface.
+            CRM, Agenda, Booking, VoIP, Facturation, Visio, KPIs... CloseOS réunit TOUT ce dont vous avez besoin pour closer davantage, et gagner plus.
           </p>
+
+          <div className="flex items-center justify-center gap-2 mb-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-250">
+            <span className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-sm font-medium text-violet-300">
+              🔗 Centralisez tout votre flux. Automatisez chaque étape de votre closing.
+            </span>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
             <Link
-              to={`/checkout?billing=${billingCycle}`}
+              to="/register"
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-blue-600 text-white font-bold text-lg hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-1 flex items-center justify-center gap-2"
             >
               <Zap className="h-5 w-5 fill-current" />
-              Profiter de l'offre Founder
+              Commencer gratuitement
             </Link>
             <Link
               to="/login"
@@ -232,24 +250,34 @@ export function LandingPage() {
             >
               Se connecter
             </Link>
+          </div>
+
+          <div className="mt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
             <a
-              href="#demo"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 font-semibold text-lg hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
+              href="https://www.whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors group"
             >
-              <Play className="h-5 w-5" />
-              Voir la démo
+              <span className="text-green-400">📲</span>
+              <span className="underline underline-offset-2 group-hover:text-green-400 transition-colors">
+                Rejoindre la communauté WhatsApp pour suivre le lancement
+              </span>
             </a>
           </div>
 
-    {/* 👇 AJOUT : SOCIAL PROOF AVEC VRAIES PHOTOS */ }
-    < div className = "mt-8 flex items-center justify-center gap-3 text-sm font-medium text-slate-400 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500" >
+          <p className="text-xs text-slate-500 mt-3">
+            🔒 Aucune carte bancaire requise. 10 jours pour tester sans engagement.
+          </p>
+
+          {/* 👇 AJOUT : SOCIAL PROOF AVEC VRAIES PHOTOS */}
+          <div className="mt-8 flex items-center justify-center gap-3 text-sm font-medium text-slate-400 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
             <div className="flex -space-x-3">
               {[
-                "https://randomuser.me/api/portraits/men/32.jpg",
-                "https://randomuser.me/api/portraits/women/44.jpg",
-                "https://randomuser.me/api/portraits/men/86.jpg",
-                "https://randomuser.me/api/portraits/women/68.jpg",
-                "https://randomuser.me/api/portraits/men/45.jpg"
+                "/U1.jpg",
+                "/U2.jpg",
+                "/U3.jpg",
+                "/U1.png"
               ].map((src, i) => (
                 <div key={i} className="h-8 w-8 rounded-full border-2 border-[#020617] relative z-0 hover:z-10 transition-all hover:scale-110">
                   <img src={src} alt="Closer" className="h-full w-full rounded-full object-cover" />
@@ -260,7 +288,7 @@ export function LandingPage() {
               <div className="flex text-amber-400 gap-0.5">
                 {[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 fill-current" />)}
               </div>
-              <span>Produit validé par <strong className="text-white">+70 closers</strong></span>
+              <span>Produit validé par <strong className="text-white">+150 closers</strong></span>
             </div>
           </div >
 
@@ -356,10 +384,91 @@ export function LandingPage() {
               <p className="text-slate-400 mb-6 max-w-md leading-relaxed">
                 Connectez votre Google Calendar. Vos rendez-vous et créneaux de booking remontent automatiquement dans votre Pipeline et votre Agenda CloseOS.
               </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Sync Bi-directionnelle</span>
-                <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Intégration native</span>
-                <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">Centralisation</span>
+            </div>
+
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-orange-500/30 transition-all duration-500 group hover:bg-slate-900/80">
+              <div className="h-12 w-12 rounded-lg bg-orange-500/20 flex items-center justify-center mb-6 ring-1 ring-orange-500/30">
+                <div className="h-6 w-6 text-orange-400 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Pipeline & Offres</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-4">
+                Vue Kanban fluide. Configurez vos offres (prix, commissions, formules) et laissez l'outil calculer vos gains à chaque deal déplacé.
+              </p>
+            </div>
+
+            <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-violet-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
+              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
+                <Users className="w-64 h-64 text-violet-500" />
+              </div>
+              <div className="relative z-10">
+                <div className="h-12 w-12 rounded-lg bg-violet-500/20 flex items-center justify-center mb-6 ring-1 ring-violet-500/30">
+                  <ArrowRight className="h-6 w-6 text-violet-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">Votre Profil de Closer en Temps Réel</h3>
+                <p className="text-slate-400 mb-6 max-w-lg leading-relaxed">
+                  Générez un lien de partage unique en un clic. Configurez exactement ce que vous voulez exposer : KPIs seuls, Pipeline complet, ou les deux. Protégez-le par mot de passe si besoin.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                  <div className="rounded-xl bg-violet-500/5 border border-violet-500/20 p-4">
+                    <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">🔗 Lien Bio</p>
+                    <p className="text-sm text-slate-400 leading-relaxed">Mettez le lien dans votre bio LinkedIn ou Instagram. Les infopreneurs tombent dessus, voient vos stats, vous contactent.</p>
+                  </div>
+                  <div className="rounded-xl bg-violet-500/5 border border-violet-500/20 p-4">
+                    <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">⚡ Réponse Instantanée</p>
+                    <p className="text-sm text-slate-400 leading-relaxed">"Montre-moi tes performances." Vous envoyez le lien. Fini les captures d'écran, les tableaux Excel et les pavés WhatsApp.</p>
+                  </div>
+                  <div className="rounded-xl bg-violet-500/5 border border-violet-500/20 p-4">
+                    <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">👁️ Suivi Infopreneur</p>
+                    <p className="text-sm text-slate-400 leading-relaxed">Votre infopreneur suit votre pipeline et vos KPIs sans avoir besoin d'un compte. Transparence totale, confiance maximale.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-purple-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
+              <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <CalendarCheck className="w-32 h-32 text-purple-500" />
+              </div>
+              <div className="relative z-10">
+                <div className="h-12 w-12 rounded-lg bg-purple-500/20 flex items-center justify-center mb-6 ring-1 ring-purple-500/30">
+                  <CalendarCheck className="h-6 w-6 text-purple-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Agenda & Booking & Rappel</h3>
+                <p className="text-slate-400 text-sm leading-relaxed mb-4">
+                  Connectez votre Google Calendar. Vos rendez-vous et créneaux de booking remontent automatiquement dans votre Pipeline. Programmez des rappels sur vos appels directement depuis votre pipeline.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-300">Sync Bi-directionnelle</span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-300">Intégration native</span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-300">Rappels intégrés</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-emerald-500/30 transition-all duration-500 group hover:bg-slate-900/80">
+              <div className="h-12 w-12 rounded-lg bg-emerald-500/20 flex items-center justify-center mb-6 ring-1 ring-emerald-500/30">
+                <FileText className="h-6 w-6 text-emerald-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Facturation Auto & Paiement CB</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Générez vos factures de commissions en un clic. Créez des liens de paiement CB sécurisés et envoyez automatiquement la facture à votre infopreneur.
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#E11D48]/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
+              <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Zap className="w-32 h-32 text-[#E11D48]" />
+              </div>
+              <div className="relative z-10">
+                <div className="h-12 w-12 rounded-lg bg-[#E11D48]/20 flex items-center justify-center mb-6 ring-1 ring-[#E11D48]/30">
+                  <Zap className="h-6 w-6 text-[#E11D48]" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Sync CRM</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Synchronisation native avec iClosed, HubSpot et Pipedrive. Oubliez la double saisie manuelle et automatisez votre suivi.
+                </p>
               </div>
             </div>
           </div>
@@ -522,8 +631,9 @@ export function LandingPage() {
         </div>
       </section >
 
-    {/* COMPARISON SECTION */ }
-    < section id = "comparison" className = "py-24 bg-slate-950/50 border-y border-white/5 relative overflow-hidden" >
+
+      {/* COMPARISON SECTION */}
+      <section id="comparison" className="py-24 bg-slate-950/50 border-y border-white/5 relative overflow-hidden">
         <div className="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-96 bg-red-600/10 blur-[100px] rounded-full pointer-events-none" />
         <div className="absolute top-1/2 right-0 -translate-y-1/2 w-96 h-96 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none" />
 
@@ -677,77 +787,47 @@ export function LandingPage() {
         </div>
       </section >
 
-    {/* PRICING SECTION */ }
-    < section id = "pricing" className = "py-32 relative bg-slate-950" >
-      <div className="mx-auto max-w-7xl px-6 relative z-10">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white sm:text-5xl">Rejoignez l'Élite.</h2>
-          <p className="text-slate-400 mt-4 text-lg">Choisissez l'outil qui va doubler votre taux de closing.</p>
-        </div>
-
-        {/* SELECTEUR D'ONGLETS & SWITCH */}
-        <div className="flex flex-col items-center mb-12">
-          <div className="inline-flex p-1 bg-slate-900 rounded-xl border border-slate-800 mb-6">
-            <button
-              onClick={() => setPricingTab('closer')}
-              className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${pricingTab === 'closer'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-            >
-              Closer Indépendant
-            </button>
-            <button
-              onClick={() => setPricingTab('agency')}
-              className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${pricingTab === 'agency'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-            >
-              Agence
-            </button>
-            <button
-              onClick={() => setPricingTab('enterprise')}
-              className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${pricingTab === 'enterprise'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-            >
-              Entreprise / Infopreneur
-            </button>
+      {/* PRICING SECTION */}
+      <section id="pricing" className="py-32 relative bg-slate-950">
+        <div className="mx-auto max-w-7xl px-6 relative z-10">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white sm:text-5xl">Rejoignez l'Élite.</h2>
+            <p className="text-slate-400 mt-4 text-lg">Choisissez l'outil qui va doubler votre taux de closing.</p>
+            <p className="text-white mt-4 text-2xl font-bold">Testez gratuitement 10 jours. Aucune carte bancaire requise.</p>
           </div>
 
-          {/* SWITCH MOIS / ANNÉE */}
-          <div className="flex items-center justify-center gap-4">
-            <span
-              className={`text-sm font-medium cursor-pointer transition-colors ${billingCycle === 'monthly' ? 'text-white' : 'text-slate-500'}`}
-              onClick={() => setBillingCycle('monthly')}
-            >
-              Mensuel
-            </span>
-
-            <button
-              onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-              className="relative w-14 h-7 bg-slate-800 rounded-full p-1 transition-colors duration-200 focus:outline-none border border-slate-700"
-            >
-              <div
-                className={`w-5 h-5 bg-blue-600 rounded-full shadow-md transform transition-transform duration-200 ${billingCycle === 'yearly' ? 'translate-x-7' : 'translate-x-0'
-                  }`}
-              />
-            </button>
-
-            <span
-              className={`text-sm font-medium cursor-pointer transition-colors flex items-center gap-2 ${billingCycle === 'yearly' ? 'text-white' : 'text-slate-500'}`}
-              onClick={() => setBillingCycle('yearly')}
-            >
-              Annuel
-              <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
-                -15%
+          <div className="flex flex-col items-center mb-12">
+            {/* SWITCH MOIS / ANNÉE */}
+            <div className="flex items-center justify-center gap-4">
+              <span
+                className={`text-sm font-medium cursor-pointer transition-colors ${billingCycle === 'monthly' ? 'text-white' : 'text-slate-500'}`}
+                onClick={() => setBillingCycle('monthly')}
+              >
+                Mensuel
               </span>
-            </span>
-          </div>
-          {/* BOUTON COMPARATIF (DÉPLACÉ ICI) */}
-          {pricingTab === 'closer' && (
+
+              <button
+                onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+                className="relative w-14 h-7 bg-slate-800 rounded-full p-1 transition-colors duration-200 focus:outline-none border border-slate-700"
+              >
+                <div
+                  className={`w-5 h-5 bg-blue-600 rounded-full shadow-md transform transition-transform duration-200 ${billingCycle === 'yearly' ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                />
+              </button>
+
+              <span
+                className={`text-sm font-medium cursor-pointer transition-colors flex items-center gap-2 ${billingCycle === 'yearly' ? 'text-white' : 'text-slate-500'}`}
+                onClick={() => setBillingCycle('yearly')}
+              >
+                Annuel
+                <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  -15%
+                </span>
+              </span>
+            </div>
+
+            {/* BOUTON COMPARATIF */}
             <button
               onClick={() => setIsComparisonOpen(true)}
               className="mt-8 px-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition-all border border-slate-700 hover:border-slate-600 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200"
@@ -755,232 +835,143 @@ export function LandingPage() {
               <Sheet className="h-5 w-5" />
               Voir le comparatif détaillé des offres
             </button>
-          )}
-        </div>
+          </div>
 
-        {/* CONTENU DES ONGLETS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start max-w-5xl mx-auto">
-
-          {pricingTab === 'closer' && (
-            <>
-              {/* PLAN STARTER */}
-              <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 flex flex-col h-full opacity-80 hover:opacity-100 transition-opacity animate-in fade-in zoom-in duration-300">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-white">PACK STARTER</h3>
-                  <p className="mt-2 text-slate-400 text-sm">Le système complet pour organiser votre closing et encaisser vos premières commissions.</p>
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-white">{calculatePrice(39)}€</span>
-                    <span className="text-slate-500">/mois</span>
-                  </div>
-                  {billingCycle === 'yearly' && (
-                    <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
-                  )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start max-w-5xl mx-auto">
+            {/* PLAN STARTER */}
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 flex flex-col h-full opacity-80 hover:opacity-100 transition-opacity animate-in fade-in zoom-in duration-300">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-white">PACK STARTER</h3>
+                <p className="mt-2 text-slate-400 text-sm">Le système complet pour organiser votre closing et encaisser vos premières commissions.</p>
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-white">{calculatePrice(39)}€</span>
+                  <span className="text-slate-500">/mois</span>
                 </div>
-                <ul className="space-y-4 mb-8 flex-1">
-                  <li className="flex gap-3 text-sm text-slate-300">
-                    <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                    <span><strong>CRM & Pipeline</strong> illimité</span>
-                  </li>
-                  <li className="flex gap-3 text-sm text-slate-300">
-                    <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                    <span><strong>Agenda & Booking</strong> (Liens de rdv)</span>
-                  </li>
-                  <li className="flex gap-3 text-sm text-slate-300">
-                    <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                    <span><strong>Facturation</strong> (Générateur PDF)</span>
-                  </li>
-                  <li className="flex gap-3 text-sm text-slate-300">
-                    <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                    <span><strong>KPIs Globaux</strong> (CA, Ventes)</span>
-                  </li>
-                </ul>
-                <Link
-                  to={`/checkout-starter?billing=${billingCycle}`}
-                  className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors block"
-                >
-                  Démarrer en Starter
-                </Link>
-                <p className="mt-3 text-[10px] text-center text-slate-600">
-                  1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
-                </p>
+                {billingCycle === 'yearly' && (
+                  <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
+                )}
               </div>
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span><strong>CRM & Pipeline</strong> illimité</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span><strong>Agenda & Booking</strong> (Liens de rdv)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span><strong>Facturation</strong> (Générateur PDF)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span><strong>KPIs Globaux</strong> (CA, Ventes)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span><strong>Rappels programmables</strong></span>
+                </li>
+              </ul>
+              <Link
+                to="/register"
+                className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors block"
+              >
+                Commencer gratuitement
+              </Link>
+              <p className="mt-3 text-[10px] text-center text-slate-600">
+                1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
+              </p>
+            </div>
 
-              {/* PLAN FOUNDER */}
-              <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 scale-105 relative z-10 flex flex-col h-full animate-in fade-in zoom-in duration-300 delay-75">
-                <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
-                  <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                    OFFRE PRÉLANCEMENT
-                  </span>
-                </div>
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-2xl font-bold text-white">PACK FOUNDER</h3>
-                    <Star className="h-5 w-5 text-yellow-400 fill-yellow-400 animate-pulse" />
-                  </div>
-                  <p className="mt-2 text-blue-200 text-sm">L'expérience ultime. Accès à vie, IA et communauté privée.</p>
-                  <div className="mt-4 flex items-baseline gap-2">
-                    <span className="text-5xl font-extrabold text-white">{calculatePrice(29)}€</span>
-                    {/* MODIFICATION 3 : PRIX BARRÉ RESTE 69€ */}
-                    <span className="text-slate-400 line-through text-lg">69€</span>
-                    <span className="text-slate-500">/mois à vie</span>
-                  </div>
-                  {billingCycle === 'yearly' && (
-                    <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
-                  )}
-                </div>
-                <ul className="space-y-4 mb-4 flex-1">
-                  <li className="flex gap-3 text-sm text-white font-medium">
-                    <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <span>Tout ce qui est inclus dans Starter</span>
-                  </li>
-                  <li className="flex gap-3 text-sm text-white font-medium">
-                    <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <span><strong>KPI Avancés</strong> (Evolution, Objectifs)</span>
-                  </li>
-                  <li className="flex gap-3 text-sm text-white font-medium">
-                    <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <span><strong>Call Room</strong> (Scripts & Notes)</span>
-                  </li>
-                  <li className="flex gap-3 text-sm text-white font-medium">
-                    <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <span><strong>Envoi Factures Automatique</strong></span>
-                  </li>
-                  <li className="flex gap-3 text-sm text-white font-medium">
-                    <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <span><strong>Automatisations</strong> (Sync CRM, etc.)</span>
-                  </li>
-                  <li className="flex gap-3 text-sm text-white font-medium">
-                    <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <span><strong>Enregistrement</strong> Vidéo/Audio</span>
-                  </li>
-                  <li className="flex gap-3 text-sm text-white font-medium">
-                    <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <span>Badge "Founder" & Support Prio</span>
-                  </li>
-                </ul>
-
-                <Link
-                  to={`/checkout?billing=${billingCycle}`}
-                  className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-50 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
-                >
-                  Sécuriser ma place à {calculatePrice(29)}€
-                </Link>
-
-                <p className="mt-4 text-xs text-center text-slate-500">
-                  Carte bancaire requise. <strong>Aucun prélèvement avant le lancement officiel</strong> + 7 jours d'essai offerts.
-                </p>
-                <p className="mt-3 text-[10px] text-center text-slate-500/60">
-                  1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
-                </p>
-              </div>
-            </>
-          )}
-
-          {pricingTab === 'agency' && (
-            <div className="col-span-1 md:col-span-2 rounded-3xl border border-indigo-500/30 bg-indigo-950/10 p-10 flex flex-col items-center text-center animate-in fade-in zoom-in duration-300 relative group overflow-hidden">
-              <div className="absolute inset-0 bg-red-600/80 backdrop-blur-[2px] z-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <span className="text-white text-2xl font-bold uppercase tracking-widest border-2 border-white/50 px-6 py-3 rounded-xl bg-red-950/50 -rotate-2">
-                  Prochainement
+            {/* PLAN FOUNDER */}
+            <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 scale-105 relative z-10 flex flex-col h-full animate-in fade-in zoom-in duration-300 delay-75">
+              <div className="absolute -top-3 right-6 flex flex-col items-end gap-1">
+                <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg">
+                  🔥 -58% PRÉLANCEMENT
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-red-500/90 text-white text-[10px] font-bold uppercase tracking-wide">
+                  Offre valable jusqu'au 10 mars
                 </span>
               </div>
-
-              <div className="h-16 w-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center mb-6">
-                <Users className="h-8 w-8 text-indigo-400" />
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-2xl font-bold text-white">PACK FOUNDER</h3>
+                  <Star className="h-5 w-5 text-yellow-400 fill-yellow-400 animate-pulse" />
+                </div>
+                <p className="mt-2 text-blue-200 text-sm">L'expérience ultime. Accès à vie, IA et communauté privée.</p>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-5xl font-extrabold text-white">{calculatePrice(29)}€</span>
+                  <span className="text-slate-400 line-through text-lg">69€</span>
+                  <span className="text-slate-500">/mois à vie</span>
+                </div>
+                {billingCycle === 'yearly' && (
+                  <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
+                )}
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Offre Agence & Réseaux</h3>
-              <p className="text-slate-300 max-w-lg mb-8">
-                Dédiée aux agences de closing. Pilotez plusieurs équipes, gérez l'attribution des leads et analysez la rentabilité de chaque closer en temps réel.
+              <ul className="space-y-4 mb-4 flex-1">
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span>Tout ce qui est inclus dans Starter</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>KPI Avancés</strong> (Evolution, Objectifs)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>Call Room</strong> (Scripts & Notes)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>Envoi Factures Automatique</strong></span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>Automatisations</strong> (Sync CRM, etc.)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>Enregistrement</strong> Vidéo/Audio</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span>Badge "Founder" & Support Prio</span>
+                </li>
+              </ul>
+
+              <Link
+                to="/register"
+                className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-50 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
+              >
+                Commencer gratuitement
+              </Link>
+
+              <p className="mt-4 text-xs text-center text-slate-500">
+                Aucune CB requise. 10 jours gratuits.
               </p>
-              {/* MODIFICATION 4 : GAP AUGMENTÉ */}
-              <div className="grid md:grid-cols-2 gap-10 w-full max-w-2xl mb-10 text-left">
-                <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-indigo-400 shrink-0" />
-                  <span className="text-sm text-slate-300">Dashboard Superviseur</span>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-indigo-400 shrink-0" />
-                  <span className="text-sm text-slate-300">Attribution auto des leads</span>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-indigo-400 shrink-0" />
-                  <span className="text-sm text-slate-300">Facturation centralisée</span>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-indigo-400 shrink-0" />
-                  <span className="text-sm text-slate-300">Onboarding prioritaire</span>
-                </div>
-              </div>
-              <a href="mailto:support@closeos.fr?subject=Demande%20Agence" className="px-8 py-4 rounded-xl bg-white text-indigo-950 font-bold hover:bg-indigo-50 transition-colors">
-                Contacter l'équipe Sales
-              </a>
-            </div>
-          )}
-
-          {pricingTab === 'enterprise' && (
-            <div className="col-span-1 md:col-span-2 rounded-3xl border border-emerald-500/30 bg-emerald-950/10 p-10 flex flex-col items-center text-center animate-in fade-in zoom-in duration-300 relative group overflow-hidden">
-              <div className="absolute inset-0 bg-red-600/80 backdrop-blur-[2px] z-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <span className="text-white text-2xl font-bold uppercase tracking-widest border-2 border-white/50 px-6 py-3 rounded-xl bg-red-950/50 -rotate-2">
-                  Prochainement
-                </span>
-              </div>
-
-              <div className="h-16 w-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center mb-6">
-                <Building2 className="h-8 w-8 text-emerald-400" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Pour Infopreneurs & Entreprises</h3>
-              <p className="text-slate-300 max-w-lg mb-8">
-                Pour les business qui scalent. Management d'équipe centralisé, attribution auto des leads et messagerie interne pour un pilotage à 360°.
+              <p className="mt-3 text-[10px] text-center text-slate-500/60">
+                1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
               </p>
-              {/* MODIFICATION 4 : GAP AUGMENTÉ */}
-              <div className="grid md:grid-cols-2 gap-10 w-full max-w-2xl mb-10 text-left">
-                <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                  <span className="text-sm text-slate-300">Intégration CRM sur-mesure</span>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                  <span className="text-sm text-slate-300">API & Webhooks dédiés</span>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                  <span className="text-sm text-slate-300">SLA & Support 24/7</span>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                  <span className="text-sm text-slate-300">Audit de process offert</span>
-                </div>
-              </div>
-              <a href="mailto:support@closeos.fr?subject=Demande%20Entreprise" className="px-8 py-4 rounded-xl bg-white text-emerald-950 font-bold hover:bg-emerald-50 transition-colors">
-                Parler à un expert
-              </a>
             </div>
-          )}
+          </div>
 
-        </div>
-
-
-        {/* MODIFICATION 5 : ENCART OPTION VOIP + BOUTON COMPARATIF */}
-        {pricingTab === 'closer' && (
           <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-
             {/* Option VoIP */}
             <div className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-900/20 border border-blue-500/30 shadow-lg shadow-blue-500/5">
               <div className="p-2 rounded-lg bg-blue-500/20">
                 <PlusCircle className="h-5 w-5 text-blue-400" />
               </div>
               <div className="text-left">
-                <p className="text-sm font-bold text-white">Option VoIP & Enregistrements</p>
-                <p className="text-xs text-blue-300">
-                  Ajoutez la téléphonie à votre plan pour <span className="text-white font-bold">+{billingCycle === 'yearly' ? '7' : '10'}€/mois</span>
+                <p className="text-sm font-bold text-white">Option VoIP </p>
+                <p className="text-xs text-blue-300 font-bold uppercase tracking-wider">
+                  Arrive prochainement
                 </p>
               </div>
             </div>
-
           </div>
-        )}
-
-      </div>
-      </section >
+        </div>
+      </section>
 
     {/* COMPARISON MODAL */ }
   {
@@ -1007,154 +998,127 @@ export function LandingPage() {
     )
   }
 
-  {/* --- SECTION DEMO / CAL.COM --- */ }
-  <section id="demo" className="py-32 relative bg-slate-900/20 border-t border-white/5">
-    <div className="mx-auto max-w-4xl px-6 text-center">
-      <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-sm font-medium text-blue-300 mb-6">
-        <Video className="h-4 w-4" />
-        Démo Personnalisée
-      </div>
-      <h2 className="text-3xl font-bold text-white sm:text-5xl mb-6">
-        Voyez la machine en action.
-      </h2>
-      <p className="text-lg text-slate-400 mb-12 max-w-2xl mx-auto">
-        Vous avez des doutes ? Prenez 15 min avec moi pour une démo en direct et on regarde ensemble comment CloseOS peut booster votre business.
-      </p>
+      {/* --- FAQ SECTION --- */}
+      <section id="faq" className="py-24 bg-slate-950 relative border-t border-white/5">
+        <div className="mx-auto max-w-3xl px-6 relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">Questions Fréquentes</h2>
+            <p className="text-slate-400 mt-4">Tout ce que vous devez savoir avant de commencer.</p>
+          </div>
 
-      <div className="rounded-3xl border border-slate-800 bg-[#020617] overflow-hidden shadow-2xl shadow-blue-500/10 h-[700px]">
-        <Cal
-          namespace="demo-closeos-decouvrez-la-plateforme"
-          calLink="thomas-sh-ipdmni/demo-closeos-decouvrez-la-plateforme"
-          style={{ width: "100%", height: "100%", overflow: "scroll" }}
-          config={{ "layout": "month_view", "useSlotsViewOnSmallScreen": "true", "theme": "dark" }}
-        />
-      </div>
+          <div className="space-y-4">
+            <FAQItem question="Est-ce que je peux connecter Calendly ?">
+              <p>
+                <strong className="text-white">Non, et c'est un choix assumé.</strong> Calendly impose un abonnement payant pour permettre les intégrations, une pratique que nous trouvons injuste.
+                Pour vous offrir la meilleure expérience sans surcoût, nous avons intégré <strong className="text-white">Cal.com</strong> (la référence Open Source).
+              </p>
+              <p className="mt-2">
+                Résultat : vous profitez d'un système de booking ultra-performant, synchronisé à votre agenda, sans avoir à payer un abonnement "Pro" à Calendly juste pour qu'il accepte de parler à votre CRM.
+              </p>
+            </FAQItem>
 
-      <p className="mt-8 text-sm text-slate-500">
-        Garanti 0% pression commerciale. 100% valeur ajoutée.
-      </p>
-    </div>
-  </section>
+            <FAQItem question="Comment CloseOS s'engage pour l'environnement ?">
+              <p>Nous prônons la <strong className="text-emerald-400">"Performance Responsable"</strong>. Concrètement :</p>
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li><strong className="text-white">Sobriété numérique :</strong> En remplaçant 10 outils par 1 seul, nous réduisons la consommation d'énergie serveur nécessaire à votre activité.</li>
+                <li><strong className="text-white">Action financière :</strong> Nous reversons automatiquement <strong className="text-white">1,5% de votre abonnement</strong> via <em>Stripe Climate</em> pour financer des technologies de pointe d'élimination du CO2. Closer avec nous, c'est aussi contribuer.</li>
+              </ul>
+            </FAQItem>
 
-  {/* --- FAQ SECTION --- */ }
-  <section id="faq" className="py-24 bg-slate-950 relative border-t border-white/5">
-    <div className="mx-auto max-w-3xl px-6 relative z-10">
-      <div className="text-center mb-16">
-        <h2 className="text-3xl font-bold text-white sm:text-4xl">Questions Fréquentes</h2>
-        <p className="text-slate-400 mt-4">Tout ce que vous devez savoir avant de commencer.</p>
-      </div>
+            <FAQItem question="Pourquoi payer CloseOS alors que je peux le faire moi-même sur Excel/Notion ?">
+              <p>
+                Parce que le "bricolage" vous coûte des ventes. Excel n'envoie pas de rappels automatiques, Notion ne génère pas vos liens de visio et ne synchronise pas vos appels.
+              </p>
+              <p className="mt-2">
+                CloseOS n'est pas un simple tableau de note, c'est un <strong className="text-white">système actif</strong> qui élimine 80% de votre administratif. Le temps que vous ne passez plus à configurer vos outils est du temps réinvesti pour signer des contrats.
+              </p>
+            </FAQItem>
 
-      <div className="space-y-4">
-        <FAQItem question="Est-ce que je peux connecter Calendly ?">
-          <p>
-            <strong className="text-white">Non, et c'est un choix assumé.</strong> Calendly impose un abonnement payant pour permettre les intégrations, une pratique que nous trouvons injuste.
-            Pour vous offrir la meilleure expérience sans surcoût, nous avons intégré <strong className="text-white">Cal.com</strong> (la référence Open Source).
+            <FAQItem question="Pourquoi l'offre Founder est-elle à 29€ au lieu de 69€ ?">
+              <p>
+                <strong className="text-white">C'est une offre de lancement limitée.</strong> Nous récompensons nos premiers utilisateurs ("Early Adopters") avec ce tarif préférentiel.
+              </p>
+              <p className="mt-2">
+                En prenant votre accès aujourd'hui, vous <strong className="text-white">bloquez ce prix à vie</strong>. Même quand l'abonnement passera à 69€/mois pour les futurs clients, vous continuerez de payer 29€.
+              </p>
+            </FAQItem>
+
+            <FAQItem question="Est-ce que iClosed est intégré ?">
+              <p>
+                <strong className="text-white">Partiellement.</strong> Contrairement aux standards du marché (HubSpot, Pipedrive), iClosed ne dispose pas d'une API publique ouverte permettant une synchronisation totale.
+              </p>
+              <p className="mt-2">
+                <strong className="text-white">Concrètement :</strong> CloseOS reçoit bien vos nouveaux leads et vos ventes venant d'iClosed (via Webhook), mais ne peut pas aller modifier des informations <em>dans</em> iClosed. La synchronisation se fait donc à sens unique (iClosed vers CloseOS). (L'API arrivera Prochainement)
+              </p>
+            </FAQItem>
+          </div>
+        </div>
+      </section>
+
+      {/* --- CTA FINAL --- */}
+      <section className="relative py-32 overflow-hidden">
+        <div className="absolute inset-0 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+
+        <div className="relative mx-auto max-w-4xl px-6 text-center z-10">
+          <h2 className="text-4xl font-bold text-white mb-6">
+            Arrêtez de payer pour 10 outils.<br />Commencez à closer.
+          </h2>
+          <p className="text-xl text-slate-300 mb-10">
+            Rejoignez l'élite des closers qui utilisent le système tout-en-un CloseOS.
           </p>
-          <p className="mt-2">
-            Résultat : vous profitez d'un système de booking ultra-performant, synchronisé à votre agenda, sans avoir à payer un abonnement "Pro" à Calendly juste pour qu'il accepte de parler à votre CRM.
+          <div className="flex flex-col items-center justify-center gap-4">
+            <Link
+              to="/register"
+              className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-slate-950 font-bold text-lg hover:bg-blue-50 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/10"
+            >
+              Commencer gratuitement
+              <ChevronRight className="h-5 w-5" />
+            </Link>
+            <Link
+              to="/register"
+              className="text-slate-500 hover:text-white text-sm underline transition-colors mt-2"
+            >
+              Ou démarrer avec le Pack Starter
+            </Link>
+          </div>
+          <p className="mt-6 text-sm text-slate-500">
+            10 jours d'essai gratuit. Pas de prélèvement immédiat.
           </p>
-        </FAQItem>
+        </div>
+      </section>
 
-        <FAQItem question="Comment CloseOS s'engage pour l'environnement ?">
-          <p>Nous prônons la <strong className="text-emerald-400">"Performance Responsable"</strong>. Concrètement :</p>
-          <ul className="list-disc pl-5 mt-2 space-y-1">
-            <li><strong className="text-white">Sobriété numérique :</strong> En remplaçant 10 outils par 1 seul, nous réduisons la consommation d'énergie serveur nécessaire à votre activité.</li>
-            <li><strong className="text-white">Action financière :</strong> Nous reversons automatiquement <strong className="text-white">1,5% de votre abonnement</strong> via <em>Stripe Climate</em> pour financer des technologies de pointe d'élimination du CO2. Closer avec nous, c'est aussi contribuer.</li>
-          </ul>
-        </FAQItem>
+      {/* --- FOOTER --- */}
+      <footer className="border-t border-white/5 bg-[#020617] py-12">
+        <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2">
+            <img src="/logo.PNG" alt="CloseOS Logo" className="h-6 w-auto" />
+          </div>
 
-        <FAQItem question="Pourquoi payer CloseOS alors que je peux le faire moi-même sur Excel/Notion ?">
-          <p>
-            Parce que le "bricolage" vous coûte des ventes. Excel n'envoie pas de rappels automatiques, Notion ne génère pas vos liens de visio et ne synchronise pas vos appels.
-          </p>
-          <p className="mt-2">
-            CloseOS n'est pas un simple tableau de note, c'est un <strong className="text-white">système actif</strong> qui élimine 80% de votre administratif. Le temps que vous ne passez plus à configurer vos outils est du temps réinvesti pour signer des contrats.
-          </p>
-        </FAQItem>
+          <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-500">
+            <span>© 2026 CloseOS.fr</span>
+            <span className="hidden sm:inline">•</span>
+            <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</a>
+            <span className="hidden sm:inline">•</span>
+            <a href="/cgu" className="hover:text-white transition-colors">CGU</a>
+            <span className="hidden sm:inline">•</span>
+            <a href="/cgv" className="hover:text-white transition-colors">CGV</a>
+            <span className="hidden sm:inline">•</span>
+            <a href="/confidentialite" className="hover:text-white transition-colors">Politique de Confidentialité</a>
+          </div>
 
-        <FAQItem question="Pourquoi l'offre Founder est-elle à 29€ au lieu de 69€ ?">
-          <p>
-            <strong className="text-white">C'est une offre de lancement limitée.</strong> Nous récompensons nos premiers utilisateurs ("Early Adopters") avec ce tarif préférentiel.
-          </p>
-          <p className="mt-2">
-            En prenant votre accès aujourd'hui, vous <strong className="text-white">bloquez ce prix à vie</strong>. Même quand l'abonnement passera à 69€/mois pour les futurs clients, vous continuerez de payer 29€.
-          </p>
-        </FAQItem>
-
-        <FAQItem question="Est-ce que iClosed est intégré ?">
-          <p>
-            <strong className="text-white">Partiellement.</strong> Contrairement aux standards du marché (HubSpot, Pipedrive), iClosed ne dispose pas d'une API publique ouverte permettant une synchronisation totale.
-          </p>
-          <p className="mt-2">
-            <strong className="text-white">Concrètement :</strong> CloseOS reçoit bien vos nouveaux leads et vos ventes venant d'iClosed (via Webhook), mais ne peut pas aller modifier des informations <em>dans</em> iClosed. La synchronisation se fait donc à sens unique (iClosed vers CloseOS). (L'API arrivera Prochainement)
-          </p>
-        </FAQItem>
-      </div>
-    </div>
-  </section>
-
-  {/* --- CTA FINAL --- */ }
-  <section className="relative py-32 overflow-hidden">
-    <div className="absolute inset-0 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-
-    <div className="relative mx-auto max-w-4xl px-6 text-center z-10">
-      <h2 className="text-4xl font-bold text-white mb-6">
-        Arrêtez de payer pour 10 outils.<br />Commencez à closer.
-      </h2>
-      <p className="text-xl text-slate-300 mb-10">
-        Rejoignez l'élite des closers qui utilisent le système tout-en-un CloseOS.
-      </p>
-      <div className="flex flex-col items-center justify-center gap-4">
-        <Link
-          to={`/checkout?billing=${billingCycle}`}
-          className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-slate-950 font-bold text-lg hover:bg-blue-50 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/10"
-        >
-          Profiter de l'offre Founder ({calculatePrice(29)}€/mois)
-          <ChevronRight className="h-5 w-5" />
-        </Link>
-        <Link
-          to={`/checkout-starter?billing=${billingCycle}`}
-          className="text-slate-500 hover:text-white text-sm underline transition-colors mt-2"
-        >
-          Ou démarrer avec le Pack Starter (39€/mois)
-        </Link>
-      </div>
-      <p className="mt-6 text-sm text-slate-500">
-        7 jours d'essai gratuit. Pas de prélèvement immédiat.
-      </p>
-    </div>
-  </section>
-
-  {/* --- FOOTER --- */ }
-  <footer className="border-t border-white/5 bg-[#020617] py-12">
-    <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-      <div className="flex items-center gap-2">
-        <img src="/logo.PNG" alt="CloseOS Logo" className="h-6 w-auto" />
-      </div>
-
-      <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-500">
-        <span>© 2026 CloseOS.fr</span>
-        <span className="hidden sm:inline">•</span>
-        <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</a>
-        <span className="hidden sm:inline">•</span>
-        <a href="/cgu" className="hover:text-white transition-colors">CGV & CGU</a>
-        <span className="hidden sm:inline">•</span>
-        <a href="/confidentialite" className="hover:text-white transition-colors">Politique de Confidentialité</a>
-      </div>
-
-      <div className="flex gap-6">
-        <a
-          href="https://www.linkedin.com/in/thomas-shamoev-570885237/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-slate-500 hover:text-white transition-colors"
-        >
-          LinkedIn
-        </a>
-        <a href="mailto:support@closeos.fr" className="text-slate-500 hover:text-white transition-colors">support@closeos.fr</a>
-      </div>
-    </div>
-  </footer>
+          <div className="flex gap-6">
+            <a
+              href="https://www.linkedin.com/in/thomas-shamoev-570885237/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-500 hover:text-white transition-colors"
+            >
+              LinkedIn
+            </a>
+            <a href="mailto:support@closeos.fr" className="text-slate-500 hover:text-white transition-colors">support@closeos.fr</a>
+          </div>
+        </div>
+      </footer>
     </div >
   )
 }

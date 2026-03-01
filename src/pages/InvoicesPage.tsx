@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { CreditCard, TrendingUp, DollarSign, Calendar, FileText, Wallet, Building2, Eye, Download, Info, Clock } from 'lucide-react' // 👈 AJOUT IMPORT CLOCK
+import { CreditCard, TrendingUp, DollarSign, Calendar, FileText, Wallet, Building2, Eye, Download, Info, Clock, Zap } from 'lucide-react'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { InvoiceGeneratorModal } from '../components/InvoiceGeneratorModal'
@@ -8,11 +8,14 @@ import { PaymentMethodsModal } from '../components/PaymentMethodsModal'
 import { IssuerProfilesModal } from '../components/IssuerProfilesModal'
 import { StripeConnectModal } from '../components/StripeConnectModal'
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal'
+import { AutoInvoiceConfigModal } from '../components/AutoInvoiceConfigModal'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 
 export function InvoicesPage() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
+  const { user } = useAuth()
 
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -29,6 +32,7 @@ export function InvoicesPage() {
   const [isPaymentMethodsOpen, setIsPaymentMethodsOpen] = useState(false)
   const [isIssuerProfilesOpen, setIsIssuerProfilesOpen] = useState(false)
   const [isStripeConnectOpen, setIsStripeConnectOpen] = useState(false)
+  const [isAutoInvoiceOpen, setIsAutoInvoiceOpen] = useState(false)
 
   // ÉTATS POUR LE NOUVEAU MODAL
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
@@ -50,24 +54,25 @@ export function InvoicesPage() {
   }, [isGeneratorOpen, isDetailOpen])
 
   useEffect(() => {
-    if (searchParams.get('stripe_connected') === 'true') {
+    let isMounted = true;
+    if (searchParams.get('stripe_connected') === 'true' && user) {
       const confirmConnection = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase
-            .from('profiles')
-            .update({ stripe_connected: true })
-            .eq('id', user.id);
+        await supabase
+          .from('profiles')
+          .update({ stripe_connected: true })
+          .eq('id', user.id);
 
-          const newUrl = window.location.pathname;
-          window.history.replaceState({}, document.title, newUrl);
+        if (!isMounted) return;
 
-          setIsStripeConnectOpen(true);
-        }
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+
+        setIsStripeConnectOpen(true);
       };
       confirmConnection();
     }
-  }, [searchParams]);
+    return () => { isMounted = false };
+  }, [searchParams, user?.id]);
 
   const isExpired = (offer: any) => {
     if (!offer.endDate) return false
@@ -120,7 +125,7 @@ export function InvoicesPage() {
 
       if (!isCorrectOffer) return false
 
-      const dealDate = new Date(prospect.lastContact || prospect.dateAdded || prospect.created_at || '')
+      const dealDate = new Date(prospect.lastContact || prospect.dateAdded)
 
       if (prospect.payment_type !== 'installments' && (!prospect.installments || prospect.installments <= 1)) {
         return dealDate >= start && dealDate <= end
@@ -144,7 +149,7 @@ export function InvoicesPage() {
       } else {
         const monthlyValue = fullValue / (prospect.installments || 1)
         let installmentsInPeriod = 0
-        const dealDate = new Date(prospect.lastContact || prospect.dateAdded || prospect.created_at || '')
+        const dealDate = new Date(prospect.lastContact || prospect.dateAdded)
 
         for (let i = 0; i < (prospect.installments || 1); i++) {
           const installmentDate = new Date(dealDate)
@@ -234,7 +239,14 @@ export function InvoicesPage() {
             <h1 className="text-3xl font-extrabold text-white tracking-tight">Factures & Commissions</h1>
             <p className="mt-1 text-slate-400">Générez vos factures et suivez vos commissions</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={() => setIsAutoInvoiceOpen(true)}
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 text-sm font-bold text-white transition-all hover:shadow-lg hover:shadow-amber-500/20 active:scale-95"
+            >
+              <Zap className="h-4 w-4" />
+              Facturation Auto
+            </button>
             <button
               onClick={() => setIsStripeConnectOpen(true)}
               className="flex items-center gap-2 rounded-xl bg-[#635BFF] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#5349E0] hover:shadow-lg hover:shadow-[#635BFF]/20 active:scale-95"
@@ -625,6 +637,12 @@ export function InvoicesPage() {
           isOpen={isDetailOpen}
           onClose={() => setIsDetailOpen(false)}
           onUpdate={fetchInvoices}
+        />
+
+        <AutoInvoiceConfigModal
+          isOpen={isAutoInvoiceOpen}
+          onClose={() => setIsAutoInvoiceOpen(false)}
+          offers={offers}
         />
       </div>
     </div>

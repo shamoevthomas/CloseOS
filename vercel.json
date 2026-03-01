@@ -3,9 +3,57 @@
     {
       "path": "/api/cron/process-deletions",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/generate-invoices",
+      "schedule": "0 8 * * *"
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/hubspot/callback",
+      "destination": "/api/hubspot?action=callback"
+    },
+    {
+      "source": "/api/hubspot/sync",
+      "destination": "/api/hubspot?action=sync"
+    },
+    {
+      "source": "/api/hubspot/push",
+      "destination": "/api/hubspot?action=push"
+    },
+    {
+      "source": "/api/hubspot/refresh",
+      "destination": "/api/hubspot?action=refresh"
+    },
+    {
+      "source": "/api/hubspot/webhook",
+      "destination": "/api/hubspot?action=webhook"
+    },
+    {
+      "source": "/api/pipedrive/callback",
+      "destination": "/api/pipedrive?action=callback"
+    },
+    {
+      "source": "/api/pipedrive/sync",
+      "destination": "/api/pipedrive?action=sync"
+    },
+    {
+      "source": "/api/pipedrive/push",
+      "destination": "/api/pipedrive?action=push"
+    },
+    {
+      "source": "/api/pipedrive/webhook",
+      "destination": "/api/pipedrive?action=webhook"
+    },
+    {
+      "source": "/api/pipedrive/pipelines",
+      "destination": "/api/pipedrive?action=pipelines"
+    },
+    {
+      "source": "/api/pipedrive/saveMapping",
+      "destination": "/api/pipedrive?action=saveMapping"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

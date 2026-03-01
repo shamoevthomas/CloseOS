@@ -16,21 +16,54 @@
   }
 }
 
-/* 
- * CookieYes Visibility Control
- * By default, hide the banner and revisit button anywhere.
- * Show them ONLY when body has .show-cookieyes class.
- */
-.cky-consent-container,
-.cky-btn-revisit-wrapper,
-.cky-revisit-consent,
-.cky-overlay {
+/* Hide CookieYes banner on all pages except landing */
+body.hide-cookieyes .cky-consent-container,
+body.hide-cookieyes .cky-revisit-consent,
+body.hide-cookieyes .cky-btn-revisit-wrapper,
+body.hide-cookieyes [data-cky-tag],
+body.hide-cookieyes #cookieyes {
   display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
-body.show-cookieyes .cky-consent-container,
-body.show-cookieyes .cky-btn-revisit-wrapper,
-body.show-cookieyes .cky-revisit-consent,
-body.show-cookieyes .cky-overlay {
-  display: block !important;
+/* Chatbot visibility overrides */
+#chatbot-widget-panel .cw-msg.bot {
+  color: #0f172a !important;
+  /* text-slate-900 */
+}
+
+#chatbot-widget-panel .cw-input-area input {
+  color: #0f172a !important;
+  /* text-slate-900 */
+}
+
+#chatbot-widget-panel .cw-input-area input::placeholder {
+  color: #64748b !important;
+  /* text-slate-500 */
+}
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-800 rounded-full hover:bg-slate-700;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }

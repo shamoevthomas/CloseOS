@@ -1,10 +1,19 @@
 import { useState } from 'react'
-import { Briefcase, Info, Plus, ChevronRight, LayoutTemplate } from 'lucide-react'
+import { RefreshCw, Plus, Briefcase, Archive, ChevronDown, ChevronUp } from 'lucide-react'
 import { OfferDetailModal, type Offer } from '../components/OfferDetailModal'
 import { useOffers } from '../contexts/OffersContext'
+import { useProspects } from '../contexts/ProspectsContext'
+import { cn } from '../lib/utils'
 
 export function Offers() {
   const { offers, addOffer, updateOffer, deleteOffer } = useOffers()
+  const {
+    syncHubspot,
+    isSyncingHubspot,
+    hubspotConnected,
+    hasHubspotOffer,
+    nextSyncSeconds
+  } = useProspects()
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null)
   const [showArchived, setShowArchived] = useState(false)
 
@@ -72,13 +81,36 @@ export function Offers() {
             </p>
           </div>
 
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 active:scale-95"
-          >
-            <Plus className="h-5 w-5" />
-            Nouvelle Offre
-          </button>
+          <div className="flex items-center gap-3">
+            {/* HubSpot Sync Button */}
+            {hubspotConnected && hasHubspotOffer && (
+              <button
+                onClick={() => syncHubspot()}
+                disabled={isSyncingHubspot}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-bold transition-all shadow-lg",
+                  isSyncingHubspot
+                    ? "bg-orange-500/10 border-orange-500/30 text-orange-400 opacity-70"
+                    : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-orange-500/30 hover:text-orange-400"
+                )}
+                title={`Prochaine synchro : ${Math.floor(nextSyncSeconds / 60)}:${(nextSyncSeconds % 60).toString().padStart(2, '0')}`}
+              >
+                <RefreshCw className={cn("h-4 w-4", isSyncingHubspot && "animate-spin text-orange-400")} />
+                {!isSyncingHubspot && (
+                  <span className="hidden lg:inline">{Math.floor(nextSyncSeconds / 60)}:{(nextSyncSeconds % 60).toString().padStart(2, '0')}</span>
+                )}
+                <span>{isSyncingHubspot ? "Synchro..." : "Synchro HubSpot"}</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 active:scale-95"
+            >
+              <Plus className="h-5 w-5" />
+              Nouvelle Offre
+            </button>
+          </div>
         </div>
 
         {/* Section 1: Offres Actuelles */}
