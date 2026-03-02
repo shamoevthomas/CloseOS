@@ -855,6 +855,36 @@ export function Agenda() {
 
       <div className="relative z-10 flex flex-col h-full min-w-[1000px] w-full gap-8">
         <div className="flex flex-1 flex-col">
+          {/* Alerte Validation Google */}
+          <div className="mb-8 rounded-2xl border border-red-500/20 bg-red-500/5 p-5 backdrop-blur-xl relative group overflow-hidden shadow-2xl shadow-red-950/20">
+            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
+              <CalendarIcon className="h-24 w-24 text-red-500 -rotate-12 translate-x-8 translate-y--4" />
+            </div>
+
+            <div className="relative flex items-start gap-5">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
+                <Sparkles className="h-6 w-6 animate-pulse" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-2 w-2 rounded-full bg-red-500 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  </span>
+                  <p className="text-base font-bold text-white tracking-tight">
+                    Google est en pleine validation de l'outil
+                  </p>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed font-medium">
+                  En attendant, lorsque vous essayez de synchronisez votre agenda : sélectionnez votre compte puis <span className="px-2 py-0.5 rounded bg-slate-800 border border-white/5 font-bold text-red-400">"paramètres avancés"</span> → <span className="px-2 py-0.5 rounded bg-slate-800 border border-white/5 font-bold text-red-400">"accéder à CloseOS"</span> → <span className="px-2 py-0.5 rounded bg-slate-800 border border-white/5 font-bold text-red-400">"continuer"</span>.
+                </p>
+                <div className="mt-3 flex items-center gap-2 text-xs font-bold text-red-400/90 uppercase tracking-widest bg-red-500/5 w-fit px-3 py-1 rounded-full border border-red-500/10">
+                  <span className="w-1 h-1 rounded-full bg-red-500"></span>
+                  Plus que quelques jours avant la validation de Google, ne vous en faites pas !
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
