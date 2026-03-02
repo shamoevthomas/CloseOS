@@ -19,7 +19,6 @@ import { CallSummaryModal, type CallSummaryData } from '../components/CallSummar
 import { NoAnswerModal } from '../components/NoAnswerModal'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
-import { useNotifications } from '../contexts/NotificationsContext'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
 
@@ -106,7 +105,6 @@ export function Dashboard() {
   const navigate = useNavigate()
   const { prospects } = useProspects()
   const { offers } = useOffers()
-  const { notifications } = useNotifications()
   const { meetings } = useMeetings()
   const { googleEvents } = useGoogleCalendar()
 

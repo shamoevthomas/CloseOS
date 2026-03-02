@@ -24,7 +24,6 @@ import {
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState, useEffect } from 'react' // Modification ici : ajout de useEffect
-import { useNotifications } from '../contexts/NotificationsContext'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase' // Ajout de l'import supabase
 
@@ -55,8 +54,6 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const { logout, user } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const { counts, clearBadge } = useNotifications()
-
   // État pour stocker l'avatar récupéré en base de données
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
 

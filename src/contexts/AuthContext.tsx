@@ -1,22 +1,25 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { trackFirstPromoterReferral } from '../lib/firstpromoter';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext<any>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null); // Stocke les données de la table profiles
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const isMountedRef = useRef(true);
+  const initDoneRef = useRef(false);
 
-  // Rôle admin simple : basé uniquement sur l'email
+  // Role admin simple : base uniquement sur l'email
   const isAdmin = user?.email === 'shamoovthomas@gmail.com';
 
-  // Founder : basé sur le statut d'abonnement
+  // Founder : base sur le statut d'abonnement
   const subscriptionStatus = profile?.subscription_status;
   const isFounder = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -26,59 +29,105 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error fetching profile:', error);
-      } else {
+        // Si erreur d'auth, tenter un refresh silencieux
+        if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (!refreshError) {
+            // Reessayer apres refresh
+            const { data: retryData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', userId)
+              .single();
+            if (retryData && isMountedRef.current) {
+              setProfile(retryData);
+              return;
+            }
+          }
+        }
+      } else if (isMountedRef.current) {
         setProfile(data);
       }
     } catch (err) {
       console.error('Exception fetching profile:', err);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
+    isMountedRef.current = true;
     let timeoutId: ReturnType<typeof setTimeout>;
     const SAFETY_TIMEOUT_MS = 5000;
 
     const init = async () => {
       timeoutId = setTimeout(() => {
-        if (isMounted) setLoading(false);
+        if (isMountedRef.current && !initDoneRef.current) {
+          initDoneRef.current = true;
+          setLoading(false);
+        }
       }, SAFETY_TIMEOUT_MS);
 
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Utiliser getUser() pour valider le token cote serveur (pas juste le cache local)
+        const { data: { user: validatedUser }, error } = await supabase.auth.getUser();
         clearTimeout(timeoutId);
 
-        const currentUser = session?.user ?? null;
+        if (!isMountedRef.current) return;
 
-        if (!isMounted) return;
-        setUser(currentUser);
-
-        if (currentUser) {
-          await fetchProfile(currentUser.id);
-        } else {
+        if (error || !validatedUser) {
+          // Pas de session valide - verifier s'il y a un cache local a nettoyer
+          setUser(null);
           setProfile(null);
+        } else {
+          setUser(validatedUser);
+          await fetchProfile(validatedUser.id);
         }
       } catch (err) {
         console.error('Erreur init auth:', err);
         clearTimeout(timeoutId);
-        if (!isMounted) return;
+        if (!isMountedRef.current) return;
         setUser(null);
         setProfile(null);
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMountedRef.current) {
+          initDoneRef.current = true;
+          setLoading(false);
+        }
       }
     };
 
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMountedRef.current) return;
+
       const currentUser = session?.user ?? null;
 
-      if (!isMounted) return;
+      // Gestion explicite des evenements
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
+        // Token rafraichi avec succes - mettre a jour l'user sans tout recharger
+        if (currentUser) {
+          setUser(currentUser);
+          // Pas besoin de refetch le profil a chaque refresh de token
+        }
+        return;
+      }
+
+      // Pour SIGNED_IN et INITIAL_SESSION
+      if (event === 'INITIAL_SESSION' && initDoneRef.current) {
+        // init() a deja gere la session initiale, ignorer le doublon
+        return;
+      }
 
       setUser(currentUser);
 
-      // FirstPromoter : suivi parrainage après connexion Google
+      // FirstPromoter : suivi parrainage apres connexion Google
       if (currentUser && typeof window !== "undefined") {
         const pendingEmail = sessionStorage.getItem("fpr_pending_email");
         if (pendingEmail) {
@@ -89,27 +138,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (currentUser) {
-        // En cas de LOGIN ou TOKEN REFRESH, on recharge le profil
         await fetchProfile(currentUser.id);
       } else {
         setProfile(null);
       }
 
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     });
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
       clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
 
   const login = (credentials: any) => supabase.auth.signInWithPassword(credentials);
   const register = (credentials: any) => supabase.auth.signUp(credentials);
   const loginWithGoogle = () => {
-    // 👇 LOGIQUE DE REDIRECTION FORCÉE
-    // Si on n'est pas en local, on force la redirection vers le domaine officiel
     const redirectTo = window.location.hostname === 'localhost'
       ? 'http://localhost:5173'
       : 'https://closeos.fr';
@@ -127,22 +175,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProfile = async (updates: any) => {
-    // Met à jour auth.users
+    // Met a jour auth.users
     const { data: authData, error: authError } = await supabase.auth.updateUser({
       data: updates
     });
 
     if (authError) return { data: authData, error: authError };
 
-    // Met à jour la table profiles aussi si nécessaire
+    // Met a jour la table profiles aussi si necessaire
     if (user) {
       const { error: profileError } = await supabase
         .from('profiles')
         .update(updates)
         .eq('id', user.id);
 
-      // On recharge le profil local
-      if (!profileError) await fetchProfile(user.id);
+      if (profileError) {
+        console.error('Erreur update profile:', profileError);
+      } else {
+        // Recharger le profil local
+        await fetchProfile(user.id);
+      }
     }
 
     return { data: authData, error: authError };
@@ -156,7 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    // Met à jour l'état local immédiatement pour éviter les redirections indésirables
+    // Met a jour l'etat local immediatement
     setUser(null);
     setProfile(null);
     await supabase.auth.signOut();
@@ -166,10 +218,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{
       isAuthenticated: !!user,
       user,
-      profile,           // Expose le profil complet (avec subscription_status)
-      isAdmin,           // Expose le flag admin
-      isFounder,         // Expose le flag "a payé"
-      subscriptionStatus,// Expose le statut brut
+      profile,
+      isAdmin,
+      isFounder,
+      subscriptionStatus,
       loading,
       login,
       register,
@@ -177,14 +229,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateProfile,
       updatePassword,
       logout,
-      refreshProfile: () => user && fetchProfile(user.id) // Helper pour forcer le rafraîchissement
+      refreshProfile: () => user && fetchProfile(user.id)
     }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// C'est cet export qui manque et cause l'erreur dans ta console
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within AuthProvider');

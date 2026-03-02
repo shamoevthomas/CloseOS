@@ -10,7 +10,7 @@ import { OffersProvider } from './contexts/OffersContext'
 import { InternalContactsProvider } from './contexts/InternalContactsContext'
 import { CallsProvider } from './contexts/CallsContext'
 import { MessagesProvider } from './contexts/MessagesContext'
-import { NotificationsProvider } from './contexts/NotificationsContext'
+import { Toaster } from 'react-hot-toast'
 import { GoogleCalendarProvider } from './contexts/GoogleCalendarContext'
 
 // Imports des Composants
@@ -262,10 +262,26 @@ function App() {
                   <MeetingsProvider>
                     <CallsProvider>
                       <MessagesProvider>
-                        <NotificationsProvider>
                           <AuthenticatedApp />
                           <Analytics />
-                        </NotificationsProvider>
+                          <Toaster
+                            position="top-right"
+                            toastOptions={{
+                              duration: 4000,
+                              style: {
+                                background: '#1e293b',
+                                color: '#e2e8f0',
+                                border: '1px solid #334155',
+                                borderRadius: '12px',
+                              },
+                              error: {
+                                iconTheme: { primary: '#ef4444', secondary: '#1e293b' },
+                              },
+                              success: {
+                                iconTheme: { primary: '#22c55e', secondary: '#1e293b' },
+                              },
+                            }}
+                          />
                       </MessagesProvider>
                     </CallsProvider>
                   </MeetingsProvider>

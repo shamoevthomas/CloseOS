@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
+import { withRetry } from '../lib/supabaseHelpers'
+import toast from 'react-hot-toast'
 
 export interface InternalContact {
   id: number
@@ -34,8 +36,7 @@ export function InternalContactsProvider({ children }: { children: ReactNode }) 
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id
 
-  // 1. Charger les contacts depuis Supabase filtrés par utilisateur
-  const fetchContacts = async () => {
+  const fetchContacts = useCallback(async () => {
     if (!user) {
       setContacts([])
       setLoading(false)
@@ -43,76 +44,82 @@ export function InternalContactsProvider({ children }: { children: ReactNode }) 
     }
 
     setLoading(true)
-    const { data, error } = await supabase
-      .from('internal_contacts')
-      .select('*')
-      .eq('user_id', user.id) // FILTRE : Seulement mes contacts
-      .order('name', { ascending: true })
+    try {
+      const { data, error } = await withRetry(
+        () => supabase.from('internal_contacts').select('*').eq('user_id', user.id).order('name', { ascending: true }),
+        { context: 'LoadInternalContacts' }
+      )
 
-    if (error) {
-      console.error('Erreur lors du chargement des contacts:', error)
-    } else {
+      if (error) {
+        toast.error('Impossible de charger les contacts internes', { id: 'load-contacts' })
+        return
+      }
       setContacts(data || [])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
-  }
+  }, [user])
 
   useEffect(() => {
     if (authLoading) return
     fetchContacts()
-  }, [userId, authLoading])
+  }, [userId, authLoading, fetchContacts])
 
-  // 2. Ajouter un contact lié à l'utilisateur
   const addContact = async (contactData: Omit<InternalContact, 'id' | 'user_id'>) => {
-    if (!user) return { data: null, error: 'Non authentifié' }
+    if (!user) return { data: null, error: 'Non authentifie' }
 
-    const { data, error } = await supabase
-      .from('internal_contacts')
-      .insert([
-        {
-          ...contactData,
-          user_id: user.id, // LIAISON : On attache l'ID de l'utilisateur
-        },
-      ])
-      .select()
+    const { data, error } = await withRetry(
+      () => supabase.from('internal_contacts').insert([{ ...contactData, user_id: user.id }]).select(),
+      { context: 'AddInternalContact' }
+    )
 
-    if (!error && data) {
+    if (error) {
+      toast.error('Impossible de creer le contact.')
+      return { data: null, error }
+    }
+    if (data) {
       setContacts((prev) => [...prev, data[0]])
     }
-    return { data, error }
+    return { data, error: null }
   }
 
-  // 3. Modifier un contact
   const updateContact = async (id: number, updates: Partial<InternalContact>) => {
-    const { error } = await supabase
-      .from('internal_contacts')
-      .update(updates)
-      .eq('id', id)
-      .eq('user_id', user.id) // SÉCURITÉ : On vérifie que c'est bien le nôtre
+    if (!user) return { error: 'Non authentifie' }
 
-    if (!error) {
-      setContacts((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
-      )
+    const { error } = await withRetry(
+      () => supabase.from('internal_contacts').update(updates).eq('id', id).eq('user_id', user.id),
+      { context: 'UpdateInternalContact' }
+    )
+
+    if (error) {
+      toast.error('Impossible de modifier le contact.')
+      return { error }
     }
-    return { error }
+    setContacts((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
+    )
+    return { error: null }
   }
 
-  // 4. Supprimer un contact
   const deleteContact = async (id: number) => {
-    const { error } = await supabase
-      .from('internal_contacts')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id) // SÉCURITÉ : On vérifie que c'est bien le nôtre
+    if (!user) return { error: 'Non authentifie' }
 
-    if (!error) {
-      setContacts((prev) => prev.filter((c) => c.id !== id))
+    const previousContacts = contacts
+    setContacts((prev) => prev.filter((c) => c.id !== id))
+
+    const { error } = await withRetry(
+      () => supabase.from('internal_contacts').delete().eq('id', id).eq('user_id', user.id),
+      { context: 'DeleteInternalContact' }
+    )
+
+    if (error) {
+      setContacts(previousContacts)
+      toast.error('Impossible de supprimer le contact.')
+      return { error }
     }
-    return { error }
+    return { error: null }
   }
 
-  // 5. Recherche locale
   const searchContacts = (query: string): InternalContact[] => {
     if (!query.trim()) return contacts
     const lowerQuery = query.toLowerCase()
@@ -126,15 +133,7 @@ export function InternalContactsProvider({ children }: { children: ReactNode }) 
 
   return (
     <InternalContactsContext.Provider
-      value={{
-        contacts,
-        loading,
-        addContact,
-        updateContact,
-        deleteContact,
-        searchContacts,
-        refreshContacts: fetchContacts,
-      }}
+      value={{ contacts, loading, addContact, updateContact, deleteContact, searchContacts, refreshContacts: fetchContacts }}
     >
       {children}
     </InternalContactsContext.Provider>

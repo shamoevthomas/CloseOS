@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
+import { withRetry } from '../lib/supabaseHelpers'
+import toast from 'react-hot-toast'
 
 export interface CallLog {
   id: number
@@ -31,8 +33,7 @@ export function CallsProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id
 
-  // 1. Charger l'historique des appels depuis Supabase (filtré par utilisateur)
-  const fetchCallHistory = async () => {
+  const fetchCallHistory = useCallback(async () => {
     if (!user) {
       setCallHistory([])
       setLoading(false)
@@ -41,42 +42,41 @@ export function CallsProvider({ children }: { children: ReactNode }) {
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('call_history')
-        .select('*')
-        .eq('user_id', user.id) // SÉCURITÉ : Uniquement mes appels
-        .order('date', { ascending: false }) // Les plus récents en premier
+      const { data, error } = await withRetry(
+        () => supabase.from('call_history').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+        { context: 'LoadCallHistory' }
+      )
 
-      if (error) throw error
+      if (error) {
+        toast.error('Impossible de charger l\'historique des appels', { id: 'load-calls' })
+        return
+      }
       setCallHistory(data || [])
-    } catch (error) {
-      console.error('Erreur lors du chargement de l\'historique des appels:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
+  // Chargement differe pour eviter le burst de requetes au demarrage
   useEffect(() => {
     if (authLoading) return
-    fetchCallHistory()
-  }, [userId, authLoading])
+    const timer = setTimeout(() => fetchCallHistory(), 500)
+    return () => clearTimeout(timer)
+  }, [userId, authLoading, fetchCallHistory])
 
-  // 2. Ajouter un appel à l'historique Cloud
   const addCallLog = async (logData: Omit<CallLog, 'id' | 'user_id'>) => {
-    if (!user) return { data: null, error: 'Non authentifié' }
+    if (!user) return { data: null, error: 'Non authentifie' }
 
     try {
-      const { data, error } = await supabase
-        .from('call_history')
-        .insert([
-          {
-            ...logData,
-            user_id: user.id, // LIAISON : ID de l'utilisateur connecté
-          },
-        ])
-        .select()
+      const { data, error } = await withRetry(
+        () => supabase.from('call_history').insert([{ ...logData, user_id: user.id }]).select(),
+        { context: 'AddCallLog' }
+      )
 
-      if (error) throw error
+      if (error) {
+        toast.error('Impossible d\'enregistrer l\'appel.')
+        return { data: null, error }
+      }
       if (data) setCallHistory((prev) => [data[0], ...prev])
 
       return { data, error: null }
@@ -85,17 +85,19 @@ export function CallsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // 3. Effacer l'historique (Uniquement celui de l'utilisateur actuel)
   const clearHistory = async () => {
-    if (!user) return { error: 'Non authentifié' }
+    if (!user) return { error: 'Non authentifie' }
 
     try {
-      const { error } = await supabase
-        .from('call_history')
-        .delete()
-        .eq('user_id', user.id) // SÉCURITÉ : Ne supprime que mes appels
+      const { error } = await withRetry(
+        () => supabase.from('call_history').delete().eq('user_id', user.id),
+        { context: 'ClearCallHistory' }
+      )
 
-      if (error) throw error
+      if (error) {
+        toast.error('Impossible de vider l\'historique.')
+        return { error }
+      }
       setCallHistory([])
       return { error: null }
     } catch (error) {
@@ -104,15 +106,7 @@ export function CallsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <CallsContext.Provider
-      value={{
-        callHistory,
-        loading,
-        addCallLog,
-        clearHistory,
-        refreshHistory: fetchCallHistory
-      }}
-    >
+    <CallsContext.Provider value={{ callHistory, loading, addCallLog, clearHistory, refreshHistory: fetchCallHistory }}>
       {children}
     </CallsContext.Provider>
   )

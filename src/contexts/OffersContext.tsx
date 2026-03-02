@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
+import { withRetry } from '../lib/supabaseHelpers'
+import toast from 'react-hot-toast'
 
 export interface OfferResource {
   id: string | number
@@ -47,7 +49,6 @@ export interface Offer {
   contacts: OfferContact[]
   formulas?: OfferFormula[]
   notes?: string
-  // CHAMPS DE FACTURATION
   billingName?: string
   billingAddress?: string
   billingCity?: string
@@ -56,14 +57,12 @@ export interface Offer {
   siret?: string
   billingEmail?: string
   billingPhone?: string
-  // CHAMPS COMMISSION + FIXE
   hasFixedFee?: boolean
   fixedFeeAmount?: string
-  // NOUVEAUX CHAMPS CRM
   crmProvider?: 'iclosed' | 'hubspot' | 'pipedrive' | 'other'
   crmApiKey?: string
   crmMapping?: CrmMapping
-  defaultFormulaId?: string // AJOUT : Déclaration du champ dans le type
+  defaultFormulaId?: string
 }
 
 interface OffersContextType {
@@ -82,8 +81,8 @@ export function OffersProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id
+  const channelRef = useRef<any>(null)
 
-  // --- TRADUCTEUR 1 : Base de données -> Application ---
   const mapFromDb = (data: any[]): Offer[] => {
     return data.map(offer => ({
       id: offer.id,
@@ -92,10 +91,8 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       company: offer.company,
       status: offer.status,
       target: offer.target,
-
       startDate: offer.startDate || offer.start_date,
       endDate: offer.endDate || offer.end_date,
-
       price: offer.price,
       commission: offer.commission,
       description: offer.description,
@@ -103,8 +100,6 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       contacts: offer.contacts || [],
       formulas: offer.formulas || [],
       notes: offer.notes,
-
-      // Mapping Facturation
       billingName: offer.billing_name,
       billingAddress: offer.billing_address,
       billingCity: offer.billing_city,
@@ -113,26 +108,18 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       siret: offer.siret,
       billingEmail: offer.billing_email,
       billingPhone: offer.billing_phone,
-
-      // Mapping CRM
       crmProvider: offer.crm_provider || 'iclosed',
       crmApiKey: offer.crm_api_key,
       crmMapping: offer.crm_mapping || {},
-
-      // Mapping Commission + Fixe
       hasFixedFee: offer.has_fixed_fee || false,
       fixedFeeAmount: offer.fixed_fee_amount || '',
-
-      // AJOUT : Lecture de la formule par défaut
       defaultFormulaId: offer.default_formula_id
     }))
   }
 
-  // --- TRADUCTEUR 2 : Application -> Base de données ---
   const mapToDb = (offer: Partial<Offer>) => {
     const dbData: any = { ...offer }
 
-    // Mapping Facturation vers snake_case
     if (offer.billingName !== undefined) dbData.billing_name = offer.billingName
     if (offer.billingAddress !== undefined) dbData.billing_address = offer.billingAddress
     if (offer.billingCity !== undefined) dbData.billing_city = offer.billingCity
@@ -140,20 +127,13 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     if (offer.billingCountry !== undefined) dbData.billing_country = offer.billingCountry
     if (offer.billingEmail !== undefined) dbData.billing_email = offer.billingEmail
     if (offer.billingPhone !== undefined) dbData.billing_phone = offer.billingPhone
-
-    // Mapping CRM vers snake_case
     if (offer.crmProvider !== undefined) dbData.crm_provider = offer.crmProvider
     if (offer.crmApiKey !== undefined) dbData.crm_api_key = offer.crmApiKey
     if (offer.crmMapping !== undefined) dbData.crm_mapping = offer.crmMapping
-
-    // AJOUT : Mapping Formule par défaut vers snake_case
     if (offer.defaultFormulaId !== undefined) dbData.default_formula_id = offer.defaultFormulaId
-
-    // Mapping Commission + Fixe vers snake_case
     if (offer.hasFixedFee !== undefined) dbData.has_fixed_fee = offer.hasFixedFee
     if (offer.fixedFeeAmount !== undefined) dbData.fixed_fee_amount = offer.fixedFeeAmount
 
-    // Nettoyage des clés camelCase pour ne pas polluer
     const keysToRemove = [
       'billingName', 'billingAddress', 'billingCity', 'billingZip',
       'billingCountry', 'billingEmail', 'billingPhone',
@@ -165,8 +145,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     return dbData
   }
 
-  // 1. Charger les offres
-  const fetchOffers = async () => {
+  const fetchOffers = useCallback(async () => {
     if (!user) {
       setOffers([])
       setLoading(false)
@@ -175,29 +154,33 @@ export function OffersProvider({ children }: { children: ReactNode }) {
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('offers')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name', { ascending: true })
+      const { data, error } = await withRetry(
+        () => supabase.from('offers').select('*').eq('user_id', user.id).order('name', { ascending: true }),
+        { context: 'LoadOffers' }
+      )
 
-      if (error) throw error
+      if (error) {
+        toast.error('Impossible de charger les offres', { id: 'load-offers' })
+        return
+      }
       setOffers(mapFromDb(data || []))
-    } catch (error) {
-      console.error('Erreur lors du chargement des offres:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     if (authLoading) return
     fetchOffers()
-  }, [userId, authLoading])
+  }, [userId, authLoading, fetchOffers])
 
-  // Supabase Realtime : écoute les changements sur la table offers
+  // Supabase Realtime avec gestion d'erreur
   useEffect(() => {
     if (authLoading || !userId) return
+
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current)
+    }
 
     const channel = supabase
       .channel('offers-realtime')
@@ -226,24 +209,36 @@ export function OffersProvider({ children }: { children: ReactNode }) {
           setOffers(prev => prev.filter(o => o.id !== payload.old.id))
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.warn('[Realtime] Canal offers en erreur, rechargement...')
+          fetchOffers()
+        }
+      })
 
-    return () => { supabase.removeChannel(channel) }
-  }, [userId, authLoading])
+    channelRef.current = channel
 
-  // 2. Ajouter une offre
+    return () => {
+      supabase.removeChannel(channel)
+      channelRef.current = null
+    }
+  }, [userId, authLoading, fetchOffers])
+
   const addOffer = async (offerData: Omit<Offer, 'id' | 'user_id'>) => {
-    if (!user) return { data: null, error: 'Non authentifié' }
+    if (!user) return { data: null, error: 'Non authentifie' }
 
     try {
       const dbPayload = mapToDb({ ...offerData, user_id: user.id } as Offer)
 
-      const { data, error } = await supabase
-        .from('offers')
-        .insert([dbPayload])
-        .select()
+      const { data, error } = await withRetry(
+        () => supabase.from('offers').insert([dbPayload]).select(),
+        { context: 'AddOffer' }
+      )
 
-      if (error) throw error
+      if (error) {
+        toast.error('Impossible de creer l\'offre. Veuillez reessayer.')
+        return { data: null, error }
+      }
 
       if (data) {
         const newOffer = mapFromDb(data)[0]
@@ -252,51 +247,65 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       }
       return { data: null, error: null }
     } catch (error) {
+      toast.error('Erreur lors de la creation de l\'offre.')
       return { data: null, error }
     }
   }
 
-  // 3. Modifier une offre
   const updateOffer = async (id: number, updates: Partial<Offer>) => {
-    if (!user) return { error: 'Non authentifié' }
+    if (!user) return { error: 'Non authentifie' }
+
+    // Sauvegarder pour rollback
+    const previousOffers = offers
+
+    // Optimistic update
+    setOffers((prev) =>
+      prev.map((offer) => (offer.id === id ? { ...offer, ...updates } : offer))
+    )
 
     try {
       const dbPayload = mapToDb(updates)
 
-      const { error } = await supabase
-        .from('offers')
-        .update(dbPayload)
-        .eq('id', id)
-        .eq('user_id', user.id)
-
-      if (error) throw error
-
-      setOffers((prev) =>
-        prev.map((offer) => (offer.id === id ? { ...offer, ...updates } : offer))
+      const { error } = await withRetry(
+        () => supabase.from('offers').update(dbPayload).eq('id', id).eq('user_id', user.id),
+        { context: 'UpdateOffer' }
       )
+
+      if (error) {
+        setOffers(previousOffers)
+        toast.error('Impossible de modifier l\'offre. Veuillez reessayer.')
+        return { error }
+      }
+
       return { error: null }
     } catch (error) {
-      console.error("Erreur update:", error)
+      setOffers(previousOffers)
+      toast.error('Erreur lors de la modification de l\'offre.')
       return { error }
     }
   }
 
-  // 4. Supprimer une offre
   const deleteOffer = async (id: number) => {
-    if (!user) return { error: 'Non authentifié' }
+    if (!user) return { error: 'Non authentifie' }
+
+    const previousOffers = offers
+    setOffers((prev) => prev.filter((offer) => offer.id !== id))
 
     try {
-      const { error } = await supabase
-        .from('offers')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id)
+      const { error } = await withRetry(
+        () => supabase.from('offers').delete().eq('id', id).eq('user_id', user.id),
+        { context: 'DeleteOffer' }
+      )
 
-      if (error) throw error
+      if (error) {
+        setOffers(previousOffers)
+        toast.error('Impossible de supprimer l\'offre. Veuillez reessayer.')
+        return { error }
+      }
 
-      setOffers((prev) => prev.filter((offer) => offer.id !== id))
       return { error: null }
     } catch (error) {
+      setOffers(previousOffers)
       return { error }
     }
   }

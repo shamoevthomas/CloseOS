@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
+import { withRetry } from '../lib/supabaseHelpers'
+import toast from 'react-hot-toast'
 
 export interface Meeting {
   id: number
@@ -39,8 +41,9 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id
+  const channelRef = useRef<any>(null)
 
-  const fetchMeetings = async () => {
+  const fetchMeetings = useCallback(async () => {
     if (!user) {
       setMeetings([])
       setLoading(false)
@@ -48,34 +51,34 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     }
 
     setLoading(true)
-    const SAFETY_TIMEOUT_MS = 8000
-    const timeoutId = setTimeout(() => setLoading(false), SAFETY_TIMEOUT_MS)
-
     try {
-      const { data, error } = await supabase
-        .from('meetings')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: true })
+      const { data, error } = await withRetry(
+        () => supabase.from('meetings').select('*').eq('user_id', user.id).order('date', { ascending: true }),
+        { context: 'LoadMeetings' }
+      )
 
-      if (error) throw error
+      if (error) {
+        toast.error('Impossible de charger les rendez-vous', { id: 'load-meetings' })
+        return
+      }
       setMeetings(data || [])
-    } catch (error) {
-      console.error('Erreur chargement RDV:', error)
     } finally {
-      clearTimeout(timeoutId)
       setLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     if (authLoading) return
     fetchMeetings()
-  }, [userId, authLoading])
+  }, [userId, authLoading, fetchMeetings])
 
-  // Supabase Realtime : écoute les changements sur la table meetings
+  // Supabase Realtime avec gestion d'erreur
   useEffect(() => {
     if (authLoading || !userId) return
+
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current)
+    }
 
     const channel = supabase
       .channel('meetings-realtime')
@@ -105,13 +108,23 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
           setMeetings(prev => prev.filter(m => m.id !== payload.old.id))
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.warn('[Realtime] Canal meetings en erreur, rechargement...')
+          fetchMeetings()
+        }
+      })
 
-    return () => { supabase.removeChannel(channel) }
-  }, [userId, authLoading])
+    channelRef.current = channel
+
+    return () => {
+      supabase.removeChannel(channel)
+      channelRef.current = null
+    }
+  }, [userId, authLoading, fetchMeetings])
 
   const addMeeting = async (meetingData: any) => {
-    if (!user) return { data: null, error: 'Non authentifié' }
+    if (!user) return { data: null, error: 'Non authentifie' }
 
     try {
       const payload = {
@@ -131,12 +144,15 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
         video_link: meetingData.video_link || null,
       }
 
-      const { data, error } = await supabase
-        .from('meetings')
-        .insert([payload])
-        .select()
+      const { data, error } = await withRetry(
+        () => supabase.from('meetings').insert([payload]).select(),
+        { context: 'AddMeeting' }
+      )
 
-      if (error) throw error
+      if (error) {
+        toast.error('Impossible de creer le rendez-vous. Veuillez reessayer.')
+        return { data: null, error }
+      }
 
       if (data) {
         setMeetings((prev) => [...prev, data[0]].sort((a, b) => a.date.localeCompare(b.date)))
@@ -144,39 +160,55 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
 
       return { data, error: null }
     } catch (error) {
-      console.error('Erreur creation RDV:', error)
+      toast.error('Erreur lors de la creation du rendez-vous.')
       return { data: null, error }
     }
   }
 
   const updateMeeting = async (id: number, updates: Partial<Meeting>) => {
-    if (!user) return { error: 'Non authentifié' }
+    if (!user) return { error: 'Non authentifie' }
+
+    const previousMeetings = meetings
+    setMeetings((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)))
+
     try {
-      const { error } = await supabase
-        .from('meetings')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', user.id)
-      if (error) throw error
-      setMeetings((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)))
+      const { error } = await withRetry(
+        () => supabase.from('meetings').update(updates).eq('id', id).eq('user_id', user.id),
+        { context: 'UpdateMeeting' }
+      )
+
+      if (error) {
+        setMeetings(previousMeetings)
+        toast.error('Impossible de modifier le rendez-vous. Veuillez reessayer.')
+        return { error }
+      }
       return { error: null }
     } catch (error) {
+      setMeetings(previousMeetings)
       return { error }
     }
   }
 
   const deleteMeeting = async (id: number) => {
-    if (!user) return { error: 'Non authentifié' }
+    if (!user) return { error: 'Non authentifie' }
+
+    const previousMeetings = meetings
+    setMeetings((prev) => prev.filter((m) => m.id !== id))
+
     try {
-      const { error } = await supabase
-        .from('meetings')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id)
-      if (error) throw error
-      setMeetings((prev) => prev.filter((m) => m.id !== id))
+      const { error } = await withRetry(
+        () => supabase.from('meetings').delete().eq('id', id).eq('user_id', user.id),
+        { context: 'DeleteMeeting' }
+      )
+
+      if (error) {
+        setMeetings(previousMeetings)
+        toast.error('Impossible de supprimer le rendez-vous. Veuillez reessayer.')
+        return { error }
+      }
       return { error: null }
     } catch (error) {
+      setMeetings(previousMeetings)
       return { error }
     }
   }

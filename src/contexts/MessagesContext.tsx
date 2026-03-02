@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
+import { withRetry } from '../lib/supabaseHelpers'
+import toast from 'react-hot-toast'
 
 export interface Message {
   id: string
@@ -12,7 +14,7 @@ export interface Message {
 export interface Thread {
   id: string
   user_id: string
-  contact_id: number // Lien vers InternalContact ID
+  contact_id: number
   last_message: string
   unread_count: number
   messages: Message[]
@@ -37,8 +39,7 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id
 
-  // 1. Charger les conversations depuis Supabase
-  const fetchThreads = async () => {
+  const fetchThreads = useCallback(async () => {
     if (!user) {
       setThreads([])
       setLoading(false)
@@ -47,27 +48,28 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('message_threads')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
+      const { data, error } = await withRetry(
+        () => supabase.from('message_threads').select('*').eq('user_id', user.id).order('updated_at', { ascending: false }),
+        { context: 'LoadThreads' }
+      )
 
-      if (error) throw error
+      if (error) {
+        toast.error('Impossible de charger les messages', { id: 'load-messages' })
+        return
+      }
       setThreads(data || [])
-    } catch (error) {
-      console.error('Erreur chargement messages:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
+  // Chargement differe pour eviter le burst de requetes au demarrage
   useEffect(() => {
     if (authLoading) return
-    fetchThreads()
-  }, [userId, authLoading])
+    const timer = setTimeout(() => fetchThreads(), 800)
+    return () => clearTimeout(timer)
+  }, [userId, authLoading, fetchThreads])
 
-  // 2. Envoyer un message (et mettre à jour le thread)
   const sendMessage = async (threadId: string, text: string) => {
     if (!user) return
 
@@ -83,30 +85,41 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
 
     const updatedMessages = [...thread.messages, newMessage]
 
-    try {
-      const { error } = await supabase
-        .from('message_threads')
-        .update({
-          messages: updatedMessages,
-          last_message: text,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', threadId)
-        .eq('user_id', user.id)
-
-      if (error) throw error
-
-      setThreads((prev) =>
-        prev.map((t) =>
-          t.id === threadId ? { ...t, messages: updatedMessages, last_message: text } : t
-        )
+    // Optimistic update
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.id === threadId ? { ...t, messages: updatedMessages, last_message: text } : t
       )
+    )
+
+    try {
+      const { error } = await withRetry(
+        () => supabase
+          .from('message_threads')
+          .update({
+            messages: updatedMessages,
+            last_message: text,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', threadId)
+          .eq('user_id', user.id),
+        { context: 'SendMessage' }
+      )
+
+      if (error) {
+        // Rollback
+        setThreads((prev) =>
+          prev.map((t) =>
+            t.id === threadId ? { ...t, messages: thread.messages, last_message: thread.last_message } : t
+          )
+        )
+        toast.error('Impossible d\'envoyer le message.')
+      }
     } catch (error) {
       console.error('Erreur envoi message:', error)
     }
   }
 
-  // 3. Créer une nouvelle conversation
   const createThread = async (contactId: number): Promise<string> => {
     if (!user) return ''
 
@@ -123,37 +136,39 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('message_threads')
-        .insert([newThread])
-        .select()
+      const { data, error } = await withRetry(
+        () => supabase.from('message_threads').insert([newThread]).select(),
+        { context: 'CreateThread' }
+      )
 
-      if (error) throw error
+      if (error) {
+        toast.error('Impossible de creer la conversation.')
+        return ''
+      }
       if (data) {
         setThreads((prev) => [data[0], ...prev])
         return data[0].id
       }
     } catch (error) {
-      console.error('Erreur création thread:', error)
+      console.error('Erreur creation thread:', error)
     }
     return ''
   }
 
-  // 4. Marquer comme lu
   const markAsRead = async (threadId: string) => {
     if (!user) return
 
     try {
-      const { error } = await supabase
-        .from('message_threads')
-        .update({ unread_count: 0 })
-        .eq('id', threadId)
-        .eq('user_id', user.id)
-
-      if (error) throw error
-      setThreads((prev) =>
-        prev.map((t) => (t.id === threadId ? { ...t, unread_count: 0 } : t))
+      const { error } = await withRetry(
+        () => supabase.from('message_threads').update({ unread_count: 0 }).eq('id', threadId).eq('user_id', user.id),
+        { context: 'MarkAsRead' }
       )
+
+      if (!error) {
+        setThreads((prev) =>
+          prev.map((t) => (t.id === threadId ? { ...t, unread_count: 0 } : t))
+        )
+      }
     } catch (error) {
       console.error('Erreur markAsRead:', error)
     }
@@ -165,15 +180,7 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
 
   return (
     <MessagesContext.Provider
-      value={{
-        threads,
-        loading,
-        sendMessage,
-        createThread,
-        markAsRead,
-        getThreadByContactId,
-        refreshThreads: fetchThreads,
-      }}
+      value={{ threads, loading, sendMessage, createThread, markAsRead, getThreadByContactId, refreshThreads: fetchThreads }}
     >
       {children}
     </MessagesContext.Provider>
