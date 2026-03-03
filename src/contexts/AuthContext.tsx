@@ -57,6 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isMountedRef.current = true;
     let timeoutId: ReturnType<typeof setTimeout>;
     const SAFETY_TIMEOUT_MS = 5000;
+    // Track if init() successfully resolved a user
+    let initResolvedUser = false;
 
     const init = async () => {
       timeoutId = setTimeout(() => {
@@ -67,26 +69,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }, SAFETY_TIMEOUT_MS);
 
       try {
-        // Utiliser getUser() pour valider le token cote serveur (pas juste le cache local)
-        const { data: { user: validatedUser }, error } = await supabase.auth.getUser();
+        // Use getSession() first (reads from cache, no navigator.locks issues)
+        // Then validate with getUser() if session exists
+        const { data: { session } } = await supabase.auth.getSession();
         clearTimeout(timeoutId);
 
         if (!isMountedRef.current) return;
 
-        if (error || !validatedUser) {
-          // Pas de session valide - verifier s'il y a un cache local a nettoyer
+        if (!session?.user) {
           setUser(null);
           setProfile(null);
         } else {
-          setUser(validatedUser);
-          await fetchProfile(validatedUser.id);
+          setUser(session.user);
+          initResolvedUser = true;
+          await fetchProfile(session.user.id);
         }
       } catch (err) {
         console.error('Erreur init auth:', err);
         clearTimeout(timeoutId);
         if (!isMountedRef.current) return;
-        setUser(null);
-        setProfile(null);
+        // Don't set user to null on error - let onAuthStateChange recover
       } finally {
         if (isMountedRef.current) {
           initDoneRef.current = true;
@@ -111,17 +113,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (event === 'TOKEN_REFRESHED') {
-        // Token rafraichi avec succes - mettre a jour l'user sans tout recharger
         if (currentUser) {
           setUser(currentUser);
-          // Pas besoin de refetch le profil a chaque refresh de token
         }
         return;
       }
 
-      // Pour SIGNED_IN et INITIAL_SESSION
-      if (event === 'INITIAL_SESSION' && initDoneRef.current) {
-        // init() a deja gere la session initiale, ignorer le doublon
+      // Pour INITIAL_SESSION : ignorer seulement si init() a deja trouve un user
+      // Si init() a echoue ou n'a pas trouve de user, laisser INITIAL_SESSION recuperer
+      if (event === 'INITIAL_SESSION' && initDoneRef.current && initResolvedUser) {
         return;
       }
 
