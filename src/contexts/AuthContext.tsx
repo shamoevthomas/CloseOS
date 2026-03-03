@@ -70,12 +70,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         // Try getUser() first (server-validated, ensures fresh token)
-        // Falls back to getSession() only on AbortError (navigator.locks issue)
+        // Falls back to getSession() on AbortError (navigator.locks issue)
+        // If getUser() returns an error, DON'T wipe user state —
+        // let onAuthStateChange/INITIAL_SESSION handle it from cache
         let resolvedUser: any = null;
+        let getUserSucceeded = false;
 
         try {
-          const { data: { user: validatedUser } } = await supabase.auth.getUser();
-          resolvedUser = validatedUser;
+          const { data: { user: validatedUser }, error: getUserError } = await supabase.auth.getUser();
+          if (!getUserError) {
+            resolvedUser = validatedUser;
+            getUserSucceeded = true;
+          } else {
+            // getUser returned an error (expired token, network, etc.)
+            // Don't force null — INITIAL_SESSION already set user from cache
+            console.warn('getUser() error, deferring to onAuthStateChange:', getUserError.message);
+          }
         } catch (getUserErr: any) {
           // AbortError from navigator.locks - fall back to getSession()
           if (getUserErr?.name === 'AbortError' || getUserErr?.message?.includes('AbortError')) {
@@ -83,25 +93,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
               resolvedUser = session.user;
+              getUserSucceeded = true;
               // Force token refresh so other contexts get a valid token
               supabase.auth.refreshSession().catch(() => {});
             }
-          } else {
-            throw getUserErr;
           }
+          // For any other throw, don't touch state — let INITIAL_SESSION recover
         }
 
         clearTimeout(timeoutId);
         if (!isMountedRef.current) return;
 
-        if (!resolvedUser) {
-          setUser(null);
-          setProfile(null);
-        } else {
-          setUser(resolvedUser);
-          initResolvedUser = true;
-          await fetchProfile(resolvedUser.id);
+        if (getUserSucceeded) {
+          if (resolvedUser) {
+            setUser(resolvedUser);
+            initResolvedUser = true;
+            await fetchProfile(resolvedUser.id);
+          } else {
+            // getUser succeeded but no user = genuinely not logged in
+            setUser(null);
+            setProfile(null);
+          }
         }
+        // If !getUserSucceeded: don't touch user/profile state
+        // INITIAL_SESSION has already (or will) set them from the cached session
       } catch (err) {
         console.error('Erreur init auth:', err);
         clearTimeout(timeoutId);
