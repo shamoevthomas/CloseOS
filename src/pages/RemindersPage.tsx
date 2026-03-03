@@ -35,17 +35,23 @@ function sortReminders(reminders: Reminder[]): Reminder[] {
 }
 
 export function RemindersPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { callHistory } = useCalls()
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
 
   useEffect(() => {
+    // Wait for auth to finish before fetching
+    if (authLoading) return
+
     let isMounted = true
 
     const fetchReminders = async () => {
-      if (!user) return
+      if (!user) {
+        if (isMounted) setLoading(false)
+        return
+      }
       setLoading(true)
       try {
         const { data, error } = await supabase
@@ -65,7 +71,7 @@ export function RemindersPage() {
 
     fetchReminders()
     return () => { isMounted = false }
-  }, [user?.id])
+  }, [user?.id, authLoading])
 
   const handleMarkDone = async (id: number) => {
     setActionLoading(id)

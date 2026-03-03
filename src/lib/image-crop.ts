@@ -3,7 +3,10 @@ export const createImage = (url: string): Promise<HTMLImageElement> =>
         const image = new Image()
         image.addEventListener('load', () => resolve(image))
         image.addEventListener('error', (error) => reject(error))
-        image.setAttribute('crossOrigin', 'anonymous') // needed to avoid cross-origin issues on CodeSandbox
+        // Only set crossOrigin for remote URLs, not data URLs
+        if (!url.startsWith('data:')) {
+            image.setAttribute('crossOrigin', 'anonymous')
+        }
         image.src = url
     })
 
@@ -80,9 +83,26 @@ export default async function getCroppedImg(
     // paste generated rotate image at the top left corner
     ctx.putImageData(data, 0, 0)
 
-    // As a blob
-    return new Promise((resolve) => {
+    // As a blob with timeout safety
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            // Fallback: convert via toDataURL if toBlob never calls back
+            try {
+                const dataUrl = canvas.toDataURL('image/jpeg')
+                const byteString = atob(dataUrl.split(',')[1])
+                const ab = new ArrayBuffer(byteString.length)
+                const ia = new Uint8Array(ab)
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i)
+                }
+                resolve(new Blob([ab], { type: 'image/jpeg' }))
+            } catch {
+                reject(new Error('Impossible de créer l\'image recadrée.'))
+            }
+        }, 5000)
+
         canvas.toBlob((file) => {
+            clearTimeout(timeout)
             resolve(file)
         }, 'image/jpeg')
     })

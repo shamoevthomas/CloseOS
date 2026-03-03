@@ -25,6 +25,7 @@ import {
 } from 'recharts'
 import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import { CloseOSBadge } from '../components/CloseOSBadge'
 import { EmailCapturePopup } from '../components/EmailCapturePopup'
 
@@ -109,6 +110,7 @@ const getDisplayName = (p: SpectatorProspect) => {
 
 export function SpectatorPage() {
   const { token } = useParams<{ token: string }>()
+  const { loading: authLoading } = useAuth()
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [data, setData] = useState<SpectatorData | null>(null)
@@ -120,7 +122,10 @@ export function SpectatorPage() {
   const [activeTab, setActiveTab] = useState<'pipeline' | 'kpi'>('pipeline')
 
   // ====== Single useEffect for initial load ======
+  // Wait for auth to finish initializing so the Supabase client's JWT is resolved
   useEffect(() => {
+    if (authLoading) return
+
     if (!token) {
       setError('Lien invalide.')
       setStatus('error')
@@ -165,7 +170,7 @@ export function SpectatorPage() {
           return
         }
 
-        if (spectatorResult?.error) {
+        if (spectatorResult?.error || !spectatorResult) {
           setError('Ce lien n\'est plus actif ou n\'existe pas.')
           setStatus('error')
           return
@@ -187,7 +192,7 @@ export function SpectatorPage() {
 
     init()
     return () => { cancelled = true }
-  }, [token])
+  }, [token, authLoading])
 
   // ====== Auto-refresh ======
   useEffect(() => {
@@ -589,66 +594,77 @@ function PipelineView({ prospects, pipelineByStage }: {
   prospects: SpectatorProspect[]
   pipelineByStage: Record<string, SpectatorProspect[]>
 }) {
+  // First row: Prospect, Qualifié, Gagné — Second row: Follow Up, No Show, Perdu
+  const topRow = STAGES.filter(s => ['prospect', 'qualified', 'won'].includes(s.id))
+  const bottomRow = STAGES.filter(s => ['followup', 'noshow', 'lost'].includes(s.id))
+
+  const renderColumn = (stage: typeof STAGES[number]) => {
+    const deals = pipelineByStage[stage.id] || []
+    return (
+      <div key={stage.id} className="flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 min-w-0">
+        <div className="border-b border-slate-800 p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.color)} />
+              <h3 className="text-sm font-semibold text-slate-200">{stage.name}</h3>
+            </div>
+            <span className={cn(
+              'flex h-6 min-w-[24px] items-center justify-center rounded-full px-2 text-xs font-bold',
+              deals.length > 0 ? `${stage.textColor} bg-slate-800` : 'text-slate-600 bg-slate-800/50'
+            )}>
+              {deals.length}
+            </span>
+          </div>
+        </div>
+        <div className="space-y-2 p-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+          {deals.length === 0 && (
+            <div className="flex h-20 items-center justify-center rounded-lg border border-dashed border-slate-800/50 bg-slate-900/20">
+              <span className="text-xs text-slate-600">Vide</span>
+            </div>
+          )}
+          {deals.map(deal => {
+            const isB2B = deal.company && deal.company !== 'N/A'
+            const displayName = getDisplayName(deal)
+            return (
+              <div key={deal.id} className="relative rounded-lg border border-slate-800 bg-slate-800/40 p-3 transition-all hover:border-slate-700 hover:bg-slate-800/60">
+                <div className={cn('absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-60', stage.color)} />
+                <div className="pl-3">
+                  <h4 className="text-sm font-medium text-slate-200 truncate">
+                    {isB2B ? deal.company : displayName}
+                  </h4>
+                  <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                    <User className="h-3 w-3" />
+                    <span className="truncate">{isB2B ? displayName : (deal.offer || '')}</span>
+                  </div>
+                  {deal.value > 0 && (
+                    <div className="mt-2 pt-2 border-t border-slate-700/50">
+                      <span className="text-xs font-semibold text-blue-400">
+                        {formatCurrency(deal.value)}€
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-base font-bold text-white">Pipeline</h2>
         <span className="text-xs text-slate-500">{prospects.length} prospects au total</span>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-        {STAGES.map(stage => {
-          const deals = pipelineByStage[stage.id] || []
-          return (
-            <div key={stage.id} className="w-64 shrink-0 flex flex-col rounded-xl border border-slate-800 bg-slate-900/50">
-              <div className="border-b border-slate-800 p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.color)} />
-                    <h3 className="text-sm font-semibold text-slate-200">{stage.name}</h3>
-                  </div>
-                  <span className={cn(
-                    'flex h-6 min-w-[24px] items-center justify-center rounded-full px-2 text-xs font-bold',
-                    deals.length > 0 ? `${stage.textColor} bg-slate-800` : 'text-slate-600 bg-slate-800/50'
-                  )}>
-                    {deals.length}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-2 p-3 max-h-[400px] overflow-y-auto custom-scrollbar">
-                {deals.length === 0 && (
-                  <div className="flex h-20 items-center justify-center rounded-lg border border-dashed border-slate-800/50 bg-slate-900/20">
-                    <span className="text-xs text-slate-600">Vide</span>
-                  </div>
-                )}
-                {deals.map(deal => {
-                  const isB2B = deal.company && deal.company !== 'N/A'
-                  const displayName = getDisplayName(deal)
-                  return (
-                    <div key={deal.id} className="relative rounded-lg border border-slate-800 bg-slate-800/40 p-3 transition-all hover:border-slate-700 hover:bg-slate-800/60">
-                      <div className={cn('absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-60', stage.color)} />
-                      <div className="pl-3">
-                        <h4 className="text-sm font-medium text-slate-200 truncate">
-                          {isB2B ? deal.company : displayName}
-                        </h4>
-                        <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-                          <User className="h-3 w-3" />
-                          <span className="truncate">{isB2B ? displayName : (deal.offer || '')}</span>
-                        </div>
-                        {deal.value > 0 && (
-                          <div className="mt-2 pt-2 border-t border-slate-700/50">
-                            <span className="text-xs font-semibold text-blue-400">
-                              {formatCurrency(deal.value)}€
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {topRow.map(renderColumn)}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {bottomRow.map(renderColumn)}
+        </div>
       </div>
     </div>
   )

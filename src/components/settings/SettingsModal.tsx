@@ -74,10 +74,10 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
         setFormData(prev => ({
           ...prev,
-          full_name: user.user_metadata?.full_name || data?.full_name || '',
-          phone: user.user_metadata?.phone || data?.phone || '',
-          role: user.user_metadata?.role || data?.role || '',
-          avatar_url: user.user_metadata?.avatar_url || data?.avatar_url || '',
+          full_name: data?.full_name || user.user_metadata?.full_name || '',
+          phone: data?.phone || user.user_metadata?.phone || '',
+          role: data?.role || user.user_metadata?.role || '',
+          avatar_url: data?.avatar_url || user.user_metadata?.avatar_url || '',
           deletion_scheduled_at: data?.deletion_scheduled_at || null
         }))
       }
@@ -122,12 +122,14 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
   };
 
   const showCroppedImage = async () => {
-    try {
-      setUploading(true)
-      setMessage({ type: '', text: '' })
+    if (!croppedAreaPixels || !imageSrc || !user?.id) return;
 
+    setUploading(true)
+    setMessage({ type: '', text: '' })
+
+    try {
       const croppedImageBlob = await getCroppedImg(
-        imageSrc!,
+        imageSrc,
         croppedAreaPixels
       );
 
@@ -135,34 +137,34 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
         throw new Error("Erreur lors de la création de l'image.");
       }
 
-      const fileName = `${user?.id}-${Math.random()}.jpg`;
-      const filePath = `${fileName}`;
+      const fileName = `${user.id}-${Math.random()}.jpg`;
       const file = new File([croppedImageBlob], fileName, { type: "image/jpeg" });
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file)
+        .upload(fileName, file)
 
       if (uploadError) throw uploadError
 
       const { data: urlData } = supabase.storage
         .from('avatars')
-        .getPublicUrl(filePath)
+        .getPublicUrl(fileName)
 
+      const publicUrl = urlData.publicUrl
+
+      // Update profiles table directly (single source of truth)
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: urlData.publicUrl })
-        .eq('id', user?.id)
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id)
 
       if (updateError) throw updateError
 
-      await updateProfile({
-        avatar_url: urlData.publicUrl
-      })
+      // Update auth metadata separately (non-blocking)
+      supabase.auth.updateUser({ data: { avatar_url: publicUrl } }).catch(() => {})
 
-      setFormData(prev => ({ ...prev, avatar_url: urlData.publicUrl }))
+      setFormData(prev => ({ ...prev, avatar_url: publicUrl }))
       setMessage({ type: 'success', text: 'Photo de profil mise à jour !' })
-
       setImageSrc(null); // Close cropper
 
     } catch (error: any) {
