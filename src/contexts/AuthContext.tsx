@@ -158,9 +158,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = (credentials: any) => supabase.auth.signInWithPassword(credentials);
   const register = (credentials: any) => supabase.auth.signUp(credentials);
   const loginWithGoogle = () => {
-    const redirectTo = window.location.hostname === 'localhost'
-      ? 'http://localhost:5173'
-      : 'https://closeos.fr';
+    // Use window.location.origin to always match the current domain (www or non-www)
+    const redirectTo = window.location.origin;
 
     return supabase.auth.signInWithOAuth({
       provider: 'google',

@@ -25,7 +25,6 @@ import {
 } from 'recharts'
 import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
-import { useAuth } from '../contexts/AuthContext'
 import { CloseOSBadge } from '../components/CloseOSBadge'
 import { EmailCapturePopup } from '../components/EmailCapturePopup'
 
@@ -110,7 +109,6 @@ const getDisplayName = (p: SpectatorProspect) => {
 
 export function SpectatorPage() {
   const { token } = useParams<{ token: string }>()
-  const { loading: authLoading } = useAuth()
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [data, setData] = useState<SpectatorData | null>(null)
@@ -122,10 +120,7 @@ export function SpectatorPage() {
   const [activeTab, setActiveTab] = useState<'pipeline' | 'kpi'>('pipeline')
 
   // ====== Single useEffect for initial load ======
-  // Wait for auth to finish initializing so the Supabase client's JWT is resolved
   useEffect(() => {
-    if (authLoading) return
-
     if (!token) {
       setError('Lien invalide.')
       setStatus('error')
@@ -133,6 +128,7 @@ export function SpectatorPage() {
     }
 
     let cancelled = false
+    let retried = false
 
     const init = async () => {
       try {
@@ -141,6 +137,13 @@ export function SpectatorPage() {
         })
 
         if (cancelled) return
+
+        // If auth error (expired JWT), refresh session and retry once
+        if (checkError && !retried) {
+          retried = true
+          await supabase.auth.refreshSession()
+          return init()
+        }
 
         if (checkError || checkResult?.error === 'invalid_token') {
           setError('Ce lien n\'est plus actif ou n\'existe pas.')
@@ -192,7 +195,7 @@ export function SpectatorPage() {
 
     init()
     return () => { cancelled = true }
-  }, [token, authLoading])
+  }, [token])
 
   // ====== Auto-refresh ======
   useEffect(() => {
