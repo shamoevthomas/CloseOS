@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react'
-import { Bell, Trash2, Check, Clock, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Bell, Trash2, Check, Clock, AlertTriangle, CheckCircle2, Loader2, Plus, X, Search, User } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useCalls } from '../contexts/CallsContext'
+import { useProspects } from '../contexts/ProspectsContext'
+import toast from 'react-hot-toast'
 
 interface Reminder {
   id: number
   user_id: string
   call_id: number | null
+  prospect_id: number | null
   title: string
   description: string | null
   reminder_date: string
@@ -27,7 +30,6 @@ function sortReminders(reminders: Reminder[]): Reminder[] {
   return [...reminders].sort((a, b) => {
     const statusA = getStatus(a)
     const statusB = getStatus(b)
-    // Overdue first, then upcoming, then done
     const order: Record<ReminderStatus, number> = { overdue: 0, upcoming: 1, done: 2 }
     if (order[statusA] !== order[statusB]) return order[statusA] - order[statusB]
     return new Date(a.reminder_date).getTime() - new Date(b.reminder_date).getTime()
@@ -37,12 +39,13 @@ function sortReminders(reminders: Reminder[]): Reminder[] {
 export function RemindersPage() {
   const { user, loading: authLoading } = useAuth()
   const { callHistory } = useCalls()
+  const { prospects } = useProspects()
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   useEffect(() => {
-    // Wait for auth to finish before fetching
     if (authLoading) return
 
     let isMounted = true
@@ -109,10 +112,42 @@ export function RemindersPage() {
     }
   }
 
+  const handleCreate = async (data: { title: string; description: string; reminder_date: string; prospect_id: number | null }) => {
+    if (!user) return
+    try {
+      const { data: newReminder, error } = await supabase
+        .from('reminders')
+        .insert([{
+          user_id: user.id,
+          title: data.title,
+          description: data.description || null,
+          reminder_date: data.reminder_date,
+          prospect_id: data.prospect_id,
+          is_done: false,
+        }])
+        .select()
+        .single()
+
+      if (error) throw error
+      setReminders(prev => [...prev, newReminder])
+      setShowCreateModal(false)
+      toast.success('Rappel créé')
+    } catch (error) {
+      console.error('Erreur création rappel:', error)
+      toast.error('Impossible de créer le rappel')
+    }
+  }
+
   const getCallName = (callId: number | null): string | null => {
     if (!callId) return null
     const call = callHistory.find(c => c.id === callId)
     return call ? call.contactName : null
+  }
+
+  const getProspectName = (prospectId: number | null): string | null => {
+    if (!prospectId) return null
+    const p = prospects.find(pr => pr.id === prospectId)
+    return p ? (p.contact || p.company || 'Prospect') : null
   }
 
   const statusConfig: Record<ReminderStatus, { label: string; badge: string; icon: typeof Clock }> = {
@@ -164,6 +199,13 @@ export function RemindersPage() {
             </p>
           </div>
         </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
+        >
+          <Plus className="h-4 w-4" />
+          Nouveau rappel
+        </button>
       </div>
 
       {/* Alerte rappels en retard */}
@@ -182,7 +224,7 @@ export function RemindersPage() {
           <Bell className="h-12 w-12 text-slate-700 mx-auto mb-4" />
           <p className="text-slate-400 font-medium">Aucun rappel programmé</p>
           <p className="text-sm text-slate-600 mt-1">
-            Créez un rappel depuis la page de détails d'un appel.
+            Cliquez sur "+ Nouveau rappel" pour en créer un.
           </p>
         </div>
       ) : (
@@ -192,7 +234,7 @@ export function RemindersPage() {
             <div className="col-span-3">Titre</div>
             <div className="col-span-2">Description</div>
             <div className="col-span-2">Date & heure</div>
-            <div className="col-span-2">Call associé</div>
+            <div className="col-span-2">Lié à</div>
             <div className="col-span-1">Statut</div>
             <div className="col-span-2 text-right">Actions</div>
           </div>
@@ -204,6 +246,8 @@ export function RemindersPage() {
               const config = statusConfig[status]
               const StatusIcon = config.icon
               const callName = getCallName(reminder.call_id)
+              const prospectName = getProspectName(reminder.prospect_id)
+              const linkedName = prospectName || callName
               const isLoading = actionLoading === reminder.id
 
               return (
@@ -245,8 +289,11 @@ export function RemindersPage() {
                       </p>
                     </div>
                     <div className="col-span-2">
-                      {callName ? (
-                        <span className="text-sm text-blue-400">{callName}</span>
+                      {linkedName ? (
+                        <span className="text-sm text-blue-400 flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          {linkedName}
+                        </span>
                       ) : (
                         <span className="text-sm text-slate-600">—</span>
                       )}
@@ -314,7 +361,7 @@ export function RemindersPage() {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
-                        {callName && <span className="ml-2 text-blue-400">| {callName}</span>}
+                        {linkedName && <span className="ml-2 text-blue-400">| {linkedName}</span>}
                       </div>
                       <div className="flex items-center gap-2">
                         {status !== 'done' && (
@@ -342,6 +389,218 @@ export function RemindersPage() {
           </div>
         </div>
       )}
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <CreateReminderModal
+          prospects={prospects}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleCreate}
+        />
+      )}
+    </div>
+  )
+}
+
+// ============================================================================
+// CREATE REMINDER MODAL
+// ============================================================================
+
+function CreateReminderModal({
+  prospects,
+  onClose,
+  onSubmit,
+  defaultProspectId,
+}: {
+  prospects: { id: number; contact: string; company: string }[]
+  onClose: () => void
+  onSubmit: (data: { title: string; description: string; reminder_date: string; prospect_id: number | null }) => Promise<void>
+  defaultProspectId?: number
+}) {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [linkType, setLinkType] = useState<'none' | 'prospect'>(defaultProspectId ? 'prospect' : 'none')
+  const [selectedProspectId, setSelectedProspectId] = useState<number | null>(defaultProspectId || null)
+  const [prospectSearch, setProspectSearch] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const filteredProspects = useMemo(() => {
+    if (!prospectSearch) return prospects.slice(0, 20)
+    const q = prospectSearch.toLowerCase()
+    return prospects.filter(p =>
+      p.contact?.toLowerCase().includes(q) || p.company?.toLowerCase().includes(q)
+    ).slice(0, 20)
+  }, [prospects, prospectSearch])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || !date || !time) return
+
+    setSubmitting(true)
+    try {
+      const reminder_date = new Date(`${date}T${time}`).toISOString()
+      await onSubmit({
+        title: title.trim(),
+        description: description.trim(),
+        reminder_date,
+        prospect_id: linkType === 'prospect' ? selectedProspectId : null,
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+          <h2 className="text-lg font-bold text-white">Nouveau rappel</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Titre */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-400">Titre *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex: Rappeler le prospect"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none"
+              autoFocus
+              required
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-400">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Détails optionnels..."
+              rows={2}
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none resize-none"
+            />
+          </div>
+
+          {/* Date & Heure */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">Date *</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                required
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">Heure *</label>
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Link Type */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-400">Lier à</label>
+            <div className="flex rounded-lg bg-slate-800 p-1 border border-slate-700">
+              <button
+                type="button"
+                onClick={() => { setLinkType('none'); setSelectedProspectId(null) }}
+                className={cn(
+                  'flex-1 rounded-md py-1.5 text-xs font-medium transition-all',
+                  linkType === 'none' ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-white'
+                )}
+              >
+                Aucun
+              </button>
+              <button
+                type="button"
+                onClick={() => setLinkType('prospect')}
+                className={cn(
+                  'flex-1 rounded-md py-1.5 text-xs font-medium transition-all',
+                  linkType === 'prospect' ? 'bg-orange-500 text-white shadow' : 'text-slate-400 hover:text-white'
+                )}
+              >
+                Un prospect
+              </button>
+            </div>
+          </div>
+
+          {/* Prospect Selector */}
+          {linkType === 'prospect' && (
+            <div className="animate-in fade-in slide-in-from-top-2 space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <input
+                  type="text"
+                  value={prospectSearch}
+                  onChange={(e) => setProspectSearch(e.target.value)}
+                  placeholder="Rechercher un prospect..."
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+              <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800/50 divide-y divide-slate-700/50">
+                {filteredProspects.length === 0 ? (
+                  <p className="px-3 py-2 text-xs text-slate-500">Aucun prospect trouvé</p>
+                ) : (
+                  filteredProspects.map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setSelectedProspectId(p.id)}
+                      className={cn(
+                        'w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
+                        selectedProspectId === p.id
+                          ? 'bg-orange-500/10 text-orange-400'
+                          : 'text-slate-300 hover:bg-slate-700/50'
+                      )}
+                    >
+                      <User className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{p.contact || p.company || 'Prospect'}</span>
+                      {p.company && p.contact && (
+                        <span className="text-xs text-slate-500 truncate ml-auto">{p.company}</span>
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
+              {selectedProspectId && (
+                <p className="text-xs text-orange-400">
+                  Lié à : {prospects.find(p => p.id === selectedProspectId)?.contact || 'Prospect'}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={!title.trim() || !date || !time || submitting || (linkType === 'prospect' && !selectedProspectId)}
+            className="w-full rounded-lg bg-orange-500 py-3 text-sm font-bold text-white hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+          >
+            {submitting ? (
+              <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+            ) : (
+              'Créer le rappel'
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   )
 }

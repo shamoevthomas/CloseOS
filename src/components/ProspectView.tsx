@@ -20,13 +20,19 @@ import {
   Plus,
   ChevronDown,
   ChevronRight,
-  User
+  User,
+  Bell,
+  Check,
+  Loader2,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
 import { type Prospect } from '../contexts/ProspectsContext'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { useOffers, type Offer } from '../contexts/OffersContext'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
+import toast from 'react-hot-toast'
 
 // Helper to parse price
 const parsePrice = (priceString: string): number => {
@@ -100,7 +106,7 @@ export function ProspectView({
   const [localProspect, setLocalProspect] = useState<ExtendedProspect>(prospect)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const [activeTab, setActiveTab] = useState<'info' | 'notes'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'rappels'>('info')
 
   const [editingOffer, setEditingOffer] = useState(false)
   const [editedOfferId, setEditedOfferId] = useState('')
@@ -170,6 +176,110 @@ export function ProspectView({
 
   const [isAddingNote, setIsAddingNote] = useState(false)
   const [newNoteContent, setNewNoteContent] = useState('')
+
+  // --- Rappels state ---
+  const { user } = useAuth()
+  const [showReminderForm, setShowReminderForm] = useState(false)
+  const [reminderTitle, setReminderTitle] = useState('')
+  const [reminderDesc, setReminderDesc] = useState('')
+  const [reminderDate, setReminderDate] = useState('')
+  const [reminderTime, setReminderTime] = useState('')
+  const [reminderSubmitting, setReminderSubmitting] = useState(false)
+  const [prospectReminders, setProspectReminders] = useState<any[]>([])
+  const [remindersLoading, setRemindersLoading] = useState(false)
+  const [reminderActionLoading, setReminderActionLoading] = useState<number | null>(null)
+
+  // Fetch reminders for this prospect
+  useEffect(() => {
+    if (!user || !prospect.id) return
+    let mounted = true
+    setRemindersLoading(true)
+    supabase
+      .from('reminders')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('prospect_id', prospect.id)
+      .order('reminder_date', { ascending: true })
+      .then(({ data }) => {
+        if (mounted) {
+          setProspectReminders(data || [])
+          setRemindersLoading(false)
+        }
+      })
+    return () => { mounted = false }
+  }, [user, prospect.id])
+
+  const handleCreateReminder = async () => {
+    if (!user || !reminderTitle.trim() || !reminderDate || !reminderTime) return
+    setReminderSubmitting(true)
+    try {
+      const reminder_date = new Date(`${reminderDate}T${reminderTime}`).toISOString()
+      const { data, error } = await supabase
+        .from('reminders')
+        .insert([{
+          user_id: user.id,
+          title: reminderTitle.trim(),
+          description: reminderDesc.trim() || null,
+          reminder_date,
+          prospect_id: prospect.id,
+          is_done: false,
+        }])
+        .select()
+        .single()
+
+      if (error) throw error
+      setProspectReminders(prev => [...prev, data])
+      setShowReminderForm(false)
+      setReminderTitle('')
+      setReminderDesc('')
+      setReminderDate('')
+      setReminderTime('')
+      toast.success('Rappel créé')
+    } catch (err) {
+      console.error('Erreur création rappel:', err)
+      toast.error('Impossible de créer le rappel')
+    } finally {
+      setReminderSubmitting(false)
+    }
+  }
+
+  const handleMarkReminderDone = async (id: number) => {
+    if (!user) return
+    setReminderActionLoading(id)
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .update({ is_done: true })
+        .eq('id', id)
+        .eq('user_id', user.id)
+      if (error) throw error
+      setProspectReminders(prev => prev.map(r => r.id === id ? { ...r, is_done: true } : r))
+    } catch (err) {
+      console.error('Erreur:', err)
+    } finally {
+      setReminderActionLoading(null)
+    }
+  }
+
+  const handleDeleteReminder = async (id: number) => {
+    if (!user) return
+    setReminderActionLoading(id)
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+      if (error) throw error
+      setProspectReminders(prev => prev.filter(r => r.id !== id))
+    } catch (err) {
+      console.error('Erreur:', err)
+    } finally {
+      setReminderActionLoading(null)
+    }
+  }
+
+  const activeRemindersCount = prospectReminders.filter(r => !r.is_done).length
 
   const selectedOfferObj = editedOfferId
     ? availableOffers.find(o => String(o.id) === editedOfferId)
@@ -386,7 +496,7 @@ export function ProspectView({
                 </button>
               </div>
 
-              <div className="flex gap-2 mb-6">
+              <div className="flex gap-2 mb-3">
                 <button onClick={handleOpenGmail} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-300 transition-all hover:bg-slate-800 hover:text-white">
                   <Mail className="h-4 w-4" /> Email
                 </button>
@@ -397,6 +507,12 @@ export function ProspectView({
                   <Calendar className="h-4 w-4" /> RDV
                 </button>
               </div>
+              <button
+                onClick={() => setShowReminderForm(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-bold text-white transition-all hover:bg-orange-600 shadow-lg shadow-orange-500/20 mb-6"
+              >
+                <Bell className="h-4 w-4" /> Créer un rappel
+              </button>
 
               {/* TABS */}
               <div className="flex border-b border-slate-800">
@@ -422,6 +538,23 @@ export function ProspectView({
                   Notes d'Appel
                   {activeTab === 'notes' && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('rappels')}
+                  className={cn(
+                    "flex-1 pb-3 text-sm font-medium transition-all relative flex items-center justify-center gap-1.5",
+                    activeTab === 'rappels' ? "text-white" : "text-slate-500 hover:text-slate-300"
+                  )}
+                >
+                  Rappels
+                  {activeRemindersCount > 0 && (
+                    <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-orange-500/20 px-1.5 text-[10px] font-bold text-orange-400">
+                      {activeRemindersCount}
+                    </span>
+                  )}
+                  {activeTab === 'rappels' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
                   )}
                 </button>
               </div>
@@ -778,7 +911,190 @@ export function ProspectView({
                 </div>
               )}
 
+              {/* --- ONGLET 3: RAPPELS --- */}
+              {activeTab === 'rappels' && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                  {/* Bouton ajouter */}
+                  <button
+                    onClick={() => setShowReminderForm(true)}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-orange-500/30 bg-orange-500/5 py-3 text-sm font-medium text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/50 transition-all"
+                  >
+                    <Plus className="h-4 w-4" /> Ajouter un rappel
+                  </button>
+
+                  {remindersLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-orange-400" />
+                    </div>
+                  ) : prospectReminders.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-slate-800 bg-slate-900/30">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 mb-3">
+                        <Bell className="h-6 w-6 text-slate-500" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-400">Aucun rappel</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Créez un rappel pour ce prospect.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {prospectReminders.map((reminder) => {
+                        const isDone = reminder.is_done
+                        const isOverdue = !isDone && new Date(reminder.reminder_date) < new Date()
+                        const isLoading = reminderActionLoading === reminder.id
+
+                        return (
+                          <div
+                            key={reminder.id}
+                            className={cn(
+                              'rounded-lg border p-3 transition-all',
+                              isDone
+                                ? 'border-slate-800 bg-slate-800/30'
+                                : isOverdue
+                                  ? 'border-red-500/30 bg-red-500/5'
+                                  : 'border-slate-800 bg-slate-800/50'
+                            )}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className={cn(
+                                  'text-sm font-semibold',
+                                  isDone ? 'text-slate-500 line-through' : 'text-white'
+                                )}>
+                                  {reminder.title}
+                                </p>
+                                {reminder.description && (
+                                  <p className="text-xs text-slate-400 mt-0.5 truncate">{reminder.description}</p>
+                                )}
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <Clock className="h-3 w-3 text-slate-500" />
+                                  <span className={cn(
+                                    'text-xs',
+                                    isOverdue ? 'text-red-400 font-medium' : 'text-slate-500'
+                                  )}>
+                                    {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                    })}{' '}
+                                    à{' '}
+                                    {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </span>
+                                  {isDone && (
+                                    <span className="text-[10px] text-slate-600 font-medium uppercase">Fait</span>
+                                  )}
+                                  {isOverdue && (
+                                    <span className="text-[10px] text-red-400 font-bold uppercase">En retard</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {!isDone && (
+                                  <button
+                                    onClick={() => handleMarkReminderDone(reminder.id)}
+                                    disabled={isLoading}
+                                    className="rounded-md p-1.5 text-emerald-400 hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
+                                    title="Marquer comme fait"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteReminder(reminder.id)}
+                                  disabled={isLoading}
+                                  className="rounded-md p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                                  title="Supprimer"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
+
+            {/* Reminder Creation Modal */}
+            {showReminderForm && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowReminderForm(false)} />
+                <div className="relative w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-slate-800 px-5 py-3">
+                    <h3 className="text-sm font-bold text-white">Nouveau rappel</h3>
+                    <button onClick={() => setShowReminderForm(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-400">Titre *</label>
+                      <input
+                        type="text"
+                        value={reminderTitle}
+                        onChange={(e) => setReminderTitle(e.target.value)}
+                        placeholder="Ex: Rappeler le prospect"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none"
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-400">Description</label>
+                      <textarea
+                        value={reminderDesc}
+                        onChange={(e) => setReminderDesc(e.target.value)}
+                        placeholder="Détails optionnels..."
+                        rows={2}
+                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none resize-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-400">Date *</label>
+                        <input
+                          type="date"
+                          value={reminderDate}
+                          onChange={(e) => setReminderDate(e.target.value)}
+                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-400">Heure *</label>
+                        <input
+                          type="time"
+                          value={reminderTime}
+                          onChange={(e) => setReminderTime(e.target.value)}
+                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-orange-500/10 border border-orange-500/20 px-3 py-2">
+                      <p className="text-xs text-orange-400">
+                        <Bell className="h-3 w-3 inline mr-1" />
+                        Lié à : <span className="font-semibold">{localProspect.contact || 'Ce prospect'}</span>
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleCreateReminder}
+                      disabled={!reminderTitle.trim() || !reminderDate || !reminderTime || reminderSubmitting}
+                      className="w-full rounded-lg bg-orange-500 py-2.5 text-sm font-bold text-white hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {reminderSubmitting ? (
+                        <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                      ) : (
+                        'Créer le rappel'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Footer */}
             <div className="border-t border-slate-800 bg-slate-950 p-6">

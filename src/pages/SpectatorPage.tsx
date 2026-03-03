@@ -138,10 +138,10 @@ export function SpectatorPage() {
 
         if (cancelled) return
 
-        // If auth error (expired JWT), refresh session and retry once
+        // Simple retry on transient error (no auth needed - RPCs are SECURITY DEFINER)
         if (checkError && !retried) {
           retried = true
-          await supabase.auth.refreshSession()
+          await new Promise(r => setTimeout(r, 1000))
           return init()
         }
 
@@ -213,7 +213,7 @@ export function SpectatorPage() {
       }
     }, 15000)
     return () => clearInterval(interval)
-  }, [status, token, storedPassword])
+  }, [status, token])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

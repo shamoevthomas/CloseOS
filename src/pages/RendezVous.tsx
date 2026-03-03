@@ -737,11 +737,15 @@ export function RendezVous() {
                setCalAccessToken(token)
                if (data.cal_username) setCalUsername(data.cal_username)
 
-               await fetchEventTypes(token)
+               // Parallelize independent Cal.com fetches, then bookings after
+               await Promise.allSettled([
+                 fetchEventTypes(token),
+                 fetchCalProfile(token),
+               ])
                if (!isMounted) return;
-               await fetchCalProfile(token)
-               if (!isMounted) return;
-               await fetchCalBookings(token, false)
+               await fetchCalBookings(token, false).catch(err => {
+                 console.error("[Cal] fetchCalBookings error:", err)
+               })
             }
          } catch (err) {
             console.error("[Cal] Error fetching profile:", err);

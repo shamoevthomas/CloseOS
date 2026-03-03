@@ -70,7 +70,8 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading) return
     fetchMeetings()
-  }, [userId, authLoading, fetchMeetings])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, authLoading])
 
   // Supabase Realtime avec gestion d'erreur
   useEffect(() => {
@@ -121,7 +122,8 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(channel)
       channelRef.current = null
     }
-  }, [userId, authLoading, fetchMeetings])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, authLoading])
 
   const addMeeting = async (meetingData: any) => {
     if (!user) return { data: null, error: 'Non authentifie' }
