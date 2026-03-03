@@ -69,20 +69,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }, SAFETY_TIMEOUT_MS);
 
       try {
-        // Use getSession() first (reads from cache, no navigator.locks issues)
-        // Then validate with getUser() if session exists
-        const { data: { session } } = await supabase.auth.getSession();
-        clearTimeout(timeoutId);
+        // Try getUser() first (server-validated, ensures fresh token)
+        // Falls back to getSession() only on AbortError (navigator.locks issue)
+        let resolvedUser: any = null;
 
+        try {
+          const { data: { user: validatedUser } } = await supabase.auth.getUser();
+          resolvedUser = validatedUser;
+        } catch (getUserErr: any) {
+          // AbortError from navigator.locks - fall back to getSession()
+          if (getUserErr?.name === 'AbortError' || getUserErr?.message?.includes('AbortError')) {
+            console.warn('getUser() AbortError, falling back to getSession()');
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+              resolvedUser = session.user;
+              // Force token refresh so other contexts get a valid token
+              supabase.auth.refreshSession().catch(() => {});
+            }
+          } else {
+            throw getUserErr;
+          }
+        }
+
+        clearTimeout(timeoutId);
         if (!isMountedRef.current) return;
 
-        if (!session?.user) {
+        if (!resolvedUser) {
           setUser(null);
           setProfile(null);
         } else {
-          setUser(session.user);
+          setUser(resolvedUser);
           initResolvedUser = true;
-          await fetchProfile(session.user.id);
+          await fetchProfile(resolvedUser.id);
         }
       } catch (err) {
         console.error('Erreur init auth:', err);
