@@ -38,33 +38,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     isMountedRef.current = true;
 
-    // Safety timeout : si getSession() bloque, on débloque le UI après 3s
+    // Safety timeout absolu : si rien ne se passe en 5s, on débloque le UI
     const safetyTimeout = setTimeout(() => {
       if (isMountedRef.current) setLoading(false);
-    }, 3000);
+    }, 5000);
 
-    // 1. Charger la session initiale via getSession() (lecture cache locale)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!isMountedRef.current) return;
-      clearTimeout(safetyTimeout);
-
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      // DÉBLOQUER LE UI IMMÉDIATEMENT — le profil se charge en arrière-plan
-      setLoading(false);
-
-      // Profil en background (non-bloquant)
-      if (currentUser) {
-        fetchProfile(currentUser.id);
-      }
-    }).catch(() => {
-      if (isMountedRef.current) {
-        clearTimeout(safetyTimeout);
-        setLoading(false);
-      }
-    });
-
-    // 2. Écouter les changements d'auth (login, logout, token refresh)
+    // 1. Écouter les changements d'auth (login, logout, token refresh)
+    //    Ceci gère aussi INITIAL_SESSION dans Supabase v2+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (!isMountedRef.current) return;
@@ -73,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(currentUser);
 
         if (currentUser) {
-          await fetchProfile(currentUser.id);
+          fetchProfile(currentUser.id);
         } else {
           setProfile(null);
         }
@@ -89,6 +69,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     );
+
+    // 2. Charger la session initiale via getSession()
+    //    On ATTEND le profil avant de débloquer le UI (max 3s)
+    //    Cela force le Supabase client à rafraîchir un token expiré,
+    //    garantissant que les contextes enfants auront un token valide
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!isMountedRef.current) return;
+      clearTimeout(safetyTimeout);
+
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        // Charger le profil AVEC un timeout de 3s pour ne jamais bloquer
+        await Promise.race([
+          fetchProfile(currentUser.id),
+          new Promise(resolve => setTimeout(resolve, 3000))
+        ]);
+      } else {
+        setProfile(null);
+      }
+
+      if (isMountedRef.current) setLoading(false);
+    }).catch(() => {
+      if (isMountedRef.current) {
+        clearTimeout(safetyTimeout);
+        setLoading(false);
+      }
+    });
 
     return () => {
       isMountedRef.current = false;
