@@ -9,8 +9,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const isMountedRef = useRef(true);
-  // Flag pour éviter que getSession et onAuthStateChange se marchent dessus
-  const hasResolved = useRef(false);
 
   // Role admin simple : base uniquement sur l'email
   const isAdmin = user?.email === 'shamoovthomas@gmail.com';
@@ -39,72 +37,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     isMountedRef.current = true;
-    hasResolved.current = false;
 
-    // Fonction locale pour résoudre l'auth (pas de useCallback = pas de dep cycle)
-    const resolveAuth = async (session: any) => {
+    // Safety timeout : si getSession() bloque, on débloque le UI après 3s
+    const safetyTimeout = setTimeout(() => {
+      if (isMountedRef.current) setLoading(false);
+    }, 3000);
+
+    // 1. Charger la session initiale via getSession() (lecture cache locale)
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!isMountedRef.current) return;
+      clearTimeout(safetyTimeout);
 
       const currentUser = session?.user ?? null;
       setUser(currentUser);
+      // DÉBLOQUER LE UI IMMÉDIATEMENT — le profil se charge en arrière-plan
+      setLoading(false);
 
+      // Profil en background (non-bloquant)
       if (currentUser) {
-        await fetchProfile(currentUser.id);
-      } else {
-        setProfile(null);
+        fetchProfile(currentUser.id);
       }
-
+    }).catch(() => {
       if (isMountedRef.current) {
+        clearTimeout(safetyTimeout);
         setLoading(false);
       }
-    };
+    });
 
-    // Safety timeout en cas de blocage réseau/auth
-    const safetyTimeout = setTimeout(() => {
-      if (isMountedRef.current && !hasResolved.current) {
-        hasResolved.current = true;
-        setLoading(false);
-      }
-    }, 5000);
+    // 2. Écouter les changements d'auth (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (!isMountedRef.current) return;
 
-    // 1. Écouter les changements d'auth (y compris INITIAL_SESSION si supporté)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!isMountedRef.current) return;
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
 
-      clearTimeout(safetyTimeout);
-      hasResolved.current = true;
+        if (currentUser) {
+          await fetchProfile(currentUser.id);
+        } else {
+          setProfile(null);
+        }
 
-      await resolveAuth(session);
-
-      // FirstPromoter tracking
-      const currentUser = session?.user ?? null;
-      if (currentUser && typeof window !== "undefined") {
-        const pendingEmail = sessionStorage.getItem("fpr_pending_email");
-        if (pendingEmail) {
-          trackFirstPromoterReferral(pendingEmail).then(() => {
-            sessionStorage.removeItem("fpr_pending_email");
-          });
+        // FirstPromoter tracking
+        if (currentUser && typeof window !== "undefined") {
+          const pendingEmail = sessionStorage.getItem("fpr_pending_email");
+          if (pendingEmail) {
+            trackFirstPromoterReferral(pendingEmail).then(() => {
+              sessionStorage.removeItem("fpr_pending_email");
+            });
+          }
         }
       }
-    });
-
-    // 2. Appel explicite à getSession() comme filet de sécurité
-    //    Si onAuthStateChange a déjà résolu (INITIAL_SESSION), on ne fait rien
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!isMountedRef.current) return;
-      if (hasResolved.current) return; // onAuthStateChange a déjà géré
-
-      clearTimeout(safetyTimeout);
-      hasResolved.current = true;
-
-      await resolveAuth(session);
-    }).catch((err) => {
-      console.error('getSession error:', err);
-      if (isMountedRef.current && !hasResolved.current) {
-        hasResolved.current = true;
-        setLoading(false);
-      }
-    });
+    );
 
     return () => {
       isMountedRef.current = false;
