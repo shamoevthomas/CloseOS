@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   GitBranch,
   Users,
-  User,
   Calendar,
   Briefcase,
   Settings,
@@ -18,7 +17,6 @@ import {
   X,
   FileText,
   Sparkles,
-  CheckCircle2,
   Loader2,
   Bell
 } from 'lucide-react'
@@ -149,6 +147,24 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
           ))}
         </nav>
 
+
+        {/* BOUTON FEEDBACK */}
+        <div className="px-4 pb-2">
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLSfG_km1jRFBreeHvhksMAvAxwokZEOdahTicsKikNwk71IUwg/viewform?usp=dialog"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3 transition-all hover:bg-blue-500/10"
+          >
+            <div className="rounded-lg bg-blue-500/20 p-2 text-blue-400 transition-transform group-hover:scale-110">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-blue-400">Votre avis compte</p>
+              <p className="text-xs text-blue-400/70">Laissez-nous un retour 🙌</p>
+            </div>
+          </a>
+        </div>
 
         {/* BOUTON KO-FI */}
         <div className="px-4 pb-4">
