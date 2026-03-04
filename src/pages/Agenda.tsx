@@ -1245,6 +1245,18 @@ export function Agenda() {
                   })()}
 
                   {!isGoogleEvent && (
+                    <button
+                      onClick={() => {
+                        const contactName = selectedEvent.contact || selectedEvent.title || 'Appel'
+                        navigate(`/live-call?name=${encodeURIComponent(contactName)}&from=/agenda`)
+                      }}
+                      className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 font-bold text-emerald-400 transition-all hover:bg-emerald-500/20"
+                    >
+                      <Phone className="h-5 w-5" /> Ouvrir CallRoom
+                    </button>
+                  )}
+
+                  {!isGoogleEvent && (
                     <div className="flex gap-3">
                       <button
                         onClick={handleEditEvent}

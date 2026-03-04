@@ -739,12 +739,12 @@ export function RendezVous() {
 
                // Parallelize independent Cal.com fetches, then bookings after
                await Promise.allSettled([
-                 fetchEventTypes(token),
-                 fetchCalProfile(token),
+                  fetchEventTypes(token),
+                  fetchCalProfile(token),
                ])
                if (!isMounted) return;
                await fetchCalBookings(token, false).catch(err => {
-                 console.error("[Cal] fetchCalBookings error:", err)
+                  console.error("[Cal] fetchCalBookings error:", err)
                })
             }
          } catch (err) {
@@ -1462,6 +1462,15 @@ export function RendezVous() {
                            <Video className="h-5 w-5" /> Rejoindre l'appel
                         </button>
                      )}
+                     <button
+                        onClick={() => {
+                           const contactName = selectedMeeting.contact || 'Appel';
+                           navigate(`/live-call?name=${encodeURIComponent(contactName)}&from=/rendez-vous`);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 py-4 font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                     >
+                        <Phone className="h-5 w-5" /> Ouvrir CallRoom
+                     </button>
                      {/* Annuler & Reporter */}
                      {selectedMeeting.status?.toLowerCase() !== 'annulé' && selectedMeeting.status?.toLowerCase() !== 'cancelled' && (
                         <div className="grid grid-cols-2 gap-3 pt-1">
