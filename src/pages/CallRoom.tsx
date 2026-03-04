@@ -73,13 +73,13 @@ export default function CallRoom() {
                         .from('call_history')
                         .insert([{
                             user_id: user.id,
+                            contactId: 0,
                             contactName: contactName,
                             contactType: 'prospect',
                             date: new Date().toISOString(),
                             duration: 'En cours...',
                             isAi: false,
-                            answered: true,
-                            status: 'in_progress'
+                            answered: true
                         }])
                         .select()
                         .single();
