@@ -32,7 +32,7 @@ import { supabase } from '../lib/supabase'
 import { format, isValid, parseISO, isAfter, startOfDay, compareAsc, compareDesc, differenceInDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '../lib/utils'
-import { isDailyCoLink } from '../services/dailyService'
+
 
 // Types pour l'édition
 interface EventTypeData {
@@ -1448,29 +1448,17 @@ export function RendezVous() {
                      {(selectedMeeting.video_link || selectedMeeting.location) && (
                         <button onClick={() => {
                            const videoUrl = selectedMeeting.video_link || selectedMeeting.location;
-                           // Ouvrir l'appel externe dans un nouvel onglet
+                           // 1. Ouvrir l'appel externe dans un nouvel onglet
                            if (videoUrl && (videoUrl.startsWith('http') || videoUrl.startsWith('https'))) {
                               window.open(videoUrl, '_blank', 'noopener,noreferrer');
                            }
-                           // Ouvrir CallRoom dans l'app
-                           if (videoUrl && isDailyCoLink(videoUrl)) {
-                              navigate(`/live-call?url=${encodeURIComponent(videoUrl)}&from=/rendez-vous`);
-                           } else {
-                              navigate('/calls');
-                           }
+                           // 2. Ouvrir CallRoom dans CloseOS
+                           const contactName = selectedMeeting.contact || 'Appel';
+                           navigate(`/live-call?name=${encodeURIComponent(contactName)}&from=/rendez-vous`);
                         }} className="w-full flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20">
                            <Video className="h-5 w-5" /> Rejoindre l'appel
                         </button>
                      )}
-                     <button
-                        onClick={() => {
-                           const contactName = selectedMeeting.contact || 'Appel';
-                           navigate(`/live-call?name=${encodeURIComponent(contactName)}&from=/rendez-vous`);
-                        }}
-                        className="w-full flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 py-4 font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-                     >
-                        <Phone className="h-5 w-5" /> Ouvrir CallRoom
-                     </button>
                      {/* Annuler & Reporter */}
                      {selectedMeeting.status?.toLowerCase() !== 'annulé' && selectedMeeting.status?.toLowerCase() !== 'cancelled' && (
                         <div className="grid grid-cols-2 gap-3 pt-1">

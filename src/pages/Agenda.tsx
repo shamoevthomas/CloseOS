@@ -9,7 +9,7 @@ import { NoAnswerModal } from '../components/NoAnswerModal'
 import { CreateEventModal } from '../components/CreateEventModal'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
-import { isDailyCoLink } from '../services/dailyService'
+
 
 // --- HELPER DE STYLE CENTRALISÉ (NOUVEAU) ---
 const getEventStyle = (event: any) => {
@@ -1230,12 +1230,11 @@ export function Agenda() {
                     return hasLink ? (
                       <button
                         onClick={() => {
-                          if (meetingUrl && isDailyCoLink(meetingUrl)) {
-                            const url = `/live-call?url=${encodeURIComponent(meetingUrl)}&from=/agenda`
-                            navigate(url)
-                          } else {
-                            window.open(meetingUrl, '_blank', 'noopener,noreferrer')
-                          }
+                          // 1. Ouvrir le lien de visio externe dans un nouvel onglet
+                          window.open(meetingUrl, '_blank', 'noopener,noreferrer')
+                          // 2. Ouvrir CallRoom dans CloseOS
+                          const contactName = selectedEvent.contact || 'Appel'
+                          navigate(`/live-call?name=${encodeURIComponent(contactName)}&from=/agenda`)
                         }}
                         className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20"
                       >
@@ -1243,18 +1242,6 @@ export function Agenda() {
                       </button>
                     ) : null
                   })()}
-
-                  {!isGoogleEvent && (
-                    <button
-                      onClick={() => {
-                        const contactName = selectedEvent.contact || selectedEvent.title || 'Appel'
-                        navigate(`/live-call?name=${encodeURIComponent(contactName)}&from=/agenda`)
-                      }}
-                      className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 font-bold text-emerald-400 transition-all hover:bg-emerald-500/20"
-                    >
-                      <Phone className="h-5 w-5" /> Ouvrir CallRoom
-                    </button>
-                  )}
 
                   {!isGoogleEvent && (
                     <div className="flex gap-3">
