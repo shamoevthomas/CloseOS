@@ -564,7 +564,7 @@ export function Agenda() {
                     {isShort ? (
                       <div className="flex h-full items-center">
                         <p className="truncate text-xs font-semibold">
-                          <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                          {event.title?.split(' - ')[0] || 'Sans titre'}
                         </p>
                       </div>
                     ) : (
@@ -573,11 +573,13 @@ export function Agenda() {
                           {event.time?.split(' - ')[0] || event.time} - {isOvernight ? '→' : event.time?.split(' - ')[1]}
                         </p>
                         <p className="mt-0.5 truncate text-sm font-bold">
-                          <MaskedText value={event.contact || 'Inconnu'} type="name" />
-                        </p>
-                        <p className="truncate text-xs opacity-80">
                           {event.title?.split(' - ')[0] || 'Sans titre'}
                         </p>
+                        {event.contact && (
+                          <p className="truncate text-xs opacity-80">
+                            <MaskedText value={event.contact} type="name" />
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -707,15 +709,20 @@ export function Agenda() {
                           {isShort ? (
                             <div className="flex h-full items-center">
                               <p className="truncate text-[10px] font-semibold">
-                                <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                                {event.title?.split(' - ')[0] || 'Sans titre'}
                               </p>
                             </div>
                           ) : (
                             <div className="flex h-full flex-col overflow-hidden">
                               <p className="truncate text-[10px] font-semibold opacity-90">→ {end}</p>
                               <p className="truncate text-xs font-bold">
-                                <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                                {event.title?.split(' - ')[0] || 'Sans titre'}
                               </p>
+                              {event.contact && (
+                                <p className="truncate text-[10px] opacity-80">
+                                  <MaskedText value={event.contact} type="name" />
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
@@ -748,7 +755,7 @@ export function Agenda() {
                           {isShort ? (
                             <div className="flex h-full items-center">
                               <p className="truncate text-[10px] font-semibold">
-                                <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                                {event.title?.split(' - ')[0] || 'Sans titre'}
                               </p>
                             </div>
                           ) : (
@@ -757,8 +764,13 @@ export function Agenda() {
                                 {event.time?.split(' - ')[0] || event.time}{isOvernight ? ' →' : ''}
                               </p>
                               <p className="truncate text-xs font-bold">
-                                <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                                {event.title?.split(' - ')[0] || 'Sans titre'}
                               </p>
+                              {event.contact && (
+                                <p className="truncate text-[10px] opacity-80">
+                                  <MaskedText value={event.contact} type="name" />
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
@@ -826,7 +838,7 @@ export function Agenda() {
                         style={style}
                       >
                         <div className="truncate">
-                          {event.time?.split(' - ')[0] || event.time} <MaskedText value={event.contact || 'Inconnu'} type="name" />
+                          {event.time?.split(' - ')[0] || event.time} {event.title?.split(' - ')[0] || 'Sans titre'}
                         </div>
                       </div>
                     )
@@ -1032,11 +1044,13 @@ export function Agenda() {
 
                     <div className="flex-1 min-w-0">
                       <p className={cn("font-bold truncate", isGoogleEvent ? "text-slate-900" : "text-white")}>
-                        <MaskedText value={event.contact || 'Inconnu'} type="name" />
-                      </p>
-                      <p className={cn("mt-0.5 text-xs font-medium uppercase tracking-wide truncate", isGoogleEvent ? "text-slate-500" : "text-slate-400")}>
                         {event.title?.split(' - ')[0] || 'Sans titre'}
                       </p>
+                      {event.contact && (
+                        <p className={cn("mt-0.5 text-xs font-medium truncate", isGoogleEvent ? "text-slate-500" : "text-slate-400")}>
+                          <MaskedText value={event.contact} type="name" />
+                        </p>
+                      )}
                       <div className={cn("mt-2 flex items-center gap-1 text-xs font-mono", isGoogleEvent ? "text-slate-400" : "text-slate-500")}>
                         <Clock className="h-3 w-3" />
                         <span>{event.time}</span>
