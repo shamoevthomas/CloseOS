@@ -9,6 +9,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const isMountedRef = useRef(true);
+  // Flag pour éviter que getSession et onAuthStateChange se marchent dessus
+  const hasResolved = useRef(false);
 
   // Role admin simple : base uniquement sur l'email
   const isAdmin = user?.email === 'shamoovthomas@gmail.com';
@@ -35,28 +37,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Fonction centralisée qui gère la résolution de la session
+  const resolveAuth = useCallback(async (session: any) => {
+    if (!isMountedRef.current) return;
+
+    const currentUser = session?.user ?? null;
+    setUser(currentUser);
+
+    if (currentUser) {
+      await fetchProfile(currentUser.id);
+    } else {
+      setProfile(null);
+    }
+
+    if (isMountedRef.current) {
+      setLoading(false);
+    }
+  }, [fetchProfile]);
+
   useEffect(() => {
     isMountedRef.current = true;
-    let isMounted = true;
+    hasResolved.current = false;
 
-    // Safety timeout : si aucun événement auth n'arrive en 5s, on débloque l'UI
+    // Safety timeout en cas de blocage réseau/auth
     const safetyTimeout = setTimeout(() => {
-      if (isMounted) setLoading(false);
+      if (isMountedRef.current && !hasResolved.current) {
+        hasResolved.current = true;
+        setLoading(false);
+      }
     }, 5000);
 
-    // SOURCE UNIQUE DE VÉRITÉ : onAuthStateChange gère AUSSI la session initiale
-    // (Supabase v2+ émet un événement INITIAL_SESSION automatiquement)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!isMounted) return;
+    // 1. Écouter les changements d'auth (y compris INITIAL_SESSION si supporté)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!isMountedRef.current) return;
 
       clearTimeout(safetyTimeout);
+      hasResolved.current = true;
 
+      await resolveAuth(session);
+
+      // FirstPromoter tracking
       const currentUser = session?.user ?? null;
-
-      // Mettre à jour le user immédiatement
-      setUser(currentUser);
-
-      // FirstPromoter
       if (currentUser && typeof window !== "undefined") {
         const pendingEmail = sessionStorage.getItem("fpr_pending_email");
         if (pendingEmail) {
@@ -65,23 +86,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         }
       }
+    });
 
-      if (currentUser) {
-        await fetchProfile(currentUser.id);
-      } else {
-        setProfile(null);
+    // 2. Appel explicite à getSession() comme filet de sécurité
+    //    Si onAuthStateChange a déjà résolu (INITIAL_SESSION), on ne fait rien
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!isMountedRef.current) return;
+      if (hasResolved.current) return; // onAuthStateChange a déjà géré
+
+      clearTimeout(safetyTimeout);
+      hasResolved.current = true;
+
+      await resolveAuth(session);
+    }).catch((err) => {
+      console.error('getSession error:', err);
+      if (isMountedRef.current && !hasResolved.current) {
+        hasResolved.current = true;
+        setLoading(false);
       }
-
-      if (isMounted) setLoading(false);
     });
 
     return () => {
-      isMounted = false;
       isMountedRef.current = false;
       clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, resolveAuth]);
 
   const login = (credentials: any) => supabase.auth.signInWithPassword(credentials);
   const register = (credentials: any) => supabase.auth.signUp(credentials);
