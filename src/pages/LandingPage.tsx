@@ -92,6 +92,11 @@ export function LandingPage() {
       if (document.body.contains(s)) {
         document.body.removeChild(s);
       }
+      // Also remove the DOM elements injected by the chatbot script
+      const chatbotContainer = document.getElementById('chatbot-widget-container');
+      if (chatbotContainer) {
+        chatbotContainer.remove();
+      }
     };
   }, []);
 

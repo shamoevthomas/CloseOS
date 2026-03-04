@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader2, LogIn, X, Check, AlertCircle } from 'lucide-react';
@@ -7,7 +7,14 @@ import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
+
+  // Si déjà connecté, rediriger vers le dashboard
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -206,8 +213,8 @@ export default function Login() {
 
             {resetMessage && (
               <div className={`mb-6 p-4 rounded-xl border flex items-start gap-3 ${resetMessage.type === 'success'
-                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                  : 'bg-red-500/10 border-red-500/20 text-red-400'
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                : 'bg-red-500/10 border-red-500/20 text-red-400'
                 }`}>
                 {resetMessage.type === 'success' ? (
                   <Check className="h-5 w-5 mt-0.5 shrink-0" />

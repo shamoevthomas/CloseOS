@@ -37,27 +37,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Fonction centralisée qui gère la résolution de la session
-  const resolveAuth = useCallback(async (session: any) => {
-    if (!isMountedRef.current) return;
-
-    const currentUser = session?.user ?? null;
-    setUser(currentUser);
-
-    if (currentUser) {
-      await fetchProfile(currentUser.id);
-    } else {
-      setProfile(null);
-    }
-
-    if (isMountedRef.current) {
-      setLoading(false);
-    }
-  }, [fetchProfile]);
-
   useEffect(() => {
     isMountedRef.current = true;
     hasResolved.current = false;
+
+    // Fonction locale pour résoudre l'auth (pas de useCallback = pas de dep cycle)
+    const resolveAuth = async (session: any) => {
+      if (!isMountedRef.current) return;
+
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        await fetchProfile(currentUser.id);
+      } else {
+        setProfile(null);
+      }
+
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+    };
 
     // Safety timeout en cas de blocage réseau/auth
     const safetyTimeout = setTimeout(() => {
@@ -111,7 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
-  }, [fetchProfile, resolveAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = (credentials: any) => supabase.auth.signInWithPassword(credentials);
   const register = (credentials: any) => supabase.auth.signUp(credentials);
