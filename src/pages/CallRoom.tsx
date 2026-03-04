@@ -30,8 +30,12 @@ export default function CallRoom() {
     const { user } = useAuth();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const callId = searchParams.get('id');
+    const callIdFromParams = searchParams.get('id');
     const contactName = searchParams.get('name') || 'Appel';
+    const fromPage = searchParams.get('from') || '/';
+
+    // Ref pour stocker le callId (soit depuis les params, soit auto-créé)
+    const callIdRef = useRef<string | null>(callIdFromParams);
 
     // --- STATE PRINCIPAL ---
     const [isPanelOpen, setIsPanelOpen] = useState(true);
@@ -55,12 +59,38 @@ export default function CallRoom() {
     const chunksRef = useRef<Blob[]>([]);
     const streamRef = useRef<MediaStream | null>(null);
 
-    // --- 1. CHARGEMENT DES DONNÉES (Scripts & Offres) ---
+    // --- 1. CHARGEMENT DES DONNÉES (Scripts & Offres) + Auto-création call_history ---
     useEffect(() => {
         let isMounted = true;
 
         async function loadData() {
             if (!user) return;
+
+            // 0. Si pas de callId, créer un enregistrement call_history
+            if (!callIdRef.current) {
+                try {
+                    const { data: newCall } = await supabase
+                        .from('call_history')
+                        .insert([{
+                            user_id: user.id,
+                            contactName: contactName,
+                            contactType: 'prospect',
+                            date: new Date().toISOString(),
+                            duration: 'En cours...',
+                            isAi: false,
+                            answered: true,
+                            status: 'in_progress'
+                        }])
+                        .select()
+                        .single();
+
+                    if (newCall && isMounted) {
+                        callIdRef.current = String(newCall.id);
+                    }
+                } catch (err) {
+                    console.error('Erreur création call_history:', err);
+                }
+            }
 
             // A. Charger les scripts
             const { data: scriptsData } = await supabase
@@ -183,22 +213,23 @@ export default function CallRoom() {
             await new Promise(r => setTimeout(r, 2000));
         }
 
-        if (callId) {
+        const finalCallId = callIdRef.current;
+
+        if (finalCallId) {
             try {
                 await supabase.from('call_history').update({
                     duration: formatDuration(callDuration),
-                    status: 'completed', // On marque comme terminé
+                    status: 'completed',
                     ended_at: new Date().toISOString()
-                }).eq('id', callId);
+                }).eq('id', finalCallId);
             } catch (e) {
                 console.error("Erreur sauvegarde durée", e);
             }
-        }
-
-        if (callId) {
-            navigate(`/appels/${callId}`, { state: { liveNotes: notes } });
+            // Toujours ouvrir CallDetail avec les notes
+            navigate(`/appels/${finalCallId}`, { state: { liveNotes: notes } });
         } else {
-            navigate('/');
+            // Fallback si la création a échoué
+            navigate(fromPage);
         }
     };
 
