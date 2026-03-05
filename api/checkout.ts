@@ -89,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             : undefined,
           trial_period_days: new Date() < new Date('2026-03-01T00:00:00Z')
             ? undefined
-            : 7,
+            : 10,
         },
       });
 

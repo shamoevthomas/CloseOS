@@ -15,7 +15,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Founder : base sur le statut d'abonnement
   const subscriptionStatus = profile?.subscription_status;
-  const isFounder = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
+  const isPaying = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
+  const isFounder = isPaying && profile?.plan === 'founder';
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
@@ -219,6 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       isAdmin,
       isFounder,
+      isPaying,
       subscriptionStatus,
       loading,
       login,
