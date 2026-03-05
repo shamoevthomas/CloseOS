@@ -75,7 +75,6 @@ export function TrialExpiredModal() {
                             {/* Logo */}
                             <div className="flex items-center gap-2.5 mb-8">
                                 <img src="/logo.PNG" alt="CloseOS Logo" className="h-9 w-auto" />
-                                <span className="text-white font-bold text-lg">CloseOS</span>
                             </div>
 
                             {/* Title */}
