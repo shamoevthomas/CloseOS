@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { CheckCircle2, LogOut } from 'lucide-react';
+import { CheckCircle2, LogOut, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 
 export function TrialExpiredModal() {
@@ -68,17 +68,22 @@ export function TrialExpiredModal() {
 
                             {/* Features */}
                             <div className="space-y-4">
-                                {[
-                                    "CRM complet & Gestion de contacts",
-                                    "Pipeline commercial illimité",
-                                    "Rapports & KPI avancés",
-                                    "Support prioritaire 24/7"
-                                ].map((feature, i) => (
-                                    <div key={i} className="flex items-center gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                                        <span className="text-slate-300 text-sm font-medium">{feature}</span>
-                                    </div>
-                                ))}
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                                    <span className="text-slate-300 text-sm font-medium">CRM complet & Gestion de contacts</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                                    <span className="text-slate-300 text-sm font-medium">Pipeline commercial illimité</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                                    <span className="text-slate-300 text-sm font-medium">Rapports & KPI avancés</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                                    <span className="text-slate-300 text-sm font-medium">Support prioritaire 24/7</span>
+                                </div>
                             </div>
                         </div>
 
@@ -105,8 +110,8 @@ export function TrialExpiredModal() {
                             <button
                                 onClick={() => setSelectedPlan('starter')}
                                 className={`w-full rounded-xl border p-5 text-left transition-all ${selectedPlan === 'starter'
-                                    ? 'border-blue-500 bg-blue-500/5'
-                                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                                        ? 'border-blue-500 bg-blue-500/5'
+                                        : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
                                     }`}
                             >
                                 <div className="flex items-center justify-between">
@@ -131,8 +136,8 @@ export function TrialExpiredModal() {
                                 <button
                                     onClick={() => setSelectedPlan('founder')}
                                     className={`w-full rounded-xl border p-5 text-left transition-all ${selectedPlan === 'founder'
-                                        ? 'border-blue-500 bg-blue-500/5'
-                                        : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                                            ? 'border-blue-500 bg-blue-500/5'
+                                            : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between">
