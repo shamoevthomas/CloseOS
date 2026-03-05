@@ -74,9 +74,7 @@ export function TrialExpiredModal() {
                         <div>
                             {/* Logo */}
                             <div className="flex items-center gap-2.5 mb-8">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm">
-                                    C
-                                </div>
+                                <img src="/logo.PNG" alt="CloseOS Logo" className="h-9 w-auto" />
                                 <span className="text-white font-bold text-lg">CloseOS</span>
                             </div>
 
@@ -139,8 +137,8 @@ export function TrialExpiredModal() {
                             <button
                                 onClick={() => setSelectedPlan('starter')}
                                 className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'starter'
-                                        ? 'border-blue-500 bg-blue-500/5'
-                                        : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                                    ? 'border-blue-500 bg-blue-500/5'
+                                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
                                     }`}
                             >
                                 <div className="flex items-center justify-between">
@@ -165,8 +163,8 @@ export function TrialExpiredModal() {
                                 <button
                                     onClick={() => setSelectedPlan('founder')}
                                     className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'founder'
-                                            ? 'border-blue-500 bg-blue-500/5'
-                                            : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                                        ? 'border-blue-500 bg-blue-500/5'
+                                        : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between">
