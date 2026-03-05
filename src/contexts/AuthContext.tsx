@@ -107,9 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const login = (credentials: any) => supabase.auth.signInWithPassword(credentials);
-  const register = (credentials: any) => supabase.auth.signUp(credentials);
-  const loginWithGoogle = () => {
+  const login = useCallback((credentials: any) => supabase.auth.signInWithPassword(credentials), []);
+  const register = useCallback((credentials: any) => supabase.auth.signUp(credentials), []);
+  const loginWithGoogle = useCallback(() => {
     const redirectTo = window.location.origin;
 
     return supabase.auth.signInWithOAuth({
@@ -122,9 +122,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       }
     });
-  };
+  }, []);
 
-  const updateProfile = async (updates: any) => {
+  const updateProfile = useCallback(async (updates: any) => {
     const { data: authData, error: authError } = await supabase.auth.updateUser({
       data: updates
     });
@@ -143,20 +143,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return { data: authData, error: authError };
-  };
+  }, [user, fetchProfile]);
 
-  const updatePassword = async (newPassword: string) => {
+  const updatePassword = useCallback(async (newPassword: string) => {
     const { data, error } = await supabase.auth.updateUser({
       password: newPassword
     });
     return { data, error };
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     setUser(null);
     setProfile(null);
     await supabase.auth.signOut();
-  };
+  }, []);
+
+  // --- GESTION DÉCONNEXION AUTO 4H DU MATIN ---
+  useEffect(() => {
+    if (!user) return;
+
+    const check4amReset = () => {
+      try {
+        const now = new Date();
+        const resetTime = new Date();
+        resetTime.setHours(4, 0, 0, 0);
+
+        // Si on est avant 4h du matin, le dernier reset "valide" était hier à 4h
+        if (now < resetTime) {
+          resetTime.setDate(resetTime.getDate() - 1);
+        }
+
+        const lastReset = localStorage.getItem('last_4am_reset');
+        const resetTimestamp = resetTime.getTime().toString();
+
+        if (lastReset !== resetTimestamp) {
+          // Si on a un ancien reset et qu'il est antérieur au reset "actuel" (4h passées)
+          if (lastReset && parseInt(lastReset) < resetTime.getTime()) {
+            console.log("Auto-logout at 4am triggered");
+            logout();
+          }
+          // On met à jour le flag soit après logout, soit si c'est une nouvelle session post-4h
+          localStorage.setItem('last_4am_reset', resetTimestamp);
+        }
+      } catch (e) {
+        console.error("Error in 4am reset check:", e);
+      }
+    };
+
+    // Vérification initiale
+    check4amReset();
+
+    // Vérification toutes les minutes pour ne pas rater le créneau si l'app est ouverte
+    const interval = setInterval(check4amReset, 60000);
+    return () => clearInterval(interval);
+  }, [user, logout]);
 
   return (
     <AuthContext.Provider value={{
