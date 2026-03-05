@@ -3,6 +3,24 @@ import { useAuth } from '../contexts/AuthContext';
 import { CheckCircle2, LogOut, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 
+const STARTER_FEATURES = [
+    { icon: 'check', text: 'CRM & Pipeline illimité' },
+    { icon: 'check', text: 'Agenda & Booking (Liens de rdv)' },
+    { icon: 'check', text: 'Facturation (Générateur PDF)' },
+    { icon: 'check', text: 'KPIs Globaux (CA, Ventes)' },
+    { icon: 'check', text: 'Rappels programmables' },
+];
+
+const FOUNDER_FEATURES = [
+    { icon: 'shield', text: 'Tout ce qui est inclus dans Starter' },
+    { icon: 'shield', text: 'KPI Avancés (Évolution, Objectifs)' },
+    { icon: 'shield', text: 'Call Room (Scripts & Notes)' },
+    { icon: 'shield', text: 'Envoi Factures Automatique' },
+    { icon: 'shield', text: 'Automatisations (Sync CRM, etc.)' },
+    { icon: 'shield', text: 'Enregistrement Vidéo/Audio' },
+    { icon: 'shield', text: 'Badge "Founder" & Support Prio' },
+];
+
 export function TrialExpiredModal() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -41,6 +59,11 @@ export function TrialExpiredModal() {
         }
     };
 
+    const features = selectedPlan === 'starter' ? STARTER_FEATURES : FOUNDER_FEATURES;
+    const subtitle = selectedPlan === 'starter'
+        ? 'Le système complet pour organiser votre closing et encaisser vos premières commissions.'
+        : "L'expérience ultime. Accès à vie, IA et communauté privée.";
+
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
             <div className="w-full max-w-[900px] rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl overflow-hidden">
@@ -62,28 +85,34 @@ export function TrialExpiredModal() {
                                 Votre essai gratuit de<br />10 jours est terminé
                             </h2>
 
-                            <p className="text-slate-400 text-sm leading-relaxed mb-8">
-                                Pour continuer à gérer votre pipeline et vos contacts sans interruption, choisissez votre forfait.
+                            <p
+                                className="text-slate-400 text-sm leading-relaxed mb-8 transition-opacity duration-300"
+                                key={selectedPlan + '-desc'}
+                                style={{ animation: 'fadeSlideIn 0.3s ease-out' }}
+                            >
+                                {subtitle}
                             </p>
 
-                            {/* Features */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                                    <span className="text-slate-300 text-sm font-medium">CRM complet & Gestion de contacts</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                                    <span className="text-slate-300 text-sm font-medium">Pipeline commercial illimité</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                                    <span className="text-slate-300 text-sm font-medium">Rapports & KPI avancés</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                                    <span className="text-slate-300 text-sm font-medium">Support prioritaire 24/7</span>
-                                </div>
+                            {/* Features — animated */}
+                            <div
+                                className="space-y-3"
+                                key={selectedPlan}
+                                style={{ animation: 'fadeSlideIn 0.3s ease-out' }}
+                            >
+                                {features.map((f, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex items-center gap-3"
+                                        style={{ animation: `fadeSlideIn 0.3s ease-out ${i * 0.05}s both` }}
+                                    >
+                                        {f.icon === 'shield' ? (
+                                            <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                                        ) : (
+                                            <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                                        )}
+                                        <span className="text-slate-300 text-sm font-medium">{f.text}</span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
@@ -109,7 +138,7 @@ export function TrialExpiredModal() {
                             {/* Starter */}
                             <button
                                 onClick={() => setSelectedPlan('starter')}
-                                className={`w-full rounded-xl border p-5 text-left transition-all ${selectedPlan === 'starter'
+                                className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'starter'
                                         ? 'border-blue-500 bg-blue-500/5'
                                         : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
                                     }`}
@@ -135,7 +164,7 @@ export function TrialExpiredModal() {
                                 </div>
                                 <button
                                     onClick={() => setSelectedPlan('founder')}
-                                    className={`w-full rounded-xl border p-5 text-left transition-all ${selectedPlan === 'founder'
+                                    className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'founder'
                                             ? 'border-blue-500 bg-blue-500/5'
                                             : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
                                         }`}
@@ -168,6 +197,20 @@ export function TrialExpiredModal() {
                     </div>
                 </div>
             </div>
+
+            {/* Keyframe animation */}
+            <style>{`
+        @keyframes fadeSlideIn {
+          from {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
         </div>
     );
 }
