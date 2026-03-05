@@ -174,16 +174,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const lastReset = localStorage.getItem('last_4am_reset');
-        const resetTimestamp = resetTime.getTime().toString();
+        const currentResetTimestamp = resetTime.getTime().toString();
 
-        if (lastReset !== resetTimestamp) {
-          // Si on a un ancien reset et qu'il est antérieur au reset "actuel" (4h passées)
-          if (lastReset && parseInt(lastReset) < resetTime.getTime()) {
-            console.log("Auto-logout at 4am triggered");
+        if (lastReset && parseInt(lastReset) < resetTime.getTime()) {
+          // On est après un 4h qui n'a pas été traité
+          // On ne déconnecte QUE si l'utilisateur n'est pas activement sur l'outil
+          if (document.visibilityState === 'hidden') {
+            console.log("Auto-logout at 4am triggered (background/inactive)");
             logout();
+            localStorage.setItem('last_4am_reset', currentResetTimestamp);
+          } else {
+            // S'il est sur l'outil (visible), on ne fait rien pour l'instant.
+            // Le check se relancera soit à la prochaine minute, soit dès qu'il change d'onglet.
+            console.log("4am reset pending: user is working on the tool.");
           }
-          // On met à jour le flag soit après logout, soit si c'est une nouvelle session post-4h
-          localStorage.setItem('last_4am_reset', resetTimestamp);
+        } else if (!lastReset) {
+          // Première fois qu'on voit le système, on initialise le flag
+          localStorage.setItem('last_4am_reset', currentResetTimestamp);
         }
       } catch (e) {
         console.error("Error in 4am reset check:", e);
@@ -193,9 +200,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Vérification initiale
     check4amReset();
 
-    // Vérification toutes les minutes pour ne pas rater le créneau si l'app est ouverte
+    // Vérification toutes les minutes
     const interval = setInterval(check4amReset, 60000);
-    return () => clearInterval(interval);
+
+    // Déclenchement dès que l'utilisateur quitte l'onglet
+    document.addEventListener('visibilitychange', check4amReset);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', check4amReset);
+    };
   }, [user, logout]);
 
   return (
