@@ -54,7 +54,7 @@ import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
 import { SubscriptionRetention } from './pages/SubscriptionRetention'
 import { SpectatorPage } from './pages/SpectatorPage'
 import { RemindersPage } from './pages/RemindersPage'
-import { TrialExpired } from './pages/TrialExpired'
+import { TrialExpiredModal } from './pages/TrialExpired'
 
 // Page d'accueil intelligente : landing immédiate si non connecté, loading si session détectée
 function SmartHome() {
@@ -74,27 +74,12 @@ function SmartHome() {
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, profile, isAdmin } = useAuth()
-  const location = useLocation()
+  const { user, loading } = useAuth()
 
   if (loading) return <LoadingScreen />
 
-  // Si non connecté, redirection vers la landing
   if (!user) {
     return <Navigate to="/" replace />
-  }
-
-  // Vérification expiration de l'essai gratuit (10 jours)
-  // Skip si admin, si déjà sur /choose-plan, ou si l'utilisateur a un abonnement actif
-  const isChoosePlan = location.pathname === '/choose-plan';
-  const hasSubscription = profile?.subscription_status && profile.subscription_status !== 'canceled';
-  if (!isAdmin && !isChoosePlan && !hasSubscription && user.created_at && profile) {
-    const created = new Date(user.created_at);
-    const trialEnd = new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000);
-    const now = new Date();
-    if (now > trialEnd) {
-      return <Navigate to="/choose-plan" replace />
-    }
   }
 
   return <>{children}</>
@@ -186,11 +171,6 @@ function AuthenticatedApp() {
         />
         <Route path="/confirm-email-change" element={<ConfirmEmailUpdate />} />
         <Route path="/retention" element={<SubscriptionRetention />} />
-        <Route path="/choose-plan" element={
-          <ProtectedRoute>
-            <TrialExpired />
-          </ProtectedRoute>
-        } />
 
         {/* 👇 NOUVELLE ROUTE SÉPARÉE : Coming Soon (Hors du Layout) */}
         <Route
@@ -245,6 +225,7 @@ function AuthenticatedApp() {
 
       {user && (
         <>
+          <TrialExpiredModal /> {/* Added TrialExpiredModal */}
           <OnboardingWrapper onComplete={() => {
             // onComplete est appelé après updateProfile dans OnboardingModal.
             // Le metadata onboarding_completed sera déjà true.
