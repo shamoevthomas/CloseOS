@@ -1,7 +1,8 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { CheckCircle2, LogOut, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, LogOut, ShieldCheck, X, Sheet } from 'lucide-react';
 import { useState } from 'react';
+import { PricingComparisonTable } from '../components/PricingComparisonTable';
 
 const STARTER_FEATURES = [
     { icon: 'check', text: 'CRM & Pipeline illimité' },
@@ -26,6 +27,7 @@ export function TrialExpiredModal() {
     const location = useLocation();
     const { user, logout, profile, isAdmin } = useAuth();
     const [selectedPlan, setSelectedPlan] = useState<'starter' | 'founder'>('founder');
+    const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
     // Don't show on checkout/return/public pages
     const hiddenPaths = ['/checkout', '/checkout-starter', '/return', '/welcome-founder', '/', '/login', '/register'];
@@ -178,6 +180,15 @@ export function TrialExpiredModal() {
                                     </div>
                                 </button>
                             </div>
+
+                            {/* BOUTON COMPARATIF */}
+                            <button
+                                onClick={() => setIsComparisonOpen(true)}
+                                className="mt-4 w-full px-4 py-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-semibold transition-all border border-slate-700/50 hover:border-slate-600 flex items-center justify-center gap-2"
+                            >
+                                <Sheet className="h-4 w-4" />
+                                Voir le comparatif détaillé des offres
+                            </button>
                         </div>
 
                         {/* CTA */}
@@ -208,6 +219,31 @@ export function TrialExpiredModal() {
           }
         }
       `}</style>
+
+            {/* COMPARISON MODAL */}
+            {
+                isComparisonOpen && (
+                    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-950 rounded-2xl border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+                            <button
+                                onClick={() => setIsComparisonOpen(false)}
+                                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors z-10"
+                            >
+                                <X className="h-6 w-6" />
+                            </button>
+                            <PricingComparisonTable isModal={true} />
+                            <div className="p-6 border-t border-slate-900 bg-slate-950/50 sticky bottom-0 text-center">
+                                <button
+                                    onClick={() => setIsComparisonOpen(false)}
+                                    className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors"
+                                >
+                                    Fermer le comparatif
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </div>
     );
 }
