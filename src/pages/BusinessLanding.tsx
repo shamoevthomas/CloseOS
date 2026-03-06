@@ -229,7 +229,7 @@ export const BusinessLanding: React.FC = () => {
                 <footer className="px-6 md:px-20 py-12 border-t border-business-primary/10 bg-business-background-light">
                     <img
                         alt="CloseOS Logo"
-                        className="w-auto object-contain h-12"
+                        className="w-auto object-contain h-16"
                         src="/CloseOS Buisness.png"
                     />
                 </footer>
