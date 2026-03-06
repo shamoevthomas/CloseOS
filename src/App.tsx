@@ -212,11 +212,11 @@ function AuthenticatedApp() {
           <Route path="offers" element={<Offers />} />
           <Route path="agenda" element={<AgendaErrorBoundary><Agenda /></AgendaErrorBoundary>} />
           <Route path="appels" element={<CallsPage />} />
-          <Route path="appels/:id" element={<FounderOnlyGuard><CallDetails /></FounderOnlyGuard>} />
+          <Route path="appels/:id" element={<CallDetails />} />
           <Route path="telephony" element={<TelephonyPage />} />
           <Route path="ai-coach" element={<AICoachPage />} />
           <Route path="factures" element={<InvoicesPage />} />
-          <Route path="kpi" element={<FounderOnlyGuard><KPIPage /></FounderOnlyGuard>} />
+          <Route path="kpi" element={<KPIPage />} />
           <Route path="rendez-vous" element={<RendezVous />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="reminders" element={<RemindersPage />} />

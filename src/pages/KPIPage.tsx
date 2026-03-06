@@ -33,8 +33,10 @@ import {
 import { useOffers } from '../contexts/OffersContext';
 import { useProspects } from '../contexts/ProspectsContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useUpgrade } from '../contexts/UpgradeContext';
 import { supabase } from '../lib/supabase';
 import { SharePerformanceButton } from '../components/SharePerformanceButton';
+import { Lock } from 'lucide-react';
 
 interface KpiFormulaEntry {
   name: string;
@@ -150,7 +152,9 @@ const getDealOffer = (deal: any): string => {
 export function KPIPage() {
   const { offers: allOffers } = useOffers();
   const { prospects: allProspects } = useProspects();
-  const { user } = useAuth();
+  const { user, isFounder, isAdmin, isInTrial } = useAuth();
+  const { showUpgrade } = useUpgrade();
+  const hasFullAccess = isFounder || isAdmin || isInTrial;
 
   // --- Logique Offres ---
   const isExpired = (offer: any) => {
@@ -556,17 +560,26 @@ export function KPIPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {viewMode === 'month' && (
-              <div className="flex items-center bg-slate-800/80 rounded-xl p-1 border border-white/10">
-                <button onClick={prevMonth} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-300"><ChevronLeft className="w-4 h-4" /></button>
-                <span className="px-4 text-sm font-semibold text-white capitalize min-w-[120px] text-center">{currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</span>
-                <button onClick={nextMonth} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-300"><ChevronRight className="w-4 h-4" /></button>
+            {hasFullAccess ? (
+              <>
+                {viewMode === 'month' && (
+                  <div className="flex items-center bg-slate-800/80 rounded-xl p-1 border border-white/10">
+                    <button onClick={prevMonth} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-300"><ChevronLeft className="w-4 h-4" /></button>
+                    <span className="px-4 text-sm font-semibold text-white capitalize min-w-[120px] text-center">{currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</span>
+                    <button onClick={nextMonth} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-300"><ChevronRight className="w-4 h-4" /></button>
+                  </div>
+                )}
+                <button onClick={() => setViewMode(viewMode === 'month' ? 'all' : 'month')} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-sm font-medium text-slate-300 hover:text-white transition-all">
+                  {viewMode === 'month' ? <Infinity className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
+                  {viewMode === 'month' ? 'Vue Globale' : 'Vue Mensuelle'}
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/30 border border-white/5 text-sm text-slate-500">
+                <Lock className="w-4 h-4" />
+                Filtres réservés au Pack Founder
               </div>
             )}
-            <button onClick={() => setViewMode(viewMode === 'month' ? 'all' : 'month')} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-sm font-medium text-slate-300 hover:text-white transition-all">
-              {viewMode === 'month' ? <Infinity className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
-              {viewMode === 'month' ? 'Vue Globale' : 'Vue Mensuelle'}
-            </button>
             <button
               onClick={() => { setConfigTab(activeOffers.length > 0 ? String(activeOffers[0].id) : 'global'); setShowConfigModal(true); }}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all"
@@ -609,7 +622,19 @@ export function KPIPage() {
         </div>
 
         {/* GRAPHIQUES RECHARTS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="relative">
+          {!hasFullAccess && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl">
+              <button
+                onClick={showUpgrade}
+                className="flex items-center gap-2.5 px-8 py-4 rounded-xl bg-blue-600 text-white font-bold text-base shadow-2xl shadow-blue-600/30 hover:bg-blue-500 hover:shadow-blue-600/40 active:scale-[0.98] transition-all border border-blue-500/50"
+              >
+                <Lock className="w-5 h-5" />
+                Débloquer
+              </button>
+            </div>
+          )}
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${!hasFullAccess ? 'blur-md select-none pointer-events-none' : ''}`}>
 
           <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
@@ -666,6 +691,7 @@ export function KPIPage() {
             </div>
           </div>
 
+          </div>
         </div>
 
         {/* SUMMARY */}
