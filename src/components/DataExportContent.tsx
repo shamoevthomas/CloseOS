@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { CheckSquare, Square, Download, Loader2 } from 'lucide-react'
+// @ts-ignore - html2pdf.js doesn't have types
 import html2pdf from 'html2pdf.js'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
@@ -51,11 +52,13 @@ export function DataExportContent() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
   const { user, profile } = useAuth()
+  const pdfRef = useRef<HTMLDivElement>(null)
 
   const [selected, setSelected] = useState<Set<ExportSection>>(new Set(SECTIONS.map(s => s.id)))
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [generating, setGenerating] = useState(false)
+  const [readyToExport, setReadyToExport] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -81,187 +84,80 @@ export function DataExportContent() {
     else setSelected(new Set(SECTIONS.map(s => s.id)))
   }
 
-  const generatePDF = useCallback(async () => {
+  // KPI calculations
+  const won = prospects.filter(p => p.stage === 'won')
+  const totalCA = won.reduce((sum, p) => sum + (p.value || 0), 0)
+  const totalVentes = won.length
+  const totalProspects = prospects.length
+  const tauxConversion = totalProspects > 0 ? ((totalVentes / totalProspects) * 100).toFixed(1) : '0'
+  const totalCommissions = won.reduce((sum, p) => {
+    const offer = offers.find(o => o.id === (p.offer_id || p.offerId))
+    if (!offer) return sum
+    return sum + (p.value || 0) * (parsePrice(offer.commission) / 100)
+  }, 0)
+
+  const userName = profile?.full_name || 'Utilisateur'
+  const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+  const stages = ['prospect', 'qualified', 'won', 'followup', 'noshow', 'lost']
+  const now = new Date()
+
+  // When readyToExport is set, wait for render then capture PDF
+  useEffect(() => {
+    if (!readyToExport || !pdfRef.current) return
+
+    const timer = setTimeout(async () => {
+      try {
+        const element = pdfRef.current
+        if (!element) return
+
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename: `CloseOS-Export-${new Date().toISOString().slice(0, 10)}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            windowWidth: 800,
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+        }
+
+        await html2pdf().set(opt).from(element).save()
+      } catch (err) {
+        console.error('PDF export error:', err)
+      } finally {
+        setReadyToExport(false)
+        setGenerating(false)
+      }
+    }, 500) // give browser time to paint
+
+    return () => clearTimeout(timer)
+  }, [readyToExport])
+
+  const generatePDF = useCallback(() => {
     if (selected.size === 0) return
     setGenerating(true)
+    setReadyToExport(true)
+  }, [selected])
 
-    try {
-      // KPI calculations
-      const won = prospects.filter(p => p.stage === 'won')
-      const totalCA = won.reduce((sum, p) => sum + (p.value || 0), 0)
-      const totalVentes = won.length
-      const totalProspects = prospects.length
-      const tauxConversion = totalProspects > 0 ? ((totalVentes / totalProspects) * 100).toFixed(1) : '0'
-      const totalCommissions = won.reduce((sum, p) => {
-        const offer = offers.find(o => o.id === (p.offer_id || p.offerId))
-        if (!offer) return sum
-        return sum + (p.value || 0) * (parsePrice(offer.commission) / 100)
-      }, 0)
+  const thStyle: React.CSSProperties = {
+    padding: '10px 14px',
+    textAlign: 'left' as const,
+    fontSize: '12px',
+    fontWeight: 700,
+    color: '#334155',
+    borderBottom: '2px solid #e2e8f0',
+    background: '#f1f5f9',
+  }
 
-      const userName = profile?.full_name || 'Utilisateur'
-      const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
-
-      const thStyle = 'padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;background:#f1f5f9;'
-      const tdStyle = 'padding:10px 14px;font-size:12px;color:#1e293b;border-bottom:1px solid #f1f5f9;'
-
-      let sectionsHTML = ''
-
-      if (selected.has('kpi')) {
-        sectionsHTML += `
-          <div style="margin-bottom:32px;">
-            <h2 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #3b82f6;">KPI</h2>
-            <table style="width:100%;border-collapse:collapse;">
-              <thead><tr>
-                <th style="${thStyle}">Métrique</th>
-                <th style="${thStyle}">Valeur</th>
-              </tr></thead>
-              <tbody>
-                <tr><td style="${tdStyle}">CA Total</td><td style="${tdStyle}">${totalCA.toLocaleString('fr-FR')} €</td></tr>
-                <tr><td style="${tdStyle}">Ventes (Won)</td><td style="${tdStyle}">${totalVentes}</td></tr>
-                <tr><td style="${tdStyle}">Taux de conversion</td><td style="${tdStyle}">${tauxConversion}%</td></tr>
-                <tr><td style="${tdStyle}">Commissions estimées</td><td style="${tdStyle}">${totalCommissions.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</td></tr>
-              </tbody>
-            </table>
-          </div>`
-      }
-
-      if (selected.has('pipeline')) {
-        const stages = ['prospect', 'qualified', 'won', 'followup', 'noshow', 'lost']
-        const rows = prospects
-          .filter(p => stages.includes(p.stage))
-          .sort((a, b) => stages.indexOf(a.stage) - stages.indexOf(b.stage))
-          .map(p => `<tr>
-            <td style="${tdStyle}">${p.contact || p.name || '-'}</td>
-            <td style="${tdStyle}">${p.company || '-'}</td>
-            <td style="${tdStyle}">${STAGE_LABELS[p.stage] || p.stage}</td>
-            <td style="${tdStyle}">${p.value ? p.value.toLocaleString('fr-FR') + ' €' : '-'}</td>
-            <td style="${tdStyle}">${p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '-'}</td>
-          </tr>`).join('')
-
-        sectionsHTML += `
-          <div style="margin-bottom:32px;">
-            <h2 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #3b82f6;">Pipeline</h2>
-            <table style="width:100%;border-collapse:collapse;">
-              <thead><tr>
-                <th style="${thStyle}">Contact</th>
-                <th style="${thStyle}">Entreprise</th>
-                <th style="${thStyle}">Étape</th>
-                <th style="${thStyle}">Montant</th>
-                <th style="${thStyle}">Date</th>
-              </tr></thead>
-              <tbody>${rows || `<tr><td style="${tdStyle}" colspan="5">Aucun prospect</td></tr>`}</tbody>
-            </table>
-          </div>`
-      }
-
-      if (selected.has('contacts')) {
-        const rows = prospects.map(p => `<tr>
-          <td style="${tdStyle}">${p.contact || p.name || '-'}</td>
-          <td style="${tdStyle}">${p.company || '-'}</td>
-          <td style="${tdStyle}">${p.email || '-'}</td>
-          <td style="${tdStyle}">${p.phone || '-'}</td>
-        </tr>`).join('')
-
-        sectionsHTML += `
-          <div style="margin-bottom:32px;">
-            <h2 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #3b82f6;">Contacts</h2>
-            <table style="width:100%;border-collapse:collapse;">
-              <thead><tr>
-                <th style="${thStyle}">Nom</th>
-                <th style="${thStyle}">Entreprise</th>
-                <th style="${thStyle}">Email</th>
-                <th style="${thStyle}">Téléphone</th>
-              </tr></thead>
-              <tbody>${rows || `<tr><td style="${tdStyle}" colspan="4">Aucun contact</td></tr>`}</tbody>
-            </table>
-          </div>`
-      }
-
-      if (selected.has('factures')) {
-        const rows = invoices.map(inv => `<tr>
-          <td style="${tdStyle}">${inv.invoice_number || '-'}</td>
-          <td style="${tdStyle}">${inv.amount_ttc ? inv.amount_ttc.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €' : '-'}</td>
-          <td style="${tdStyle}">${inv.created_at ? new Date(inv.created_at).toLocaleDateString('fr-FR') : '-'}</td>
-          <td style="${tdStyle}">${inv.status || '-'}</td>
-        </tr>`).join('')
-
-        sectionsHTML += `
-          <div style="margin-bottom:32px;">
-            <h2 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #3b82f6;">Factures</h2>
-            <table style="width:100%;border-collapse:collapse;">
-              <thead><tr>
-                <th style="${thStyle}">N°</th>
-                <th style="${thStyle}">Montant</th>
-                <th style="${thStyle}">Date</th>
-                <th style="${thStyle}">Statut</th>
-              </tr></thead>
-              <tbody>${rows || `<tr><td style="${tdStyle}" colspan="4">Aucune facture</td></tr>`}</tbody>
-            </table>
-          </div>`
-      }
-
-      if (selected.has('rappels')) {
-        const now = new Date()
-        const rows = reminders.map(r => {
-          const due = new Date(r.due_date)
-          const statut = r.done ? 'Fait' : due < now ? 'En retard' : 'À venir'
-          const statutColor = r.done ? '#10b981' : due < now ? '#ef4444' : '#3b82f6'
-          return `<tr>
-            <td style="${tdStyle}">${r.title || '-'}</td>
-            <td style="${tdStyle}">${due.toLocaleDateString('fr-FR')}</td>
-            <td style="${tdStyle}"><span style="color:${statutColor};font-weight:600;">${statut}</span></td>
-          </tr>`
-        }).join('')
-
-        sectionsHTML += `
-          <div style="margin-bottom:32px;">
-            <h2 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #3b82f6;">Rappels</h2>
-            <table style="width:100%;border-collapse:collapse;">
-              <thead><tr>
-                <th style="${thStyle}">Titre</th>
-                <th style="${thStyle}">Date</th>
-                <th style="${thStyle}">Statut</th>
-              </tr></thead>
-              <tbody>${rows || `<tr><td style="${tdStyle}" colspan="3">Aucun rappel</td></tr>`}</tbody>
-            </table>
-          </div>`
-      }
-
-      // Build full HTML
-      const html = `
-        <div style="font-family:Inter,Helvetica,Arial,sans-serif;background:#ffffff;padding:40px;max-width:800px;margin:0 auto;">
-          <div style="background:linear-gradient(135deg,#2563eb,#1d4ed8);padding:28px 32px;border-radius:12px;margin-bottom:32px;">
-            <h1 style="color:#ffffff;font-size:22px;font-weight:800;margin:0 0 4px 0;">CloseOS — Export de données</h1>
-            <p style="color:rgba(255,255,255,0.8);font-size:13px;margin:0;">${userName} • ${dateStr}</p>
-          </div>
-          ${sectionsHTML}
-          <div style="margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0;text-align:center;">
-            <p style="color:#94a3b8;font-size:11px;margin:0;">Généré par CloseOS — closeros.com</p>
-          </div>
-        </div>`
-
-      // Render off-screen
-      const container = document.createElement('div')
-      container.style.cssText = 'position:absolute;left:-9999px;top:0;background:#fff;'
-      container.innerHTML = html
-      document.body.appendChild(container)
-
-      const opt = {
-        margin: 0,
-        filename: `CloseOS-Export-${new Date().toISOString().slice(0, 10)}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-      }
-
-      await html2pdf().set(opt).from(container).save()
-      document.body.removeChild(container)
-    } catch (err) {
-      console.error('PDF export error:', err)
-    } finally {
-      setGenerating(false)
-    }
-  }, [selected, prospects, offers, invoices, reminders, profile])
+  const tdStyle: React.CSSProperties = {
+    padding: '10px 14px',
+    fontSize: '12px',
+    color: '#1e293b',
+    borderBottom: '1px solid #f1f5f9',
+  }
 
   return (
     <div className="space-y-6">
@@ -299,6 +195,183 @@ export function DataExportContent() {
         {generating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
         {generating ? 'Génération en cours…' : 'Exporter en PDF'}
       </button>
+
+      {/* Hidden PDF content - rendered in DOM for html2canvas to capture */}
+      {readyToExport && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '800px', zIndex: -1, opacity: 0, pointerEvents: 'none' }}>
+          <div
+            ref={pdfRef}
+            style={{
+              fontFamily: 'Inter, Helvetica, Arial, sans-serif',
+              background: '#ffffff',
+              color: '#000000',
+              padding: '40px',
+              width: '800px',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', padding: '28px 32px', borderRadius: '12px', marginBottom: '32px' }}>
+              <h1 style={{ color: '#ffffff', fontSize: '22px', fontWeight: 800, margin: '0 0 4px 0' }}>CloseOS — Export de données</h1>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', margin: 0 }}>{userName} • {dateStr}</p>
+            </div>
+
+            {/* KPI */}
+            {selected.has('kpi') && (
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6' }}>KPI</h2>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Métrique</th>
+                      <th style={thStyle}>Valeur</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td style={tdStyle}>CA Total</td><td style={tdStyle}>{totalCA.toLocaleString('fr-FR')} €</td></tr>
+                    <tr><td style={tdStyle}>Ventes (Won)</td><td style={tdStyle}>{totalVentes}</td></tr>
+                    <tr><td style={tdStyle}>Taux de conversion</td><td style={tdStyle}>{tauxConversion}%</td></tr>
+                    <tr><td style={tdStyle}>Commissions estimées</td><td style={tdStyle}>{totalCommissions.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Pipeline */}
+            {selected.has('pipeline') && (
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6' }}>Pipeline</h2>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Contact</th>
+                      <th style={thStyle}>Entreprise</th>
+                      <th style={thStyle}>Étape</th>
+                      <th style={thStyle}>Montant</th>
+                      <th style={thStyle}>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {prospects.filter(p => stages.includes(p.stage)).length > 0
+                      ? prospects
+                          .filter(p => stages.includes(p.stage))
+                          .sort((a, b) => stages.indexOf(a.stage) - stages.indexOf(b.stage))
+                          .map((p, i) => (
+                            <tr key={i}>
+                              <td style={tdStyle}>{p.contact || p.name || '-'}</td>
+                              <td style={tdStyle}>{p.company || '-'}</td>
+                              <td style={tdStyle}>{STAGE_LABELS[p.stage] || p.stage}</td>
+                              <td style={tdStyle}>{p.value ? p.value.toLocaleString('fr-FR') + ' €' : '-'}</td>
+                              <td style={tdStyle}>{p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '-'}</td>
+                            </tr>
+                          ))
+                      : <tr><td style={tdStyle} colSpan={5}>Aucun prospect</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Contacts */}
+            {selected.has('contacts') && (
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6' }}>Contacts</h2>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Nom</th>
+                      <th style={thStyle}>Entreprise</th>
+                      <th style={thStyle}>Email</th>
+                      <th style={thStyle}>Téléphone</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {prospects.length > 0
+                      ? prospects.map((p, i) => (
+                          <tr key={i}>
+                            <td style={tdStyle}>{p.contact || p.name || '-'}</td>
+                            <td style={tdStyle}>{p.company || '-'}</td>
+                            <td style={tdStyle}>{p.email || '-'}</td>
+                            <td style={tdStyle}>{p.phone || '-'}</td>
+                          </tr>
+                        ))
+                      : <tr><td style={tdStyle} colSpan={4}>Aucun contact</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Factures */}
+            {selected.has('factures') && (
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6' }}>Factures</h2>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>N°</th>
+                      <th style={thStyle}>Montant</th>
+                      <th style={thStyle}>Date</th>
+                      <th style={thStyle}>Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.length > 0
+                      ? invoices.map((inv, i) => (
+                          <tr key={i}>
+                            <td style={tdStyle}>{inv.invoice_number || '-'}</td>
+                            <td style={tdStyle}>{inv.amount_ttc ? inv.amount_ttc.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €' : '-'}</td>
+                            <td style={tdStyle}>{inv.created_at ? new Date(inv.created_at).toLocaleDateString('fr-FR') : '-'}</td>
+                            <td style={tdStyle}>{inv.status || '-'}</td>
+                          </tr>
+                        ))
+                      : <tr><td style={tdStyle} colSpan={4}>Aucune facture</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Rappels */}
+            {selected.has('rappels') && (
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6' }}>Rappels</h2>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Titre</th>
+                      <th style={thStyle}>Date</th>
+                      <th style={thStyle}>Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reminders.length > 0
+                      ? reminders.map((r, i) => {
+                          const due = new Date(r.due_date)
+                          const statut = r.done ? 'Fait' : due < now ? 'En retard' : 'À venir'
+                          const statutColor = r.done ? '#10b981' : due < now ? '#ef4444' : '#3b82f6'
+                          return (
+                            <tr key={i}>
+                              <td style={tdStyle}>{r.title || '-'}</td>
+                              <td style={tdStyle}>{due.toLocaleDateString('fr-FR')}</td>
+                              <td style={{ ...tdStyle, color: statutColor, fontWeight: 600 }}>{statut}</td>
+                            </tr>
+                          )
+                        })
+                      : <tr><td style={tdStyle} colSpan={3}>Aucun rappel</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div style={{ marginTop: '40px', paddingTop: '16px', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
+              <p style={{ color: '#94a3b8', fontSize: '11px', margin: 0 }}>Généré par CloseOS — closeros.com</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
