@@ -56,7 +56,7 @@ export default async function handler(req: Request) {
         return new Response(JSON.stringify({
             cancel_at_period_end: sub.cancel_at_period_end,
             current_period_end: sub.current_period_end
-                ? new Date(sub.current_period_end * 1000).toISOString()
+                ? new Date((typeof sub.current_period_end === 'number' ? sub.current_period_end * 1000 : new Date(sub.current_period_end).getTime())).toISOString()
                 : null,
         }), {
             headers: { 'Content-Type': 'application/json' }

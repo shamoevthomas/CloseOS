@@ -768,12 +768,16 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 )}
 
                 {/* Annulation programmée — info + réactivation */}
-                {isPaying && cancelAtPeriodEnd && currentPeriodEnd && (
+                {isPaying && cancelAtPeriodEnd && (
                   <div className="p-5 rounded-2xl bg-orange-500/10 border border-orange-500/20 space-y-4">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="h-5 w-5 text-orange-400 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-white font-bold text-sm">Votre abonnement prend fin le {new Date(currentPeriodEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        <p className="text-white font-bold text-sm">
+                          {currentPeriodEnd
+                            ? `Votre abonnement prend fin le ${new Date(currentPeriodEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                            : 'Votre abonnement est en cours d\'annulation'}
+                        </p>
                         <p className="text-slate-400 text-xs mt-1">Après cette date, vous perdrez l'accès à toutes les fonctionnalités.</p>
                       </div>
                     </div>
