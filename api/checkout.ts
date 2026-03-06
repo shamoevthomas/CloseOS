@@ -14,7 +14,7 @@ const supabase = createClient(
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     try {
-      const { lineItems, plan, referralCode, isVoip, promotekitReferral, userId, referral_code: frontendReferralCode, customerEmail } = req.body;
+      const { lineItems, plan, referralCode, isVoip, promotekitReferral, userId, referral_code: frontendReferralCode, customerEmail, existingUser } = req.body;
 
       // Cascade de priorité pour le code affilié : Supabase > localStorage > Promotekit
       let supabaseReferral = null;
@@ -67,6 +67,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Pré-remplir l'email pour les utilisateurs existants (TrialExpired)
         ...(customerEmail ? { customer_email: customerEmail } : {}),
 
+        // Utilisateur existant → pas de redirect, onComplete gère côté client
+        // Nouvel utilisateur → redirect vers /return pour créer le compte
+        ...(existingUser
+          ? { redirect_on_completion: 'never' as const }
+          : { return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}&plan=${plan || 'founder'}` }),
+
         // On applique la réduction
         discounts: discounts.length > 0 ? discounts : undefined,
 
@@ -76,8 +82,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ...(finalReferral ? { referral_code: String(finalReferral) } : {}),
           ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
         },
-
-        return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}&plan=${plan || 'founder'}`,
 
         subscription_data: {
           metadata: {

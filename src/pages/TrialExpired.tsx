@@ -118,6 +118,7 @@ export function TrialExpiredModal() {
                 referral_code: localStorage.getItem('referral_code') ?? '',
                 userId: user?.id,
                 customerEmail: user?.email,
+                existingUser: true,
             }),
         })
             .then(async (res) => {
