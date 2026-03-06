@@ -1,48 +1,87 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { CheckCircle2, LogOut, ShieldCheck, X, Sheet } from 'lucide-react';
-import { useState } from 'react';
+import { CheckCircle2, LogOut, ShieldCheck, X, Sheet, ArrowLeft, Square, CheckSquare, AlertCircle, TicketPercent, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
 import { PricingComparisonTable } from '../components/PricingComparisonTable';
 
+const stripePromise = loadStripe('pk_live_51SxnxC33xpuYLywqRhYvxhWrChlI3Ckjj1AfJLqRQJQwaXNyVLuLAPaURbnEcrKRAQJTneB3ZjhUHSHuFQ9Xekdt00k1ho4IEt');
+
+// Features
 const STARTER_FEATURES = [
-    { icon: 'check', text: 'CRM & Pipeline illimité' },
-    { icon: 'check', text: 'Agenda & Booking (Liens de rdv)' },
-    { icon: 'check', text: 'Facturation (Générateur PDF)' },
-    { icon: 'check', text: 'KPIs Globaux (CA, Ventes)' },
-    { icon: 'check', text: 'Rappels programmables' },
+    'CRM & Pipeline illimité',
+    'Agenda & Booking (Liens de rdv)',
+    'Facturation (Générateur PDF)',
+    'KPIs Globaux (CA, Ventes)',
+    'Rappels programmables',
+];
+const FOUNDER_FEATURES = [
+    'Tout inclus (Starter +)',
+    'KPI Avancés (Évolution, Objectifs)',
+    'Call Room (Scripts & Notes)',
+    'Envoi Factures Automatique',
+    'Automatisations (Sync CRM, etc.)',
+    'Enregistrement Vidéo/Audio',
+    'Badge "Founder" & Support Prio',
 ];
 
-const FOUNDER_FEATURES = [
-    { icon: 'shield', text: 'Tout ce qui est inclus dans Starter' },
-    { icon: 'shield', text: 'KPI Avancés (Évolution, Objectifs)' },
-    { icon: 'shield', text: 'Call Room (Scripts & Notes)' },
-    { icon: 'shield', text: 'Envoi Factures Automatique' },
-    { icon: 'shield', text: 'Automatisations (Sync CRM, etc.)' },
-    { icon: 'shield', text: 'Enregistrement Vidéo/Audio' },
-    { icon: 'shield', text: 'Badge "Founder" & Support Prio' },
-];
+// Price IDs
+const PRICES: Record<string, Record<string, string>> = {
+    starter: {
+        monthly: 'price_1SyYFA33xpuYLywqHtV34VGE',
+        yearly: 'price_1Sz1Cj33xpuYLywq7Lkx6GKp',
+    },
+    founder: {
+        monthly: 'price_1SyKgI33xpuYLywqfdB8YJTp',
+        yearly: 'price_1Sz1Kg33xpuYLywqS5kHdnyU',
+    },
+};
+
+const BASE_PRICES: Record<string, Record<string, number>> = {
+    starter: { monthly: 39, yearly: 33 },
+    founder: { monthly: 29, yearly: 25 },
+};
+
+const CROSSED_PRICES: Record<string, Record<string, number>> = {
+    starter: { monthly: 0, yearly: 39 },
+    founder: { monthly: 69, yearly: 60 },
+};
 
 export function TrialExpiredModal() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, logout, profile, isAdmin } = useAuth();
+
+    // Step management
+    const [step, setStep] = useState<'select' | 'checkout'>('select');
     const [selectedPlan, setSelectedPlan] = useState<'starter' | 'founder'>('founder');
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+    // Comparison modal
     const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
-    // Don't show on checkout/return/public pages
+    // Stripe checkout
+    const [clientSecret, setClientSecret] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    // Promo code
+    const [referralCode, setReferralCode] = useState('');
+    const [appliedCode, setAppliedCode] = useState('');
+    const [isApplyingCode, setIsApplyingCode] = useState(false);
+    const [displayDiscount, setDisplayDiscount] = useState(0);
+
+    // CGV
+    const [isTermsAccepted, setIsTermsAccepted] = useState(false);
+    const [showTermsError, setShowTermsError] = useState(false);
+
+    // Guard clauses
     const hiddenPaths = ['/checkout', '/checkout-starter', '/return', '/welcome-founder', '/', '/login', '/register'];
-    if (hiddenPaths.some(p => location.pathname === p || location.pathname.startsWith(p + '/'))) {
-        return null;
-    }
-
-    // Don't show for admin
+    if (hiddenPaths.some(p => location.pathname === p || location.pathname.startsWith(p + '/'))) return null;
     if (isAdmin) return null;
-
-    // Don't show if user has an active subscription
     const hasSubscription = profile?.subscription_status && profile.subscription_status !== 'canceled';
     if (hasSubscription) return null;
-
-    // Don't show if trial hasn't expired yet
     if (!user?.created_at || !profile) return null;
     const created = new Date(user.created_at);
     const trialEnd = new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000);
@@ -53,197 +92,440 @@ export function TrialExpiredModal() {
         navigate('/', { replace: true });
     };
 
-    const handleSubscribe = () => {
-        if (selectedPlan === 'starter') {
-            navigate('/checkout-starter');
-        } else {
-            navigate('/checkout');
+    // Fetch Stripe client secret
+    const fetchClientSecret = () => {
+        setClientSecret('');
+        setLoading(true);
+        setError('');
+        const priceId = PRICES[selectedPlan][billingCycle];
+        const lineItems = [{ price: priceId, quantity: 1 }];
+
+        const promotekitReferral =
+            typeof window !== 'undefined' && (window as any).promotekit_referral
+                ? (window as any).promotekit_referral
+                : null;
+
+        fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                lineItems,
+                plan: selectedPlan,
+                referralCode: appliedCode,
+                promotekitReferral,
+                referral_code: localStorage.getItem('referral_code') ?? '',
+            }),
+        })
+            .then(async (res) => {
+                if (!res.ok) throw new Error('Erreur API');
+                return res.json();
+            })
+            .then((data) => {
+                setClientSecret(data.clientSecret);
+                setDisplayDiscount(data.percentOff || 0);
+                setLoading(false);
+                setIsApplyingCode(false);
+                if (appliedCode && !data.percentOff) {
+                    alert("Ce code promo n'existe pas ou est inactif.");
+                    setAppliedCode('');
+                    setReferralCode('');
+                }
+            })
+            .catch((err) => {
+                console.error(err);
+                setError('Erreur de chargement du module de paiement.');
+                setLoading(false);
+                setIsApplyingCode(false);
+            });
+    };
+
+    // Fetch when entering step 2 or when code changes
+    useEffect(() => {
+        if (step === 'checkout') {
+            fetchClientSecret();
+        }
+    }, [step, billingCycle, appliedCode]);
+
+    const handleApplyCode = () => {
+        if (referralCode.trim() !== appliedCode) {
+            setIsApplyingCode(true);
+            setAppliedCode(referralCode.trim().toUpperCase());
         }
     };
 
+    const handleOverlayClick = () => {
+        if (!isTermsAccepted) {
+            setShowTermsError(true);
+        }
+    };
+
+    const toggleTerms = () => {
+        if (isTermsAccepted) {
+            setIsTermsAccepted(false);
+        } else {
+            setIsTermsAccepted(true);
+            setShowTermsError(false);
+        }
+    };
+
+    const handleGoToCheckout = () => {
+        setStep('checkout');
+    };
+
+    const handleBackToSelect = () => {
+        setStep('select');
+        setClientSecret('');
+        setIsTermsAccepted(false);
+        setShowTermsError(false);
+        setReferralCode('');
+        setAppliedCode('');
+        setDisplayDiscount(0);
+    };
+
+    // Computed visuals
+    const basePrice = BASE_PRICES[selectedPlan][billingCycle];
+    const crossedPrice = CROSSED_PRICES[selectedPlan][billingCycle];
+    const finalPrice = displayDiscount > 0
+        ? (basePrice * (1 - displayDiscount / 100)).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
+        : basePrice;
     const features = selectedPlan === 'starter' ? STARTER_FEATURES : FOUNDER_FEATURES;
-    const subtitle = selectedPlan === 'starter'
-        ? 'Le système complet pour organiser votre closing et encaisser vos premières commissions.'
-        : "L'expérience ultime. Accès à vie, IA et communauté privée.";
+    const planLabel = selectedPlan === 'starter' ? 'Pack Starter' : 'Pack Founder';
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div className="w-full max-w-[900px] rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl overflow-hidden">
-                <div className="grid md:grid-cols-2">
 
-                    {/* LEFT SIDE */}
-                    <div className="p-8 md:p-10 flex flex-col justify-between border-r border-slate-800/50">
-                        <div>
-                            {/* Logo */}
-                            <div className="flex items-center gap-2.5 mb-8">
-                                <img src="/logo.PNG" alt="CloseOS Logo" className="h-9 w-auto" />
+            {/* ==================== STEP 1: SELECT PLAN ==================== */}
+            {step === 'select' && (
+                <div className="w-full max-w-[900px] rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl overflow-hidden" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                    <div className="grid md:grid-cols-2">
+
+                        {/* LEFT */}
+                        <div className="p-8 md:p-10 flex flex-col justify-between border-r border-slate-800/50">
+                            <div>
+                                <div className="flex items-center gap-2.5 mb-8">
+                                    <img src="/logo.PNG" alt="CloseOS Logo" className="h-9 w-auto" />
+                                </div>
+                                <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-tight mb-4">
+                                    Votre essai gratuit de<br />10 jours est terminé
+                                </h2>
+                                <p className="text-slate-400 text-sm leading-relaxed mb-8 transition-opacity duration-300" key={selectedPlan + '-desc'} style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                                    {selectedPlan === 'starter'
+                                        ? 'Le système complet pour organiser votre closing et encaisser vos premières commissions.'
+                                        : "L'expérience ultime. Accès à vie, IA et communauté privée."}
+                                </p>
+                                <div className="space-y-3" key={selectedPlan} style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                                    {features.map((text, i) => (
+                                        <div key={i} className="flex items-center gap-3" style={{ animation: `fadeSlideIn 0.3s ease-out ${i * 0.05}s both` }}>
+                                            {selectedPlan === 'founder' ? (
+                                                <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                                            ) : (
+                                                <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                                            )}
+                                            <span className="text-slate-300 text-sm font-medium">{text}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-
-                            {/* Title */}
-                            <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-tight mb-4">
-                                Votre essai gratuit de<br />10 jours est terminé
-                            </h2>
-
-                            <p
-                                className="text-slate-400 text-sm leading-relaxed mb-8 transition-opacity duration-300"
-                                key={selectedPlan + '-desc'}
-                                style={{ animation: 'fadeSlideIn 0.3s ease-out' }}
-                            >
-                                {subtitle}
-                            </p>
-
-                            {/* Features — animated */}
-                            <div
-                                className="space-y-3"
-                                key={selectedPlan}
-                                style={{ animation: 'fadeSlideIn 0.3s ease-out' }}
-                            >
-                                {features.map((f, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex items-center gap-3"
-                                        style={{ animation: `fadeSlideIn 0.3s ease-out ${i * 0.05}s both` }}
-                                    >
-                                        {f.icon === 'shield' ? (
-                                            <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                                        ) : (
-                                            <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                                        )}
-                                        <span className="text-slate-300 text-sm font-medium">{f.text}</span>
-                                    </div>
-                                ))}
-                            </div>
+                            <button onClick={handleLogout} className="mt-8 flex items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors text-sm">
+                                <LogOut className="h-4 w-4" />
+                                Se déconnecter
+                            </button>
                         </div>
 
-                        {/* Logout */}
-                        <button
-                            onClick={handleLogout}
-                            className="mt-8 flex items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors text-sm"
-                        >
-                            <LogOut className="h-4 w-4" />
-                            Se déconnecter
-                        </button>
-                    </div>
+                        {/* RIGHT */}
+                        <div className="p-8 md:p-10 flex flex-col">
+                            <h3 className="text-lg font-bold text-white text-center mb-6">Choisissez votre offre</h3>
 
-                    {/* RIGHT SIDE */}
-                    <div className="p-8 md:p-10 flex flex-col">
-                        <h3 className="text-lg font-bold text-white text-center mb-6">
-                            Choisissez votre offre
-                        </h3>
-
-                        {/* Plans */}
-                        <div className="space-y-4 flex-1">
-
-                            {/* Starter */}
-                            <button
-                                onClick={() => setSelectedPlan('starter')}
-                                className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'starter'
-                                    ? 'border-blue-500 bg-blue-500/5'
-                                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
-                                    }`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-white font-bold text-base">Offre Starter</p>
-                                        <p className="text-slate-400 text-xs mt-0.5 italic">L'essentiel pour démarrer</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className="text-2xl font-black text-white">39€</span>
-                                        <span className="text-slate-400 text-xs ml-1">/mois</span>
-                                    </div>
+                            {/* Billing toggle */}
+                            <div className="flex justify-center mb-5">
+                                <div className="bg-slate-900/50 p-1 rounded-xl border border-slate-800 flex items-center gap-1">
+                                    <button
+                                        onClick={() => setBillingCycle('monthly')}
+                                        className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        Mensuel
+                                    </button>
+                                    <button
+                                        onClick={() => setBillingCycle('yearly')}
+                                        className={`px-5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white shadow-lg border border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        Annuel
+                                        <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-15%</span>
+                                    </button>
                                 </div>
-                            </button>
+                            </div>
 
-                            {/* Founder */}
-                            <div className="relative">
-                                <div className="absolute -top-2.5 left-4 z-10">
-                                    <span className="inline-block px-3 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider shadow-lg">
-                                        Meilleure offre
-                                    </span>
-                                </div>
+                            <div className="space-y-4 flex-1">
+                                {/* Starter */}
                                 <button
-                                    onClick={() => setSelectedPlan('founder')}
-                                    className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'founder'
-                                        ? 'border-blue-500 bg-blue-500/5'
-                                        : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
-                                        }`}
+                                    onClick={() => setSelectedPlan('starter')}
+                                    className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'starter' ? 'border-blue-500 bg-blue-500/5' : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'}`}
                                 >
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-white font-bold text-base">Offre Founder</p>
-                                            <p className="text-blue-400 text-xs mt-0.5">Accès complet & illimité</p>
+                                            <p className="text-white font-bold text-base">Offre Starter</p>
+                                            <p className="text-slate-400 text-xs mt-0.5 italic">L'essentiel pour démarrer</p>
                                         </div>
                                         <div className="text-right">
-                                            <span className="text-2xl font-black text-white">29€</span>
+                                            {billingCycle === 'yearly' && <span className="text-sm text-slate-500 line-through mr-2">39€</span>}
+                                            <span className="text-2xl font-black text-white">{BASE_PRICES.starter[billingCycle]}€</span>
                                             <span className="text-slate-400 text-xs ml-1">/mois</span>
                                         </div>
                                     </div>
                                 </button>
-                            </div>
 
-                            {/* BOUTON COMPARATIF */}
-                            <button
-                                onClick={() => setIsComparisonOpen(true)}
-                                className="mt-4 w-full px-4 py-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-semibold transition-all border border-slate-700/50 hover:border-slate-600 flex items-center justify-center gap-2"
-                            >
-                                <Sheet className="h-4 w-4" />
-                                Voir le comparatif détaillé des offres
-                            </button>
-                        </div>
+                                {/* Founder */}
+                                <div className="relative">
+                                    <div className="absolute -top-2.5 left-4 z-10">
+                                        <span className="inline-block px-3 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider shadow-lg">
+                                            Meilleure offre
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedPlan('founder')}
+                                        className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'founder' ? 'border-blue-500 bg-blue-500/5' : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'}`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-white font-bold text-base">Offre Founder</p>
+                                                <p className="text-blue-400 text-xs mt-0.5">Accès complet & illimité</p>
+                                            </div>
+                                            <div className="text-right flex items-center gap-2">
+                                                <span className="text-sm text-slate-500 line-through">{CROSSED_PRICES.founder[billingCycle]}€</span>
+                                                <span className="text-2xl font-black text-white">{BASE_PRICES.founder[billingCycle]}€</span>
+                                                <span className="text-slate-400 text-xs">/mois</span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
 
-                        {/* CTA */}
-                        <button
-                            onClick={handleSubscribe}
-                            className="w-full mt-8 rounded-xl bg-blue-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-[0.98]"
-                        >
-                            S'abonner maintenant
-                        </button>
-
-                        <p className="text-center text-[11px] text-slate-500 mt-4 leading-relaxed">
-                            Paiement sécurisé par Stripe. Annulation possible à tout moment.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Keyframe animation */}
-            <style>{`
-        @keyframes fadeSlideIn {
-          from {
-            opacity: 0;
-            transform: translateY(6px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-
-            {/* COMPARISON MODAL */}
-            {
-                isComparisonOpen && (
-                    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-950 rounded-2xl border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-                            <button
-                                onClick={() => setIsComparisonOpen(false)}
-                                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors z-10"
-                            >
-                                <X className="h-6 w-6" />
-                            </button>
-                            <PricingComparisonTable isModal={true} />
-                            <div className="p-6 border-t border-slate-900 bg-slate-950/50 sticky bottom-0 text-center">
+                                {/* Comparatif button */}
                                 <button
-                                    onClick={() => setIsComparisonOpen(false)}
-                                    className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors"
+                                    onClick={() => setIsComparisonOpen(true)}
+                                    className="mt-2 w-full px-4 py-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-semibold transition-all border border-slate-700/50 hover:border-slate-600 flex items-center justify-center gap-2"
                                 >
-                                    Fermer le comparatif
+                                    <Sheet className="h-4 w-4" />
+                                    Voir le comparatif détaillé des offres
                                 </button>
                             </div>
+
+                            {/* CTA */}
+                            <button
+                                onClick={handleGoToCheckout}
+                                className="w-full mt-6 rounded-xl bg-blue-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-[0.98]"
+                            >
+                                S'abonner maintenant
+                            </button>
+                            <p className="text-center text-[11px] text-slate-500 mt-3 leading-relaxed">
+                                Paiement sécurisé par Stripe. Annulation possible à tout moment.
+                            </p>
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
+
+            {/* ==================== STEP 2: CHECKOUT ==================== */}
+            {step === 'checkout' && (
+                <div className="w-full max-w-[1000px] max-h-[90vh] rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl overflow-y-auto" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                    {/* Header */}
+                    <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#0B1120]/95 backdrop-blur-sm">
+                        <button onClick={handleBackToSelect} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm">
+                            <ArrowLeft className="h-4 w-4" />
+                            Retour
+                        </button>
+                        <img src="/logo.PNG" alt="CloseOS Logo" className="h-7 w-auto" />
+                        <div className="w-16" />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-0">
+                        {/* LEFT: Plan summary + promo + CGV */}
+                        <div className="p-6 md:p-8 space-y-6 border-r border-slate-800/50">
+
+                            {/* Plan summary */}
+                            <div className={`rounded-2xl p-6 border ${selectedPlan === 'founder' ? 'bg-blue-600/5 border-blue-500/20' : 'bg-slate-900/40 border-slate-800'}`}>
+                                {selectedPlan === 'founder' && (
+                                    <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">🔥 -58% Offre de lancement</div>
+                                )}
+                                <h3 className="text-xl font-extrabold text-white mb-1">{planLabel} {billingCycle === 'yearly' && '(Annuel)'}</h3>
+                                <p className="text-slate-400 text-sm mb-4">
+                                    {selectedPlan === 'starter'
+                                        ? "L'essentiel pour démarrer"
+                                        : 'Accès complet & illimité'}
+                                </p>
+
+                                <div className="flex items-baseline gap-2 mb-4 flex-wrap">
+                                    <span className="text-4xl font-black text-white">{finalPrice}€</span>
+                                    {crossedPrice > 0 && displayDiscount === 0 && (
+                                        <span className="text-lg text-slate-500 line-through">{crossedPrice}€</span>
+                                    )}
+                                    {displayDiscount > 0 && (
+                                        <>
+                                            <span className="text-lg text-slate-500 line-through">{basePrice}€</span>
+                                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
+                                                -{displayDiscount}%
+                                            </span>
+                                        </>
+                                    )}
+                                    <span className="text-slate-400 text-sm">
+                                        {billingCycle === 'yearly'
+                                            ? `/mois (facturé ${selectedPlan === 'founder' ? '300' : '396'}€/an)`
+                                            : selectedPlan === 'founder' ? '/mois à vie' : '/mois'}
+                                    </span>
+                                </div>
+
+                                {billingCycle === 'yearly' && (
+                                    <p className="text-xs text-emerald-400 font-medium">✨ -15% supplémentaire avec la facturation annuelle</p>
+                                )}
+
+                                <div className="space-y-2.5 mt-4">
+                                    {features.map((text, i) => (
+                                        <div key={i} className="flex items-center gap-2.5 text-slate-300 text-sm">
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                                            <span>{text}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Billing toggle small */}
+                            <div className="flex justify-center">
+                                <div className="bg-slate-900/50 p-1 rounded-xl border border-slate-800 flex items-center gap-1">
+                                    <button
+                                        onClick={() => setBillingCycle('monthly')}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        Mensuel
+                                    </button>
+                                    <button
+                                        onClick={() => setBillingCycle('yearly')}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        Annuel
+                                        <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-15%</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Promo code */}
+                            <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+                                <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
+                                    <TicketPercent className="h-4 w-4 text-blue-400" />
+                                    <span className="font-semibold">Code de parrainage / Promo</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Ex: ADMIN15"
+                                        value={referralCode}
+                                        onChange={(e) => setReferralCode(e.target.value)}
+                                        className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors uppercase placeholder:normal-case"
+                                    />
+                                    <button
+                                        onClick={handleApplyCode}
+                                        disabled={isApplyingCode || !referralCode}
+                                        className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
+                                    >
+                                        {isApplyingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Appliquer'}
+                                    </button>
+                                </div>
+                                {appliedCode && !isApplyingCode && (
+                                    <p className="text-xs text-emerald-400 mt-2 font-medium flex items-center gap-1.5">
+                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                        Code appliqué ! Vérifiez le montant total.
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* CGV checkbox */}
+                            <div id="terms-checkbox" className={`p-4 rounded-2xl border transition-colors ${showTermsError ? 'bg-red-950/10 border-red-500/50' : 'bg-slate-900/50 border-slate-800'}`}>
+                                {showTermsError && (
+                                    <div className="flex items-center gap-2 text-red-400 text-sm font-bold mb-3 animate-pulse">
+                                        <AlertCircle className="h-4 w-4" />
+                                        Vous devez accepter les conditions pour continuer
+                                    </div>
+                                )}
+                                <div className="flex items-start gap-3 cursor-pointer" onClick={toggleTerms}>
+                                    <div className={`mt-1 h-5 w-5 rounded border flex items-center justify-center transition-colors shrink-0 ${isTermsAccepted ? 'bg-blue-600 border-blue-600' : 'border-slate-500 hover:border-blue-400'}`}>
+                                        {isTermsAccepted ? <CheckSquare className="h-3.5 w-3.5 text-white" /> : <Square className="h-3.5 w-3.5 text-transparent" />}
+                                    </div>
+                                    <div className="text-xs text-slate-300 leading-relaxed select-none">
+                                        Je reconnais avoir pris connaissance et j'accepte les <Link to="/cgu" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>CGV</Link> et la <Link to="/confidentialite" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Politique de Confidentialité</Link>. Je renonce expressément à mon droit de rétractation pour accéder au service immédiatement.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/50 border border-slate-800">
+                                <ShieldCheck className="h-8 w-8 text-blue-500/50 shrink-0" />
+                                <p className="text-[10px] text-slate-500 leading-tight">
+                                    Paiement sécurisé par Stripe. Vos données sont cryptées. Annulation possible à tout moment.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* RIGHT: Stripe embedded checkout */}
+                        <div className="p-4 md:p-6 min-h-[500px] flex flex-col">
+                            {error ? (
+                                <div className="flex-1 flex items-center justify-center">
+                                    <div className="bg-red-950/20 border border-red-900/50 p-6 rounded-2xl text-center">
+                                        <p className="text-red-400 mb-4 text-sm">{error}</p>
+                                        <button onClick={fetchClientSecret} className="text-white bg-slate-800 px-5 py-2 rounded-xl font-bold hover:bg-slate-700 transition-all text-sm">
+                                            Réessayer
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : loading || !clientSecret ? (
+                                <div className="flex-1 flex flex-col items-center justify-center">
+                                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-4" />
+                                    <p className="text-slate-400 font-medium text-sm">Chargement du module sécurisé...</p>
+                                </div>
+                            ) : (
+                                <div className="relative flex-1">
+                                    <EmbeddedCheckoutProvider
+                                        key={clientSecret}
+                                        stripe={stripePromise}
+                                        options={{ clientSecret }}
+                                    >
+                                        <EmbeddedCheckout className="h-full w-full" />
+                                    </EmbeddedCheckoutProvider>
+
+                                    {/* CGV overlay */}
+                                    {!isTermsAccepted && (
+                                        <div
+                                            onClick={handleOverlayClick}
+                                            className="absolute inset-0 z-50 bg-slate-950/10 backdrop-blur-[2px] flex items-center justify-center cursor-not-allowed transition-all duration-300"
+                                        />
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* COMPARISON MODAL */}
+            {isComparisonOpen && (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-950 rounded-2xl border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => setIsComparisonOpen(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors z-10">
+                            <X className="h-6 w-6" />
+                        </button>
+                        <PricingComparisonTable isModal={true} />
+                        <div className="p-6 border-t border-slate-900 bg-slate-950/50 sticky bottom-0 text-center">
+                            <button onClick={() => setIsComparisonOpen(false)} className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors">
+                                Fermer le comparatif
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Animation keyframes */}
+            <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
         </div>
     );
 }
