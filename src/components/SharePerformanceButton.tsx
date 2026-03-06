@@ -32,8 +32,10 @@ const VIEW_OPTIONS: { value: SharedView; label: string; icon: React.ComponentTyp
 ]
 
 export function SharePerformanceButton() {
-  const { user } = useAuth()
+  const { user, isFounder, isAdmin, isInTrial } = useAuth()
+  const { showUpgrade } = useUpgrade()
   const { offers } = useOffers()
+  const hasFullAccess = isFounder || isAdmin || isInTrial
   const [isOpen, setIsOpen] = useState(false)
   const [activeLinks, setActiveLinks] = useState<ShareLink[]>([])
   const [leads, setLeads] = useState<SpectatorLead[]>([])
@@ -469,7 +471,7 @@ export function SharePerformanceButton() {
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => hasFullAccess ? setIsOpen(true) : showUpgrade()}
         className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800/50 px-5 py-2.5 text-sm font-bold text-slate-300 transition-all hover:bg-slate-700/80 hover:border-blue-500/50 hover:text-white shadow-lg active:scale-95 group"
       >
         <Share2 className="h-4 w-4 group-hover:rotate-12 transition-transform" />
