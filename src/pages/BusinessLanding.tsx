@@ -239,7 +239,7 @@ export const BusinessLanding: React.FC = () => {
 };
 
 const KPIBox = ({ title, value, change, icon, positive }: any) => (
-    <div className="bg-business-background-light p-8 rounded-2xl border border-business-primary/10 flex flex-col gap-3 shadow-sm">
+    <div className="bg-business-background-light p-8 rounded-2xl border border-business-primary/10 flex flex-col gap-3 shadow-sm hover:scale-[1.02] transition-all duration-300 cursor-pointer">
         <div className="flex items-center justify-between">
             <span className="text-business-primary/60 text-sm font-bold uppercase tracking-widest">{title}</span>
             {icon}
@@ -266,7 +266,7 @@ const FeatureItem = ({ icon, title, description }: any) => (
 );
 
 const TeamMember = ({ name, role, conv }: any) => (
-    <div className="flex items-center justify-between p-4 bg-business-primary/5 rounded-xl border border-business-primary/5">
+    <div className="flex items-center justify-between p-4 bg-business-primary/5 rounded-xl border border-business-primary/5 hover:scale-[1.02] transition-all duration-300 cursor-pointer">
         <div className="flex items-center gap-4 text-left">
             <div className="w-10 h-10 rounded-full bg-business-primary/20 flex items-center justify-center font-bold text-business-primary">
                 {name.split(' ').map((n: string) => n[0]).join('')}
@@ -296,7 +296,7 @@ const PipelineColumn = ({ title, color, count, children }: any) => (
 );
 
 const PipelineCard = ({ name, source, time, highlight }: any) => (
-    <div className={`${highlight ? 'bg-emerald-50 border-emerald-100' : 'bg-business-background-light border-business-primary/5'} p-4 rounded-xl shadow-sm border space-y-3 text-left`}>
+    <div className={`${highlight ? 'bg-emerald-50 border-emerald-100' : 'bg-business-background-light border-business-primary/5'} p-4 rounded-xl shadow-sm border space-y-3 text-left hover:scale-[1.02] transition-all duration-300 cursor-pointer`}>
         <p className={`${highlight ? 'text-emerald-900' : 'text-business-primary'} font-bold text-sm`}>{name}</p>
         <div className="flex justify-between items-center">
             <span className={`text-[10px] ${highlight ? 'bg-emerald-500 text-white' : 'bg-business-primary/10 text-business-primary'} px-2 py-0.5 rounded font-bold uppercase`}>{source}</span>
