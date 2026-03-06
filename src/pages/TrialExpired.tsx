@@ -130,7 +130,7 @@ export function TrialExpiredModal() {
                 setDisplayDiscount(data.percentOff || 0);
                 setLoading(false);
                 setIsApplyingCode(false);
-                if (appliedCode && !data.percentOff) {
+                if (appliedCode && !data.promoApplied) {
                     alert("Ce code promo n'existe pas ou est inactif.");
                     setAppliedCode('');
                     setReferralCode('');

@@ -38,23 +38,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let percentOff = 0; // On stocke la réduction pour l'envoyer au frontend
 
       if (referralCode) {
-        const cleanCode = referralCode.trim().toUpperCase();
+        const cleanCode = referralCode.trim();
 
-        // 1. On interroge Stripe dynamiquement
-        const promoCodes = await stripe.promotionCodes.list({
+        // Essayer avec le code tel quel, puis en majuscules si pas trouvé
+        let promoCodes = await stripe.promotionCodes.list({
           code: cleanCode,
-          active: true, // On s'assure qu'il est valide
+          active: true,
           limit: 1,
-          expand: ['data.coupon']
         });
+
+        // Fallback: essayer en majuscules si pas trouvé
+        if (promoCodes.data.length === 0 && cleanCode !== cleanCode.toUpperCase()) {
+          promoCodes = await stripe.promotionCodes.list({
+            code: cleanCode.toUpperCase(),
+            active: true,
+            limit: 1,
+          });
+        }
 
         if (promoCodes.data.length > 0) {
           const promo = promoCodes.data[0];
-          console.log("✅ Code trouvé ! Application du code promo:", promo.id);
+          // Récupérer le coupon associé
+          const coupon = typeof promo.coupon === 'string'
+            ? await stripe.coupons.retrieve(promo.coupon)
+            : promo.coupon;
+          console.log("✅ Code trouvé:", promo.id, "| Coupon:", coupon?.id, "| percent_off:", coupon?.percent_off, "| amount_off:", coupon?.amount_off);
           discounts.push({ promotion_code: promo.id });
-          percentOff = ((promo as any).coupon?.percent_off as number) || 0; // On récupère le pourcentage
+          percentOff = coupon?.percent_off || 0;
         } else {
-          console.log("❌ Code inconnu ou expiré");
+          console.log("❌ Code inconnu ou expiré:", cleanCode);
         }
       }
 
@@ -94,7 +106,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       });
 
-      res.status(200).json({ clientSecret: session.client_secret, percentOff });
+      res.status(200).json({ clientSecret: session.client_secret, percentOff, promoApplied: discounts.length > 0 });
     } catch (err: any) {
       console.error("ERREUR STRIPE:", err.message);
       // On renvoie l'erreur exacte pour le débug
