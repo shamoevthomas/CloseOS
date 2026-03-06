@@ -19,7 +19,8 @@ import {
   ZoomIn,
   ZoomOut,
   ArrowUpRight,
-  Database
+  Database,
+  Heart
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useUpgrade } from '../../contexts/UpgradeContext'
@@ -46,6 +47,10 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
   const [uploading, setUploading] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false)
+  const [isReactivateModalOpen, setIsReactivateModalOpen] = useState(false)
+  const [reactivating, setReactivating] = useState(false)
+  const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false)
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null)
   const [message, setMessage] = useState({ type: '', text: '' })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -90,6 +95,44 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
     }
     fetchProfileData()
   }, [user, isOpen, activeTab])
+
+  // Fetch subscription cancellation status from Stripe
+  useEffect(() => {
+    if (!user || !isOpen || activeTab !== 'subscription' || !isPaying) return
+    fetch('/api/subscription-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id })
+    })
+      .then(r => r.json())
+      .then(data => {
+        setCancelAtPeriodEnd(!!data.cancel_at_period_end)
+        setCurrentPeriodEnd(data.current_period_end || null)
+      })
+      .catch(() => {})
+  }, [user, isOpen, activeTab, isPaying])
+
+  const handleReactivate = async () => {
+    if (!user) return
+    setReactivating(true)
+    try {
+      const res = await fetch('/api/reactivate-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setCancelAtPeriodEnd(false)
+      setIsReactivateModalOpen(false)
+      setMessage({ type: 'success', text: 'Votre abonnement a été réactivé !' })
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Erreur lors de la réactivation' })
+      setIsReactivateModalOpen(false)
+    } finally {
+      setReactivating(false)
+    }
+  }
 
   // Reset tab when opening
   useEffect(() => {
@@ -687,9 +730,9 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                     <CreditCard className="w-32 h-32 text-white" />
                   </div>
                   <div className="relative z-10 text-left">
-                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4 ${isPaying ? 'bg-blue-500/20 border border-blue-500/30 text-blue-300' : 'bg-slate-500/20 border border-slate-500/30 text-slate-300'}`}>
-                      <span className={`w-2 h-2 rounded-full ${isPaying ? 'bg-blue-400 animate-pulse' : 'bg-slate-400'}`}></span>
-                      {isPaying ? 'Plan Actif' : 'Aucun abonnement'}
+                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4 ${cancelAtPeriodEnd ? 'bg-orange-500/20 border border-orange-500/30 text-orange-300' : isPaying ? 'bg-blue-500/20 border border-blue-500/30 text-blue-300' : 'bg-slate-500/20 border border-slate-500/30 text-slate-300'}`}>
+                      <span className={`w-2 h-2 rounded-full ${cancelAtPeriodEnd ? 'bg-orange-400 animate-pulse' : isPaying ? 'bg-blue-400 animate-pulse' : 'bg-slate-400'}`}></span>
+                      {cancelAtPeriodEnd ? 'Annulation programmée' : isPaying ? 'Plan Actif' : 'Aucun abonnement'}
                     </span>
                     <h3 className="text-3xl font-bold text-white mb-1">
                       {isFounder ? 'Pack Founder' : isStarter ? 'Pack Starter' : 'Aucun plan'}
@@ -724,8 +767,28 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   </button>
                 )}
 
-                {/* Annulation — visible si abonné */}
-                {isPaying && (
+                {/* Annulation programmée — info + réactivation */}
+                {isPaying && cancelAtPeriodEnd && currentPeriodEnd && (
+                  <div className="p-5 rounded-2xl bg-orange-500/10 border border-orange-500/20 space-y-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-orange-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-white font-bold text-sm">Votre abonnement prend fin le {new Date(currentPeriodEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        <p className="text-slate-400 text-xs mt-1">Après cette date, vous perdrez l'accès à toutes les fonctionnalités.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setIsReactivateModalOpen(true)}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
+                    >
+                      <Heart className="h-4 w-4" />
+                      J'ai changé d'avis
+                    </button>
+                  </div>
+                )}
+
+                {/* Annulation — visible si abonné et pas en cours d'annulation */}
+                {isPaying && !cancelAtPeriodEnd && (
                   <button
                     onClick={() => setIsCancellationModalOpen(true)}
                     className="w-full px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20 flex items-center justify-center gap-2"
@@ -778,6 +841,41 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
           </div>
         </div>
       </div>
+      {/* Reactivation Confirmation Modal */}
+      {isReactivateModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0B1121] shadow-2xl p-8 text-center relative">
+            <button
+              onClick={() => setIsReactivateModalOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-emerald-500 text-white shadow-lg shadow-blue-500/20">
+              <Heart className="h-8 w-8" />
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-2">Vous restez parmi nous alors ?!</h3>
+            <p className="text-slate-400 text-sm mb-6">Votre abonnement sera réactivé et continuera normalement.</p>
+            <div className="space-y-3">
+              <button
+                onClick={handleReactivate}
+                disabled={reactivating}
+                className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-500 hover:to-emerald-400 text-white rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {reactivating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+                {reactivating ? 'Réactivation...' : 'Oui, je reste !'}
+              </button>
+              <button
+                onClick={() => setIsReactivateModalOpen(false)}
+                className="w-full px-6 py-3 bg-slate-800/50 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-all border border-slate-700"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <DeletionModal
         isOpen={isDeletionModalOpen}
         onClose={() => setIsDeletionModalOpen(false)}

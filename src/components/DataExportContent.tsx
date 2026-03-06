@@ -367,7 +367,7 @@ export function DataExportContent() {
 
             {/* Footer */}
             <div style={{ marginTop: '40px', paddingTop: '16px', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
-              <p style={{ color: '#94a3b8', fontSize: '11px', margin: 0 }}>Généré par CloseOS — closeros.com</p>
+              <p style={{ color: '#94a3b8', fontSize: '11px', margin: 0 }}>Généré par CloseOS — closeos.fr</p>
             </div>
           </div>
         </div>
