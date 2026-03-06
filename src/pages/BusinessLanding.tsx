@@ -24,7 +24,7 @@ export const BusinessLanding: React.FC = () => {
                     <div className="flex items-center gap-3">
                         <img
                             alt="CloseOS Logo"
-                            className="w-auto object-contain h-12"
+                            className="w-auto object-contain h-16"
                             src="/CloseOS Buisness.png"
                         />
                     </div>
