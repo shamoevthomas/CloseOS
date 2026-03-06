@@ -57,6 +57,8 @@ import { SpectatorPage } from './pages/SpectatorPage'
 import { RemindersPage } from './pages/RemindersPage'
 import { TrialExpiredModal } from './pages/TrialExpired'
 import { FounderOnlyGuard } from './components/FounderOnlyGuard'
+import { BusinessLanding } from './pages/BusinessLanding'
+
 
 // Page d'accueil intelligente : landing immédiate si non connecté, loading si session détectée
 function SmartHome() {
@@ -158,6 +160,8 @@ function AuthenticatedApp() {
         <Route path="/cgu" element={<CGU />} />
         <Route path="/cgv" element={<CGV />} />
         <Route path="/confidentialite" element={<PrivacyPolicy />} /> {/* 👇 AJOUT ROUTE CONFIDENTIALITÉ */}
+        <Route path="/buisness" element={<BusinessLanding />} />
+
 
         {/* Routes Paiement & Onboarding */}
         <Route path="/checkout" element={<CheckoutForm />} />

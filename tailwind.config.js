@@ -12,6 +12,13 @@ export default {
         'bg-dark': '#020617',
         'bg-card': '#0f172a',
         'text-light': '#f1f5f9',
+        'business-primary': '#493627',
+        'business-background-light': '#fbfaf9',
+        'business-background-dark': '#1c1916',
+      },
+      fontFamily: {
+        'business-display': ['Manrope', 'sans-serif'],
+        'business-serif': ['Playfair Display', 'serif'],
       },
       keyframes: {
         wiggle: {

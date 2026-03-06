@@ -4,6 +4,7 @@ import { Share2, Copy, Check, Trash2, X, Eye, EyeOff, Link2, Mail, Shield, Shiel
 import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useUpgrade } from '../contexts/UpgradeContext'
 import { useOffers } from '../contexts/OffersContext'
 
 interface ShareLink {
