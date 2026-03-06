@@ -586,7 +586,7 @@ export function KPIPage() {
             >
               <Settings className="w-4 h-4" /> Configurer mes KPI
             </button>
-            <SharePerformanceButton />
+            {hasFullAccess && <SharePerformanceButton />}
           </div>
         </div>
 

@@ -309,26 +309,28 @@ export function TrialExpiredModal() {
                             </div>
 
                             <div className="space-y-4 flex-1">
-                                {/* Starter */}
-                                <button
-                                    onClick={() => setSelectedPlan('starter')}
-                                    className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'starter' ? 'border-blue-500 bg-blue-500/5' : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'}`}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-white font-bold text-base">Offre Starter</p>
-                                            <p className="text-slate-400 text-xs mt-0.5 italic">L'essentiel pour démarrer</p>
+                                {/* Starter — masqué si c'est l'offre actuelle (mode upgrade) */}
+                                {!(isUpgradeModalOpen && profile?.plan === 'starter') && (
+                                    <button
+                                        onClick={() => setSelectedPlan('starter')}
+                                        className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'starter' ? 'border-blue-500 bg-blue-500/5' : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'}`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-white font-bold text-base">Offre Starter</p>
+                                                <p className="text-slate-400 text-xs mt-0.5 italic">L'essentiel pour démarrer</p>
+                                            </div>
+                                            <div className="text-right">
+                                                {billingCycle === 'yearly' && <span className="text-sm text-slate-500 line-through mr-2">39€</span>}
+                                                <span className="text-2xl font-black text-white">{BASE_PRICES.starter[billingCycle]}€</span>
+                                                <span className="text-slate-400 text-xs ml-1">/mois</span>
+                                            </div>
                                         </div>
-                                        <div className="text-right">
-                                            {billingCycle === 'yearly' && <span className="text-sm text-slate-500 line-through mr-2">39€</span>}
-                                            <span className="text-2xl font-black text-white">{BASE_PRICES.starter[billingCycle]}€</span>
-                                            <span className="text-slate-400 text-xs ml-1">/mois</span>
-                                        </div>
-                                    </div>
-                                </button>
+                                    </button>
+                                )}
 
-                                {/* Founder */}
-                                <div className="relative">
+                                {/* Founder — masqué si c'est l'offre actuelle (mode upgrade) */}
+                                {!(isUpgradeModalOpen && profile?.plan === 'founder') && <div className="relative">
                                     <div className="absolute -top-2.5 left-4 z-10">
                                         <span className="inline-block px-3 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider shadow-lg">
                                             Meilleure offre
@@ -350,7 +352,7 @@ export function TrialExpiredModal() {
                                             </div>
                                         </div>
                                     </button>
-                                </div>
+                                </div>}
 
                                 {/* Comparatif button */}
                                 <button
