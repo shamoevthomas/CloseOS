@@ -38,7 +38,7 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: SettingsModalProps) {
-  const { user, profile, updateProfile, updatePassword, isFounder, isStarter, isPaying } = useAuth()
+  const { user, profile, updateProfile, updatePassword, isFounder, isStarter, isPaying, refreshProfile } = useAuth()
   const { showUpgrade } = useUpgrade()
 
   // Retrait de 'timezone' des onglets possibles
@@ -126,6 +126,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
       setCancelAtPeriodEnd(false)
       setIsReactivateModalOpen(false)
       setMessage({ type: 'success', text: 'Votre abonnement a été réactivé !' })
+      refreshProfile()
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Erreur lors de la réactivation' })
       setIsReactivateModalOpen(false)

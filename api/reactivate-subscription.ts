@@ -46,25 +46,34 @@ export default async function handler(req: Request) {
 
         const customerId = profile.stripe_customer_id;
 
-        // 2. Find Active Subscription that is cancelling
-        const subscriptions = await stripe.subscriptions.list({
-            customer: customerId,
-            status: 'active',
-            limit: 1
-        });
+        // 2. Find active OR trialing subscription
+        const [activeSubs, trialingSubs] = await Promise.all([
+            stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 1 }),
+            stripe.subscriptions.list({ customer: customerId, status: 'trialing', limit: 1 }),
+        ]);
 
-        if (subscriptions.data.length === 0) {
+        const sub = activeSubs.data[0] || trialingSubs.data[0];
+
+        if (!sub) {
             return new Response(JSON.stringify({ error: 'No active subscription found' }), { status: 404 });
         }
 
-        const sub = subscriptions.data[0];
-
-        // 3. Reactivate (set cancel_at_period_end = false)
+        // 3. Reactivate on Stripe (set cancel_at_period_end = false)
         if (sub.cancel_at_period_end) {
             await stripe.subscriptions.update(sub.id, {
                 cancel_at_period_end: false
             });
         }
+
+        // 4. Update Supabase profile to reflect active state
+        await supabaseAdmin
+            .from('profiles')
+            .update({
+                subscription_status: sub.status, // keep 'active' or 'trialing'
+            })
+            .eq('id', userId);
+
+        console.log(`✅ Subscription ${sub.id} reactivated for user ${userId}`);
 
         return new Response(JSON.stringify({ success: true, message: 'Subscription reactivated' }), {
             headers: { 'Content-Type': 'application/json' }
