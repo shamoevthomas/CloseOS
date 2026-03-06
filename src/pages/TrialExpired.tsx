@@ -76,16 +76,14 @@ export function TrialExpiredModal() {
     const [isTermsAccepted, setIsTermsAccepted] = useState(false);
     const [showTermsError, setShowTermsError] = useState(false);
 
-    // Guard clauses
+    // Determine visibility (computed BEFORE hooks that depend on it)
     const hiddenPaths = ['/checkout', '/checkout-starter', '/return', '/welcome-founder', '/', '/login', '/register'];
-    if (hiddenPaths.some(p => location.pathname === p || location.pathname.startsWith(p + '/'))) return null;
-    if (isAdmin) return null;
+    const isOnHiddenPath = hiddenPaths.some(p => location.pathname === p || location.pathname.startsWith(p + '/'));
     const hasSubscription = profile?.subscription_status && profile.subscription_status !== 'canceled';
-    if (hasSubscription) return null;
-    if (!user?.created_at || !profile) return null;
-    const created = new Date(user.created_at);
-    const trialEnd = new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000);
-    if (new Date() <= trialEnd) return null;
+    const created = user?.created_at ? new Date(user.created_at) : null;
+    const trialEnd = created ? new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000) : null;
+    const isTrialExpired = trialEnd ? new Date() > trialEnd : false;
+    const shouldShow = !isOnHiddenPath && !isAdmin && !hasSubscription && !!user?.created_at && !!profile && isTrialExpired;
 
     const handleLogout = async () => {
         await logout();
@@ -139,12 +137,15 @@ export function TrialExpiredModal() {
             });
     };
 
-    // Fetch when entering step 2 or when code changes
+    // Fetch when entering step 2 or when code changes — MUST be after all useState
     useEffect(() => {
-        if (step === 'checkout') {
+        if (shouldShow && step === 'checkout') {
             fetchClientSecret();
         }
-    }, [step, billingCycle, appliedCode]);
+    }, [shouldShow, step, billingCycle, appliedCode]);
+
+    // Guard: return null AFTER all hooks
+    if (!shouldShow) return null;
 
     const handleApplyCode = () => {
         if (referralCode.trim() !== appliedCode) {
