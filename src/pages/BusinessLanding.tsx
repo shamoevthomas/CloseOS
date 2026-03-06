@@ -337,7 +337,7 @@ const CRMKPI = ({ title, value, description }: any) => (
 );
 
 const LeadProfile = () => (
-    <div className="bg-business-background-light text-business-primary rounded-3xl overflow-hidden shadow-2xl border border-white/10 text-left">
+    <div className="bg-business-background-light text-business-primary rounded-3xl overflow-hidden shadow-2xl border border-white/10 text-left hover:scale-[1.02] transition-all duration-300 cursor-pointer">
         <div className="p-6 border-b border-business-primary/5 bg-business-primary/5 flex justify-between items-center">
             <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-business-primary flex items-center justify-center text-business-background-light font-bold text-lg">JP</div>
