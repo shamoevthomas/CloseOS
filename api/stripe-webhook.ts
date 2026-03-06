@@ -229,13 +229,111 @@ export default async function handler(req: Request) {
 
             console.log(`🚫 Subscription deleted for customer ${customerId}`);
 
-            await supabaseAdmin
+            // Check if user has a pending deletion request
+            const { data: deletionProfile } = await supabaseAdmin
                 .from('profiles')
-                .update({
-                    subscription_status: 'canceled',
-                    plan: null // On retire le plan ? Ou on laisse 'founder' mais en canceled ?
-                })
-                .eq('stripe_customer_id', customerId);
+                .select('id, full_name, email, deletion_scheduled_at, deletion_scope')
+                .eq('stripe_customer_id', customerId)
+                .single();
+
+            if (deletionProfile?.deletion_scheduled_at && deletionProfile?.deletion_scope) {
+                // User requested account deletion — execute it now
+                console.log(`🗑️ Executing deferred deletion for user ${deletionProfile.id}`);
+
+                const scope = deletionProfile.deletion_scope as string[];
+                const deleteAll = scope.includes('all');
+                const deleteBilling = deleteAll || scope.includes('billing');
+                const deleteInternal = deleteAll || scope.includes('internal');
+                const deleteExternal = deleteAll || scope.includes('external');
+                const deletePersonal = deleteAll || scope.includes('personal');
+
+                const deleteTasks: Promise<any>[] = [];
+
+                if (deleteBilling) {
+                    deleteTasks.push(
+                        supabaseAdmin.from('invoices').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('issuer_profiles').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('payment_methods').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('auto_invoice_configs').delete().eq('user_id', deletionProfile.id),
+                    );
+                }
+                if (deleteInternal) {
+                    deleteTasks.push(
+                        supabaseAdmin.from('internal_contacts').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('offers').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('user_scripts').delete().eq('user_id', deletionProfile.id),
+                    );
+                }
+                if (deleteExternal) {
+                    deleteTasks.push(
+                        supabaseAdmin.from('prospects').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('calls').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('call_history').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('meetings').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('reminders').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('share_links').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('spectator_leads').delete().eq('user_id', deletionProfile.id),
+                    );
+                }
+                if (deletePersonal) {
+                    deleteTasks.push(
+                        supabaseAdmin.from('notifications').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('kpi_config').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('booking_settings').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('booking_types').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('cal_credentials').delete().eq('user_id', deletionProfile.id),
+                        supabaseAdmin.from('pipedrive_stage_mapping').delete().eq('user_id', deletionProfile.id),
+                    );
+                }
+
+                await Promise.all(deleteTasks);
+
+                // Delete profile
+                await supabaseAdmin.from('profiles').delete().eq('id', deletionProfile.id);
+
+                // Send farewell email
+                if (deletionProfile.email) {
+                    try {
+                        await fetch('https://api.brevo.com/v3/smtp/email', {
+                            method: 'POST',
+                            headers: {
+                                'accept': 'application/json',
+                                'api-key': brevoApiKey,
+                                'content-type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                sender: { email: 'support@closeos.fr', name: 'CloseOS Support' },
+                                to: [{ email: deletionProfile.email }],
+                                subject: 'Votre compte CloseOS a été supprimé',
+                                htmlContent: `
+                                    <div style="font-family: sans-serif; color: #333;">
+                                        <h1>Compte supprimé</h1>
+                                        <p>Bonjour${deletionProfile.full_name ? ` ${deletionProfile.full_name}` : ''},</p>
+                                        <p>Votre abonnement est arrivé à terme et votre compte a été supprimé comme demandé.</p>
+                                        <p>Vous pouvez toujours créer un nouveau compte si vous changez d'avis.</p>
+                                        <p>Cordialement,<br/>L'équipe CloseOS</p>
+                                    </div>
+                                `
+                            })
+                        });
+                    } catch (emailErr) {
+                        console.error('Farewell email error:', emailErr);
+                    }
+                }
+
+                // Delete auth user
+                await supabaseAdmin.auth.admin.deleteUser(deletionProfile.id);
+                console.log(`✅ Deferred deletion completed for user ${deletionProfile.id}`);
+            } else {
+                // No deletion request — just mark as canceled
+                await supabaseAdmin
+                    .from('profiles')
+                    .update({
+                        subscription_status: 'canceled',
+                        plan: null
+                    })
+                    .eq('stripe_customer_id', customerId);
+            }
             break;
         }
     }

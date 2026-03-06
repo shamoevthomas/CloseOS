@@ -123,9 +123,16 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
 
-            // Account deleted — sign out and redirect
-            await supabase.auth.signOut();
-            window.location.href = '/';
+            if (data.deferred) {
+                // Subscription active — deletion scheduled for later
+                alert(`Votre compte sera supprimé le ${new Date(data.scheduledAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}. Vous gardez l'accès jusque là.`);
+                onSuccess();
+                onClose();
+            } else {
+                // No subscription — account deleted immediately
+                await supabase.auth.signOut();
+                window.location.href = '/';
+            }
         } catch (error: any) {
             console.error(error);
             setError(error.message || "Erreur lors de la suppression.");
