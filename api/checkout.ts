@@ -83,13 +83,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             ...(finalReferral ? { referral_code: String(finalReferral) } : {}),
             ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
           },
-          // MODE LANCEMENT : Si on est avant le 1er Mars, l'essai va jusqu'au 8 Mars
-          trial_end: new Date() < new Date('2026-03-01T00:00:00Z')
-            ? Math.floor(new Date('2026-03-08T00:00:00Z').getTime() / 1000)
-            : undefined,
-          trial_period_days: new Date() < new Date('2026-03-01T00:00:00Z')
-            ? undefined
-            : 10,
         },
       });
 
