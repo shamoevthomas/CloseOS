@@ -83,6 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             ...(finalReferral ? { referral_code: String(finalReferral) } : {}),
             ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
           },
+          trial_period_days: 2,
         },
       });
 
