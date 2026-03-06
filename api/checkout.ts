@@ -52,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const promo = promoCodes.data[0];
           console.log("✅ Code trouvé ! Application du code promo:", promo.id);
           discounts.push({ promotion_code: promo.id });
-          percentOff = (promo.coupon as Stripe.Coupon).percent_off || 0; // On récupère le pourcentage
+          percentOff = ((promo as any).coupon?.percent_off as number) || 0; // On récupère le pourcentage
         } else {
           console.log("❌ Code inconnu ou expiré");
         }
