@@ -111,7 +111,6 @@ export default async function handler(req: Request) {
             const session = event.data.object as Stripe.Checkout.Session;
             console.log(`💰 Checkout completed for session ${session.id}`);
 
-            // On récupère le customerId et l'email
             const customerId = session.customer as string;
             const customerEmail = session.customer_details?.email;
             const subscriptionId = session.subscription as string;
@@ -121,20 +120,24 @@ export default async function handler(req: Request) {
                 break;
             }
 
-            // On cherche le user Supabase avec cet email
-            // (Note: s'il s'est inscrit AVANT de payer, on le trouve. S'il s'inscrit APRÈS, on ne le trouve pas encore)
-            // C'est là que la page /return joue son rôle pour forcer l'inscription avec le même email.
-            // On peut tenter de créer un "prospect" ou juste attendre qu'il s'inscrive.
-            // ICI: On va tenter de mettre à jour le profil existant.
+            // Récupérer les infos de la subscription pour avoir le vrai statut et le cycle
+            let realStatus = 'active';
+            let billingCycle: string | null = null;
+            if (subscriptionId) {
+                try {
+                    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+                    realStatus = sub.status; // 'active' ou 'trialing'
+                    // Déterminer le cycle depuis l'intervalle du prix
+                    const interval = (sub as any).items?.data?.[0]?.price?.recurring?.interval;
+                    billingCycle = interval === 'year' ? 'yearly' : 'monthly';
+                } catch (e) {
+                    console.error('⚠️ Could not retrieve subscription details:', e);
+                }
+            }
 
-            // On cherche dans auth.users (via admin)
-            // Malheureusement on ne peut pas search auth.users id by email facilement sans une fonction RPC secure ou admin.
-            // MAIS on a accès à supabaseAdmin.auth.admin.listUsers() ou nous pouvons supposer qu'il est dans profiles si inscrit.
-
-            // On va essayer de trouver le profil via l'email (si on a stocké l'email dans profiles, ce qu'on devrait faire)
             const { data: profile } = await supabaseAdmin
                 .from('profiles')
-                .select('id')
+                .select('id, subscribed_at')
                 .eq('email', customerEmail)
                 .single();
 
@@ -145,16 +148,16 @@ export default async function handler(req: Request) {
                     .update({
                         stripe_customer_id: customerId,
                         stripe_subscription_id: subscriptionId,
-                        subscription_status: 'active', // ou 'trialing' si période d'essai
-                        plan: session.metadata?.plan || 'founder', // On récupère le plan depuis les metadata (ou fallback founder)
-                        has_voip: session.metadata?.voip === 'true', // 👇 Récupération de l'option VoIP
+                        subscription_status: realStatus,
+                        plan: session.metadata?.plan || 'founder',
+                        has_voip: session.metadata?.voip === 'true',
+                        billing_cycle: billingCycle,
+                        // On ne met subscribed_at que si c'est le premier paiement
+                        ...(!profile.subscribed_at ? { subscribed_at: new Date().toISOString() } : {}),
                     })
                     .eq('id', profile.id);
             } else {
                 console.log(`⚠️ User not found for email ${customerEmail}. They might register later.`);
-                // Optionnel : Stocker dans une table 'pending_subscriptions' si on veut être très robuste.
-                // Pour le MVP : On compte sur le fait que l'utilisateur va s'inscrire avec cet email.
-                // Au moment de l'inscription, on pourrait checker Stripe.
             }
             break;
         }
@@ -184,12 +187,19 @@ export default async function handler(req: Request) {
 
             console.log(`🔄 Subscription updated: ${subscription.status}`);
 
+            // Récupérer le plan et le cycle depuis les metadata et l'intervalle
+            const updatedPlan = subscription.metadata?.plan;
+            const interval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+            const updatedCycle = interval === 'year' ? 'yearly' : 'monthly';
+
             await supabaseAdmin
                 .from('profiles')
                 .update({
                     subscription_status: subscription.status,
                     current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-                    stripe_subscription_id: subscription.id
+                    stripe_subscription_id: subscription.id,
+                    ...(updatedPlan ? { plan: updatedPlan } : {}),
+                    billing_cycle: updatedCycle,
                 })
                 .eq('stripe_customer_id', customerId);
 

@@ -55,14 +55,19 @@ export default async function handler(req: Request) {
 
         if (activeSub) {
             console.log(`✅ Found active subscription ${activeSub.id}. Linking...`);
+            // Déterminer le cycle de facturation
+            const interval = (activeSub as any).items?.data?.[0]?.price?.recurring?.interval;
+            const billingCycle = interval === 'year' ? 'yearly' : 'monthly';
+
             await supabaseAdmin
                 .from('profiles')
                 .update({
                     stripe_customer_id: customer.id,
                     stripe_subscription_id: activeSub.id,
                     subscription_status: activeSub.status,
-                    plan: activeSub.metadata?.plan || 'founder', // On récupère le plan depuis les metadata (ou fallback founder)
-                    has_voip: activeSub.metadata?.voip === 'true', // 👇 Récupération de l'option VoIP
+                    plan: activeSub.metadata?.plan || 'founder',
+                    has_voip: activeSub.metadata?.voip === 'true',
+                    billing_cycle: billingCycle,
                     current_period_end: new Date((activeSub as any).current_period_end * 1000).toISOString()
                 })
                 .eq('id', userId);
