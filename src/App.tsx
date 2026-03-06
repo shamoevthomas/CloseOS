@@ -146,10 +146,10 @@ function AuthenticatedApp() {
   return (
     <>
       <Routes>
-        <Route
-          path="/"
-          element={<SmartHome />}
-        />
+        <Route path="/business" element={<BusinessLanding />} />
+        <Route path="/buisness" element={<BusinessLanding />} />
+        <Route path="/business/" element={<BusinessLanding />} />
+        <Route path="/buisness/" element={<BusinessLanding />} />
 
         {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />
@@ -159,9 +159,12 @@ function AuthenticatedApp() {
         <Route path="/mentions-legales" element={<Legal />} />
         <Route path="/cgu" element={<CGU />} />
         <Route path="/cgv" element={<CGV />} />
-        <Route path="/confidentialite" element={<PrivacyPolicy />} /> {/* 👇 AJOUT ROUTE CONFIDENTIALITÉ */}
-        <Route path="/business" element={<BusinessLanding />} />
-        <Route path="/buisness" element={<BusinessLanding />} />
+        <Route path="/confidentialite" element={<PrivacyPolicy />} />
+
+        <Route
+          path="/"
+          element={<SmartHome />}
+        />
 
 
         {/* Routes Paiement & Onboarding */}
