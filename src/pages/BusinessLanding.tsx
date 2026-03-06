@@ -25,7 +25,7 @@ export const BusinessLanding: React.FC = () => {
                         <img
                             alt="CloseOS Logo"
                             className="w-auto object-contain h-16"
-                            src="https://yydewzqxvteemubkdmrh.supabase.co/storage/v1/object/public/assets/CloseOS%20Logo.png"
+                            src="/CloseOS Buisness.png"
                         />
                     </div>
                     <nav className="hidden md:flex flex-1 justify-center gap-10">
@@ -230,7 +230,7 @@ export const BusinessLanding: React.FC = () => {
                     <img
                         alt="CloseOS Logo"
                         className="w-auto object-contain h-14"
-                        src="https://yydewzqxvteemubkdmrh.supabase.co/storage/v1/object/public/assets/CloseOS%20Logo.png"
+                        src="/CloseOS Buisness.png"
                     />
                 </footer>
             </div>
@@ -283,7 +283,7 @@ const TeamMember = ({ name, role, conv }: any) => (
     </div>
 );
 
-const PipelineColumn = ({ title, color, count, children, highlight }: any) => (
+const PipelineColumn = ({ title, color, count, children }: any) => (
     <div className="flex flex-col gap-4 min-w-[280px]">
         <div className="flex items-center justify-between px-2">
             <h4 className="text-business-primary font-bold uppercase tracking-wider text-sm flex items-center gap-2">
