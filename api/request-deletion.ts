@@ -5,7 +5,6 @@ export const config = {
     runtime: 'edge',
 };
 
-// Environment variables
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
@@ -20,9 +19,9 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 
 const stripe = new Stripe(stripeSecretKey, {
     apiVersion: '2026-01-28.clover',
+    httpClient: Stripe.createFetchHttpClient(),
 });
 
-// Helper for sending email directly (since importing local file might be tricky in edge runtime if not bundled correctly, but let's try direct fetch)
 async function sendEmailBrevo(to: string, subject: string, htmlContent: string) {
     try {
         const response = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -35,8 +34,8 @@ async function sendEmailBrevo(to: string, subject: string, htmlContent: string) 
             body: JSON.stringify({
                 sender: { email: 'support@closeos.fr', name: 'CloseOS Support' },
                 to: [{ email: to }],
-                subject: subject,
-                htmlContent: htmlContent
+                subject,
+                htmlContent
             })
         });
         return response.ok;
@@ -58,88 +57,130 @@ export default async function handler(req: Request) {
             return new Response(JSON.stringify({ error: 'User ID is required' }), { status: 400 });
         }
 
-        // 1. Get user profile (check auth table for email if needed)
+        // 1. Get user from auth
         const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
-
         if (userError || !user || !user.email) {
             return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
         }
 
         const email = user.email;
 
-        // Get stripe ID from profiles
+        // 2. Get profile for Stripe ID
         const { data: profile } = await supabaseAdmin
             .from('profiles')
-            .select('stripe_customer_id')
+            .select('stripe_customer_id, full_name')
             .eq('id', userId)
             .single();
 
         const stripeCustomerId = profile?.stripe_customer_id;
 
-        let scheduledAt = new Date(); // Default immediate (or near future)
-        let isDelayed = false;
+        // Resolve scope: 'all' means everything
+        const deleteAll = scope.includes('all');
+        const deleteBilling = deleteAll || scope.includes('billing');
+        const deleteInternal = deleteAll || scope.includes('internal');
+        const deleteExternal = deleteAll || scope.includes('external');
+        const deletePersonal = deleteAll || scope.includes('personal');
 
-        // 2. Check Stripe Subscription
+        const deletedTables: string[] = [];
+
+        // 3. Delete data based on scope
+
+        // Billing: invoices, issuer_profiles, payment_methods, auto_invoice_configs
+        if (deleteBilling) {
+            await Promise.all([
+                supabaseAdmin.from('invoices').delete().eq('user_id', userId),
+                supabaseAdmin.from('issuer_profiles').delete().eq('user_id', userId),
+                supabaseAdmin.from('payment_methods').delete().eq('user_id', userId),
+                supabaseAdmin.from('auto_invoice_configs').delete().eq('user_id', userId),
+            ]);
+            deletedTables.push('invoices', 'issuer_profiles', 'payment_methods', 'auto_invoice_configs');
+        }
+
+        // Internal contacts: internal_contacts, offers, user_scripts
+        if (deleteInternal) {
+            await Promise.all([
+                supabaseAdmin.from('internal_contacts').delete().eq('user_id', userId),
+                supabaseAdmin.from('offers').delete().eq('user_id', userId),
+                supabaseAdmin.from('user_scripts').delete().eq('user_id', userId),
+            ]);
+            deletedTables.push('internal_contacts', 'offers', 'user_scripts');
+        }
+
+        // External contacts: prospects, calls, call_history, meetings, reminders, share_links, spectator_leads
+        if (deleteExternal) {
+            await Promise.all([
+                supabaseAdmin.from('prospects').delete().eq('user_id', userId),
+                supabaseAdmin.from('calls').delete().eq('user_id', userId),
+                supabaseAdmin.from('call_history').delete().eq('user_id', userId),
+                supabaseAdmin.from('meetings').delete().eq('user_id', userId),
+                supabaseAdmin.from('reminders').delete().eq('user_id', userId),
+                supabaseAdmin.from('share_links').delete().eq('user_id', userId),
+                supabaseAdmin.from('spectator_leads').delete().eq('user_id', userId),
+            ]);
+            deletedTables.push('prospects', 'calls', 'call_history', 'meetings', 'reminders', 'share_links', 'spectator_leads');
+        }
+
+        // Personal: notifications, kpi_config, booking_settings, booking_types, cal_credentials, pipedrive_stage_mapping
+        if (deletePersonal) {
+            await Promise.all([
+                supabaseAdmin.from('notifications').delete().eq('user_id', userId),
+                supabaseAdmin.from('kpi_config').delete().eq('user_id', userId),
+                supabaseAdmin.from('booking_settings').delete().eq('user_id', userId),
+                supabaseAdmin.from('booking_types').delete().eq('user_id', userId),
+                supabaseAdmin.from('cal_credentials').delete().eq('user_id', userId),
+                supabaseAdmin.from('pipedrive_stage_mapping').delete().eq('user_id', userId),
+            ]);
+            deletedTables.push('notifications', 'kpi_config', 'booking_settings', 'booking_types', 'cal_credentials', 'pipedrive_stage_mapping');
+        }
+
+        // 4. Cancel Stripe subscription if exists
         if (stripeCustomerId) {
-            const subscriptions = await stripe.subscriptions.list({
-                customer: stripeCustomerId,
-                status: 'active',
-                limit: 1
-            });
-
-            if (subscriptions.data.length > 0) {
-                const sub = subscriptions.data[0];
-                // Schedule for end of period
-                scheduledAt = new Date(sub.items.data[0].current_period_end * 1000);
-                isDelayed = true;
+            try {
+                const [activeSubs, trialingSubs] = await Promise.all([
+                    stripe.subscriptions.list({ customer: stripeCustomerId, status: 'active', limit: 1 }),
+                    stripe.subscriptions.list({ customer: stripeCustomerId, status: 'trialing', limit: 1 }),
+                ]);
+                const sub = activeSubs.data[0] || trialingSubs.data[0];
+                if (sub) {
+                    await stripe.subscriptions.cancel(sub.id);
+                    console.log(`🚫 Cancelled Stripe subscription ${sub.id} for user ${userId}`);
+                }
+            } catch (stripeErr) {
+                console.error('Stripe cancellation error (continuing):', stripeErr);
             }
         }
 
-        // 3. Update Profile
-        const { error: updateError } = await supabaseAdmin
-            .from('profiles')
-            .update({
-                deletion_scheduled_at: scheduledAt.toISOString(),
-                deletion_scope: scope
-            })
-            .eq('id', userId);
+        // 5. Delete profile row from Supabase
+        await supabaseAdmin.from('profiles').delete().eq('id', userId);
+        console.log(`🗑️ Deleted profile for user ${userId}`);
 
-        if (updateError) {
-            throw updateError;
+        // 6. Send farewell email before deleting auth user
+        await sendEmailBrevo(email, 'Votre compte CloseOS a été supprimé', `
+            <div style="font-family: sans-serif; color: #333;">
+                <h1>Compte supprimé</h1>
+                <p>Bonjour${profile?.full_name ? ` ${profile.full_name}` : ''},</p>
+                <p>Votre compte CloseOS a été supprimé avec succès.</p>
+                ${deletedTables.length > 0
+                ? `<p>Les données suivantes ont été supprimées : ${deletedTables.join(', ')}.</p>`
+                : '<p>Aucune donnée supplémentaire n\'a été supprimée selon votre choix.</p>'}
+                <p>Nous sommes tristes de vous voir partir. Si vous changez d'avis, vous pourrez toujours créer un nouveau compte.</p>
+                <p>Cordialement,<br/>L'équipe CloseOS</p>
+            </div>
+        `);
+
+        // 7. Delete auth user from Supabase (this is the final step)
+        const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        if (deleteAuthError) {
+            console.error('Auth deletion error:', deleteAuthError);
+            // Don't throw — data is already deleted, auth cleanup can be retried
+        } else {
+            console.log(`✅ Auth user ${userId} deleted from Supabase`);
         }
-
-        // 4. Send Email
-        const dateStr = scheduledAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-        const emailSubject = isDelayed
-            ? 'Confirmation de demande de suppression de compte'
-            : 'Suppression de votre compte CloseOS - Confirmation';
-
-        const emailContent = isDelayed
-            ? `
-        <div style="font-family: sans-serif; color: #333;">
-          <h1>Demande de suppression enregistrée</h1>
-          <p>Bonjour,</p>
-          <p>Votre demande de suppression de compte a bien été prise en compte.</p>
-          <p>Compte tenu de votre abonnement actif, la suppression effective de vos données et de votre accès aura lieu le : <strong>${dateStr}</strong>.</p>
-          <p>D'ici là, vous conservez un accès complet à votre compte. Vous pouvez annuler cette demande à tout moment depuis vos paramètres > Suppression.</p>
-          <p>Cordialement,<br/>L'équipe CloseOS</p>
-        </div>
-      `
-            : `
-        <div style="font-family: sans-serif; color: #333;">
-          <h1>Compte en cours de suppression</h1>
-          <p>Bonjour,</p>
-          <p>Votre demande de suppression a été traitée. Votre compte et les données sélectionnées sont en cours de suppression immédiate.</p>
-          <p>Nous sommes tristes de vous voir partir.</p>
-          <p>Cordialement,<br/>L'équipe CloseOS</p>
-        </div>
-      `;
-
-        await sendEmailBrevo(email, emailSubject, emailContent);
 
         return new Response(JSON.stringify({
             success: true,
-            scheduledAt: isDelayed ? scheduledAt.toISOString() : null
+            deleted: true,
+            deletedTables
         }), {
             headers: { 'Content-Type': 'application/json' }
         });

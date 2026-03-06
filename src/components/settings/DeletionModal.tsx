@@ -123,12 +123,9 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
 
-            if (data.scheduledAt) {
-                // Optional: show a toast or alert before closing? 
-            }
-
-            onSuccess();
-            onClose();
+            // Account deleted — sign out and redirect
+            await supabase.auth.signOut();
+            window.location.href = '/';
         } catch (error: any) {
             console.error(error);
             setError(error.message || "Erreur lors de la suppression.");
