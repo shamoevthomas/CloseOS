@@ -12,6 +12,7 @@ import { CallsProvider } from './contexts/CallsContext'
 import { MessagesProvider } from './contexts/MessagesContext'
 import { Toaster } from 'react-hot-toast'
 import { GoogleCalendarProvider } from './contexts/GoogleCalendarContext'
+import { UpgradeProvider } from './contexts/UpgradeContext'
 
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
@@ -55,6 +56,7 @@ import { SubscriptionRetention } from './pages/SubscriptionRetention'
 import { SpectatorPage } from './pages/SpectatorPage'
 import { RemindersPage } from './pages/RemindersPage'
 import { TrialExpiredModal } from './pages/TrialExpired'
+import { FounderOnlyGuard } from './components/FounderOnlyGuard'
 
 // Page d'accueil intelligente : landing immédiate si non connecté, loading si session détectée
 function SmartHome() {
@@ -187,7 +189,9 @@ function AuthenticatedApp() {
           path="/live-call"
           element={
             <ProtectedRoute>
-              <CallRoom />
+              <FounderOnlyGuard>
+                <CallRoom />
+              </FounderOnlyGuard>
             </ProtectedRoute>
           }
         />
@@ -208,11 +212,11 @@ function AuthenticatedApp() {
           <Route path="offers" element={<Offers />} />
           <Route path="agenda" element={<AgendaErrorBoundary><Agenda /></AgendaErrorBoundary>} />
           <Route path="appels" element={<CallsPage />} />
-          <Route path="appels/:id" element={<CallDetails />} />
+          <Route path="appels/:id" element={<FounderOnlyGuard><CallDetails /></FounderOnlyGuard>} />
           <Route path="telephony" element={<TelephonyPage />} />
           <Route path="ai-coach" element={<AICoachPage />} />
           <Route path="factures" element={<InvoicesPage />} />
-          <Route path="kpi" element={<KPIPage />} />
+          <Route path="kpi" element={<FounderOnlyGuard><KPIPage /></FounderOnlyGuard>} />
           <Route path="rendez-vous" element={<RendezVous />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="reminders" element={<RemindersPage />} />
@@ -263,7 +267,9 @@ function App() {
                   <MeetingsProvider>
                     <CallsProvider>
                       <MessagesProvider>
-                        <AuthenticatedApp />
+                        <UpgradeProvider>
+                          <AuthenticatedApp />
+                        </UpgradeProvider>
                         <Analytics />
                         <Toaster
                           position="top-right"

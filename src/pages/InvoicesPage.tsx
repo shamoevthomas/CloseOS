@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { CreditCard, TrendingUp, DollarSign, Calendar, FileText, Wallet, Building2, Eye, Download, Info, Clock, Zap } from 'lucide-react'
+import { CreditCard, TrendingUp, DollarSign, Calendar, FileText, Wallet, Building2, Eye, Download, Info, Clock, Zap, Lock } from 'lucide-react'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { InvoiceGeneratorModal } from '../components/InvoiceGeneratorModal'
@@ -11,11 +11,14 @@ import { InvoiceDetailModal } from '../components/InvoiceDetailModal'
 import { AutoInvoiceConfigModal } from '../components/AutoInvoiceConfigModal'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useUpgrade } from '../contexts/UpgradeContext'
 
 export function InvoicesPage() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
-  const { user } = useAuth()
+  const { user, isFounder, isInTrial, isAdmin } = useAuth()
+  const { showUpgrade } = useUpgrade()
+  const canUseAutoInvoice = isFounder || isInTrial || isAdmin
 
   const [searchParams] = useSearchParams()
 
@@ -244,11 +247,12 @@ export function InvoicesPage() {
           </div>
           <div className="flex gap-3 flex-wrap">
             <button
-              onClick={() => setIsAutoInvoiceOpen(true)}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 text-sm font-bold text-white transition-all hover:shadow-lg hover:shadow-amber-500/20 active:scale-95"
+              onClick={() => canUseAutoInvoice ? setIsAutoInvoiceOpen(true) : showUpgrade()}
+              className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-95 ${canUseAutoInvoice ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-lg hover:shadow-amber-500/20' : 'bg-slate-700 opacity-70 hover:opacity-90'}`}
             >
               <Zap className="h-4 w-4" />
               Facturation Auto
+              {!canUseAutoInvoice && <Lock className="h-3.5 w-3.5 ml-1" />}
             </button>
             <button
               onClick={() => setIsStripeConnectOpen(true)}

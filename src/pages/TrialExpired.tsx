@@ -1,5 +1,6 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useUpgrade } from '../contexts/UpgradeContext';
 import { CheckCircle2, LogOut, ShieldCheck, X, Sheet, ArrowLeft, Square, CheckSquare, AlertCircle, TicketPercent, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -52,6 +53,7 @@ export function TrialExpiredModal() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, logout, profile, isAdmin } = useAuth();
+    const { isUpgradeModalOpen, hideUpgrade } = useUpgrade();
 
     // Step management
     const [step, setStep] = useState<'select' | 'checkout'>('select');
@@ -83,7 +85,8 @@ export function TrialExpiredModal() {
     const created = user?.created_at ? new Date(user.created_at) : null;
     const trialEnd = created ? new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000) : null;
     const isTrialExpired = trialEnd ? new Date() > trialEnd : false;
-    const shouldShow = !isOnHiddenPath && !isAdmin && !hasSubscription && !!user?.created_at && !!profile && isTrialExpired;
+    const isTrialExpiredShow = !isOnHiddenPath && !isAdmin && !hasSubscription && !!user?.created_at && !!profile && isTrialExpired;
+    const shouldShow = isTrialExpiredShow || isUpgradeModalOpen;
 
     const handleLogout = async () => {
         await logout();
@@ -136,6 +139,14 @@ export function TrialExpiredModal() {
                 setIsApplyingCode(false);
             });
     };
+
+    // When upgrade modal opens, reset to select step with founder pre-selected
+    useEffect(() => {
+        if (isUpgradeModalOpen) {
+            setStep('select');
+            setSelectedPlan('founder');
+        }
+    }, [isUpgradeModalOpen]);
 
     // Fetch when entering step 2 or when code changes — MUST be after all useState
     useEffect(() => {
@@ -197,7 +208,12 @@ export function TrialExpiredModal() {
 
             {/* ==================== STEP 1: SELECT PLAN ==================== */}
             {step === 'select' && (
-                <div className="w-full max-w-[900px] rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl overflow-hidden" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                <div className="relative w-full max-w-[900px] rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl overflow-hidden" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                    {isUpgradeModalOpen && !isTrialExpiredShow && (
+                        <button onClick={hideUpgrade} className="absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors">
+                            <X className="h-5 w-5" />
+                        </button>
+                    )}
                     <div className="grid md:grid-cols-2">
 
                         {/* LEFT */}
@@ -207,7 +223,9 @@ export function TrialExpiredModal() {
                                     <img src="/logo.PNG" alt="CloseOS Logo" className="h-9 w-auto" />
                                 </div>
                                 <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-tight mb-4">
-                                    Votre essai gratuit de<br />10 jours est terminé
+                                    {isTrialExpiredShow
+                                        ? <>Votre essai gratuit de<br />10 jours est terminé</>
+                                        : <>Passez au niveau<br />supérieur</>}
                                 </h2>
                                 <p className="text-slate-400 text-sm leading-relaxed mb-8 transition-opacity duration-300" key={selectedPlan + '-desc'} style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
                                     {selectedPlan === 'starter'

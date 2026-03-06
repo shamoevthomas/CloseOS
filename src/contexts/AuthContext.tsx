@@ -17,6 +17,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const subscriptionStatus = profile?.subscription_status;
   const isPaying = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
   const isFounder = isPaying && profile?.plan === 'founder';
+  const isStarter = isPaying && profile?.plan === 'starter';
+
+  // Trial: user exists, no active subscription, account < 10 days old
+  const hasSubscription = profile?.subscription_status && profile.subscription_status !== 'canceled';
+  const created = user?.created_at ? new Date(user.created_at) : null;
+  const trialEnd = created ? new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000) : null;
+  const isInTrial = trialEnd ? new Date() < trialEnd && !hasSubscription : false;
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
@@ -220,6 +227,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       isAdmin,
       isFounder,
+      isStarter,
+      isInTrial,
       isPaying,
       subscriptionStatus,
       loading,
