@@ -24,7 +24,7 @@ export const BusinessLanding: React.FC = () => {
                     <div className="flex items-center gap-3">
                         <img
                             alt="CloseOS Logo"
-                            className="w-auto object-contain h-10"
+                            className="w-auto object-contain h-12"
                             src="/CloseOS Buisness.png"
                         />
                     </div>
@@ -229,7 +229,7 @@ export const BusinessLanding: React.FC = () => {
                 <footer className="px-6 md:px-20 py-12 border-t border-business-primary/10 bg-business-background-light">
                     <img
                         alt="CloseOS Logo"
-                        className="w-auto object-contain h-8"
+                        className="w-auto object-contain h-12"
                         src="/CloseOS Buisness.png"
                     />
                 </footer>
