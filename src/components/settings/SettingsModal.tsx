@@ -18,20 +18,22 @@ import {
   Trash2,
   ZoomIn,
   ZoomOut,
-  ArrowUpRight
+  ArrowUpRight,
+  Database
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useUpgrade } from '../../contexts/UpgradeContext'
 import { supabase } from '../../lib/supabase'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
+import { DataExportContent } from '../DataExportContent'
 import { DeletionModal } from './DeletionModal'
 import { CancellationRetentionModal } from './CancellationRetentionModal'
 
 interface SettingsModalProps {
   isOpen: boolean
   onClose: () => void
-  initialTab?: 'profile' | 'security' | 'subscription' | 'support' | 'delete_account'
+  initialTab?: 'profile' | 'security' | 'subscription' | 'support' | 'delete_account' | 'data'
 }
 
 export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: SettingsModalProps) {
@@ -39,7 +41,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
   const { showUpgrade } = useUpgrade()
 
   // Retrait de 'timezone' des onglets possibles
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'support' | 'delete_account'>(initialTab)
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'support' | 'delete_account' | 'data'>(initialTab)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
@@ -396,6 +398,13 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
             <div className="my-6 h-px bg-white/5 mx-4" />
 
+            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Données</p>
+            <button onClick={() => setActiveTab('data')} className={tabButtonClass('data')}>
+              <Database className="w-4 h-4" /> Données
+            </button>
+
+            <div className="my-6 h-px bg-white/5 mx-4" />
+
             <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Aide</p>
             <button onClick={() => setActiveTab('support')} className={tabButtonClass('support')}>
               <Headphones className="w-4 h-4" /> Support
@@ -419,6 +428,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 {activeTab === 'subscription' && 'Mon Abonnement'}
                 {activeTab === 'support' && 'Centre d\'Aide'}
                 {activeTab === 'delete_account' && 'Suppression du compte'}
+                {activeTab === 'data' && 'Mes Données'}
               </h2>
               <p className="text-slate-400 text-sm mt-1 text-left">
                 {activeTab === 'profile' && 'Gérez vos informations personnelles et votre rôle.'}
@@ -428,6 +438,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 {activeTab === 'subscription' && 'Gérez votre plan, vos factures et l\'annulation.'}
                 {activeTab === 'support' && 'Une question ? Notre équipe est là pour vous.'}
                 {activeTab === 'delete_account' && 'Zone de danger : Supprimer votre compte et vos données.'}
+                {activeTab === 'data' && 'Exportez vos données au format PDF.'}
               </p>
             </div>
           </div>
@@ -657,6 +668,13 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                     </button>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* --- ONGLET DONNÉES --- */}
+            {activeTab === 'data' && (
+              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+                <DataExportContent />
               </div>
             )}
 

@@ -1,7 +1,8 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUpgrade } from '../contexts/UpgradeContext';
-import { CheckCircle2, LogOut, ShieldCheck, X, Sheet, ArrowLeft, Square, CheckSquare, AlertCircle, TicketPercent, Loader2 } from 'lucide-react';
+import { CheckCircle2, LogOut, ShieldCheck, X, Sheet, ArrowLeft, Square, CheckSquare, AlertCircle, TicketPercent, Loader2, Download } from 'lucide-react';
+import { DataExportModal } from '../components/DataExportModal';
 import { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { loadStripe } from '@stripe/stripe-js';
@@ -58,6 +59,7 @@ export function TrialExpiredModal() {
 
     // Step management
     const [step, setStep] = useState<'select' | 'checkout' | 'success'>('select');
+    const [isExportOpen, setIsExportOpen] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<'starter' | 'founder'>('founder');
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
@@ -279,10 +281,16 @@ export function TrialExpiredModal() {
                                     ))}
                                 </div>
                             </div>
-                            <button onClick={handleLogout} className="mt-8 flex items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors text-sm">
-                                <LogOut className="h-4 w-4" />
-                                Se déconnecter
-                            </button>
+                            <div className="mt-8 space-y-3">
+                                <button onClick={() => setIsExportOpen(true)} className="flex items-center gap-2 text-slate-400 hover:text-blue-400 transition-colors text-sm font-medium">
+                                    <Download className="h-4 w-4" />
+                                    Extraire mes données
+                                </button>
+                                <button onClick={handleLogout} className="flex items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors text-sm">
+                                    <LogOut className="h-4 w-4" />
+                                    Se déconnecter
+                                </button>
+                            </div>
                         </div>
 
                         {/* RIGHT */}
@@ -592,6 +600,8 @@ export function TrialExpiredModal() {
                     </div>
                 </div>
             )}
+
+            <DataExportModal isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} />
 
             {/* Animation keyframes */}
             <style>{`
