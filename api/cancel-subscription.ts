@@ -39,11 +39,12 @@ export default async function handler(req: Request) {
         }
 
         // Find active subscription
-        const subscriptions = await stripe.subscriptions.list({
-            customer: profile.stripe_customer_id,
-            status: 'active',
-            limit: 1
-        });
+        // Chercher les abonnements actifs OU en période d'essai
+        const [activeSubs, trialingSubs] = await Promise.all([
+            stripe.subscriptions.list({ customer: profile.stripe_customer_id, status: 'active', limit: 1 }),
+            stripe.subscriptions.list({ customer: profile.stripe_customer_id, status: 'trialing', limit: 1 }),
+        ]);
+        const subscriptions = { data: [...activeSubs.data, ...trialingSubs.data] };
 
         if (subscriptions.data.length === 0) {
             return new Response(JSON.stringify({ error: 'No active subscription found' }), { status: 404 });

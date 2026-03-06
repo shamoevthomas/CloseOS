@@ -17,9 +17,11 @@ import {
   Camera,
   Trash2,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  ArrowUpRight
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useUpgrade } from '../../contexts/UpgradeContext'
 import { supabase } from '../../lib/supabase'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
@@ -33,7 +35,8 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: SettingsModalProps) {
-  const { user, updateProfile, updatePassword } = useAuth()
+  const { user, profile, updateProfile, updatePassword, isFounder, isStarter, isPaying } = useAuth()
+  const { showUpgrade } = useUpgrade()
 
   // Retrait de 'timezone' des onglets possibles
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'support' | 'delete_account'>(initialTab)
@@ -659,29 +662,64 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
             {/* --- ONGLET ABONNEMENT --- */}
             {activeTab === 'subscription' && (
-              <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+              <div className="max-w-2xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+                {/* Plan actuel */}
                 <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden text-left">
-                  <div className="absolute top-0 right-0 p-3 opacity-10 text-left">
-                    <CreditCard className="w-32 h-32 text-white text-left" />
+                  <div className="absolute top-0 right-0 p-3 opacity-10">
+                    <CreditCard className="w-32 h-32 text-white" />
                   </div>
                   <div className="relative z-10 text-left">
-                    <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-bold uppercase tracking-wider mb-4 text-left">
-                      <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse text-left"></span>
-                      Plan Actif
+                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4 ${isPaying ? 'bg-blue-500/20 border border-blue-500/30 text-blue-300' : 'bg-slate-500/20 border border-slate-500/30 text-slate-300'}`}>
+                      <span className={`w-2 h-2 rounded-full ${isPaying ? 'bg-blue-400 animate-pulse' : 'bg-slate-400'}`}></span>
+                      {isPaying ? 'Plan Actif' : 'Aucun abonnement'}
                     </span>
-                    <h3 className="text-3xl font-bold text-white mb-2 text-left">Founder Edition</h3>
-                    <p className="text-slate-300 mb-6 max-w-md text-left">
-                      Gérez vos paiements et factures en toute sécurité via Stripe.
-                    </p>
-                    <button
-                      onClick={() => setIsCancellationModalOpen(true)}
-                      className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors shadow-lg flex items-center gap-2 text-left"
-                    >
-                      <Trash2 className="h-4 w-4 text-left" />
-                      Annuler mon abonnement
-                    </button>
+                    <h3 className="text-3xl font-bold text-white mb-1">
+                      {isFounder ? 'Pack Founder' : isStarter ? 'Pack Starter' : 'Aucun plan'}
+                    </h3>
+                    {profile?.billing_cycle && (
+                      <p className="text-slate-400 text-sm mb-1">
+                        Facturation {profile.billing_cycle === 'yearly' ? 'annuelle' : 'mensuelle'}
+                      </p>
+                    )}
+                    {profile?.current_period_end && (
+                      <p className="text-slate-500 text-xs">
+                        Prochaine échéance : {new Date(profile.current_period_end).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </p>
+                    )}
                   </div>
                 </div>
+
+                {/* Upgrade — visible pour Starter */}
+                {isStarter && (
+                  <button
+                    onClick={() => { onClose(); showUpgrade(); }}
+                    className="w-full p-5 rounded-2xl bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center justify-between group"
+                  >
+                    <div className="text-left">
+                      <p className="text-white font-bold text-base">Passer au Pack Founder</p>
+                      <p className="text-slate-400 text-sm mt-0.5">Débloquez les KPI avancés, le Call Room, les automatisations...</p>
+                    </div>
+                    <div className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm group-hover:bg-blue-500 transition-colors shrink-0">
+                      <ArrowUpRight className="h-4 w-4" />
+                      Upgrade
+                    </div>
+                  </button>
+                )}
+
+                {/* Annulation — visible si abonné */}
+                {isPaying && (
+                  <button
+                    onClick={() => setIsCancellationModalOpen(true)}
+                    className="w-full px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20 flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Annuler mon abonnement
+                  </button>
+                )}
+
+                <p className="text-center text-[11px] text-slate-500">
+                  Paiement sécurisé par Stripe. Annulation possible à tout moment.
+                </p>
               </div>
             )}
 
