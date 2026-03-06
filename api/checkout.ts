@@ -14,7 +14,7 @@ const supabase = createClient(
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     try {
-      const { lineItems, plan, referralCode, isVoip, promotekitReferral, userId, referral_code: frontendReferralCode } = req.body;
+      const { lineItems, plan, referralCode, isVoip, promotekitReferral, userId, referral_code: frontendReferralCode, customerEmail } = req.body;
 
       // Cascade de priorité pour le code affilié : Supabase > localStorage > Promotekit
       let supabaseReferral = null;
@@ -63,6 +63,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         line_items: lineItems,
         mode: 'subscription',
         payment_method_collection: 'always',
+
+        // Pré-remplir l'email pour les utilisateurs existants (TrialExpired)
+        ...(customerEmail ? { customer_email: customerEmail } : {}),
 
         // On applique la réduction
         discounts: discounts.length > 0 ? discounts : undefined,

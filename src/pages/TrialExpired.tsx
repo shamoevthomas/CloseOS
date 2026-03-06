@@ -2,7 +2,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUpgrade } from '../contexts/UpgradeContext';
 import { CheckCircle2, LogOut, ShieldCheck, X, Sheet, ArrowLeft, Square, CheckSquare, AlertCircle, TicketPercent, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import confetti from 'canvas-confetti';
 import { loadStripe } from '@stripe/stripe-js';
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
 import { PricingComparisonTable } from '../components/PricingComparisonTable';
@@ -52,11 +53,11 @@ const CROSSED_PRICES: Record<string, Record<string, number>> = {
 export function TrialExpiredModal() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, logout, profile, isAdmin } = useAuth();
+    const { user, logout, profile, isAdmin, refreshProfile } = useAuth();
     const { isUpgradeModalOpen, hideUpgrade } = useUpgrade();
 
     // Step management
-    const [step, setStep] = useState<'select' | 'checkout'>('select');
+    const [step, setStep] = useState<'select' | 'checkout' | 'success'>('select');
     const [selectedPlan, setSelectedPlan] = useState<'starter' | 'founder'>('founder');
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
@@ -115,6 +116,8 @@ export function TrialExpiredModal() {
                 referralCode: appliedCode,
                 promotekitReferral,
                 referral_code: localStorage.getItem('referral_code') ?? '',
+                userId: user?.id,
+                customerEmail: user?.email,
             }),
         })
             .then(async (res) => {
@@ -154,6 +157,36 @@ export function TrialExpiredModal() {
             fetchClientSecret();
         }
     }, [shouldShow, step, billingCycle, appliedCode]);
+
+    // Fire confetti when entering success step
+    useEffect(() => {
+        if (step === 'success') {
+            const duration = 2000;
+            const end = Date.now() + duration;
+            const frame = () => {
+                confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 } });
+                confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 } });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            };
+            frame();
+        }
+    }, [step]);
+
+    const handleSuccessClose = useCallback(async () => {
+        // Force sync Stripe → Supabase avant de rafraîchir le profil
+        try {
+            await fetch('/api/sync-subscription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user?.id, email: user?.email }),
+            });
+        } catch (e) {
+            console.error('sync-subscription failed, relying on webhook:', e);
+        }
+        await refreshProfile();
+        setStep('select');
+        if (isUpgradeModalOpen) hideUpgrade();
+    }, [user, refreshProfile, isUpgradeModalOpen, hideUpgrade]);
 
     // Guard: return null AFTER all hooks
     if (!shouldShow) return null;
@@ -502,7 +535,7 @@ export function TrialExpiredModal() {
                                     <EmbeddedCheckoutProvider
                                         key={clientSecret}
                                         stripe={stripePromise}
-                                        options={{ clientSecret }}
+                                        options={{ clientSecret, onComplete: () => setStep('success') }}
                                     >
                                         <EmbeddedCheckout className="h-full w-full" />
                                     </EmbeddedCheckoutProvider>
@@ -518,6 +551,25 @@ export function TrialExpiredModal() {
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* ==================== STEP 3: SUCCESS ==================== */}
+            {step === 'success' && (
+                <div className="relative w-full max-w-md rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl p-10 text-center" style={{ animation: 'fadeSlideIn 0.4s ease-out' }}>
+                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 border-2 border-emerald-500/30">
+                        <CheckCircle2 className="h-10 w-10 text-emerald-400" style={{ animation: 'successPop 0.5s ease-out' }} />
+                    </div>
+                    <h2 className="text-2xl font-extrabold text-white mb-3">Paiement validé !</h2>
+                    <p className="text-slate-400 text-sm leading-relaxed mb-8">
+                        Vous avez maintenant accès au <span className="text-white font-semibold">{planLabel}</span>. Bienvenue !
+                    </p>
+                    <button
+                        onClick={handleSuccessClose}
+                        className="w-full rounded-xl bg-emerald-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-emerald-500 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 active:scale-[0.98]"
+                    >
+                        Commencez réellement
+                    </button>
                 </div>
             )}
 
@@ -543,6 +595,11 @@ export function TrialExpiredModal() {
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes successPop {
+          0% { opacity: 0; transform: scale(0.3); }
+          60% { transform: scale(1.15); }
+          100% { opacity: 1; transform: scale(1); }
         }
       `}</style>
         </div>
