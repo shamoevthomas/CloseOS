@@ -160,6 +160,7 @@ function AuthenticatedApp() {
         <Route path="/cgu" element={<CGU />} />
         <Route path="/cgv" element={<CGV />} />
         <Route path="/confidentialite" element={<PrivacyPolicy />} /> {/* 👇 AJOUT ROUTE CONFIDENTIALITÉ */}
+        <Route path="/business" element={<BusinessLanding />} />
         <Route path="/buisness" element={<BusinessLanding />} />
 
 
