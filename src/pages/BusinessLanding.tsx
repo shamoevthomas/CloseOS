@@ -66,13 +66,7 @@ export const BusinessLanding: React.FC = () => {
                             src="/CloseOS Buisness.png"
                         />
                     </div>
-                    <nav className="hidden md:flex flex-1 justify-center gap-10">
-                        <a className="text-business-primary/80 hover:text-business-primary text-sm font-semibold transition-colors cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Accès anticipé</a>
-                        <a className="text-business-primary/80 hover:text-business-primary text-sm font-semibold transition-colors" href="#dashboard">Dashboard</a>
-                        <a className="text-business-primary/80 hover:text-business-primary text-sm font-semibold transition-colors" href="#pipeline">Pipeline</a>
-                        <a className="text-business-primary/80 hover:text-business-primary text-sm font-semibold transition-colors" href="#crm">CRM</a>
-                    </nav>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 ml-auto">
                         <button
                             onClick={() => setIsModalOpen(true)}
                             className="hidden sm:flex min-w-[120px] cursor-pointer items-center justify-center rounded-lg h-10 px-5 text-white text-sm font-bold tracking-wide hover:opacity-90 transition-all bg-[#493627]"
@@ -81,6 +75,12 @@ export const BusinessLanding: React.FC = () => {
                         </button>
                     </div>
                 </header>
+
+                <div className="w-full bg-business-primary/5 border-b border-business-primary/10 py-3 text-center">
+                    <p className="text-business-primary/70 text-sm font-semibold">
+                        🚀 Déjà <span className="text-business-primary font-extrabold">+150 closers</span> qui utilisent CloseOS Sales
+                    </p>
+                </div>
 
                 <main className="flex flex-col flex-1">
                     {/* Hero Section */}
@@ -267,7 +267,6 @@ export const BusinessLanding: React.FC = () => {
                                 >
                                     Être informé de l'ouverture
                                 </button>
-                                <p className="text-business-primary/50 font-semibold italic">Pas de carte bancaire requise.</p>
                             </div>
                         </div>
                     </section>

@@ -568,13 +568,24 @@ export function TrialExpiredModal() {
             {/* ==================== STEP 3: SUCCESS ==================== */}
             {step === 'success' && (
                 <div className="relative w-full max-w-md rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl p-10 text-center" style={{ animation: 'fadeSlideIn 0.4s ease-out' }}>
-                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 border-2 border-emerald-500/30">
-                        <CheckCircle2 className="h-10 w-10 text-emerald-400" style={{ animation: 'successPop 0.5s ease-out' }} />
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 border-2 border-emerald-500/30">
+                        <CheckCircle2 className="h-8 w-8 text-emerald-400" style={{ animation: 'successPop 0.5s ease-out' }} />
                     </div>
-                    <h2 className="text-2xl font-extrabold text-white mb-3">Paiement validé !</h2>
-                    <p className="text-slate-400 text-sm leading-relaxed mb-8">
+                    <h2 className="text-2xl font-extrabold text-white mb-2">Paiement validé !</h2>
+                    <p className="text-slate-400 text-sm leading-relaxed mb-5">
                         Vous avez maintenant accès au <span className="text-white font-semibold">{planLabel}</span>. Bienvenue !
                     </p>
+                    <div className="w-full rounded-xl overflow-hidden mb-6 border border-slate-700">
+                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                            <iframe
+                                src="https://www.youtube.com/embed/as_MdM--MYQ?autoplay=1"
+                                title="Bienvenue sur CloseOS"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                className="absolute inset-0 w-full h-full"
+                            />
+                        </div>
+                    </div>
                     <button
                         onClick={handleSuccessClose}
                         className="w-full rounded-xl bg-emerald-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-emerald-500 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 active:scale-[0.98]"
