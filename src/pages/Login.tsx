@@ -100,7 +100,7 @@ export default function Login() {
         {/* LOGO EN-TÊTE */}
         <div className="mb-10 text-center flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
           <Link to="/" className="inline-block transition-transform hover:scale-105">
-            <img src="/logo.PNG" alt="CloseOS Logo" className="h-12 w-auto" />
+            <img src="/logo Sales.png" alt="CloseOS Logo" className="h-12 w-auto" />
           </Link>
         </div>
 

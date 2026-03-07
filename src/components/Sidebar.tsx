@@ -113,7 +113,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
         <div className="flex h-16 items-center justify-between px-6 border-b border-slate-800">
           <div className="flex items-center gap-3">
             <img
-              src="/logo.PNG"
+              src="/logo Sales.png"
               alt="CloserOS"
               className="h-8 w-auto object-contain rounded-md"
             />
