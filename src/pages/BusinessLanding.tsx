@@ -268,19 +268,22 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         setErrorMessage('');
 
         try {
+            // Insert into the new dedicated EmailBuis table
             const { error } = await supabase
-                .from('prospects')
-                .insert([
-                    {
-                        email,
-                        source: 'Waiting List Business',
-                        status: 'new'
-                    }
-                ]);
+                .from('EmailBuis')
+                .insert([{ email }]);
 
-            if (error) throw error;
+            if (error) {
+                // Postgres error code for unique constraint violation
+                if (error.code === '23505') {
+                    setErrorMessage("Vous êtes déjà inscrit avec ce mail");
+                    setStatus('error');
+                    return;
+                }
+                throw error;
+            }
 
-            // Trigger welcome email via Brevo API
+            // Trigger welcome email via Brevo API only for new signups
             try {
                 await fetch('/api/business-welcome-email', {
                     method: 'POST',
@@ -289,12 +292,10 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                 });
             } catch (emailErr) {
                 console.error('Error triggering welcome email:', emailErr);
-                // We don't block the UI if the email fails, but we log it
             }
 
             setStatus('success');
             setEmail('');
-            // Removed auto-close timeout to allow users to interact with success CTAs
         } catch (err: any) {
             console.error('Error joining waiting list:', err);
             setStatus('error');
