@@ -30,7 +30,7 @@ export function ComingSoon() {
 
         {/* LOGO */}
         <div className="flex justify-center mb-8">
-          <img src="/logo Sales.png" alt="CloseOS" className="h-12 w-auto" />
+          <img src="/logo Sales.png" alt="CloseOS" className="h-16 w-auto" />
         </div>
 
         {/* TITRE & ICONE */}

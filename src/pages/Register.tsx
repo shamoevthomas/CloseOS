@@ -72,7 +72,7 @@ export default function Register() {
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
           <Link to="/" className="inline-block">
-            <img src="/logo Sales.png" alt="CloseOS" className="h-8 w-auto mx-auto" />
+            <img src="/logo Sales.png" alt="CloseOS" className="h-12 w-auto mx-auto" />
           </Link>
         </div>
 

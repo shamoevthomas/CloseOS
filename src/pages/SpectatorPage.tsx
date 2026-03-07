@@ -368,7 +368,7 @@ export function SpectatorPage() {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="text-center space-y-6">
-          <img src="/logo Sales.png" alt="CloseOS" className="h-14 mx-auto drop-shadow-lg" />
+          <img src="/logo Sales.png" alt="CloseOS" className="h-20 mx-auto drop-shadow-lg" />
           <div className="flex flex-col items-center gap-3 w-64 mx-auto">
             <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
               <div className="h-full bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600 rounded-full animate-loading-bar" />
@@ -403,7 +403,7 @@ export function SpectatorPage() {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="w-full max-w-sm text-center space-y-6">
-          <img src="/logo Sales.png" alt="CloseOS" className="h-14 mx-auto drop-shadow-lg" />
+          <img src="/logo Sales.png" alt="CloseOS" className="h-20 mx-auto drop-shadow-lg" />
           <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
               <X className="h-6 w-6 text-red-400" />
@@ -423,7 +423,7 @@ export function SpectatorPage() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           <div className="flex items-center justify-center mb-8">
-            <img src="/logo Sales.png" alt="CloseOS" className="h-14 drop-shadow-lg" />
+            <img src="/logo Sales.png" alt="CloseOS" className="h-20 drop-shadow-lg" />
           </div>
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
             <div className="text-center mb-6">
@@ -484,7 +484,7 @@ export function SpectatorPage() {
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt={profile?.full_name || 'Closer'} className="h-9 w-9 rounded-full object-cover border border-slate-700" />
             ) : (
-              <img src="/logo Sales.png" alt="CloseOS" className="h-9" />
+              <img src="/logo Sales.png" alt="CloseOS" className="h-14" />
             )}
             <div>
               <h1 className="text-sm font-bold text-white">

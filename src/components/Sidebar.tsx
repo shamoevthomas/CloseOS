@@ -115,7 +115,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
             <img
               src="/logo Sales.png"
               alt="CloserOS"
-              className="h-8 w-auto object-contain rounded-md"
+              className="h-12 w-auto object-contain rounded-md"
             />
           </div>
           <button onClick={onClose} className="lg:hidden p-2 text-slate-400 hover:text-white">

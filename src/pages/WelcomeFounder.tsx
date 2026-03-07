@@ -52,7 +52,7 @@ export function WelcomeFounder() {
 
           {/* Logo seul (non cliquable) */}
           <div className="flex items-center gap-2">
-            <img src="/logo Sales.png" alt="CloseOS" className="h-8 w-auto" />
+            <img src="/logo Sales.png" alt="CloseOS" className="h-12 w-auto" />
           </div>
 
           {/* Vraie déconnexion */}
