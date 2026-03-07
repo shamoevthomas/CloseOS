@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
 import {
     ArrowUp,
     ArrowDown,
@@ -12,10 +13,14 @@ import {
     CheckCircle,
     Plus,
     FileText,
-    Video
+    Video,
+    X,
+    Loader2
 } from 'lucide-react';
 
 export const BusinessLanding: React.FC = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     return (
         <div className="bg-business-background-light dark:bg-business-background-dark font-business-display text-slate-900 dark:text-slate-100 transition-colors duration-300">
             <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
@@ -35,7 +40,10 @@ export const BusinessLanding: React.FC = () => {
                         <a className="text-business-primary/80 hover:text-business-primary text-sm font-semibold transition-colors" href="#crm">CRM</a>
                     </nav>
                     <div className="flex items-center gap-4">
-                        <button className="hidden sm:flex min-w-[120px] cursor-pointer items-center justify-center rounded-lg h-10 px-5 text-white text-sm font-bold tracking-wide hover:opacity-90 transition-all bg-[#493627]">
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="hidden sm:flex min-w-[120px] cursor-pointer items-center justify-center rounded-lg h-10 px-5 text-white text-sm font-bold tracking-wide hover:opacity-90 transition-all bg-[#493627]"
+                        >
                             Rejoindre la liste d'attente
                         </button>
                     </div>
@@ -55,7 +63,10 @@ export const BusinessLanding: React.FC = () => {
                                     </p>
                                 </div>
                                 <div className="flex flex-wrap gap-4 justify-center">
-                                    <button className="flex min-w-[200px] cursor-pointer items-center justify-center rounded-xl h-14 px-8 text-white text-lg font-bold shadow-lg shadow-black/20 hover:-translate-y-1 transition-all bg-[#493627]">
+                                    <button
+                                        onClick={() => setIsModalOpen(true)}
+                                        className="flex min-w-[200px] cursor-pointer items-center justify-center rounded-xl h-14 px-8 text-white text-lg font-bold shadow-lg shadow-black/20 hover:-translate-y-1 transition-all bg-[#493627]"
+                                    >
                                         S'inscrire pour le lancement
                                     </button>
                                 </div>
@@ -217,7 +228,10 @@ export const BusinessLanding: React.FC = () => {
                         <div className="max-w-[800px] mx-auto space-y-10">
                             <h2 className="text-business-primary font-business-serif text-5xl font-bold leading-tight">Prêt à scaler votre écosystème de closing ?</h2>
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <button className="w-full sm:w-auto flex min-w-[240px] cursor-pointer items-center justify-center rounded-xl h-16 px-10 text-white text-xl font-bold shadow-xl shadow-black/20 hover:scale-105 transition-all bg-[#493627]">
+                                <button
+                                    onClick={() => setIsModalOpen(true)}
+                                    className="w-full sm:w-auto flex min-w-[240px] cursor-pointer items-center justify-center rounded-xl h-16 px-10 text-white text-xl font-bold shadow-xl shadow-black/20 hover:scale-105 transition-all bg-[#493627]"
+                                >
                                     Être informé de l'ouverture
                                 </button>
                                 <p className="text-business-primary/50 font-semibold italic">Pas de carte bancaire requise.</p>
@@ -233,7 +247,130 @@ export const BusinessLanding: React.FC = () => {
                         src="/CloseOS Buisness.png"
                     />
                 </footer>
+
+                <WaitingListModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
             </div>
+        </div>
+    );
+};
+
+const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+    const [email, setEmail] = useState('');
+    const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [errorMessage, setErrorMessage] = useState('');
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setStatus('loading');
+        setErrorMessage('');
+
+        try {
+            const { error } = await supabase
+                .from('prospects')
+                .insert([
+                    {
+                        email,
+                        source: 'Waiting List Business',
+                        status: 'new'
+                    }
+                ]);
+
+            if (error) throw error;
+            setStatus('success');
+            setTimeout(() => {
+                onClose();
+                setStatus('idle');
+                setEmail('');
+            }, 3000);
+        } catch (err: any) {
+            console.error('Error joining waiting list:', err);
+            setStatus('error');
+            setErrorMessage(err.message || "Une erreur est survenue. Veuillez rééssayer.");
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-business-primary/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div
+                className="bg-business-background-light w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-300"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-2 rounded-full hover:bg-business-primary/10 transition-colors text-business-primary"
+                >
+                    <X className="size-6" />
+                </button>
+
+                <div className="p-8 pt-12 text-center">
+                    <div className="bg-business-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <Mail className="size-8 text-business-primary" />
+                    </div>
+
+                    {status === 'success' ? (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <h3 className="text-business-primary font-business-serif text-3xl font-bold">C'est noté ! 🚀</h3>
+                            <p className="text-business-primary/70 font-medium text-center">
+                                Merci de votre intérêt. Nous vous contacterons dès que l'accès Business sera disponible.
+                            </p>
+                            <div className="pt-4 flex justify-center">
+                                <CheckCircle className="size-12 text-emerald-500" />
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <h3 className="text-business-primary font-business-serif text-3xl font-bold mb-3">Rejoindre la liste d'attente</h3>
+                            <p className="text-business-primary/60 mb-8 font-medium">
+                                Soyez parmi les premiers à piloter votre business avec le nouvel écosystème CloseOS.
+                            </p>
+
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="relative text-left">
+                                    <label htmlFor="email" className="text-[10px] font-bold text-business-primary/40 uppercase tracking-widest ml-1 mb-1 block">
+                                        Votre Email Professionnel
+                                    </label>
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        required
+                                        placeholder="votre@email.com"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full bg-business-primary/5 border border-business-primary/10 rounded-xl px-4 py-4 focus:ring-2 focus:ring-business-primary focus:border-transparent outline-none transition-all text-business-primary font-bold"
+                                    />
+                                </div>
+
+                                {status === 'error' && (
+                                    <p className="text-rose-500 text-xs font-bold text-left ml-1 italic">{errorMessage}</p>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={status === 'loading'}
+                                    className="w-full bg-business-primary text-white rounded-xl py-4 font-bold text-lg shadow-lg hover:shadow-business-primary/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {status === 'loading' ? (
+                                        <>
+                                            <Loader2 className="size-5 animate-spin" />
+                                            Inscription...
+                                        </>
+                                    ) : (
+                                        "M'inscrire maintenant"
+                                    )}
+                                </button>
+
+                                <p className="text-[10px] text-business-primary/40 font-bold uppercase tracking-widest text-center">
+                                    Accès prioritaire • Sans engagement
+                                </p>
+                            </form>
+                        </>
+                    )}
+                </div>
+            </div>
+            {/* Background Overlay to close */}
+            <div className="fixed inset-0 -z-10" onClick={onClose}></div>
         </div>
     );
 };
