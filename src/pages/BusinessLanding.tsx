@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import {
     ArrowUp,
@@ -21,6 +21,19 @@ import {
 
 export const BusinessLanding: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 300);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     return (
         <div className="bg-business-background-light dark:bg-business-background-dark font-business-display text-slate-900 dark:text-slate-100 transition-colors duration-300">
@@ -250,6 +263,19 @@ export const BusinessLanding: React.FC = () => {
                 </footer>
 
                 <WaitingListModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+                {/* Floating Scroll to Top Button */}
+                <button
+                    onClick={scrollToTop}
+                    className={`fixed bottom-8 left-8 z-[90] p-4 rounded-full bg-white/80 backdrop-blur-md border border-business-primary/10 shadow-xl transition-all duration-500 hover:scale-110 hover:-translate-y-1 group ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
+                        }`}
+                    aria-label="Retour en haut"
+                >
+                    <ArrowUp className="size-6 text-[#493627] group-hover:animate-bounce" />
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-business-primary text-white text-[10px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap uppercase tracking-widest pointer-events-none">
+                        Retour en haut
+                    </div>
+                </button>
             </div>
         </div>
     );
