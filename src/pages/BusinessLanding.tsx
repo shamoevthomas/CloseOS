@@ -216,6 +216,50 @@ export const BusinessLanding: React.FC = () => {
                         </div>
                     </section>
 
+                    {/* FAQ Section */}
+                    <section className="px-6 md:px-20 py-24 bg-business-primary/5">
+                        <div className="max-w-[800px] mx-auto">
+                            <div className="text-center mb-16 space-y-4">
+                                <h2 className="text-business-primary font-business-serif text-5xl font-bold">Questions fréquentes</h2>
+                                <p className="text-business-primary/60 text-lg">Tout ce que vous devez savoir avant de rejoindre la liste d'attente.</p>
+                            </div>
+                            <div className="space-y-4">
+                                <FAQItem
+                                    question="CloseOS Business est-il compatible avec mes outils CRM actuels ?"
+                                    answer={<p>Oui. Tu peux connecter ton CRM existant — <strong>iClosed</strong>, <strong>HubSpot</strong> ou <strong>Pipedrive</strong> sont supportés. Cela dit, nous recommandons d'utiliser le <strong>CRM intégré CloseOS Business</strong> : c'est lui qui offre les meilleures performances et la gestion la plus simple dans cet écosystème. Tout est conçu pour fonctionner ensemble, sans friction.</p>}
+                                />
+                                <FAQItem
+                                    question="Mes données sont-elles sécurisées et conformes au RGPD ?"
+                                    answer={<p>Oui. CloseOS Business est <strong>100% conforme au RGPD</strong>. Toutes les données sont hébergées de manière sécurisée, isolées par organisation, et aucun tiers n'y a accès. Tu restes propriétaire de tes données à tout moment.</p>}
+                                />
+                                <FAQItem
+                                    question="Mes closers ont-ils accès à toutes les données ?"
+                                    answer={<p>Non. Tu définis toi-même les niveaux d'accès. Chaque closer voit uniquement ses prospects, ses KPIs et son pipeline. Les données sensibles (CA global, marges, contacts stratégiques) restent visibles par toi seul.</p>}
+                                />
+                                <FAQItem
+                                    question="Combien de closers puis-je ajouter ?"
+                                    answer={<p>Autant que tu veux. CloseOS Business n'impose <strong>aucune limite</strong> sur la taille de ton équipe.</p>}
+                                />
+                                <FAQItem
+                                    question="Est-ce difficile à prendre en main pour mes closers ?"
+                                    answer={<p>Non. L'onboarding est <strong>100% autonome</strong> — tes closers sont guidés dès leur première connexion avec tes scripts, ressources et KPIs de progression. Tu n'as rien à expliquer manuellement.</p>}
+                                />
+                                <FAQItem
+                                    question="Est-ce que CloseOS Business sera parfaitement adapté à mon business ?"
+                                    answer={<p>C'est justement l'objectif. <strong>CloseOS Business se construit avec les infopreneurs inscrits sur la liste d'attente.</strong> Tes retours, tes besoins et tes cas d'usage concrets façonnent directement l'outil. Tu ne découvres pas un produit fini — tu participes à créer le meilleur outil de closing du marché.</p>}
+                                />
+                                <FAQItem
+                                    question="Y a-t-il un avantage à s'inscrire maintenant ?"
+                                    answer={<p>Oui, et pas des moindres. Les inscrits sur la liste d'attente bénéficieront d'une <strong>réduction imbattable</strong> au lancement — réservée exclusivement aux early adopters. Plus tu t'inscris tôt, plus tu en profites.</p>}
+                                />
+                                <FAQItem
+                                    question="Quand CloseOS Business sera-t-il disponible ?"
+                                    answer={<p>Le lancement est prévu dans les prochaines semaines. Inscris-toi maintenant pour être parmi les premiers informés et accéder aux <strong>conditions d'early adopter</strong>.</p>}
+                                />
+                            </div>
+                        </div>
+                    </section>
+
                     {/* CRM Feature Teaser */}
                     <section className="px-6 md:px-20 py-24 bg-business-primary text-business-background-light overflow-hidden relative" id="crm">
                         <div className="max-w-[1200px] mx-auto flex flex-col items-center text-center relative z-10">
@@ -626,6 +670,28 @@ const LeadProfile = () => (
         </div>
     </div>
 );
+
+const FAQItem = ({ question, answer }: { question: string; answer: React.ReactNode }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="border border-business-primary/10 rounded-2xl overflow-hidden">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-business-primary/5 transition-colors"
+            >
+                <span className="text-business-primary font-bold text-lg pr-4">{question}</span>
+                <span className={`text-business-primary transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-45' : ''}`}>
+                    <Plus className="size-5" />
+                </span>
+            </button>
+            {isOpen && (
+                <div className="px-6 pb-6 text-business-primary/70 leading-relaxed">
+                    {answer}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const InteractionItem = ({ icon, text, subtext, color, italic }: any) => (
     <div className="flex gap-3 items-start">
