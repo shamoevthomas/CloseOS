@@ -3,15 +3,18 @@ export const config = {
 };
 
 export default async function handler(req: Request) {
-    const BREVO_API_KEY = process.env.BREVO_API_KEY;
+    const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY;
 
     if (req.method !== 'POST') {
         return new Response('Method Not Allowed', { status: 405 });
     }
 
     if (!BREVO_API_KEY) {
-        console.error("BREVO_API_KEY is missing");
-        return new Response(JSON.stringify({ error: 'BREVO_API_KEY is missing from environment' }), { status: 500 });
+        console.error("BREVO_API_KEY is missing from environment");
+        return new Response(JSON.stringify({
+            error: 'BREVO_API_KEY is missing from environment',
+            message: 'Please ensure BREVO_API_KEY is set in Vercel environment variables.'
+        }), { status: 500 });
     }
 
     try {
@@ -75,7 +78,7 @@ export default async function handler(req: Request) {
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
-                sender: { name: 'CloseOS Business', email: 'noreplycloseos@gmail.com' },
+                sender: { name: 'CloseOS Business', email: 'support@closeos.fr' },
                 to: [{ email }],
                 subject: "Bienvenue sur la liste d'attente CloseOS Business 🚀",
                 htmlContent
@@ -89,7 +92,8 @@ export default async function handler(req: Request) {
             return new Response(JSON.stringify({
                 error: 'Brevo API Error',
                 details: data,
-                senderUsed: 'noreplycloseos@gmail.com'
+                senderUsed: 'support@closeos.fr',
+                keyLength: BREVO_API_KEY ? BREVO_API_KEY.length : 0
             }), { status: response.status });
         }
 
