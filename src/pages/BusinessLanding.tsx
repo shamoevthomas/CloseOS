@@ -310,13 +310,27 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                     </div>
 
                     {status === 'success' ? (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <h3 className="text-business-primary font-business-serif text-3xl font-bold">C'est noté ! 🚀</h3>
-                            <p className="text-business-primary/70 font-medium text-center">
-                                Merci de votre intérêt. Nous vous contacterons dès que l'accès Business sera disponible.
-                            </p>
-                            <div className="pt-4 flex justify-center">
-                                <CheckCircle className="size-12 text-emerald-500" />
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="space-y-2">
+                                <h3 className="text-business-primary font-business-serif text-3xl font-bold">C'est noté ! 🚀</h3>
+                                <p className="text-business-primary/70 font-medium text-center">
+                                    Merci de votre intérêt. Regardez cette vidéo en attendant l'ouverture !
+                                </p>
+                            </div>
+
+                            <div className="relative pt-[56.25%] w-full rounded-2xl overflow-hidden shadow-xl border border-business-primary/10 bg-black">
+                                <iframe
+                                    className="absolute inset-0 w-full h-full"
+                                    src="https://www.youtube.com/embed/DP1me04gNbk?autoplay=1"
+                                    title="CloseOS Business Introduction"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                ></iframe>
+                            </div>
+
+                            <div className="pt-2 flex justify-center">
+                                <CheckCircle className="size-8 text-emerald-500" />
                             </div>
                         </div>
                     ) : (
