@@ -35,7 +35,7 @@ export const BusinessLanding: React.FC = () => {
                         />
                     </div>
                     <nav className="hidden md:flex flex-1 justify-center gap-10">
-                        <a className="text-business-primary/80 hover:text-business-primary text-sm font-semibold transition-colors" href="#features">Accès anticipé</a>
+                        <a className="text-business-primary/80 hover:text-business-primary text-sm font-semibold transition-colors cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Accès anticipé</a>
                         <a className="text-business-primary/80 hover:text-business-primary text-sm font-semibold transition-colors" href="#dashboard">Dashboard</a>
                         <a className="text-business-primary/80 hover:text-business-primary text-sm font-semibold transition-colors" href="#pipeline">Pipeline</a>
                         <a className="text-business-primary/80 hover:text-business-primary text-sm font-semibold transition-colors" href="#crm">CRM</a>
