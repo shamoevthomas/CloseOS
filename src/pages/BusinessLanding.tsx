@@ -279,6 +279,19 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                 ]);
 
             if (error) throw error;
+
+            // Trigger welcome email via Brevo API
+            try {
+                await fetch('/api/business-welcome-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+            } catch (emailErr) {
+                console.error('Error triggering welcome email:', emailErr);
+                // We don't block the UI if the email fails, but we log it
+            }
+
             setStatus('success');
             setEmail('');
             // Removed auto-close timeout to allow users to interact with success CTAs
