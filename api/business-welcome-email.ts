@@ -26,46 +26,91 @@ export default async function handler(req: Request) {
 
         const htmlContent = `
     <!DOCTYPE html>
-    <html>
+    <html lang="fr">
     <head>
-        <meta charset="utf-8">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bienvenue sur la liste d'attente CloseOS Business</title>
         <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FDFBF7; color: #493627; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
-            .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
-            .header { text-align: center; margin-bottom: 40px; }
-            .logo { height: 60px; margin-bottom: 20px; }
-            .card { background-color: #ffffff; border-radius: 24px; padding: 40px; box-shadow: 0 10px 30px rgba(73, 54, 39, 0.05); border: 1px solid rgba(73, 54, 39, 0.05); }
-            h1 { font-family: 'Georgia', serif; font-size: 28px; line-height: 1.2; margin-bottom: 20px; color: #493627; }
-            p { font-size: 16px; line-height: 1.6; margin-bottom: 24px; color: rgba(73, 54, 39, 0.8); }
-            .cta-container { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
-            .button { display: block; text-align: center; padding: 14px 20px; border-radius: 12px; font-weight: bold; text-decoration: none; font-size: 15px; transition: all 0.2s; }
-            .button-whatsapp { background-color: #25D366; color: #ffffff; }
-            .button-form { background-color: #493627; color: #ffffff; }
-            .button-linkedin { background-color: #0A66C2; color: #ffffff; }
-            .footer { text-align: center; margin-top: 40px; font-size: 12px; color: rgba(73, 54, 39, 0.4); text-transform: uppercase; letter-spacing: 0.1em; }
+            body { margin: 0; padding: 0; background-color: #FDFBF7; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #493627; }
+            .wrapper { width: 100%; table-layout: fixed; background-color: #FDFBF7; padding-bottom: 60px; padding-top: 40px; }
+            .main { margin: 0 auto; width: 100%; max-width: 600px; border-spacing: 0; }
+            .logo-container { padding: 40px 0; text-align: center; }
+            .content-card { background-color: #ffffff; border: 1px solid rgba(73, 54, 39, 0.05); border-radius: 24px; padding: 40px; box-shadow: 0 10px 30px rgba(73, 54, 39, 0.05); }
+            h1 { font-family: 'Georgia', serif; font-size: 26px; font-weight: bold; margin-bottom: 24px; color: #493627; line-height: 1.2; text-align: center; }
+            p { font-size: 16px; line-height: 1.6; margin-bottom: 20px; color: rgba(73, 54, 39, 0.8); }
+            
+            /* High-End Button Design */
+            .btn-primary { 
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+                color: #ffffff !important; 
+                text-decoration: none; 
+                padding: 18px 32px; 
+                border-radius: 14px; 
+                font-weight: bold; 
+                display: block; 
+                text-align: center; 
+                font-size: 17px; 
+                margin-bottom: 16px; 
+                margin-top: 32px;
+                box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            }
+            .btn-secondary-container { display: flex; gap: 12px; margin-top: 12px; }
+            .btn-secondary { 
+                flex: 1; 
+                text-decoration: none; 
+                padding: 14px; 
+                border-radius: 12px; 
+                font-weight: bold; 
+                text-align: center; 
+                font-size: 14px; 
+                display: inline-block; 
+                border: 1px solid rgba(73, 54, 39, 0.1);
+                background-color: rgba(255, 255, 255, 0.5);
+                transition: background-color 0.2s;
+            }
+            .btn-whatsapp { color: #25D366 !important; border-color: rgba(37, 211, 102, 0.2); background-color: rgba(37, 211, 102, 0.03); }
+            .btn-linkedin { color: #0A66C2 !important; border-color: rgba(10, 102, 194, 0.2); background-color: rgba(10, 102, 194, 0.03); }
+            
+            .footer { color: rgba(73, 54, 39, 0.4); font-size: 12px; text-align: center; margin-top: 40px; text-transform: uppercase; letter-spacing: 1.5px; }
+
+            @media screen and (max-width: 480px) { 
+                .btn-secondary-container { display: block; } 
+                .btn-secondary { display: block; margin-bottom: 8px; width: auto; } 
+                .content-card { padding: 30px 20px; }
+            }
         </style>
     </head>
     <body>
-        <div class="container">
-            <div class="header">
-                <img src="https://closeros-mvp.vercel.app/CloseOS%20Buisness.png" alt="CloseOS Business" class="logo">
-            </div>
-            <div class="card">
-                <h1>Bienvenue dans l'écosystème Business.</h1>
-                <p>C'est noté ! Nous avons bien reçu votre inscription à la liste d'attente CloseOS Business.</p>
-                <p>Vous serez parmi les premiers informés de nos avancées et surtout de l'ouverture officielle des accès pour piloter votre empire de closing.</p>
-                <p>En attendant, voici comment vous pouvez déjà vous impliquer :</p>
-                
-                <div class="cta-container">
-                    <a href="https://whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s" class="button button-whatsapp">Rejoindre le canal WhatsApp</a>
-                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSfG_km1jRFBreeHvhksMAvAxwokZEOdahTicsKikNwk71IUwg/viewform" class="button button-form">Partager vos besoins (Google Form)</a>
-                    <a href="https://www.linkedin.com/in/thomas-shamoev/" class="button button-linkedin">Me suivre sur LinkedIn</a>
-                </div>
-            </div>
-            <div class="footer">
-                CloseOS Business • Support@closeos.fr
-            </div>
-        </div>
+        <center class="wrapper">
+            <table class="main" width="100%">
+                <tr>
+                    <td class="logo-container">
+                        <img src="https://closeros-mvp.vercel.app/CloseOS%20Buisness.png" alt="CloseOS Business" width="160">
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 0 20px;">
+                        <div class="content-card">
+                            <h1>Bienvenue dans l'écosystème Business.</h1>
+                            <p>C'est noté ! Nous avons bien reçu votre inscription à la liste d'attente CloseOS Business.</p>
+                            <p>Vous serez parmi les premiers informés de nos avancées et surtout de l'ouverture officielle des accès pour piloter votre empire de closing.</p>
+                            
+                            <div style="margin-top: 40px;">
+                                <a href="https://docs.google.com/forms/d/e/1FAIpQLSfG_km1jRFBreeHvhksMAvAxwokZEOdahTicsKikNwk71IUwg/viewform" class="btn-primary">📝 Partager mes besoins</a>
+                                <div class="btn-secondary-container">
+                                    <a href="https://whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s" class="btn-secondary btn-whatsapp">📲 Canal WhatsApp</a>
+                                    <a href="https://www.linkedin.com/in/thomas-shamoev/" class="btn-secondary btn-linkedin">💼 Me suivre sur LinkedIn</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="footer">
+                            <p>© 2026 CloseOS Business · <a href="mailto:support@closeos.fr" style="color: inherit; text-decoration: underline;">support@closeos.fr</a></p>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </center>
     </body>
     </html>
     `;
