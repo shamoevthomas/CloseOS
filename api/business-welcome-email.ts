@@ -75,7 +75,7 @@ export default async function handler(req: Request) {
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
-                sender: { name: 'CloseOS Business', email: 'support@closeos.fr' },
+                sender: { name: 'CloseOS Business', email: 'noreplycloseos@gmail.com' },
                 to: [{ email }],
                 subject: "Bienvenue sur la liste d'attente CloseOS Business 🚀",
                 htmlContent
@@ -85,7 +85,12 @@ export default async function handler(req: Request) {
         const data = await response.json();
 
         if (!response.ok) {
-            return new Response(JSON.stringify(data), { status: response.status });
+            console.error("Brevo Error Response:", data);
+            return new Response(JSON.stringify({
+                error: 'Brevo API Error',
+                details: data,
+                senderUsed: 'noreplycloseos@gmail.com'
+            }), { status: response.status });
         }
 
         return new Response(JSON.stringify(data), {
