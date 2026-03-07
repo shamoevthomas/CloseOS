@@ -9,6 +9,11 @@ export default async function handler(req: Request) {
         return new Response('Method Not Allowed', { status: 405 });
     }
 
+    if (!BREVO_API_KEY) {
+        console.error("BREVO_API_KEY is missing");
+        return new Response(JSON.stringify({ error: 'BREVO_API_KEY is missing from environment' }), { status: 500 });
+    }
+
     try {
         const { email } = await req.json();
 
