@@ -15,7 +15,8 @@ import {
     FileText,
     Video,
     X,
-    Loader2
+    Loader2,
+    ExternalLink
 } from 'lucide-react';
 
 export const BusinessLanding: React.FC = () => {
@@ -279,11 +280,8 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
             if (error) throw error;
             setStatus('success');
-            setTimeout(() => {
-                onClose();
-                setStatus('idle');
-                setEmail('');
-            }, 3000);
+            setEmail('');
+            // Removed auto-close timeout to allow users to interact with success CTAs
         } catch (err: any) {
             console.error('Error joining waiting list:', err);
             setStatus('error');
@@ -327,6 +325,36 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                     allowFullScreen
                                 ></iframe>
+                            </div>
+
+                            <div className="pt-2 flex flex-col gap-3">
+                                <a
+                                    href="https://whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white py-3 rounded-xl font-bold hover:scale-[1.02] transition-all shadow-lg shadow-emerald-500/10"
+                                >
+                                    Canal WhatsApp
+                                    <ExternalLink className="size-4" />
+                                </a>
+                                <a
+                                    href="https://docs.google.com/forms/d/e/1FAIpQLSfG_km1jRFBreeHvhksMAvAxwokZEOdahTicsKikNwk71IUwg/viewform"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 w-full bg-business-primary text-white py-3 rounded-xl font-bold hover:scale-[1.02] transition-all shadow-lg"
+                                >
+                                    Vos besoins (Google Form)
+                                    <ExternalLink className="size-4" />
+                                </a>
+                                <a
+                                    href="https://www.linkedin.com/in/thomas-shamoev/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 w-full bg-[#0A66C2] text-white py-3 rounded-xl font-bold hover:scale-[1.02] transition-all shadow-lg shadow-blue-500/10"
+                                >
+                                    Suivre sur LinkedIn
+                                    <ExternalLink className="size-4" />
+                                </a>
                             </div>
 
                             <div className="pt-2 flex justify-center">
