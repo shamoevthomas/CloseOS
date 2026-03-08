@@ -95,7 +95,7 @@ export const BusinessLanding: React.FC = () => {
 
                 <div className="w-full bg-business-primary/5 border-b border-business-primary/10 py-3 text-center">
                     <p className="text-business-primary/70 text-sm font-semibold">
-                        🚀 Déjà <span className="text-business-primary font-extrabold">+150 closers</span> qui utilisent CloseOS Sales
+                        🚀 Déjà <span className="text-business-primary font-extrabold">+150 closers</span> qui valident CloseOS Sales
                     </p>
                 </div>
 
