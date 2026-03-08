@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
 
 import { PricingComparisonTable } from '../components/PricingComparisonTable';
 import {
@@ -60,10 +60,20 @@ function FAQItem({ question, children }: { question: string, children: React.Rea
 }
 
 export function LandingPage() {
+  const navigate = useNavigate();
+  const pageRef = useRef<HTMLDivElement>(null);
+  const [isExiting, setIsExiting] = useState(false);
+
   // État pour le cycle de facturation
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleNavigateToBusiness = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsExiting(true);
+    setTimeout(() => navigate('/business'), 500);
+  };
 
   // Fonction pour calculer le prix (arrondi) avec -15% si annuel
   const calculatePrice = (price: number) => {
@@ -102,7 +112,7 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 overflow-x-hidden">
+    <div ref={pageRef} className={`min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 overflow-x-hidden transition-all duration-500 ${isExiting ? 'translate-y-full opacity-0' : 'animate-[pageEnterFromTop_0.5s_ease-out]'}`}>
 
       {/* BANDEAU OFFRE */}
       <div className="fixed top-0 z-[60] w-full bg-blue-600 py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-lg animate-in slide-in-from-top duration-500">
@@ -115,10 +125,10 @@ export function LandingPage() {
           <div className="relative group flex items-center gap-1 cursor-pointer">
             <img src="/logo Sales.png" alt="CloseOS Logo" className="h-12 w-auto" />
             <ChevronDown className="h-4 w-4 text-slate-500 group-hover:text-slate-300 transition-transform duration-300 group-hover:rotate-180" />
-            <div className="absolute top-full left-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-              <Link to="/business" className="block rounded-xl border border-business-primary/10 bg-[#F5F0EB] p-3 shadow-xl hover:bg-[#EDE7E0] transition-colors">
-                <img src="/CloseOS Buisness.png" alt="CloseOS Business" className="h-10 w-auto" />
-              </Link>
+            <div className="absolute top-full left-0 right-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+              <a onClick={handleNavigateToBusiness} className="block rounded-xl border border-business-primary/10 bg-[#F5F0EB] p-3 shadow-xl hover:bg-[#EDE7E0] transition-colors cursor-pointer">
+                <img src="/CloseOS Buisness.png" alt="CloseOS Business" className="w-full h-auto" />
+              </a>
             </div>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
@@ -1082,6 +1092,13 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <style>{`
+        @keyframes pageEnterFromTop {
+          from { opacity: 0; transform: translateY(-60px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div >
   )
 }

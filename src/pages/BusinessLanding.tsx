@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
     ArrowUp,
@@ -22,8 +22,17 @@ import {
 } from 'lucide-react';
 
 export const BusinessLanding: React.FC = () => {
+    const navigate = useNavigate();
+    const pageRef = useRef<HTMLDivElement>(null);
+    const [isExiting, setIsExiting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
+
+    const handleNavigateToSales = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsExiting(true);
+        setTimeout(() => navigate('/landing'), 500);
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -57,7 +66,7 @@ export const BusinessLanding: React.FC = () => {
     };
 
     return (
-        <div className="bg-business-background-light dark:bg-business-background-dark font-business-display text-slate-900 dark:text-slate-100 transition-colors duration-300">
+        <div ref={pageRef} className={`bg-business-background-light dark:bg-business-background-dark font-business-display text-slate-900 dark:text-slate-100 transition-all duration-500 ${isExiting ? 'translate-y-full opacity-0' : 'animate-[pageEnterFromTop_0.5s_ease-out]'}`}>
             <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
                 {/* Header / Navigation */}
                 <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-business-primary/10 px-6 md:px-20 py-4 bg-business-background-light/80 backdrop-blur-md sticky top-0 z-50">
@@ -68,10 +77,10 @@ export const BusinessLanding: React.FC = () => {
                             src="/CloseOS Buisness.png"
                         />
                         <ChevronDown className="h-4 w-4 text-business-primary/40 group-hover:text-business-primary/70 transition-transform duration-300 group-hover:rotate-180" />
-                        <div className="absolute top-full left-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-                            <Link to="/landing" className="block rounded-xl border border-white/10 bg-[#020617] p-3 shadow-xl hover:bg-[#0f172a] transition-colors">
-                                <img src="/logo Sales.png" alt="CloseOS Sales" className="h-10 w-auto" />
-                            </Link>
+                        <div className="absolute top-full left-0 right-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                            <a onClick={handleNavigateToSales} className="block rounded-xl border border-white/10 bg-[#020617] p-3 shadow-xl hover:bg-[#0f172a] transition-colors cursor-pointer">
+                                <img src="/logo Sales.png" alt="CloseOS Sales" className="w-full h-auto" />
+                            </a>
                         </div>
                     </div>
                     <div className="flex items-center gap-4 ml-auto">
@@ -347,6 +356,13 @@ export const BusinessLanding: React.FC = () => {
                     </div>
                 </button>
             </div>
+
+            <style>{`
+                @keyframes pageEnterFromTop {
+                    from { opacity: 0; transform: translateY(-60px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
         </div>
     );
 };
