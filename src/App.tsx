@@ -59,6 +59,18 @@ import { TrialExpiredModal } from './pages/TrialExpired'
 import { FounderOnlyGuard } from './components/FounderOnlyGuard'
 import { BusinessLanding } from './pages/BusinessLanding'
 
+// Business Module Imports
+import { BusinessAuthProvider } from './business/contexts/BusinessAuthContext'
+import { BusinessProspectsProvider } from './business/contexts/BusinessProspectsContext'
+import { BusinessLayout } from './business/layouts/BusinessLayout'
+import BusinessLogin from './business/pages/BusinessLogin'
+import BusinessRegister from './business/pages/BusinessRegister'
+import { BusinessDashboard } from './business/pages/BusinessDashboard'
+import { BusinessCRM } from './business/pages/BusinessCRM'
+import { BusinessTeam } from './business/pages/BusinessTeam'
+import { BusinessInvitation } from './business/pages/BusinessInvitation'
+import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
+
 
 // Page d'accueil intelligente : landing immédiate si non connecté, loading si session détectée
 function SmartHome() {
@@ -146,10 +158,36 @@ function AuthenticatedApp() {
   return (
     <>
       <Routes>
+        {/* Business Landing */}
         <Route path="/business" element={<BusinessLanding />} />
         <Route path="/buisness" element={<BusinessLanding />} />
-        <Route path="/business/" element={<BusinessLanding />} />
-        <Route path="/buisness/" element={<BusinessLanding />} />
+
+        {/* Business Public Routes */}
+        <Route path="/business/login" element={
+          <BusinessAuthProvider>
+            <BusinessLogin />
+          </BusinessAuthProvider>
+        } />
+        <Route path="/business/register" element={
+          <BusinessAuthProvider>
+            <BusinessRegister />
+          </BusinessAuthProvider>
+        } />
+        <Route path="/business/invitation/:token" element={<BusinessInvitation />} />
+
+        {/* Business Protected Routes */}
+        <Route path="/business" element={
+          <BusinessAuthProvider>
+            <BusinessProspectsProvider>
+              <BusinessLayout />
+              <BusinessOnboardingModal />
+            </BusinessProspectsProvider>
+          </BusinessAuthProvider>
+        }>
+          <Route path="dashboard" element={<BusinessDashboard />} />
+          <Route path="crm" element={<BusinessCRM />} />
+          <Route path="team" element={<BusinessTeam />} />
+        </Route>
 
         {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />
