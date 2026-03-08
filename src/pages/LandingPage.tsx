@@ -27,6 +27,7 @@ import {
   Clock,
   X,
   Menu,
+  ChevronDown,
 } from 'lucide-react'
 
 function FAQItem({ question, children }: { question: string, children: React.ReactNode }) {
@@ -111,8 +112,14 @@ export function LandingPage() {
       {/* NAVBAR */}
       <nav className="fixed top-[40px] z-50 w-full border-b border-white/5 bg-[#020617]/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-2">
+          <div className="relative group flex items-center gap-1 cursor-pointer">
             <img src="/logo Sales.png" alt="CloseOS Logo" className="h-12 w-auto" />
+            <ChevronDown className="h-4 w-4 text-slate-500 group-hover:text-slate-300 transition-transform duration-300 group-hover:rotate-180" />
+            <div className="absolute top-full left-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+              <Link to="/business" className="block rounded-xl border border-white/10 bg-slate-900/95 backdrop-blur-md p-3 shadow-xl hover:bg-slate-800/95 transition-colors">
+                <img src="/CloseOS Buisness.png" alt="CloseOS Business" className="h-10 w-auto" />
+              </Link>
+            </div>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Fonctionnalités</a>

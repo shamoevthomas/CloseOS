@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
     ArrowUp,
@@ -16,7 +17,8 @@ import {
     Video,
     X,
     Loader2,
-    ExternalLink
+    ExternalLink,
+    ChevronDown
 } from 'lucide-react';
 
 export const BusinessLanding: React.FC = () => {
@@ -59,12 +61,18 @@ export const BusinessLanding: React.FC = () => {
             <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
                 {/* Header / Navigation */}
                 <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-business-primary/10 px-6 md:px-20 py-4 bg-business-background-light/80 backdrop-blur-md sticky top-0 z-50">
-                    <div className="flex items-center gap-3">
+                    <div className="relative group flex items-center gap-1 cursor-pointer">
                         <img
                             alt="CloseOS Logo"
                             className="w-auto object-contain h-[72px]"
                             src="/CloseOS Buisness.png"
                         />
+                        <ChevronDown className="h-4 w-4 text-business-primary/40 group-hover:text-business-primary/70 transition-transform duration-300 group-hover:rotate-180" />
+                        <div className="absolute top-full left-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                            <Link to="/landing" className="block rounded-xl border border-business-primary/10 bg-white/95 backdrop-blur-md p-3 shadow-xl hover:bg-business-primary/5 transition-colors">
+                                <img src="/logo Sales.png" alt="CloseOS Sales" className="h-10 w-auto" />
+                            </Link>
+                        </div>
                     </div>
                     <div className="flex items-center gap-4 ml-auto">
                         <button
