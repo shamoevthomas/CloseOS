@@ -116,7 +116,7 @@ export function LandingPage() {
             <img src="/logo Sales.png" alt="CloseOS Logo" className="h-12 w-auto" />
             <ChevronDown className="h-4 w-4 text-slate-500 group-hover:text-slate-300 transition-transform duration-300 group-hover:rotate-180" />
             <div className="absolute top-full left-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-              <Link to="/business" className="block rounded-xl border border-white/10 bg-slate-900/95 backdrop-blur-md p-3 shadow-xl hover:bg-slate-800/95 transition-colors">
+              <Link to="/business" className="block rounded-xl border border-business-primary/10 bg-[#F5F0EB] p-3 shadow-xl hover:bg-[#EDE7E0] transition-colors">
                 <img src="/CloseOS Buisness.png" alt="CloseOS Business" className="h-10 w-auto" />
               </Link>
             </div>

@@ -69,7 +69,7 @@ export const BusinessLanding: React.FC = () => {
                         />
                         <ChevronDown className="h-4 w-4 text-business-primary/40 group-hover:text-business-primary/70 transition-transform duration-300 group-hover:rotate-180" />
                         <div className="absolute top-full left-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-                            <Link to="/landing" className="block rounded-xl border border-business-primary/10 bg-white/95 backdrop-blur-md p-3 shadow-xl hover:bg-business-primary/5 transition-colors">
+                            <Link to="/landing" className="block rounded-xl border border-white/10 bg-[#020617] p-3 shadow-xl hover:bg-[#0f172a] transition-colors">
                                 <img src="/logo Sales.png" alt="CloseOS Sales" className="h-10 w-auto" />
                             </Link>
                         </div>
