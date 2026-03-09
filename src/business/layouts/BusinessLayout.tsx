@@ -7,6 +7,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/dashboard': { title: 'Dashboard', subtitle: "Vue d'ensemble de votre business" },
   '/business/crm': { title: 'CRM', subtitle: 'Gérez vos prospects' },
   '/business/team': { title: 'Équipe', subtitle: 'Gérez votre équipe' },
+  '/business/kpi': { title: 'KPI & Performance', subtitle: 'Analysez vos performances commerciales' },
 }
 
 export function BusinessLayout() {

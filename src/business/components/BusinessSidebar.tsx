@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   GitBranch,
   Users,
+  TrendingUp,
   Settings,
   LogOut,
   ChevronUp,
@@ -17,6 +18,7 @@ import { supabase } from '../../lib/supabase'
 const navigation = [
   { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
   { name: 'CRM', href: '/business/crm', icon: GitBranch },
+  { name: 'KPI', href: '/business/kpi', icon: TrendingUp },
   { name: 'Équipe', href: '/business/team', icon: Users },
 ]
 

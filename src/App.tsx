@@ -69,6 +69,7 @@ import { BusinessDashboard } from './business/pages/BusinessDashboard'
 import { BusinessCRM } from './business/pages/BusinessCRM'
 import { BusinessTeam } from './business/pages/BusinessTeam'
 import { BusinessInvitation } from './business/pages/BusinessInvitation'
+import { BusinessKPI } from './business/pages/BusinessKPI'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
 
 
@@ -186,6 +187,7 @@ function AuthenticatedApp() {
         }>
           <Route path="dashboard" element={<BusinessDashboard />} />
           <Route path="crm" element={<BusinessCRM />} />
+          <Route path="kpi" element={<BusinessKPI />} />
           <Route path="team" element={<BusinessTeam />} />
         </Route>
 
