@@ -9,6 +9,8 @@ import {
   Settings2,
   X,
   Loader2,
+  RefreshCw,
+  Check,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -30,7 +32,13 @@ const INACTIVE_STAGES = [
 const ALL_STAGES = [...ACTIVE_STAGES, ...INACTIVE_STAGES]
 
 export function BusinessCRM() {
-  const { prospects, updateProspect, addProspect, deleteProspect, loading } = useBusinessProspects()
+  const {
+    prospects, updateProspect, addProspect, deleteProspect, loading,
+    syncHubspot, syncPipedrive,
+    isSyncingHubspot, isSyncingPipedrive,
+    hubspotConnected, pipedriveConnected,
+    nextSyncSeconds,
+  } = useBusinessProspects()
   const { businessSettings } = useBusinessAuth()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -124,21 +132,60 @@ export function BusinessCRM() {
       {/* CRM Integration Banner */}
       <div className="mb-4 flex items-center justify-between rounded-xl border border-amber-200 bg-white px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-amber-500 flex items-center justify-center">
+          <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+            crmProvider === 'hubspot' ? 'bg-orange-500' :
+            crmProvider === 'pipedrive' ? 'bg-green-500' :
+            crmProvider === 'iclosed' ? 'bg-purple-500' : 'bg-amber-500'
+          }`}>
             <span className="text-white font-bold text-xs">{crmLabel[0]}</span>
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-800">CRM : {crmLabel}</p>
-            <p className="text-xs text-slate-500">Votre pipeline de prospection</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-slate-800">CRM : {crmLabel}</p>
+              {((crmProvider === 'hubspot' && hubspotConnected) || (crmProvider === 'pipedrive' && pipedriveConnected)) && (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
+                  <Check className="h-2.5 w-2.5" /> Connecté
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-500">
+              {crmProvider === 'hubspot' && hubspotConnected
+                ? `Auto-sync dans ${Math.floor(nextSyncSeconds / 60)}:${String(nextSyncSeconds % 60).padStart(2, '0')}`
+                : 'Votre pipeline de prospection'
+              }
+            </p>
           </div>
         </div>
-        <button
-          onClick={() => setIsIntegrationModalOpen(true)}
-          className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all"
-        >
-          <Settings2 className="h-3.5 w-3.5" />
-          Intégration
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Sync button for connected CRMs */}
+          {crmProvider === 'hubspot' && hubspotConnected && (
+            <button
+              onClick={() => syncHubspot()}
+              disabled={isSyncingHubspot}
+              className="flex items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-medium text-orange-700 hover:bg-orange-100 transition-all disabled:opacity-50"
+            >
+              {isSyncingHubspot ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Sync
+            </button>
+          )}
+          {crmProvider === 'pipedrive' && pipedriveConnected && (
+            <button
+              onClick={() => syncPipedrive()}
+              disabled={isSyncingPipedrive}
+              className="flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-all disabled:opacity-50"
+            >
+              {isSyncingPipedrive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Sync
+            </button>
+          )}
+          <button
+            onClick={() => setIsIntegrationModalOpen(true)}
+            className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all"
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+            Intégration
+          </button>
+        </div>
       </div>
 
       {/* Search & Add */}
