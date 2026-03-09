@@ -46,7 +46,7 @@ async function sendEmailBrevo(to: string, subject: string, htmlContent: string) 
 }
 
 // Deletes user data from Supabase based on scope
-export async function deleteUserData(userId: string, scope: string[]) {
+async function deleteUserData(userId: string, scope: string[]) {
     const deleteAll = scope.includes('all');
     const deleteBilling = deleteAll || scope.includes('billing');
     const deleteInternal = deleteAll || scope.includes('internal');
@@ -103,7 +103,7 @@ export async function deleteUserData(userId: string, scope: string[]) {
 }
 
 // Fully removes user: profile + auth
-export async function finalizeUserDeletion(userId: string, email: string, fullName: string | null, deletedTables: string[]) {
+async function finalizeUserDeletion(userId: string, email: string, fullName: string | null, deletedTables: string[]) {
     // Delete profile
     await supabaseAdmin.from('profiles').delete().eq('id', userId);
     console.log(`🗑️ Deleted profile for user ${userId}`);
@@ -131,7 +131,8 @@ export async function finalizeUserDeletion(userId: string, email: string, fullNa
     }
 }
 
-export default async function handler(req: Request) {
+// === REQUEST DELETION ===
+async function handleRequestDeletion(req: Request) {
     if (req.method !== 'POST') {
         return new Response('Method not allowed', { status: 405 });
     }
@@ -236,5 +237,80 @@ export default async function handler(req: Request) {
     } catch (error: any) {
         console.error('Deletion request error:', error);
         return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    }
+}
+
+// === CANCEL DELETION ===
+async function handleCancelDeletion(req: Request) {
+    if (req.method !== 'POST') {
+        return new Response('Method not allowed', { status: 405 });
+    }
+
+    try {
+        const { userId } = await req.json();
+
+        if (!userId) {
+            return new Response(JSON.stringify({ error: 'User ID is required' }), { status: 400 });
+        }
+
+        // 1. Get user email
+        const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (userError || !user || !user.email) {
+            // Proceed anyway to clear profile if user not found (edge case), but email is needed for notification
+            // If user not found, they might be already deleted?
+            return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
+        }
+
+        // 2. Clear deletion schedule
+        const { error: updateError } = await supabaseAdmin
+            .from('profiles')
+            .update({
+                deletion_scheduled_at: null,
+                deletion_scope: [] // or null
+            })
+            .eq('id', userId);
+
+        if (updateError) throw updateError;
+
+        // 3. Send Email
+        await sendEmailBrevo(
+            user.email,
+            'Annulation de la suppression de votre compte',
+            `
+      <div style="font-family: sans-serif; color: #333;">
+        <h1>Annulation confirmée</h1>
+        <p>Bonjour,</p>
+        <p>Nous vous confirmons l'annulation de la procédure de suppression de votre compte CloseOS.</p>
+        <p>Vous pouvez continuer à utiliser nos services normalement.</p>
+        <p>Cordialement,<br/>L'équipe CloseOS</p>
+      </div>
+      `
+        );
+
+        return new Response(JSON.stringify({ success: true }), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+    } catch (error: any) {
+        console.error('Cancel deletion error:', error);
+        return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    }
+}
+
+// === MAIN ROUTER ===
+export default async function handler(req: Request) {
+    const url = new URL(req.url);
+    const action = url.searchParams.get('action');
+
+    switch (action) {
+        case 'request-deletion':
+            return handleRequestDeletion(req);
+        case 'cancel-deletion':
+            return handleCancelDeletion(req);
+        default:
+            return new Response(
+                JSON.stringify({ error: 'Invalid or missing action parameter. Use ?action=request-deletion or ?action=cancel-deletion' }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
     }
 }

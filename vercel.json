@@ -10,53 +10,51 @@
     }
   ],
   "rewrites": [
-    {
-      "source": "/api/hubspot/callback",
-      "destination": "/api/hubspot?action=callback"
-    },
-    {
-      "source": "/api/hubspot/sync",
-      "destination": "/api/hubspot?action=sync"
-    },
-    {
-      "source": "/api/hubspot/push",
-      "destination": "/api/hubspot?action=push"
-    },
-    {
-      "source": "/api/hubspot/refresh",
-      "destination": "/api/hubspot?action=refresh"
-    },
-    {
-      "source": "/api/hubspot/webhook",
-      "destination": "/api/hubspot?action=webhook"
-    },
-    {
-      "source": "/api/pipedrive/callback",
-      "destination": "/api/pipedrive?action=callback"
-    },
-    {
-      "source": "/api/pipedrive/sync",
-      "destination": "/api/pipedrive?action=sync"
-    },
-    {
-      "source": "/api/pipedrive/push",
-      "destination": "/api/pipedrive?action=push"
-    },
-    {
-      "source": "/api/pipedrive/webhook",
-      "destination": "/api/pipedrive?action=webhook"
-    },
-    {
-      "source": "/api/pipedrive/pipelines",
-      "destination": "/api/pipedrive?action=pipelines"
-    },
-    {
-      "source": "/api/pipedrive/saveMapping",
-      "destination": "/api/pipedrive?action=saveMapping"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/api/hubspot/callback", "destination": "/api/hubspot?action=callback" },
+    { "source": "/api/hubspot/sync", "destination": "/api/hubspot?action=sync" },
+    { "source": "/api/hubspot/push", "destination": "/api/hubspot?action=push" },
+    { "source": "/api/hubspot/refresh", "destination": "/api/hubspot?action=refresh" },
+    { "source": "/api/hubspot/webhook", "destination": "/api/hubspot?action=webhook" },
+    { "source": "/api/pipedrive/callback", "destination": "/api/pipedrive?action=callback" },
+    { "source": "/api/pipedrive/sync", "destination": "/api/pipedrive?action=sync" },
+    { "source": "/api/pipedrive/push", "destination": "/api/pipedrive?action=push" },
+    { "source": "/api/pipedrive/webhook", "destination": "/api/pipedrive?action=webhook" },
+    { "source": "/api/pipedrive/pipelines", "destination": "/api/pipedrive?action=pipelines" },
+    { "source": "/api/pipedrive/saveMapping", "destination": "/api/pipedrive?action=saveMapping" },
+
+    { "source": "/api/checkout", "destination": "/api/stripe?action=checkout" },
+    { "source": "/api/connect-stripe", "destination": "/api/stripe?action=connect" },
+    { "source": "/api/create-invoice-session", "destination": "/api/stripe?action=invoice-session" },
+    { "source": "/api/create-portal-session", "destination": "/api/stripe?action=portal-session" },
+    { "source": "/api/session-status", "destination": "/api/stripe?action=session-status" },
+
+    { "source": "/api/cancel-subscription", "destination": "/api/subscription?action=cancel" },
+    { "source": "/api/reactivate-subscription", "destination": "/api/subscription?action=reactivate" },
+    { "source": "/api/subscription-status", "destination": "/api/subscription?action=status" },
+    { "source": "/api/sync-subscription", "destination": "/api/subscription?action=sync" },
+
+    { "source": "/api/send-email", "destination": "/api/email?action=send" },
+    { "source": "/api/notify-password-change", "destination": "/api/email?action=notify-password-change" },
+    { "source": "/api/request-email-change", "destination": "/api/email?action=request-email-change" },
+    { "source": "/api/confirm-email-change", "destination": "/api/email?action=confirm-email-change" },
+    { "source": "/api/request-password-reset", "destination": "/api/email?action=request-password-reset" },
+    { "source": "/api/send-deletion-code", "destination": "/api/email?action=send-deletion-code" },
+
+    { "source": "/api/cal-callback", "destination": "/api/cal?action=callback" },
+    { "source": "/api/cal-proxy", "destination": "/api/cal?action=proxy" },
+    { "source": "/api/cal-webhook", "destination": "/api/cal?action=webhook" },
+    { "source": "/api/refresh-cal-token", "destination": "/api/cal?action=refresh" },
+
+    { "source": "/api/request-deletion", "destination": "/api/account?action=request-deletion" },
+    { "source": "/api/cancel-deletion", "destination": "/api/account?action=cancel-deletion" },
+
+    { "source": "/api/webhook", "destination": "/api/webhooks?action=crm-webhook" },
+    { "source": "/api/sync-brevo", "destination": "/api/webhooks?action=sync-brevo" },
+
+    { "source": "/api/business-invitation", "destination": "/api/business?action=invitation" },
+    { "source": "/api/business-crm-sync", "destination": "/api/business" },
+    { "source": "/api/business-welcome-email", "destination": "/api/business?action=welcome-email" },
+
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

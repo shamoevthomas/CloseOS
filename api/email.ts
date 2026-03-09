@@ -1,0 +1,430 @@
+import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
+
+// Shared helper: send email via Brevo
+async function sendEmail({ to, subject, htmlContent }: { to: string; subject: string; htmlContent: string }) {
+    const BREVO_API_KEY = process.env.BREVO_API_KEY;
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+            'accept': 'application/json',
+            'api-key': BREVO_API_KEY || '',
+            'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+            sender: { email: 'support@closeos.fr', name: 'CloseOS Support' },
+            to: [{ email: to }],
+            subject,
+            htmlContent
+        })
+    });
+    return response;
+}
+
+// ─── action=send ───────────────────────────────────────────────────────────────
+async function handleSend(req: any, res: any) {
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method Not Allowed');
+    }
+
+    try {
+        const body = req.body;
+
+        // Log pour le debug dans Vercel
+        console.log("Tentative d'envoi d'email via Brevo...");
+
+        const BREVO_API_KEY = process.env.BREVO_API_KEY;
+
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'api-key': BREVO_API_KEY || '',
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("Erreur Brevo détaillée:", data);
+            return res.status(response.status).json(data);
+        }
+
+        return res.status(response.status).json(data);
+    } catch (error) {
+        console.error("Erreur critique API:", error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+}
+
+// ─── action=notify-password-change ─────────────────────────────────────────────
+async function handleNotifyPasswordChange(req: any, res: any) {
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method Not Allowed');
+    }
+
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Missing email' });
+        }
+
+        await sendEmail({
+            to: email,
+            subject: 'Sécurité : Modification de votre mot de passe',
+            htmlContent: `
+        <div style="font-family: sans-serif; padding: 20px; color: #333;">
+          <h2 style="color: #EF4444;">Changement de mot de passe détecté</h2>
+          <p>Bonjour,</p>
+          <p>Le mot de passe de votre compte CloseOS a été modifié récemment.</p>
+          <p>Si vous êtes à l'origine de ce changement, vous pouvez ignorer cet email.</p>
+          <p style="background-color: #FEE2E2; color: #991B1B; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <strong>Si vous n'avez pas effectué ce changement :</strong><br/>
+            Contactez immédiatement notre support en répondant à cet email ou à <a href="mailto:support@closeos.fr">support@closeos.fr</a> pour sécuriser votre compte.
+          </p>
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
+          <p style="font-size: 12px; color: #666;">CloseOS Security Team</p>
+        </div>
+      `
+        });
+
+        return res.status(200).json({ success: true });
+
+    } catch (error: any) {
+        console.error("Erreur API:", error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+// ─── action=request-email-change ───────────────────────────────────────────────
+async function handleRequestEmailChange(req: any, res: any) {
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method Not Allowed');
+    }
+
+    try {
+        const { userId, newEmail } = req.body;
+
+        if (!userId || !newEmail) {
+            return res.status(400).json({ error: 'Missing userId or newEmail' });
+        }
+
+        // Initialisation Supabase Admin
+        const supabaseAdmin = createClient(
+            process.env.VITE_SUPABASE_URL || '',
+            process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+        );
+
+        // Récupérer l'utilisateur pour avoir son email actuel
+        const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const currentEmail = user.email;
+
+        // Générer un token sécurisé
+        const token = crypto.randomUUID();
+
+        // Hasher le token pour le stockage (SHA-256)
+        const encoder = new TextEncoder();
+        const data = encoder.encode(token);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // Expiration (1 heure)
+        const expiresAt = Date.now() + 60 * 60 * 1000;
+
+        // Stocker le hash et le nouvel email dans app_metadata (sécurisé)
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            app_metadata: {
+                pending_email_change: {
+                    new_email: newEmail,
+                    token_hash: tokenHash,
+                    expires_at: expiresAt
+                }
+            }
+        });
+
+        if (updateError) {
+            throw updateError;
+        }
+
+        // Lien de confirmation AVEC userId
+        const baseUrl = process.env.VITE_APP_URL || 'https://closeos.fr';
+        const confirmLink = `${baseUrl}/confirm-email-change?token=${token}&userId=${userId}`;
+
+        // Envoyer l'email à l'ADRESSE ACTUELLE
+        await sendEmail({
+            to: currentEmail!,
+            subject: 'Confirmation de changement d\'email - CloseOS',
+            htmlContent: `
+        <div style="font-family: sans-serif; padding: 20px; color: #333;">
+          <h2>Demande de changement d'email</h2>
+          <p>Bonjour,</p>
+          <p>Une demande a été effectuée pour changer l'email de votre compte CloseOS vers : <strong>${newEmail}</strong>.</p>
+          <p>Si vous êtes à l'origine de cette demande, veuillez cliquer sur le lien ci-dessous pour confirmer le changement :</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${confirmLink}" style="background-color: #2563EB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Confirmer le changement d'email</a>
+          </p>
+          <p>Ce lien expirera dans 1 heure.</p>
+          <p>Si vous n'avez pas demandé ce changement, <strong>ne cliquez pas</strong> et contactez immédiatement le support.</p>
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
+          <p style="font-size: 12px; color: #666;">CloseOS Support</p>
+        </div>
+      `
+        });
+
+        return res.status(200).json({ success: true });
+
+    } catch (error: any) {
+        console.error("Erreur API:", error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+// ─── action=confirm-email-change ───────────────────────────────────────────────
+async function handleConfirmEmailChange(req: any, res: any) {
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method Not Allowed');
+    }
+
+    try {
+        const { userId, token } = req.body;
+
+        if (!userId || !token) {
+            return res.status(400).json({ error: 'Missing userId or token' });
+        }
+
+        const supabaseAdmin = createClient(
+            process.env.VITE_SUPABASE_URL || '',
+            process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+        );
+
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+            apiVersion: '2026-01-28.clover' as any,
+            httpClient: Stripe.createFetchHttpClient(),
+        });
+
+        // Récupérer l'utilisateur pour vérifier app_metadata
+        const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const pendingChange = user.app_metadata?.pending_email_change;
+
+        if (!pendingChange) {
+            return res.status(400).json({ error: 'Aucune demande de changement d\'email en cours.' });
+        }
+
+        const { new_email, token_hash, expires_at } = pendingChange;
+
+        if (Date.now() > expires_at) {
+            return res.status(400).json({ error: 'Le lien a expiré.' });
+        }
+
+        // Hash input token and compare
+        const encoder = new TextEncoder();
+        const data = encoder.encode(token);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const inputHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        if (inputHash !== token_hash) {
+            return res.status(400).json({ error: 'Lien invalide.' });
+        }
+
+        // Update Email in Supabase
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            email: new_email,
+            email_confirm: true,
+            app_metadata: {
+                pending_email_change: null // Clear request
+            }
+        });
+
+        if (updateError) throw updateError;
+
+        // STRIPE SYNC: Retrieve Profile to get Stripe Customer ID
+        const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('stripe_customer_id')
+            .eq('id', userId)
+            .single();
+
+        if (profile?.stripe_customer_id) {
+            try {
+                await stripe.customers.update(profile.stripe_customer_id, {
+                    email: new_email
+                });
+                console.log(`Stripe email updated for user ${userId} / Customer ${profile.stripe_customer_id}`);
+            } catch (stripeError) {
+                console.error("Failed to update Stripe email:", stripeError);
+                // We don't fail the whole request if Stripe update fails, but we log it.
+            }
+        }
+
+        return res.status(200).json({ success: true });
+
+    } catch (error: any) {
+        console.error("Erreur API:", error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+// ─── action=request-password-reset ─────────────────────────────────────────────
+async function handleRequestPasswordReset(req: any, res: any) {
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method Not Allowed');
+    }
+
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        // Initialisation Supabase Admin
+        const supabaseAdmin = createClient(
+            process.env.VITE_SUPABASE_URL || '',
+            process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+        );
+
+        // Générer le lien de récupération
+        // redirectTo pointe vers le dashboard avec un paramètre pour ouvrir le modal de sécurité
+        const redirectTo = `${process.env.VITE_APP_URL || 'https://closeos.fr'}/dashboard?reset_password=true`;
+
+        const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+            type: 'recovery',
+            email,
+            options: {
+                redirectTo
+            }
+        });
+
+        if (error) {
+            throw error;
+        }
+
+        const actionLink = data.properties.action_link;
+
+        // Envoyer l'email via Brevo
+        await sendEmail({
+            to: email,
+            subject: 'Réinitialisation de votre mot de passe - CloseOS',
+            htmlContent: `
+        <div style="font-family: sans-serif; padding: 20px; color: #333;">
+          <h2>Réinitialisation de mot de passe</h2>
+          <p>Bonjour,</p>
+          <p>Vous avez demandé la réinitialisation de votre mot de passe pour votre compte CloseOS.</p>
+          <p>Cliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${actionLink}" style="background-color: #2563EB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Réinitialiser mon mot de passe</a>
+          </p>
+          <p>Ce lien expirera dans une heure.</p>
+          <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
+          <p style="font-size: 12px; color: #666;">CloseOS Support</p>
+          <p style="font-size: 12px; color: #666;">Si le bouton ne fonctionne pas, copiez ce lien : ${actionLink}</p>
+        </div>
+      `
+        });
+
+        return res.status(200).json({ success: true });
+
+    } catch (error: any) {
+        console.error("Erreur API:", error);
+        return res.status(500).json({ error: error.message || "Une erreur est survenue" });
+    }
+}
+
+// ─── action=send-deletion-code ─────────────────────────────────────────────────
+async function handleSendDeletionCode(req: any, res: any) {
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method not allowed');
+    }
+
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email requis' });
+        }
+
+        // Generate 6-digit code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Store code in response (we'll verify client-side by comparing)
+        // For MVP: send code via email, return hashed version to frontend
+        // Simple approach: return the code hashed, frontend compares user input
+        // More secure: store server-side. But for MVP, we'll use a simple hash.
+
+        const brevoApiKey = process.env.BREVO_API_KEY!;
+
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'api-key': brevoApiKey,
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+                sender: { email: 'support@closeos.fr', name: 'CloseOS' },
+                to: [{ email }],
+                subject: 'Code de vérification — Suppression de compte CloseOS',
+                htmlContent: `
+                    <div style="font-family: sans-serif; color: #333; max-width: 500px; margin: 0 auto;">
+                        <h2 style="color: #1e293b;">Code de vérification</h2>
+                        <p>Vous avez demandé la suppression de votre compte CloseOS.</p>
+                        <p>Voici votre code de confirmation :</p>
+                        <div style="background: #f1f5f9; padding: 20px; border-radius: 12px; text-align: center; margin: 24px 0;">
+                            <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #ef4444;">${code}</span>
+                        </div>
+                        <p style="color: #64748b; font-size: 14px;">Ce code expire dans 10 minutes. Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+                        <p>L'équipe CloseOS</p>
+                    </div>
+                `
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Erreur envoi email');
+        }
+
+        return res.status(200).json({ success: true, code });
+
+    } catch (error: any) {
+        console.error('Send deletion code error:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+// ─── Main Router ───────────────────────────────────────────────────────────────
+export default async function handler(req: any, res: any) {
+    const action = req.query.action;
+
+    switch (action) {
+        case 'send':
+            return handleSend(req, res);
+        case 'notify-password-change':
+            return handleNotifyPasswordChange(req, res);
+        case 'request-email-change':
+            return handleRequestEmailChange(req, res);
+        case 'confirm-email-change':
+            return handleConfirmEmailChange(req, res);
+        case 'request-password-reset':
+            return handleRequestPasswordReset(req, res);
+        case 'send-deletion-code':
+            return handleSendDeletionCode(req, res);
+        default:
+            return res.status(400).json({ error: 'Invalid or missing action parameter' });
+    }
+}
