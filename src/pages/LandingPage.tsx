@@ -864,7 +864,7 @@ export function LandingPage() {
                   🔥 -58% OFFRE DE LANCEMENT
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-red-500/90 text-white text-[10px] font-bold uppercase tracking-wide">
-                  Offre valable jusqu'au 10 mars
+                  Offre valable jusqu'au 15 mars
                 </span>
               </div>
               <div className="mb-6">
