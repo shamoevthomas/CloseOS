@@ -610,6 +610,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
+      // Ensure business_users entry exists
+      const { data: existingUser } = await supabase
+        .from('business_users')
+        .select('id')
+        .eq('id', user_id)
+        .maybeSingle()
+
+      if (!existingUser) {
+        // Fetch auth user info to create business profile
+        const { data: { user: authUser } } = await supabase.auth.admin.getUserById(user_id)
+        await supabase.from('business_users').insert({
+          id: user_id,
+          email: authUser?.email || '',
+          full_name: authUser?.user_metadata?.full_name || '',
+        })
+      }
+
       const slug = crypto.randomUUID()
       const { data, error } = await supabase
         .from('business_campaigns')
