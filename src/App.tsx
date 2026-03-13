@@ -70,7 +70,10 @@ import { BusinessCRM } from './business/pages/BusinessCRM'
 import { BusinessTeam } from './business/pages/BusinessTeam'
 import { BusinessInvitation } from './business/pages/BusinessInvitation'
 import { BusinessKPI } from './business/pages/BusinessKPI'
+import { BusinessCampaigns } from './business/pages/BusinessCampaigns'
+import { BusinessAppointments } from './business/pages/BusinessAppointments'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
+import { CaptureForm } from './pages/CaptureForm'
 
 
 // Page d'accueil intelligente : landing immédiate si non connecté, loading si session détectée
@@ -188,6 +191,8 @@ function AuthenticatedApp() {
           <Route path="dashboard" element={<BusinessDashboard />} />
           <Route path="crm" element={<BusinessCRM />} />
           <Route path="kpi" element={<BusinessKPI />} />
+          <Route path="campagnes" element={<BusinessCampaigns />} />
+          <Route path="rendez-vous" element={<BusinessAppointments />} />
           <Route path="team" element={<BusinessTeam />} />
         </Route>
 
@@ -195,6 +200,7 @@ function AuthenticatedApp() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
+        <Route path="/capture/:slug" element={<CaptureForm />} />
         <Route path="/view/:token" element={<SpectatorPage />} />
         <Route path="/mentions-legales" element={<Legal />} />
         <Route path="/cgu" element={<CGU />} />

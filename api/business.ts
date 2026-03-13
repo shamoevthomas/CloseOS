@@ -591,6 +591,185 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true })
     }
 
+    // ─── Campaign actions ───
+    if (action === 'campaigns-list' && req.method === 'GET') {
+      const user_id = req.query.user_id as string
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+
+      const { data, error } = await supabase
+        .from('business_campaigns')
+        .select('*, business_prospects(count)')
+        .eq('user_id', user_id)
+        .order('created_at', { ascending: false })
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ campaigns: data })
+    }
+
+    if (action === 'campaigns-create' && req.method === 'POST') {
+      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields } = req.body
+      if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
+
+      const slug = crypto.randomUUID()
+      const { data, error } = await supabase
+        .from('business_campaigns')
+        .insert({
+          user_id, name, description, source: source || 'Direct',
+          utm_source, utm_medium, utm_campaign,
+          custom_fields: custom_fields || [],
+          slug, is_active: true,
+        })
+        .select()
+        .single()
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ campaign: data })
+    }
+
+    if (action === 'campaigns-update' && req.method === 'PUT') {
+      const { user_id, id, ...updates } = req.body
+      if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
+
+      const { data, error } = await supabase
+        .from('business_campaigns')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user_id)
+        .select()
+        .single()
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ campaign: data })
+    }
+
+    if (action === 'campaigns-delete' && req.method === 'DELETE') {
+      const id = req.query.id as string
+      const user_id = req.query.user_id as string
+      if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
+
+      const { error } = await supabase
+        .from('business_campaigns')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user_id)
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ success: true })
+    }
+
+    // ─── Appointment actions ───
+    if (action === 'appointments-list' && req.method === 'GET') {
+      const user_id = req.query.user_id as string
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+
+      const { data, error } = await supabase
+        .from('business_appointments')
+        .select('*, prospect:business_prospects(id, contact, email, phone), campaign:business_campaigns(id, name)')
+        .eq('user_id', user_id)
+        .order('date', { ascending: false })
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ appointments: data })
+    }
+
+    if (action === 'appointments-update' && req.method === 'PUT') {
+      const { user_id, id, status, notes } = req.body
+      if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
+
+      const updates: any = {}
+      if (status) updates.status = status
+      if (notes !== undefined) updates.notes = notes
+
+      const { data, error } = await supabase
+        .from('business_appointments')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user_id)
+        .select()
+        .single()
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ appointment: data })
+    }
+
+    // ─── Public capture info (no auth) ───
+    if (action === 'capture-info' && req.method === 'GET') {
+      const slug = req.query.slug as string
+      if (!slug) return res.status(400).json({ error: 'slug required' })
+
+      const { data: campaign, error } = await supabase
+        .from('business_campaigns')
+        .select('id, name, description, custom_fields, slug')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .single()
+
+      if (error || !campaign) return res.status(404).json({ error: 'Campaign not found or inactive' })
+      return res.status(200).json({ campaign })
+    }
+
+    // ─── Public capture endpoint (no auth) ───
+    if (action === 'capture-submit' && req.method === 'POST') {
+      const { slug, name, email, phone, custom_data, date, time } = req.body
+      if (!slug || !name || !email) return res.status(400).json({ error: 'slug, name, and email required' })
+
+      // Find campaign by slug
+      const { data: campaign, error: campErr } = await supabase
+        .from('business_campaigns')
+        .select('*')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .single()
+
+      if (campErr || !campaign) return res.status(404).json({ error: 'Campaign not found or inactive' })
+
+      // Create prospect
+      const nameParts = name.trim().split(' ')
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ') || ''
+
+      const { data: prospect, error: prospErr } = await supabase
+        .from('business_prospects')
+        .insert({
+          user_id: campaign.user_id,
+          contact: name,
+          firstName,
+          lastName,
+          email,
+          phone: phone || '',
+          stage: 'prospect',
+          campaign_id: campaign.id,
+          notes: custom_data ? JSON.stringify(custom_data) : null,
+        })
+        .select()
+        .single()
+
+      if (prospErr) return res.status(500).json({ error: prospErr.message })
+
+      // Create appointment if date/time provided
+      let appointment = null
+      if (date && time) {
+        const { data: appt, error: apptErr } = await supabase
+          .from('business_appointments')
+          .insert({
+            user_id: campaign.user_id,
+            campaign_id: campaign.id,
+            prospect_id: prospect.id,
+            date,
+            time,
+            duration: 30,
+            status: 'pending',
+          })
+          .select()
+          .single()
+
+        if (apptErr) return res.status(500).json({ error: apptErr.message })
+        appointment = appt
+      }
+
+      return res.status(200).json({ prospect, appointment })
+    }
+
     // ─── Welcome email ───
     if (req.method === 'POST' && action === 'welcome-email') {
       const { email } = req.body

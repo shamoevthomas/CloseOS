@@ -9,6 +9,8 @@ import {
   ChevronUp,
   X,
   Loader2,
+  Megaphone,
+  Calendar,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect } from 'react'
@@ -18,6 +20,8 @@ import { supabase } from '../../lib/supabase'
 const navigation = [
   { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
   { name: 'CRM', href: '/business/crm', icon: GitBranch },
+  { name: 'Campagnes', href: '/business/campagnes', icon: Megaphone },
+  { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
   { name: 'KPI', href: '/business/kpi', icon: TrendingUp },
   { name: 'Équipe', href: '/business/team', icon: Users },
 ]
