@@ -591,6 +591,88 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true })
     }
 
+    // ─── Formula actions ───
+    if (action === 'formulas-list' && req.method === 'GET') {
+      const user_id = req.query.user_id as string
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+
+      const { data, error } = await supabase
+        .from('business_formulas')
+        .select('*')
+        .eq('user_id', user_id)
+        .order('created_at', { ascending: false })
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ formulas: data })
+    }
+
+    if (action === 'formulas-create' && req.method === 'POST') {
+      const { user_id, name, price, description, resources } = req.body
+      if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
+
+      // Ensure business_users entry exists
+      const { data: existingUser } = await supabase
+        .from('business_users')
+        .select('id')
+        .eq('id', user_id)
+        .maybeSingle()
+
+      if (!existingUser) {
+        const { data: { user: authUser } } = await supabase.auth.admin.getUserById(user_id)
+        await supabase.from('business_users').insert({
+          id: user_id,
+          email: authUser?.email || '',
+          full_name: authUser?.user_metadata?.full_name || '',
+        })
+      }
+
+      const { data, error } = await supabase
+        .from('business_formulas')
+        .insert({
+          user_id, name,
+          price: price || 0,
+          description: description || null,
+          resources: resources || [],
+          is_active: true,
+        })
+        .select()
+        .single()
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ formula: data })
+    }
+
+    if (action === 'formulas-update' && req.method === 'PUT') {
+      const { user_id, id, ...updates } = req.body
+      if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
+
+      const { data, error } = await supabase
+        .from('business_formulas')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user_id)
+        .select()
+        .single()
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ formula: data })
+    }
+
+    if (action === 'formulas-delete' && req.method === 'DELETE') {
+      const id = req.query.id as string
+      const user_id = req.query.user_id as string
+      if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
+
+      const { error } = await supabase
+        .from('business_formulas')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user_id)
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ success: true })
+    }
+
     // ─── Campaign actions ───
     if (action === 'campaigns-list' && req.method === 'GET') {
       const user_id = req.query.user_id as string
@@ -756,6 +838,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           phone: phone || '',
           stage: 'prospect',
           campaign_id: campaign.id,
+          formula_id: campaign.formula_id || null,
           notes: custom_data ? JSON.stringify(custom_data) : null,
         })
         .select()

@@ -30,8 +30,15 @@ interface Campaign {
   landing_video_url: string | null
   email_required: boolean
   phone_required: boolean
+  formula_id: string | null
   created_at: string
   business_prospects: { count: number }[]
+}
+
+interface Formula {
+  id: string
+  name: string
+  price: number
 }
 
 const SOURCES = ['Direct', 'Google Ads', 'Facebook Ads', 'Instagram', 'LinkedIn', 'Email', 'Autre']
@@ -47,8 +54,12 @@ export function BusinessCampaigns() {
   const [saving, setSaving] = useState(false)
   const [modalTab, setModalTab] = useState<'general' | 'landing' | 'fields'>('general')
 
+  // Formulas for dropdown
+  const [formulas, setFormulas] = useState<Formula[]>([])
+
   // Form state - General
   const [formName, setFormName] = useState('')
+  const [formFormulaId, setFormFormulaId] = useState<string | null>(null)
   const [formDescription, setFormDescription] = useState('')
   const [formSource, setFormSource] = useState('Direct')
   const [formUtmSource, setFormUtmSource] = useState('')
@@ -79,7 +90,18 @@ export function BusinessCampaigns() {
     }
   }, [user?.id])
 
-  useEffect(() => { fetchCampaigns() }, [fetchCampaigns])
+  const fetchFormulas = useCallback(async () => {
+    if (!user?.id) return
+    try {
+      const res = await fetch(`${API_URL}?action=formulas-list&user_id=${user.id}`)
+      const data = await res.json()
+      if (data.formulas) setFormulas(data.formulas)
+    } catch (err) {
+      console.error('Error fetching formulas:', err)
+    }
+  }, [user?.id])
+
+  useEffect(() => { fetchCampaigns(); fetchFormulas() }, [fetchCampaigns, fetchFormulas])
 
   const resetForm = () => {
     setFormName(''); setFormDescription(''); setFormSource('Direct')
@@ -87,6 +109,7 @@ export function BusinessCampaigns() {
     setFormLandingTitle(''); setFormLandingSubtitle(''); setFormLandingText(''); setFormLandingVideoUrl('')
     setFormEmailRequired(true); setFormPhoneRequired(false)
     setFormCustomFields([]); setEditingCampaign(null); setModalTab('general')
+    setFormFormulaId(null)
   }
 
   const openCreate = () => { resetForm(); setIsModalOpen(true) }
@@ -101,6 +124,7 @@ export function BusinessCampaigns() {
     setFormLandingText(campaign.landing_text || ''); setFormLandingVideoUrl(campaign.landing_video_url || '')
     setFormEmailRequired(campaign.email_required ?? true); setFormPhoneRequired(campaign.phone_required ?? false)
     setFormCustomFields(campaign.custom_fields || [])
+    setFormFormulaId(campaign.formula_id || null)
     setModalTab('general'); setIsModalOpen(true)
   }
 
@@ -111,6 +135,7 @@ export function BusinessCampaigns() {
     landing_title: formLandingTitle || null, landing_subtitle: formLandingSubtitle || null,
     landing_text: formLandingText || null, landing_video_url: formLandingVideoUrl || null,
     email_required: formEmailRequired, phone_required: formPhoneRequired,
+    formula_id: formFormulaId || null,
   })
 
   const handleSave = async () => {
@@ -327,6 +352,17 @@ export function BusinessCampaigns() {
                       <input type="text" value={formUtmMedium} onChange={(e) => setFormUtmMedium(e.target.value)} placeholder="utm_medium" className={smallInputCls} />
                       <input type="text" value={formUtmCampaign} onChange={(e) => setFormUtmCampaign(e.target.value)} placeholder="utm_campaign" className={smallInputCls} />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Formule associée</label>
+                    <div className="relative">
+                      <select value={formFormulaId || ''} onChange={(e) => setFormFormulaId(e.target.value || null)} className={selectCls}>
+                        <option value="">Aucune formule</option>
+                        {formulas.map(f => <option key={f.id} value={f.id}>{f.name} — {f.price?.toFixed(2)} €</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">Les prospects capturés via cette campagne seront associés à cette formule</p>
                   </div>
                 </div>
               )}
