@@ -4,7 +4,7 @@ import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight } from 'luci
 
 interface CustomField {
   label: string
-  type: 'text' | 'email' | 'phone' | 'select'
+  type: 'text' | 'email' | 'phone' | 'number' | 'select'
   required: boolean
   options?: string[]
 }

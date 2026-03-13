@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'
 
 interface CustomField {
   label: string
-  type: 'text' | 'email' | 'phone' | 'select'
+  type: 'text' | 'email' | 'phone' | 'number' | 'select'
   required: boolean
   options?: string[]
 }
@@ -351,7 +351,7 @@ export function BusinessCampaigns() {
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="Ex: Campagne Facebook Mars 2026"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
               </div>
 
@@ -362,7 +362,7 @@ export function BusinessCampaigns() {
                   <select
                     value={formSource}
                     onChange={(e) => setFormSource(e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    className="w-full appearance-none rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
                   >
                     {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -378,7 +378,7 @@ export function BusinessCampaigns() {
                   onChange={(e) => setFormDescription(e.target.value)}
                   rows={2}
                   placeholder="Description de la campagne..."
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none"
                 />
               </div>
 
@@ -388,15 +388,15 @@ export function BusinessCampaigns() {
                 <div className="grid grid-cols-3 gap-2">
                   <input
                     type="text" value={formUtmSource} onChange={(e) => setFormUtmSource(e.target.value)}
-                    placeholder="utm_source" className="rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-amber-500 focus:outline-none"
+                    placeholder="utm_source" className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
                   />
                   <input
                     type="text" value={formUtmMedium} onChange={(e) => setFormUtmMedium(e.target.value)}
-                    placeholder="utm_medium" className="rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-amber-500 focus:outline-none"
+                    placeholder="utm_medium" className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
                   />
                   <input
                     type="text" value={formUtmCampaign} onChange={(e) => setFormUtmCampaign(e.target.value)}
-                    placeholder="utm_campaign" className="rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-amber-500 focus:outline-none"
+                    placeholder="utm_campaign" className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -420,16 +420,17 @@ export function BusinessCampaigns() {
                       value={field.label}
                       onChange={(e) => updateCustomField(idx, { label: e.target.value })}
                       placeholder="Nom du champ"
-                      className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-amber-500 focus:outline-none"
+                      className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
                     />
                     <select
                       value={field.type}
                       onChange={(e) => updateCustomField(idx, { type: e.target.value as CustomField['type'] })}
-                      className="rounded-lg border border-slate-200 px-2 py-2 text-xs focus:border-amber-500 focus:outline-none"
+                      className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
                     >
                       <option value="text">Texte</option>
                       <option value="email">Email</option>
                       <option value="phone">Téléphone</option>
+                      <option value="number">Numéro</option>
                       <option value="select">Sélection</option>
                     </select>
                     <label className="flex items-center gap-1 text-xs text-slate-500 whitespace-nowrap">
