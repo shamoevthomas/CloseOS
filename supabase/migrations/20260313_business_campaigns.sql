@@ -15,6 +15,12 @@ CREATE TABLE IF NOT EXISTS business_campaigns (
   custom_fields jsonb DEFAULT '[]'::jsonb,
   is_active boolean DEFAULT true,
   slug text UNIQUE NOT NULL DEFAULT gen_random_uuid()::text,
+  landing_title text,
+  landing_subtitle text,
+  landing_text text,
+  landing_video_url text,
+  email_required boolean DEFAULT true,
+  phone_required boolean DEFAULT false,
   created_at timestamptz DEFAULT now()
 );
 
