@@ -10,6 +10,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/kpi': { title: 'KPI & Performance', subtitle: 'Analysez vos performances commerciales' },
   '/business/campagnes': { title: 'Campagnes', subtitle: 'Gérez vos campagnes de capture de leads' },
   '/business/acquisition': { title: 'Acquisition', subtitle: 'Analysez la performance de vos campagnes' },
+  '/business/objectifs': { title: 'Objectifs', subtitle: 'Définissez vos objectifs et suivez votre progression' },
   '/business/formules': { title: 'Formules', subtitle: 'Gérez vos formules tarifaires et ressources' },
   '/business/rendez-vous': { title: 'Rendez-vous', subtitle: 'Tous vos rendez-vous pris via les campagnes' },
   '/business/rappels': { title: 'Rappels', subtitle: 'Gérez vos rappels et suivis prospects' },

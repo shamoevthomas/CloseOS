@@ -17,6 +17,7 @@ import {
   FileText,
   UserCheck,
   Headphones,
+  Target,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect } from 'react'
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'CRM', href: '/business/crm', icon: GitBranch },
   { name: 'Campagnes', href: '/business/campagnes', icon: Megaphone },
   { name: 'Acquisition', href: '/business/acquisition', icon: BarChart3 },
+  { name: 'Objectifs', href: '/business/objectifs', icon: Target },
   { name: 'Formules', href: '/business/formules', icon: Package },
   { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
   { name: 'Rappels', href: '/business/rappels', icon: Bell },

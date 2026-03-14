@@ -72,6 +72,7 @@ import { BusinessInvitation } from './business/pages/BusinessInvitation'
 import { BusinessKPI } from './business/pages/BusinessKPI'
 import { BusinessCampaigns } from './business/pages/BusinessCampaigns'
 import { BusinessFormules } from './business/pages/BusinessFormules'
+import { BusinessObjectives } from './business/pages/BusinessObjectives'
 import { BusinessAppointments } from './business/pages/BusinessAppointments'
 import { BusinessReminders } from './business/pages/BusinessReminders'
 import { BusinessAcquisition } from './business/pages/BusinessAcquisition'
@@ -199,6 +200,7 @@ function AuthenticatedApp() {
           <Route path="kpi" element={<BusinessKPI />} />
           <Route path="campagnes" element={<BusinessCampaigns />} />
           <Route path="acquisition" element={<BusinessAcquisition />} />
+          <Route path="objectifs" element={<BusinessObjectives />} />
           <Route path="formules" element={<BusinessFormules />} />
           <Route path="rendez-vous" element={<BusinessAppointments />} />
           <Route path="rappels" element={<BusinessReminders />} />

@@ -673,6 +673,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true })
     }
 
+    // ─── Objectives CRUD ───
+    if (action === 'objectives-list' && req.method === 'GET') {
+      const user_id = req.query.user_id as string
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+
+      const { data, error } = await supabase
+        .from('business_objectives')
+        .select('*')
+        .eq('user_id', user_id)
+        .order('created_at', { ascending: true })
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ objectives: data })
+    }
+
+    if (action === 'objectives-create' && req.method === 'POST') {
+      const { user_id, label, metric, target_value, period } = req.body
+      if (!user_id || !label || !metric || target_value == null) {
+        return res.status(400).json({ error: 'user_id, label, metric, and target_value required' })
+      }
+
+      const { data, error } = await supabase
+        .from('business_objectives')
+        .insert({ user_id, label, metric, target_value, period: period || 'monthly' })
+        .select()
+        .single()
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ objective: data })
+    }
+
+    if (action === 'objectives-update' && req.method === 'PUT') {
+      const { user_id, id, ...updates } = req.body
+      if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
+
+      const { data, error } = await supabase
+        .from('business_objectives')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user_id)
+        .select()
+        .single()
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ objective: data })
+    }
+
+    if (action === 'objectives-delete' && req.method === 'DELETE') {
+      const id = req.query.id as string
+      const user_id = req.query.user_id as string
+      if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
+
+      const { error } = await supabase
+        .from('business_objectives')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user_id)
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ success: true })
+    }
+
     // ─── Acquisition stats ───
     if (action === 'acquisition-stats' && req.method === 'GET') {
       const user_id = req.query.user_id as string
@@ -733,7 +795,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'campaigns-create' && req.method === 'POST') {
-      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields } = req.body
+      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -761,6 +823,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           utm_source, utm_medium, utm_campaign,
           custom_fields: custom_fields || [],
           slug, is_active: true,
+          redirect_url: redirect_url || null,
         })
         .select()
         .single()
@@ -842,7 +905,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: campaign, error } = await supabase
         .from('business_campaigns')
-        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required')
+        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, redirect_url')
         .eq('slug', slug)
         .eq('is_active', true)
         .single()
@@ -933,7 +996,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         appointment = appt
       }
 
-      return res.status(200).json({ prospect, appointment })
+      return res.status(200).json({ prospect, appointment, redirect_url: campaign.redirect_url || null })
     }
 
     // ─── Welcome email ───

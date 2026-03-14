@@ -21,6 +21,7 @@ interface Campaign {
   landing_video_url: string | null
   email_required: boolean
   phone_required: boolean
+  redirect_url: string | null
 }
 
 const API_URL = '/api/business'
@@ -77,6 +78,7 @@ export function CaptureForm() {
   const [notFound, setNotFound] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -144,8 +146,14 @@ export function CaptureForm() {
         body: JSON.stringify({ slug, name, email, phone, custom_data: customData, date: dateStr, time: selectedTime }),
       })
       const data = await res.json()
-      if (data.prospect) setSubmitted(true)
-      else alert(data.error || 'Une erreur est survenue')
+      if (data.prospect) {
+        setSubmitted(true)
+        const rUrl = data.redirect_url || campaign?.redirect_url
+        if (rUrl) {
+          setRedirectUrl(rUrl)
+          setTimeout(() => { window.location.href = rUrl }, 2000)
+        }
+      } else alert(data.error || 'Une erreur est survenue')
     } catch { alert('Erreur réseau') }
     finally { setSubmitting(false) }
   }
@@ -191,7 +199,11 @@ export function CaptureForm() {
               </p>
             </div>
           )}
-          <p className="text-xs text-slate-400">Vous recevrez une confirmation par email.</p>
+          {redirectUrl ? (
+            <p className="text-xs text-slate-500 animate-pulse">Vous allez être redirigé...</p>
+          ) : (
+            <p className="text-xs text-slate-400">Vous recevrez une confirmation par email.</p>
+          )}
         </div>
       </div>
     )

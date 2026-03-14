@@ -30,6 +30,7 @@ interface Campaign {
   landing_video_url: string | null
   email_required: boolean
   phone_required: boolean
+  redirect_url: string | null
   formula_id: string | null
   created_at: string
   business_prospects: { count: number }[]
@@ -67,6 +68,7 @@ export function BusinessCampaigns() {
   const [formUtmCampaign, setFormUtmCampaign] = useState('')
 
   // Form state - Landing page
+  const [formRedirectUrl, setFormRedirectUrl] = useState('')
   const [formLandingTitle, setFormLandingTitle] = useState('')
   const [formLandingSubtitle, setFormLandingSubtitle] = useState('')
   const [formLandingText, setFormLandingText] = useState('')
@@ -106,6 +108,7 @@ export function BusinessCampaigns() {
   const resetForm = () => {
     setFormName(''); setFormDescription(''); setFormSource('Direct')
     setFormUtmSource(''); setFormUtmMedium(''); setFormUtmCampaign('')
+    setFormRedirectUrl('')
     setFormLandingTitle(''); setFormLandingSubtitle(''); setFormLandingText(''); setFormLandingVideoUrl('')
     setFormEmailRequired(true); setFormPhoneRequired(false)
     setFormCustomFields([]); setEditingCampaign(null); setModalTab('general')
@@ -120,6 +123,7 @@ export function BusinessCampaigns() {
     setFormSource(campaign.source || 'Direct')
     setFormUtmSource(campaign.utm_source || ''); setFormUtmMedium(campaign.utm_medium || '')
     setFormUtmCampaign(campaign.utm_campaign || '')
+    setFormRedirectUrl(campaign.redirect_url || '')
     setFormLandingTitle(campaign.landing_title || ''); setFormLandingSubtitle(campaign.landing_subtitle || '')
     setFormLandingText(campaign.landing_text || ''); setFormLandingVideoUrl(campaign.landing_video_url || '')
     setFormEmailRequired(campaign.email_required ?? true); setFormPhoneRequired(campaign.phone_required ?? false)
@@ -136,6 +140,7 @@ export function BusinessCampaigns() {
     landing_text: formLandingText || null, landing_video_url: formLandingVideoUrl || null,
     email_required: formEmailRequired, phone_required: formPhoneRequired,
     formula_id: formFormulaId || null,
+    redirect_url: formRedirectUrl || null,
   })
 
   const handleSave = async () => {
@@ -387,6 +392,11 @@ export function BusinessCampaigns() {
                     <label className="block text-sm font-medium text-slate-700 mb-1">URL Vidéo (YouTube, Loom...)</label>
                     <input type="url" value={formLandingVideoUrl} onChange={(e) => setFormLandingVideoUrl(e.target.value)} placeholder="https://www.youtube.com/embed/..." className={inputCls} />
                     <p className="text-xs text-slate-400 mt-1">Utilisez l'URL d'intégration (embed). Ex: https://www.youtube.com/embed/VIDEO_ID</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Lien de redirection post-capture</label>
+                    <input type="url" value={formRedirectUrl} onChange={(e) => setFormRedirectUrl(e.target.value)} placeholder="https://www.example.com/merci" className={inputCls} />
+                    <p className="text-xs text-slate-400 mt-1">Optionnel — Redirige le prospect vers cette URL après soumission du formulaire</p>
                   </div>
                 </div>
               )}
