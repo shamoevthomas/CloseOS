@@ -60,7 +60,7 @@ import { FounderOnlyGuard } from './components/FounderOnlyGuard'
 import { BusinessLanding } from './pages/BusinessLanding'
 
 // Business Module Imports
-import { BusinessAuthProvider } from './business/contexts/BusinessAuthContext'
+import { BusinessAuthProvider, useBusinessAuth } from './business/contexts/BusinessAuthContext'
 import { BusinessProspectsProvider } from './business/contexts/BusinessProspectsContext'
 import { BusinessLayout } from './business/layouts/BusinessLayout'
 import BusinessLogin from './business/pages/BusinessLogin'
@@ -82,6 +82,18 @@ import { BusinessSetters } from './business/pages/BusinessSetters'
 import { BusinessOrganization } from './business/pages/BusinessOrganization'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
 import { CaptureForm } from './pages/CaptureForm'
+
+// Owner-only route guard for business pages
+function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { isTeamMember } = useBusinessAuth()
+  if (isTeamMember) return <Navigate to="/business/dashboard" replace />
+  return <>{children}</>
+}
+
+// Wrapper to use BusinessAuth inside routes
+function OwnerOnlyWrapper({ children }: { children: React.ReactNode }) {
+  return <OwnerOnlyRoute>{children}</OwnerOnlyRoute>
+}
 
 
 // Page d'accueil intelligente : landing immédiate si non connecté, loading si session détectée
@@ -197,19 +209,19 @@ function AuthenticatedApp() {
           </BusinessAuthProvider>
         }>
           <Route path="dashboard" element={<BusinessDashboard />} />
-          <Route path="crm" element={<BusinessCRM />} />
-          <Route path="kpi" element={<BusinessKPI />} />
-          <Route path="campagnes" element={<BusinessCampaigns />} />
-          <Route path="acquisition" element={<BusinessAcquisition />} />
+          <Route path="crm" element={<OwnerOnlyWrapper><BusinessCRM /></OwnerOnlyWrapper>} />
+          <Route path="kpi" element={<OwnerOnlyWrapper><BusinessKPI /></OwnerOnlyWrapper>} />
+          <Route path="campagnes" element={<OwnerOnlyWrapper><BusinessCampaigns /></OwnerOnlyWrapper>} />
+          <Route path="acquisition" element={<OwnerOnlyWrapper><BusinessAcquisition /></OwnerOnlyWrapper>} />
           <Route path="objectifs" element={<BusinessObjectives />} />
-          <Route path="formules" element={<BusinessFormules />} />
+          <Route path="formules" element={<OwnerOnlyWrapper><BusinessFormules /></OwnerOnlyWrapper>} />
           <Route path="rendez-vous" element={<BusinessAppointments />} />
           <Route path="rappels" element={<BusinessReminders />} />
-          <Route path="report" element={<BusinessReport />} />
-          <Route path="team" element={<BusinessTeam />} />
-          <Route path="closers" element={<BusinessClosers />} />
-          <Route path="setters" element={<BusinessSetters />} />
-          <Route path="organisation" element={<BusinessOrganization />} />
+          <Route path="report" element={<OwnerOnlyWrapper><BusinessReport /></OwnerOnlyWrapper>} />
+          <Route path="team" element={<OwnerOnlyWrapper><BusinessTeam /></OwnerOnlyWrapper>} />
+          <Route path="closers" element={<OwnerOnlyWrapper><BusinessClosers /></OwnerOnlyWrapper>} />
+          <Route path="setters" element={<OwnerOnlyWrapper><BusinessSetters /></OwnerOnlyWrapper>} />
+          <Route path="organisation" element={<OwnerOnlyWrapper><BusinessOrganization /></OwnerOnlyWrapper>} />
         </Route>
 
         {/* Routes Publiques */}

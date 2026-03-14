@@ -3,8 +3,9 @@ import { BusinessSidebar } from '../components/BusinessSidebar'
 import { BusinessSettingsModal } from '../components/BusinessSettingsModal'
 import { Menu } from 'lucide-react'
 import { useState } from 'react'
+import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 
-const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
+const OWNER_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/dashboard': { title: 'Dashboard', subtitle: "Vue d'ensemble de votre business" },
   '/business/crm': { title: 'CRM', subtitle: 'Gérez vos prospects' },
   '/business/team': { title: 'Équipe', subtitle: 'Gérez votre équipe' },
@@ -21,9 +22,18 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/organisation': { title: 'Organisation', subtitle: 'Gérez les informations de votre organisation' },
 }
 
+const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
+  '/business/dashboard': { title: 'Dashboard', subtitle: 'Votre espace membre' },
+  '/business/objectifs': { title: 'Mes Objectifs', subtitle: 'Suivez vos objectifs assignés' },
+  '/business/rendez-vous': { title: 'Rendez-vous', subtitle: 'Consultez les rendez-vous' },
+  '/business/rappels': { title: 'Rappels', subtitle: 'Vos rappels personnels' },
+}
+
 export function BusinessLayout() {
   const location = useLocation()
-  const pageInfo = PAGE_TITLES[location.pathname] || { title: 'CloseOS Business', subtitle: '' }
+  const { isTeamMember } = useBusinessAuth()
+  const pageTitles = isTeamMember ? TEAM_PAGE_TITLES : OWNER_PAGE_TITLES
+  const pageInfo = pageTitles[location.pathname] || { title: 'CloseOS Business', subtitle: '' }
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 

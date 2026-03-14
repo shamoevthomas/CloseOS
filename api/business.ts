@@ -1011,6 +1011,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(data)
     }
 
+    // ─── Team member dashboard ───
+    if (action === 'team-dashboard' && req.method === 'GET') {
+      const team_member_id = req.query.team_member_id as string
+      const owner_id = req.query.owner_id as string
+      if (!team_member_id || !owner_id) {
+        return res.status(400).json({ error: 'team_member_id and owner_id required' })
+      }
+
+      // Verify the member belongs to the owner
+      const { data: member, error: memberErr } = await supabase
+        .from('business_team_members')
+        .select('*')
+        .eq('id', team_member_id)
+        .eq('business_owner_id', owner_id)
+        .single()
+
+      if (memberErr || !member) {
+        return res.status(403).json({ error: 'Not authorized' })
+      }
+
+      // Fetch owner data
+      const [objectivesRes, prospectsRes, campaignsRes, appointmentsRes] = await Promise.all([
+        supabase.from('business_objectives').select('*').eq('user_id', owner_id).order('created_at', { ascending: true }),
+        supabase.from('business_prospects').select('*').eq('user_id', owner_id),
+        supabase.from('business_campaigns').select('*').eq('user_id', owner_id),
+        supabase.from('business_appointments').select('*, prospect:business_prospects(id, contact, email, phone), campaign:business_campaigns(id, name)').eq('user_id', owner_id).order('date', { ascending: false }),
+      ])
+
+      return res.status(200).json({
+        objectives: objectivesRes.data || [],
+        prospects: prospectsRes.data || [],
+        campaigns: campaignsRes.data || [],
+        appointments: appointmentsRes.data || [],
+      })
+    }
+
     return res.status(400).json({ error: 'Invalid action' })
   } catch (err: any) {
     console.error('[business] Error:', err)

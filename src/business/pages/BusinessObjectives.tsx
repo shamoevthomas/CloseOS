@@ -77,8 +77,9 @@ const ROLE_COLORS: Record<string, string> = {
 const API_URL = '/api/business'
 
 export function BusinessObjectives() {
-  const { user } = useBusinessAuth()
+  const { user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
   const { prospects } = useBusinessProspects()
+  const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const [objectives, setObjectives] = useState<Objective[]>([])
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
@@ -98,41 +99,46 @@ export function BusinessObjectives() {
   const [formDeadline, setFormDeadline] = useState('')
 
   const fetchObjectives = useCallback(async () => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     try {
-      const res = await fetch(`${API_URL}?action=objectives-list&user_id=${user.id}`)
+      const res = await fetch(`${API_URL}?action=objectives-list&user_id=${effectiveUserId}`)
       const data = await res.json()
-      if (data.objectives) setObjectives(data.objectives)
+      let objs = data.objectives || []
+      // Team members only see objectives assigned to them
+      if (isTeamMember && teamMember?.id) {
+        objs = objs.filter((o: Objective) => o.assigned_to === teamMember.id)
+      }
+      setObjectives(objs)
     } catch (err) {
       console.error('Error fetching objectives:', err)
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [effectiveUserId, isTeamMember, teamMember?.id])
 
   const fetchAppointments = useCallback(async () => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     try {
-      const res = await fetch(`${API_URL}?action=appointments-list&user_id=${user.id}`)
+      const res = await fetch(`${API_URL}?action=appointments-list&user_id=${effectiveUserId}`)
       const data = await res.json()
       if (data.appointments) setAppointments(data.appointments)
     } catch (err) {
       console.error('Error fetching appointments:', err)
     }
-  }, [user?.id])
+  }, [effectiveUserId])
 
   const fetchMembers = useCallback(async () => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     try {
       const { data } = await supabase
         .from('business_team_members')
         .select('id, first_name, last_name, role')
-        .eq('business_owner_id', user.id)
+        .eq('business_owner_id', effectiveUserId)
       if (data) setMembers(data)
     } catch (err) {
       console.error('Error fetching members:', err)
     }
-  }, [user?.id])
+  }, [effectiveUserId])
 
   useEffect(() => { fetchObjectives(); fetchAppointments(); fetchMembers() }, [fetchObjectives, fetchAppointments, fetchMembers])
 
@@ -299,9 +305,11 @@ export function BusinessObjectives() {
             <p className="text-xs text-slate-500">Définissez vos objectifs et suivez votre progression</p>
           </div>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors">
-          <Plus className="h-4 w-4" /> Ajouter un objectif
-        </button>
+        {!isTeamMember && (
+          <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors">
+            <Plus className="h-4 w-4" /> Ajouter un objectif
+          </button>
+        )}
       </div>
 
       {/* Empty state */}
@@ -309,10 +317,14 @@ export function BusinessObjectives() {
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 py-16">
           <Target className="h-12 w-12 text-amber-300 mb-4" />
           <h3 className="text-lg font-semibold text-slate-700 mb-1">Aucun objectif</h3>
-          <p className="text-sm text-slate-500 mb-4">Créez votre premier objectif pour suivre votre progression</p>
-          <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700">
-            <Plus className="h-4 w-4" /> Créer un objectif
-          </button>
+          <p className="text-sm text-slate-500 mb-4">
+            {isTeamMember ? "Aucun objectif ne vous a été assigné" : "Créez votre premier objectif pour suivre votre progression"}
+          </p>
+          {!isTeamMember && (
+            <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700">
+              <Plus className="h-4 w-4" /> Créer un objectif
+            </button>
+          )}
         </div>
       )}
 
@@ -393,14 +405,16 @@ export function BusinessObjectives() {
                 )}
               </div>
 
-              <div className="flex gap-2 border-t border-slate-100 pt-3">
-                <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                  <Pencil className="h-3.5 w-3.5" /> Modifier
-                </button>
-                <button onClick={() => deleteObjective(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
-                  <Trash2 className="h-3.5 w-3.5" /> Supprimer
-                </button>
-              </div>
+              {!isTeamMember && (
+                <div className="flex gap-2 border-t border-slate-100 pt-3">
+                  <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                    <Pencil className="h-3.5 w-3.5" /> Modifier
+                  </button>
+                  <button onClick={() => deleteObjective(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                  </button>
+                </div>
+              )}
             </div>
           )
         })}

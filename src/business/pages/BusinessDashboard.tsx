@@ -5,6 +5,7 @@ import {
   Megaphone, Users, Bell, ArrowUpRight, ArrowDownRight, FileDown, Circle,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { TeamMemberDashboard } from './TeamMemberDashboard'
 import { supabase } from '../../lib/supabase'
 
 // ─── Types ───
@@ -71,7 +72,11 @@ const ROLE_COLORS: Record<string, string> = {
 // ─── Component ───
 
 export function BusinessDashboard() {
-  const { user } = useBusinessAuth()
+  const { user, isTeamMember } = useBusinessAuth()
+
+  if (isTeamMember) {
+    return <TeamMemberDashboard />
+  }
   const [loading, setLoading] = useState(true)
 
   const [prospects, setProspects] = useState<Prospect[]>([])

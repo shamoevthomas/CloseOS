@@ -58,8 +58,8 @@ const SYNC_INTERVAL_SECONDS = 120
 export function BusinessProspectsProvider({ children }: { children: ReactNode }) {
   const [prospects, setProspects] = useState<BusinessProspect[]>([])
   const [loading, setLoading] = useState(true)
-  const { user, loading: authLoading, businessSettings } = useBusinessAuth()
-  const userId = user?.id
+  const { user, loading: authLoading, businessSettings, isTeamMember, ownerUserId } = useBusinessAuth()
+  const userId = isTeamMember ? ownerUserId : user?.id
   const channelRef = useRef<any>(null)
 
   // CRM states
@@ -72,11 +72,11 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   const crmProvider = businessSettings?.crm_provider || 'closeos'
 
   const loadProspects = useCallback(async (showLoading = true) => {
-    if (!user) return
+    if (!userId) return
     try {
       if (showLoading) setLoading(true)
       const { data, error } = await withRetry(
-        () => supabase.from('business_prospects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        () => supabase.from('business_prospects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         { context: 'LoadBusinessProspects' }
       )
 
@@ -88,7 +88,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     } finally {
       if (showLoading) setLoading(false)
     }
-  }, [user])
+  }, [userId])
 
   // Check CRM connection status
   const checkCrmStatus = useCallback(async () => {

@@ -8,7 +8,39 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const [businessProfile, setBusinessProfile] = useState<any>(null);
   const [businessSettings, setBusinessSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [teamMember, setTeamMember] = useState<any>(null);
+  const [isTeamMember, setIsTeamMember] = useState(false);
+  const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
   const isMountedRef = useRef(true);
+
+  const fetchTeamMember = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('business_team_members')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (!error && data && isMountedRef.current) {
+        setTeamMember(data);
+        setIsTeamMember(true);
+        setOwnerUserId(data.business_owner_id);
+
+        // Fetch the owner's business_settings for company name/logo
+        const { data: ownerSettings } = await supabase
+          .from('business_settings')
+          .select('*')
+          .eq('user_id', data.business_owner_id)
+          .single();
+
+        if (isMountedRef.current && ownerSettings) {
+          setBusinessSettings(ownerSettings);
+        }
+      }
+    } catch (err) {
+      console.error('Exception fetching team member:', err);
+    }
+  }, []);
 
   const fetchBusinessProfile = useCallback(async (userId: string) => {
     try {
@@ -19,15 +51,18 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
         .single();
 
       if (error) {
-        // User doesn't have a business profile yet
-        if (isMountedRef.current) setBusinessProfile(null);
+        // User doesn't have a business profile yet — check if team member
+        if (isMountedRef.current) {
+          setBusinessProfile(null);
+          await fetchTeamMember(userId);
+        }
       } else if (isMountedRef.current) {
         setBusinessProfile(data);
       }
     } catch (err) {
       console.error('Exception fetching business profile:', err);
     }
-  }, []);
+  }, [fetchTeamMember]);
 
   const fetchBusinessSettings = useCallback(async (userId: string) => {
     try {
@@ -186,6 +221,9 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     setUser(null);
     setBusinessProfile(null);
     setBusinessSettings(null);
+    setTeamMember(null);
+    setIsTeamMember(false);
+    setOwnerUserId(null);
     await supabase.auth.signOut();
   }, []);
 
@@ -195,7 +233,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       user,
       businessProfile,
       businessSettings,
-      hasOnboarded: businessProfile?.has_onboarded ?? false,
+      hasOnboarded: isTeamMember ? true : (businessProfile?.has_onboarded ?? false),
       loading,
       login,
       register,
@@ -203,6 +241,9 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       updateBusinessProfile,
       updateBusinessSettings,
       logout,
+      teamMember,
+      isTeamMember,
+      ownerUserId,
       refreshProfile: () => {
         if (user) {
           fetchBusinessProfile(user.id);

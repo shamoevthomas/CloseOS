@@ -28,16 +28,17 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 const API_URL = '/api/business'
 
 export function BusinessAppointments() {
-  const { user } = useBusinessAuth()
+  const { user, isTeamMember, ownerUserId } = useBusinessAuth()
+  const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterDate, setFilterDate] = useState<string>('')
 
   const fetchAppointments = useCallback(async () => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     try {
-      const res = await fetch(`${API_URL}?action=appointments-list&user_id=${user.id}`)
+      const res = await fetch(`${API_URL}?action=appointments-list&user_id=${effectiveUserId}`)
       const data = await res.json()
       if (data.appointments) setAppointments(data.appointments)
     } catch (err) {
@@ -45,7 +46,7 @@ export function BusinessAppointments() {
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [effectiveUserId])
 
   useEffect(() => { fetchAppointments() }, [fetchAppointments])
 
@@ -191,7 +192,7 @@ export function BusinessAppointments() {
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {appt.status === 'pending' && (
+                  {!isTeamMember && appt.status === 'pending' && (
                     <>
                       <button
                         onClick={() => updateStatus(appt.id, 'confirmed')}
@@ -207,7 +208,7 @@ export function BusinessAppointments() {
                       </button>
                     </>
                   )}
-                  {appt.status === 'confirmed' && (
+                  {!isTeamMember && appt.status === 'confirmed' && (
                     <button
                       onClick={() => updateStatus(appt.id, 'done')}
                       className="rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
@@ -219,6 +220,12 @@ export function BusinessAppointments() {
                     <span className="text-xs text-slate-400 italic">
                       {appt.status === 'done' ? 'Terminé' : 'Annulé'}
                     </span>
+                  )}
+                  {isTeamMember && appt.status === 'pending' && (
+                    <span className="text-xs text-amber-500 italic">En attente</span>
+                  )}
+                  {isTeamMember && appt.status === 'confirmed' && (
+                    <span className="text-xs text-blue-500 italic">Confirmé</span>
                   )}
                 </div>
               </div>

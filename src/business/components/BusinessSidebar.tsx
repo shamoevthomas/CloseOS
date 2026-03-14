@@ -25,7 +25,7 @@ import { useState, useEffect } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 
-const navigation = [
+const ownerNavigation = [
   { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
   { name: 'CRM', href: '/business/crm', icon: GitBranch },
   { name: 'Campagnes', href: '/business/campagnes', icon: Megaphone },
@@ -41,6 +41,13 @@ const navigation = [
   { name: 'Setters', href: '/business/setters', icon: Headphones },
 ]
 
+const teamMemberNavigation = [
+  { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
+  { name: 'Objectifs', href: '/business/objectifs', icon: Target },
+  { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
+  { name: 'Rappels', href: '/business/rappels', icon: Bell },
+]
+
 interface BusinessSidebarProps {
   isOpen?: boolean
   onClose?: () => void
@@ -49,7 +56,8 @@ interface BusinessSidebarProps {
 
 export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSidebarProps) {
   const navigate = useNavigate()
-  const { logout, user, businessProfile, businessSettings } = useBusinessAuth()
+  const { logout, user, businessProfile, businessSettings, isTeamMember, teamMember } = useBusinessAuth()
+  const navigation = isTeamMember ? teamMemberNavigation : ownerNavigation
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
@@ -84,8 +92,10 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
     fetchAvatar()
   }, [user?.id])
 
-  const fullName = businessProfile?.full_name || user?.user_metadata?.full_name || 'Utilisateur';
-  const userRole = businessProfile?.role || 'Business Owner';
+  const fullName = isTeamMember
+    ? `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || user?.user_metadata?.full_name || 'Membre'
+    : businessProfile?.full_name || user?.user_metadata?.full_name || 'Utilisateur';
+  const userRole = isTeamMember ? (teamMember?.role || 'Membre') : (businessProfile?.role || 'Business Owner');
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   const avatarUrl = dbAvatarUrl || businessProfile?.avatar_url || user?.user_metadata?.avatar_url;
 
@@ -117,25 +127,43 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
           </button>
         </div>
 
-        {/* Organisation block */}
-        <button
-          onClick={() => { navigate('/business/organisation'); if (window.innerWidth < 1024) onClose?.(); }}
-          className="mx-3 mt-3 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 transition-colors hover:bg-amber-100"
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 overflow-hidden shrink-0">
-            {businessSettings?.logo_url ? (
-              <img src={businessSettings.logo_url} alt="Logo" className="h-full w-full object-cover" />
-            ) : (
-              <Building2 className="h-5 w-5 text-amber-700" />
-            )}
+        {/* Organisation block (owner only) */}
+        {!isTeamMember ? (
+          <button
+            onClick={() => { navigate('/business/organisation'); if (window.innerWidth < 1024) onClose?.(); }}
+            className="mx-3 mt-3 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 transition-colors hover:bg-amber-100"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 overflow-hidden shrink-0">
+              {businessSettings?.logo_url ? (
+                <img src={businessSettings.logo_url} alt="Logo" className="h-full w-full object-cover" />
+              ) : (
+                <Building2 className="h-5 w-5 text-amber-700" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-semibold text-slate-800 truncate">
+                {businessSettings?.company_name || 'Mon organisation'}
+              </p>
+              <p className="text-xs text-slate-500 truncate">Organisation</p>
+            </div>
+          </button>
+        ) : (
+          <div className="mx-3 mt-3 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 overflow-hidden shrink-0">
+              {businessSettings?.logo_url ? (
+                <img src={businessSettings.logo_url} alt="Logo" className="h-full w-full object-cover" />
+              ) : (
+                <Building2 className="h-5 w-5 text-amber-700" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-semibold text-slate-800 truncate">
+                {businessSettings?.company_name || 'Organisation'}
+              </p>
+              <p className="text-xs text-slate-500 truncate">{teamMember?.role || 'Membre'}</p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0 text-left">
-            <p className="text-sm font-semibold text-slate-800 truncate">
-              {businessSettings?.company_name || 'Mon organisation'}
-            </p>
-            <p className="text-xs text-slate-500 truncate">Organisation</p>
-          </div>
-        </button>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
@@ -167,13 +195,15 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
             <>
               <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)} />
               <div className="absolute bottom-full left-4 right-4 z-20 mb-2 overflow-hidden rounded-xl border border-amber-200 bg-white shadow-xl">
-                <button
-                  onClick={() => { setIsMenuOpen(false); onOpenSettings?.() }}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-amber-50 hover:text-slate-900"
-                >
-                  <Settings className="h-4 w-4" />
-                  Paramètres
-                </button>
+                {!isTeamMember && (
+                  <button
+                    onClick={() => { setIsMenuOpen(false); onOpenSettings?.() }}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-amber-50 hover:text-slate-900"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Paramètres
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-amber-50 hover:text-red-500 border-t border-slate-100"
