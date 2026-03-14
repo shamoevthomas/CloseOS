@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   Building2,
-  Users,
-  Rocket,
   Save,
   Loader2,
   Check,
@@ -17,9 +15,12 @@ import {
   Phone,
   MapPin,
   Receipt,
-  LayoutGrid,
+  Rocket,
   ChevronDown,
   ChevronUp,
+  Video,
+  Type,
+  ExternalLink,
   GripVertical,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -27,45 +28,241 @@ import { supabase } from '../../lib/supabase'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
 
-type TabKey = 'general' | 'team' | 'billing' | 'onboarding' | 'sections'
+// ─── Types ───
 
-const TEAM_SIZES = ['1', '2-5', '6-10', '11-25', '26-50', '50+']
-const NICHES = [
-  'Coaching',
-  'Formation',
-  'Consulting',
-  'E-commerce',
-  'SaaS',
-  'Agence',
-  'Immobilier',
-  'Finance',
-  'Santé',
-  'Autre',
-]
+interface SectionBlock {
+  id: string
+  type: 'text' | 'video' | 'link'
+  content: string
+  label?: string
+}
 
 interface CustomSection {
   id: string
   title: string
-  fields: { label: string; value: string }[]
+  blocks: SectionBlock[]
   collapsed?: boolean
 }
 
-export function BusinessOrganization() {
-  const { user, businessSettings, updateBusinessSettings } = useBusinessAuth()
+type TabKey = 'organisation' | 'onboarding'
 
-  const [activeTab, setActiveTab] = useState<TabKey>('general')
+// ─── Helpers ───
+
+const inputClass = "w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all placeholder:text-slate-400"
+const labelClass = "text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5"
+
+function generateId() {
+  return crypto.randomUUID()
+}
+
+// ─── Section Editor (réutilisé pour Organisation et Onboarding) ───
+
+function SectionEditor({
+  sections,
+  onUpdate,
+  emptyLabel,
+  emptyDesc,
+}: {
+  sections: CustomSection[]
+  onUpdate: (sections: CustomSection[]) => void
+  emptyLabel: string
+  emptyDesc: string
+}) {
+  const [newTitle, setNewTitle] = useState('')
+
+  const addSection = () => {
+    const t = newTitle.trim()
+    if (!t) return
+    onUpdate([...sections, { id: generateId(), title: t, blocks: [] }])
+    setNewTitle('')
+  }
+
+  const removeSection = (id: string) => {
+    onUpdate(sections.filter(s => s.id !== id))
+  }
+
+  const updateTitle = (id: string, title: string) => {
+    onUpdate(sections.map(s => s.id === id ? { ...s, title } : s))
+  }
+
+  const toggleCollapse = (id: string) => {
+    onUpdate(sections.map(s => s.id === id ? { ...s, collapsed: !s.collapsed } : s))
+  }
+
+  const addBlock = (sectionId: string, type: SectionBlock['type']) => {
+    onUpdate(sections.map(s =>
+      s.id === sectionId
+        ? { ...s, blocks: [...s.blocks, { id: generateId(), type, content: '', label: '' }] }
+        : s
+    ))
+  }
+
+  const updateBlock = (sectionId: string, blockId: string, updates: Partial<SectionBlock>) => {
+    onUpdate(sections.map(s =>
+      s.id === sectionId
+        ? { ...s, blocks: s.blocks.map(b => b.id === blockId ? { ...b, ...updates } : b) }
+        : s
+    ))
+  }
+
+  const removeBlock = (sectionId: string, blockId: string) => {
+    onUpdate(sections.map(s =>
+      s.id === sectionId
+        ? { ...s, blocks: s.blocks.filter(b => b.id !== blockId) }
+        : s
+    ))
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Add section */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSection() } }}
+          className={`${inputClass} flex-1`}
+          placeholder="Nom de la nouvelle section..."
+        />
+        <button
+          type="button"
+          onClick={addSection}
+          className="px-5 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors flex items-center gap-2 shrink-0"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">Ajouter</span>
+        </button>
+      </div>
+
+      {/* Sections */}
+      {sections.map(section => (
+        <div key={section.id} className="rounded-xl border border-slate-200 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200">
+            <GripVertical className="h-4 w-4 text-slate-300 shrink-0" />
+            <input
+              type="text"
+              value={section.title}
+              onChange={(e) => updateTitle(section.id, e.target.value)}
+              className="flex-1 bg-transparent font-semibold text-slate-800 outline-none focus:text-amber-700 transition-colors text-sm"
+            />
+            <button onClick={() => toggleCollapse(section.id)} className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
+              {section.collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </button>
+            <button onClick={() => removeSection(section.id)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Blocks */}
+          {!section.collapsed && (
+            <div className="p-4 space-y-3">
+              {section.blocks.map(block => (
+                <div key={block.id} className="flex gap-2 items-start">
+                  <div className="shrink-0 mt-3 w-8 flex justify-center">
+                    {block.type === 'text' && <Type className="h-4 w-4 text-slate-400" />}
+                    {block.type === 'video' && <Video className="h-4 w-4 text-purple-400" />}
+                    {block.type === 'link' && <ExternalLink className="h-4 w-4 text-blue-400" />}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    {block.type === 'text' && (
+                      <textarea
+                        value={block.content}
+                        onChange={(e) => updateBlock(section.id, block.id, { content: e.target.value })}
+                        className={`${inputClass} resize-none h-20 text-sm`}
+                        placeholder="Écrivez votre texte ici..."
+                      />
+                    )}
+                    {block.type === 'video' && (
+                      <input
+                        type="url"
+                        value={block.content}
+                        onChange={(e) => updateBlock(section.id, block.id, { content: e.target.value })}
+                        className={`${inputClass} text-sm`}
+                        placeholder="URL de la vidéo (YouTube, Loom...)"
+                      />
+                    )}
+                    {block.type === 'link' && (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={block.label || ''}
+                          onChange={(e) => updateBlock(section.id, block.id, { label: e.target.value })}
+                          className={`${inputClass} w-1/3 text-sm`}
+                          placeholder="Titre du lien"
+                        />
+                        <input
+                          type="url"
+                          value={block.content}
+                          onChange={(e) => updateBlock(section.id, block.id, { content: e.target.value })}
+                          className={`${inputClass} flex-1 text-sm`}
+                          placeholder="https://..."
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={() => removeBlock(section.id, block.id)} className="p-2.5 text-slate-400 hover:text-red-500 transition-colors shrink-0">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Add block buttons */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  onClick={() => addBlock(section.id, 'text')}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-50 transition-colors border border-dashed border-slate-300"
+                >
+                  <Type className="h-3.5 w-3.5" /> Texte
+                </button>
+                <button
+                  onClick={() => addBlock(section.id, 'video')}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-purple-500 hover:bg-purple-50 transition-colors border border-dashed border-purple-300"
+                >
+                  <Video className="h-3.5 w-3.5" /> Vidéo
+                </button>
+                <button
+                  onClick={() => addBlock(section.id, 'link')}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-dashed border-blue-300"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> Lien
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {sections.length === 0 && (
+        <div className="text-center py-10 text-slate-400">
+          <Plus className="h-8 w-8 mx-auto mb-2 opacity-40" />
+          <p className="font-medium">{emptyLabel}</p>
+          <p className="text-sm mt-1">{emptyDesc}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Main Page ───
+
+export function BusinessOrganization() {
+  const { user, businessSettings, businessProfile, updateBusinessSettings } = useBusinessAuth()
+
+  const [activeTab, setActiveTab] = useState<TabKey>('organisation')
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Crop states
+  // Crop
   const [imageSrc, setImageSrc] = useState<string | null>(null)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
 
-  // Form data
+  // Form
   const [formData, setFormData] = useState({
     company_name: '',
     description: '',
@@ -74,13 +271,9 @@ export function BusinessOrganization() {
     org_phone: '',
     address: '',
     logo_url: '',
-    team_size: '',
     niche: '',
     niche_custom: '',
-    custom_roles: [] as string[],
-    onboarding_message: '',
-    onboarding_video_url: '',
-    onboarding_checklist: [] as string[],
+    team_size: '',
     // Billing
     raison_sociale: '',
     billing_address: '',
@@ -89,13 +282,10 @@ export function BusinessOrganization() {
     billing_country: 'France',
     siret: '',
     tva_number: '',
-    // Custom sections
+    // Sections
     custom_sections: [] as CustomSection[],
+    onboarding_sections: [] as CustomSection[],
   })
-
-  const [newRole, setNewRole] = useState('')
-  const [newChecklistItem, setNewChecklistItem] = useState('')
-  const [newSectionTitle, setNewSectionTitle] = useState('')
 
   useEffect(() => {
     if (businessSettings) {
@@ -107,13 +297,9 @@ export function BusinessOrganization() {
         org_phone: businessSettings.org_phone || '',
         address: businessSettings.address || '',
         logo_url: businessSettings.logo_url || '',
-        team_size: businessSettings.team_size || '',
         niche: businessSettings.niche || '',
         niche_custom: businessSettings.niche_custom || '',
-        custom_roles: businessSettings.custom_roles || [],
-        onboarding_message: businessSettings.onboarding_message || '',
-        onboarding_video_url: businessSettings.onboarding_video_url || '',
-        onboarding_checklist: businessSettings.onboarding_checklist || [],
+        team_size: businessSettings.team_size || '',
         raison_sociale: businessSettings.raison_sociale || '',
         billing_address: businessSettings.billing_address || '',
         billing_zip: businessSettings.billing_zip || '',
@@ -122,49 +308,40 @@ export function BusinessOrganization() {
         siret: businessSettings.siret || '',
         tva_number: businessSettings.tva_number || '',
         custom_sections: businessSettings.custom_sections || [],
+        onboarding_sections: businessSettings.onboarding_sections || [],
       })
     }
   }, [businessSettings])
 
-  // ─── Logo upload ───
+  // ─── Logo ───
   const handleLogoClick = () => fileInputRef.current?.click()
 
-  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0]
       const reader = new FileReader()
       reader.addEventListener('load', () => setImageSrc(reader.result as string))
-      reader.readAsDataURL(file)
+      reader.readAsDataURL(e.target.files[0])
       e.target.value = ''
     }
   }
 
-  const onCropComplete = (_: any, croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels)
-  }
+  const onCropComplete = (_: any, pixels: any) => setCroppedAreaPixels(pixels)
 
-  const showCroppedImage = async () => {
+  const saveCroppedImage = async () => {
     if (!croppedAreaPixels || !imageSrc || !user?.id) return
     setUploading(true)
     setMessage({ type: '', text: '' })
     try {
-      const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels)
-      if (!croppedImageBlob) throw new Error("Erreur lors de la création de l'image.")
-
+      const blob = await getCroppedImg(imageSrc, croppedAreaPixels)
+      if (!blob) throw new Error("Erreur image")
       const fileName = `org-logo-${user.id}-${Math.random()}.jpg`
-      const file = new File([croppedImageBlob], fileName, { type: 'image/jpeg' })
-
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file)
-      if (uploadError) throw uploadError
-
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName)
-      const publicUrl = urlData.publicUrl
-
-      setFormData(prev => ({ ...prev, logo_url: publicUrl }))
+      const { error } = await supabase.storage.from('avatars').upload(fileName, new File([blob], fileName, { type: 'image/jpeg' }))
+      if (error) throw error
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      setFormData(prev => ({ ...prev, logo_url: data.publicUrl }))
       setMessage({ type: 'success', text: 'Logo mis à jour !' })
       setImageSrc(null)
-    } catch (error: any) {
-      console.error('Erreur upload:', error)
+    } catch (err: any) {
       setMessage({ type: 'error', text: "Erreur lors de l'upload du logo." })
     } finally {
       setUploading(false)
@@ -176,30 +353,7 @@ export function BusinessOrganization() {
     setLoading(true)
     setMessage({ type: '', text: '' })
     try {
-      const { error } = await updateBusinessSettings({
-        company_name: formData.company_name,
-        description: formData.description,
-        website: formData.website,
-        org_email: formData.org_email,
-        org_phone: formData.org_phone,
-        address: formData.address,
-        logo_url: formData.logo_url,
-        team_size: formData.team_size,
-        niche: formData.niche,
-        niche_custom: formData.niche_custom,
-        custom_roles: formData.custom_roles,
-        onboarding_message: formData.onboarding_message,
-        onboarding_video_url: formData.onboarding_video_url,
-        onboarding_checklist: formData.onboarding_checklist,
-        raison_sociale: formData.raison_sociale,
-        billing_address: formData.billing_address,
-        billing_zip: formData.billing_zip,
-        billing_city: formData.billing_city,
-        billing_country: formData.billing_country,
-        siret: formData.siret,
-        tva_number: formData.tva_number,
-        custom_sections: formData.custom_sections,
-      })
+      const { error } = await updateBusinessSettings(formData)
       if (error) throw error
       setMessage({ type: 'success', text: 'Organisation mise à jour avec succès !' })
     } catch (err: any) {
@@ -209,150 +363,28 @@ export function BusinessOrganization() {
     }
   }
 
-  // ─── Roles ───
-  const addRole = () => {
-    const trimmed = newRole.trim()
-    if (trimmed && !formData.custom_roles.includes(trimmed)) {
-      setFormData(prev => ({ ...prev, custom_roles: [...prev.custom_roles, trimmed] }))
-      setNewRole('')
-    }
-  }
-
-  const removeRole = (role: string) => {
-    setFormData(prev => ({ ...prev, custom_roles: prev.custom_roles.filter(r => r !== role) }))
-  }
-
-  // ─── Checklist ───
-  const addChecklistItem = () => {
-    const trimmed = newChecklistItem.trim()
-    if (trimmed) {
-      setFormData(prev => ({ ...prev, onboarding_checklist: [...prev.onboarding_checklist, trimmed] }))
-      setNewChecklistItem('')
-    }
-  }
-
-  const removeChecklistItem = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      onboarding_checklist: prev.onboarding_checklist.filter((_, i) => i !== index),
-    }))
-  }
-
-  // ─── Custom sections ───
-  const addSection = () => {
-    const trimmed = newSectionTitle.trim()
-    if (!trimmed) return
-    const section: CustomSection = {
-      id: crypto.randomUUID(),
-      title: trimmed,
-      fields: [],
-    }
-    setFormData(prev => ({ ...prev, custom_sections: [...prev.custom_sections, section] }))
-    setNewSectionTitle('')
-  }
-
-  const removeSection = (id: string) => {
-    setFormData(prev => ({ ...prev, custom_sections: prev.custom_sections.filter(s => s.id !== id) }))
-  }
-
-  const updateSectionTitle = (id: string, title: string) => {
-    setFormData(prev => ({
-      ...prev,
-      custom_sections: prev.custom_sections.map(s => s.id === id ? { ...s, title } : s),
-    }))
-  }
-
-  const toggleSectionCollapse = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      custom_sections: prev.custom_sections.map(s => s.id === id ? { ...s, collapsed: !s.collapsed } : s),
-    }))
-  }
-
-  const addFieldToSection = (sectionId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      custom_sections: prev.custom_sections.map(s =>
-        s.id === sectionId ? { ...s, fields: [...s.fields, { label: '', value: '' }] } : s
-      ),
-    }))
-  }
-
-  const updateField = (sectionId: string, fieldIndex: number, key: 'label' | 'value', val: string) => {
-    setFormData(prev => ({
-      ...prev,
-      custom_sections: prev.custom_sections.map(s =>
-        s.id === sectionId
-          ? { ...s, fields: s.fields.map((f, i) => i === fieldIndex ? { ...f, [key]: val } : f) }
-          : s
-      ),
-    }))
-  }
-
-  const removeField = (sectionId: string, fieldIndex: number) => {
-    setFormData(prev => ({
-      ...prev,
-      custom_sections: prev.custom_sections.map(s =>
-        s.id === sectionId ? { ...s, fields: s.fields.filter((_, i) => i !== fieldIndex) } : s
-      ),
-    }))
-  }
-
-  const tabs: { key: TabKey; label: string; icon: typeof Building2 }[] = [
-    { key: 'general', label: 'Général', icon: Building2 },
-    { key: 'team', label: 'Équipe', icon: Users },
-    { key: 'billing', label: 'Facturation', icon: Receipt },
-    { key: 'onboarding', label: 'Onboarding', icon: Rocket },
-    { key: 'sections', label: 'Sections', icon: LayoutGrid },
-  ]
-
-  const inputClass = "w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all placeholder:text-slate-400"
-  const labelClass = "text-xs font-bold text-slate-500 uppercase tracking-wider"
+  const ownerName = businessProfile?.full_name || user?.user_metadata?.full_name || 'Propriétaire'
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-8">
 
-      {/* Cropper overlay */}
+      {/* ─── Cropper overlay ─── */}
       {imageSrc && (
         <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900 mb-6">
-            <Cropper
-              image={imageSrc}
-              crop={crop}
-              zoom={zoom}
-              aspect={1}
-              onCropChange={setCrop}
-              onCropComplete={onCropComplete}
-              onZoomChange={setZoom}
-            />
+            <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} />
           </div>
           <div className="w-full max-w-lg space-y-6">
             <div className="flex items-center gap-4 px-4">
               <ZoomOut className="h-5 w-5 text-slate-400" />
-              <input
-                type="range"
-                value={zoom}
-                min={1}
-                max={3}
-                step={0.1}
-                onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-              />
+              <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500" />
               <ZoomIn className="h-5 w-5 text-slate-400" />
             </div>
             <div className="flex gap-4 justify-center">
-              <button
-                onClick={() => setImageSrc(null)}
-                disabled={uploading}
-                className="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
-              >
+              <button onClick={() => setImageSrc(null)} disabled={uploading} className="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors flex items-center gap-2">
                 <X className="h-4 w-4" /> Annuler
               </button>
-              <button
-                onClick={showCroppedImage}
-                disabled={uploading}
-                className="px-6 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors shadow-lg shadow-amber-500/25 flex items-center gap-2"
-              >
+              <button onClick={saveCroppedImage} disabled={uploading} className="px-6 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors shadow-lg shadow-amber-500/25 flex items-center gap-2">
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Valider le logo
               </button>
@@ -361,7 +393,7 @@ export function BusinessOrganization() {
         </div>
       )}
 
-      {/* Message */}
+      {/* ─── Message ─── */}
       {message.text && (
         <div className={`flex items-center gap-3 p-4 rounded-xl border ${message.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
           {message.type === 'success' ? <Check className="h-5 w-5" /> : <X className="h-5 w-5" />}
@@ -369,13 +401,16 @@ export function BusinessOrganization() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-white rounded-xl border border-slate-200 overflow-x-auto">
-        {tabs.map(tab => (
+      {/* ─── Tabs ─── */}
+      <div className="flex gap-1 p-1 bg-white rounded-xl border border-slate-200">
+        {[
+          { key: 'organisation' as TabKey, label: 'Organisation', icon: Building2 },
+          { key: 'onboarding' as TabKey, label: 'Onboarding', icon: Rocket },
+        ].map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex-1 justify-center ${
               activeTab === tab.key
                 ? 'bg-amber-600 text-white shadow-sm'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
@@ -387,502 +422,221 @@ export function BusinessOrganization() {
         ))}
       </div>
 
-      {/* Content */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8">
+      {/* ═══════════════════ ORGANISATION TAB ═══════════════════ */}
+      {activeTab === 'organisation' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
 
-        {/* ─── GENERAL TAB ─── */}
-        {activeTab === 'general' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-
-            {/* Logo */}
-            <div className="flex items-center gap-6 p-5 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="relative group cursor-pointer" onClick={handleLogoClick}>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={onFileChange}
-                  className="hidden"
-                  accept="image/jpeg, image/png, image/webp"
-                  disabled={uploading}
-                />
-                <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-slate-200 group-hover:border-amber-500 transition-all">
+          {/* ─── Header card : Logo + Nom + Owner + Site ─── */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row gap-6">
+              {/* Logo */}
+              <div className="relative group cursor-pointer shrink-0 self-start" onClick={handleLogoClick}>
+                <input type="file" ref={fileInputRef} onChange={onFileChange} className="hidden" accept="image/jpeg,image/png,image/webp" disabled={uploading} />
+                <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-200 group-hover:border-amber-500 transition-all shadow-sm">
                   {formData.logo_url ? (
                     <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                      <Building2 className="h-8 w-8 text-white" />
+                      <Building2 className="h-10 w-10 text-white" />
                     </div>
                   )}
                 </div>
-                <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   {uploading ? <Loader2 className="h-6 w-6 text-white animate-spin" /> : <Camera className="h-6 w-6 text-white" />}
                 </div>
               </div>
-              <div>
-                <h3 className="font-bold text-slate-900 text-lg">Logo de l'organisation</h3>
-                <p className="text-sm text-slate-500 mt-1">
-                  {uploading ? 'Téléchargement en cours...' : "Cliquez pour uploader votre logo (JPG, PNG)."}
-                </p>
-              </div>
-            </div>
 
-            <div className="grid gap-5">
-              <div className="space-y-2">
-                <label className={labelClass}>Nom de l'entreprise</label>
-                <input
-                  type="text"
-                  value={formData.company_name}
-                  onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                  className={inputClass}
-                  placeholder="Nom de votre entreprise"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className={labelClass}>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className={`${inputClass} resize-none h-24`}
-                  placeholder="Décrivez votre activité..."
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className={labelClass}>Site web</label>
-                <div className="relative">
-                  <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <input
-                    type="url"
-                    value={formData.website}
-                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    className={`${inputClass} pl-11`}
-                    placeholder="https://votresite.com"
-                  />
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <label className={labelClass}>Email de contact</label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <input
-                      type="email"
-                      value={formData.org_email}
-                      onChange={(e) => setFormData({ ...formData, org_email: e.target.value })}
-                      className={`${inputClass} pl-11`}
-                      placeholder="contact@entreprise.com"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className={labelClass}>Téléphone</label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <input
-                      type="tel"
-                      value={formData.org_phone}
-                      onChange={(e) => setFormData({ ...formData, org_phone: e.target.value })}
-                      className={`${inputClass} pl-11`}
-                      placeholder="+33 1 00 00 00 00"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className={labelClass}>Adresse</label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              {/* Infos */}
+              <div className="flex-1 space-y-4">
+                <div>
                   <input
                     type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className={`${inputClass} pl-11`}
-                    placeholder="123 rue Example, 75001 Paris"
+                    value={formData.company_name}
+                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                    className="text-2xl font-bold text-slate-900 bg-transparent border-none outline-none w-full placeholder:text-slate-300 focus:text-amber-700 transition-colors"
+                    placeholder="Nom de votre entreprise"
                   />
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ─── TEAM TAB ─── */}
-        {activeTab === 'team' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-
-            <div className="space-y-3">
-              <label className={labelClass}>Taille de l'équipe</label>
-              <div className="flex flex-wrap gap-2">
-                {TEAM_SIZES.map(size => (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, team_size: size }))}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all border ${
-                      formData.team_size === size
-                        ? 'bg-amber-600 text-white border-amber-500 shadow-sm'
-                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-800'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className={labelClass}>Secteur / Niche</label>
-              <div className="flex flex-wrap gap-2">
-                {NICHES.map(n => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, niche: n, niche_custom: n === 'Autre' ? prev.niche_custom : '' }))}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all border ${
-                      formData.niche === n
-                        ? 'bg-amber-600 text-white border-amber-500 shadow-sm'
-                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-800'
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-              {formData.niche === 'Autre' && (
-                <input
-                  type="text"
-                  value={formData.niche_custom}
-                  onChange={(e) => setFormData({ ...formData, niche_custom: e.target.value })}
-                  className={`${inputClass} mt-2`}
-                  placeholder="Précisez votre secteur..."
-                />
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <label className={labelClass}>Rôles personnalisés</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newRole}
-                  onChange={(e) => setNewRole(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRole() } }}
-                  className={`${inputClass} flex-1`}
-                  placeholder="Ajouter un rôle..."
-                />
-                <button
-                  type="button"
-                  onClick={addRole}
-                  className="px-4 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-              {formData.custom_roles.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.custom_roles.map(role => (
-                    <span
-                      key={role}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800 font-medium"
-                    >
-                      {role}
-                      <button onClick={() => removeRole(role)} className="text-amber-400 hover:text-red-500 transition-colors">
-                        <X className="h-3 w-3" />
-                      </button>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-500">
+                  <span className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-[10px] font-bold text-amber-700">
+                      {ownerName.charAt(0).toUpperCase()}
+                    </div>
+                    {ownerName}
+                  </span>
+                  {formData.website && (
+                    <a href={formData.website.startsWith('http') ? formData.website : `https://${formData.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-amber-600 hover:text-amber-700 transition-colors">
+                      <Globe className="h-3.5 w-3.5" />
+                      {formData.website.replace(/^https?:\/\//, '')}
+                    </a>
+                  )}
+                  {formData.niche && (
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-xs font-medium text-amber-700">
+                      {formData.niche === 'Autre' ? (formData.niche_custom || 'Autre') : formData.niche}
                     </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ─── BILLING TAB ─── */}
-        {activeTab === 'billing' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-
-            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
-              <p className="text-sm text-amber-800 font-medium">
-                Ces informations apparaîtront sur vos factures et documents officiels.
-              </p>
-            </div>
-
-            <div className="grid gap-5">
-              <div className="space-y-2">
-                <label className={labelClass}>Raison sociale</label>
-                <input
-                  type="text"
-                  value={formData.raison_sociale}
-                  onChange={(e) => setFormData({ ...formData, raison_sociale: e.target.value })}
-                  className={inputClass}
-                  placeholder="Raison sociale de votre entreprise"
-                />
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <label className={labelClass}>SIRET</label>
-                  <input
-                    type="text"
-                    value={formData.siret}
-                    onChange={(e) => setFormData({ ...formData, siret: e.target.value })}
-                    className={inputClass}
-                    placeholder="123 456 789 00012"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className={labelClass}>Numéro de TVA</label>
-                  <input
-                    type="text"
-                    value={formData.tva_number}
-                    onChange={(e) => setFormData({ ...formData, tva_number: e.target.value })}
-                    className={inputClass}
-                    placeholder="FR 12 345678901"
-                  />
-                </div>
-              </div>
-
-              <div className="h-px bg-slate-200 my-2" />
-
-              <div className="space-y-2">
-                <label className={labelClass}>Adresse de facturation</label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <input
-                    type="text"
-                    value={formData.billing_address}
-                    onChange={(e) => setFormData({ ...formData, billing_address: e.target.value })}
-                    className={`${inputClass} pl-11`}
-                    placeholder="123 rue de la Facturation"
-                  />
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-3 gap-5">
-                <div className="space-y-2">
-                  <label className={labelClass}>Code postal</label>
-                  <input
-                    type="text"
-                    value={formData.billing_zip}
-                    onChange={(e) => setFormData({ ...formData, billing_zip: e.target.value })}
-                    className={inputClass}
-                    placeholder="75001"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className={labelClass}>Ville</label>
-                  <input
-                    type="text"
-                    value={formData.billing_city}
-                    onChange={(e) => setFormData({ ...formData, billing_city: e.target.value })}
-                    className={inputClass}
-                    placeholder="Paris"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className={labelClass}>Pays</label>
-                  <input
-                    type="text"
-                    value={formData.billing_country}
-                    onChange={(e) => setFormData({ ...formData, billing_country: e.target.value })}
-                    className={inputClass}
-                    placeholder="France"
-                  />
+                  )}
+                  {formData.team_size && (
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-xs font-medium text-slate-600">
+                      {formData.team_size} pers.
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-        )}
 
-        {/* ─── ONBOARDING TAB ─── */}
-        {activeTab === 'onboarding' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {/* ─── Détails de l'organisation ─── */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5">
+            <h3 className="text-lg font-bold text-slate-900">Détails de l'organisation</h3>
 
             <div className="space-y-2">
-              <label className={labelClass}>Message d'accueil</label>
+              <label className={labelClass}>Description</label>
               <textarea
-                value={formData.onboarding_message}
-                onChange={(e) => setFormData({ ...formData, onboarding_message: e.target.value })}
-                className={`${inputClass} resize-none h-32`}
-                placeholder="Bienvenue dans l'équipe ! Voici ce que vous devez savoir..."
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className={`${inputClass} resize-none h-24`}
+                placeholder="Ce que fait votre entreprise, vos services, votre proposition de valeur..."
               />
             </div>
 
             <div className="space-y-2">
-              <label className={labelClass}>Vidéo d'onboarding</label>
+              <label className={labelClass}>Site web</label>
               <div className="relative">
                 <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="url"
-                  value={formData.onboarding_video_url}
-                  onChange={(e) => setFormData({ ...formData, onboarding_video_url: e.target.value })}
-                  className={`${inputClass} pl-11`}
-                  placeholder="https://youtube.com/watch?v=..."
-                />
+                <input type="url" value={formData.website} onChange={(e) => setFormData({ ...formData, website: e.target.value })} className={`${inputClass} pl-11`} placeholder="https://votresite.com" />
               </div>
             </div>
 
-            <div className="space-y-3">
-              <label className={labelClass}>Checklist d'onboarding</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newChecklistItem}
-                  onChange={(e) => setNewChecklistItem(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItem() } }}
-                  className={`${inputClass} flex-1`}
-                  placeholder="Ajouter une étape..."
-                />
-                <button
-                  type="button"
-                  onClick={addChecklistItem}
-                  className="px-4 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-              {formData.onboarding_checklist.length > 0 && (
-                <div className="space-y-2 mt-2">
-                  {formData.onboarding_checklist.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200"
-                    >
-                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold shrink-0">
-                        {index + 1}
-                      </span>
-                      <span className="flex-1 text-sm text-slate-700">{item}</span>
-                      <button
-                        onClick={() => removeChecklistItem(index)}
-                        className="text-slate-400 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className={labelClass}>Email de contact</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input type="email" value={formData.org_email} onChange={(e) => setFormData({ ...formData, org_email: e.target.value })} className={`${inputClass} pl-11`} placeholder="contact@entreprise.com" />
                 </div>
-              )}
+              </div>
+              <div className="space-y-2">
+                <label className={labelClass}>Téléphone</label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input type="tel" value={formData.org_phone} onChange={(e) => setFormData({ ...formData, org_phone: e.target.value })} className={`${inputClass} pl-11`} placeholder="+33 1 00 00 00 00" />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className={labelClass}>Adresse</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input type="text" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className={`${inputClass} pl-11`} placeholder="123 rue Example, 75001 Paris" />
+              </div>
             </div>
           </div>
-        )}
 
-        {/* ─── CUSTOM SECTIONS TAB ─── */}
-        {activeTab === 'sections' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {/* ─── Facturation ─── */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-50">
+                <Receipt className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Facturation</h3>
+                <p className="text-xs text-slate-500">Informations pour vos factures et documents officiels</p>
+              </div>
+            </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-              <p className="text-sm text-slate-600">
-                Créez des sections personnalisées pour organiser les informations spécifiques à votre organisation (processus internes, outils, liens utiles...).
+            <div className="space-y-2">
+              <label className={labelClass}>Raison sociale</label>
+              <input type="text" value={formData.raison_sociale} onChange={(e) => setFormData({ ...formData, raison_sociale: e.target.value })} className={inputClass} placeholder="Raison sociale de votre entreprise" />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className={labelClass}>SIRET</label>
+                <input type="text" value={formData.siret} onChange={(e) => setFormData({ ...formData, siret: e.target.value })} className={inputClass} placeholder="123 456 789 00012" />
+              </div>
+              <div className="space-y-2">
+                <label className={labelClass}>Numéro de TVA</label>
+                <input type="text" value={formData.tva_number} onChange={(e) => setFormData({ ...formData, tva_number: e.target.value })} className={inputClass} placeholder="FR 12 345678901" />
+              </div>
+            </div>
+
+            <div className="h-px bg-slate-100" />
+
+            <div className="space-y-2">
+              <label className={labelClass}>Adresse de facturation</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input type="text" value={formData.billing_address} onChange={(e) => setFormData({ ...formData, billing_address: e.target.value })} className={`${inputClass} pl-11`} placeholder="123 rue de la Facturation" />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className={labelClass}>Code postal</label>
+                <input type="text" value={formData.billing_zip} onChange={(e) => setFormData({ ...formData, billing_zip: e.target.value })} className={inputClass} placeholder="75001" />
+              </div>
+              <div className="space-y-2">
+                <label className={labelClass}>Ville</label>
+                <input type="text" value={formData.billing_city} onChange={(e) => setFormData({ ...formData, billing_city: e.target.value })} className={inputClass} placeholder="Paris" />
+              </div>
+              <div className="space-y-2">
+                <label className={labelClass}>Pays</label>
+                <input type="text" value={formData.billing_country} onChange={(e) => setFormData({ ...formData, billing_country: e.target.value })} className={inputClass} placeholder="France" />
+              </div>
+            </div>
+          </div>
+
+          {/* ─── Sections personnalisées ─── */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Sections personnalisées</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Ajoutez des sections avec du texte, des vidéos ou des liens pour documenter votre organisation</p>
+            </div>
+
+            <SectionEditor
+              sections={formData.custom_sections}
+              onUpdate={(s) => setFormData(prev => ({ ...prev, custom_sections: s }))}
+              emptyLabel="Aucune section"
+              emptyDesc="Créez votre première section ci-dessus"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════ ONBOARDING TAB ═══════════════════ */}
+      {activeTab === 'onboarding' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-50">
+                <Rocket className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Onboarding</h3>
+                <p className="text-xs text-slate-500">Créez le parcours d'accueil de vos nouveaux membres d'équipe</p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+              <p className="text-sm text-emerald-800">
+                Chaque section que vous créez ici sera présentée à vos nouveaux collaborateurs lors de leur intégration. Ajoutez des textes explicatifs, des vidéos de formation, des liens vers vos outils...
               </p>
             </div>
 
-            {/* Add section */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newSectionTitle}
-                onChange={(e) => setNewSectionTitle(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSection() } }}
-                className={`${inputClass} flex-1`}
-                placeholder="Nom de la nouvelle section..."
-              />
-              <button
-                type="button"
-                onClick={addSection}
-                className="px-5 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Ajouter</span>
-              </button>
-            </div>
-
-            {/* Sections list */}
-            {formData.custom_sections.map(section => (
-              <div
-                key={section.id}
-                className="rounded-xl border border-slate-200 overflow-hidden"
-              >
-                {/* Section header */}
-                <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
-                  <GripVertical className="h-4 w-4 text-slate-300 shrink-0" />
-                  <input
-                    type="text"
-                    value={section.title}
-                    onChange={(e) => updateSectionTitle(section.id, e.target.value)}
-                    className="flex-1 bg-transparent font-semibold text-slate-800 outline-none focus:text-amber-700 transition-colors"
-                  />
-                  <button
-                    onClick={() => toggleSectionCollapse(section.id)}
-                    className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    {section.collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                  </button>
-                  <button
-                    onClick={() => removeSection(section.id)}
-                    className="p-1 text-slate-400 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-
-                {/* Section fields */}
-                {!section.collapsed && (
-                  <div className="p-4 space-y-3">
-                    {section.fields.map((field, fi) => (
-                      <div key={fi} className="flex gap-2 items-start">
-                        <input
-                          type="text"
-                          value={field.label}
-                          onChange={(e) => updateField(section.id, fi, 'label', e.target.value)}
-                          className={`${inputClass} w-1/3`}
-                          placeholder="Label"
-                        />
-                        <input
-                          type="text"
-                          value={field.value}
-                          onChange={(e) => updateField(section.id, fi, 'value', e.target.value)}
-                          className={`${inputClass} flex-1`}
-                          placeholder="Valeur"
-                        />
-                        <button
-                          onClick={() => removeField(section.id, fi)}
-                          className="p-3 text-slate-400 hover:text-red-500 transition-colors shrink-0"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => addFieldToSection(section.id)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-amber-600 hover:bg-amber-50 transition-colors border border-dashed border-amber-300"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Ajouter un champ
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {formData.custom_sections.length === 0 && (
-              <div className="text-center py-12 text-slate-400">
-                <LayoutGrid className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">Aucune section personnalisée</p>
-                <p className="text-sm mt-1">Créez votre première section ci-dessus</p>
-              </div>
-            )}
+            <SectionEditor
+              sections={formData.onboarding_sections}
+              onUpdate={(s) => setFormData(prev => ({ ...prev, onboarding_sections: s }))}
+              emptyLabel="Aucune section d'onboarding"
+              emptyDesc="Créez votre première étape d'intégration"
+            />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Save button */}
-      <div className="sticky bottom-4">
+      {/* ─── Save ─── */}
+      <div className="sticky bottom-4 z-10">
         <button
           onClick={handleSave}
           disabled={loading}
