@@ -45,10 +45,9 @@ interface BusinessSidebarProps {
   isOpen?: boolean
   onClose?: () => void
   onOpenSettings?: () => void
-  onOpenOrganization?: () => void
 }
 
-export function BusinessSidebar({ isOpen, onClose, onOpenSettings, onOpenOrganization }: BusinessSidebarProps) {
+export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSidebarProps) {
   const navigate = useNavigate()
   const { logout, user, businessProfile, businessSettings } = useBusinessAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -120,7 +119,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, onOpenOrganiz
 
         {/* Organisation block */}
         <button
-          onClick={() => onOpenOrganization?.()}
+          onClick={() => { navigate('/business/organisation'); if (window.innerWidth < 1024) onClose?.(); }}
           className="mx-3 mt-3 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 transition-colors hover:bg-amber-100"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 overflow-hidden shrink-0">

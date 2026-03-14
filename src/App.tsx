@@ -79,6 +79,7 @@ import { BusinessAcquisition } from './business/pages/BusinessAcquisition'
 import { BusinessReport } from './business/pages/BusinessReport'
 import { BusinessClosers } from './business/pages/BusinessClosers'
 import { BusinessSetters } from './business/pages/BusinessSetters'
+import { BusinessOrganization } from './business/pages/BusinessOrganization'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
 import { CaptureForm } from './pages/CaptureForm'
 
@@ -208,6 +209,7 @@ function AuthenticatedApp() {
           <Route path="team" element={<BusinessTeam />} />
           <Route path="closers" element={<BusinessClosers />} />
           <Route path="setters" element={<BusinessSetters />} />
+          <Route path="organisation" element={<BusinessOrganization />} />
         </Route>
 
         {/* Routes Publiques */}
