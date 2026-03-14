@@ -689,14 +689,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'objectives-create' && req.method === 'POST') {
-      const { user_id, label, metric, target_value, period } = req.body
+      const { user_id, label, metric, target_value, period, assigned_to, deadline } = req.body
       if (!user_id || !label || !metric || target_value == null) {
         return res.status(400).json({ error: 'user_id, label, metric, and target_value required' })
       }
 
+      const insertPayload: Record<string, any> = { user_id, label, metric, target_value, period: period || 'monthly' }
+      if (assigned_to) insertPayload.assigned_to = assigned_to
+      if (deadline) insertPayload.deadline = deadline
+
       const { data, error } = await supabase
         .from('business_objectives')
-        .insert({ user_id, label, metric, target_value, period: period || 'monthly' })
+        .insert(insertPayload)
         .select()
         .single()
 

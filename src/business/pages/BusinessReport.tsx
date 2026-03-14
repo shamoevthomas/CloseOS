@@ -64,6 +64,7 @@ const formatPct = (v: number) => `${v.toFixed(1)}%`
 const COLORS = ['#d97706', '#2563eb', '#7c3aed', '#059669', '#e11d48', '#0891b2', '#ea580c', '#4f46e5']
 
 const PERIODS = [
+  { label: "Aujourd'hui", days: 1 },
   { label: '7 jours', days: 7 },
   { label: '14 jours', days: 14 },
   { label: '30 jours', days: 30 },

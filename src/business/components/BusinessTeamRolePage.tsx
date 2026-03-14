@@ -216,18 +216,18 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
           }
         </h2>
         <div className="flex items-center gap-1 rounded-lg border border-amber-200 bg-white p-1">
-          {[7, 14, 30, 90].map(days => (
+          {[{ label: "Auj.", days: 1 }, { label: '7j', days: 7 }, { label: '14j', days: 14 }, { label: '30j', days: 30 }, { label: '90j', days: 90 }].map(p => (
             <button
-              key={days}
-              onClick={() => setPeriodFilter(days)}
+              key={p.days}
+              onClick={() => setPeriodFilter(p.days)}
               className={cn(
                 'rounded-md px-3 py-1 text-xs font-medium transition-colors',
-                periodFilter === days
+                periodFilter === p.days
                   ? 'bg-amber-600 text-white'
                   : 'text-slate-500 hover:bg-amber-50'
               )}
             >
-              {days}j
+              {p.label}
             </button>
           ))}
         </div>
