@@ -43,9 +43,10 @@ const navigation = [
 interface BusinessSidebarProps {
   isOpen?: boolean
   onClose?: () => void
+  onOpenSettings?: () => void
 }
 
-export function BusinessSidebar({ isOpen, onClose }: BusinessSidebarProps) {
+export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSidebarProps) {
   const navigate = useNavigate()
   const { logout, user, businessProfile } = useBusinessAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -146,8 +147,15 @@ export function BusinessSidebar({ isOpen, onClose }: BusinessSidebarProps) {
               <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)} />
               <div className="absolute bottom-full left-4 right-4 z-20 mb-2 overflow-hidden rounded-xl border border-amber-200 bg-white shadow-xl">
                 <button
+                  onClick={() => { setIsMenuOpen(false); onOpenSettings?.() }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-amber-50 hover:text-slate-900"
+                >
+                  <Settings className="h-4 w-4" />
+                  Paramètres
+                </button>
+                <button
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-amber-50 hover:text-red-500"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-amber-50 hover:text-red-500 border-t border-slate-100"
                 >
                   <LogOut className="h-4 w-4" />
                   Déconnexion
