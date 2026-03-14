@@ -98,7 +98,15 @@ export function CaptureForm() {
         const res = await fetch(`${API_URL}?action=capture-info&slug=${slug}`)
         if (!res.ok) { setNotFound(true); return }
         const data = await res.json()
-        if (data.campaign) setCampaign(data.campaign)
+        if (data.campaign) {
+          setCampaign(data.campaign)
+          // Track page view (fire-and-forget)
+          fetch(`${API_URL}?action=capture-view`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug }),
+          }).catch(() => {})
+        }
         else setNotFound(true)
       } catch { setNotFound(true) }
       finally { setLoading(false) }

@@ -673,6 +673,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true })
     }
 
+    // ─── Acquisition stats ───
+    if (action === 'acquisition-stats' && req.method === 'GET') {
+      const user_id = req.query.user_id as string
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+
+      // Get all campaigns with views
+      const { data: campaigns, error: campErr } = await supabase
+        .from('business_campaigns')
+        .select('id, name, views, is_active')
+        .eq('user_id', user_id)
+        .order('created_at', { ascending: false })
+
+      if (campErr) return res.status(500).json({ error: campErr.message })
+
+      // Get all prospects with campaign_id
+      const { data: prospects, error: prosErr } = await supabase
+        .from('business_prospects')
+        .select('id, campaign_id, stage, value')
+        .eq('user_id', user_id)
+
+      if (prosErr) return res.status(500).json({ error: prosErr.message })
+
+      const stats = (campaigns || []).map((c: any) => {
+        const campProspects = (prospects || []).filter((p: any) => p.campaign_id === c.id)
+        const totalLeads = campProspects.length
+        const wonLeads = campProspects.filter((p: any) => p.stage === 'won')
+        const wonCount = wonLeads.length
+        const totalCA = wonLeads.reduce((sum: number, p: any) => sum + (Number(p.value) || 0), 0)
+        return {
+          id: c.id,
+          name: c.name,
+          views: c.views || 0,
+          is_active: c.is_active,
+          totalLeads,
+          wonCount,
+          totalCA,
+          conversionRate: c.views > 0 ? ((totalLeads / c.views) * 100) : 0,
+          wonRate: totalLeads > 0 ? ((wonCount / totalLeads) * 100) : 0,
+        }
+      })
+
+      return res.status(200).json({ stats })
+    }
+
     // ─── Campaign actions ───
     if (action === 'campaigns-list' && req.method === 'GET') {
       const user_id = req.query.user_id as string
@@ -805,6 +849,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (error || !campaign) return res.status(404).json({ error: 'Campaign not found or inactive' })
       return res.status(200).json({ campaign })
+    }
+
+    // ─── Public capture view tracking (no auth) ───
+    if (action === 'capture-view' && req.method === 'POST') {
+      const { slug } = req.body
+      if (!slug) return res.status(400).json({ error: 'slug required' })
+
+      const { data: campaign } = await supabase
+        .from('business_campaigns')
+        .select('id, views')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .single()
+
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
+
+      await supabase
+        .from('business_campaigns')
+        .update({ views: (campaign.views || 0) + 1 })
+        .eq('id', campaign.id)
+
+      return res.status(200).json({ success: true })
     }
 
     // ─── Public capture endpoint (no auth) ───

@@ -74,6 +74,7 @@ import { BusinessCampaigns } from './business/pages/BusinessCampaigns'
 import { BusinessFormules } from './business/pages/BusinessFormules'
 import { BusinessAppointments } from './business/pages/BusinessAppointments'
 import { BusinessReminders } from './business/pages/BusinessReminders'
+import { BusinessAcquisition } from './business/pages/BusinessAcquisition'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
 import { CaptureForm } from './pages/CaptureForm'
 
@@ -194,6 +195,7 @@ function AuthenticatedApp() {
           <Route path="crm" element={<BusinessCRM />} />
           <Route path="kpi" element={<BusinessKPI />} />
           <Route path="campagnes" element={<BusinessCampaigns />} />
+          <Route path="acquisition" element={<BusinessAcquisition />} />
           <Route path="formules" element={<BusinessFormules />} />
           <Route path="rendez-vous" element={<BusinessAppointments />} />
           <Route path="rappels" element={<BusinessReminders />} />
