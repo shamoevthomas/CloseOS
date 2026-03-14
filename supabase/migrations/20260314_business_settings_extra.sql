@@ -15,4 +15,5 @@ ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS billing_country text DEFA
 ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS siret text;
 ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS tva_number text;
 ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS custom_sections jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS custom_tabs jsonb DEFAULT '[]'::jsonb;
 ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS onboarding_sections jsonb DEFAULT '[]'::jsonb;

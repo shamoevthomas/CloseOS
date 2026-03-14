@@ -22,6 +22,8 @@ import {
   Type,
   ExternalLink,
   GripVertical,
+  Pencil,
+  LayoutGrid,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
@@ -37,25 +39,29 @@ interface SectionBlock {
   label?: string
 }
 
-interface CustomSection {
+interface ContentSection {
   id: string
   title: string
   blocks: SectionBlock[]
   collapsed?: boolean
 }
 
-type TabKey = 'organisation' | 'onboarding'
+interface CustomTab {
+  id: string
+  name: string
+  sections: ContentSection[]
+}
 
 // ─── Helpers ───
 
 const inputClass = "w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all placeholder:text-slate-400"
 const labelClass = "text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5"
 
-function generateId() {
+function genId() {
   return crypto.randomUUID()
 }
 
-// ─── Section Editor (réutilisé pour Organisation et Onboarding) ───
+// ─── Section Editor ───
 
 function SectionEditor({
   sections,
@@ -63,8 +69,8 @@ function SectionEditor({
   emptyLabel,
   emptyDesc,
 }: {
-  sections: CustomSection[]
-  onUpdate: (sections: CustomSection[]) => void
+  sections: ContentSection[]
+  onUpdate: (sections: ContentSection[]) => void
   emptyLabel: string
   emptyDesc: string
 }) {
@@ -73,26 +79,18 @@ function SectionEditor({
   const addSection = () => {
     const t = newTitle.trim()
     if (!t) return
-    onUpdate([...sections, { id: generateId(), title: t, blocks: [] }])
+    onUpdate([...sections, { id: genId(), title: t, blocks: [] }])
     setNewTitle('')
   }
 
-  const removeSection = (id: string) => {
-    onUpdate(sections.filter(s => s.id !== id))
-  }
-
-  const updateTitle = (id: string, title: string) => {
-    onUpdate(sections.map(s => s.id === id ? { ...s, title } : s))
-  }
-
-  const toggleCollapse = (id: string) => {
-    onUpdate(sections.map(s => s.id === id ? { ...s, collapsed: !s.collapsed } : s))
-  }
+  const removeSection = (id: string) => onUpdate(sections.filter(s => s.id !== id))
+  const updateTitle = (id: string, title: string) => onUpdate(sections.map(s => s.id === id ? { ...s, title } : s))
+  const toggleCollapse = (id: string) => onUpdate(sections.map(s => s.id === id ? { ...s, collapsed: !s.collapsed } : s))
 
   const addBlock = (sectionId: string, type: SectionBlock['type']) => {
     onUpdate(sections.map(s =>
       s.id === sectionId
-        ? { ...s, blocks: [...s.blocks, { id: generateId(), type, content: '', label: '' }] }
+        ? { ...s, blocks: [...s.blocks, { id: genId(), type, content: '', label: '' }] }
         : s
     ))
   }
@@ -115,7 +113,6 @@ function SectionEditor({
 
   return (
     <div className="space-y-4">
-      {/* Add section */}
       <div className="flex gap-2">
         <input
           type="text"
@@ -125,20 +122,14 @@ function SectionEditor({
           className={`${inputClass} flex-1`}
           placeholder="Nom de la nouvelle section..."
         />
-        <button
-          type="button"
-          onClick={addSection}
-          className="px-5 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors flex items-center gap-2 shrink-0"
-        >
+        <button type="button" onClick={addSection} className="px-5 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors flex items-center gap-2 shrink-0">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Ajouter</span>
         </button>
       </div>
 
-      {/* Sections */}
       {sections.map(section => (
         <div key={section.id} className="rounded-xl border border-slate-200 overflow-hidden">
-          {/* Header */}
           <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200">
             <GripVertical className="h-4 w-4 text-slate-300 shrink-0" />
             <input
@@ -155,7 +146,6 @@ function SectionEditor({
             </button>
           </div>
 
-          {/* Blocks */}
           {!section.collapsed && (
             <div className="p-4 space-y-3">
               {section.blocks.map(block => (
@@ -208,24 +198,14 @@ function SectionEditor({
                 </div>
               ))}
 
-              {/* Add block buttons */}
               <div className="flex flex-wrap gap-2 pt-1">
-                <button
-                  onClick={() => addBlock(section.id, 'text')}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-50 transition-colors border border-dashed border-slate-300"
-                >
+                <button onClick={() => addBlock(section.id, 'text')} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-50 transition-colors border border-dashed border-slate-300">
                   <Type className="h-3.5 w-3.5" /> Texte
                 </button>
-                <button
-                  onClick={() => addBlock(section.id, 'video')}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-purple-500 hover:bg-purple-50 transition-colors border border-dashed border-purple-300"
-                >
+                <button onClick={() => addBlock(section.id, 'video')} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-purple-500 hover:bg-purple-50 transition-colors border border-dashed border-purple-300">
                   <Video className="h-3.5 w-3.5" /> Vidéo
                 </button>
-                <button
-                  onClick={() => addBlock(section.id, 'link')}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-dashed border-blue-300"
-                >
+                <button onClick={() => addBlock(section.id, 'link')} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-dashed border-blue-300">
                   <ExternalLink className="h-3.5 w-3.5" /> Lien
                 </button>
               </div>
@@ -250,7 +230,7 @@ function SectionEditor({
 export function BusinessOrganization() {
   const { user, businessSettings, businessProfile, updateBusinessSettings } = useBusinessAuth()
 
-  const [activeTab, setActiveTab] = useState<TabKey>('organisation')
+  const [activeTab, setActiveTab] = useState('organisation')
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -261,6 +241,11 @@ export function BusinessOrganization() {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
+
+  // Renaming custom tab
+  const [renamingTabId, setRenamingTabId] = useState<string | null>(null)
+  const [renamingValue, setRenamingValue] = useState('')
+  const renameInputRef = useRef<HTMLInputElement>(null)
 
   // Form
   const [formData, setFormData] = useState({
@@ -274,7 +259,6 @@ export function BusinessOrganization() {
     niche: '',
     niche_custom: '',
     team_size: '',
-    // Billing
     raison_sociale: '',
     billing_address: '',
     billing_zip: '',
@@ -282,9 +266,8 @@ export function BusinessOrganization() {
     billing_country: 'France',
     siret: '',
     tva_number: '',
-    // Sections
-    custom_sections: [] as CustomSection[],
-    onboarding_sections: [] as CustomSection[],
+    custom_tabs: [] as CustomTab[],
+    onboarding_sections: [] as ContentSection[],
   })
 
   useEffect(() => {
@@ -307,11 +290,19 @@ export function BusinessOrganization() {
         billing_country: businessSettings.billing_country || 'France',
         siret: businessSettings.siret || '',
         tva_number: businessSettings.tva_number || '',
-        custom_sections: businessSettings.custom_sections || [],
+        custom_tabs: businessSettings.custom_tabs || [],
         onboarding_sections: businessSettings.onboarding_sections || [],
       })
     }
   }, [businessSettings])
+
+  // Focus rename input when it appears
+  useEffect(() => {
+    if (renamingTabId && renameInputRef.current) {
+      renameInputRef.current.focus()
+      renameInputRef.current.select()
+    }
+  }, [renamingTabId])
 
   // ─── Logo ───
   const handleLogoClick = () => fileInputRef.current?.click()
@@ -341,7 +332,7 @@ export function BusinessOrganization() {
       setFormData(prev => ({ ...prev, logo_url: data.publicUrl }))
       setMessage({ type: 'success', text: 'Logo mis à jour !' })
       setImageSrc(null)
-    } catch (err: any) {
+    } catch {
       setMessage({ type: 'error', text: "Erreur lors de l'upload du logo." })
     } finally {
       setUploading(false)
@@ -363,7 +354,43 @@ export function BusinessOrganization() {
     }
   }
 
+  // ─── Custom tabs ───
+  const addCustomTab = () => {
+    const newTab: CustomTab = { id: genId(), name: 'Nouvel onglet', sections: [] }
+    setFormData(prev => ({ ...prev, custom_tabs: [...prev.custom_tabs, newTab] }))
+    setActiveTab(newTab.id)
+  }
+
+  const removeCustomTab = (id: string) => {
+    setFormData(prev => ({ ...prev, custom_tabs: prev.custom_tabs.filter(t => t.id !== id) }))
+    if (activeTab === id) setActiveTab('organisation')
+  }
+
+  const startRenaming = (tab: CustomTab) => {
+    setRenamingTabId(tab.id)
+    setRenamingValue(tab.name)
+  }
+
+  const commitRename = () => {
+    if (!renamingTabId) return
+    const name = renamingValue.trim() || 'Sans titre'
+    setFormData(prev => ({
+      ...prev,
+      custom_tabs: prev.custom_tabs.map(t => t.id === renamingTabId ? { ...t, name } : t),
+    }))
+    setRenamingTabId(null)
+  }
+
+  const updateCustomTabSections = (tabId: string, sections: ContentSection[]) => {
+    setFormData(prev => ({
+      ...prev,
+      custom_tabs: prev.custom_tabs.map(t => t.id === tabId ? { ...t, sections } : t),
+    }))
+  }
+
   const ownerName = businessProfile?.full_name || user?.user_metadata?.full_name || 'Propriétaire'
+
+  const activeCustomTab = formData.custom_tabs.find(t => t.id === activeTab)
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-8">
@@ -402,15 +429,16 @@ export function BusinessOrganization() {
       )}
 
       {/* ─── Tabs ─── */}
-      <div className="flex gap-1 p-1 bg-white rounded-xl border border-slate-200">
+      <div className="flex items-center gap-1 p-1 bg-white rounded-xl border border-slate-200 overflow-x-auto">
+        {/* Fixed tabs */}
         {[
-          { key: 'organisation' as TabKey, label: 'Organisation', icon: Building2 },
-          { key: 'onboarding' as TabKey, label: 'Onboarding', icon: Rocket },
+          { key: 'organisation', label: 'Organisation', icon: Building2 },
+          { key: 'onboarding', label: 'Onboarding', icon: Rocket },
         ].map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex-1 justify-center ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap shrink-0 ${
               activeTab === tab.key
                 ? 'bg-amber-600 text-white shadow-sm'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
@@ -420,16 +448,68 @@ export function BusinessOrganization() {
             {tab.label}
           </button>
         ))}
+
+        {/* Custom tabs */}
+        {formData.custom_tabs.map(tab => (
+          <div key={tab.id} className="flex items-center shrink-0 group relative">
+            {renamingTabId === tab.id ? (
+              <input
+                ref={renameInputRef}
+                type="text"
+                value={renamingValue}
+                onChange={(e) => setRenamingValue(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setRenamingTabId(null) }}
+                className="px-3 py-2 rounded-lg text-sm font-semibold bg-amber-50 border border-amber-300 outline-none text-amber-700 w-36"
+              />
+            ) : (
+              <button
+                onClick={() => setActiveTab(tab.id)}
+                onDoubleClick={() => startRenaming(tab)}
+                className={`flex items-center gap-2 pl-4 pr-2 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                }`}
+              >
+                <LayoutGrid className="h-4 w-4" />
+                {tab.name}
+                <span className="flex items-center gap-0.5 ml-1">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); startRenaming(tab) }}
+                    className={`p-1 rounded transition-colors ${activeTab === tab.id ? 'hover:bg-amber-500 text-amber-200' : 'hover:bg-slate-200 text-slate-400'}`}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeCustomTab(tab.id) }}
+                    className={`p-1 rounded transition-colors ${activeTab === tab.id ? 'hover:bg-amber-500 text-amber-200' : 'hover:bg-slate-200 text-slate-400'}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              </button>
+            )}
+          </div>
+        ))}
+
+        {/* Add tab button */}
+        <button
+          onClick={addCustomTab}
+          className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-amber-600 hover:bg-amber-50 transition-colors whitespace-nowrap shrink-0"
+        >
+          <Plus className="h-4 w-4" />
+          Onglet
+        </button>
       </div>
 
       {/* ═══════════════════ ORGANISATION TAB ═══════════════════ */}
       {activeTab === 'organisation' && (
         <div className="space-y-6 animate-in fade-in duration-300">
 
-          {/* ─── Header card : Logo + Nom + Owner + Site ─── */}
+          {/* Header card */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row gap-6">
-              {/* Logo */}
               <div className="relative group cursor-pointer shrink-0 self-start" onClick={handleLogoClick}>
                 <input type="file" ref={fileInputRef} onChange={onFileChange} className="hidden" accept="image/jpeg,image/png,image/webp" disabled={uploading} />
                 <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-200 group-hover:border-amber-500 transition-all shadow-sm">
@@ -445,18 +525,14 @@ export function BusinessOrganization() {
                   {uploading ? <Loader2 className="h-6 w-6 text-white animate-spin" /> : <Camera className="h-6 w-6 text-white" />}
                 </div>
               </div>
-
-              {/* Infos */}
               <div className="flex-1 space-y-4">
-                <div>
-                  <input
-                    type="text"
-                    value={formData.company_name}
-                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                    className="text-2xl font-bold text-slate-900 bg-transparent border-none outline-none w-full placeholder:text-slate-300 focus:text-amber-700 transition-colors"
-                    placeholder="Nom de votre entreprise"
-                  />
-                </div>
+                <input
+                  type="text"
+                  value={formData.company_name}
+                  onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                  className="text-2xl font-bold text-slate-900 bg-transparent border-none outline-none w-full placeholder:text-slate-300 focus:text-amber-700 transition-colors"
+                  placeholder="Nom de votre entreprise"
+                />
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-500">
                   <span className="flex items-center gap-1.5">
                     <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-[10px] font-bold text-amber-700">
@@ -485,7 +561,7 @@ export function BusinessOrganization() {
             </div>
           </div>
 
-          {/* ─── Détails de l'organisation ─── */}
+          {/* Détails */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5">
             <h3 className="text-lg font-bold text-slate-900">Détails de l'organisation</h3>
 
@@ -533,7 +609,7 @@ export function BusinessOrganization() {
             </div>
           </div>
 
-          {/* ─── Facturation ─── */}
+          {/* Facturation */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-amber-50">
@@ -586,28 +662,12 @@ export function BusinessOrganization() {
               </div>
             </div>
           </div>
-
-          {/* ─── Sections personnalisées ─── */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Sections personnalisées</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Ajoutez des sections avec du texte, des vidéos ou des liens pour documenter votre organisation</p>
-            </div>
-
-            <SectionEditor
-              sections={formData.custom_sections}
-              onUpdate={(s) => setFormData(prev => ({ ...prev, custom_sections: s }))}
-              emptyLabel="Aucune section"
-              emptyDesc="Créez votre première section ci-dessus"
-            />
-          </div>
         </div>
       )}
 
       {/* ═══════════════════ ONBOARDING TAB ═══════════════════ */}
       {activeTab === 'onboarding' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-
           <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-emerald-50">
@@ -630,6 +690,30 @@ export function BusinessOrganization() {
               onUpdate={(s) => setFormData(prev => ({ ...prev, onboarding_sections: s }))}
               emptyLabel="Aucune section d'onboarding"
               emptyDesc="Créez votre première étape d'intégration"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════ CUSTOM TABS ═══════════════════ */}
+      {activeCustomTab && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-indigo-50">
+                <LayoutGrid className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{activeCustomTab.name}</h3>
+                <p className="text-xs text-slate-500">Onglet personnalisé &mdash; double-cliquez sur le nom pour le renommer</p>
+              </div>
+            </div>
+
+            <SectionEditor
+              sections={activeCustomTab.sections}
+              onUpdate={(s) => updateCustomTabSections(activeCustomTab.id, s)}
+              emptyLabel="Aucune section"
+              emptyDesc="Ajoutez des sections avec du texte, des vidéos ou des liens"
             />
           </div>
         </div>
