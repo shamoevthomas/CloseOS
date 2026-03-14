@@ -437,7 +437,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (error || !data) return res.status(404).json({ error: 'Invitation not found' })
         if (data.used) return res.status(400).json({ error: 'Invitation already used' })
         if (new Date(data.expires_at) < new Date()) return res.status(400).json({ error: 'Invitation expired' })
-        return res.status(200).json({ invitation: data })
+
+        // Fetch owner's business_settings for company info
+        const { data: ownerSettings } = await supabase
+          .from('business_settings')
+          .select('company_name, description, website, logo_url, niche, address, org_email, org_phone')
+          .eq('user_id', data.inviter_id)
+          .single()
+
+        return res.status(200).json({ invitation: data, ownerSettings: ownerSettings || null })
       }
       if (req.method === 'PUT') {
         const { token, user_id, first_name, last_name, email } = req.body
