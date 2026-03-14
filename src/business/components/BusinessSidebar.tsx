@@ -15,6 +15,8 @@ import {
   Bell,
   BarChart3,
   FileText,
+  UserCheck,
+  Headphones,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect } from 'react'
@@ -32,6 +34,8 @@ const navigation = [
   { name: 'Rapport', href: '/business/report', icon: FileText },
   { name: 'KPI', href: '/business/kpi', icon: TrendingUp },
   { name: 'Équipe', href: '/business/team', icon: Users },
+  { name: 'Closers', href: '/business/closers', icon: UserCheck },
+  { name: 'Setters', href: '/business/setters', icon: Headphones },
 ]
 
 interface BusinessSidebarProps {

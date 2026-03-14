@@ -76,6 +76,8 @@ import { BusinessAppointments } from './business/pages/BusinessAppointments'
 import { BusinessReminders } from './business/pages/BusinessReminders'
 import { BusinessAcquisition } from './business/pages/BusinessAcquisition'
 import { BusinessReport } from './business/pages/BusinessReport'
+import { BusinessClosers } from './business/pages/BusinessClosers'
+import { BusinessSetters } from './business/pages/BusinessSetters'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
 import { CaptureForm } from './pages/CaptureForm'
 
@@ -202,6 +204,8 @@ function AuthenticatedApp() {
           <Route path="rappels" element={<BusinessReminders />} />
           <Route path="report" element={<BusinessReport />} />
           <Route path="team" element={<BusinessTeam />} />
+          <Route path="closers" element={<BusinessClosers />} />
+          <Route path="setters" element={<BusinessSetters />} />
         </Route>
 
         {/* Routes Publiques */}

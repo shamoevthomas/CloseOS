@@ -14,6 +14,8 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/rendez-vous': { title: 'Rendez-vous', subtitle: 'Tous vos rendez-vous pris via les campagnes' },
   '/business/rappels': { title: 'Rappels', subtitle: 'Gérez vos rappels et suivis prospects' },
   '/business/report': { title: 'Rapport', subtitle: 'Rapports détaillés et export PDF' },
+  '/business/closers': { title: 'Closers', subtitle: 'Gérez vos closers et suivez leurs performances' },
+  '/business/setters': { title: 'Setters', subtitle: 'Gérez vos setters et suivez leurs performances' },
 }
 
 export function BusinessLayout() {
