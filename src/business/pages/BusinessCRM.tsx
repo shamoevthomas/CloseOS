@@ -16,6 +16,7 @@ import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessCRMIntegrationModal } from '../components/BusinessCRMIntegrationModal'
+import { BusinessProspectView } from '../components/BusinessProspectView'
 
 const ACTIVE_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50', borderColor: 'border-blue-200' },
@@ -41,6 +42,7 @@ export function BusinessCRM() {
   } = useBusinessProspects()
   const { businessSettings } = useBusinessAuth()
 
+  const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set(['noshow', 'lost']))
   const [isIntegrationModalOpen, setIsIntegrationModalOpen] = useState(false)
@@ -255,8 +257,9 @@ export function BusinessCRM() {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
+                                  onClick={() => setSelectedProspect(deal)}
                                   className={cn(
-                                    "rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:shadow-md transition-shadow",
+                                    "rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer",
                                     snapshot.isDragging && "shadow-lg ring-2 ring-amber-300"
                                   )}
                                 >
@@ -340,8 +343,9 @@ export function BusinessCRM() {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
+                                  onClick={() => setSelectedProspect(deal)}
                                   className={cn(
-                                    "rounded-lg border border-slate-200 bg-white p-3 shadow-sm",
+                                    "rounded-lg border border-slate-200 bg-white p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow",
                                     snapshot.isDragging && "shadow-lg ring-2 ring-amber-300"
                                   )}
                                 >
@@ -378,6 +382,22 @@ export function BusinessCRM() {
         isOpen={isIntegrationModalOpen}
         onClose={() => setIsIntegrationModalOpen(false)}
       />
+
+      {/* Prospect View (Fiche) */}
+      {selectedProspect && (
+        <BusinessProspectView
+          prospect={selectedProspect}
+          onClose={() => setSelectedProspect(null)}
+          onUpdate={(id, updates) => {
+            updateProspect(id, updates)
+            setSelectedProspect(prev => prev ? { ...prev, ...updates } : null)
+          }}
+          onDelete={(id) => {
+            deleteProspect(id)
+            setSelectedProspect(null)
+          }}
+        />
+      )}
 
       {/* Add Prospect Modal */}
       {isAddModalOpen && (

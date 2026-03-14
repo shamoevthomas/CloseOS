@@ -12,6 +12,7 @@ import {
   Megaphone,
   Calendar,
   Package,
+  Bell,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect } from 'react'
@@ -24,6 +25,7 @@ const navigation = [
   { name: 'Campagnes', href: '/business/campagnes', icon: Megaphone },
   { name: 'Formules', href: '/business/formules', icon: Package },
   { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
+  { name: 'Rappels', href: '/business/rappels', icon: Bell },
   { name: 'KPI', href: '/business/kpi', icon: TrendingUp },
   { name: 'Équipe', href: '/business/team', icon: Users },
 ]
