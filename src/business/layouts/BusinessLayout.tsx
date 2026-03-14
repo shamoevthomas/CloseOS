@@ -13,6 +13,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/formules': { title: 'Formules', subtitle: 'Gérez vos formules tarifaires et ressources' },
   '/business/rendez-vous': { title: 'Rendez-vous', subtitle: 'Tous vos rendez-vous pris via les campagnes' },
   '/business/rappels': { title: 'Rappels', subtitle: 'Gérez vos rappels et suivis prospects' },
+  '/business/report': { title: 'Rapport', subtitle: 'Rapports détaillés et export PDF' },
 }
 
 export function BusinessLayout() {

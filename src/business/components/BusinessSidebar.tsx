@@ -14,6 +14,7 @@ import {
   Package,
   Bell,
   BarChart3,
+  FileText,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect } from 'react'
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Formules', href: '/business/formules', icon: Package },
   { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
   { name: 'Rappels', href: '/business/rappels', icon: Bell },
+  { name: 'Rapport', href: '/business/report', icon: FileText },
   { name: 'KPI', href: '/business/kpi', icon: TrendingUp },
   { name: 'Équipe', href: '/business/team', icon: Users },
 ]

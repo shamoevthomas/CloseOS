@@ -75,6 +75,7 @@ import { BusinessFormules } from './business/pages/BusinessFormules'
 import { BusinessAppointments } from './business/pages/BusinessAppointments'
 import { BusinessReminders } from './business/pages/BusinessReminders'
 import { BusinessAcquisition } from './business/pages/BusinessAcquisition'
+import { BusinessReport } from './business/pages/BusinessReport'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
 import { CaptureForm } from './pages/CaptureForm'
 
@@ -199,6 +200,7 @@ function AuthenticatedApp() {
           <Route path="formules" element={<BusinessFormules />} />
           <Route path="rendez-vous" element={<BusinessAppointments />} />
           <Route path="rappels" element={<BusinessReminders />} />
+          <Route path="report" element={<BusinessReport />} />
           <Route path="team" element={<BusinessTeam />} />
         </Route>
 
