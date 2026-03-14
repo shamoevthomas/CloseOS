@@ -18,6 +18,7 @@ import {
   UserCheck,
   Headphones,
   Target,
+  Building2,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect } from 'react'
@@ -44,11 +45,12 @@ interface BusinessSidebarProps {
   isOpen?: boolean
   onClose?: () => void
   onOpenSettings?: () => void
+  onOpenOrganization?: () => void
 }
 
-export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSidebarProps) {
+export function BusinessSidebar({ isOpen, onClose, onOpenSettings, onOpenOrganization }: BusinessSidebarProps) {
   const navigate = useNavigate()
-  const { logout, user, businessProfile } = useBusinessAuth()
+  const { logout, user, businessProfile, businessSettings } = useBusinessAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
@@ -115,6 +117,26 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {/* Organisation block */}
+        <button
+          onClick={() => onOpenOrganization?.()}
+          className="mx-3 mt-3 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 transition-colors hover:bg-amber-100"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 overflow-hidden shrink-0">
+            {businessSettings?.logo_url ? (
+              <img src={businessSettings.logo_url} alt="Logo" className="h-full w-full object-cover" />
+            ) : (
+              <Building2 className="h-5 w-5 text-amber-700" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-semibold text-slate-800 truncate">
+              {businessSettings?.company_name || 'Mon organisation'}
+            </p>
+            <p className="text-xs text-slate-500 truncate">Organisation</p>
+          </div>
+        </button>
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">

@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { BusinessSidebar } from '../components/BusinessSidebar'
 import { BusinessSettingsModal } from '../components/BusinessSettingsModal'
+import { BusinessOrganizationModal } from '../components/BusinessOrganizationModal'
 import { Menu } from 'lucide-react'
 import { useState } from 'react'
 
@@ -25,6 +26,7 @@ export function BusinessLayout() {
   const pageInfo = PAGE_TITLES[location.pathname] || { title: 'CloseOS Business', subtitle: '' }
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isOrganizationOpen, setIsOrganizationOpen] = useState(false)
 
   return (
     <div className="flex h-screen bg-[#FDF6EE] overflow-hidden">
@@ -32,6 +34,7 @@ export function BusinessLayout() {
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenOrganization={() => setIsOrganizationOpen(true)}
       />
 
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
@@ -68,6 +71,11 @@ export function BusinessLayout() {
       <BusinessSettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      <BusinessOrganizationModal
+        isOpen={isOrganizationOpen}
+        onClose={() => setIsOrganizationOpen(false)}
       />
     </div>
   )
