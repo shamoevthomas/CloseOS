@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { ArrowRight, Loader2, Building2, Users, Briefcase, ChevronRight } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ArrowRight, Loader2, Building2, Briefcase, ChevronRight, Camera, User, X, Check, ZoomIn, ZoomOut, Search } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { countries } from '../../lib/countries';
+import { supabase } from '../../lib/supabase';
+import Cropper from 'react-easy-crop';
+import getCroppedImg from '../../lib/image-crop';
 
 const NICHES = [
   'Coaching',
@@ -26,10 +29,22 @@ export function BusinessOnboardingModal() {
   const { user, businessProfile, hasOnboarded, loading: authLoading, updateBusinessProfile, updateBusinessSettings } = useBusinessAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Avatar crop states
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [avatarUrl, setAvatarUrl] = useState(businessProfile?.avatar_url || user?.user_metadata?.avatar_url || '');
 
   // Step 1: Profile
   const [fullName, setFullName] = useState(businessProfile?.full_name || user?.user_metadata?.full_name || '');
   const [countryCode, setCountryCode] = useState('+33');
+  const [countrySearch, setCountrySearch] = useState('');
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
   const [phone, setPhone] = useState(businessProfile?.phone || '');
   const [role, setRole] = useState(businessProfile?.role || '');
 
@@ -39,8 +54,73 @@ export function BusinessOnboardingModal() {
   const [niche, setNiche] = useState('');
   const [nicheCustom, setNicheCustom] = useState('');
 
+  // Close country dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
+        setIsCountryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Don't show if already onboarded, no user, or still loading
   if (!user || hasOnboarded || authLoading) return null;
+
+  const selectedCountry = countries.find(c => c.dial_code === countryCode);
+
+  const filteredCountries = countrySearch
+    ? countries.filter(c =>
+        c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+        c.dial_code.includes(countrySearch) ||
+        c.code.toLowerCase().includes(countrySearch.toLowerCase())
+      )
+    : countries;
+
+  // Avatar handlers
+  const handleAvatarClick = () => fileInputRef.current?.click();
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.addEventListener('load', () => setImageSrc(reader.result as string));
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+  };
+
+  const onCropComplete = (_: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const showCroppedImage = async () => {
+    try {
+      setUploading(true);
+      const croppedImageBlob = await getCroppedImg(imageSrc!, croppedAreaPixels);
+      if (!croppedImageBlob) throw new Error("Erreur lors de la création de l'image.");
+
+      const fileName = `business-${user.id}-${Math.random()}.jpg`;
+      const file = new File([croppedImageBlob], fileName, { type: 'image/jpeg' });
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      setAvatarUrl(urlData.publicUrl);
+      setImageSrc(null);
+    } catch (e) {
+      console.error('Avatar upload error:', e);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleStep1 = async () => {
     if (!fullName || !role) return;
@@ -52,15 +132,14 @@ export function BusinessOnboardingModal() {
     setLoading(true);
 
     try {
-      // Update business profile
       await updateBusinessProfile({
         full_name: fullName,
         phone: phone ? `${countryCode} ${phone}` : '',
         role,
+        avatar_url: avatarUrl || null,
         has_onboarded: true,
       });
 
-      // Create business settings
       await updateBusinessSettings({
         company_name: companyName,
         team_size: teamSize,
@@ -74,8 +153,60 @@ export function BusinessOnboardingModal() {
     }
   };
 
+  const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+      {/* Crop overlay */}
+      {imageSrc && (
+        <div className="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center p-4">
+          <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-amber-700/30 bg-slate-900 mb-6">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+            />
+          </div>
+          <div className="w-full max-w-lg space-y-6">
+            <div className="flex items-center gap-4 px-4">
+              <ZoomOut className="h-5 w-5 text-slate-400" />
+              <input
+                type="range"
+                value={zoom}
+                min={1}
+                max={3}
+                step={0.1}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              />
+              <ZoomIn className="h-5 w-5 text-slate-400" />
+            </div>
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => { setImageSrc(null); setZoom(1); }}
+                disabled={uploading}
+                className="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Annuler
+              </button>
+              <button
+                onClick={showCroppedImage}
+                disabled={uploading}
+                className="px-6 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors shadow-lg flex items-center gap-2"
+              >
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Valider la photo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-lg rounded-2xl border border-amber-200 bg-white p-8 shadow-2xl animate-in zoom-in-95 duration-200">
         {/* Progress indicator */}
         <div className="flex items-center gap-2 mb-8">
@@ -96,6 +227,31 @@ export function BusinessOnboardingModal() {
             </div>
 
             <div className="space-y-4">
+              {/* Avatar */}
+              <div className="flex justify-center mb-2">
+                <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+                  <div className="w-20 h-20 rounded-full border-2 border-amber-200 overflow-hidden bg-amber-50 flex items-center justify-center transition-all group-hover:border-amber-500">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Profil" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-lg font-bold text-amber-600">
+                        {initials || <User className="w-8 h-8 text-amber-400" />}
+                      </span>
+                    )}
+                  </div>
+                  <div className="absolute bottom-0 right-0 bg-amber-600 p-1.5 rounded-full border-2 border-white text-white shadow-sm group-hover:scale-110 transition-transform">
+                    <Camera className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={onFileChange}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">Nom complet</label>
                 <input
@@ -111,17 +267,55 @@ export function BusinessOnboardingModal() {
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">Téléphone</label>
                 <div className="flex gap-2">
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    className="w-28 shrink-0 rounded-xl border border-slate-200 bg-slate-50 py-3 px-2 text-slate-900 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                  >
-                    {countries.map((c) => (
-                      <option key={c.code} value={c.dial_code}>
-                        {c.dial_code} {c.code}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Searchable country code dropdown */}
+                  <div className="relative" ref={countryDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => { setIsCountryDropdownOpen(!isCountryDropdownOpen); setCountrySearch(''); }}
+                      className="w-28 shrink-0 rounded-xl border border-slate-200 bg-slate-50 py-3 px-3 text-slate-900 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none text-left truncate"
+                    >
+                      {selectedCountry ? `${selectedCountry.dial_code} ${selectedCountry.code}` : countryCode}
+                    </button>
+                    {isCountryDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                        <div className="sticky top-0 bg-white p-2 border-b border-slate-100">
+                          <div className="relative">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <input
+                              type="text"
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-3 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
+                              placeholder="Rechercher un pays..."
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        <div className="overflow-y-auto max-h-48">
+                          {filteredCountries.map((c) => (
+                            <button
+                              key={c.code}
+                              type="button"
+                              onClick={() => {
+                                setCountryCode(c.dial_code);
+                                setIsCountryDropdownOpen(false);
+                                setCountrySearch('');
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-amber-50 transition-colors flex items-center justify-between ${
+                                countryCode === c.dial_code ? 'bg-amber-50 text-amber-700 font-medium' : 'text-slate-700'
+                              }`}
+                            >
+                              <span className="truncate">{c.name}</span>
+                              <span className="text-slate-400 ml-2 shrink-0">{c.dial_code}</span>
+                            </button>
+                          ))}
+                          {filteredCountries.length === 0 && (
+                            <p className="px-3 py-4 text-sm text-slate-400 text-center">Aucun résultat</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <input
                     type="tel"
                     value={phone}
