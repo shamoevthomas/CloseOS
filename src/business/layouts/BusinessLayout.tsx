@@ -27,6 +27,7 @@ const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/objectifs': { title: 'Mes Objectifs', subtitle: 'Suivez vos objectifs assignés' },
   '/business/rendez-vous': { title: 'Rendez-vous', subtitle: 'Consultez les rendez-vous' },
   '/business/rappels': { title: 'Rappels', subtitle: 'Vos rappels personnels' },
+  '/business/organisation': { title: 'Organisation', subtitle: "Informations de votre organisation" },
 }
 
 export function BusinessLayout() {

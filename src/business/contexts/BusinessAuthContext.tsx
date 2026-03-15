@@ -13,70 +13,60 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
-  const fetchTeamMember = useCallback(async (userId: string) => {
+  // Single init function that handles both owner and team member detection
+  const initUser = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('business_team_members')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      // Fetch business_users AND team_members in parallel
+      const [profileRes, teamRes] = await Promise.all([
+        supabase.from('business_users').select('*').eq('id', userId).single(),
+        supabase.from('business_team_members').select('*').eq('user_id', userId).single(),
+      ]);
 
-      if (!error && data && isMountedRef.current) {
-        setTeamMember(data);
+      if (!isMountedRef.current) return;
+
+      // Team member takes priority — if user is in business_team_members, treat as team member
+      if (!teamRes.error && teamRes.data) {
+        setTeamMember(teamRes.data);
         setIsTeamMember(true);
-        setOwnerUserId(data.business_owner_id);
+        setOwnerUserId(teamRes.data.business_owner_id);
+        setBusinessProfile(null);
 
-        // Fetch the owner's business_settings for company name/logo
+        // Fetch the OWNER's business_settings (not the closer's)
         const { data: ownerSettings } = await supabase
           .from('business_settings')
           .select('*')
-          .eq('user_id', data.business_owner_id)
+          .eq('user_id', teamRes.data.business_owner_id)
           .single();
 
-        if (isMountedRef.current && ownerSettings) {
-          setBusinessSettings(ownerSettings);
-        }
-      }
-    } catch (err) {
-      console.error('Exception fetching team member:', err);
-    }
-  }, []);
-
-  const fetchBusinessProfile = useCallback(async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('business_users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        // User doesn't have a business profile yet — check if team member
         if (isMountedRef.current) {
-          setBusinessProfile(null);
-          await fetchTeamMember(userId);
+          setBusinessSettings(ownerSettings || null);
         }
-      } else if (isMountedRef.current) {
-        setBusinessProfile(data);
+        return;
       }
-    } catch (err) {
-      console.error('Exception fetching business profile:', err);
-    }
-  }, [fetchTeamMember]);
 
-  const fetchBusinessSettings = useCallback(async (userId: string) => {
-    try {
-      const { data } = await supabase
+      // Not a team member — regular owner flow
+      setTeamMember(null);
+      setIsTeamMember(false);
+      setOwnerUserId(null);
+
+      if (!profileRes.error && profileRes.data) {
+        setBusinessProfile(profileRes.data);
+      } else {
+        setBusinessProfile(null);
+      }
+
+      // Fetch owner's own settings
+      const { data: settings } = await supabase
         .from('business_settings')
         .select('*')
         .eq('user_id', userId)
         .single();
 
       if (isMountedRef.current) {
-        setBusinessSettings(data || null);
+        setBusinessSettings(settings || null);
       }
     } catch (err) {
-      console.error('Exception fetching business settings:', err);
+      console.error('Exception in initUser:', err);
     }
   }, []);
 
@@ -95,11 +85,13 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
         setUser(currentUser);
 
         if (currentUser) {
-          fetchBusinessProfile(currentUser.id);
-          fetchBusinessSettings(currentUser.id);
+          await initUser(currentUser.id);
         } else {
           setBusinessProfile(null);
           setBusinessSettings(null);
+          setTeamMember(null);
+          setIsTeamMember(false);
+          setOwnerUserId(null);
         }
       }
     );
@@ -113,10 +105,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
 
       if (currentUser) {
         await Promise.race([
-          Promise.all([
-            fetchBusinessProfile(currentUser.id),
-            fetchBusinessSettings(currentUser.id),
-          ]),
+          initUser(currentUser.id),
           new Promise(resolve => setTimeout(resolve, 3000))
         ]);
       } else {
@@ -193,11 +182,11 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       .eq('id', user.id);
 
     if (!error) {
-      await fetchBusinessProfile(user.id);
+      await initUser(user.id);
     }
 
     return { error };
-  }, [user, fetchBusinessProfile]);
+  }, [user, initUser]);
 
   const updateBusinessSettings = useCallback(async (updates: any) => {
     if (!user) return { error: new Error('Not authenticated') };
@@ -211,11 +200,11 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       }, { onConflict: 'user_id' });
 
     if (!error) {
-      await fetchBusinessSettings(user.id);
+      await initUser(user.id);
     }
 
     return { error };
-  }, [user, fetchBusinessSettings]);
+  }, [user, initUser]);
 
   const logout = useCallback(async () => {
     setUser(null);
@@ -246,8 +235,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       ownerUserId,
       refreshProfile: () => {
         if (user) {
-          fetchBusinessProfile(user.id);
-          fetchBusinessSettings(user.id);
+          initUser(user.id);
         }
       }
     }}>

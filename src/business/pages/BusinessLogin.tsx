@@ -7,15 +7,15 @@ import { supabase } from '../../lib/supabase';
 
 export default function BusinessLogin() {
   const navigate = useNavigate();
-  const { login, user, loading: authLoading, businessProfile } = useBusinessAuth();
+  const { login, user, loading: authLoading, businessProfile, isTeamMember } = useBusinessAuth();
 
   useEffect(() => {
     if (!authLoading && user) {
-      if (businessProfile) {
+      if (businessProfile || isTeamMember) {
         navigate('/business/dashboard', { replace: true });
       }
     }
-  }, [user, authLoading, businessProfile, navigate]);
+  }, [user, authLoading, businessProfile, isTeamMember, navigate]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,20 +69,31 @@ export default function BusinessLogin() {
         setLoading(false);
       } else {
         // Check if user has a business profile, if not create one
+        // But DON'T create one if the user is a team member (closer/setter)
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (authUser) {
-          const { data: existing } = await supabase
-            .from('business_users')
+          // Check if team member first
+          const { data: teamMemberData } = await supabase
+            .from('business_team_members')
             .select('id')
-            .eq('id', authUser.id)
+            .eq('user_id', authUser.id)
             .single();
 
-          if (!existing) {
-            await supabase.from('business_users').insert({
-              id: authUser.id,
-              full_name: authUser.user_metadata?.full_name || '',
-              email: authUser.email || '',
-            });
+          if (!teamMemberData) {
+            // Not a team member — ensure business_users entry exists
+            const { data: existing } = await supabase
+              .from('business_users')
+              .select('id')
+              .eq('id', authUser.id)
+              .single();
+
+            if (!existing) {
+              await supabase.from('business_users').insert({
+                id: authUser.id,
+                full_name: authUser.user_metadata?.full_name || '',
+                email: authUser.email || '',
+              });
+            }
           }
         }
         navigate('/business/dashboard');

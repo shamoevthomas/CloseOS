@@ -127,43 +127,27 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
           </button>
         </div>
 
-        {/* Organisation block (owner only) */}
-        {!isTeamMember ? (
-          <button
-            onClick={() => { navigate('/business/organisation'); if (window.innerWidth < 1024) onClose?.(); }}
-            className="mx-3 mt-3 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 transition-colors hover:bg-amber-100"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 overflow-hidden shrink-0">
-              {businessSettings?.logo_url ? (
-                <img src={businessSettings.logo_url} alt="Logo" className="h-full w-full object-cover" />
-              ) : (
-                <Building2 className="h-5 w-5 text-amber-700" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-semibold text-slate-800 truncate">
-                {businessSettings?.company_name || 'Mon organisation'}
-              </p>
-              <p className="text-xs text-slate-500 truncate">Organisation</p>
-            </div>
-          </button>
-        ) : (
-          <div className="mx-3 mt-3 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 overflow-hidden shrink-0">
-              {businessSettings?.logo_url ? (
-                <img src={businessSettings.logo_url} alt="Logo" className="h-full w-full object-cover" />
-              ) : (
-                <Building2 className="h-5 w-5 text-amber-700" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-semibold text-slate-800 truncate">
-                {businessSettings?.company_name || 'Organisation'}
-              </p>
-              <p className="text-xs text-slate-500 truncate">{teamMember?.role || 'Membre'}</p>
-            </div>
+        {/* Organisation block — clickable for both owner and team member */}
+        <button
+          onClick={() => { navigate('/business/organisation'); if (window.innerWidth < 1024) onClose?.(); }}
+          className="mx-3 mt-3 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 transition-colors hover:bg-amber-100"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 overflow-hidden shrink-0">
+            {businessSettings?.logo_url ? (
+              <img src={businessSettings.logo_url} alt="Logo" className="h-full w-full object-cover" />
+            ) : (
+              <Building2 className="h-5 w-5 text-amber-700" />
+            )}
           </div>
-        )}
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-semibold text-slate-800 truncate">
+              {businessSettings?.company_name || (isTeamMember ? 'Organisation' : 'Mon organisation')}
+            </p>
+            <p className="text-xs text-slate-500 truncate">
+              {isTeamMember ? (teamMember?.role || 'Membre') : 'Organisation'}
+            </p>
+          </div>
+        </button>
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">

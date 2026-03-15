@@ -221,7 +221,7 @@ function AuthenticatedApp() {
           <Route path="team" element={<OwnerOnlyWrapper><BusinessTeam /></OwnerOnlyWrapper>} />
           <Route path="closers" element={<OwnerOnlyWrapper><BusinessClosers /></OwnerOnlyWrapper>} />
           <Route path="setters" element={<OwnerOnlyWrapper><BusinessSetters /></OwnerOnlyWrapper>} />
-          <Route path="organisation" element={<OwnerOnlyWrapper><BusinessOrganization /></OwnerOnlyWrapper>} />
+          <Route path="organisation" element={<BusinessOrganization />} />
         </Route>
 
         {/* Routes Publiques */}
