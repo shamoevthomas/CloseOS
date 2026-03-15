@@ -129,7 +129,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function OnboardingWrapper({ onComplete }: { onComplete?: () => void }) {
   const location = useLocation();
 
-  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/choose-plan'];
+  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/choose-plan', '/business'];
 
   if (hiddenPaths.some(path => location.pathname === path || location.pathname.startsWith(path + '/'))) {
     return null;
@@ -309,12 +309,10 @@ function AuthenticatedApp() {
         </Route>
       </Routes>
 
-      {user && (
+      {user && !location.pathname.startsWith('/business') && (
         <>
-          <TrialExpiredModal /> {/* Added TrialExpiredModal */}
+          <TrialExpiredModal />
           <OnboardingWrapper onComplete={() => {
-            // onComplete est appelé après updateProfile dans OnboardingModal.
-            // Le metadata onboarding_completed sera déjà true.
             setIsVideoOnboardingOpen(true);
           }} />
           <VideoOnboardingModal
