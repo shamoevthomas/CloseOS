@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, Loader2, Building2, Users, Briefcase, ChevronRight } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
+import { countries } from '../../lib/countries';
 
 const NICHES = [
   'Coaching',
@@ -28,6 +29,7 @@ export function BusinessOnboardingModal() {
 
   // Step 1: Profile
   const [fullName, setFullName] = useState(businessProfile?.full_name || user?.user_metadata?.full_name || '');
+  const [countryCode, setCountryCode] = useState('+33');
   const [phone, setPhone] = useState(businessProfile?.phone || '');
   const [role, setRole] = useState(businessProfile?.role || '');
 
@@ -53,7 +55,7 @@ export function BusinessOnboardingModal() {
       // Update business profile
       await updateBusinessProfile({
         full_name: fullName,
-        phone,
+        phone: phone ? `${countryCode} ${phone}` : '',
         role,
         has_onboarded: true,
       });
@@ -108,13 +110,26 @@ export function BusinessOnboardingModal() {
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">Téléphone</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                  placeholder="+33 6 12 34 56 78"
-                />
+                <div className="flex gap-2">
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="w-28 shrink-0 rounded-xl border border-slate-200 bg-slate-50 py-3 px-2 text-slate-900 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  >
+                    {countries.map((c) => (
+                      <option key={c.code} value={c.dial_code}>
+                        {c.dial_code} {c.code}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    placeholder="6 12 34 56 78"
+                  />
+                </div>
               </div>
 
               <div>
