@@ -220,7 +220,8 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       }, { onConflict: 'user_id' });
 
     if (!error) {
-      await initUser(user.id);
+      // Refresh in background — don't block the caller
+      initUser(user.id);
     }
 
     return { error };
