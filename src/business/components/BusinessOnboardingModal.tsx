@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, Loader2, Building2, Briefcase, ChevronRight, Camera, User, X, Check, ZoomIn, ZoomOut, Search, Rocket, CheckCircle, ExternalLink, Video, FileText, Type } from 'lucide-react';
+import { ArrowRight, Loader2, Building2, Briefcase, ChevronRight, Camera, User, X, Check, ZoomIn, ZoomOut, Search, Calendar } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { countries } from '../../lib/countries';
 import { supabase } from '../../lib/supabase';
@@ -25,55 +25,14 @@ const TEAM_SIZES = [
   '25+',
 ];
 
-// ─── Inline Section Viewer for team member onboarding modal ───
-function OnboardingSectionViewer({ sections }: { sections: any[] }) {
-  if (!sections || sections.length === 0) return null
-
-  return (
-    <div className="space-y-4">
-      {sections.map((section: any) => (
-        <div key={section.id} className="rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200">
-            <h4 className="font-semibold text-slate-800 text-sm">{section.title}</h4>
-          </div>
-          <div className="p-4 space-y-3">
-            {(section.blocks || []).map((block: any) => (
-              <div key={block.id}>
-                {block.type === 'text' && (
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{block.content}</p>
-                )}
-                {block.type === 'video' && block.content && (
-                  <div className="rounded-lg overflow-hidden bg-black aspect-video">
-                    <iframe
-                      src={block.content.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                      className="w-full h-full"
-                      allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    />
-                  </div>
-                )}
-                {block.type === 'link' && block.content && (
-                  <a href={block.content.startsWith('http') ? block.content : `https://${block.content}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-amber-700 hover:text-amber-600 font-medium transition-colors">
-                    <ExternalLink className="h-4 w-4 shrink-0" />
-                    {block.label || block.content}
-                  </a>
-                )}
-                {block.type === 'pdf' && block.content && (
-                  <a href={block.content} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors">
-                    <FileText className="h-4 w-4 shrink-0" />
-                    {block.label || 'Voir le PDF'}
-                  </a>
-                )}
-              </div>
-            ))}
-            {(!section.blocks || section.blocks.length === 0) && (
-              <p className="text-xs text-slate-400 italic">Section vide</p>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
+function calculateAge(dateString: string): number | null {
+  if (!dateString) return null;
+  const birth = new Date(dateString);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
 }
 
 export function BusinessOnboardingModal() {
@@ -82,7 +41,6 @@ export function BusinessOnboardingModal() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [ackLoading, setAckLoading] = useState(false);
 
   // Avatar crop states
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -117,106 +75,278 @@ export function BusinessOnboardingModal() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Team member profile fields
+  const [tmFirstName, setTmFirstName] = useState(teamMember?.first_name || '');
+  const [tmLastName, setTmLastName] = useState(teamMember?.last_name || '');
+  const [tmDob, setTmDob] = useState(teamMember?.date_of_birth || '');
+  const [tmPhone, setTmPhone] = useState(teamMember?.phone || '');
+  const [tmAvatarUrl, setTmAvatarUrl] = useState(teamMember?.avatar_url || user?.user_metadata?.avatar_url || '');
+  const [tmCountryCode, setTmCountryCode] = useState('+33');
+  const [tmCountrySearch, setTmCountrySearch] = useState('');
+  const [isTmCountryOpen, setIsTmCountryOpen] = useState(false);
+  const tmCountryRef = useRef<HTMLDivElement>(null);
+  const tmFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Close team member country dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (tmCountryRef.current && !tmCountryRef.current.contains(e.target as Node)) {
+        setIsTmCountryOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   // Don't show if already onboarded, no user, or still loading
   if (!user || hasOnboarded || authLoading) return null;
 
-  // ─── Team Member Onboarding Flow ───
-  if (isTeamMember && teamMember && !teamMember.onboarding_acknowledged) {
+  // ─── Team Member Profile Onboarding ───
+  if (isTeamMember && teamMember) {
     const settings = businessSettings || {};
-    const onboardingSections = settings.onboarding_sections || [];
-    const roleOnboardingSections = settings.role_onboarding_sections || {};
-    const memberRole = teamMember.role || '';
-    const roleSections = roleOnboardingSections[memberRole] || [];
-    const hasContent = onboardingSections.length > 0 || roleSections.length > 0;
+    const tmAge = calculateAge(tmDob);
+    const tmInitials = [tmFirstName, tmLastName].filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-    const handleAcknowledge = async () => {
-      if (!teamMember.id) return;
-      setAckLoading(true);
+    const tmSelectedCountry = countries.find(c => c.dial_code === tmCountryCode);
+    const tmFilteredCountries = tmCountrySearch
+      ? countries.filter(c =>
+          c.name.toLowerCase().includes(tmCountrySearch.toLowerCase()) ||
+          c.dial_code.includes(tmCountrySearch) ||
+          c.code.toLowerCase().includes(tmCountrySearch.toLowerCase())
+        )
+      : countries;
+
+    const handleTmAvatarClick = () => tmFileInputRef.current?.click();
+
+    const onTmFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files.length > 0) {
+        const reader = new FileReader();
+        reader.addEventListener('load', () => setImageSrc(reader.result as string));
+        reader.readAsDataURL(e.target.files[0]);
+        e.target.value = '';
+      }
+    };
+
+    const saveTmCroppedImage = async () => {
       try {
-        await fetch('/api/business?action=acknowledge-onboarding', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ team_member_id: teamMember.id }),
-        });
+        setUploading(true);
+        const blob = await getCroppedImg(imageSrc!, croppedAreaPixels);
+        if (!blob) throw new Error("Erreur image");
+        const fileName = `team-${teamMember.id}-${Math.random()}.jpg`;
+        const file = new File([blob], fileName, { type: 'image/jpeg' });
+        const { error } = await supabase.storage.from('avatars').upload(fileName, file);
+        if (error) throw error;
+        const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+        setTmAvatarUrl(data.publicUrl);
+        setImageSrc(null);
+      } catch (e) {
+        console.error('Avatar upload error:', e);
+      } finally {
+        setUploading(false);
+      }
+    };
+
+    const handleTmSubmit = async () => {
+      if (!tmFirstName || !tmLastName) return;
+      setLoading(true);
+      try {
+        const { error } = await supabase
+          .from('business_team_members')
+          .update({
+            first_name: tmFirstName,
+            last_name: tmLastName,
+            date_of_birth: tmDob || null,
+            phone: tmPhone ? `${tmCountryCode} ${tmPhone}` : null,
+            avatar_url: tmAvatarUrl || null,
+            has_onboarded: true,
+          })
+          .eq('id', teamMember.id);
+        if (error) throw error;
         refreshProfile();
       } catch (err) {
-        console.error('Acknowledge error:', err);
+        console.error('Team member onboarding error:', err);
       } finally {
-        setAckLoading(false);
+        setLoading(false);
       }
     };
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-        <div className="w-full max-w-2xl rounded-2xl border border-amber-200 bg-white shadow-2xl animate-in zoom-in-95 duration-200 my-8">
-          {/* Header */}
-          <div className="p-6 sm:p-8 border-b border-slate-200">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-slate-200 shadow-sm shrink-0">
-                {settings.logo_url ? (
-                  <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                    <Building2 className="h-7 w-7 text-white" />
-                  </div>
-                )}
+        {/* Crop overlay */}
+        {imageSrc && (
+          <div className="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-amber-700/30 bg-slate-900 mb-6">
+              <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} />
+            </div>
+            <div className="w-full max-w-lg space-y-6">
+              <div className="flex items-center gap-4 px-4">
+                <ZoomOut className="h-5 w-5 text-slate-400" />
+                <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500" />
+                <ZoomIn className="h-5 w-5 text-slate-400" />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">
-                  Bienvenue chez {settings.company_name || 'votre organisation'} !
-                </h2>
-                <p className="text-sm text-slate-500 mt-0.5">
-                  Prenez connaissance de votre parcours d'intégration
-                </p>
+              <div className="flex gap-4 justify-center">
+                <button onClick={() => { setImageSrc(null); setZoom(1); }} disabled={uploading} className="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors flex items-center gap-2">
+                  <X className="h-4 w-4" /> Annuler
+                </button>
+                <button onClick={saveTmCroppedImage} disabled={uploading} className="px-6 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors shadow-lg flex items-center gap-2">
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Valider la photo
+                </button>
               </div>
             </div>
           </div>
+        )}
 
-          {/* Content */}
-          <div className="p-6 sm:p-8 space-y-6 max-h-[60vh] overflow-y-auto">
-            {/* General onboarding */}
-            {onboardingSections.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Rocket className="h-4 w-4 text-emerald-600" />
-                  <h3 className="font-semibold text-slate-800 text-sm">Onboarding général</h3>
+        <div className="w-full max-w-lg rounded-2xl border border-amber-200 bg-white p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+          {/* Header with org info */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 shrink-0">
+              {settings.logo_url ? (
+                <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-white" />
                 </div>
-                <OnboardingSectionViewer sections={onboardingSections} />
-              </div>
-            )}
-
-            {/* Role-specific onboarding */}
-            {roleSections.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Rocket className="h-4 w-4 text-amber-600" />
-                  <h3 className="font-semibold text-slate-800 text-sm">Onboarding {memberRole}</h3>
-                </div>
-                <OnboardingSectionViewer sections={roleSections} />
-              </div>
-            )}
-
-            {!hasContent && (
-              <div className="text-center py-8">
-                <Rocket className="h-8 w-8 mx-auto mb-2 text-slate-300" />
-                <p className="text-sm text-slate-400">Aucun contenu d'onboarding pour le moment.</p>
-              </div>
-            )}
+              )}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Bienvenue chez {settings.company_name || 'votre organisation'} !</h2>
+              <p className="text-slate-500 text-sm">Complétez votre profil pour commencer</p>
+            </div>
           </div>
 
-          {/* Footer */}
-          <div className="p-6 sm:p-8 border-t border-slate-200">
-            <button
-              onClick={handleAcknowledge}
-              disabled={ackLoading}
-              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-            >
-              {ackLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <CheckCircle className="h-5 w-5" />
+          <div className="space-y-4">
+            {/* Avatar */}
+            <div className="flex justify-center mb-2">
+              <div className="relative group cursor-pointer" onClick={handleTmAvatarClick}>
+                <div className="w-20 h-20 rounded-full border-2 border-amber-200 overflow-hidden bg-amber-50 flex items-center justify-center transition-all group-hover:border-amber-500">
+                  {tmAvatarUrl ? (
+                    <img src={tmAvatarUrl} alt="Profil" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-lg font-bold text-amber-600">
+                      {tmInitials || <User className="w-8 h-8 text-amber-400" />}
+                    </span>
+                  )}
+                </div>
+                <div className="absolute bottom-0 right-0 bg-amber-600 p-1.5 rounded-full border-2 border-white text-white shadow-sm group-hover:scale-110 transition-transform">
+                  <Camera className="w-3.5 h-3.5" />
+                </div>
+                <input type="file" ref={tmFileInputRef} onChange={onTmFileChange} accept="image/*" className="hidden" />
+              </div>
+            </div>
+
+            {/* Prénom + Nom */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Prénom</label>
+                <input
+                  type="text"
+                  value={tmFirstName}
+                  onChange={(e) => setTmFirstName(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  placeholder="Jean"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Nom</label>
+                <input
+                  type="text"
+                  value={tmLastName}
+                  onChange={(e) => setTmLastName(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  placeholder="Dupont"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Date de naissance */}
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Date de naissance</label>
+              <div className="relative">
+                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="date"
+                  value={tmDob}
+                  onChange={(e) => setTmDob(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                />
+              </div>
+              {tmAge !== null && tmAge >= 0 && (
+                <p className="text-xs text-slate-500 mt-1.5">{tmAge} ans</p>
               )}
-              J'ai bien pris connaissance de l'onboarding
+            </div>
+
+            {/* Téléphone */}
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Téléphone</label>
+              <div className="flex gap-2">
+                <div className="relative" ref={tmCountryRef}>
+                  <button
+                    type="button"
+                    onClick={() => { setIsTmCountryOpen(!isTmCountryOpen); setTmCountrySearch(''); }}
+                    className="w-28 shrink-0 rounded-xl border border-slate-200 bg-slate-50 py-3 px-3 text-slate-900 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none text-left truncate"
+                  >
+                    {tmSelectedCountry ? `${tmSelectedCountry.dial_code} ${tmSelectedCountry.code}` : tmCountryCode}
+                  </button>
+                  {isTmCountryOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                      <div className="sticky top-0 bg-white p-2 border-b border-slate-100">
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                          <input
+                            type="text"
+                            value={tmCountrySearch}
+                            onChange={(e) => setTmCountrySearch(e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-3 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
+                            placeholder="Rechercher un pays..."
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+                      <div className="overflow-y-auto max-h-48">
+                        {tmFilteredCountries.map((c) => (
+                          <button
+                            key={c.code}
+                            type="button"
+                            onClick={() => { setTmCountryCode(c.dial_code); setIsTmCountryOpen(false); setTmCountrySearch(''); }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-amber-50 transition-colors flex items-center justify-between ${
+                              tmCountryCode === c.dial_code ? 'bg-amber-50 text-amber-700 font-medium' : 'text-slate-700'
+                            }`}
+                          >
+                            <span className="truncate">{c.name}</span>
+                            <span className="text-slate-400 ml-2 shrink-0">{c.dial_code}</span>
+                          </button>
+                        ))}
+                        {tmFilteredCountries.length === 0 && (
+                          <p className="px-3 py-4 text-sm text-slate-400 text-center">Aucun résultat</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="tel"
+                  value={tmPhone}
+                  onChange={(e) => setTmPhone(e.target.value)}
+                  className="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  placeholder="6 12 34 56 78"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleTmSubmit}
+              disabled={loading || !tmFirstName || !tmLastName}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-600 py-3.5 font-bold text-white transition-all hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+            >
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+                <>
+                  Terminer
+                  <ArrowRight className="h-5 w-5" />
+                </>
+              )}
             </button>
           </div>
         </div>
