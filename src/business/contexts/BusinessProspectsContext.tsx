@@ -59,7 +59,9 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   const [prospects, setProspects] = useState<BusinessProspect[]>([])
   const [loading, setLoading] = useState(true)
   const { user, loading: authLoading, businessSettings, isTeamMember, ownerUserId } = useBusinessAuth()
-  const userId = isTeamMember ? ownerUserId : user?.id
+  // Wait for auth to fully resolve before computing userId
+  // When authLoading is false and user exists, isTeamMember/ownerUserId are finalized
+  const userId = authLoading ? null : (isTeamMember ? ownerUserId : user?.id)
   const channelRef = useRef<any>(null)
 
   // CRM states

@@ -12,9 +12,28 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const [isTeamMember, setIsTeamMember] = useState(false);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
   const isMountedRef = useRef(true);
+  // Guard: tracks the latest initUser call to discard stale results
+  const initVersionRef = useRef(0);
 
-  // Single init function that handles both owner and team member detection
+  const applyUserData = useCallback((version: number, data: {
+    teamMember: any;
+    isTeamMember: boolean;
+    ownerUserId: string | null;
+    businessProfile: any;
+    businessSettings: any;
+  }) => {
+    // Only apply if this is still the latest call and component is mounted
+    if (!isMountedRef.current || initVersionRef.current !== version) return;
+    setTeamMember(data.teamMember);
+    setIsTeamMember(data.isTeamMember);
+    setOwnerUserId(data.ownerUserId);
+    setBusinessProfile(data.businessProfile);
+    setBusinessSettings(data.businessSettings);
+  }, []);
+
   const initUser = useCallback(async (userId: string) => {
+    const version = ++initVersionRef.current;
+
     try {
       // Fetch business_users AND team_members in parallel
       const [profileRes, teamRes] = await Promise.all([
@@ -22,56 +41,59 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
         supabase.from('business_team_members').select('*').eq('user_id', userId).single(),
       ]);
 
-      if (!isMountedRef.current) return;
+      if (!isMountedRef.current || initVersionRef.current !== version) return;
 
-      // Team member takes priority — if user is in business_team_members, treat as team member
+      // Team member takes priority
       if (!teamRes.error && teamRes.data) {
-        setTeamMember(teamRes.data);
-        setIsTeamMember(true);
-        setOwnerUserId(teamRes.data.business_owner_id);
-        setBusinessProfile(null);
-
-        // Fetch the OWNER's business_settings (not the closer's)
         const { data: ownerSettings } = await supabase
           .from('business_settings')
           .select('*')
           .eq('user_id', teamRes.data.business_owner_id)
           .single();
 
-        if (isMountedRef.current) {
-          setBusinessSettings(ownerSettings || null);
-        }
+        applyUserData(version, {
+          teamMember: teamRes.data,
+          isTeamMember: true,
+          ownerUserId: teamRes.data.business_owner_id,
+          businessProfile: null,
+          businessSettings: ownerSettings || null,
+        });
         return;
       }
 
       // Not a team member — regular owner flow
-      setTeamMember(null);
-      setIsTeamMember(false);
-      setOwnerUserId(null);
+      const profile = (!profileRes.error && profileRes.data) ? profileRes.data : null;
 
-      if (!profileRes.error && profileRes.data) {
-        setBusinessProfile(profileRes.data);
-      } else {
-        setBusinessProfile(null);
-      }
-
-      // Fetch owner's own settings
       const { data: settings } = await supabase
         .from('business_settings')
         .select('*')
         .eq('user_id', userId)
         .single();
 
-      if (isMountedRef.current) {
-        setBusinessSettings(settings || null);
-      }
+      applyUserData(version, {
+        teamMember: null,
+        isTeamMember: false,
+        ownerUserId: null,
+        businessProfile: profile,
+        businessSettings: settings || null,
+      });
     } catch (err) {
       console.error('Exception in initUser:', err);
     }
+  }, [applyUserData]);
+
+  const clearUserData = useCallback(() => {
+    initVersionRef.current++;
+    setBusinessProfile(null);
+    setBusinessSettings(null);
+    setTeamMember(null);
+    setIsTeamMember(false);
+    setOwnerUserId(null);
   }, []);
 
   useEffect(() => {
     isMountedRef.current = true;
+    let initialSessionHandled = false;
 
     const safetyTimeout = setTimeout(() => {
       if (isMountedRef.current) setLoading(false);
@@ -81,24 +103,25 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       async (_event, session) => {
         if (!isMountedRef.current) return;
 
+        // Skip INITIAL_SESSION — let getSession handle first load to avoid double-call
+        if (!initialSessionHandled) return;
+
         const currentUser = session?.user ?? null;
         setUser(currentUser);
 
         if (currentUser) {
           await initUser(currentUser.id);
         } else {
-          setBusinessProfile(null);
-          setBusinessSettings(null);
-          setTeamMember(null);
-          setIsTeamMember(false);
-          setOwnerUserId(null);
+          clearUserData();
         }
       }
     );
 
+    // Primary init: getSession
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!isMountedRef.current) return;
       clearTimeout(safetyTimeout);
+      initialSessionHandled = true;
 
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -106,16 +129,16 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       if (currentUser) {
         await Promise.race([
           initUser(currentUser.id),
-          new Promise(resolve => setTimeout(resolve, 3000))
+          new Promise(resolve => setTimeout(resolve, 4000))
         ]);
       } else {
-        setBusinessProfile(null);
-        setBusinessSettings(null);
+        clearUserData();
       }
 
       if (isMountedRef.current) setLoading(false);
     }).catch(() => {
       if (isMountedRef.current) {
+        initialSessionHandled = true;
         clearTimeout(safetyTimeout);
         setLoading(false);
       }
@@ -142,7 +165,6 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
 
     if (error) return { data, error };
 
-    // Insert into business_users
     if (data.user) {
       const { error: insertError } = await supabase
         .from('business_users')
@@ -191,7 +213,6 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const updateBusinessSettings = useCallback(async (updates: any) => {
     if (!user) return { error: new Error('Not authenticated') };
 
-    // Upsert settings
     const { error } = await supabase
       .from('business_settings')
       .upsert({
@@ -208,13 +229,9 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
 
   const logout = useCallback(async () => {
     setUser(null);
-    setBusinessProfile(null);
-    setBusinessSettings(null);
-    setTeamMember(null);
-    setIsTeamMember(false);
-    setOwnerUserId(null);
+    clearUserData();
     await supabase.auth.signOut();
-  }, []);
+  }, [clearUserData]);
 
   return (
     <BusinessAuthContext.Provider value={{
