@@ -40,7 +40,8 @@ export function BusinessCRM() {
     hubspotConnected, pipedriveConnected,
     nextSyncSeconds,
   } = useBusinessProspects()
-  const { businessSettings } = useBusinessAuth()
+  const { businessSettings, isTeamMember } = useBusinessAuth()
+  const isReadOnly = isTeamMember
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -69,6 +70,7 @@ export function BusinessCRM() {
   })
 
   const onDragEnd = (result: DropResult) => {
+    if (isReadOnly) return
     const { destination, source, draggableId } = result
     if (!destination) return
     if (destination.droppableId === source.droppableId && destination.index === source.index) return
@@ -159,8 +161,8 @@ export function BusinessCRM() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Sync button for connected CRMs */}
-          {crmProvider === 'hubspot' && hubspotConnected && (
+          {/* Sync button for connected CRMs (owner only) */}
+          {!isReadOnly && crmProvider === 'hubspot' && hubspotConnected && (
             <button
               onClick={() => syncHubspot()}
               disabled={isSyncingHubspot}
@@ -170,7 +172,7 @@ export function BusinessCRM() {
               Sync
             </button>
           )}
-          {crmProvider === 'pipedrive' && pipedriveConnected && (
+          {!isReadOnly && crmProvider === 'pipedrive' && pipedriveConnected && (
             <button
               onClick={() => syncPipedrive()}
               disabled={isSyncingPipedrive}
@@ -180,13 +182,15 @@ export function BusinessCRM() {
               Sync
             </button>
           )}
-          <button
-            onClick={() => setIsIntegrationModalOpen(true)}
-            className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all"
-          >
-            <Settings2 className="h-3.5 w-3.5" />
-            Intégration
-          </button>
+          {!isReadOnly && (
+            <button
+              onClick={() => setIsIntegrationModalOpen(true)}
+              className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              Intégration
+            </button>
+          )}
         </div>
       </div>
 
@@ -202,13 +206,15 @@ export function BusinessCRM() {
             className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
           />
         </div>
-        <button
-          onClick={() => { setAddStage('prospect'); setIsAddModalOpen(true) }}
-          className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-500 transition-all"
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Nouveau prospect</span>
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={() => { setAddStage('prospect'); setIsAddModalOpen(true) }}
+            className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-500 transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Nouveau prospect</span>
+          </button>
+        )}
       </div>
 
       {/* Kanban */}
@@ -273,12 +279,14 @@ export function BusinessCRM() {
                                         {deal.company && <p className="text-xs text-slate-500">{deal.company}</p>}
                                       </div>
                                     </div>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
-                                      className="p-1 text-slate-300 hover:text-red-500 transition-colors"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
+                                    {!isReadOnly && (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
+                                        className="p-1 text-slate-300 hover:text-red-500 transition-colors"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    )}
                                   </div>
                                   {deal.value && (
                                     <p className="text-xs font-bold text-emerald-600 mt-1">{deal.value.toLocaleString()} €</p>

@@ -26,6 +26,7 @@ export interface BusinessProspect {
   payment_type?: 'once' | 'installments' | 'cash' | 'comptant'
   installments?: number
   probability?: number
+  assigned_to?: string
   hubspot_contact_id?: string
   call_notes?: {
     id: string

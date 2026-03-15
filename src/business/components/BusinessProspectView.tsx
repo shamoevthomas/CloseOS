@@ -55,7 +55,20 @@ export function BusinessProspectView({
   onUpdate,
   onDelete,
 }: BusinessProspectViewProps) {
-  const { user } = useBusinessAuth()
+  const { user, isTeamMember } = useBusinessAuth()
+  const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string }[]>([])
+
+  // Fetch team members for assignment (owner only)
+  useEffect(() => {
+    if (isTeamMember || !user?.id) return
+    supabase
+      .from('business_team_members')
+      .select('id, first_name, last_name, role')
+      .eq('business_owner_id', user.id)
+      .then(({ data }) => {
+        if (data) setTeamMembers(data)
+      })
+  }, [user?.id, isTeamMember])
 
   const [local, setLocal] = useState<BusinessProspect>(prospect)
   const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'rappels'>('info')
@@ -345,6 +358,25 @@ export function BusinessProspectView({
                       {ALL_STAGES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   </div>
+
+                  {/* Assignment (owner only) */}
+                  {!isTeamMember && teamMembers.length > 0 && (
+                    <div>
+                      <label className="mb-2 block text-xs font-medium text-slate-500">Assigner à</label>
+                      <select
+                        value={(local as any).assigned_to || ''}
+                        onChange={(e) => handleUpdate({ assigned_to: e.target.value || null } as any)}
+                        className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
+                      >
+                        <option value="">Non assigné</option>
+                        {teamMembers.map(tm => (
+                          <option key={tm.id} value={tm.id}>
+                            {tm.first_name} {tm.last_name} ({tm.role})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Linked Formula */}
                   {formula && (

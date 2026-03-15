@@ -43,9 +43,13 @@ const ownerNavigation = [
 
 const teamMemberNavigation = [
   { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
-  { name: 'Objectifs', href: '/business/objectifs', icon: Target },
+  { name: 'CRM', href: '/business/crm', icon: GitBranch },
+  { name: 'Pipeline', href: '/business/pipeline', icon: Target },
+  { name: 'Disponibilité', href: '/business/disponibilite', icon: Calendar },
+  { name: 'KPI', href: '/business/closer-kpi', icon: TrendingUp },
   { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
-  { name: 'Rappels', href: '/business/rappels', icon: Bell },
+  { name: 'Appels', href: '/business/appels', icon: Headphones },
+  { name: 'Organisation', href: '/business/organisation', icon: Building2 },
 ]
 
 interface BusinessSidebarProps {

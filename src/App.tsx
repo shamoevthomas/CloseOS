@@ -82,6 +82,13 @@ import { BusinessSetters } from './business/pages/BusinessSetters'
 import { BusinessOrganization } from './business/pages/BusinessOrganization'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
 import { CaptureForm } from './pages/CaptureForm'
+import { CloserPipeline } from './business/pages/CloserPipeline'
+import { CloserRendezVous } from './business/pages/CloserRendezVous'
+import { CloserDisponibilite } from './business/pages/CloserDisponibilite'
+import { CloserKPI } from './business/pages/CloserKPI'
+import { CloserAppels } from './business/pages/CloserAppels'
+import { CloserCallDetails } from './business/pages/CloserCallDetails'
+import { CloserCallRoom } from './business/pages/CloserCallRoom'
 
 // Owner-only route guard for business pages
 function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
@@ -218,7 +225,7 @@ function AuthenticatedApp() {
           </BusinessAuthProvider>
         }>
           <Route path="dashboard" element={<TeamOnboardingGuard><BusinessDashboard /></TeamOnboardingGuard>} />
-          <Route path="crm" element={<OwnerOnlyWrapper><BusinessCRM /></OwnerOnlyWrapper>} />
+          <Route path="crm" element={<TeamOnboardingGuard><BusinessCRM /></TeamOnboardingGuard>} />
           <Route path="kpi" element={<OwnerOnlyWrapper><BusinessKPI /></OwnerOnlyWrapper>} />
           <Route path="campagnes" element={<OwnerOnlyWrapper><BusinessCampaigns /></OwnerOnlyWrapper>} />
           <Route path="acquisition" element={<OwnerOnlyWrapper><BusinessAcquisition /></OwnerOnlyWrapper>} />
@@ -230,8 +237,22 @@ function AuthenticatedApp() {
           <Route path="team" element={<OwnerOnlyWrapper><BusinessTeam /></OwnerOnlyWrapper>} />
           <Route path="closers" element={<OwnerOnlyWrapper><BusinessClosers /></OwnerOnlyWrapper>} />
           <Route path="setters" element={<OwnerOnlyWrapper><BusinessSetters /></OwnerOnlyWrapper>} />
+          <Route path="pipeline" element={<TeamOnboardingGuard><CloserPipeline /></TeamOnboardingGuard>} />
+          <Route path="disponibilite" element={<TeamOnboardingGuard><CloserDisponibilite /></TeamOnboardingGuard>} />
+          <Route path="closer-kpi" element={<TeamOnboardingGuard><CloserKPI /></TeamOnboardingGuard>} />
+          <Route path="appels" element={<TeamOnboardingGuard><CloserAppels /></TeamOnboardingGuard>} />
+          <Route path="appels/:id" element={<TeamOnboardingGuard><CloserCallDetails /></TeamOnboardingGuard>} />
           <Route path="organisation" element={<BusinessOrganization />} />
         </Route>
+
+        {/* Business Cockpit (standalone, hors layout) */}
+        <Route path="/business/cockpit" element={
+          <BusinessAuthProvider>
+            <BusinessProspectsProvider>
+              <CloserCallRoom />
+            </BusinessProspectsProvider>
+          </BusinessAuthProvider>
+        } />
 
         {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />
