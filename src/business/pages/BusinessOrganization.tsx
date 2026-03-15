@@ -174,19 +174,19 @@ function SectionEditor({
                       />
                     )}
                     {block.type === 'link' && (
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2">
                         <input
                           type="text"
                           value={block.label || ''}
                           onChange={(e) => updateBlock(section.id, block.id, { label: e.target.value })}
-                          className={`${inputClass} w-1/3 text-sm`}
+                          className={`${inputClass} text-sm`}
                           placeholder="Titre du lien"
                         />
                         <input
                           type="url"
                           value={block.content}
                           onChange={(e) => updateBlock(section.id, block.id, { content: e.target.value })}
-                          className={`${inputClass} flex-1 text-sm`}
+                          className={`${inputClass} text-sm`}
                           placeholder="https://..."
                         />
                       </div>
