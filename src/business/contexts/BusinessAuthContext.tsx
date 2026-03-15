@@ -250,9 +250,9 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       teamMember,
       isTeamMember,
       ownerUserId,
-      refreshProfile: () => {
+      refreshProfile: async () => {
         if (user) {
-          initUser(user.id);
+          await initUser(user.id);
         }
       }
     }}>

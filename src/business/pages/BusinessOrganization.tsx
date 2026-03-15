@@ -372,7 +372,7 @@ function TeamMemberOrganizationView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ team_member_id: teamMember.id }),
       })
-      refreshProfile()
+      await refreshProfile()
     } catch (err) {
       console.error('Acknowledge error:', err)
     } finally {

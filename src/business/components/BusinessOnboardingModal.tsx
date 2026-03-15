@@ -165,7 +165,7 @@ export function BusinessOnboardingModal() {
           })
           .eq('id', teamMember.id);
         if (error) throw error;
-        refreshProfile();
+        await refreshProfile();
       } catch (err) {
         console.error('Team member onboarding error:', err);
       } finally {
