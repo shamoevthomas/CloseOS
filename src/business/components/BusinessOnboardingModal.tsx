@@ -98,6 +98,9 @@ export function BusinessOnboardingModal() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Shared crop callback — must be declared before any early return that uses it
+  const onCropComplete = (_: any, pixels: any) => setCroppedAreaPixels(pixels);
+
   // Don't show if already onboarded, no user, or still loading
   if (!user || hasOnboarded || authLoading) return null;
 
@@ -375,10 +378,6 @@ export function BusinessOnboardingModal() {
       reader.readAsDataURL(file);
       e.target.value = '';
     }
-  };
-
-  const onCropComplete = (_: any, croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels);
   };
 
   const showCroppedImage = async () => {
