@@ -239,7 +239,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       user,
       businessProfile,
       businessSettings,
-      hasOnboarded: isTeamMember ? true : (businessProfile?.has_onboarded ?? false),
+      hasOnboarded: isTeamMember ? !!teamMember?.onboarding_acknowledged : (businessProfile?.has_onboarded ?? false),
       loading,
       login,
       register,

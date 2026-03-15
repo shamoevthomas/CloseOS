@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, Loader2, Building2, Briefcase, ChevronRight, Camera, User, X, Check, ZoomIn, ZoomOut, Search } from 'lucide-react';
+import { ArrowRight, Loader2, Building2, Briefcase, ChevronRight, Camera, User, X, Check, ZoomIn, ZoomOut, Search, Rocket, CheckCircle, ExternalLink, Video, FileText, Type } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { countries } from '../../lib/countries';
 import { supabase } from '../../lib/supabase';
@@ -25,12 +25,64 @@ const TEAM_SIZES = [
   '25+',
 ];
 
+// ─── Inline Section Viewer for team member onboarding modal ───
+function OnboardingSectionViewer({ sections }: { sections: any[] }) {
+  if (!sections || sections.length === 0) return null
+
+  return (
+    <div className="space-y-4">
+      {sections.map((section: any) => (
+        <div key={section.id} className="rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+            <h4 className="font-semibold text-slate-800 text-sm">{section.title}</h4>
+          </div>
+          <div className="p-4 space-y-3">
+            {(section.blocks || []).map((block: any) => (
+              <div key={block.id}>
+                {block.type === 'text' && (
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{block.content}</p>
+                )}
+                {block.type === 'video' && block.content && (
+                  <div className="rounded-lg overflow-hidden bg-black aspect-video">
+                    <iframe
+                      src={block.content.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                      className="w-full h-full"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    />
+                  </div>
+                )}
+                {block.type === 'link' && block.content && (
+                  <a href={block.content.startsWith('http') ? block.content : `https://${block.content}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-amber-700 hover:text-amber-600 font-medium transition-colors">
+                    <ExternalLink className="h-4 w-4 shrink-0" />
+                    {block.label || block.content}
+                  </a>
+                )}
+                {block.type === 'pdf' && block.content && (
+                  <a href={block.content} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors">
+                    <FileText className="h-4 w-4 shrink-0" />
+                    {block.label || 'Voir le PDF'}
+                  </a>
+                )}
+              </div>
+            ))}
+            {(!section.blocks || section.blocks.length === 0) && (
+              <p className="text-xs text-slate-400 italic">Section vide</p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function BusinessOnboardingModal() {
-  const { user, businessProfile, hasOnboarded, loading: authLoading, updateBusinessProfile, updateBusinessSettings } = useBusinessAuth();
+  const { user, businessProfile, businessSettings, hasOnboarded, loading: authLoading, updateBusinessProfile, updateBusinessSettings, isTeamMember, teamMember, refreshProfile } = useBusinessAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [ackLoading, setAckLoading] = useState(false);
 
   // Avatar crop states
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -67,6 +119,110 @@ export function BusinessOnboardingModal() {
 
   // Don't show if already onboarded, no user, or still loading
   if (!user || hasOnboarded || authLoading) return null;
+
+  // ─── Team Member Onboarding Flow ───
+  if (isTeamMember && teamMember && !teamMember.onboarding_acknowledged) {
+    const settings = businessSettings || {};
+    const onboardingSections = settings.onboarding_sections || [];
+    const roleOnboardingSections = settings.role_onboarding_sections || {};
+    const memberRole = teamMember.role || '';
+    const roleSections = roleOnboardingSections[memberRole] || [];
+    const hasContent = onboardingSections.length > 0 || roleSections.length > 0;
+
+    const handleAcknowledge = async () => {
+      if (!teamMember.id) return;
+      setAckLoading(true);
+      try {
+        await fetch('/api/business?action=acknowledge-onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ team_member_id: teamMember.id }),
+        });
+        refreshProfile();
+      } catch (err) {
+        console.error('Acknowledge error:', err);
+      } finally {
+        setAckLoading(false);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+        <div className="w-full max-w-2xl rounded-2xl border border-amber-200 bg-white shadow-2xl animate-in zoom-in-95 duration-200 my-8">
+          {/* Header */}
+          <div className="p-6 sm:p-8 border-b border-slate-200">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-slate-200 shadow-sm shrink-0">
+                {settings.logo_url ? (
+                  <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                    <Building2 className="h-7 w-7 text-white" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">
+                  Bienvenue chez {settings.company_name || 'votre organisation'} !
+                </h2>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Prenez connaissance de votre parcours d'intégration
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 sm:p-8 space-y-6 max-h-[60vh] overflow-y-auto">
+            {/* General onboarding */}
+            {onboardingSections.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Rocket className="h-4 w-4 text-emerald-600" />
+                  <h3 className="font-semibold text-slate-800 text-sm">Onboarding général</h3>
+                </div>
+                <OnboardingSectionViewer sections={onboardingSections} />
+              </div>
+            )}
+
+            {/* Role-specific onboarding */}
+            {roleSections.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Rocket className="h-4 w-4 text-amber-600" />
+                  <h3 className="font-semibold text-slate-800 text-sm">Onboarding {memberRole}</h3>
+                </div>
+                <OnboardingSectionViewer sections={roleSections} />
+              </div>
+            )}
+
+            {!hasContent && (
+              <div className="text-center py-8">
+                <Rocket className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+                <p className="text-sm text-slate-400">Aucun contenu d'onboarding pour le moment.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 sm:p-8 border-t border-slate-200">
+            <button
+              onClick={handleAcknowledge}
+              disabled={ackLoading}
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+            >
+              {ackLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <CheckCircle className="h-5 w-5" />
+              )}
+              J'ai bien pris connaissance de l'onboarding
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const selectedCountry = countries.find(c => c.dial_code === countryCode);
 
