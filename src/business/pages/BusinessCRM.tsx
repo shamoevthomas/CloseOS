@@ -11,6 +11,9 @@ import {
   Loader2,
   RefreshCw,
   Check,
+  Mail,
+  Phone,
+  Building2,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -217,7 +220,89 @@ export function BusinessCRM() {
         )}
       </div>
 
-      {/* Kanban */}
+      {/* Team Member Table View */}
+      {isTeamMember ? (
+        <div className="flex-1 overflow-auto rounded-xl border border-slate-200 bg-white">
+          <table className="w-full min-w-[700px]">
+            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Contact</th>
+                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Entreprise</th>
+                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Email</th>
+                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Étape</th>
+                <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Valeur</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredProspects.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-12 text-sm text-slate-400">
+                    Aucun prospect trouvé
+                  </td>
+                </tr>
+              ) : (
+                filteredProspects.map((deal) => {
+                  const stage = ALL_STAGES.find(s => s.id === deal.stage)
+                  return (
+                    <tr
+                      key={deal.id}
+                      onClick={() => setSelectedProspect(deal)}
+                      className="cursor-pointer hover:bg-amber-50/50 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                            <User className="h-4 w-4 text-slate-500" />
+                          </div>
+                          <span className="text-sm font-semibold text-slate-800">{getDisplayName(deal)}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {deal.company ? (
+                          <div className="flex items-center gap-1.5">
+                            <Building2 className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                            <span className="text-sm text-slate-600">{deal.company}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-slate-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {deal.email ? (
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                            <span className="text-sm text-slate-600 truncate max-w-[200px]">{deal.email}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-slate-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {stage ? (
+                          <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full", stage.bgLight, stage.textColor)}>
+                            <span className={cn("h-2 w-2 rounded-full", stage.color)} />
+                            {stage.name}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-slate-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {deal.value ? (
+                          <span className="text-sm font-bold text-emerald-600">{deal.value.toLocaleString()} €</span>
+                        ) : (
+                          <span className="text-sm text-slate-300">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+      /* Kanban (Owner view) */
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex-1 overflow-x-auto">
           <div className="flex gap-4 min-w-max pb-4" style={{ minHeight: '400px' }}>
@@ -384,6 +469,7 @@ export function BusinessCRM() {
           </div>
         </div>
       </DragDropContext>
+      )}
 
       {/* Integration Modal */}
       <BusinessCRMIntegrationModal

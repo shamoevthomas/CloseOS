@@ -1,11 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { supabase } from '../../lib/supabase'
 import {
-  TrendingUp, DollarSign, ShoppingCart, Target,
-  Users, Loader2, Settings, Save, X,
+  TrendingUp, DollarSign, ShoppingCart, Target, Award,
+  Ban, Users, Briefcase, UserX, Settings, X, Save, Loader2,
 } from 'lucide-react'
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
 
@@ -14,6 +17,9 @@ interface KpiConfig {
   revenue_target: number
   commission_rate: number
 }
+
+const formatCurrency = (n: number) => n.toLocaleString('fr-FR')
+const formatPercent = (n: number) => n.toFixed(1)
 
 export function CloserKPI() {
   const { teamMember, ownerUserId } = useBusinessAuth()
@@ -54,149 +60,282 @@ export function CloserKPI() {
   // Calculate personal KPIs from assigned prospects
   const myProspects = prospects.filter(p => p.assigned_to === teamMember?.id)
   const wonProspects = myProspects.filter(p => p.stage === 'won')
+  const noShowProspects = myProspects.filter(p => p.stage === 'noshow')
+  const lostProspects = myProspects.filter(p => p.stage === 'lost')
   const totalRevenue = wonProspects.reduce((sum, p) => sum + (p.value || 0), 0)
   const totalSales = wonProspects.length
-  const conversionRate = myProspects.length > 0 ? Math.round((wonProspects.length / myProspects.length) * 100) : 0
+  const closedTotal = wonProspects.length + lostProspects.length + noShowProspects.length
+  const conversionRate = closedTotal > 0 ? (wonProspects.length / closedTotal) * 100 : 0
+  const noShowRate = closedTotal > 0 ? (noShowProspects.length / closedTotal) * 100 : 0
   const commission = Math.round(totalRevenue * (kpiConfig.commission_rate / 100))
 
   // Org KPIs (all prospects)
   const orgWon = prospects.filter(p => p.stage === 'won')
+  const orgNoShow = prospects.filter(p => p.stage === 'noshow')
+  const orgLost = prospects.filter(p => p.stage === 'lost')
   const orgRevenue = orgWon.reduce((sum, p) => sum + (p.value || 0), 0)
-  const orgConversion = prospects.length > 0 ? Math.round((orgWon.length / prospects.length) * 100) : 0
+  const orgClosedTotal = orgWon.length + orgLost.length + orgNoShow.length
+  const orgConversion = orgClosedTotal > 0 ? (orgWon.length / orgClosedTotal) * 100 : 0
+  const orgNoShowRate = orgClosedTotal > 0 ? (orgNoShow.length / orgClosedTotal) * 100 : 0
+  const orgCommission = Math.round(orgRevenue * (kpiConfig.commission_rate / 100))
 
-  const kpiCards = [
-    { label: 'Revenue', value: `${totalRevenue.toLocaleString()} €`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-    { label: 'Ventes', value: totalSales, icon: ShoppingCart, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-    { label: 'Taux conversion', value: `${conversionRate}%`, icon: Target, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
-    { label: 'Commissions', value: `${commission.toLocaleString()} €`, icon: TrendingUp, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-  ]
+  // Chart data: group prospects by month
+  const chartData = useMemo(() => {
+    const source = activeTab === 'personal' ? myProspects : prospects
+    const monthMap: Record<string, { won: number; total: number; commission: number }> = {}
+    source.forEach(p => {
+      const date = new Date(p.created_at || Date.now())
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      if (!monthMap[key]) monthMap[key] = { won: 0, total: 0, commission: 0 }
+      monthMap[key].total++
+      if (p.stage === 'won') {
+        monthMap[key].won++
+        monthMap[key].commission += Math.round((p.value || 0) * (kpiConfig.commission_rate / 100))
+      }
+    })
+    return Object.entries(monthMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, val]) => ({
+        name: key,
+        closing: val.total > 0 ? Math.round((val.won / val.total) * 100) : 0,
+        commission: val.commission,
+      }))
+  }, [prospects, myProspects, activeTab, kpiConfig.commission_rate])
 
-  const orgCards = [
-    { label: 'Revenue Org', value: `${orgRevenue.toLocaleString()} €`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-    { label: 'Ventes Org', value: orgWon.length, icon: ShoppingCart, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-    { label: 'Conversion Org', value: `${orgConversion}%`, icon: Target, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
-    { label: 'Total Prospects', value: prospects.length, icon: Users, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' },
-  ]
+  // Current tab values
+  const currentRevenue = activeTab === 'personal' ? totalRevenue : orgRevenue
+  const currentSales = activeTab === 'personal' ? totalSales : orgWon.length
+  const currentConversion = activeTab === 'personal' ? conversionRate : orgConversion
+  const currentCommission = activeTab === 'personal' ? commission : orgCommission
+  const currentNoShowRate = activeTab === 'personal' ? noShowRate : orgNoShowRate
+  const currentLost = activeTab === 'personal' ? lostProspects.length : orgLost.length
+  const currentLeads = activeTab === 'personal' ? myProspects.length : prospects.length
+  const currentDeals = activeTab === 'personal'
+    ? myProspects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length
+    : prospects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length
+  const avgCommission = currentSales > 0 ? Math.round(currentCommission / currentSales) : 0
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+      <div className="flex items-center justify-center h-64 bg-slate-950">
+        <Loader2 className="h-8 w-8 text-amber-400 animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-            <TrendingUp className="h-5 w-5 text-amber-700" />
+      <div className="relative p-6 rounded-2xl bg-slate-800/40 border border-white/5 backdrop-blur-md">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/20">
+              <TrendingUp className="w-6 h-6 text-amber-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                Performance
+              </h1>
+              <p className="text-sm text-slate-400 mt-0.5">Vos indicateurs de performance</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">KPI</h2>
-            <p className="text-xs text-slate-500">Vos indicateurs de performance</p>
-          </div>
+          <button
+            onClick={() => setIsConfigOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700/50 border border-white/10 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-all"
+          >
+            <Settings className="h-4 w-4" /> Configurer
+          </button>
         </div>
-        <button onClick={() => setIsConfigOpen(true)} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
-          <Settings className="h-3.5 w-3.5" /> Configurer
-        </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-amber-200">
+      <div className="flex gap-2">
         <button
           onClick={() => setActiveTab('personal')}
-          className={cn("px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px", activeTab === 'personal' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-400 hover:text-slate-600')}
+          className={cn(
+            'px-5 py-2.5 rounded-full text-sm font-medium transition-all',
+            activeTab === 'personal'
+              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25'
+              : 'bg-slate-800/40 text-slate-400 border border-white/5 hover:bg-slate-800/60 hover:text-slate-200'
+          )}
         >
           Global (Personnel)
         </button>
         <button
           onClick={() => setActiveTab('org')}
-          className={cn("px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px", activeTab === 'org' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-400 hover:text-slate-600')}
+          className={cn(
+            'px-5 py-2.5 rounded-full text-sm font-medium transition-all',
+            activeTab === 'org'
+              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25'
+              : 'bg-slate-800/40 text-slate-400 border border-white/5 hover:bg-slate-800/60 hover:text-slate-200'
+          )}
         >
           Organisation
         </button>
       </div>
 
+      {activeTab === 'org' && (
+        <div className="rounded-xl bg-slate-800/30 border border-white/5 px-4 py-3">
+          <p className="text-sm text-slate-400 text-center">Vue en lecture seule des KPIs de l'organisation.</p>
+        </div>
+      )}
+
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {(activeTab === 'personal' ? kpiCards : orgCards).map((kpi, i) => (
-          <div key={i} className={cn("rounded-xl border p-5", kpi.border, kpi.bg)}>
-            <div className="flex items-center gap-2 mb-3">
-              <kpi.icon className={cn("h-5 w-5", kpi.color)} />
-              <span className="text-xs font-medium text-slate-500">{kpi.label}</span>
-            </div>
-            <p className={cn("text-2xl font-bold", kpi.color)}>{kpi.value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <KpiCard title="CA Généré" value={`${formatCurrency(currentRevenue)} €`} icon={DollarSign} color="emerald" />
+        <KpiCard title="Ventes Totales" value={currentSales} icon={ShoppingCart} color="blue" />
+        <KpiCard title="Taux de Conversion" value={`${formatPercent(currentConversion)}%`} icon={Target} color="purple" />
+        <KpiCard title="Mes Commissions" value={`${formatCurrency(currentCommission)} €`} icon={Award} color="amber" glow />
+        <KpiCard title="Taux de No Show" value={`${formatPercent(currentNoShowRate)}%`} icon={UserX} color="rose" />
+        <KpiCard title="Deals Perdus" value={currentLost} icon={Ban} color="slate" />
       </div>
 
-      {/* Progress bars for personal tab */}
-      {activeTab === 'personal' && (
-        <div className="rounded-xl border border-amber-200 bg-white p-6 space-y-5">
-          <h3 className="text-sm font-bold text-slate-900">Progression</h3>
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-slate-600">Objectif Revenue</span>
-              <span className="text-xs text-slate-500">{totalRevenue.toLocaleString()} / {kpiConfig.revenue_target.toLocaleString()} €</span>
-            </div>
-            <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${Math.min(100, (totalRevenue / kpiConfig.revenue_target) * 100)}%` }} />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-slate-600">Prospects traités</span>
-              <span className="text-xs text-slate-500">{myProspects.length} prospects</span>
-            </div>
-            <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${Math.min(100, (myProspects.length / Math.max(1, kpiConfig.planned_calls)) * 100)}%` }} />
-            </div>
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Closing Rate Chart */}
+        <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-white mb-6">Historique Taux de Closing</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorClosing" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} unit="%" />
+                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }} />
+                <Area type="monotone" dataKey="closing" stroke="#a855f7" strokeWidth={2} fill="url(#colorClosing)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
-      )}
 
-      {activeTab === 'org' && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
-          <p className="text-sm text-slate-500 text-center">Vue en lecture seule des KPIs de l'organisation.</p>
+        {/* Commission Chart */}
+        <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-white mb-6">Historique Commissions</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorCommission" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} unit="€" />
+                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }} />
+                <Area type="monotone" dataKey="commission" stroke="#10b981" strokeWidth={2} fill="url(#colorCommission)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Pipeline Summary */}
+      <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
+        <h3 className="text-lg font-semibold text-white mb-4">Résumé du Pipeline</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SummaryItem label="Total Leads" value={currentLeads} icon={Users} color="indigo" />
+          <SummaryItem label="Deals en Cours" value={currentDeals} icon={Briefcase} color="cyan" />
+          <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="amber" />
+        </div>
+      </div>
 
       {/* Config Modal */}
       {isConfigOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-amber-200 bg-white p-6 shadow-2xl relative">
-            <button onClick={() => setIsConfigOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-white/10 p-6 shadow-2xl relative">
+            <button onClick={() => setIsConfigOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
               <X className="h-5 w-5" />
             </button>
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Configuration KPI</h2>
-            <div className="space-y-4">
+            <h2 className="text-lg font-bold text-white mb-6">Configuration KPI</h2>
+            <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Objectif de revenue (€)</label>
-                <input type="number" value={kpiConfig.revenue_target} onChange={e => setKpiConfig(prev => ({ ...prev, revenue_target: Number(e.target.value) }))}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none" />
+                <label className="block text-sm font-medium text-slate-300 mb-2">Objectif de revenue (€)</label>
+                <input
+                  type="number"
+                  value={kpiConfig.revenue_target}
+                  onChange={e => setKpiConfig(prev => ({ ...prev, revenue_target: Number(e.target.value) }))}
+                  className="w-full rounded-xl bg-slate-800 border border-white/10 text-white py-2.5 px-4 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none placeholder-slate-500"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Appels prévus / mois</label>
-                <input type="number" value={kpiConfig.planned_calls} onChange={e => setKpiConfig(prev => ({ ...prev, planned_calls: Number(e.target.value) }))}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none" />
+                <label className="block text-sm font-medium text-slate-300 mb-2">Appels prévus / mois</label>
+                <input
+                  type="number"
+                  value={kpiConfig.planned_calls}
+                  onChange={e => setKpiConfig(prev => ({ ...prev, planned_calls: Number(e.target.value) }))}
+                  className="w-full rounded-xl bg-slate-800 border border-white/10 text-white py-2.5 px-4 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none placeholder-slate-500"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Taux de commission (%)</label>
-                <input type="number" value={kpiConfig.commission_rate} onChange={e => setKpiConfig(prev => ({ ...prev, commission_rate: Number(e.target.value) }))}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none" />
+                <label className="block text-sm font-medium text-slate-300 mb-2">Taux de commission (%)</label>
+                <input
+                  type="number"
+                  value={kpiConfig.commission_rate}
+                  onChange={e => setKpiConfig(prev => ({ ...prev, commission_rate: Number(e.target.value) }))}
+                  className="w-full rounded-xl bg-slate-800 border border-white/10 text-white py-2.5 px-4 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none placeholder-slate-500"
+                />
               </div>
-              <button onClick={saveConfig} className="w-full rounded-xl bg-amber-600 py-2.5 font-bold text-white hover:bg-amber-500 transition-all flex items-center justify-center gap-2">
+              <button
+                onClick={saveConfig}
+                className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 py-2.5 font-bold text-white hover:from-amber-400 hover:to-orange-400 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25"
+              >
                 <Save className="h-4 w-4" /> Sauvegarder
               </button>
             </div>
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/* ── Inline Components ─────────────────────────────────────────────── */
+
+const KpiCard = ({ title, value, icon: Icon, color, glow }: any) => {
+  const colors: any = {
+    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    blue: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+    purple: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    rose: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+    slate: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
+  }
+  return (
+    <div className={`relative p-6 rounded-2xl bg-slate-800/40 border border-white/5 backdrop-blur-md transition-all hover:bg-slate-800/60 group ${glow ? 'shadow-lg shadow-amber-500/10 border-amber-500/30' : ''}`}>
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-3 rounded-xl ${colors[color] || colors.slate} group-hover:scale-110 transition-transform duration-300`}>
+          <Icon className="w-6 h-6" />
+        </div>
+      </div>
+      <h3 className="text-slate-400 text-sm font-medium mb-1">{title}</h3>
+      <p className="text-3xl font-bold text-white tracking-tight">{value}</p>
+    </div>
+  )
+}
+
+const SummaryItem = ({ label, value, icon: Icon, color }: any) => {
+  const colors: any = {
+    indigo: 'text-indigo-400 bg-indigo-500/10',
+    cyan: 'text-cyan-400 bg-cyan-500/10',
+    amber: 'text-amber-400 bg-amber-500/10',
+  }
+  return (
+    <div className="flex items-center gap-5 p-4 rounded-xl hover:bg-white/5 transition-colors">
+      <div className={`p-4 rounded-2xl ${colors[color]}`}>
+        <Icon className="w-8 h-8" />
+      </div>
+      <div>
+        <p className="text-slate-400 text-sm font-medium mb-1">{label}</p>
+        <p className="text-2xl font-bold text-white">{value}</p>
+      </div>
     </div>
   )
 }
