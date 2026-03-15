@@ -113,7 +113,7 @@ export function BusinessInvitation() {
 
       await acceptInvitation(userId, userEmail, firstName, lastName);
       setSuccess(true);
-      setTimeout(() => navigate('/business/dashboard'), 2500);
+      setTimeout(() => navigate('/business/organisation'), 2500);
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue.');
     } finally {
@@ -169,7 +169,7 @@ export function BusinessInvitation() {
           parts.slice(1).join(' ') || '',
         );
         setSuccess(true);
-        setTimeout(() => navigate('/business/dashboard'), 2500);
+        setTimeout(() => navigate('/business/organisation'), 2500);
       } catch (err: any) {
         setError(err.message || 'Erreur lors de l\'acceptation.');
       } finally {

@@ -24,6 +24,9 @@ import {
   GripVertical,
   Pencil,
   LayoutGrid,
+  FileText,
+  Upload,
+  CheckCircle,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
@@ -34,7 +37,7 @@ import getCroppedImg from '../../lib/image-crop'
 
 interface SectionBlock {
   id: string
-  type: 'text' | 'video' | 'link'
+  type: 'text' | 'video' | 'link' | 'pdf'
   content: string
   label?: string
 }
@@ -60,6 +63,8 @@ const labelClass = "text-xs font-bold text-slate-500 uppercase tracking-wider bl
 function genId() {
   return crypto.randomUUID()
 }
+
+const DEFAULT_ROLES = ['Général', 'Closer', 'Setter', 'Setter-Closer', 'Manager', 'Admin']
 
 // ─── Section Editor ───
 
@@ -111,6 +116,23 @@ function SectionEditor({
     ))
   }
 
+  const [pdfUploading, setPdfUploading] = useState<string | null>(null)
+
+  const handlePdfUpload = async (sectionId: string, blockId: string, file: File) => {
+    setPdfUploading(blockId)
+    try {
+      const fileName = `${genId()}-${file.name}`
+      const { error } = await supabase.storage.from('onboarding-pdfs').upload(fileName, file)
+      if (error) throw error
+      const { data } = supabase.storage.from('onboarding-pdfs').getPublicUrl(fileName)
+      updateBlock(sectionId, blockId, { content: data.publicUrl, label: file.name })
+    } catch (err) {
+      console.error('PDF upload error:', err)
+    } finally {
+      setPdfUploading(null)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
@@ -154,6 +176,7 @@ function SectionEditor({
                     {block.type === 'text' && <Type className="h-4 w-4 text-slate-400" />}
                     {block.type === 'video' && <Video className="h-4 w-4 text-purple-400" />}
                     {block.type === 'link' && <ExternalLink className="h-4 w-4 text-blue-400" />}
+                    {block.type === 'pdf' && <FileText className="h-4 w-4 text-red-400" />}
                   </div>
                   <div className="flex-1 space-y-2">
                     {block.type === 'text' && (
@@ -191,6 +214,36 @@ function SectionEditor({
                         />
                       </div>
                     )}
+                    {block.type === 'pdf' && (
+                      <div>
+                        {block.content ? (
+                          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 border border-red-200">
+                            <FileText className="h-5 w-5 text-red-500 shrink-0" />
+                            <span className="text-sm font-medium text-slate-700 truncate flex-1">{block.label || 'PDF'}</span>
+                            <a href={block.content} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-red-600 hover:text-red-500 shrink-0">Voir</a>
+                          </div>
+                        ) : (
+                          <label className="flex items-center gap-3 px-4 py-3 rounded-lg border border-dashed border-red-300 bg-red-50/50 cursor-pointer hover:bg-red-50 transition-colors">
+                            {pdfUploading === block.id ? (
+                              <Loader2 className="h-5 w-5 text-red-500 animate-spin shrink-0" />
+                            ) : (
+                              <Upload className="h-5 w-5 text-red-400 shrink-0" />
+                            )}
+                            <span className="text-sm text-slate-500">{pdfUploading === block.id ? 'Upload en cours...' : 'Choisir un fichier PDF'}</span>
+                            <input
+                              type="file"
+                              accept=".pdf"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0]
+                                if (f) handlePdfUpload(section.id, block.id, f)
+                                e.target.value = ''
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <button onClick={() => removeBlock(section.id, block.id)} className="p-2.5 text-slate-400 hover:text-red-500 transition-colors shrink-0">
                     <Trash2 className="h-4 w-4" />
@@ -207,6 +260,9 @@ function SectionEditor({
                 </button>
                 <button onClick={() => addBlock(section.id, 'link')} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-dashed border-blue-300">
                   <ExternalLink className="h-3.5 w-3.5" /> Lien
+                </button>
+                <button onClick={() => addBlock(section.id, 'pdf')} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors border border-dashed border-red-300">
+                  <FileText className="h-3.5 w-3.5" /> PDF
                 </button>
               </div>
             </div>
@@ -266,6 +322,17 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
                     {block.label || block.content}
                   </a>
                 )}
+                {block.type === 'pdf' && block.content && (
+                  <a
+                    href={block.content}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
+                  >
+                    <FileText className="h-4 w-4 shrink-0" />
+                    {block.label || 'Voir le PDF'}
+                  </a>
+                )}
               </div>
             ))}
             {section.blocks.length === 0 && (
@@ -281,14 +348,37 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
 // ─── Team Member Read-Only View ───
 
 function TeamMemberOrganizationView() {
-  const { businessSettings } = useBusinessAuth()
+  const { businessSettings, teamMember, refreshProfile } = useBusinessAuth()
   const [activeTab, setActiveTab] = useState('organisation')
+  const [ackLoading, setAckLoading] = useState(false)
 
   const settings = businessSettings || {}
   const onboardingSections: ContentSection[] = settings.onboarding_sections || []
+  const roleOnboardingSections: Record<string, ContentSection[]> = settings.role_onboarding_sections || {}
   const customTabs: CustomTab[] = settings.custom_tabs || []
 
+  const memberRole = teamMember?.role || ''
+  const roleSections: ContentSection[] = roleOnboardingSections[memberRole] || []
+  const hasAcknowledged = !!teamMember?.onboarding_acknowledged
+
   const activeCustomTab = customTabs.find(t => t.id === activeTab)
+
+  const handleAcknowledge = async () => {
+    if (!teamMember?.id) return
+    setAckLoading(true)
+    try {
+      await fetch('/api/business?action=acknowledge-onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ team_member_id: teamMember.id }),
+      })
+      refreshProfile()
+    } catch (err) {
+      console.error('Acknowledge error:', err)
+    } finally {
+      setAckLoading(false)
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-8">
@@ -419,19 +509,60 @@ function TeamMemberOrganizationView() {
       {/* Onboarding tab (read-only) */}
       {activeTab === 'onboarding' && (
         <div className="space-y-6 animate-in fade-in duration-300">
+          {/* General onboarding */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-emerald-50">
                 <Rocket className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Onboarding</h3>
+                <h3 className="text-lg font-bold text-slate-900">Onboarding général</h3>
                 <p className="text-xs text-slate-500">Parcours d'intégration de votre organisation</p>
               </div>
             </div>
 
             <SectionViewer sections={onboardingSections} />
           </div>
+
+          {/* Role-specific onboarding */}
+          {roleSections.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-50">
+                  <Rocket className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Onboarding {memberRole}</h3>
+                  <p className="text-xs text-slate-500">Parcours spécifique à votre rôle</p>
+                </div>
+              </div>
+
+              <SectionViewer sections={roleSections} />
+            </div>
+          )}
+
+          {/* Acknowledgment button */}
+          {!hasAcknowledged && (
+            <button
+              onClick={handleAcknowledge}
+              disabled={ackLoading}
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+            >
+              {ackLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <CheckCircle className="h-5 w-5" />
+              )}
+              J'ai bien pris connaissance de l'onboarding
+            </button>
+          )}
+
+          {hasAcknowledged && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700">
+              <CheckCircle className="h-5 w-5 shrink-0" />
+              <p className="font-medium text-sm">Vous avez validé l'onboarding.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -504,6 +635,7 @@ export function BusinessOrganization() {
     tva_number: '',
     custom_tabs: [] as CustomTab[],
     onboarding_sections: [] as ContentSection[],
+    role_onboarding_sections: {} as Record<string, ContentSection[]>,
   })
 
   useEffect(() => {
@@ -528,6 +660,7 @@ export function BusinessOrganization() {
         tva_number: businessSettings.tva_number || '',
         custom_tabs: businessSettings.custom_tabs || [],
         onboarding_sections: businessSettings.onboarding_sections || [],
+        role_onboarding_sections: businessSettings.role_onboarding_sections || {},
       })
     }
   }, [businessSettings])
@@ -623,6 +756,8 @@ export function BusinessOrganization() {
       custom_tabs: prev.custom_tabs.map(t => t.id === tabId ? { ...t, sections } : t),
     }))
   }
+
+  const [selectedOnboardingRole, setSelectedOnboardingRole] = useState('Général')
 
   const ownerName = businessProfile?.full_name || user?.user_metadata?.full_name || 'Propriétaire'
 
@@ -915,18 +1050,49 @@ export function BusinessOrganization() {
               </div>
             </div>
 
+            {/* Role selector */}
+            <div className="flex flex-wrap gap-2">
+              {DEFAULT_ROLES.map(role => (
+                <button
+                  key={role}
+                  onClick={() => setSelectedOnboardingRole(role)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    selectedOnboardingRole === role
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
+
             <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
               <p className="text-sm text-emerald-800">
-                Chaque section que vous créez ici sera présentée à vos nouveaux collaborateurs lors de leur intégration. Ajoutez des textes explicatifs, des vidéos de formation, des liens vers vos outils...
+                {selectedOnboardingRole === 'Général'
+                  ? 'Cet onboarding sera présenté à tous les nouveaux collaborateurs lors de leur intégration.'
+                  : `Cet onboarding sera présenté uniquement aux membres avec le rôle "${selectedOnboardingRole}".`}
               </p>
             </div>
 
-            <SectionEditor
-              sections={formData.onboarding_sections}
-              onUpdate={(s) => setFormData(prev => ({ ...prev, onboarding_sections: s }))}
-              emptyLabel="Aucune section d'onboarding"
-              emptyDesc="Créez votre première étape d'intégration"
-            />
+            {selectedOnboardingRole === 'Général' ? (
+              <SectionEditor
+                sections={formData.onboarding_sections}
+                onUpdate={(s) => setFormData(prev => ({ ...prev, onboarding_sections: s }))}
+                emptyLabel="Aucune section d'onboarding"
+                emptyDesc="Créez votre première étape d'intégration"
+              />
+            ) : (
+              <SectionEditor
+                sections={formData.role_onboarding_sections[selectedOnboardingRole] || []}
+                onUpdate={(s) => setFormData(prev => ({
+                  ...prev,
+                  role_onboarding_sections: { ...prev.role_onboarding_sections, [selectedOnboardingRole]: s },
+                }))}
+                emptyLabel={`Aucune section pour ${selectedOnboardingRole}`}
+                emptyDesc={`Créez un parcours spécifique pour les ${selectedOnboardingRole}s`}
+              />
+            )}
           </div>
         </div>
       )}

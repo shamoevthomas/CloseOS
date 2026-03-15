@@ -90,6 +90,15 @@ function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+// Guard: team members must acknowledge onboarding before accessing other pages
+function TeamOnboardingGuard({ children }: { children: React.ReactNode }) {
+  const { isTeamMember, teamMember } = useBusinessAuth()
+  if (isTeamMember && !teamMember?.onboarding_acknowledged) {
+    return <Navigate to="/business/organisation" replace />
+  }
+  return <>{children}</>
+}
+
 // Wrapper to use BusinessAuth inside routes
 function OwnerOnlyWrapper({ children }: { children: React.ReactNode }) {
   return <OwnerOnlyRoute>{children}</OwnerOnlyRoute>
@@ -208,15 +217,15 @@ function AuthenticatedApp() {
             </BusinessProspectsProvider>
           </BusinessAuthProvider>
         }>
-          <Route path="dashboard" element={<BusinessDashboard />} />
+          <Route path="dashboard" element={<TeamOnboardingGuard><BusinessDashboard /></TeamOnboardingGuard>} />
           <Route path="crm" element={<OwnerOnlyWrapper><BusinessCRM /></OwnerOnlyWrapper>} />
           <Route path="kpi" element={<OwnerOnlyWrapper><BusinessKPI /></OwnerOnlyWrapper>} />
           <Route path="campagnes" element={<OwnerOnlyWrapper><BusinessCampaigns /></OwnerOnlyWrapper>} />
           <Route path="acquisition" element={<OwnerOnlyWrapper><BusinessAcquisition /></OwnerOnlyWrapper>} />
-          <Route path="objectifs" element={<BusinessObjectives />} />
+          <Route path="objectifs" element={<TeamOnboardingGuard><BusinessObjectives /></TeamOnboardingGuard>} />
           <Route path="formules" element={<OwnerOnlyWrapper><BusinessFormules /></OwnerOnlyWrapper>} />
-          <Route path="rendez-vous" element={<BusinessAppointments />} />
-          <Route path="rappels" element={<BusinessReminders />} />
+          <Route path="rendez-vous" element={<TeamOnboardingGuard><BusinessAppointments /></TeamOnboardingGuard>} />
+          <Route path="rappels" element={<TeamOnboardingGuard><BusinessReminders /></TeamOnboardingGuard>} />
           <Route path="report" element={<OwnerOnlyWrapper><BusinessReport /></OwnerOnlyWrapper>} />
           <Route path="team" element={<OwnerOnlyWrapper><BusinessTeam /></OwnerOnlyWrapper>} />
           <Route path="closers" element={<OwnerOnlyWrapper><BusinessClosers /></OwnerOnlyWrapper>} />

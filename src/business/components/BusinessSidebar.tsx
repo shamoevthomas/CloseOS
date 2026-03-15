@@ -57,6 +57,7 @@ interface BusinessSidebarProps {
 export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSidebarProps) {
   const navigate = useNavigate()
   const { logout, user, businessProfile, businessSettings, isTeamMember, teamMember } = useBusinessAuth()
+  const hasAcknowledgedOnboarding = !isTeamMember || !!teamMember?.onboarding_acknowledged
   const navigation = isTeamMember ? teamMemberNavigation : ownerNavigation
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -151,26 +152,34 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
-          {navigation.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.href}
-              onClick={() => {
-                if (window.innerWidth < 1024) onClose?.();
-              }}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-amber-600 text-white'
-                    : 'text-slate-600 hover:bg-amber-50 hover:text-slate-900'
-                )
-              }
-            >
-              <item.icon className="h-4 w-4" />
-              <span className="flex-1">{item.name}</span>
-            </NavLink>
-          ))}
+          {hasAcknowledgedOnboarding ? (
+            navigation.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.href}
+                onClick={() => {
+                  if (window.innerWidth < 1024) onClose?.();
+                }}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-amber-600 text-white'
+                      : 'text-slate-600 hover:bg-amber-50 hover:text-slate-900'
+                  )
+                }
+              >
+                <item.icon className="h-4 w-4" />
+                <span className="flex-1">{item.name}</span>
+              </NavLink>
+            ))
+          ) : (
+            <div className="px-3 py-6 text-center space-y-3">
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <p className="text-xs font-medium text-amber-700">Veuillez compléter l'onboarding pour accéder à la plateforme.</p>
+              </div>
+            </div>
+          )}
         </nav>
 
         {/* User Section */}

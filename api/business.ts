@@ -1055,6 +1055,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
+    // ─── Acknowledge onboarding ───
+    if (action === 'acknowledge-onboarding' && req.method === 'POST') {
+      const { team_member_id } = req.body
+      if (!team_member_id) return res.status(400).json({ error: 'team_member_id required' })
+
+      const { error } = await supabase
+        .from('business_team_members')
+        .update({ onboarding_acknowledged: true })
+        .eq('id', team_member_id)
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ success: true })
+    }
+
     return res.status(400).json({ error: 'Invalid action' })
   } catch (err: any) {
     console.error('[business] Error:', err)
