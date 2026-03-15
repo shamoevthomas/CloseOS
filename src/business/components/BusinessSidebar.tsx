@@ -98,7 +98,9 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
     : businessProfile?.full_name || user?.user_metadata?.full_name || 'Utilisateur';
   const userRole = isTeamMember ? (teamMember?.role || 'Membre') : (businessProfile?.role || 'Business Owner');
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
-  const avatarUrl = dbAvatarUrl || businessProfile?.avatar_url || user?.user_metadata?.avatar_url;
+  const avatarUrl = isTeamMember
+    ? (teamMember?.avatar_url || user?.user_metadata?.avatar_url)
+    : (dbAvatarUrl || businessProfile?.avatar_url || user?.user_metadata?.avatar_url);
 
   return (
     <>
