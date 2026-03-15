@@ -22,7 +22,7 @@ const TEAM_SIZES = [
 ];
 
 export function BusinessOnboardingModal() {
-  const { user, businessProfile, hasOnboarded, updateBusinessProfile, updateBusinessSettings } = useBusinessAuth();
+  const { user, businessProfile, hasOnboarded, loading: authLoading, updateBusinessProfile, updateBusinessSettings } = useBusinessAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -37,10 +37,8 @@ export function BusinessOnboardingModal() {
   const [niche, setNiche] = useState('');
   const [nicheCustom, setNicheCustom] = useState('');
 
-  // Don't show if already onboarded or no user
-  if (!user || hasOnboarded) return null;
-  // Don't show if no business profile yet (still loading or not registered)
-  if (!businessProfile) return null;
+  // Don't show if already onboarded, no user, or still loading
+  if (!user || hasOnboarded || authLoading) return null;
 
   const handleStep1 = async () => {
     if (!fullName || !role) return;

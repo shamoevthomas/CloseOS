@@ -200,8 +200,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
 
     const { error } = await supabase
       .from('business_users')
-      .update(updates)
-      .eq('id', user.id);
+      .upsert({ id: user.id, email: user.email, ...updates }, { onConflict: 'id' });
 
     if (!error) {
       await initUser(user.id);
