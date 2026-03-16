@@ -25,11 +25,11 @@ const PRO_FEATURES = [
 // Price IDs — Pack Pro
 const PRICES: Record<string, string> = {
     monthly: 'price_1TBghQ33xpuYLywqqw113Vxv',
-    yearly: 'price_1TBghQ33xpuYLywq5CTMmIc6',
+    yearly: 'price_1TBh2Y33xpuYLywqZaoPaqth',
 };
 
-const BASE_PRICES: Record<string, number> = { monthly: 34, yearly: 29 };
-const CROSSED_PRICES: Record<string, number> = { monthly: 69, yearly: 60 };
+const BASE_PRICES: Record<string, number> = { monthly: 34, yearly: 25.50 };
+const CROSSED_PRICES: Record<string, number> = { monthly: 69, yearly: 45 };
 
 export function TrialExpiredModal() {
     const navigate = useNavigate();
@@ -63,15 +63,37 @@ export function TrialExpiredModal() {
     const hiddenPaths = ['/checkout', '/return', '/welcome-founder', '/', '/login', '/register'];
     const isOnHiddenPath = hiddenPaths.some(p => location.pathname === p || location.pathname.startsWith(p + '/'));
     const hasSubscription = profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing';
+    const isPaymentFailed = profile?.subscription_status === 'past_due' || profile?.subscription_status === 'unpaid';
     const created = user?.created_at ? new Date(user.created_at) : null;
     const trialEnd = created ? new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000) : null;
     const isTrialExpired = trialEnd ? new Date() > trialEnd : false;
-    const isTrialExpiredShow = !isOnHiddenPath && !isAdmin && !hasSubscription && !!user?.created_at && !!profile && isTrialExpired;
-    const shouldShow = isTrialExpiredShow || isUpgradeModalOpen;
+    const isTrialExpiredShow = !isOnHiddenPath && !isAdmin && !hasSubscription && !isPaymentFailed && !!user?.created_at && !!profile && isTrialExpired;
+    const isPaymentFailedShow = !isOnHiddenPath && !isAdmin && isPaymentFailed && !!profile;
+    const shouldShow = isTrialExpiredShow || isPaymentFailedShow || isUpgradeModalOpen;
+
+    const [portalLoading, setPortalLoading] = useState(false);
 
     const handleLogout = async () => {
         await logout();
         navigate('/', { replace: true });
+    };
+
+    const handleOpenPortal = async () => {
+        setPortalLoading(true);
+        try {
+            const res = await fetch('/api/create-portal-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user?.id }),
+            });
+            const data = await res.json();
+            if (data.url) window.location.href = data.url;
+            else alert('Impossible d\'ouvrir le portail de paiement.');
+        } catch {
+            alert('Erreur lors de l\'ouverture du portail.');
+        } finally {
+            setPortalLoading(false);
+        }
     };
 
     // Fetch Stripe client secret
@@ -233,8 +255,38 @@ export function TrialExpiredModal() {
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
 
+            {/* ==================== PAYMENT FAILED ==================== */}
+            {isPaymentFailedShow && !isUpgradeModalOpen && (
+                <div className="relative w-full max-w-md rounded-2xl bg-[#0B1120] border border-red-500/30 shadow-2xl p-10 text-center" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 border-2 border-red-500/30">
+                        <AlertCircle className="h-8 w-8 text-red-400" />
+                    </div>
+                    <h2 className="text-2xl font-extrabold text-white mb-2">Échec de paiement</h2>
+                    <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                        Votre dernier paiement a échoué. Mettez à jour votre moyen de paiement pour continuer à utiliser CloseOS.
+                    </p>
+                    <button
+                        onClick={handleOpenPortal}
+                        disabled={portalLoading}
+                        className="w-full rounded-xl bg-blue-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-[0.98] disabled:opacity-50 mb-3"
+                    >
+                        {portalLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'Mettre à jour mon moyen de paiement'}
+                    </button>
+                    <div className="mt-4 space-y-3">
+                        <button onClick={() => setIsExportOpen(true)} className="flex items-center justify-center gap-2 text-slate-400 hover:text-blue-400 transition-colors text-sm font-medium w-full">
+                            <Download className="h-4 w-4" />
+                            Extraire mes données
+                        </button>
+                        <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-slate-500 hover:text-slate-300 transition-colors text-sm w-full">
+                            <LogOut className="h-4 w-4" />
+                            Se déconnecter
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* ==================== STEP 1: SELECT PLAN ==================== */}
-            {step === 'select' && (
+            {step === 'select' && !isPaymentFailedShow && (
                 <div className="relative w-full max-w-[900px] rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl overflow-hidden" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
                     {isUpgradeModalOpen && !isTrialExpiredShow && (
                         <button onClick={hideUpgrade} className="absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors">
@@ -296,7 +348,7 @@ export function TrialExpiredModal() {
                                         className={`px-5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white shadow-lg border border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
                                         Annuel
-                                        <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-15%</span>
+                                        <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-25%</span>
                                     </button>
                                 </div>
                             </div>
@@ -335,7 +387,7 @@ export function TrialExpiredModal() {
             )}
 
             {/* ==================== STEP 2: CHECKOUT ==================== */}
-            {step === 'checkout' && (
+            {step === 'checkout' && !isPaymentFailedShow && (
                 <div className="w-full max-w-[1000px] max-h-[90vh] rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl overflow-y-auto" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
                     {/* Header */}
                     <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#0B1120]/95 backdrop-blur-sm">
@@ -372,13 +424,13 @@ export function TrialExpiredModal() {
                                     )}
                                     <span className="text-slate-400 text-sm">
                                         {billingCycle === 'yearly'
-                                            ? '/mois (facturé 348€/an)'
+                                            ? '/mois (facturé 306€/an)'
                                             : '/mois'}
                                     </span>
                                 </div>
 
                                 {billingCycle === 'yearly' && (
-                                    <p className="text-xs text-emerald-400 font-medium">✨ -15% supplémentaire avec la facturation annuelle</p>
+                                    <p className="text-xs text-emerald-400 font-medium">✨ -25% avec la facturation annuelle</p>
                                 )}
 
                                 <div className="space-y-2.5 mt-4">
@@ -405,7 +457,7 @@ export function TrialExpiredModal() {
                                         className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
                                         Annuel
-                                        <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-15%</span>
+                                        <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-25%</span>
                                     </button>
                                 </div>
                             </div>
@@ -507,7 +559,7 @@ export function TrialExpiredModal() {
             )}
 
             {/* ==================== STEP 3: SUCCESS ==================== */}
-            {step === 'success' && (
+            {step === 'success' && !isPaymentFailedShow && (
                 <div className="relative w-full max-w-md rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl p-10 text-center" style={{ animation: 'fadeSlideIn 0.4s ease-out' }}>
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 border-2 border-emerald-500/30">
                         <CheckCircle2 className="h-8 w-8 text-emerald-400" style={{ animation: 'successPop 0.5s ease-out' }} />

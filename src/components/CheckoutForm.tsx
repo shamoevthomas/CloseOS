@@ -44,13 +44,13 @@ export const CheckoutForm = () => {
 
   // CONFIGURATION DES PRIX (PRO)
   const PRICE_PRO = isYearly
-    ? "price_1TBghQ33xpuYLywq5CTMmIc6"
+    ? "price_1TBh2Y33xpuYLywqZaoPaqth"
     : "price_1TBghQ33xpuYLywqqw113Vxv";
 
 
 
   // CALCUL VISUEL
-  const basePrice = isYearly ? 29 : 34;
+  const basePrice = isYearly ? 25.50 : 34;
   const finalPrice = displayDiscount > 0
     ? (basePrice * (1 - displayDiscount / 100)).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
     : basePrice;
@@ -202,7 +202,7 @@ export const CheckoutForm = () => {
                   Annuel
                   {/* LA PETITE BULLE -15% */}
                   <span className="bg-white text-blue-600 text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">
-                    -15%
+                    -25%
                   </span>
                 </button>
               </div>
@@ -216,7 +216,7 @@ export const CheckoutForm = () => {
                 <span className="text-6xl font-black text-white">{finalPrice}€</span>
 
                 {displayDiscount === 0 && (
-                  <span className="text-2xl text-slate-500 line-through">{isYearly ? '60' : '69'}€</span>
+                  <span className="text-2xl text-slate-500 line-through">{isYearly ? '45' : '69'}€</span>
                 )}
 
                 {displayDiscount > 0 && (
@@ -230,7 +230,7 @@ export const CheckoutForm = () => {
                 )}
 
                 <span className="text-slate-400 font-medium w-full sm:w-auto">
-                  {isYearly ? "/mois (facturé 348€/an)" : "/mois"}
+                  {isYearly ? "/mois (facturé 306€/an)" : "/mois"}
                 </span>
               </div>
 

@@ -56,14 +56,14 @@ export const CGV = () => {
                   <tr className="border-b border-slate-800 bg-slate-900">
                     <th className="px-4 py-3 text-left font-bold text-white">Offre</th>
                     <th className="px-4 py-3 text-left font-bold text-white">Mensuel</th>
-                    <th className="px-4 py-3 text-left font-bold text-white">Annuel (−15%)</th>
+                    <th className="px-4 py-3 text-left font-bold text-white">Annuel (−25%)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
                   <tr>
                     <td className="px-4 py-3 text-slate-300">Pack Pro <span className="text-blue-400 text-xs font-bold">(offre de lancement)</span></td>
                     <td className="px-4 py-3 text-slate-300">34 € / mois</td>
-                    <td className="px-4 py-3 text-slate-300">29 € / mois</td>
+                    <td className="px-4 py-3 text-slate-300">25,50 € / mois</td>
                   </tr>
                 </tbody>
               </table>

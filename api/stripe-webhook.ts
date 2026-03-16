@@ -180,6 +180,20 @@ export default async function handler(req: Request) {
             break;
         }
 
+        // 2b. PAIEMENT RÉCURRENT ÉCHOUÉ
+        case 'invoice.payment_failed': {
+            const invoice = event.data.object as any;
+            const customerId = invoice.customer as string;
+
+            console.log(`❌ Payment failed for invoice ${invoice.id}`);
+
+            await supabaseAdmin
+                .from('profiles')
+                .update({ subscription_status: 'past_due' })
+                .eq('stripe_customer_id', customerId);
+            break;
+        }
+
         // 3. MISE À JOUR ABONNEMENT (Annulation, Pause, Changement de plan...)
         case 'customer.subscription.updated': {
             const subscription = event.data.object as any;

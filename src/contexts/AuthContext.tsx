@@ -16,6 +16,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Pro : base sur le statut d'abonnement (accepte aussi 'founder' pour rétrocompat)
   const subscriptionStatus = profile?.subscription_status;
   const isPaying = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
+  const isPaymentFailed = subscriptionStatus === 'past_due' || subscriptionStatus === 'unpaid';
   const isPro = isPaying && (profile?.plan === 'pro' || profile?.plan === 'founder');
   const isFounder = isPro; // Alias rétrocompat
 
@@ -228,6 +229,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin,
       isPro,
       isFounder, // Alias rétrocompat
+      isPaymentFailed,
       isInTrial,
       isPaying,
       subscriptionStatus,

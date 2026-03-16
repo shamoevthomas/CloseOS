@@ -75,10 +75,10 @@ export function LandingPage() {
     setTimeout(() => navigate('/business'), 500);
   };
 
-  // Fonction pour calculer le prix (arrondi) avec -15% si annuel
+  // Fonction pour calculer le prix avec -25% si annuel
   const calculatePrice = (price: number) => {
     if (billingCycle === 'yearly') {
-      return Math.round(price * 0.85);
+      return +(price * 0.75).toFixed(2);
     }
     return price;
   };
@@ -795,7 +795,7 @@ export function LandingPage() {
               >
                 Annuel
                 <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  -15%
+                  -25%
                 </span>
               </span>
             </div>
@@ -822,7 +822,7 @@ export function LandingPage() {
                   <span className="text-slate-500">/mois</span>
                 </div>
                 {billingCycle === 'yearly' && (
-                  <p className="text-xs text-emerald-400 mt-2">Facturé annuellement ({calculatePrice(34) === 34 ? '348' : Math.round(calculatePrice(34) * 12)}€/an)</p>
+                  <p className="text-xs text-emerald-400 mt-2">Facturé annuellement (306€/an)</p>
                 )}
               </div>
               <ul className="space-y-4 mb-4 flex-1">
