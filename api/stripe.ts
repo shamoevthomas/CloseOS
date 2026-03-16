@@ -82,8 +82,8 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
           const createdAt = new Date(authUser.user.created_at);
           const cutoffDate = new Date('2026-03-16T00:00:00Z');
           if (createdAt < cutoffDate) {
-            console.log('🎁 Legacy user detected, applying 5€ off coupon');
-            discounts.push({ coupon: 'uZQt4Lpb' });
+            console.log('🎁 Legacy user detected, applying 5€ off forever coupon');
+            discounts.push({ coupon: 'jV2tsVKM' });
           }
         }
       } catch (e) {
