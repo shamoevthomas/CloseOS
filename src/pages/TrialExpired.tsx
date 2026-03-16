@@ -161,9 +161,23 @@ export function TrialExpiredModal() {
         }
     }, [shouldShow, step, billingCycle, appliedCode]);
 
-    // Fire confetti when entering success step
+    // Fire confetti + sync subscription when entering success step
     useEffect(() => {
         if (step === 'success') {
+            // Sync subscription immediately on payment completion
+            (async () => {
+                try {
+                    await fetch('/api/sync-subscription', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: user?.id, email: user?.email }),
+                    });
+                } catch (e) {
+                    console.error('Auto sync-subscription failed:', e);
+                }
+                await refreshProfile();
+            })();
+
             const duration = 2000;
             const end = Date.now() + duration;
             const frame = () => {
