@@ -84,7 +84,7 @@ export function TrialExpiredModal() {
     // Determine visibility (computed BEFORE hooks that depend on it)
     const hiddenPaths = ['/checkout', '/checkout-starter', '/return', '/welcome-founder', '/', '/login', '/register'];
     const isOnHiddenPath = hiddenPaths.some(p => location.pathname === p || location.pathname.startsWith(p + '/'));
-    const hasSubscription = profile?.subscription_status && profile.subscription_status !== 'canceled';
+    const hasSubscription = profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing';
     const created = user?.created_at ? new Date(user.created_at) : null;
     const trialEnd = created ? new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000) : null;
     const isTrialExpired = trialEnd ? new Date() > trialEnd : false;
