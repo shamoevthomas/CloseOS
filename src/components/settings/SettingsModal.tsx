@@ -833,7 +833,8 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   </h3>
                   <div className="space-y-2 text-sm text-slate-300">
                     <p><strong className="text-white">Pour vous :</strong> -7€/mois pendant 2 mois par filleul (mensuel) ou 1 mois offert (annuel). Cumulable, plancher 18€/mois.</p>
-                    <p><strong className="text-white">Pour votre filleul :</strong> -10€/mois pendant 2 mois s'il utilise votre code.</p>
+                    <p><strong className="text-white">Pour votre filleul (mensuel) :</strong> -10€/mois pendant 2 mois (24€/mois au lieu de 34€).</p>
+                    <p><strong className="text-white">Pour votre filleul (annuel) :</strong> -30% sur l'abonnement annuel (285€ au lieu de 408€, soit 23,75€/mois toute l'année).</p>
                   </div>
                 </div>
 

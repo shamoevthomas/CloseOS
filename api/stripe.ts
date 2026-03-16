@@ -58,7 +58,7 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
         internalReferrerId = referrer.id;
         isInternalCodeUsed = true;
         const isYearly = lineItems[0]?.price === 'price_1TBh2Y33xpuYLywqZaoPaqth';
-        discounts.push({ coupon: isYearly ? 'pgPgnrYE' : '7Dt4fsPe' });
+        discounts.push({ coupon: isYearly ? 'aEg3N6xK' : '7Dt4fsPe' });
         console.log('🤝 Code parrainage interne:', cleanCode, '| Parrain:', referrer.id, '| Annuel:', isYearly);
       } else if (!referrer) {
         // Pas un code interne → chercher dans Stripe
