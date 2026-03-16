@@ -61,34 +61,23 @@ export const CGV = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-800">
                   <tr>
-                    <td className="px-4 py-3 text-slate-300">Pack Starter</td>
-                    <td className="px-4 py-3 text-slate-300">39 € / mois</td>
-                    <td className="px-4 py-3 text-slate-300">33 € / mois</td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 text-slate-300">Pack Founder <span className="text-blue-400 text-xs font-bold">(offre limitée)</span></td>
+                    <td className="px-4 py-3 text-slate-300">Pack Pro <span className="text-blue-400 text-xs font-bold">(offre de lancement)</span></td>
+                    <td className="px-4 py-3 text-slate-300">34 € / mois</td>
                     <td className="px-4 py-3 text-slate-300">29 € / mois</td>
-                    <td className="px-4 py-3 text-slate-300">25 € / mois</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             <p className="mt-4">
-              Les prix sont indiqués en euros. Le Prestataire se réserve le droit de modifier ses tarifs à tout moment pour les nouveaux abonnements. Les abonnements en cours ne sont pas affectés par ces modifications, sous réserve des dispositions spécifiques à l'Offre Founder (voir article 4).
+              Les prix sont indiqués en euros. Le Prestataire se réserve le droit de modifier ses tarifs à tout moment pour les nouveaux abonnements. Les abonnements en cours ne sont pas affectés par ces modifications.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">4. Offre Founder — Engagement à Vie</h2>
+            <h2 className="text-xl font-bold text-white mb-4">4. Tarification et abonnements existants</h2>
             <p>
-              L'Offre Founder est une offre de lancement à durée limitée. En souscrivant à l'Offre Founder, le Client bénéficie d'un <strong>tarif garanti à vie</strong> : le prix mensuel souscrit au moment de l'adhésion reste inchangé pour toute la durée de l'abonnement actif, quelle que soit l'évolution future des tarifs publics de CloseOS.
-            </p>
-            <p className="mt-2">
-              Cet engagement est conditionnel au maintien actif de l'abonnement. En cas de résiliation volontaire par le Client, le tarif Founder est définitivement perdu. En cas de réabonnement ultérieur, le Client sera soumis aux tarifs en vigueur à cette date.
-            </p>
-            <p className="mt-2">
-              Le Prestataire s'engage à honorer cet engagement pour toute la durée de vie commerciale du Service CloseOS.
+              Les abonnements souscrits avant le 16 mars 2026 conservent leur tarif d'origine tant que l'abonnement reste actif. En cas de résiliation volontaire par le Client, le tarif préférentiel est définitivement perdu. En cas de réabonnement ultérieur, le Client sera soumis aux tarifs en vigueur à cette date.
             </p>
           </section>
 

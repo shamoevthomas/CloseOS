@@ -1,55 +1,35 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUpgrade } from '../contexts/UpgradeContext';
-import { CheckCircle2, LogOut, ShieldCheck, X, Sheet, ArrowLeft, Square, CheckSquare, AlertCircle, TicketPercent, Loader2, Download } from 'lucide-react';
+import { CheckCircle2, LogOut, ShieldCheck, X, ArrowLeft, Square, CheckSquare, AlertCircle, TicketPercent, Loader2, Download } from 'lucide-react';
 import { DataExportModal } from '../components/DataExportModal';
 import { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { loadStripe } from '@stripe/stripe-js';
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
-import { PricingComparisonTable } from '../components/PricingComparisonTable';
 
 const stripePromise = loadStripe('pk_live_51SxnxC33xpuYLywqRhYvxhWrChlI3Ckjj1AfJLqRQJQwaXNyVLuLAPaURbnEcrKRAQJTneB3ZjhUHSHuFQ9Xekdt00k1ho4IEt');
 
-// Features
-const STARTER_FEATURES = [
+// Features Pack Pro
+const PRO_FEATURES = [
     'CRM & Pipeline illimité',
     'Agenda & Booking (Liens de rdv)',
-    'Facturation (Générateur PDF)',
-    'KPIs Globaux (CA, Ventes)',
-    'Rappels programmables',
-];
-const FOUNDER_FEATURES = [
-    'Tout inclus (Starter +)',
+    'Facturation & Envoi Automatique',
     'KPI Avancés (Évolution, Objectifs)',
     'Call Room (Scripts & Notes)',
-    'Envoi Factures Automatique',
     'Automatisations (Sync CRM, etc.)',
     'Enregistrement Vidéo/Audio',
-    'Badge "Founder" & Support Prio',
+    'Support Prioritaire',
 ];
 
-// Price IDs
-const PRICES: Record<string, Record<string, string>> = {
-    starter: {
-        monthly: 'price_1SyYFA33xpuYLywqHtV34VGE',
-        yearly: 'price_1Sz1Cj33xpuYLywq7Lkx6GKp',
-    },
-    founder: {
-        monthly: 'price_1SyKgI33xpuYLywqfdB8YJTp',
-        yearly: 'price_1Sz1Kg33xpuYLywqS5kHdnyU',
-    },
+// Price IDs — Pack Pro
+const PRICES: Record<string, string> = {
+    monthly: 'price_1TBghQ33xpuYLywqqw113Vxv',
+    yearly: 'price_1TBghQ33xpuYLywq5CTMmIc6',
 };
 
-const BASE_PRICES: Record<string, Record<string, number>> = {
-    starter: { monthly: 39, yearly: 33 },
-    founder: { monthly: 29, yearly: 25 },
-};
-
-const CROSSED_PRICES: Record<string, Record<string, number>> = {
-    starter: { monthly: 0, yearly: 39 },
-    founder: { monthly: 69, yearly: 60 },
-};
+const BASE_PRICES: Record<string, number> = { monthly: 34, yearly: 29 };
+const CROSSED_PRICES: Record<string, number> = { monthly: 69, yearly: 60 };
 
 export function TrialExpiredModal() {
     const navigate = useNavigate();
@@ -60,11 +40,9 @@ export function TrialExpiredModal() {
     // Step management
     const [step, setStep] = useState<'select' | 'checkout' | 'success'>('select');
     const [isExportOpen, setIsExportOpen] = useState(false);
-    const [selectedPlan, setSelectedPlan] = useState<'starter' | 'founder'>('founder');
+    const selectedPlan = 'pro';
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
-    // Comparison modal
-    const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
     // Stripe checkout
     const [clientSecret, setClientSecret] = useState('');
@@ -82,7 +60,7 @@ export function TrialExpiredModal() {
     const [showTermsError, setShowTermsError] = useState(false);
 
     // Determine visibility (computed BEFORE hooks that depend on it)
-    const hiddenPaths = ['/checkout', '/checkout-starter', '/return', '/welcome-founder', '/', '/login', '/register'];
+    const hiddenPaths = ['/checkout', '/return', '/welcome-founder', '/', '/login', '/register'];
     const isOnHiddenPath = hiddenPaths.some(p => location.pathname === p || location.pathname.startsWith(p + '/'));
     const hasSubscription = profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing';
     const created = user?.created_at ? new Date(user.created_at) : null;
@@ -101,7 +79,7 @@ export function TrialExpiredModal() {
         setClientSecret('');
         setLoading(true);
         setError('');
-        const priceId = PRICES[selectedPlan][billingCycle];
+        const priceId = PRICES[billingCycle];
         const lineItems = [{ price: priceId, quantity: 1 }];
 
         const promotekitReferral =
@@ -114,7 +92,7 @@ export function TrialExpiredModal() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 lineItems,
-                plan: selectedPlan,
+                plan: 'pro',
                 referralCode: appliedCode,
                 promotekitReferral,
                 referral_code: localStorage.getItem('referral_code') ?? '',
@@ -146,11 +124,10 @@ export function TrialExpiredModal() {
             });
     };
 
-    // When upgrade modal opens, reset to select step with founder pre-selected
+    // When upgrade modal opens, reset to select step
     useEffect(() => {
         if (isUpgradeModalOpen) {
             setStep('select');
-            setSelectedPlan('founder');
         }
     }, [isUpgradeModalOpen]);
 
@@ -245,13 +222,13 @@ export function TrialExpiredModal() {
     };
 
     // Computed visuals
-    const basePrice = BASE_PRICES[selectedPlan][billingCycle];
-    const crossedPrice = CROSSED_PRICES[selectedPlan][billingCycle];
+    const basePrice = BASE_PRICES[billingCycle];
+    const crossedPrice = CROSSED_PRICES[billingCycle];
     const finalPrice = displayDiscount > 0
         ? (basePrice * (1 - displayDiscount / 100)).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
         : basePrice;
-    const features = selectedPlan === 'starter' ? STARTER_FEATURES : FOUNDER_FEATURES;
-    const planLabel = selectedPlan === 'starter' ? 'Pack Starter' : 'Pack Founder';
+    const features = PRO_FEATURES;
+    const planLabel = 'Pack Pro';
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -277,19 +254,13 @@ export function TrialExpiredModal() {
                                         ? <>Votre essai gratuit de<br />10 jours est terminé</>
                                         : <>Passez au niveau<br />supérieur</>}
                                 </h2>
-                                <p className="text-slate-400 text-sm leading-relaxed mb-8 transition-opacity duration-300" key={selectedPlan + '-desc'} style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-                                    {selectedPlan === 'starter'
-                                        ? 'Le système complet pour organiser votre closing et encaisser vos premières commissions.'
-                                        : "L'expérience ultime. Accès à vie, IA et communauté privée."}
+                                <p className="text-slate-400 text-sm leading-relaxed mb-8 transition-opacity duration-300" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                                    L'outil tout-en-un pour les closers. Accès complet & illimité.
                                 </p>
-                                <div className="space-y-3" key={selectedPlan} style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                                <div className="space-y-3" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
                                     {features.map((text, i) => (
                                         <div key={i} className="flex items-center gap-3" style={{ animation: `fadeSlideIn 0.3s ease-out ${i * 0.05}s both` }}>
-                                            {selectedPlan === 'founder' ? (
-                                                <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                                            ) : (
-                                                <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                                            )}
+                                            <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
                                             <span className="text-slate-300 text-sm font-medium">{text}</span>
                                         </div>
                                     ))}
@@ -309,7 +280,7 @@ export function TrialExpiredModal() {
 
                         {/* RIGHT */}
                         <div className="p-8 md:p-10 flex flex-col">
-                            <h3 className="text-lg font-bold text-white text-center mb-6">Choisissez votre offre</h3>
+                            <h3 className="text-lg font-bold text-white text-center mb-6">Pack Pro — Accès complet</h3>
 
                             {/* Billing toggle */}
                             <div className="flex justify-center mb-5">
@@ -331,59 +302,21 @@ export function TrialExpiredModal() {
                             </div>
 
                             <div className="space-y-4 flex-1">
-                                {/* Starter — masqué si c'est l'offre actuelle (mode upgrade) */}
-                                {!(isUpgradeModalOpen && profile?.plan === 'starter') && (
-                                    <button
-                                        onClick={() => setSelectedPlan('starter')}
-                                        className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'starter' ? 'border-blue-500 bg-blue-500/5' : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'}`}
-                                    >
+                                <div className="relative">
+                                    <div className="w-full rounded-xl border border-blue-500 bg-blue-500/5 p-5 text-left">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-white font-bold text-base">Offre Starter</p>
-                                                <p className="text-slate-400 text-xs mt-0.5 italic">L'essentiel pour démarrer</p>
-                                            </div>
-                                            <div className="text-right">
-                                                {billingCycle === 'yearly' && <span className="text-sm text-slate-500 line-through mr-2">39€</span>}
-                                                <span className="text-2xl font-black text-white">{BASE_PRICES.starter[billingCycle]}€</span>
-                                                <span className="text-slate-400 text-xs ml-1">/mois</span>
-                                            </div>
-                                        </div>
-                                    </button>
-                                )}
-
-                                {/* Founder — masqué si c'est l'offre actuelle (mode upgrade) */}
-                                {!(isUpgradeModalOpen && profile?.plan === 'founder') && <div className="relative">
-                                    <div className="absolute -top-2.5 left-4 z-10">
-                                        <span className="inline-block px-3 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider shadow-lg">
-                                            Meilleure offre
-                                        </span>
-                                    </div>
-                                    <button
-                                        onClick={() => setSelectedPlan('founder')}
-                                        className={`w-full rounded-xl border p-5 text-left transition-all duration-200 ${selectedPlan === 'founder' ? 'border-blue-500 bg-blue-500/5' : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'}`}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-white font-bold text-base">Offre Founder</p>
+                                                <p className="text-white font-bold text-base">Offre Pro</p>
                                                 <p className="text-blue-400 text-xs mt-0.5">Accès complet & illimité</p>
                                             </div>
                                             <div className="text-right flex items-center gap-2">
-                                                <span className="text-sm text-slate-500 line-through">{CROSSED_PRICES.founder[billingCycle]}€</span>
-                                                <span className="text-2xl font-black text-white">{BASE_PRICES.founder[billingCycle]}€</span>
+                                                <span className="text-sm text-slate-500 line-through">{crossedPrice}€</span>
+                                                <span className="text-2xl font-black text-white">{basePrice}€</span>
                                                 <span className="text-slate-400 text-xs">/mois</span>
                                             </div>
                                         </div>
-                                    </button>
-                                </div>}
-
-                                {/* Comparatif button */}
-                                <button
-                                    onClick={() => setIsComparisonOpen(true)}
-                                    className="mt-2 w-full px-4 py-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-semibold transition-all border border-slate-700/50 hover:border-slate-600 flex items-center justify-center gap-2"
-                                >
-                                    <Sheet className="h-4 w-4" />
-                                    Voir le comparatif détaillé des offres
-                                </button>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* CTA */}
@@ -419,16 +352,10 @@ export function TrialExpiredModal() {
                         <div className="p-6 md:p-8 space-y-6 border-r border-slate-800/50">
 
                             {/* Plan summary */}
-                            <div className={`rounded-2xl p-6 border ${selectedPlan === 'founder' ? 'bg-blue-600/5 border-blue-500/20' : 'bg-slate-900/40 border-slate-800'}`}>
-                                {selectedPlan === 'founder' && (
-                                    <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">🔥 -58% Offre de lancement</div>
-                                )}
+                            <div className="rounded-2xl p-6 border bg-blue-600/5 border-blue-500/20">
+                                <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">🔥 -51% Offre de lancement</div>
                                 <h3 className="text-xl font-extrabold text-white mb-1">{planLabel} {billingCycle === 'yearly' && '(Annuel)'}</h3>
-                                <p className="text-slate-400 text-sm mb-4">
-                                    {selectedPlan === 'starter'
-                                        ? "L'essentiel pour démarrer"
-                                        : 'Accès complet & illimité'}
-                                </p>
+                                <p className="text-slate-400 text-sm mb-4">Accès complet & illimité</p>
 
                                 <div className="flex items-baseline gap-2 mb-4 flex-wrap">
                                     <span className="text-4xl font-black text-white">{finalPrice}€</span>
@@ -445,8 +372,8 @@ export function TrialExpiredModal() {
                                     )}
                                     <span className="text-slate-400 text-sm">
                                         {billingCycle === 'yearly'
-                                            ? `/mois (facturé ${selectedPlan === 'founder' ? '300' : '396'}€/an)`
-                                            : selectedPlan === 'founder' ? '/mois à vie' : '/mois'}
+                                            ? '/mois (facturé 348€/an)'
+                                            : '/mois'}
                                     </span>
                                 </div>
 
@@ -609,22 +536,6 @@ export function TrialExpiredModal() {
                 </div>
             )}
 
-            {/* COMPARISON MODAL */}
-            {isComparisonOpen && (
-                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-950 rounded-2xl border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => setIsComparisonOpen(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors z-10">
-                            <X className="h-6 w-6" />
-                        </button>
-                        <PricingComparisonTable isModal={true} />
-                        <div className="p-6 border-t border-slate-900 bg-slate-950/50 sticky bottom-0 text-center">
-                            <button onClick={() => setIsComparisonOpen(false)} className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors">
-                                Fermer le comparatif
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <DataExportModal isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} />
 

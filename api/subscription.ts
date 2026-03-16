@@ -238,7 +238,7 @@ async function handleSync(req: Request): Promise<Response> {
                     stripe_customer_id: customer.id,
                     stripe_subscription_id: activeSub.id,
                     subscription_status: activeSub.status,
-                    plan: activeSub.metadata?.plan || 'founder',
+                    plan: activeSub.metadata?.plan || 'pro',
                     has_voip: activeSub.metadata?.voip === 'true',
                     billing_cycle: billingCycle,
                     current_period_end: new Date((activeSub as any).current_period_end * 1000).toISOString()

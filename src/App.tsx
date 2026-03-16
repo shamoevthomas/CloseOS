@@ -22,7 +22,7 @@ import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 import { LoadingScreen } from './components/LoadingScreen'
 import { CheckoutForm } from './components/CheckoutForm'
-import { CheckoutStarter } from './components/CheckoutStarter'
+// CheckoutStarter supprimé — un seul plan Pro maintenant
 import { Return } from './components/Return'
 
 // Imports des Pages
@@ -145,7 +145,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function OnboardingWrapper({ onComplete }: { onComplete?: () => void }) {
   const location = useLocation();
 
-  const hiddenPaths = ['/welcome-founder', '/checkout', '/checkout-starter', '/return', '/choose-plan', '/business'];
+  const hiddenPaths = ['/welcome-founder', '/checkout', '/return', '/choose-plan', '/business'];
 
   if (hiddenPaths.some(path => location.pathname === path || location.pathname.startsWith(path + '/'))) {
     return null;
@@ -273,7 +273,6 @@ function AuthenticatedApp() {
 
         {/* Routes Paiement & Onboarding */}
         <Route path="/checkout" element={<CheckoutForm />} />
-        <Route path="/checkout-starter" element={<CheckoutStarter />} />
         <Route path="/return" element={<Return />} />
         <Route
           path="/welcome-founder"

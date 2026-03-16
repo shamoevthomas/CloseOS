@@ -743,9 +743,9 @@ export function LandingPage() {
                   </div>
 
                   <div className="pt-6 border-t border-blue-500/20 relative z-10">
-                    <p className="text-blue-400 text-sm font-medium uppercase tracking-widest mb-1">Offre Founder</p>
+                    <p className="text-blue-400 text-sm font-medium uppercase tracking-widest mb-1">Pack Pro</p>
                     <div className="text-5xl font-black text-white tracking-tight">
-                      29€<span className="text-lg text-slate-500 font-medium">/mois</span>
+                      34€<span className="text-lg text-slate-500 font-medium">/mois</span>
                     </div>
                     <p className="text-emerald-400 text-xs font-bold mt-2 flex items-center justify-center gap-1">
                       <Zap className="w-3 h-3" />
@@ -765,7 +765,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white sm:text-5xl">Tarifs CloseOS — l'outil tout-en-un des closers</h2>
-            <p className="text-slate-400 mt-4 text-lg">Choisissez le plan adapté à votre activité de closing. Sans engagement.</p>
+            <p className="text-slate-400 mt-4 text-lg">Un seul plan. Tout inclus. Sans engagement.</p>
             <p className="text-white mt-4 text-2xl font-bold">Testez gratuitement 10 jours. Aucune carte bancaire requise.</p>
           </div>
 
@@ -800,92 +800,43 @@ export function LandingPage() {
               </span>
             </div>
 
-            {/* BOUTON COMPARATIF */}
-            <button
-              onClick={() => setIsComparisonOpen(true)}
-              className="mt-8 px-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition-all border border-slate-700 hover:border-slate-600 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200"
-            >
-              <Sheet className="h-5 w-5" />
-              Voir le comparatif détaillé des offres
-            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start max-w-5xl mx-auto">
-            {/* PLAN STARTER */}
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 flex flex-col h-full opacity-80 hover:opacity-100 transition-opacity animate-in fade-in zoom-in duration-300">
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-white">PACK STARTER</h3>
-                <p className="mt-2 text-slate-400 text-sm">Le système complet pour organiser votre closing et encaisser vos premières commissions.</p>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-white">{calculatePrice(39)}€</span>
-                  <span className="text-slate-500">/mois</span>
-                </div>
-                {billingCycle === 'yearly' && (
-                  <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
-                )}
-              </div>
-              <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex gap-3 text-sm text-slate-300">
-                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                  <span><strong>CRM & Pipeline</strong> illimité</span>
-                </li>
-                <li className="flex gap-3 text-sm text-slate-300">
-                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                  <span><strong>Agenda & Booking</strong> (Liens de rdv)</span>
-                </li>
-                <li className="flex gap-3 text-sm text-slate-300">
-                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                  <span><strong>Facturation</strong> (Générateur PDF)</span>
-                </li>
-                <li className="flex gap-3 text-sm text-slate-300">
-                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                  <span><strong>KPIs Globaux</strong> (CA, Ventes)</span>
-                </li>
-                <li className="flex gap-3 text-sm text-slate-300">
-                  <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
-                  <span><strong>Rappels programmables</strong></span>
-                </li>
-              </ul>
-              <Link
-                to="/register"
-                className="w-full py-4 rounded-xl border border-slate-700 font-bold text-center text-slate-300 hover:bg-slate-800 hover:text-white transition-colors block"
-              >
-                Commencer gratuitement
-              </Link>
-              <p className="mt-3 text-[10px] text-center text-slate-600">
-                1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.
-              </p>
-            </div>
-
-            {/* PLAN FOUNDER */}
-            <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 scale-105 relative z-10 flex flex-col h-full animate-in fade-in zoom-in duration-300 delay-75">
-              <div className="absolute -top-3 right-6 flex flex-col items-end gap-1">
+          <div className="max-w-lg mx-auto">
+            {/* PLAN PRO */}
+            <div className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 relative flex flex-col h-full animate-in fade-in zoom-in duration-300">
+              <div className="absolute -top-3 right-6">
                 <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg">
-                  🔥 -58% OFFRE DE LANCEMENT
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-red-500/90 text-white text-[10px] font-bold uppercase tracking-wide">
-                  Offre valable jusqu'au 15 mars
+                  🔥 -51% OFFRE DE LANCEMENT
                 </span>
               </div>
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-2xl font-bold text-white">PACK FOUNDER</h3>
+                  <h3 className="text-2xl font-bold text-white">PACK PRO</h3>
                   <Star className="h-5 w-5 text-yellow-400 fill-yellow-400 animate-pulse" />
                 </div>
-                <p className="mt-2 text-blue-200 text-sm">L'expérience ultime. Accès à vie, IA et communauté privée.</p>
+                <p className="mt-2 text-blue-200 text-sm">L'outil tout-en-un des closers. Accès complet & illimité.</p>
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-5xl font-extrabold text-white">{calculatePrice(29)}€</span>
+                  <span className="text-5xl font-extrabold text-white">{calculatePrice(34)}€</span>
                   <span className="text-slate-400 line-through text-lg">69€</span>
-                  <span className="text-slate-500">/mois à vie</span>
+                  <span className="text-slate-500">/mois</span>
                 </div>
                 {billingCycle === 'yearly' && (
-                  <p className="text-xs text-emerald-400 mt-2">Facturé annuellement</p>
+                  <p className="text-xs text-emerald-400 mt-2">Facturé annuellement ({calculatePrice(34) === 34 ? '348' : Math.round(calculatePrice(34) * 12)}€/an)</p>
                 )}
               </div>
               <ul className="space-y-4 mb-4 flex-1">
                 <li className="flex gap-3 text-sm text-white font-medium">
                   <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                  <span>Tout ce qui est inclus dans Starter</span>
+                  <span><strong>CRM & Pipeline</strong> illimité</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>Agenda & Booking</strong> (Liens de rdv)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-white font-medium">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span><strong>Facturation & Envoi Automatique</strong></span>
                 </li>
                 <li className="flex gap-3 text-sm text-white font-medium">
                   <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
@@ -897,10 +848,6 @@ export function LandingPage() {
                 </li>
                 <li className="flex gap-3 text-sm text-white font-medium">
                   <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                  <span><strong>Envoi Factures Automatique</strong></span>
-                </li>
-                <li className="flex gap-3 text-sm text-white font-medium">
-                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
                   <span><strong>Automatisations</strong> (Sync CRM, etc.)</span>
                 </li>
                 <li className="flex gap-3 text-sm text-white font-medium">
@@ -909,13 +856,13 @@ export function LandingPage() {
                 </li>
                 <li className="flex gap-3 text-sm text-white font-medium">
                   <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                  <span>Badge "Founder" & Support Prio</span>
+                  <span>Support Prioritaire</span>
                 </li>
               </ul>
 
               <Link
                 to="/register"
-                className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-50 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
+                className="block w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-center hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40"
               >
                 Commencer gratuitement
               </Link>
@@ -1007,12 +954,12 @@ export function LandingPage() {
               </p>
             </FAQItem>
 
-            <FAQItem question="Pourquoi l'offre Founder est-elle à 29€ au lieu de 69€ ?">
+            <FAQItem question="Pourquoi le Pack Pro est-il à 34€ au lieu de 69€ ?">
               <p>
-                <strong className="text-white">C'est une offre de lancement limitée.</strong> Nous récompensons nos premiers utilisateurs ("Early Adopters") avec ce tarif préférentiel.
+                <strong className="text-white">C'est une offre de lancement.</strong> Nous récompensons nos premiers utilisateurs avec ce tarif préférentiel.
               </p>
               <p className="mt-2">
-                En prenant votre accès aujourd'hui, vous <strong className="text-white">bloquez ce prix à vie</strong>. Même quand l'abonnement passera à 69€/mois pour les nouveaux clients, vous continuerez de payer 29€.
+                Le prix standard passera à 69€/mois. En prenant votre accès maintenant, vous profitez du tarif de lancement.
               </p>
             </FAQItem>
 
@@ -1046,12 +993,6 @@ export function LandingPage() {
             >
               Commencer gratuitement
               <ChevronRight className="h-5 w-5" />
-            </Link>
-            <Link
-              to="/register"
-              className="text-slate-500 hover:text-white text-sm underline transition-colors mt-2"
-            >
-              Ou démarrer avec le Pack Starter
             </Link>
           </div>
           <p className="mt-6 text-sm text-slate-500">

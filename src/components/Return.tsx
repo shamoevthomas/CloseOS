@@ -12,7 +12,6 @@ export function Return() {
   // 👇 On récupère le paramètre "plan" de l'URL (envoyé par Stripe)
   const [searchParams] = useSearchParams();
   const plan = searchParams.get('plan');
-  const isStarter = plan === 'starter'; // Ajout de la variable helper
 
   // États pour l'inscription
   const { register, loginWithGoogle, refreshProfile } = useAuth();
@@ -58,15 +57,11 @@ export function Return() {
   // 👇 FONCTION D'ENVOI D'EMAIL (BREVO) AJOUTÉE ICI
   const sendWelcomeEmail = async (email: string, userName: string) => {
 
-    const subject = isStarter
-      ? "Bienvenue sur CloseOS Starter 🚀"
-      : "Bienvenue dans l'Élite CloseOS 💎";
+    const subject = "Bienvenue sur CloseOS Pro 💎";
 
-    const title = isStarter ? "Pack Starter Activé" : "Membre Founder Confirmé";
+    const title = "Membre Pro Confirmé";
 
-    const subtext = isStarter
-      ? "Votre période d'essai de 10 jours est réservée. Préparez-vous à closer."
-      : "Vous avez sécurisé votre accès à vie. Vous faites partie des premiers.";
+    const subtext = "Votre accès Pro est activé. Préparez-vous à closer.";
 
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
@@ -130,8 +125,7 @@ export function Return() {
         options: {
           data: {
             full_name: name,
-            // 👇 LOGIQUE : Si le plan est 'starter', il n'est pas founder
-            is_founder: plan !== 'starter'
+            is_founder: true
           }
         }
       });
@@ -165,7 +159,7 @@ export function Return() {
         await trackFirstPromoterReferral(customerEmail);
 
         // 👇 REDIRECTION : On transmet le plan à la page suivante
-        navigate(plan === 'starter' ? '/welcome-founder?plan=starter' : '/welcome-founder');
+        navigate('/welcome-founder');
       }
     } catch (err: any) {
       setError("Une erreur est survenue lors de la création du compte.");
@@ -218,7 +212,7 @@ export function Return() {
           <h1 className="text-2xl font-bold text-white mb-2">Paiement réussi !</h1>
           <p className="text-slate-400">
             {/* Texte dynamique selon le plan */}
-            {plan === 'starter' ? "Bienvenue membre Starter." : "Bienvenue dans l'Élite."} Finalisez votre compte pour accéder à votre espace.
+Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
           </p>
         </div>
 

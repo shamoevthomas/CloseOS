@@ -44,7 +44,7 @@ export function ComingSoon() {
 
         <p className="text-lg text-slate-400 mb-8 leading-relaxed">
           Nous peaufinons les derniers détails de la plateforme. <br className="hidden md:block" />
-          Votre espace Founder est sécurisé et vous attend.
+          Votre espace Pro est sécurisé et vous attend.
         </p>
 
         {/* BOITE D'INFO ESSAI GRATUIT */}

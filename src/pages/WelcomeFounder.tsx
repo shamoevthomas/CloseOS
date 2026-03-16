@@ -1,4 +1,4 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Target, MessageCircle, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect } from 'react';
@@ -12,19 +12,11 @@ export function WelcomeFounder() {
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // 👇 DÉTECTION DU PLAN (Starter ou Founder)
-  const [searchParams] = useSearchParams();
-  const isStarter = searchParams.get('plan') === 'starter';
-
   // 👇 TON LIEN WHATSAPP OFFICIEL
   const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s";
 
-  // 👇 CONFIG VIDEOS
-  const VIDEO_ID_FOUNDER = "ewsQesgvs1w";
-  // 👇 NOUVEL ID VIDEO STARTER ICI
-  const VIDEO_ID_STARTER = "3IsO7V3-bnY";
-
-  const activeVideoId = isStarter ? VIDEO_ID_STARTER : VIDEO_ID_FOUNDER;
+  // 👇 CONFIG VIDEO
+  const activeVideoId = "ewsQesgvs1w";
   const YOUTUBE_URL = `https://www.youtube.com/embed/${activeVideoId}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1`;
 
   // Fonction pour gérer la vraie déconnexion
@@ -72,23 +64,17 @@ export function WelcomeFounder() {
           {/* TITRE & CONFIRMATION DYNAMIQUE */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* BADGE QUI CHANGE DE COULEUR ET DE TEXTE */}
-            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-widest mb-6 ${isStarter
-              ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
-              : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-              }`}>
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-widest mb-6 bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
               <Target className="h-3 w-3" />
-              {isStarter ? "Espace Starter Activé" : "Place Founder Sécurisée"}
+              Pack Pro Activé
             </span>
 
             <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
-              {isStarter ? "Bienvenue sur CloseOS." : "Bienvenue dans l'Élite."}
+              Bienvenue sur CloseOS.
             </h1>
 
             <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
-              {isStarter
-                ? "Félicitations. Ton abonnement Starter est actif."
-                : "Félicitations. Ton abonnement à vie est verrouillé."
-              }
+              Félicitations. Ton abonnement Pro est activé.
               <br />
               Regarde cette courte vidéo pour comprendre la suite.
             </p>

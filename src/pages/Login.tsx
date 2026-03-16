@@ -110,7 +110,7 @@ export default function Login() {
               <LogIn className="h-6 w-6 text-blue-500" />
               Connexion
             </h2>
-            <p className="text-slate-400">Accédez à votre espace Founder.</p>
+            <p className="text-slate-400">Accédez à votre espace CloseOS.</p>
           </div>
 
           {error && (
@@ -188,7 +188,7 @@ export default function Login() {
               Pas encore de compte ?{' '}
               {/* LIEN VERS LE PRICING */}
               <a href="/#pricing" className="font-bold text-blue-500 hover:text-blue-400 hover:underline transition-all">
-                Devenir Founder
+                S'inscrire
               </a>
             </p>
           </div>

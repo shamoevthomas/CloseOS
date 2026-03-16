@@ -74,6 +74,23 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Grandfathering: users registered before March 16, 2026 get 5€ off first month
+    if (existingUser && userId && discounts.length === 0) {
+      try {
+        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+        if (authUser?.user?.created_at) {
+          const createdAt = new Date(authUser.user.created_at);
+          const cutoffDate = new Date('2026-03-16T00:00:00Z');
+          if (createdAt < cutoffDate) {
+            console.log('🎁 Legacy user detected, applying 5€ off coupon');
+            discounts.push({ coupon: 'uZQt4Lpb' });
+          }
+        }
+      } catch (e) {
+        console.error('Could not check user creation date for grandfathering:', e);
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       ui_mode: 'embedded',
       line_items: lineItems,
@@ -87,13 +104,13 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
       // Nouvel utilisateur → redirect vers /return pour créer le compte
       ...(existingUser
         ? { redirect_on_completion: 'never' as const }
-        : { return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}&plan=${plan || 'founder'}` }),
+        : { return_url: `${req.headers.origin}/return?session_id={CHECKOUT_SESSION_ID}&plan=${plan || 'pro'}` }),
 
       // On applique la réduction
       discounts: discounts.length > 0 ? discounts : undefined,
 
       metadata: {
-        plan: plan || 'founder',
+        plan: plan || 'pro',
         voip: isVoip ? 'true' : 'false',
         ...(finalReferral ? { referral_code: String(finalReferral) } : {}),
         ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
@@ -101,7 +118,7 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
 
       subscription_data: {
         metadata: {
-          plan: plan || 'founder',
+          plan: plan || 'pro',
           voip: isVoip ? 'true' : 'false',
           ...(finalReferral ? { referral_code: String(finalReferral) } : {}),
           ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),

@@ -8,7 +8,7 @@ const FOUNDER_ADVANTAGES = [
   'Envoi Factures Automatique',
   'Automatisations (Sync CRM, etc.)',
   'Enregistrement Vidéo/Audio',
-  'Badge "Founder" & Support Prio',
+  'Support Prioritaire',
 ];
 
 export function FounderOnlyGuard({ children }: { children: React.ReactNode }) {
@@ -27,10 +27,10 @@ export function FounderOnlyGuard({ children }: { children: React.ReactNode }) {
         </div>
 
         <h2 className="text-2xl font-extrabold text-white mb-3">
-          Fonctionnalité réservée au Pack Founder
+          Fonctionnalité réservée au Pack Pro
         </h2>
         <p className="text-slate-400 text-sm mb-8 leading-relaxed">
-          Cette fonctionnalité fait partie du Pack Founder. Passez au niveau supérieur pour débloquer toutes les features avancées.
+          Cette fonctionnalité fait partie du Pack Pro. Passez au niveau supérieur pour débloquer toutes les features avancées.
         </p>
 
         <div className="text-left space-y-3 mb-8">
@@ -46,7 +46,7 @@ export function FounderOnlyGuard({ children }: { children: React.ReactNode }) {
           onClick={showUpgrade}
           className="w-full rounded-xl bg-blue-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-[0.98]"
         >
-          Passer au Pack Founder
+          Passer au Pack Pro
         </button>
 
         <p className="text-[11px] text-slate-500 mt-4">

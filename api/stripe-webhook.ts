@@ -149,7 +149,7 @@ export default async function handler(req: Request) {
                         stripe_customer_id: customerId,
                         stripe_subscription_id: subscriptionId,
                         subscription_status: realStatus,
-                        plan: session.metadata?.plan || 'founder',
+                        plan: session.metadata?.plan || 'pro',
                         has_voip: session.metadata?.voip === 'true',
                         billing_cycle: billingCycle,
                         // On ne met subscribed_at que si c'est le premier paiement

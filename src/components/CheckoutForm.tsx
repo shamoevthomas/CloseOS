@@ -42,15 +42,15 @@ export const CheckoutForm = () => {
     setSearchParams(newParams);
   };
 
-  // CONFIGURATION DES PRIX (FOUNDER)
-  const PRICE_FOUNDER = isYearly
-    ? "price_1Sz1Kg33xpuYLywqS5kHdnyU"
-    : "price_1SyKgI33xpuYLywqfdB8YJTp"; // Remis l'ID Founder standard
+  // CONFIGURATION DES PRIX (PRO)
+  const PRICE_PRO = isYearly
+    ? "price_1TBghQ33xpuYLywq5CTMmIc6"
+    : "price_1TBghQ33xpuYLywqqw113Vxv";
 
 
 
   // CALCUL VISUEL
-  const basePrice = isYearly ? 25 : 29;
+  const basePrice = isYearly ? 29 : 34;
   const finalPrice = displayDiscount > 0
     ? (basePrice * (1 - displayDiscount / 100)).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
     : basePrice;
@@ -58,7 +58,7 @@ export const CheckoutForm = () => {
   const fetchClientSecret = () => {
     setClientSecret(''); // 👈 Reset pour forcer l'unmount et éviter l'erreur "multiple objects"
     setLoading(true);
-    const lineItems = [{ price: PRICE_FOUNDER, quantity: 1 }];
+    const lineItems = [{ price: PRICE_PRO, quantity: 1 }];
 
 
 
@@ -73,7 +73,7 @@ export const CheckoutForm = () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         lineItems,
-        plan: 'founder',
+        plan: 'pro',
         referralCode: appliedCode,
         promotekitReferral,
         referral_code: localStorage.getItem('referral_code') ?? '',
@@ -178,11 +178,11 @@ export const CheckoutForm = () => {
           <div className="space-y-8">
             <div>
               <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-bold bg-blue-500/10 text-blue-300 border border-blue-500/20 mb-6">
-                <Sparkles className="w-3 h-3" /> Offre de Prélancement
+                <Sparkles className="w-3 h-3" /> Offre de lancement
               </span>
-              <h1 className="text-4xl font-extrabold text-white mb-4">Pack Founder {isYearly && "(Annuel)"}</h1>
+              <h1 className="text-4xl font-extrabold text-white mb-4">Pack Pro {isYearly && "(Annuel)"}</h1>
               <p className="text-slate-400 text-lg">
-                Rejoignez les premiers membres et sécurisez votre tarif à VIE.
+                L'outil tout-en-un des closers. Accès complet & illimité.
               </p>
             </div>
 
@@ -210,16 +210,13 @@ export const CheckoutForm = () => {
             {/* 👆 FIN DU SWITCH 👆 */}
 
             <div className="bg-blue-600/5 rounded-3xl p-8 border border-blue-500/20 relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">OFFRE LIMITÉE</div>
+              <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">-51% LANCEMENT</div>
 
               <div className="flex items-baseline gap-3 mb-6 flex-wrap">
                 <span className="text-6xl font-black text-white">{finalPrice}€</span>
 
-                {isYearly && displayDiscount === 0 && (
-                  <span className="text-2xl text-slate-500 line-through">60€</span>
-                )}
-                {!isYearly && displayDiscount === 0 && (
-                  <span className="text-2xl text-slate-500 line-through">69€</span>
+                {displayDiscount === 0 && (
+                  <span className="text-2xl text-slate-500 line-through">{isYearly ? '60' : '69'}€</span>
                 )}
 
                 {displayDiscount > 0 && (
@@ -233,17 +230,18 @@ export const CheckoutForm = () => {
                 )}
 
                 <span className="text-slate-400 font-medium w-full sm:w-auto">
-                  {isYearly ? "/mois (facturé 300€/an)" : "/mois à vie"}
+                  {isYearly ? "/mois (facturé 348€/an)" : "/mois"}
                 </span>
               </div>
 
               <div className="space-y-4 mb-8">
                 {[
-                  "Tout inclus (Starter +)",
+                  "CRM & Pipeline illimité",
                   "KPI Avancés (Evolution, Objectifs)",
                   "Call Room & Scripts Interactifs",
                   "Automatisations (Factures & CRM)",
-                  "Badges Founder & Support Prioritaire"
+                  "Enregistrement Vidéo/Audio",
+                  "Support Prioritaire"
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 text-slate-300 text-sm font-medium">
                     <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />

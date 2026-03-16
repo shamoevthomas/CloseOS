@@ -38,8 +38,7 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: SettingsModalProps) {
-  const { user, profile, updateProfile, updatePassword, isFounder, isStarter, isPaying, refreshProfile } = useAuth()
-  const { showUpgrade } = useUpgrade()
+  const { user, profile, updateProfile, updatePassword, isFounder, isPaying, refreshProfile } = useAuth()
 
   // Retrait de 'timezone' des onglets possibles
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'support' | 'delete_account' | 'data'>(initialTab)
@@ -736,7 +735,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       {cancelAtPeriodEnd ? 'Annulation programmée' : isPaying ? 'Plan Actif' : 'Aucun abonnement'}
                     </span>
                     <h3 className="text-3xl font-bold text-white mb-1">
-                      {isFounder ? 'Pack Founder' : isStarter ? 'Pack Starter' : 'Aucun plan'}
+                      {isFounder ? 'Pack Pro' : 'Aucun plan'}
                     </h3>
                     {profile?.billing_cycle && (
                       <p className="text-slate-400 text-sm mb-1">
@@ -751,22 +750,6 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   </div>
                 </div>
 
-                {/* Upgrade — visible pour Starter */}
-                {isStarter && (
-                  <button
-                    onClick={() => { onClose(); showUpgrade(); }}
-                    className="w-full p-5 rounded-2xl bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center justify-between group"
-                  >
-                    <div className="text-left">
-                      <p className="text-white font-bold text-base">Passer au Pack Founder</p>
-                      <p className="text-slate-400 text-sm mt-0.5">Débloquez les KPI avancés, le Call Room, les automatisations...</p>
-                    </div>
-                    <div className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm group-hover:bg-blue-500 transition-colors shrink-0">
-                      <ArrowUpRight className="h-4 w-4" />
-                      Upgrade
-                    </div>
-                  </button>
-                )}
 
                 {/* Annulation programmée — info + réactivation */}
                 {isPaying && cancelAtPeriodEnd && (

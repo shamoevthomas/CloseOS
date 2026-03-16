@@ -13,11 +13,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Role admin simple : base uniquement sur l'email
   const isAdmin = user?.email === 'shamoovthomas@gmail.com';
 
-  // Founder : base sur le statut d'abonnement
+  // Pro : base sur le statut d'abonnement (accepte aussi 'founder' pour rétrocompat)
   const subscriptionStatus = profile?.subscription_status;
   const isPaying = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
-  const isFounder = isPaying && profile?.plan === 'founder';
-  const isStarter = isPaying && profile?.plan === 'starter';
+  const isPro = isPaying && (profile?.plan === 'pro' || profile?.plan === 'founder');
+  const isFounder = isPro; // Alias rétrocompat
 
   // Trial: user exists, no active subscription, account < 10 days old
   const hasSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
@@ -226,8 +226,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       profile,
       isAdmin,
-      isFounder,
-      isStarter,
+      isPro,
+      isFounder, // Alias rétrocompat
       isInTrial,
       isPaying,
       subscriptionStatus,
