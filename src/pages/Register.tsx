@@ -33,15 +33,30 @@ export default function Register() {
         setError(result.error.message);
         setLoading(false);
       } else {
-        // Sauvegarder le code affilié en base si présent
-        const referralCode = localStorage.getItem('referral_code');
-        if (referralCode) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase
+        // Sauvegarder le parrainage en base si présent
+        const refCode = localStorage.getItem('closeos_ref') || localStorage.getItem('referral_code');
+        if (refCode) {
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          if (currentUser) {
+            // Chercher le parrain via son code de parrainage
+            const { data: referrer } = await supabase
               .from('profiles')
-              .update({ referral_code: referralCode })
-              .eq('id', user.id);
+              .select('id')
+              .eq('own_referral_code', refCode.toUpperCase())
+              .single();
+
+            if (referrer) {
+              await supabase
+                .from('profiles')
+                .update({ referred_by: referrer.id, referral_code: refCode })
+                .eq('id', currentUser.id);
+            } else {
+              // Code externe (Promotekit etc.)
+              await supabase
+                .from('profiles')
+                .update({ referral_code: refCode })
+                .eq('id', currentUser.id);
+            }
           }
         }
         navigate('/dashboard');

@@ -152,12 +152,123 @@ export default async function handler(req: Request) {
                         plan: session.metadata?.plan || 'pro',
                         has_voip: session.metadata?.voip === 'true',
                         billing_cycle: billingCycle,
-                        // On ne met subscribed_at que si c'est le premier paiement
                         ...(!profile.subscribed_at ? { subscribed_at: new Date().toISOString() } : {}),
                     })
                     .eq('id', profile.id);
+
+                // ─── Enregistrer le parrainage interne ───
+                const internalReferrerId = session.metadata?.internal_referrer_id;
+                if (internalReferrerId) {
+                    const isYearly = billingCycle === 'yearly';
+
+                    // Vérifier qu'il n'existe pas déjà un parrainage pour ce filleul
+                    const { data: existingRef } = await supabaseAdmin
+                        .from('referrals')
+                        .select('id')
+                        .eq('referee_id', profile.id)
+                        .limit(1);
+
+                    if (!existingRef || existingRef.length === 0) {
+                        await supabaseAdmin.from('referrals').insert({
+                            referrer_id: internalReferrerId,
+                            referee_id: profile.id,
+                            referee_billing_cycle: billingCycle || 'monthly',
+                            referrer_reward_type: isYearly ? 'free_month' : 'monthly_discount',
+                            referrer_months_remaining: isYearly ? 1 : 2,
+                            status: 'active',
+                            activated_at: new Date().toISOString(),
+                        });
+
+                        // Mettre à jour referred_by sur le profil du filleul
+                        await supabaseAdmin
+                            .from('profiles')
+                            .update({ referred_by: internalReferrerId })
+                            .eq('id', profile.id);
+
+                        console.log(`🤝 Parrainage enregistré: ${internalReferrerId} → ${profile.id} (${isYearly ? 'annuel' : 'mensuel'})`);
+                    }
+                }
             } else {
                 console.log(`⚠️ User not found for email ${customerEmail}. They might register later.`);
+            }
+            break;
+        }
+
+        // 1b. CRÉDITS PARRAINAGE SUR FACTURE (avant paiement)
+        case 'invoice.created': {
+            const invoice = event.data.object as any;
+            const customerId = invoice.customer as string;
+            const subscriptionId = invoice.subscription as string;
+
+            // Ne traiter que les factures d'abonnement récurrentes (pas la première)
+            if (!subscriptionId || invoice.billing_reason === 'subscription_create') break;
+
+            // Trouver le parrain
+            const { data: parrain } = await supabaseAdmin
+                .from('profiles')
+                .select('id, stripe_customer_id, billing_cycle')
+                .eq('stripe_customer_id', customerId)
+                .single();
+
+            if (!parrain) break;
+
+            // Trouver les parrainages actifs avec des mois restants
+            const { data: activeReferrals } = await supabaseAdmin
+                .from('referrals')
+                .select('*')
+                .eq('referrer_id', parrain.id)
+                .eq('status', 'active')
+                .gt('referrer_months_remaining', 0);
+
+            if (!activeReferrals || activeReferrals.length === 0) break;
+
+            // Calculer le crédit total
+            let totalDiscountCents = 0;
+            for (const ref of activeReferrals) {
+                if (ref.referrer_reward_type === 'free_month') {
+                    // 1 mois offert = prix mensuel du parrain
+                    // Pour annuel: on prend le prix mensuel équivalent
+                    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+                    const priceAmount = (sub as any).items?.data?.[0]?.price?.unit_amount || 3400;
+                    const interval = (sub as any).items?.data?.[0]?.price?.recurring?.interval;
+                    const monthlyEquiv = interval === 'year' ? Math.round(priceAmount / 12) : priceAmount;
+                    totalDiscountCents += monthlyEquiv;
+                } else {
+                    // -7€ par mois
+                    totalDiscountCents += 700;
+                }
+            }
+
+            // Plancher 18€/mois : calculer le max déductible
+            const invoiceSubtotal = invoice.subtotal || 0; // en centimes
+            const isYearlyInvoice = invoiceSubtotal > 10000; // > 100€ = annuel
+            const floorCents = isYearlyInvoice ? 1800 * 12 : 1800; // 18€/mois ou 216€/an
+            const maxDiscount = Math.max(0, invoiceSubtotal - floorCents);
+            const appliedDiscount = Math.min(totalDiscountCents, maxDiscount);
+
+            if (appliedDiscount > 0) {
+                // Ajouter un item négatif sur la facture
+                await stripe.invoiceItems.create({
+                    customer: customerId,
+                    amount: -appliedDiscount,
+                    currency: 'eur',
+                    description: `Réduction parrainage (${activeReferrals.length} filleul${activeReferrals.length > 1 ? 's' : ''})`,
+                    invoice: invoice.id,
+                });
+
+                console.log(`🎁 Parrain ${parrain.id}: -${appliedDiscount / 100}€ appliqué (${activeReferrals.length} parrainages)`);
+            }
+
+            // Décrémenter les mois restants
+            for (const ref of activeReferrals) {
+                const newMonths = ref.referrer_months_remaining - 1;
+                await supabaseAdmin
+                    .from('referrals')
+                    .update({
+                        referrer_months_remaining: newMonths,
+                        status: newMonths <= 0 ? 'expired' : 'active',
+                    })
+                    .eq('id', ref.id);
             }
             break;
         }

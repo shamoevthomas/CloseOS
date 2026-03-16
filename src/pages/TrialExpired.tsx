@@ -109,6 +109,10 @@ export function TrialExpiredModal() {
                 ? (window as any).promotekit_referral
                 : null;
 
+        // Lire le cookie/localStorage de parrainage
+        const cookieRef = document.cookie.match(/closeos_ref=([^;]+)/)?.[1] || '';
+        const internalRef = decodeURIComponent(cookieRef) || localStorage.getItem('closeos_ref') || '';
+
         fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -118,6 +122,7 @@ export function TrialExpiredModal() {
                 referralCode: appliedCode,
                 promotekitReferral,
                 referral_code: localStorage.getItem('referral_code') ?? '',
+                internalReferral: internalRef,
                 userId: user?.id,
                 customerEmail: user?.email,
                 existingUser: true,

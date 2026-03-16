@@ -18,7 +18,7 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { lineItems, plan, referralCode, isVoip, promotekitReferral, userId, referral_code: frontendReferralCode, customerEmail, existingUser } = req.body;
+    const { lineItems, plan, referralCode, isVoip, promotekitReferral, userId, referral_code: frontendReferralCode, customerEmail, existingUser, internalReferral } = req.body;
 
     // Cascade de priorité pour le code affilié : Supabase > localStorage > Promotekit
     let supabaseReferral = null;
@@ -39,39 +39,85 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
     console.log("Session pour:", plan, "| Code saisi:", referralCode, "| VoIP:", isVoip, "| Referral:", finalReferral);
 
     let discounts: any[] = [];
-    let percentOff = 0; // On stocke la réduction pour l'envoyer au frontend
+    let percentOff = 0;
+    let internalReferrerId: string | null = null;
+    let isInternalCodeUsed = false;
 
+    // ─── 1. Vérifier si le code saisi est un code de parrainage interne ───
     if (referralCode) {
-      const cleanCode = referralCode.trim();
+      const cleanCode = referralCode.trim().toUpperCase();
 
-      // Essayer avec le code tel quel, puis en majuscules si pas trouvé
-      let promoCodes = await stripe.promotionCodes.list({
-        code: cleanCode,
-        active: true,
-        limit: 1,
-      });
+      const { data: referrer } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('own_referral_code', cleanCode)
+        .single();
 
-      // Fallback: essayer en majuscules si pas trouvé
-      if (promoCodes.data.length === 0 && cleanCode !== cleanCode.toUpperCase()) {
-        promoCodes = await stripe.promotionCodes.list({
-          code: cleanCode.toUpperCase(),
+      if (referrer && referrer.id !== userId) {
+        // Code interne trouvé → appliquer coupon filleul
+        internalReferrerId = referrer.id;
+        isInternalCodeUsed = true;
+        const isYearly = lineItems[0]?.price === 'price_1TBh2Y33xpuYLywqZaoPaqth';
+        discounts.push({ coupon: isYearly ? 'pgPgnrYE' : '7Dt4fsPe' });
+        console.log('🤝 Code parrainage interne:', cleanCode, '| Parrain:', referrer.id, '| Annuel:', isYearly);
+      } else if (!referrer) {
+        // Pas un code interne → chercher dans Stripe
+        let promoCodes = await stripe.promotionCodes.list({
+          code: referralCode.trim(),
           active: true,
           limit: 1,
         });
-      }
 
-      if (promoCodes.data.length > 0) {
-        const promo = promoCodes.data[0];
-        // Récupérer le coupon associé
-        const coupon = typeof promo.coupon === 'string'
-          ? await stripe.coupons.retrieve(promo.coupon)
-          : promo.coupon;
-        console.log("✅ Code trouvé:", promo.id, "| Coupon:", coupon?.id, "| percent_off:", coupon?.percent_off, "| amount_off:", coupon?.amount_off);
-        discounts.push({ promotion_code: promo.id });
-        percentOff = coupon?.percent_off || 0;
-      } else {
-        console.log("❌ Code inconnu ou expiré:", cleanCode);
+        if (promoCodes.data.length === 0 && referralCode.trim() !== cleanCode) {
+          promoCodes = await stripe.promotionCodes.list({
+            code: cleanCode,
+            active: true,
+            limit: 1,
+          });
+        }
+
+        if (promoCodes.data.length > 0) {
+          const promo = promoCodes.data[0];
+          const coupon = typeof promo.coupon === 'string'
+            ? await stripe.coupons.retrieve(promo.coupon)
+            : promo.coupon;
+          console.log("✅ Code Stripe trouvé:", promo.id, "| percent_off:", coupon?.percent_off);
+          discounts.push({ promotion_code: promo.id });
+          percentOff = coupon?.percent_off || 0;
+        } else {
+          console.log("❌ Code inconnu:", cleanCode);
+        }
       }
+    }
+
+    // ─── 2. Vérifier le parrainage via cookie (lien de parrainage) ───
+    if (!internalReferrerId && internalReferral) {
+      const cleanRef = internalReferral.trim().toUpperCase();
+      const { data: referrer } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('own_referral_code', cleanRef)
+        .single();
+
+      if (referrer && referrer.id !== userId) {
+        internalReferrerId = referrer.id;
+        console.log('🔗 Parrainage via lien (cookie):', cleanRef, '| Parrain:', referrer.id);
+      }
+    }
+
+    // ─── 3. Vérifier referred_by sur le profil ───
+    if (!internalReferrerId && userId) {
+      try {
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('referred_by')
+          .eq('id', userId)
+          .single();
+        if (userProfile?.referred_by) {
+          internalReferrerId = userProfile.referred_by;
+          console.log('🔗 Parrainage via referred_by:', internalReferrerId);
+        }
+      } catch {}
     }
 
     // Grandfathering: users registered before March 16, 2026 get 5€ off first month
@@ -114,6 +160,8 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
         voip: isVoip ? 'true' : 'false',
         ...(finalReferral ? { referral_code: String(finalReferral) } : {}),
         ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
+        ...(internalReferrerId ? { internal_referrer_id: internalReferrerId } : {}),
+        ...(isInternalCodeUsed ? { internal_code_used: 'true' } : {}),
       },
 
       subscription_data: {
@@ -122,11 +170,12 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
           voip: isVoip ? 'true' : 'false',
           ...(finalReferral ? { referral_code: String(finalReferral) } : {}),
           ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
+          ...(internalReferrerId ? { internal_referrer_id: internalReferrerId } : {}),
         },
       },
     });
 
-    res.status(200).json({ clientSecret: session.client_secret, percentOff, promoApplied: discounts.length > 0 });
+    res.status(200).json({ clientSecret: session.client_secret, percentOff, promoApplied: discounts.length > 0, internalReferralApplied: isInternalCodeUsed });
   } catch (err: any) {
     console.error("ERREUR STRIPE:", err.message);
     // On renvoie l'erreur exacte pour le débug

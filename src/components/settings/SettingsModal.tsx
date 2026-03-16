@@ -20,7 +20,10 @@ import {
   ZoomOut,
   ArrowUpRight,
   Database,
-  Heart
+  Heart,
+  Gift,
+  Copy,
+  Users
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useUpgrade } from '../../contexts/UpgradeContext'
@@ -34,14 +37,14 @@ import { CancellationRetentionModal } from './CancellationRetentionModal'
 interface SettingsModalProps {
   isOpen: boolean
   onClose: () => void
-  initialTab?: 'profile' | 'security' | 'subscription' | 'support' | 'delete_account' | 'data'
+  initialTab?: 'profile' | 'security' | 'subscription' | 'referral' | 'support' | 'delete_account' | 'data'
 }
 
 export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: SettingsModalProps) {
   const { user, profile, updateProfile, updatePassword, isFounder, isPaying, refreshProfile } = useAuth()
 
   // Retrait de 'timezone' des onglets possibles
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'support' | 'delete_account' | 'data'>(initialTab)
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'referral' | 'support' | 'delete_account' | 'data'>(initialTab)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
@@ -52,6 +55,11 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null)
   const [message, setMessage] = useState({ type: '', text: '' })
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // States pour le parrainage
+  const [referralStats, setReferralStats] = useState({ total: 0, active: 0 })
+  const [codeCopied, setCodeCopied] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
 
   // States pour le crop
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -93,6 +101,23 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
       setMessage({ type: '', text: '' })
     }
     fetchProfileData()
+  }, [user, isOpen, activeTab])
+
+  // Fetch referral stats
+  useEffect(() => {
+    if (!user || !isOpen || activeTab !== 'referral') return
+    supabase
+      .from('referrals')
+      .select('id, status')
+      .eq('referrer_id', user.id)
+      .then(({ data }) => {
+        if (data) {
+          setReferralStats({
+            total: data.length,
+            active: data.filter(r => r.status === 'active').length,
+          })
+        }
+      })
   }, [user, isOpen, activeTab])
 
   // Fetch subscription cancellation status from Stripe
@@ -438,6 +463,9 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
             <button onClick={() => setActiveTab('subscription')} className={tabButtonClass('subscription')}>
               <CreditCard className="w-4 h-4" /> Abonnement
             </button>
+            <button onClick={() => setActiveTab('referral')} className={tabButtonClass('referral')}>
+              <Gift className="w-4 h-4" /> Parrainage
+            </button>
 
             <div className="my-6 h-px bg-white/5 mx-4" />
 
@@ -469,6 +497,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 {/* Retrait du titre Fuseau Horaire */}
                 {activeTab === 'security' && 'Sécurité & Connexion'}
                 {activeTab === 'subscription' && 'Mon Abonnement'}
+                {activeTab === 'referral' && 'Parrainage'}
                 {activeTab === 'support' && 'Centre d\'Aide'}
                 {activeTab === 'delete_account' && 'Suppression du compte'}
                 {activeTab === 'data' && 'Mes Données'}
@@ -479,6 +508,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 {/* Retrait de la description Fuseau Horaire */}
                 {activeTab === 'security' && 'Protégez l\'accès à votre compte CloserOS.'}
                 {activeTab === 'subscription' && 'Gérez votre plan, vos factures et l\'annulation.'}
+                {activeTab === 'referral' && 'Partagez votre lien et gagnez des réductions.'}
                 {activeTab === 'support' && 'Une question ? Notre équipe est là pour vous.'}
                 {activeTab === 'delete_account' && 'Zone de danger : Supprimer votre compte et vos données.'}
                 {activeTab === 'data' && 'Exportez vos données au format PDF.'}
@@ -788,6 +818,83 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
                 <p className="text-center text-[11px] text-slate-500">
                   Paiement sécurisé par Stripe. Annulation possible à tout moment.
+                </p>
+              </div>
+            )}
+
+            {/* --- ONGLET PARRAINAGE --- */}
+            {activeTab === 'referral' && (
+              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+                {/* Avantages */}
+                <div className="p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5">
+                  <h3 className="text-white font-bold text-base mb-3 flex items-center gap-2">
+                    <Gift className="h-5 w-5 text-blue-400" />
+                    Comment ça marche ?
+                  </h3>
+                  <div className="space-y-2 text-sm text-slate-300">
+                    <p><strong className="text-white">Pour vous :</strong> -7€/mois pendant 2 mois par filleul (mensuel) ou 1 mois offert (annuel). Cumulable, plancher 18€/mois.</p>
+                    <p><strong className="text-white">Pour votre filleul :</strong> -10€/mois pendant 2 mois s'il utilise votre code.</p>
+                  </div>
+                </div>
+
+                {/* Code de parrainage */}
+                <div className="p-5 rounded-2xl border border-white/10 bg-slate-900/50">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Votre code de parrainage</p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-white font-mono text-lg font-bold tracking-widest">
+                      {profile?.own_referral_code || '...'}
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(profile?.own_referral_code || '')
+                        setCodeCopied(true)
+                        setTimeout(() => setCodeCopied(false), 2000)
+                      }}
+                      className="px-4 py-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-all flex items-center gap-2 text-sm font-bold"
+                    >
+                      {codeCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                      {codeCopied ? 'Copié' : 'Copier'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lien de parrainage */}
+                <div className="p-5 rounded-2xl border border-white/10 bg-slate-900/50">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Votre lien de parrainage</p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-300 text-sm truncate">
+                      {`https://closeos.fr?ref=${profile?.own_referral_code || ''}`}
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`https://closeos.fr?ref=${profile?.own_referral_code || ''}`)
+                        setLinkCopied(true)
+                        setTimeout(() => setLinkCopied(false), 2000)
+                      }}
+                      className="px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-all flex items-center gap-2 text-sm font-bold shrink-0"
+                    >
+                      {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {linkCopied ? 'Copié' : 'Copier'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-5 rounded-2xl border border-white/10 bg-slate-900/50 text-center">
+                    <Users className="h-6 w-6 text-blue-400 mx-auto mb-2" />
+                    <p className="text-3xl font-black text-white">{referralStats.total}</p>
+                    <p className="text-xs text-slate-500 mt-1">Filleuls total</p>
+                  </div>
+                  <div className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 text-center">
+                    <Gift className="h-6 w-6 text-emerald-400 mx-auto mb-2" />
+                    <p className="text-3xl font-black text-white">{referralStats.active}</p>
+                    <p className="text-xs text-slate-500 mt-1">Réductions actives</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-500 text-center">
+                  Le filleul peut utiliser votre code lors du paiement, ou simplement s'inscrire via votre lien.
                 </p>
               </div>
             )}

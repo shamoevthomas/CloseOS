@@ -85,9 +85,12 @@ export function LandingPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const via = params.get('via');
-    if (via) {
-      localStorage.setItem('referral_code', via);
+    const ref = params.get('ref') || params.get('via');
+    if (ref) {
+      localStorage.setItem('referral_code', ref);
+      localStorage.setItem('closeos_ref', ref);
+      // Cookie 30 jours pour le tracking parrainage
+      document.cookie = `closeos_ref=${encodeURIComponent(ref)};max-age=${30 * 24 * 60 * 60};path=/;SameSite=Lax`;
     }
   }, []);
 
