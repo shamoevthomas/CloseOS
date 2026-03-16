@@ -5,7 +5,7 @@ const funFacts = [
     "Le saviez-vous ? CloseOS a été fondé par Thomas Shamoev, alors âgé de seulement 19 ans. 🚀",
     "Le saviez-vous ? CloseOS est le premier outil du marché à centraliser l'ensemble du closing. 🎯",
     "Le saviez-vous ? À l'origine, CloseOS était uniquement destiné aux closers. Aujourd'hui, il va bien au-delà. 💡",
-    "Le saviez-vous ? CloseOS permet de libérer jusqu'à 35 heures par mois pour chaque closer. ⏱️",
+    "Le saviez-vous ? CloseOS permet de libérer jusqu'à 10h par semaine pour chaque closer. ⏱️",
 ]
 
 export function LoadingScreen() {

@@ -244,16 +244,16 @@ export function LandingPage() {
               c'est terminé.
             </span>
             <br />
-            Reprenez 35H de closing par mois.
+            Récupérez 10h de closing par semaine.
           </h1>
 
           <p className="mx-auto max-w-2xl text-lg text-slate-400 mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 leading-relaxed">
-            CRM, Agenda, Booking, VoIP, Facturation, Visio, KPIs... CloseOS réunit TOUT ce dont vous avez besoin pour closer davantage, et gagner plus.
+            CRM, Agenda, Booking, VoIP, Facturation, Visio, KPIs — le logiciel tout-en-un conçu pour les closers. Centralisez votre activité, automatisez l'administratif et concentrez-vous sur ce qui rapporte : le closing.
           </p>
 
           <div className="flex items-center justify-center gap-2 mb-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-250">
             <span className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-sm font-medium text-violet-300">
-              🔗 Centralisez tout votre flux. Automatisez chaque étape de votre closing.
+              🔗 Un seul outil. Zéro saisie manuelle. 100% dédié au closing.
             </span>
           </div>
 
@@ -338,9 +338,9 @@ export function LandingPage() {
       < section id="features" className="py-32 relative" >
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-20 text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-white sm:text-5xl mb-6">Tout est là.<br />Au même endroit.</h2>
+            <h2 className="text-3xl font-bold text-white sm:text-5xl mb-6">Toutes vos fonctionnalités de closing.<br />Un seul outil.</h2>
             <p className="text-lg text-slate-400">
-              Arrêtez de perdre du temps à switcher entre les onglets. CloseOS centralise votre flux de travail pour que vous puissiez vous concentrer sur l'essentiel : <span className="text-emerald-400 font-semibold">Le Closing.</span>
+              CRM, pipeline, VoIP, agenda, facturation, KPIs — arrêtez de jongler entre les onglets. CloseOS centralise tout votre flux de travail pour que vous puissiez vous concentrer sur l'essentiel : <span className="text-emerald-400 font-semibold">vendre et closer.</span>
             </p>
           </div>
 
@@ -483,7 +483,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-12">
             <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-400 uppercase tracking-widest">
-              Roadmap 2025
+              Roadmap 2026
             </span>
             <h2 className="text-3xl sm:text-5xl font-bold text-white mt-6">L'Évolution du Closing</h2>
             <p className="text-slate-400 mt-4 max-w-2xl mx-auto text-sm">Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers, agences et infopreneurs.</p>
@@ -612,8 +612,8 @@ export function LandingPage() {
 
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white sm:text-5xl">Vendez plus. Vivez mieux.</h2>
-            <p className="text-slate-400 mt-4 text-lg">Pourquoi être "indépendant" si c'est pour être esclave de l'administratif ?</p>
+            <h2 className="text-3xl font-bold text-white sm:text-5xl">Closer sans CloseOS vs avec CloseOS</h2>
+            <p className="text-slate-400 mt-4 text-lg">Pourquoi rester esclave de l'administratif quand un seul outil peut tout automatiser ?</p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
@@ -672,7 +672,7 @@ export function LandingPage() {
                     <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1">PERTE ESTIMÉE</p>
                     {/* MODIFICATION 2 : 35H + SOUS-TITRE */}
                     <div className="text-4xl font-black text-white">
-                      35h<span className="text-lg text-slate-500 font-medium">/mois</span>
+                      10h<span className="text-lg text-slate-500 font-medium">/semaine</span>
                     </div>
                   </div>
                 </div>
@@ -764,8 +764,8 @@ export function LandingPage() {
       <section id="pricing" className="py-32 relative bg-slate-950">
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white sm:text-5xl">Rejoignez l'Élite.</h2>
-            <p className="text-slate-400 mt-4 text-lg">Choisissez l'outil qui va doubler votre taux de closing.</p>
+            <h2 className="text-3xl font-bold text-white sm:text-5xl">Tarifs CloseOS — l'outil tout-en-un des closers</h2>
+            <p className="text-slate-400 mt-4 text-lg">Choisissez le plan adapté à votre activité de closing. Sans engagement.</p>
             <p className="text-white mt-4 text-2xl font-bold">Testez gratuitement 10 jours. Aucune carte bancaire requise.</p>
           </div>
 
