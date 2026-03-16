@@ -184,70 +184,8 @@ export default async function handler(req: Request) {
                             .update({ referred_by: internalReferrerId })
                             .eq('id', profile.id);
 
-                        // ─── Créer le premier crédit parrain (invoice item négatif) ───
-                        try {
-                            const { data: parrainProfile } = await supabaseAdmin
-                                .from('profiles')
-                                .select('stripe_customer_id, stripe_subscription_id, billing_cycle')
-                                .eq('id', internalReferrerId)
-                                .single();
-
-                            if (parrainProfile?.stripe_customer_id) {
-                                // Calculer le montant du crédit
-                                let creditCents = 700; // -7€ par défaut (filleul mensuel)
-                                if (isYearly) {
-                                    // 1 mois offert = prix mensuel du parrain
-                                    if (parrainProfile.stripe_subscription_id) {
-                                        const parrainSub = await stripe.subscriptions.retrieve(parrainProfile.stripe_subscription_id);
-                                        const priceAmount = (parrainSub as any).items?.data?.[0]?.price?.unit_amount || 3400;
-                                        const interval = (parrainSub as any).items?.data?.[0]?.price?.recurring?.interval;
-                                        creditCents = interval === 'year' ? Math.round(priceAmount / 12) : priceAmount;
-                                    } else {
-                                        creditCents = 3400;
-                                    }
-                                }
-
-                                // Appliquer le plancher 18€ : vérifier le prix actuel du parrain
-                                let parrainMonthlyCents = 3400;
-                                if (parrainProfile.stripe_subscription_id) {
-                                    const parrainSub = await stripe.subscriptions.retrieve(parrainProfile.stripe_subscription_id);
-                                    const priceAmount = (parrainSub as any).items?.data?.[0]?.price?.unit_amount || 3400;
-                                    const interval = (parrainSub as any).items?.data?.[0]?.price?.recurring?.interval;
-                                    parrainMonthlyCents = interval === 'year' ? Math.round(priceAmount / 12) : priceAmount;
-                                }
-
-                                // Vérifier les autres crédits actifs déjà en cours
-                                const { data: allActiveRefs } = await supabaseAdmin
-                                    .from('referrals')
-                                    .select('referrer_reward_type, referrer_months_remaining')
-                                    .eq('referrer_id', internalReferrerId)
-                                    .eq('status', 'active')
-                                    .gt('referrer_months_remaining', 0);
-
-                                let existingCreditCents = 0;
-                                for (const r of (allActiveRefs || [])) {
-                                    existingCreditCents += r.referrer_reward_type === 'free_month' ? parrainMonthlyCents : 700;
-                                }
-                                // Exclure le crédit qu'on vient d'ajouter (déjà compté)
-                                const totalWithNew = existingCreditCents;
-                                const maxDiscount = Math.max(0, parrainMonthlyCents - 1800);
-                                const appliedCredit = Math.min(creditCents, maxDiscount, totalWithNew > maxDiscount ? Math.max(0, maxDiscount - (existingCreditCents - creditCents)) : creditCents);
-
-                                if (appliedCredit > 0) {
-                                    await stripe.invoiceItems.create({
-                                        customer: parrainProfile.stripe_customer_id,
-                                        amount: -appliedCredit,
-                                        currency: 'eur',
-                                        description: `Parrainage : réduction filleul ${isYearly ? '(annuel)' : '(mensuel)'}`,
-                                    });
-                                    console.log(`🎁 Crédit parrain ${internalReferrerId}: -${appliedCredit / 100}€ sur prochaine facture`);
-                                }
-                            }
-                        } catch (e) {
-                            console.error('⚠️ Erreur création crédit parrain:', e);
-                        }
-
                         console.log(`🤝 Parrainage enregistré: ${internalReferrerId} → ${profile.id} (${isYearly ? 'annuel' : 'mensuel'})`);
+                        // Les crédits seront appliqués automatiquement via invoice.created
                     }
                 }
             } else {
@@ -256,10 +194,88 @@ export default async function handler(req: Request) {
             break;
         }
 
-        // 2. PAIEMENT RÉCURRENT RÉUSSI
+        // 2. FACTURE CRÉÉE (avant paiement) — Appliquer les crédits parrainage
+        case 'invoice.created': {
+            const invoice = event.data.object as any;
+            const customerId = invoice.customer as string;
+            const subscriptionId = invoice.subscription as string;
+
+            // Ne pas traiter la première facture (c'est le checkout) ni les factures manuelles
+            if (!subscriptionId || invoice.billing_reason === 'subscription_create') {
+                console.log(`📄 Invoice created (initial/manual) ${invoice.id} — skip referral credits`);
+                break;
+            }
+
+            console.log(`📄 Invoice created ${invoice.id} for customer ${customerId}`);
+
+            try {
+                const { data: payer } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id, stripe_subscription_id')
+                    .eq('stripe_customer_id', customerId)
+                    .single();
+
+                if (payer) {
+                    const { data: activeRefs } = await supabaseAdmin
+                        .from('referrals')
+                        .select('*')
+                        .eq('referrer_id', payer.id)
+                        .eq('status', 'active')
+                        .gt('referrer_months_remaining', 0);
+
+                    if (activeRefs && activeRefs.length > 0) {
+                        // Calculer le prix mensuel du parrain
+                        let parrainMonthlyCents = 3400;
+                        if (payer.stripe_subscription_id) {
+                            const sub = await stripe.subscriptions.retrieve(payer.stripe_subscription_id);
+                            const priceAmount = (sub as any).items?.data?.[0]?.price?.unit_amount || 3400;
+                            const interval = (sub as any).items?.data?.[0]?.price?.recurring?.interval;
+                            parrainMonthlyCents = interval === 'year' ? Math.round(priceAmount / 12) : priceAmount;
+                        }
+
+                        // Calculer le crédit total
+                        let totalCredit = 0;
+                        for (const ref of activeRefs) {
+                            totalCredit += ref.referrer_reward_type === 'free_month' ? parrainMonthlyCents : 700;
+                        }
+
+                        // Plancher 18€ : le parrain ne paie jamais moins de 18€/mois
+                        const maxDiscount = Math.max(0, parrainMonthlyCents - 1800);
+                        const applied = Math.min(totalCredit, maxDiscount);
+
+                        if (applied > 0) {
+                            await stripe.invoiceItems.create({
+                                customer: customerId,
+                                amount: -applied,
+                                currency: 'eur',
+                                invoice: invoice.id,
+                                description: `Parrainage : réduction (${activeRefs.length} filleul${activeRefs.length > 1 ? 's' : ''})`,
+                            });
+                            console.log(`🎁 Crédit parrain ${payer.id}: -${applied / 100}€ appliqué sur facture ${invoice.id}`);
+                        }
+
+                        // Décrémenter les mois restants
+                        for (const ref of activeRefs) {
+                            const newMonths = ref.referrer_months_remaining - 1;
+                            await supabaseAdmin
+                                .from('referrals')
+                                .update({
+                                    referrer_months_remaining: newMonths,
+                                    status: newMonths <= 0 ? 'expired' : 'active',
+                                })
+                                .eq('id', ref.id);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('⚠️ Erreur crédits parrainage sur invoice.created:', e);
+            }
+            break;
+        }
+
+        // 2b. PAIEMENT RÉCURRENT RÉUSSI
         case 'invoice.payment_succeeded': {
             const invoice = event.data.object as any;
-            const subscriptionId = invoice.subscription as string;
             const customerId = invoice.customer as string;
 
             console.log(`💸 Payment succeeded for invoice ${invoice.id}`);
@@ -271,85 +287,10 @@ export default async function handler(req: Request) {
                     current_period_end: new Date((invoice.lines.data[0].period.end * 1000)).toISOString()
                 })
                 .eq('stripe_customer_id', customerId);
-
-            // ─── Crédits parrainage : décrémenter et planifier le prochain ───
-            if (subscriptionId && invoice.billing_reason !== 'subscription_create') {
-                try {
-                    const { data: payer } = await supabaseAdmin
-                        .from('profiles')
-                        .select('id, stripe_customer_id, stripe_subscription_id')
-                        .eq('stripe_customer_id', customerId)
-                        .single();
-
-                    if (payer) {
-                        const { data: activeRefs } = await supabaseAdmin
-                            .from('referrals')
-                            .select('*')
-                            .eq('referrer_id', payer.id)
-                            .eq('status', 'active')
-                            .gt('referrer_months_remaining', 0);
-
-                        if (activeRefs && activeRefs.length > 0) {
-                            // Décrémenter les mois restants
-                            for (const ref of activeRefs) {
-                                const newMonths = ref.referrer_months_remaining - 1;
-                                await supabaseAdmin
-                                    .from('referrals')
-                                    .update({
-                                        referrer_months_remaining: newMonths,
-                                        status: newMonths <= 0 ? 'expired' : 'active',
-                                    })
-                                    .eq('id', ref.id);
-                            }
-
-                            // Vérifier s'il reste des crédits pour le prochain mois
-                            const { data: remainingRefs } = await supabaseAdmin
-                                .from('referrals')
-                                .select('*')
-                                .eq('referrer_id', payer.id)
-                                .eq('status', 'active')
-                                .gt('referrer_months_remaining', 0);
-
-                            if (remainingRefs && remainingRefs.length > 0) {
-                                // Calculer le prix mensuel du parrain
-                                let parrainMonthlyCents = 3400;
-                                if (payer.stripe_subscription_id) {
-                                    const sub = await stripe.subscriptions.retrieve(payer.stripe_subscription_id);
-                                    const priceAmount = (sub as any).items?.data?.[0]?.price?.unit_amount || 3400;
-                                    const interval = (sub as any).items?.data?.[0]?.price?.recurring?.interval;
-                                    parrainMonthlyCents = interval === 'year' ? Math.round(priceAmount / 12) : priceAmount;
-                                }
-
-                                // Calculer le crédit total pour le prochain mois
-                                let totalCredit = 0;
-                                for (const ref of remainingRefs) {
-                                    totalCredit += ref.referrer_reward_type === 'free_month' ? parrainMonthlyCents : 700;
-                                }
-
-                                // Plancher 18€
-                                const maxDiscount = Math.max(0, parrainMonthlyCents - 1800);
-                                const applied = Math.min(totalCredit, maxDiscount);
-
-                                if (applied > 0) {
-                                    await stripe.invoiceItems.create({
-                                        customer: customerId,
-                                        amount: -applied,
-                                        currency: 'eur',
-                                        description: `Parrainage : réduction (${remainingRefs.length} filleul${remainingRefs.length > 1 ? 's' : ''})`,
-                                    });
-                                    console.log(`🎁 Prochain crédit parrain ${payer.id}: -${applied / 100}€`);
-                                }
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error('⚠️ Erreur gestion crédits parrainage:', e);
-                }
-            }
             break;
         }
 
-        // 2b. PAIEMENT RÉCURRENT ÉCHOUÉ
+        // 2c. PAIEMENT RÉCURRENT ÉCHOUÉ
         case 'invoice.payment_failed': {
             const invoice = event.data.object as any;
             const customerId = invoice.customer as string;
