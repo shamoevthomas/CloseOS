@@ -24,6 +24,7 @@ import {
   Bell,
   Check,
   Loader2,
+  Building2,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
@@ -739,6 +740,8 @@ export function ProspectView({
                       <div className="space-y-3">
                         <input type="text" value={editedContact} onChange={(e) => setEditedContact(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Nom" />
                         <input type="text" value={editedCompany} onChange={(e) => setEditedCompany(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Entreprise" />
+                        <input type="email" value={editedEmail} onChange={(e) => setEditedEmail(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Email" />
+                        <input type="tel" value={editedPhone} onChange={(e) => setEditedPhone(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Téléphone" />
                         <div className="flex gap-2">
                           <button onClick={handleSaveClient} className="flex-1 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white">Sauvegarder</button>
                           <button onClick={handleCancelClient} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-300">Annuler</button>
@@ -760,6 +763,15 @@ export function ProspectView({
                             <button onClick={handleOpenWhatsApp} className="text-sm text-slate-300 hover:text-white hover:underline text-left"><MaskedText value={localProspect.phone} type="name" /></button>
                           </div>
                         </div>
+                        {localProspect.company && localProspect.company !== 'N/A' && (
+                          <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
+                            <Building2 className="h-4 w-4 text-orange-400" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs text-slate-500">Entreprise</p>
+                              <p className="text-sm text-slate-300">{localProspect.company}</p>
+                            </div>
+                          </div>
+                        )}
                         <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
                           <Clock className="h-4 w-4 text-purple-400" />
                           <div className="min-w-0 flex-1">

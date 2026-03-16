@@ -102,7 +102,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
     }
 
     if (isB2B && !formData.company) {
-      alert('Le nom de l\'entreprise est requis pour les offres B2B')
+      alert("Le nom de l'entreprise est requis pour les offres B2B")
       return
     }
 
@@ -128,7 +128,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
       contact: fullName, // On garde la compatibilité
       email: formData.email,
       phone: formData.phone,
-      company: isB2B ? formData.company : 'N/A',
+      company: formData.company || '',
       offer: finalOfferName,
       offer_id: formData.offerId ? parseInt(formData.offerId) : undefined,
       value: selectedOfferPrice,
@@ -215,6 +215,20 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
             />
           </div>
 
+          <div>
+            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-300">
+              <Building2 className="h-4 w-4 text-blue-400" />
+              Entreprise <span className="text-slate-500 font-normal">(facultatif)</span>
+            </label>
+            <input
+              type="text"
+              value={formData.company}
+              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+              placeholder="Ex: Tech Corp"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+
           {/* SÉLECTEUR D'OFFRE */}
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-300">Offre</label>
@@ -264,23 +278,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
             </div>
           )}
 
-          {/* B2B COMPANY */}
-          {isB2B && (
-            <div>
-              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-300">
-                <Building2 className="h-4 w-4 text-blue-400" />
-                Nom de l'Entreprise *
-              </label>
-              <input
-                type="text"
-                value={formData.company}
-                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                placeholder="Ex: Tech Corp"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-                required={isB2B}
-              />
-            </div>
-          )}
+          {/* B2B: entreprise requise pour offres B2B (déjà rempli via le champ au-dessus) */}
 
           <div className="mt-6 flex gap-3">
             <button
