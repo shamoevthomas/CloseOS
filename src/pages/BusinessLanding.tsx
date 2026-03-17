@@ -8,7 +8,6 @@ import {
   Layers,
   Bell,
   Tag,
-  Shield,
   Mail,
   Phone,
   MessageSquare,
@@ -71,7 +70,7 @@ export const BusinessLanding: React.FC = () => {
       
       {/* Navigation */}
       <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-5xl">
-        <div className="bg-white/80 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-3 flex items-center justify-between shadow-sm">
+        <div className="bg-white/80 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-1.5 flex items-center justify-between shadow-sm">
           <div className="relative group flex items-center gap-1 cursor-pointer">
             <img
               alt="CloseOS Logo"
@@ -125,16 +124,16 @@ export const BusinessLanding: React.FC = () => {
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm">
               <span className="text-sm font-medium text-stone-800">
-                🚀 Déjà <span className="font-bold bg-gradient-to-r from-[#ff2f2f] via-[#ef7b16] to-[#d511fd] text-transparent bg-clip-text">+150 closers</span> qui valident CloseOS Sales
+                🚀 Centre de Commandement Manager
               </span>
             </div>
 
             <h1 className="text-5xl md:text-7xl lg:text-[80px] font-bold leading-[1.1] tracking-tight text-[#111111]">
-              L'écosystème ultime pour piloter votre business.
+              Pilotez et gerez votre écosystème de vente avec une autorité absolue
             </h1>
             
             <p className="text-stone-600 text-lg md:text-xl font-medium leading-relaxed max-w-2xl">
-              Gérez vos ventes, pilotez vos équipes et automatisez votre croissance. L'infrastructure complète pour prendre le contrôle total de votre empire d'infoproduits et scaler sereinement.
+              Centralisez tout votre management dans un OS puissant. Du tableau de bord stratégique macro à la gestion de chaque closer et l'automatisation de leur formation, vous ne gérez plus, vous pilotez la croissance.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-4">
@@ -146,21 +145,6 @@ export const BusinessLanding: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex items-center gap-3 mt-8">
-              <div className="flex -space-x-3">
-                {[1,2,3,4].map((i) => (
-                  <div key={i} className="w-10 h-10 rounded-full border-2 border-[#f4f2f1] bg-stone-200 flex items-center justify-center overflow-hidden">
-                    <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-col items-start text-sm">
-                <div className="flex text-amber-400">
-                  {'★★★★★'.split('').map((star, i) => <span key={i}>{star}</span>)}
-                </div>
-                <span className="text-stone-500 font-medium">4.9 rating <span className="text-stone-400">Based on 150+ Users</span></span>
-              </div>
-            </div>
           </motion.div>
         </section>
 
@@ -299,6 +283,10 @@ export const BusinessLanding: React.FC = () => {
             </div>
             <div className="space-y-4">
               <FAQItem
+                question="A qui est destiné cet outil ?"
+                answer={<p>CloseOS Business est destiné à toute personne qui gère une ou des équipes de closing : <strong>Infopreneurs</strong>, <strong>Agences</strong>, <strong>Head of Sales</strong>... Toute structure qui souhaite scaler et piloter son activité avec précision.</p>}
+              />
+              <FAQItem
                 question="CloseOS Business est-il compatible avec mes outils CRM actuels ?"
                 answer={<p>Oui. Tu peux connecter ton CRM existant — <strong>iClosed</strong>, <strong>HubSpot</strong> ou <strong>Pipedrive</strong> sont supportés. Cela dit, nous recommandons d'utiliser le <strong>CRM intégré CloseOS Business</strong> : c'est lui qui offre les meilleures performances et la gestion la plus simple dans cet écosystème. Tout est conçu pour fonctionner ensemble, sans friction.</p>}
               />
@@ -353,8 +341,6 @@ export const BusinessLanding: React.FC = () => {
         </div>
         <p className="text-stone-500 text-sm font-medium">© 2026 CloseOS. All rights reserved.</p>
         <div className="flex gap-6 text-sm font-medium text-stone-500">
-          <a href="#" className="hover:text-[#111111] transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-[#111111] transition-colors">Terms of Service</a>
         </div>
       </footer>
 
@@ -429,7 +415,7 @@ const TeamMember = ({ name, role, conv }: any) => (
   </div>
 );
 
-const PipelineCard = ({ name, source, time, highlight }: any) => (
+const PipelineCard = ({ name, source, time }: any) => (
   <div className={`p-4 rounded-xl shadow-sm border space-y-3 text-left transition-all duration-300 bg-white border-stone-200`}>
     <p className={`text-[#111111] font-bold text-sm`}>{name}</p>
     <div className="flex justify-between items-center">
