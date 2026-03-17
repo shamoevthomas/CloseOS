@@ -824,8 +824,17 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
             {/* --- ONGLET PARRAINAGE --- */}
             {activeTab === 'referral' && (
-              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                {/* Avantages */}
+              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left relative">
+                {!isPaying && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-900/60 backdrop-blur-md border border-white/5">
+                    <p className="text-white font-bold text-lg text-center px-6">
+                      Accessible à la fin de votre période d'essai
+                    </p>
+                  </div>
+                )}
+                
+                <div className={!isPaying ? "space-y-6 blur-[8px] select-none pointer-events-none" : "space-y-6"}>
+                  {/* Avantages */}
                 <div className="p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5">
                   <h3 className="text-white font-bold text-base mb-3 flex items-center gap-2">
                     <Gift className="h-5 w-5 text-blue-400" />
@@ -897,6 +906,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 <p className="text-xs text-slate-500 text-center">
                   Le filleul peut utiliser votre code lors du paiement, ou simplement s'inscrire via votre lien.
                 </p>
+                </div>
               </div>
             )}
 
