@@ -153,10 +153,10 @@ export const BusinessLanding: React.FC = () => {
         <section className="px-6 md:px-20 py-24 max-w-7xl mx-auto" id="features">
           <div className="text-center mb-16 space-y-4">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
-              <span className="text-sm font-semibold text-stone-800">Powerful Features</span>
+              <span className="text-sm font-semibold text-stone-800">Centre de Commandement Manager</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight">Work Smarter with Powerful Features</h2>
-            <p className="text-stone-600 text-lg max-w-2xl mx-auto">Effortlessly manage tasks, collaborate with teams, and meet deadlines with precision and clarity.</p>
+            <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight">Pilotez et gérez votre écosystème de vente avec une autorité absolue</h2>
+            <p className="text-stone-600 text-lg max-w-2xl mx-auto">Centralisez tout votre management dans un OS puissant. Du tableau de bord stratégique macro à la gestion de chaque closer et l'automatisation de leur formation, vous ne gérez plus, vous pilotez la croissance.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
