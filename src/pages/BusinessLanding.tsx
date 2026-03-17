@@ -150,7 +150,14 @@ export const BusinessLanding: React.FC = () => {
         </section>
 
         {/* Dashboard Macro Section (Bento Grid) */}
-        <section className="px-6 md:px-20 py-24 max-w-7xl mx-auto" id="features">
+        <motion.section 
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="px-6 md:px-20 py-24 max-w-7xl mx-auto" 
+          id="features"
+        >
           <div className="text-center mb-16 space-y-4">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
               <span className="text-sm font-semibold text-stone-800">Centre de Commandement Manager</span>
@@ -238,10 +245,17 @@ export const BusinessLanding: React.FC = () => {
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* CRM Feature Teaser */}
-        <section className="px-6 md:px-20 py-32 bg-white border-y border-stone-200 relative overflow-hidden" id="crm">
+        <motion.section 
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="px-6 md:px-20 py-32 bg-white border-y border-stone-200 relative overflow-hidden" 
+          id="crm"
+        >
           <div className="max-w-7xl mx-auto relative z-10">
             <div className="text-center mb-20">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6">
@@ -270,10 +284,17 @@ export const BusinessLanding: React.FC = () => {
               <CRMKPI title="KPI CRM • Vélocité" value="12 Jours" description="Cycle de vente moyen (Lead to Close)" />
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* FAQ Section */}
-        <section className="px-6 md:px-20 py-32 bg-[#f4f2f1]" id="faq">
+        <motion.section 
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="px-6 md:px-20 py-32 bg-[#f4f2f1]" 
+          id="faq"
+        >
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-16 space-y-4">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
@@ -313,10 +334,16 @@ export const BusinessLanding: React.FC = () => {
               />
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* Final CTA */}
-        <section className="px-6 md:px-20 py-32 bg-white text-center border-t border-stone-200">
+        <motion.section 
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="px-6 md:px-20 py-32 bg-white text-center border-t border-stone-200"
+        >
           <div className="max-w-3xl mx-auto space-y-10">
             <h2 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight text-[#111111]">Prêt à scaler votre écosystème de closing ?</h2>
             <p className="text-stone-500 text-xl">Rejoignez la liste d'attente aujourd'hui et bénéficiez d'un accès prioritaire lors du lancement.</p>
@@ -329,7 +356,7 @@ export const BusinessLanding: React.FC = () => {
               </button>
             </div>
           </div>
-        </section>
+        </motion.section>
       </main>
 
       <footer className="px-6 md:px-20 py-12 border-t border-stone-200 bg-[#f4f2f1] flex flex-col md:flex-row items-center justify-between gap-6">
