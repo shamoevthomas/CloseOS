@@ -8,6 +8,7 @@ import {
   Layers,
   Bell,
   Tag,
+  Shield,
   Mail,
   Phone,
   MessageSquare,
@@ -70,11 +71,11 @@ export const BusinessLanding: React.FC = () => {
       
       {/* Navigation */}
       <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-5xl">
-        <div className="bg-white/80 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-1.5 flex items-center justify-between shadow-sm">
+        <div className="bg-white/80 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-2 flex items-center justify-between shadow-sm">
           <div className="relative group flex items-center gap-1 cursor-pointer">
             <img
               alt="CloseOS Logo"
-              className="w-auto object-contain h-[72px]"
+              className="w-auto object-contain h-12"
               src="/CloseOS Buisness.png"
             />
             <ChevronDown className="h-4 w-4 text-stone-400 group-hover:text-stone-800 transition-transform duration-300 group-hover:rotate-180" />
@@ -105,7 +106,7 @@ export const BusinessLanding: React.FC = () => {
         </div>
       </nav>
 
-      <main className="flex flex-col flex-1 pt-32">
+      <main className="flex flex-col flex-1 pt-24">
         {/* Hero Section */}
         <section className="px-6 md:px-20 py-16 md:py-24 max-w-6xl mx-auto text-center relative">
           
@@ -124,16 +125,16 @@ export const BusinessLanding: React.FC = () => {
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm">
               <span className="text-sm font-medium text-stone-800">
-                🚀 Centre de Commandement Manager
+                🚀 Déjà <span className="font-bold bg-gradient-to-r from-[#ff2f2f] via-[#ef7b16] to-[#d511fd] text-transparent bg-clip-text">+150 closers</span> qui valident CloseOS Sales
               </span>
             </div>
 
             <h1 className="text-5xl md:text-7xl lg:text-[80px] font-bold leading-[1.1] tracking-tight text-[#111111]">
-              Pilotez et gerez votre écosystème de vente avec une autorité absolue
+              L'écosystème ultime pour piloter votre business.
             </h1>
             
             <p className="text-stone-600 text-lg md:text-xl font-medium leading-relaxed max-w-2xl">
-              Centralisez tout votre management dans un OS puissant. Du tableau de bord stratégique macro à la gestion de chaque closer et l'automatisation de leur formation, vous ne gérez plus, vous pilotez la croissance.
+              Gérez vos ventes, pilotez vos équipes et automatisez votre croissance. L'infrastructure complète pour prendre le contrôle total de votre empire d'infoproduits et scaler sereinement.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-4">
@@ -284,7 +285,7 @@ export const BusinessLanding: React.FC = () => {
             <div className="space-y-4">
               <FAQItem
                 question="A qui est destiné cet outil ?"
-                answer={<p>CloseOS Business est destiné à toute personne qui gère une ou des équipes de closing : <strong>Infopreneurs</strong>, <strong>Agences</strong>, <strong>Head of Sales</strong>... Toute structure qui souhaite scaler et piloter son activité avec précision.</p>}
+                answer={<p>Il est destiné à toute personne qui gère une ou des équipes de closing : <strong>infopreneurs</strong>, <strong>Agences</strong>, <strong>Head of Sales</strong>...</p>}
               />
               <FAQItem
                 question="CloseOS Business est-il compatible avec mes outils CRM actuels ?"
@@ -335,13 +336,11 @@ export const BusinessLanding: React.FC = () => {
         <div className="flex items-center gap-2">
           <img
             alt="CloseOS Logo"
-            className="w-auto object-contain h-[72px]"
+            className="w-auto object-contain h-12"
             src="/CloseOS Buisness.png"
           />
         </div>
         <p className="text-stone-500 text-sm font-medium">© 2026 CloseOS. All rights reserved.</p>
-        <div className="flex gap-6 text-sm font-medium text-stone-500">
-        </div>
       </footer>
 
       <WaitingListModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
@@ -415,7 +414,7 @@ const TeamMember = ({ name, role, conv }: any) => (
   </div>
 );
 
-const PipelineCard = ({ name, source, time }: any) => (
+const PipelineCard = ({ name, source, time, highlight }: any) => (
   <div className={`p-4 rounded-xl shadow-sm border space-y-3 text-left transition-all duration-300 bg-white border-stone-200`}>
     <p className={`text-[#111111] font-bold text-sm`}>{name}</p>
     <div className="flex justify-between items-center">
