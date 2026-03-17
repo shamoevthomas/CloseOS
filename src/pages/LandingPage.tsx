@@ -550,14 +550,14 @@ export function LandingPage() {
               <div className="flex justify-between items-stretch h-full">
 
                 {/* Q1 — BELOW */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                <div className="relative flex flex-col items-center" style={{ width: '20%' }}>
                   <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-blue-500/30 border-2 border-blue-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
                     Q1
                   </div>
                   <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 36px)' }}>
                     <div className="group p-3 rounded-xl bg-slate-900/80 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 text-center">
                       <Zap className="h-4 w-4 text-blue-400 mx-auto mb-1.5" />
-                      <h3 className="font-bold text-white text-[11px] leading-tight">Lancement CloseOS</h3>
+                      <h3 className="font-bold text-white text-[11px] leading-tight">Lancement CloseOS Sales</h3>
                       <p className="text-[10px] text-slate-500 mt-1">CRM, Pipeline, VoIP, KPIs...</p>
                       <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
@@ -566,77 +566,51 @@ export function LandingPage() {
                   </div>
                 </div>
 
-                {/* Q2 Début — ABOVE */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                {/* Q2 — ABOVE */}
+                <div className="relative flex flex-col items-center" style={{ width: '20%' }}>
                   <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white text-[9px] font-black shadow-lg shadow-indigo-500/30 border-2 border-indigo-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
                     Q2
                   </div>
                   <div className="absolute left-0 right-0 px-1" style={{ bottom: 'calc(50% + 36px)' }}>
                     <div className="group p-3 rounded-xl bg-slate-900/80 border border-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300 text-center">
                       <Building2 className="h-4 w-4 text-indigo-400 mx-auto mb-1.5" />
-                      <h3 className="font-bold text-white text-[11px] leading-tight">Interface Infopreneur</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">Gérez votre équipe de closers</p>
-                      <span className="text-[9px] text-indigo-400 font-semibold uppercase">Début Q2</span>
+                      <h3 className="font-bold text-white text-[11px] leading-tight">CloseOS Business</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">L'outil pour les Infopreneurs, agences, head of sales... Inclut le CRM Complet.</p>
+                      <span className="text-[9px] text-indigo-400 font-semibold uppercase tracking-wider">Q2 2026</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Q2 Milieu — BELOW */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
-                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 8px)' }} />
-                  <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 16px)' }}>
-                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 text-center">
-                      <Users className="h-4 w-4 text-purple-400 mx-auto mb-1.5" />
-                      <h3 className="font-bold text-white text-[11px] leading-tight">Interface Agence</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">Gestion d'équipes</p>
-                      <span className="text-[9px] text-purple-400 font-semibold uppercase">Milieu Q2</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Q2 Fin — ABOVE */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                {/* Q2 Fin — BELOW */}
+                <div className="relative flex flex-col items-center" style={{ width: '20%' }}>
                   <div className="absolute left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full bg-violet-500 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 8px)' }} />
-                  <div className="absolute left-0 right-0 px-1" style={{ bottom: 'calc(50% + 16px)' }}>
+                  <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 16px)' }}>
                     <div className="group p-3 rounded-xl bg-slate-900/80 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300 text-center">
                       <FileText className="h-4 w-4 text-violet-400 mx-auto mb-1.5" />
                       <h3 className="font-bold text-white text-[11px] leading-tight">Rapport de performance</h3>
                       <p className="text-[10px] text-slate-500 mt-1">Feedback sur appels</p>
-                      <span className="text-[9px] text-violet-400 font-semibold uppercase">Fin Q2</span>
+                      <span className="text-[9px] text-violet-400 font-semibold uppercase tracking-wider">FIN Q2</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Q3 — BELOW */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                {/* Q3 — ABOVE */}
+                <div className="relative flex flex-col items-center" style={{ width: '20%' }}>
                   <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-amber-600 to-orange-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-amber-500/30 border-2 border-amber-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
                     Q3
                   </div>
-                  <div className="absolute left-0 right-0 px-1" style={{ top: 'calc(50% + 36px)' }}>
+                  <div className="absolute left-0 right-0 px-1" style={{ bottom: 'calc(50% + 36px)' }}>
                     <div className="group p-3 rounded-xl bg-slate-900/80 border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 text-center">
                       <Smartphone className="h-4 w-4 text-amber-400 mx-auto mb-1.5" />
                       <h3 className="font-bold text-white text-[11px] leading-tight">App Mobile</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">iOS {'&'} Android</p>
-                      <span className="text-[9px] text-amber-400 font-semibold uppercase">Milieu Q3</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Q3 Fin — ABOVE */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
-                  <div className="absolute left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full bg-orange-500 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 8px)' }} />
-                  <div className="absolute left-0 right-0 px-1" style={{ bottom: 'calc(50% + 16px)' }}>
-                    <div className="group p-3 rounded-xl bg-slate-900/80 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 text-center">
-                      <Database className="h-4 w-4 text-orange-400 mx-auto mb-1.5" />
-                      <h3 className="font-bold text-white text-[11px] leading-tight">CRM Complet</h3>
-                      <p className="text-[10px] text-slate-500 mt-1">Acquisition de leads</p>
-                      <span className="text-[9px] text-orange-400 font-semibold uppercase">Fin Q3</span>
+                      <p className="text-[10px] text-slate-500 mt-1">iOS & Android</p>
+                      <span className="text-[9px] text-amber-400 font-semibold uppercase tracking-wider">MILIEU Q3</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Q4 — BELOW */}
-                <div className="relative flex flex-col items-center" style={{ width: '14%' }}>
+                <div className="relative flex flex-col items-center" style={{ width: '20%' }}>
                   <div className="absolute left-1/2 -translate-x-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-emerald-500/30 border-2 border-emerald-400/40 ring-4 ring-[#0B1121]" style={{ top: 'calc(50% - 28px)' }}>
                     Q4
                   </div>
@@ -645,7 +619,7 @@ export function LandingPage() {
                       <MessageSquare className="h-4 w-4 text-emerald-400 mx-auto mb-1.5" />
                       <h3 className="font-bold text-white text-[11px] leading-tight">Messagerie Interne</h3>
                       <p className="text-[10px] text-slate-500 mt-1">Chat équipe intégré</p>
-                      <span className="text-[9px] text-emerald-400 font-semibold uppercase">Q4</span>
+                      <span className="text-[9px] text-emerald-400 font-semibold uppercase tracking-wider">Q4 2026</span>
                     </div>
                   </div>
                 </div>
@@ -1083,7 +1057,7 @@ export function LandingPage() {
       <footer className="border-t border-white/5 bg-[#020617] py-6 pb-16">
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo Sales.png" alt="CloseOS Logo" className="h-8 w-auto" />
+            <img src="/logo Sales.png" alt="CloseOS Logo" className="h-6 w-auto" />
           </div>
 
           <div className="flex flex-wrap justify-center gap-4 text-xs text-slate-500">
