@@ -174,76 +174,21 @@ export const BusinessLanding: React.FC = () => {
                 <p className="text-stone-500">Suivez vos KPIs stratégiques en temps réel pour prendre les meilleures décisions.</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KPIBox title="CA Total" value="145,000€" change="+15%" icon={<ArrowUp className="text-emerald-500 size-5" />} positive={true} />
-                <KPIBox title="CA par Closer" value="12,400€" change="+5%" icon={<ArrowUp className="text-emerald-500 size-5" />} positive={true} />
-                <KPIBox title="Taux de Closing" value="28%" change="-2%" icon={<ArrowDown className="text-rose-500 size-5" />} positive={false} />
-                <KPIBox title="Taux de No-show" value="12%" change="-4%" icon={<ArrowDown className="text-rose-500 size-5" />} positive={false} />
+                <KPIBox index={0} title="CA Total" value="145,000€" change="+15%" icon={<ArrowUp className="text-emerald-500 size-5" />} positive={true} />
+                <KPIBox index={1} title="CA par Closer" value="12,400€" change="+5%" icon={<ArrowUp className="text-emerald-500 size-5" />} positive={true} />
+                <KPIBox index={2} title="Taux de Closing" value="28%" change="-2%" icon={<ArrowDown className="text-rose-500 size-5" />} positive={false} />
+                <KPIBox index={3} title="Taux de No-show" value="12%" change="-4%" icon={<ArrowDown className="text-rose-500 size-5" />} positive={false} />
               </div>
             </div>
 
             {/* Team Management */}
-            <div className="lg:col-span-2 bg-white rounded-3xl p-8 border border-stone-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-6">
-                  <Layers className="size-6 text-stone-800" />
-                </div>
-                <h3 className="text-2xl font-bold text-[#111111] mb-3">Gestion de l'Équipe simplifiée</h3>
-                <p className="text-stone-500 mb-8">
-                  Pilotez vos closers avec une précision chirurgicale. Visualisez qui est en ligne, gérez les performances individuelles et intégrez de nouveaux talents en un clic.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <TeamMember name="Julien Durand" role="Closer Senior" conv="34%" />
-                <TeamMember name="Marie Lefebvre" role="Closer Junior" conv="21%" />
-              </div>
-            </div>
+            <TeamManagement />
 
             {/* Shared Pipeline */}
-            <div className="lg:col-span-1 bg-white rounded-3xl p-8 border border-stone-200 shadow-sm flex flex-col">
-              <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-6">
-                <Tag className="size-6 text-stone-800" />
-              </div>
-              <h3 className="text-2xl font-bold text-[#111111] mb-3">Pipeline Partagé</h3>
-              <p className="text-stone-500 mb-8">
-                Un kanban visuel clair avec code couleur et drag-and-drop pour un suivi impeccable.
-              </p>
-              <div className="mt-auto bg-stone-50 rounded-2xl p-4 border border-stone-100">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-bold uppercase tracking-wider text-stone-500">RDV Fixé</span>
-                  <span className="text-xs font-bold text-stone-400">12</span>
-                </div>
-                <PipelineCard name="Michel Robert" source="MAI 24 - 14:00" highlight={false} />
-              </div>
-            </div>
+            <SharedPipeline />
 
             {/* Onboarding */}
-            <div className="lg:col-span-3 bg-[#111111] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#ff2f2f]/20 to-[#8a43e1]/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
-                <div className="flex flex-col justify-center">
-                  <span className="text-stone-400 font-bold text-sm tracking-[0.2em] uppercase mb-4">Autonomie Totale</span>
-                  <h3 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">Onboarding des closers simplifié</h3>
-                  <p className="text-stone-300 text-lg mb-8 leading-relaxed">
-                    Arrêtez de perdre du temps à former chaque nouveau closer manuellement. Notre système automatisé les guide de A à Z avec vos scripts, ressources et KPIs de suivi de progression.
-                  </p>
-                  <ul className="space-y-4">
-                    <li className="flex items-center gap-3 text-stone-200 font-medium">
-                      <CheckCircle className="text-emerald-400 size-5" /> Monday Morning Reporting (Auto)
-                    </li>
-                    <li className="flex items-center gap-3 text-stone-200 font-medium">
-                      <CheckCircle className="text-emerald-400 size-5" /> Exports hebdomadaires par email
-                    </li>
-                  </ul>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <BoxItem icon={<FileText className="size-6 text-white" />} title="Scripts & Playbooks" description="Centralisez vos meilleures méthodes." dark />
-                  <BoxItem icon={<Video className="size-6 text-white" />} title="Vidéos de Formation" description="Onboarding 100% autonome." dark />
-                  <BoxItem icon={<CheckCircle className="size-6 text-white" />} title="Suivi Progression" description="Vérifiez les acquis avant le 1er call." dark />
-                  <BoxItem icon={<ArrowDown className="size-6 text-white" />} title="Exports Auto" description="Data exportable en CSV/PDF." dark />
-                </div>
-              </div>
-            </div>
+            <Onboarding />
           </div>
         </motion.section>
 
@@ -279,9 +224,9 @@ export const BusinessLanding: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-16 border-t border-stone-200">
-              <CRMKPI title="KPI CRM • Pipeline" value="452,000€" description="Valeur totale du pipeline en cours" />
-              <CRMKPI title="KPI CRM • Performance" value="4,850€" description="Deal moyen encaissé" />
-              <CRMKPI title="KPI CRM • Vélocité" value="12 Jours" description="Cycle de vente moyen (Lead to Close)" />
+              <CRMKPI index={0} title="KPI CRM • Pipeline" value="452,000€" description="Valeur totale du pipeline en cours" />
+              <CRMKPI index={1} title="KPI CRM • Performance" value="4,850€" description="Deal moyen encaissé" />
+              <CRMKPI index={2} title="KPI CRM • Vélocité" value="12 Jours" description="Cycle de vente moyen (Lead to Close)" />
             </div>
           </div>
         </motion.section>
@@ -359,7 +304,7 @@ export const BusinessLanding: React.FC = () => {
         </motion.section>
       </main>
 
-      <footer className="px-6 md:px-20 py-12 border-t border-stone-200 bg-[#f4f2f1] flex flex-col md:flex-row items-center justify-between gap-6">
+      <footer className="px-6 md:px-20 py-12 border-t border-stone-200 bg-[#f4f2f1] flex flex-col md:flex-row items-center justify-between gap-6 pb-24">
         <div className="flex items-center gap-2">
           <img
             alt="CloseOS Logo"
@@ -369,6 +314,9 @@ export const BusinessLanding: React.FC = () => {
         </div>
         <p className="text-stone-500 text-sm font-medium">© 2026 CloseOS. All rights reserved.</p>
       </footer>
+
+      {/* Fixed bottom blur cue */}
+      <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#f4f2f1] via-[#f4f2f1]/80 to-transparent backdrop-blur-[2px] pointer-events-none z-[80]" />
 
       <WaitingListModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
@@ -408,8 +356,14 @@ export const BusinessLanding: React.FC = () => {
 
 // --- Sub-components ---
 
-const KPIBox = ({ title, value, change, icon, positive }: any) => (
-  <div className="bg-stone-50 p-6 rounded-2xl border border-stone-100 flex flex-col gap-3 hover:shadow-md transition-all duration-300">
+const KPIBox = ({ title, value, change, icon, positive, index }: any) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-50px" }}
+    transition={{ duration: 0.6, delay: (index || 0) * 0.1, ease: "easeOut" }}
+    className="bg-stone-50 p-6 rounded-2xl border border-stone-100 flex flex-col gap-3 hover:shadow-md transition-all duration-300"
+  >
     <div className="flex items-center justify-between">
       <span className="text-stone-500 text-xs font-bold uppercase tracking-widest">{title}</span>
       <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-stone-100">
@@ -420,11 +374,102 @@ const KPIBox = ({ title, value, change, icon, positive }: any) => (
     <p className={`${positive ? 'text-emerald-600' : 'text-rose-500'} text-xs font-semibold flex items-center gap-1`}>
       {change} vs mois dernier
     </p>
-  </div>
+  </motion.div>
 );
 
-const TeamMember = ({ name, role, conv }: any) => (
-  <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl border border-stone-100 hover:shadow-sm transition-all duration-300">
+const TeamManagement = () => (
+  <motion.div 
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-100px" }}
+    transition={{ duration: 0.8, delay: 0.2 }}
+    className="lg:col-span-2 bg-white rounded-3xl p-8 border border-stone-200 shadow-sm flex flex-col justify-between"
+  >
+    <div>
+      <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-6">
+        <Layers className="size-6 text-stone-800" />
+      </div>
+      <h3 className="text-2xl font-bold text-[#111111] mb-3">Gestion de l'Équipe simplifiée</h3>
+      <p className="text-stone-500 mb-8">
+        Pilotez vos closers avec une précision chirurgicale. Visualisez qui est en ligne, gérez les performances individuelles et intégrez de nouveaux talents en un clic.
+      </p>
+    </div>
+    <div className="space-y-3">
+      <TeamMember index={0} name="Julien Durand" role="Closer Senior" conv="34%" />
+      <TeamMember index={1} name="Marie Lefebvre" role="Closer Junior" conv="21%" />
+    </div>
+  </motion.div>
+);
+
+const SharedPipeline = () => (
+  <motion.div 
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-100px" }}
+    transition={{ duration: 0.8, delay: 0.4 }}
+    className="lg:col-span-1 bg-white rounded-3xl p-8 border border-stone-200 shadow-sm flex flex-col"
+  >
+    <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-6">
+      <Tag className="size-6 text-stone-800" />
+    </div>
+    <h3 className="text-2xl font-bold text-[#111111] mb-3">Pipeline Partagé</h3>
+    <p className="text-stone-500 mb-8">
+      Un kanban visuel clair avec code couleur et drag-and-drop pour un suivi impeccable.
+    </p>
+    <div className="mt-auto bg-stone-50 rounded-2xl p-4 border border-stone-100">
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-xs font-bold uppercase tracking-wider text-stone-500">RDV Fixé</span>
+        <span className="text-xs font-bold text-stone-400">12</span>
+      </div>
+      <PipelineCard name="Michel Robert" source="MAI 24 - 14:00" highlight={false} />
+    </div>
+  </motion.div>
+);
+
+const Onboarding = () => (
+  <motion.div 
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-100px" }}
+    transition={{ duration: 0.8, delay: 0.6 }}
+    className="lg:col-span-3 bg-[#111111] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden"
+  >
+    <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#ff2f2f]/20 to-[#8a43e1]/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+    
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
+      <div className="flex flex-col justify-center">
+        <span className="text-stone-400 font-bold text-sm tracking-[0.2em] uppercase mb-4">Autonomie Totale</span>
+        <h3 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">Onboarding des closers simplifié</h3>
+        <p className="text-stone-300 text-lg mb-8 leading-relaxed">
+          Arrêtez de perdre du temps à former chaque nouveau closer manuellement. Notre système automatisé les guide de A à Z avec vos scripts, ressources et KPIs de suivi de progression.
+        </p>
+        <ul className="space-y-4">
+          <li className="flex items-center gap-3 text-stone-200 font-medium">
+            <CheckCircle className="text-emerald-400 size-5" /> Monday Morning Reporting (Auto)
+          </li>
+          <li className="flex items-center gap-3 text-stone-200 font-medium">
+            <CheckCircle className="text-emerald-400 size-5" /> Exports hebdomadaires par email
+          </li>
+        </ul>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <BoxItem index={0} icon={<FileText className="size-6 text-white" />} title="Scripts & Playbooks" description="Centralisez vos meilleures méthodes." dark />
+        <BoxItem index={1} icon={<Video className="size-6 text-white" />} title="Vidéos de Formation" description="Onboarding 100% autonome." dark />
+        <BoxItem index={2} icon={<CheckCircle className="size-6 text-white" />} title="Suivi Progression" description="Vérifiez les acquis avant le 1er call." dark />
+        <BoxItem index={3} icon={<ArrowDown className="size-6 text-white" />} title="Exports Auto" description="Data exportable en CSV/PDF." dark />
+      </div>
+    </div>
+  </motion.div>
+);
+
+const TeamMember = ({ name, role, conv, index }: any) => (
+  <motion.div 
+    initial={{ opacity: 0, x: -20 }}
+    whileInView={{ opacity: 1, x: 0 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.5, delay: (index || 0) * 0.1 }}
+    className="flex items-center justify-between p-4 bg-stone-50 rounded-xl border border-stone-100 hover:shadow-sm transition-all duration-300"
+  >
     <div className="flex items-center gap-4">
       <div className="w-10 h-10 rounded-full bg-stone-200 flex items-center justify-center font-bold text-stone-600 text-sm">
         {name.split(' ').map((n: string) => n[0]).join('')}
@@ -438,29 +483,46 @@ const TeamMember = ({ name, role, conv }: any) => (
       <p className="text-[#111111] font-bold text-sm">{conv} Conv.</p>
       <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-bold uppercase tracking-wider">Online</span>
     </div>
-  </div>
+  </motion.div>
 );
 
 const PipelineCard = ({ name, source, time, highlight }: any) => (
-  <div className={`p-4 rounded-xl shadow-sm border space-y-3 text-left transition-all duration-300 bg-white border-stone-200`}>
+  <motion.div 
+    initial={{ opacity: 0, scale: 0.95 }}
+    whileInView={{ opacity: 1, scale: 1 }}
+    viewport={{ once: true }}
+    className={`p-4 rounded-xl shadow-sm border space-y-3 text-left transition-all duration-300 bg-white border-stone-200`}
+  >
     <p className={`text-[#111111] font-bold text-sm`}>{name}</p>
     <div className="flex justify-between items-center">
       <span className={`text-[10px] bg-stone-100 text-stone-600 px-2 py-1 rounded-md font-bold uppercase tracking-wider`}>{source}</span>
       {time && <span className="text-stone-400 text-[10px] font-medium">{time}</span>}
     </div>
-  </div>
+  </motion.div>
 );
 
-const BoxItem = ({ icon, title, description, dark }: any) => (
-  <div className={`${dark ? 'bg-white/5 border-white/10' : 'bg-stone-50 border-stone-100'} p-6 rounded-2xl border text-left`}>
+const BoxItem = ({ icon, title, description, dark, index }: any) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.5, delay: (index || 0) * 0.1 }}
+    className={`${dark ? 'bg-white/5 border-white/10' : 'bg-stone-50 border-stone-100'} p-6 rounded-2xl border text-left`}
+  >
     <div className="mb-4 bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center">{icon}</div>
     <h4 className={`font-bold mb-2 ${dark ? 'text-white' : 'text-[#111111]'}`}>{title}</h4>
     <p className={`text-sm font-medium ${dark ? 'text-stone-400' : 'text-stone-500'}`}>{description}</p>
-  </div>
+  </motion.div>
 );
 
-const CRMFeature = ({ icon, title, description, extra }: any) => (
-  <div className="bg-stone-50 hover:bg-stone-100 border border-stone-200 p-5 rounded-2xl transition-all group text-left">
+const CRMFeature = ({ icon, title, description, extra, index }: any) => (
+  <motion.div 
+    initial={{ opacity: 0, x: 20 }}
+    whileInView={{ opacity: 1, x: 0 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.5, delay: (index || 0) * 0.1 }}
+    className="bg-stone-50 hover:bg-stone-100 border border-stone-200 p-5 rounded-2xl transition-all group text-left"
+  >
     <div className="flex gap-4">
       <div className="size-10 rounded-xl bg-white border border-stone-200 shadow-sm flex items-center justify-center text-stone-800 flex-shrink-0">{icon}</div>
       <div className="flex-1">
@@ -469,19 +531,31 @@ const CRMFeature = ({ icon, title, description, extra }: any) => (
         {extra}
       </div>
     </div>
-  </div>
+  </motion.div>
 );
 
-const CRMKPI = ({ title, value, description }: any) => (
-  <div className="flex flex-col gap-2 items-center text-center p-6 rounded-3xl bg-stone-50 border border-stone-200">
+const CRMKPI = ({ title, value, description, index }: any) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.6, delay: (index || 0) * 0.1 }}
+    className="flex flex-col gap-2 items-center text-center p-6 rounded-3xl bg-stone-50 border border-stone-200"
+  >
     <span className="text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em]">{title}</span>
     <h4 className="text-4xl font-bold text-[#111111] tracking-tight my-2">{value}</h4>
     <p className="text-stone-500 text-sm font-medium">{description}</p>
-  </div>
+  </motion.div>
 );
 
 const LeadProfile = () => (
-  <div className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left">
+  <motion.div 
+    initial={{ opacity: 0, scale: 0.98 }}
+    whileInView={{ opacity: 1, scale: 1 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.8 }}
+    className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
+  >
     <div className="p-6 border-b border-stone-100 bg-stone-50 flex justify-between items-center">
       <div className="flex items-center gap-4">
         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#ff2f2f] to-[#8a43e1] flex items-center justify-center text-white font-bold text-xl shadow-inner">JP</div>
@@ -531,7 +605,7 @@ const LeadProfile = () => (
         </div>
       </div>
     </div>
-  </div>
+  </motion.div>
 );
 
 const FAQItem = ({ question, answer }: { question: string; answer: React.ReactNode }) => {
