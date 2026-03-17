@@ -1,21 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
-import { Bell, X, Check, Clock } from 'lucide-react'
+import { Bell, X, Check, Clock, Trash2 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { useProspects } from '../contexts/ProspectsContext'
 import { useNavigate } from 'react-router-dom'
-import { ReminderDetailAndProspectModal } from './ReminderDetailAndProspectModal'
-import type { Reminder } from './ReminderDetailAndProspectModal'
 
+interface Reminder {
+  id: number
+  title: string
+  description: string | null
+  reminder_date: string
+  is_done: boolean
+}
 
 export function ReminderBell() {
   const { user } = useAuth()
-  const { prospects } = useProspects()
   const navigate = useNavigate()
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [isOpen, setIsOpen] = useState(false)
-  const [selectedReminderId, setSelectedReminderId] = useState<number | null>(null)
   const [dismissed, setDismissed] = useState<Set<number>>(new Set())
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -30,7 +32,7 @@ export function ReminderBell() {
 
       const { data, error } = await supabase
         .from('reminders')
-        .select('*')
+        .select('id, title, description, reminder_date, is_done')
         .eq('user_id', user.id)
         .eq('is_done', false)
         .lte('reminder_date', endOfDay)
@@ -72,20 +74,6 @@ export function ReminderBell() {
 
     if (!error) {
       setReminders(prev => prev.filter(r => r.id !== id))
-      if (selectedReminderId === id) setSelectedReminderId(null)
-    }
-  }
-
-  const handleDelete = async (id: number) => {
-    const { error } = await supabase
-      .from('reminders')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user!.id)
-
-    if (!error) {
-      setReminders(prev => prev.filter(r => r.id !== id))
-      if (selectedReminderId === id) setSelectedReminderId(null)
     }
   }
 
@@ -151,12 +139,8 @@ export function ReminderBell() {
                   return (
                     <div
                       key={reminder.id}
-                      onClick={() => {
-                        setSelectedReminderId(reminder.id)
-                        setIsOpen(false)
-                      }}
                       className={cn(
-                        'px-4 py-3 transition-colors hover:bg-slate-800/50 cursor-pointer',
+                        'px-4 py-3 transition-colors hover:bg-slate-800/50',
                         overdue && 'bg-red-500/5'
                       )}
                     >
@@ -185,20 +169,14 @@ export function ReminderBell() {
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleMarkDone(reminder.id)
-                            }}
+                            onClick={() => handleMarkDone(reminder.id)}
                             className="rounded-md p-1.5 text-emerald-400 hover:bg-emerald-500/20 transition-all"
                             title="Marquer comme fait"
                           >
                             <Check className="h-3.5 w-3.5" />
                           </button>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDismiss(reminder.id)
-                            }}
+                            onClick={() => handleDismiss(reminder.id)}
                             className="rounded-md p-1.5 text-slate-500 hover:bg-slate-700 hover:text-slate-300 transition-all"
                             title="Masquer"
                           >
@@ -213,16 +191,6 @@ export function ReminderBell() {
             )}
           </div>
         </div>
-      )}
-      {/* Reminder Detail Modal */}
-      {selectedReminderId && (
-        <ReminderDetailAndProspectModal
-          reminder={reminders.find(r => r.id === selectedReminderId)!}
-          prospect={prospects.find(p => p.id === reminders.find(r => r.id === selectedReminderId)?.prospect_id) || null}
-          onClose={() => setSelectedReminderId(null)}
-          onMarkDone={handleMarkDone}
-          onDelete={handleDelete}
-        />
       )}
     </div>
   )
