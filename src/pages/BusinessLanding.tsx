@@ -304,19 +304,19 @@ export const BusinessLanding: React.FC = () => {
         </motion.section>
       </main>
 
-      <footer className="px-6 md:px-20 py-12 border-t border-stone-200 bg-[#f4f2f1] flex flex-col md:flex-row items-center justify-between gap-6 pb-24">
+      <footer className="px-6 md:px-20 py-6 border-t border-stone-200 bg-[#f4f2f1] flex flex-col md:flex-row items-center justify-between gap-4 pb-16">
         <div className="flex items-center gap-2">
           <img
             alt="CloseOS Logo"
-            className="w-auto object-contain h-12"
+            className="w-auto object-contain h-10"
             src="/CloseOS Buisness.png"
           />
         </div>
-        <p className="text-stone-500 text-sm font-medium">© 2026 CloseOS. All rights reserved.</p>
+        <p className="text-stone-500 text-xs font-medium">© 2026 CloseOS. All rights reserved.</p>
       </footer>
 
       {/* Fixed bottom blur cue */}
-      <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#f4f2f1] via-[#f4f2f1]/80 to-transparent backdrop-blur-[2px] pointer-events-none z-[80]" />
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#f4f2f1] via-[#f4f2f1]/80 to-transparent backdrop-blur-[1px] pointer-events-none z-[80]" />
 
       <WaitingListModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
