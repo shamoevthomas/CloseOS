@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/generate-invoices",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/lifecycle-emails",
+      "schedule": "0 9 * * *"
     }
   ],
   "rewrites": [
@@ -34,6 +38,7 @@
     { "source": "/api/sync-subscription", "destination": "/api/subscription?action=sync" },
 
     { "source": "/api/send-email", "destination": "/api/email?action=send" },
+    { "source": "/api/welcome-email", "destination": "/api/email?action=welcome" },
     { "source": "/api/notify-password-change", "destination": "/api/email?action=notify-password-change" },
     { "source": "/api/request-email-change", "destination": "/api/email?action=request-email-change" },
     { "source": "/api/confirm-email-change", "destination": "/api/email?action=confirm-email-change" },

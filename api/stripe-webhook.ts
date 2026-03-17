@@ -23,6 +23,66 @@ const stripe = new Stripe(stripeSecretKey, {
     httpClient: Stripe.createFetchHttpClient(), // Required for Edge
 });
 
+// ─── Email wrapper (même DA que tous les mails CloseOS) ─────────────────────
+
+function emailWrap(badge: string, badgeColor: string, borderColor: string, title: string, body: string, ctaText: string, ctaUrl: string) {
+    return `<!DOCTYPE html>
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark">
+    <style>
+        :root { color-scheme: dark; }
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+        body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; -webkit-font-smoothing: antialiased; background-color: #020617;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #020617; background-image: linear-gradient(#020617, #020617);">
+        <tr><td align="center" style="padding-bottom: 60px;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                <tr><td align="center" style="padding: 40px 20px 20px 20px;">
+                    <img src="https://closeos.fr/logo.PNG" alt="CloseOS" width="140" style="display: block;">
+                </td></tr>
+                <tr><td align="center" style="padding: 0 20px; font-family: 'Segoe UI', Arial, sans-serif;">
+                    <span style="background-color: ${badgeColor}; background-image: linear-gradient(${badgeColor}, ${badgeColor}); border: 1px solid ${borderColor}; color: ${borderColor}; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: bold; text-transform: uppercase; display: inline-block;">${badge}</span>
+                    <h1 style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent); font-size: 28px; margin-top: 20px; margin-bottom: 16px;">${title}</h1>
+                    ${body}
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 25px;">
+                        <tr><td align="center">
+                            <a href="${ctaUrl}" style="background-color: #3b82f6; background-image: linear-gradient(#3b82f6, #3b82f6); color: #fdfdfd; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: bold; display: block; font-family: 'Segoe UI', Arial, sans-serif; font-size: 18px;">${ctaText}</a>
+                        </td></tr>
+                    </table>
+                </td></tr>
+                <tr><td align="center" style="padding: 40px 20px 0 20px; font-family: 'Segoe UI', Arial, sans-serif;">
+                    <p style="color: #475569; font-size: 12px; margin-bottom: 4px;">&copy; 2026 CloseOS.fr &mdash; Le Syst&egrave;me d'Exploitation des Closers</p>
+                    <p style="color: #475569; font-size: 12px;"><a href="https://closeos.fr/cgu" style="color: #475569; text-decoration: none;">CGU</a> &middot; <a href="https://closeos.fr/cgv" style="color: #475569; text-decoration: none;">CGV</a> &middot; <a href="https://closeos.fr/confidentialite" style="color: #475569; text-decoration: none;">Confidentialit&eacute;</a></p>
+                    <p style="color: #475569; font-size: 11px; margin-top: 30px;">Vous recevez cet email car vous &ecirc;tes inscrit sur CloseOS.</p>
+                </td></tr>
+            </table>
+        </td></tr>
+    </table>
+</body></html>`;
+}
+
+async function sendBrevoEmail(to: string, subject: string, html: string) {
+    try {
+        const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: { 'accept': 'application/json', 'api-key': brevoApiKey, 'content-type': 'application/json' },
+            body: JSON.stringify({
+                sender: { email: 'support@closeos.fr', name: 'CloseOS' },
+                to: [{ email: to }],
+                subject, htmlContent: html
+            })
+        });
+        console.log(`📧 Email "${subject}" → ${to}: ${res.ok ? 'OK' : 'FAIL'}`);
+        return res.ok;
+    } catch (e) { console.error('Email error:', e); return false; }
+}
+
 async function sendRetentionEmail(to: string, userId: string, name: string) {
     // Generate a quick link. Ideally use a signed token, but for MVP, userId might suffice if we secure the endpoint.
     // Better: verification token?
@@ -188,6 +248,33 @@ export default async function handler(req: Request) {
                         // Les crédits seront appliqués automatiquement via invoice.created
                     }
                 }
+                // ─── Email de confirmation de paiement ───
+                const userName = session.customer_details?.name || customerEmail?.split('@')[0] || 'Closer';
+                const priceLabel = billingCycle === 'yearly' ? '25,50€/mois (annuel)' : '34€/mois';
+                await sendBrevoEmail(customerEmail!, 'Bienvenue dans l\'aventure CloseOS 🚀', emailWrap(
+                    'Confirmation', '#042f2e', '#14b8a6',
+                    'Bienvenue dans l\'aventure CloseOS \u{1F680}',
+                    `<p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 16px; line-height: 1.6; text-align: left; margin-bottom: 20px;">
+                        Bonjour ${userName},<br><br>
+                        Votre paiement a bien \u00e9t\u00e9 confirm\u00e9. Vous faites maintenant partie de la communaut\u00e9 des closers qui ont d\u00e9cid\u00e9 de <strong style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent);">professionnaliser leur activit\u00e9</strong>.
+                    </p>
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; background-image: linear-gradient(#0f172a, #0f172a); border: 1px solid #14b8a6; border-radius: 20px; margin-bottom: 20px;">
+                        <tr><td style="padding: 25px; text-align: left; font-family: 'Segoe UI', Arial, sans-serif;">
+                            <h3 style="color: #2dd4bf; background-image: linear-gradient(transparent, transparent); font-size: 20px; margin-top: 0; margin-bottom: 16px;">\u2705 R\u00e9capitulatif</h3>
+                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.8; margin: 0;">
+                                \u2022 <strong style="color: #fdfdfd;">Plan :</strong> Pro<br>
+                                \u2022 <strong style="color: #fdfdfd;">Tarif :</strong> ${priceLabel}<br>
+                                \u2022 <strong style="color: #fdfdfd;">Acc\u00e8s :</strong> CRM, Pipeline, Agenda, Factures, KPI, Call Room
+                            </p>
+                        </td></tr>
+                    </table>
+                    <p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; text-align: left; margin-bottom: 10px;">
+                        Vous avez acc\u00e8s \u00e0 <strong style="color: #fdfdfd;">toutes les fonctionnalit\u00e9s</strong> de l'outil. C'est le moment de centraliser votre activit\u00e9 et de closer comme un pro.
+                    </p>`,
+                    '\u{1F4BB} Acc\u00e9der \u00e0 mon espace',
+                    'https://closeos.fr/dashboard'
+                ));
+
             } else {
                 console.log(`⚠️ User not found for email ${customerEmail}. They might register later.`);
             }
@@ -294,13 +381,61 @@ export default async function handler(req: Request) {
         case 'invoice.payment_failed': {
             const invoice = event.data.object as any;
             const customerId = invoice.customer as string;
+            const isRenewal = invoice.billing_reason === 'subscription_cycle';
 
-            console.log(`❌ Payment failed for invoice ${invoice.id}`);
+            console.log(`❌ Payment failed for invoice ${invoice.id} (${isRenewal ? 'renewal' : 'other'})`);
+
+            const { data: failedProfile } = await supabaseAdmin
+                .from('profiles')
+                .select('id, email, full_name')
+                .eq('stripe_customer_id', customerId)
+                .single();
 
             await supabaseAdmin
                 .from('profiles')
                 .update({ subscription_status: 'past_due' })
                 .eq('stripe_customer_id', customerId);
+
+            // Envoyer le mail d'échec de paiement
+            if (failedProfile?.email) {
+                const failName = failedProfile.full_name || 'Closer';
+                const subject = isRenewal
+                    ? 'Votre renouvellement n\'a pas abouti \u26A0\uFE0F'
+                    : 'Votre paiement a \u00e9chou\u00e9 \u26A0\uFE0F';
+                const title = isRenewal
+                    ? 'Votre renouvellement n\'a pas abouti \u26A0\uFE0F'
+                    : 'Votre paiement a \u00e9chou\u00e9 \u26A0\uFE0F';
+                const bodyText = isRenewal
+                    ? `Bonjour ${failName},<br><br>Le renouvellement de votre abonnement CloseOS n'a pas pu \u00eatre effectu\u00e9. Votre moyen de paiement a \u00e9t\u00e9 refus\u00e9 ou est expir\u00e9.`
+                    : `Bonjour ${failName},<br><br>Nous n'avons pas pu proc\u00e9der au paiement de votre abonnement CloseOS. Votre moyen de paiement semble avoir \u00e9t\u00e9 refus\u00e9.`;
+
+                await sendBrevoEmail(failedProfile.email, subject, emailWrap(
+                    'Action requise', '#451a03', '#f97316',
+                    title,
+                    `<p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 16px; line-height: 1.6; text-align: left; margin-bottom: 20px;">
+                        ${bodyText}
+                    </p>
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; background-image: linear-gradient(#0f172a, #0f172a); border: 1px solid #f97316; border-radius: 20px; margin-bottom: 20px;">
+                        <tr><td style="padding: 25px; text-align: left; font-family: 'Segoe UI', Arial, sans-serif;">
+                            <h3 style="color: #fb923c; background-image: linear-gradient(transparent, transparent); font-size: 20px; margin-top: 0; margin-bottom: 16px;">\u26A0\uFE0F Ce qu'il se passe</h3>
+                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">
+                                \u2022 Votre acc\u00e8s \u00e0 CloseOS est <strong style="color: #fdfdfd;">temporairement suspendu</strong>.
+                            </p>
+                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">
+                                \u2022 Vos donn\u00e9es sont <strong style="color: #fdfdfd;">en s\u00e9curit\u00e9</strong> et ne seront pas supprim\u00e9es.
+                            </p>
+                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0;">
+                                \u2022 Mettez \u00e0 jour votre moyen de paiement pour <strong style="color: #fdfdfd;">r\u00e9activer votre acc\u00e8s imm\u00e9diatement</strong>.
+                            </p>
+                        </td></tr>
+                    </table>
+                    <p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; text-align: left; margin-bottom: 10px;">
+                        Si vous pensez qu'il s'agit d'une erreur, contactez-nous \u00e0 <a href="mailto:support@closeos.fr" style="color: #60a5fa; text-decoration: none;">support@closeos.fr</a>.
+                    </p>`,
+                    '\u{1F4B3} Mettre \u00e0 jour mon paiement',
+                    'https://closeos.fr/dashboard'
+                ));
+            }
             break;
         }
 

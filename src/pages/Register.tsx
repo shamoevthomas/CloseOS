@@ -59,6 +59,12 @@ export default function Register() {
             }
           }
         }
+        // Envoyer le mail de bienvenue (fire & forget)
+        fetch('/api/welcome-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email }),
+        }).catch(() => {});
         navigate('/dashboard');
       }
     } catch (err: any) {
