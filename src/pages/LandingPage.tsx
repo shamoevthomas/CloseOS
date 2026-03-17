@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
+import { motion } from 'motion/react'
 
 import { PricingComparisonTable } from '../components/PricingComparisonTable';
 import {
@@ -58,6 +59,28 @@ function FAQItem({ question, children }: { question: string, children: React.Rea
     </div>
   );
 }
+
+const containerVariants: any = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants: any = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.25, 0.1, 0.25, 1]
+    }
+  }
+};
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -210,7 +233,7 @@ export function LandingPage() {
       </nav>
 
       {/* HERO SECTION */}
-      < section className="relative pt-40 pb-20 overflow-hidden" >
+      <section className="relative pt-40 pb-20 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/20 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
         <div className="absolute bottom-0 right-0 w-[800px] h-[600px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
 
@@ -317,10 +340,17 @@ export function LandingPage() {
           </div >
 
         </div >
-      </section >
+      </section>
 
       {/* INTEGRATIONS BANNER */}
-      < section id="integrations" className="py-12 border-y border-white/5 bg-slate-950/50" >
+      <motion.section
+        id="integrations"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8 }}
+        className="py-12 border-y border-white/5 bg-slate-950/50"
+      >
         <div className="mx-auto max-w-7xl px-6 text-center">
           <p className="text-xs font-bold text-slate-500 mb-8 uppercase tracking-widest">
             Synchronisation native avec vos outils préférés
@@ -335,10 +365,17 @@ export function LandingPage() {
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
           </div>
         </div>
-      </section >
+      </motion.section >
 
       {/* FEATURES GRID */}
-      < section id="features" className="py-32 relative" >
+      <motion.section
+        id="features"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8 }}
+        className="py-32 relative"
+      >
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-20 text-center max-w-3xl mx-auto">
             <h2 className="text-3xl font-bold text-white sm:text-5xl mb-6">Toutes vos fonctionnalités de closing.<br />Un seul outil.</h2>
@@ -347,9 +384,15 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+          >
             {/* CARD 1 - COCKPIT (Large) */}
-            <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-blue-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
+            <motion.div variants={itemVariants} className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-blue-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
                 <LayoutDashboard className="w-64 h-64 text-blue-500" />
               </div>
@@ -368,10 +411,10 @@ export function LandingPage() {
                   <li className="flex items-center gap-2 text-sm text-slate-300"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Deals en cours</li>
                 </ul>
               </div>
-            </div>
+            </motion.div>
 
             {/* CARD 2 - VOIP (Small) */}
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#25D366]/30 transition-all duration-500 group hover:bg-slate-900/80 relative overflow-hidden">
+            <motion.div variants={itemVariants} className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#25D366]/30 transition-all duration-500 group hover:bg-slate-900/80 relative overflow-hidden">
               <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <MessageSquare className="w-32 h-32 text-[#25D366]" />
               </div>
@@ -386,10 +429,10 @@ export function LandingPage() {
                   🚀 Zéro friction au quotidien
                 </span>
               </p>
-            </div>
+            </motion.div>
 
             {/* CARD 3 - PIPELINE (Small) */}
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-orange-500/30 transition-all duration-500 group hover:bg-slate-900/80">
+            <motion.div variants={itemVariants} className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-orange-500/30 transition-all duration-500 group hover:bg-slate-900/80">
               <div className="h-12 w-12 rounded-lg bg-orange-500/20 flex items-center justify-center mb-6 ring-1 ring-orange-500/30">
                 <TrendingUp className="h-6 w-6 text-orange-400" />
               </div>
@@ -397,10 +440,10 @@ export function LandingPage() {
               <p className="text-slate-400 text-sm leading-relaxed mb-4">
                 Vue Kanban fluide. Configurez vos offres (prix, commissions, formules) et laissez l'outil calculer vos gains à chaque deal déplacé.
               </p>
-            </div>
+            </motion.div>
 
             {/* CARD 4 - PROFIL CLOSER (Large) */}
-            <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-violet-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
+            <motion.div variants={itemVariants} className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-violet-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
                 <Users className="w-64 h-64 text-violet-500" />
               </div>
@@ -427,10 +470,10 @@ export function LandingPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* CARD 5 - AGENDA (Small) */}
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-purple-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
+            <motion.div variants={itemVariants} className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-purple-500/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
               <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <CalendarCheck className="w-32 h-32 text-purple-500" />
               </div>
@@ -448,10 +491,10 @@ export function LandingPage() {
                   <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-300">Rappels intégrés</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* CARD 6 - FACTURATION (Small) */}
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-emerald-500/30 transition-all duration-500 group hover:bg-slate-900/80">
+            <motion.div variants={itemVariants} className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-emerald-500/30 transition-all duration-500 group hover:bg-slate-900/80">
               <div className="h-12 w-12 rounded-lg bg-emerald-500/20 flex items-center justify-center mb-6 ring-1 ring-emerald-500/30">
                 <FileText className="h-6 w-6 text-emerald-400" />
               </div>
@@ -459,10 +502,10 @@ export function LandingPage() {
               <p className="text-slate-400 text-sm leading-relaxed">
                 Générez vos factures de commissions en un clic. Créez des liens de paiement CB sécurisés et envoyez automatiquement la facture à votre infopreneur.
               </p>
-            </div>
+            </motion.div>
 
             {/* CARD 7 - SYNC CRM (Small) */}
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#E11D48]/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
+            <motion.div variants={itemVariants} className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 hover:border-[#E11D48]/30 transition-all duration-500 group overflow-hidden relative hover:bg-slate-900/80">
               <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <Zap className="w-32 h-32 text-[#E11D48]" />
               </div>
@@ -475,13 +518,19 @@ export function LandingPage() {
                   Synchronisation native avec iClosed, HubSpot et Pipedrive. Oubliez la double saisie manuelle et automatisez 100% de votre suivi.
                 </p>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
-      </section >
+      </motion.section >
 
       {/* ROADMAP TIMELINE — HORIZONTAL */}
-      < section className="py-20 bg-[#0B1121] border-t border-white/5 relative overflow-hidden" >
+      <motion.section
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8 }}
+        className="py-20 bg-[#0B1121] border-t border-white/5 relative overflow-hidden"
+      >
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-indigo-600/8 blur-[150px] rounded-full pointer-events-none" />
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-12">
@@ -605,11 +654,17 @@ export function LandingPage() {
             </div>
           </div>
         </div>
-      </section >
-
+      </motion.section >
 
       {/* COMPARISON SECTION */}
-      <section id="comparison" className="py-24 bg-slate-950/50 border-y border-white/5 relative overflow-hidden">
+      <motion.section
+        id="comparison"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8 }}
+        className="py-24 bg-slate-950/50 border-y border-white/5 relative overflow-hidden"
+      >
         <div className="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-96 bg-red-600/10 blur-[100px] rounded-full pointer-events-none" />
         <div className="absolute top-1/2 right-0 -translate-y-1/2 w-96 h-96 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none" />
 
@@ -761,10 +816,17 @@ export function LandingPage() {
 
           </div>
         </div>
-      </section >
+      </motion.section >
 
       {/* PRICING SECTION */}
-      <section id="pricing" className="py-32 relative bg-slate-950">
+      <motion.section
+        id="pricing"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8 }}
+        className="py-32 relative bg-slate-950"
+      >
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white sm:text-5xl">Tarifs CloseOS — l'outil tout-en-un des closers</h2>
@@ -894,7 +956,7 @@ export function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* COMPARISON MODAL */}
       {
@@ -922,7 +984,14 @@ export function LandingPage() {
       }
 
       {/* --- FAQ SECTION --- */}
-      <section id="faq" className="py-24 bg-slate-950 relative border-t border-white/5">
+      <motion.section
+        id="faq"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8 }}
+        className="py-24 bg-slate-950 relative border-t border-white/5"
+      >
         <div className="mx-auto max-w-3xl px-6 relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-white sm:text-4xl">Questions Fréquentes</h2>
@@ -976,10 +1045,16 @@ export function LandingPage() {
             </FAQItem>
           </div>
         </div>
-      </section>
+      </motion.section >
 
       {/* --- CTA FINAL --- */}
-      <section className="relative py-32 overflow-hidden">
+      <motion.section
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8 }}
+        className="relative py-32 overflow-hidden"
+      >
         <div className="absolute inset-0 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
 
         <div className="relative mx-auto max-w-4xl px-6 text-center z-10">
@@ -1002,16 +1077,16 @@ export function LandingPage() {
             10 jours d'essai gratuit. Pas de prélèvement immédiat.
           </p>
         </div>
-      </section>
+      </motion.section >
 
       {/* --- FOOTER --- */}
-      <footer className="border-t border-white/5 bg-[#020617] py-12">
-        <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+      <footer className="border-t border-white/5 bg-[#020617] py-6 pb-16">
+        <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo Sales.png" alt="CloseOS Logo" className="h-10 w-auto" />
+            <img src="/logo Sales.png" alt="CloseOS Logo" className="h-8 w-auto" />
           </div>
 
-          <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-500">
+          <div className="flex flex-wrap justify-center gap-4 text-xs text-slate-500">
             <span>© 2026 CloseOS.fr</span>
             <span className="hidden sm:inline">•</span>
             <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</a>
@@ -1023,7 +1098,7 @@ export function LandingPage() {
             <a href="/confidentialite" className="hover:text-white transition-colors">Politique de Confidentialité</a>
           </div>
 
-          <div className="flex gap-6">
+          <div className="flex gap-6 text-xs">
             <a
               href="https://www.linkedin.com/in/thomas-shamoev-570885237/"
               target="_blank"
@@ -1036,6 +1111,9 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Fixed bottom blur cue */}
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#020617] via-[#020617]/80 to-transparent backdrop-blur-[1px] pointer-events-none z-[80]" />
 
       <style>{`
         @keyframes pageEnterFromTop {
