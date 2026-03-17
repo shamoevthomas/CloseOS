@@ -189,6 +189,7 @@ export function ProspectView({
   const [prospectReminders, setProspectReminders] = useState<any[]>([])
   const [remindersLoading, setRemindersLoading] = useState(false)
   const [reminderActionLoading, setReminderActionLoading] = useState<number | null>(null)
+  const [expandedReminderId, setExpandedReminderId] = useState<number | null>(null)
 
   // Fetch reminders for this prospect
   useEffect(() => {
@@ -954,17 +955,20 @@ export function ProspectView({
                         const isDone = reminder.is_done
                         const isOverdue = !isDone && new Date(reminder.reminder_date) < new Date()
                         const isLoading = reminderActionLoading === reminder.id
+                        const isExpanded = expandedReminderId === reminder.id
 
                         return (
                           <div
                             key={reminder.id}
+                            onClick={() => setExpandedReminderId(isExpanded ? null : reminder.id)}
                             className={cn(
-                              'rounded-lg border p-3 transition-all',
+                              'rounded-lg border p-3 transition-all cursor-pointer',
                               isDone
                                 ? 'border-slate-800 bg-slate-800/30'
                                 : isOverdue
                                   ? 'border-red-500/30 bg-red-500/5'
-                                  : 'border-slate-800 bg-slate-800/50'
+                                  : 'border-slate-800 bg-slate-800/50',
+                              isExpanded && 'ring-1 ring-orange-500/30'
                             )}
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -975,34 +979,54 @@ export function ProspectView({
                                 )}>
                                   {reminder.title}
                                 </p>
-                                {reminder.description && (
-                                  <p className="text-xs text-slate-400 mt-0.5 truncate">{reminder.description}</p>
-                                )}
-                                <div className="flex items-center gap-2 mt-1.5">
-                                  <Clock className="h-3 w-3 text-slate-500" />
-                                  <span className={cn(
-                                    'text-xs',
-                                    isOverdue ? 'text-red-400 font-medium' : 'text-slate-500'
-                                  )}>
-                                    {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
-                                      day: 'numeric',
-                                      month: 'short',
-                                    })}{' '}
-                                    à{' '}
-                                    {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    })}
-                                  </span>
-                                  {isDone && (
-                                    <span className="text-[10px] text-slate-600 font-medium uppercase">Fait</span>
-                                  )}
-                                  {isOverdue && (
-                                    <span className="text-[10px] text-red-400 font-bold uppercase">En retard</span>
-                                  )}
+                                
+                                <div className={cn(
+                                  "grid transition-all duration-300 ease-in-out",
+                                  isExpanded ? "grid-rows-[1fr] opacity-100 mt-2" : "grid-rows-[0fr] opacity-0"
+                                )}>
+                                  <div className="overflow-hidden">
+                                     {reminder.description && (
+                                      <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed mb-2">
+                                        {reminder.description}
+                                      </p>
+                                    )}
+                                    <div className="flex items-center gap-2 py-1 px-2 rounded bg-slate-900/50 w-fit">
+                                      <Clock className="h-3 w-3 text-slate-500" />
+                                      <span className={cn(
+                                        'text-xs',
+                                        isOverdue ? 'text-red-400 font-medium' : 'text-slate-400'
+                                      )}>
+                                        {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
+                                          weekday: 'long',
+                                          day: 'numeric',
+                                          month: 'long',
+                                        })}{' '}
+                                        à{' '}
+                                        {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })}
+                                      </span>
+                                    </div>
+                                  </div>
                                 </div>
+
+                                {!isExpanded && (
+                                  <div className="flex items-center gap-2 mt-1.5 opacity-60">
+                                    <Clock className="h-3 w-3 text-slate-500" />
+                                    <span className="text-[10px] text-slate-500">
+                                      {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                      })} à {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
-                              <div className="flex items-center gap-1 shrink-0">
+                              <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                                 {!isDone && (
                                   <button
                                     onClick={() => handleMarkReminderDone(reminder.id)}
@@ -1021,6 +1045,10 @@ export function ProspectView({
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
+                                <ChevronDown className={cn(
+                                  "h-4 w-4 text-slate-600 transition-transform duration-300",
+                                  isExpanded && "rotate-180 text-orange-500"
+                                )} />
                               </div>
                             </div>
                           </div>

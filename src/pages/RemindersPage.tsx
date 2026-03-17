@@ -437,6 +437,8 @@ function ReminderDetailAndProspectModal({
 
   return (
     <>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity" onClick={onClose} />
+
       {prospect && (
         <ProspectView
           prospect={prospect}
@@ -447,11 +449,8 @@ function ReminderDetailAndProspectModal({
       {/* Reminder Detail Card */}
       <div className={cn(
         "fixed z-[60] top-1/2 -translate-y-1/2 w-full max-w-sm md:max-w-md p-4 transition-all duration-300",
-        prospect ? "left-0 md:left-8 lg:left-16 hidden md:block" : "left-1/2 -translate-x-1/2"
+        prospect ? "left-0 md:left-[10%] lg:left-[15%] hidden md:block" : "left-1/2 -translate-x-1/2"
       )}>
-        {!prospect && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm -z-10" onClick={onClose} />
-        )}
         
         <div className="rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4">
           <div className="flex items-center justify-between border-b border-slate-800 bg-slate-950 px-6 py-4">
