@@ -83,16 +83,32 @@ export function SetterKPI() {
     setIsConfigOpen(false)
   }
 
-  // Calculate personal KPIs from assigned prospects
-  const myProspects = prospects.filter(p => p.assigned_to === teamMember?.id)
+  // Setter prospects = prospects assigned to this setter via assigned_setter
+  const myProspects = prospects.filter(p => p.assigned_setter === teamMember?.id)
+
+  // Taux de Réponse: prospects qui ne sont PAS en "noanswer" / total assignés
+  const noAnswerProspects = myProspects.filter(p => p.stage === 'noanswer')
+  const respondedProspects = myProspects.filter(p => p.stage !== 'noanswer')
+  const responseRate = myProspects.length > 0 ? (respondedProspects.length / myProspects.length) * 100 : 0
+
+  // Taux de Booking: prospects "qualified" / (qualified + unqualified)
+  const qualifiedProspects = myProspects.filter(p => p.stage === 'qualified')
+  const unqualifiedProspects = myProspects.filter(p => p.stage === 'unqualified')
+  const bookingTotal = qualifiedProspects.length + unqualifiedProspects.length
+  const bookingRate = bookingTotal > 0 ? (qualifiedProspects.length / bookingTotal) * 100 : 0
+
+  // Taux de Conversion: prospects qualifiés par le setter qui sont en "won"
+  const qualifiedByMeAll = myProspects.filter(p => ['qualified', 'won', 'lost', 'noshow', 'followup'].includes(p.stage))
   const wonProspects = myProspects.filter(p => p.stage === 'won')
+  const conversionRate = qualifiedByMeAll.length > 0 ? (wonProspects.length / qualifiedByMeAll.length) * 100 : 0
+
+  // Taux de No Show: prospects qualifiés par le setter qui sont en "noshow"
   const noShowProspects = myProspects.filter(p => p.stage === 'noshow')
+  const noShowRate = qualifiedByMeAll.length > 0 ? (noShowProspects.length / qualifiedByMeAll.length) * 100 : 0
+
   const lostProspects = myProspects.filter(p => p.stage === 'lost')
   const totalRevenue = wonProspects.reduce((sum, p) => sum + (p.value || 0), 0)
   const totalSales = wonProspects.length
-  const closedTotal = wonProspects.length + lostProspects.length + noShowProspects.length
-  const conversionRate = closedTotal > 0 ? (wonProspects.length / closedTotal) * 100 : 0
-  const noShowRate = closedTotal > 0 ? (noShowProspects.length / closedTotal) * 100 : 0
   const commission = Math.round(totalRevenue * (kpiConfig.commission_rate / 100))
 
   // Org KPIs (all prospects)
@@ -168,10 +184,6 @@ export function SetterKPI() {
 
   const v = getTabValues()
   const avgCommission = v.sales > 0 ? Math.round(v.commission / v.sales) : 0
-
-  // Setter-specific KPIs (visual placeholders)
-  const responseRate = 0 // placeholder — will be detailed later
-  const bookingRate = 0 // placeholder — will be detailed later
 
   const inputCls = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
 
@@ -260,7 +272,7 @@ export function SetterKPI() {
             <span className="text-xs font-medium text-slate-500">Taux de Réponse</span>
           </div>
           <p className="text-2xl font-bold text-purple-700">{formatPercent(responseRate)}%</p>
-          <p className="text-xs text-slate-400 mt-1">Bientôt disponible — sera calculé à partir des appels</p>
+          <p className="text-xs text-slate-400 mt-1">{respondedProspects.length} réponses / {myProspects.length} prospects assignés</p>
         </div>
         <div className="bg-white rounded-2xl border border-purple-200 p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
@@ -270,7 +282,7 @@ export function SetterKPI() {
             <span className="text-xs font-medium text-slate-500">Taux de Booking</span>
           </div>
           <p className="text-2xl font-bold text-purple-700">{formatPercent(bookingRate)}%</p>
-          <p className="text-xs text-slate-400 mt-1">Bientôt disponible — sera calculé à partir des RDV bookés</p>
+          <p className="text-xs text-slate-400 mt-1">{qualifiedProspects.length} qualifiés / {bookingTotal} traités</p>
         </div>
       </div>
 
@@ -278,9 +290,9 @@ export function SetterKPI() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <KpiCard title="CA Généré" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title="Ventes Totales" value={v.sales} icon={ShoppingCart} color="blue" />
-        <KpiCard title="Taux de Conversion" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" />
+        <KpiCard title="Taux de Conversion" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" subtitle={`${wonProspects.length} gagnés / ${qualifiedByMeAll.length} qualifiés`} />
         <KpiCard title="Mes Commissions" value={`${formatCurrency(v.commission)} €`} icon={Award} color="amber" highlight />
-        <KpiCard title="Taux de No Show" value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" />
+        <KpiCard title="Taux de No Show" value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" subtitle={`${noShowProspects.length} no shows / ${qualifiedByMeAll.length} qualifiés`} />
         <KpiCard title="Deals Perdus" value={v.lost} icon={Ban} color="slate" />
       </div>
 
@@ -398,7 +410,7 @@ export function SetterKPI() {
 
 /* -- Inline Components -- */
 
-const KpiCard = ({ title, value, icon: Icon, color, highlight }: any) => {
+const KpiCard = ({ title, value, icon: Icon, color, highlight, subtitle }: any) => {
   const colors: any = {
     emerald: { icon: 'bg-emerald-50 text-emerald-600' },
     blue: { icon: 'bg-blue-50 text-blue-600' },
@@ -420,6 +432,7 @@ const KpiCard = ({ title, value, icon: Icon, color, highlight }: any) => {
         <span className="text-xs font-medium text-slate-500">{title}</span>
       </div>
       <p className="text-2xl font-bold text-slate-900">{value}</p>
+      {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
     </div>
   )
 }
