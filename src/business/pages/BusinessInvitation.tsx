@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Loader2, CheckCircle, AlertCircle, Mail, Lock, ArrowRight,
@@ -127,7 +127,6 @@ export function BusinessInvitation() {
     setError(null);
 
     try {
-      // Store token in localStorage so we can accept after OAuth redirect
       localStorage.setItem('pending_invitation_token', token);
 
       const { error } = await supabase.auth.signInWithOAuth({
@@ -147,13 +146,16 @@ export function BusinessInvitation() {
     }
   };
 
-  // Handle Google OAuth return — auto-accept invitation
-  // Uses auth state listener to reliably detect when Google OAuth completes
-  const [oauthHandled, setOauthHandled] = useState(false);
+  // ─── Handle Google OAuth return ───
+  // After Google redirects back, we need BOTH: a valid session AND invitation data.
+  // We use refs to avoid stale closure issues and a single orchestrator effect.
+  const oauthAcceptedRef = useRef(false);
+  const invitationRef = useRef(invitation);
+  invitationRef.current = invitation;
 
-  const doAcceptOAuth = async (user: any) => {
-    if (oauthHandled) return;
-    setOauthHandled(true);
+  const tryAcceptOAuth = useCallback(async (user: any) => {
+    if (oauthAcceptedRef.current) return;
+    oauthAcceptedRef.current = true;
     localStorage.removeItem('pending_invitation_token');
     setSubmitLoading(true);
 
@@ -169,42 +171,49 @@ export function BusinessInvitation() {
       setSuccess(true);
       setTimeout(() => navigate('/business/organisation'), 2500);
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de l\'acceptation.');
+      oauthAcceptedRef.current = false; // allow retry
+      setError(err.message || "Erreur lors de l'acceptation.");
     } finally {
       setSubmitLoading(false);
     }
-  };
+  }, [token, navigate]);
 
-  // Listen for auth state changes (fires when Supabase processes OAuth hash)
+  // Single effect: listen for auth + poll until both invitation & session are ready
   useEffect(() => {
     const pendingToken = localStorage.getItem('pending_invitation_token');
-    if (!pendingToken) return;
+    if (!pendingToken || oauthAcceptedRef.current) return;
 
+    let cancelled = false;
+
+    // Method 1: auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user && invitation && !oauthHandled) {
-          await doAcceptOAuth(session.user);
+        if (cancelled || oauthAcceptedRef.current) return;
+        if (session?.user && invitationRef.current) {
+          await tryAcceptOAuth(session.user);
         }
       }
     );
 
-    return () => { subscription.unsubscribe(); };
-  }, [invitation, oauthHandled]);
-
-  // Also try immediately on mount + when invitation loads (for cases where auth is already resolved)
-  useEffect(() => {
-    const handleOAuthReturn = async () => {
-      const pendingToken = localStorage.getItem('pending_invitation_token');
-      if (!pendingToken || !invitation || oauthHandled) return;
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        await doAcceptOAuth(session.user);
+    // Method 2: poll every 500ms for up to 10s (handles cases where auth event already fired)
+    const poll = async () => {
+      for (let i = 0; i < 20; i++) {
+        if (cancelled || oauthAcceptedRef.current) return;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && invitationRef.current) {
+          await tryAcceptOAuth(session.user);
+          return;
+        }
+        await new Promise(r => setTimeout(r, 500));
       }
     };
+    poll();
 
-    handleOAuthReturn();
-  }, [invitation, oauthHandled]);
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [tryAcceptOAuth]);
 
   const inviterName = invitation?.inviter?.full_name || 'Un manager';
   const inviterFirstName = inviterName.split(' ')[0];
