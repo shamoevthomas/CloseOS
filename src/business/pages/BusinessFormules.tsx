@@ -27,7 +27,8 @@ const RESOURCE_TYPES: Resource['type'][] = ['PDF', 'Vidéo', 'Lien', 'Autre']
 const API_URL = '/api/business'
 
 export function BusinessFormules() {
-  const { user } = useBusinessAuth()
+  const { user, isTeamMember, ownerUserId } = useBusinessAuth()
+  const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const [formulas, setFormulas] = useState<Formula[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -41,9 +42,9 @@ export function BusinessFormules() {
   const [formResources, setFormResources] = useState<Resource[]>([])
 
   const fetchFormulas = useCallback(async () => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     try {
-      const res = await fetch(`${API_URL}?action=formulas-list&user_id=${user.id}`)
+      const res = await fetch(`${API_URL}?action=formulas-list&user_id=${effectiveUserId}`)
       const data = await res.json()
       if (data.formulas) setFormulas(data.formulas)
     } catch (err) {
@@ -51,7 +52,7 @@ export function BusinessFormules() {
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [effectiveUserId])
 
   useEffect(() => { fetchFormulas() }, [fetchFormulas])
 
@@ -163,9 +164,11 @@ export function BusinessFormules() {
             <p className="text-xs text-slate-500">Gérez vos formules tarifaires et ressources</p>
           </div>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors">
-          <Plus className="h-4 w-4" /> Nouvelle formule
-        </button>
+        {!isTeamMember && (
+          <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors">
+            <Plus className="h-4 w-4" /> Nouvelle formule
+          </button>
+        )}
       </div>
 
       {/* Empty state */}
@@ -174,9 +177,11 @@ export function BusinessFormules() {
           <Package className="h-12 w-12 text-amber-300 mb-4" />
           <h3 className="text-lg font-semibold text-slate-700 mb-1">Aucune formule</h3>
           <p className="text-sm text-slate-500 mb-4">Créez votre première formule tarifaire</p>
-          <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700">
-            <Plus className="h-4 w-4" /> Créer une formule
-          </button>
+          {!isTeamMember && (
+            <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700">
+              <Plus className="h-4 w-4" /> Creer une formule
+            </button>
+          )}
         </div>
       )}
 
@@ -191,9 +196,11 @@ export function BusinessFormules() {
                   <h3 className="font-semibold text-slate-900 truncate">{formula.name}</h3>
                   {formula.description && <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{formula.description}</p>}
                 </div>
-                <button onClick={() => toggleActive(formula)} className="ml-2 flex-shrink-0">
-                  {formula.is_active ? <ToggleRight className="h-6 w-6 text-amber-600" /> : <ToggleLeft className="h-6 w-6 text-slate-300" />}
-                </button>
+                {!isTeamMember && (
+                  <button onClick={() => toggleActive(formula)} className="ml-2 flex-shrink-0">
+                    {formula.is_active ? <ToggleRight className="h-6 w-6 text-amber-600" /> : <ToggleLeft className="h-6 w-6 text-slate-300" />}
+                  </button>
+                )}
               </div>
               <div className="flex items-center gap-2 mb-3">
                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${formula.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
@@ -215,14 +222,16 @@ export function BusinessFormules() {
                   {resourceCount > 3 && <span className="text-xs text-slate-400">+{resourceCount - 3}</span>}
                 </div>
               )}
-              <div className="flex gap-2 border-t border-slate-100 pt-3">
-                <button onClick={() => openEdit(formula)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                  <Pencil className="h-3.5 w-3.5" /> Modifier
-                </button>
-                <button onClick={() => deleteFormula(formula)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
-                  <Trash2 className="h-3.5 w-3.5" /> Supprimer
-                </button>
-              </div>
+              {!isTeamMember && (
+                <div className="flex gap-2 border-t border-slate-100 pt-3">
+                  <button onClick={() => openEdit(formula)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                    <Pencil className="h-3.5 w-3.5" /> Modifier
+                  </button>
+                  <button onClick={() => deleteFormula(formula)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                  </button>
+                </div>
+              )}
             </div>
           )
         })}

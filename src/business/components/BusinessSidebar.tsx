@@ -47,9 +47,12 @@ const teamMemberNavigation = [
   { name: 'Pipeline', href: '/business/pipeline', icon: Target },
   { name: 'Disponibilité', href: '/business/disponibilite', icon: Calendar },
   { name: 'KPI', href: '/business/closer-kpi', icon: TrendingUp },
+  { name: 'Formules', href: '/business/formules', icon: Package },
   { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
   { name: 'Appels', href: '/business/appels', icon: Headphones },
-  { name: 'Organisation', href: '/business/organisation', icon: Building2 },
+  { name: 'Agenda', href: '/business/agenda', icon: Calendar },
+  { name: 'Factures', href: '/business/factures', icon: FileText },
+  { name: 'Rappels', href: '/business/rappels', icon: Bell },
 ]
 
 interface BusinessSidebarProps {

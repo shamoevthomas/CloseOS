@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { BusinessSidebar } from '../components/BusinessSidebar'
 import { BusinessSettingsModal } from '../components/BusinessSettingsModal'
+import { BusinessReminderBell } from '../components/BusinessReminderBell'
 import { Menu } from 'lucide-react'
 import { useState } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -24,17 +25,29 @@ const OWNER_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 
 const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/dashboard': { title: 'Dashboard', subtitle: 'Votre espace membre' },
-  '/business/objectifs': { title: 'Mes Objectifs', subtitle: 'Suivez vos objectifs assignés' },
-  '/business/rendez-vous': { title: 'Rendez-vous', subtitle: 'Consultez les rendez-vous' },
+  '/business/crm': { title: 'CRM', subtitle: 'Vue globale des prospects' },
+  '/business/pipeline': { title: 'Pipeline', subtitle: 'Vos prospects en cours' },
+  '/business/disponibilite': { title: 'Disponibilité', subtitle: 'Gérez vos créneaux et absences' },
+  '/business/closer-kpi': { title: 'KPI & Performance', subtitle: 'Vos indicateurs de performance' },
+  '/business/formules': { title: 'Formules', subtitle: 'Formules tarifaires de l\'organisation' },
+  '/business/rendez-vous': { title: 'Rendez-vous', subtitle: 'Vos rendez-vous assignés' },
+  '/business/appels': { title: 'Appels', subtitle: 'Historique et gestion des appels' },
+  '/business/agenda': { title: 'Agenda', subtitle: 'Votre calendrier' },
+  '/business/factures': { title: 'Factures', subtitle: 'Suivi de facturation' },
   '/business/rappels': { title: 'Rappels', subtitle: 'Vos rappels personnels' },
   '/business/organisation': { title: 'Organisation', subtitle: "Informations de votre organisation" },
+  '/business/objectifs': { title: 'Mes Objectifs', subtitle: 'Suivez vos objectifs assignés' },
 }
 
 export function BusinessLayout() {
   const location = useLocation()
   const { isTeamMember } = useBusinessAuth()
   const pageTitles = isTeamMember ? TEAM_PAGE_TITLES : OWNER_PAGE_TITLES
-  const pageInfo = pageTitles[location.pathname] || { title: 'CloseOS Business', subtitle: '' }
+
+  // Handle dynamic routes like /business/appels/:id
+  const basePath = location.pathname.replace(/\/[^/]+$/, '')
+  const pageInfo = pageTitles[location.pathname] || pageTitles[basePath] || { title: 'CloseOS Business', subtitle: '' }
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -64,6 +77,7 @@ export function BusinessLayout() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4">
+              <BusinessReminderBell />
               <div className="hidden items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-50 px-3 py-1.5 xs:flex">
                 <div className="h-2 w-2 animate-pulse rounded-full bg-amber-500"></div>
                 <span className="text-xs font-medium text-amber-700">Business</span>

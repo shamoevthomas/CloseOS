@@ -5,7 +5,7 @@ import {
   Megaphone, Users, Bell, ArrowUpRight, ArrowDownRight, FileDown, Circle,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
-import { TeamMemberDashboard } from './TeamMemberDashboard'
+import { CloserDashboard } from './CloserDashboard'
 import { supabase } from '../../lib/supabase'
 
 // ─── Types ───
@@ -75,7 +75,7 @@ export function BusinessDashboard() {
   const { user, isTeamMember } = useBusinessAuth()
 
   if (isTeamMember) {
-    return <TeamMemberDashboard />
+    return <CloserDashboard />
   }
   const [loading, setLoading] = useState(true)
 

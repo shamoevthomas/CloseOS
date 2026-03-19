@@ -89,6 +89,11 @@ import { CloserKPI } from './business/pages/CloserKPI'
 import { CloserAppels } from './business/pages/CloserAppels'
 import { CloserCallDetails } from './business/pages/CloserCallDetails'
 import { CloserCallRoom } from './business/pages/CloserCallRoom'
+import { CloserDashboard } from './business/pages/CloserDashboard'
+import { CloserCRM } from './business/pages/CloserCRM'
+import { CloserFormules } from './business/pages/CloserFormules'
+import { CloserAgenda } from './business/pages/CloserAgenda'
+import { CloserFactures } from './business/pages/CloserFactures'
 
 // Owner-only route guard for business pages
 function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
@@ -109,6 +114,13 @@ function TeamOnboardingGuard({ children }: { children: React.ReactNode }) {
 // Wrapper to use BusinessAuth inside routes
 function OwnerOnlyWrapper({ children }: { children: React.ReactNode }) {
   return <OwnerOnlyRoute>{children}</OwnerOnlyRoute>
+}
+
+// CRM route wrapper: shows CloserCRM table view for team members, BusinessCRM kanban for owners
+function BusinessCRMRouter() {
+  const { isTeamMember } = useBusinessAuth()
+  if (isTeamMember) return <CloserCRM />
+  return <BusinessCRM />
 }
 
 
@@ -225,12 +237,12 @@ function AuthenticatedApp() {
           </BusinessAuthProvider>
         }>
           <Route path="dashboard" element={<TeamOnboardingGuard><BusinessDashboard /></TeamOnboardingGuard>} />
-          <Route path="crm" element={<TeamOnboardingGuard><BusinessCRM /></TeamOnboardingGuard>} />
+          <Route path="crm" element={<TeamOnboardingGuard><BusinessCRMRouter /></TeamOnboardingGuard>} />
           <Route path="kpi" element={<OwnerOnlyWrapper><BusinessKPI /></OwnerOnlyWrapper>} />
           <Route path="campagnes" element={<OwnerOnlyWrapper><BusinessCampaigns /></OwnerOnlyWrapper>} />
           <Route path="acquisition" element={<OwnerOnlyWrapper><BusinessAcquisition /></OwnerOnlyWrapper>} />
           <Route path="objectifs" element={<TeamOnboardingGuard><BusinessObjectives /></TeamOnboardingGuard>} />
-          <Route path="formules" element={<OwnerOnlyWrapper><BusinessFormules /></OwnerOnlyWrapper>} />
+          <Route path="formules" element={<TeamOnboardingGuard><BusinessFormules /></TeamOnboardingGuard>} />
           <Route path="rendez-vous" element={<TeamOnboardingGuard><BusinessAppointments /></TeamOnboardingGuard>} />
           <Route path="rappels" element={<TeamOnboardingGuard><BusinessReminders /></TeamOnboardingGuard>} />
           <Route path="report" element={<OwnerOnlyWrapper><BusinessReport /></OwnerOnlyWrapper>} />
@@ -242,6 +254,8 @@ function AuthenticatedApp() {
           <Route path="closer-kpi" element={<TeamOnboardingGuard><CloserKPI /></TeamOnboardingGuard>} />
           <Route path="appels" element={<TeamOnboardingGuard><CloserAppels /></TeamOnboardingGuard>} />
           <Route path="appels/:id" element={<TeamOnboardingGuard><CloserCallDetails /></TeamOnboardingGuard>} />
+          <Route path="agenda" element={<TeamOnboardingGuard><CloserAgenda /></TeamOnboardingGuard>} />
+          <Route path="factures" element={<TeamOnboardingGuard><CloserFactures /></TeamOnboardingGuard>} />
           <Route path="organisation" element={<BusinessOrganization />} />
         </Route>
 

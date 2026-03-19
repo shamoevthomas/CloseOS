@@ -46,6 +46,7 @@ export function BusinessCRM() {
   const { businessSettings, isTeamMember } = useBusinessAuth()
   const isReadOnly = isTeamMember
 
+
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set(['noshow', 'lost']))

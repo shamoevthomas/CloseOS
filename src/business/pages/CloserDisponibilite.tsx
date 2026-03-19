@@ -28,6 +28,7 @@ export function CloserDisponibilite() {
   const [slots, setSlots] = useState<Slot[]>([])
   const [absences, setAbsences] = useState<Absence[]>([])
   const [loading, setLoading] = useState(true)
+  const [showOnboardingPopup, setShowOnboardingPopup] = useState(false)
 
   // Add slot form
   const [addingDay, setAddingDay] = useState<number | null>(null)
@@ -56,6 +57,23 @@ export function CloserDisponibilite() {
   }, [teamMember?.id])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  // Show onboarding popup if no slots exist yet (first time setup)
+  useEffect(() => {
+    if (!loading && slots.length === 0 && teamMember?.id) {
+      const dismissed = localStorage.getItem(`dispo-onboarding-${teamMember.id}`)
+      if (!dismissed) {
+        setShowOnboardingPopup(true)
+      }
+    }
+  }, [loading, slots.length, teamMember?.id])
+
+  const dismissOnboarding = () => {
+    if (teamMember?.id) {
+      localStorage.setItem(`dispo-onboarding-${teamMember.id}`, 'true')
+    }
+    setShowOnboardingPopup(false)
+  }
 
   const handleAddSlot = async (dayOfWeek: number) => {
     if (!teamMember?.id || !ownerUserId) return
@@ -171,6 +189,45 @@ export function CloserDisponibilite() {
           })}
         </div>
       </div>
+
+      {/* Onboarding Popup */}
+      {showOnboardingPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={dismissOnboarding} />
+          <div className="relative w-full max-w-md rounded-2xl border border-amber-200 bg-white shadow-2xl p-6 animate-in zoom-in-95">
+            <button onClick={dismissOnboarding} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700">
+              <X className="h-5 w-5" />
+            </button>
+            <div className="text-center mb-6">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 mx-auto mb-4">
+                <Calendar className="h-8 w-8 text-amber-700" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900">Configurez vos disponibilites</h2>
+              <p className="text-sm text-slate-500 mt-2">
+                Avant de commencer, indiquez vos creneaux de disponibilite hebdomadaires.
+                Cela permettra a votre manager de vous assigner des rendez-vous aux bons moments.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
+                <p className="text-xs text-amber-700 font-medium">1. Ajoutez vos creneaux pour chaque jour de la semaine</p>
+              </div>
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
+                <p className="text-xs text-amber-700 font-medium">2. Indiquez vos periodes d'absence si necessaire</p>
+              </div>
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
+                <p className="text-xs text-amber-700 font-medium">3. Vous pourrez modifier ces informations a tout moment</p>
+              </div>
+            </div>
+            <button
+              onClick={dismissOnboarding}
+              className="w-full mt-6 rounded-xl bg-amber-600 py-3 text-sm font-bold text-white hover:bg-amber-500 transition-all"
+            >
+              C'est parti !
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Absences */}
       <div className="rounded-xl border border-amber-200 bg-white p-6">
