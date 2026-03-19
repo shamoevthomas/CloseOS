@@ -62,6 +62,7 @@ import { BusinessLanding } from './pages/BusinessLanding'
 // Business Module Imports
 import { BusinessAuthProvider, useBusinessAuth } from './business/contexts/BusinessAuthContext'
 import { BusinessProspectsProvider } from './business/contexts/BusinessProspectsContext'
+import { BusinessGoogleCalendarProvider } from './business/contexts/BusinessGoogleCalendarContext'
 import { BusinessLayout } from './business/layouts/BusinessLayout'
 import BusinessLogin from './business/pages/BusinessLogin'
 import BusinessRegister from './business/pages/BusinessRegister'
@@ -231,8 +232,10 @@ function AuthenticatedApp() {
         <Route path="/business" element={
           <BusinessAuthProvider>
             <BusinessProspectsProvider>
-              <BusinessLayout />
-              <BusinessOnboardingModal />
+              <BusinessGoogleCalendarProvider>
+                <BusinessLayout />
+                <BusinessOnboardingModal />
+              </BusinessGoogleCalendarProvider>
             </BusinessProspectsProvider>
           </BusinessAuthProvider>
         }>
