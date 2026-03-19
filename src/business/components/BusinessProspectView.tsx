@@ -14,6 +14,7 @@ import toast from 'react-hot-toast'
 const ALL_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500' },
+  { id: 'unqualified', name: 'Non-Qualifié', color: 'bg-yellow-500' },
   { id: 'won', name: 'Gagné', color: 'bg-emerald-500' },
   { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' },
   { id: 'noshow', name: 'No Show', color: 'bg-slate-600' },

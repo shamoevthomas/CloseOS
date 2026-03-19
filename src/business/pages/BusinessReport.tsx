@@ -203,6 +203,7 @@ export function BusinessReport() {
     const stages = [
       { id: 'prospect', name: 'Prospect', color: '#3b82f6' },
       { id: 'qualified', name: 'Qualifié', color: '#7c3aed' },
+      { id: 'unqualified', name: 'Non-Qualifié', color: '#eab308' },
       { id: 'followup', name: 'Follow Up', color: '#f59e0b' },
       { id: 'won', name: 'Gagné', color: '#059669' },
       { id: 'lost', name: 'Perdu', color: '#ef4444' },

@@ -248,13 +248,13 @@ export function BusinessKPI() {
   // ---- Period bar chart data ----
   const periodBarData = useMemo(() => {
     const stages: Record<string, number> = {
-      prospect: 0, qualified: 0, followup: 0, won: 0, lost: 0, noshow: 0,
+      prospect: 0, qualified: 0, unqualified: 0, followup: 0, won: 0, lost: 0, noshow: 0,
     }
     periodProspects.forEach(p => {
       if (stages[p.stage] !== undefined) stages[p.stage]++
     })
     return Object.entries(stages).map(([stage, count]) => ({
-      stage: stage === 'followup' ? 'Follow-up' : stage === 'noshow' ? 'No Show' : stage.charAt(0).toUpperCase() + stage.slice(1),
+      stage: stage === 'followup' ? 'Follow-up' : stage === 'noshow' ? 'No Show' : stage === 'unqualified' ? 'Non-Qualifié' : stage.charAt(0).toUpperCase() + stage.slice(1),
       count,
     }))
   }, [periodProspects])
