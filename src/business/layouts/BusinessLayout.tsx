@@ -9,6 +9,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 const OWNER_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/dashboard': { title: 'Dashboard', subtitle: "Vue d'ensemble de votre business" },
   '/business/crm': { title: 'CRM', subtitle: 'Gérez vos prospects' },
+  '/business/pipeline-owner': { title: 'Pipeline', subtitle: 'Visualisez et gérez votre pipeline commercial' },
   '/business/team': { title: 'Équipe', subtitle: 'Gérez votre équipe' },
   '/business/kpi': { title: 'KPI & Performance', subtitle: 'Analysez vos performances commerciales' },
   '/business/campagnes': { title: 'Campagnes', subtitle: 'Gérez vos campagnes de capture de leads' },

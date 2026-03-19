@@ -1,8 +1,6 @@
 import { useState } from 'react'
-import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
   User,
-  ChevronDown,
   Search,
   Plus,
   Trash2,
@@ -14,6 +12,7 @@ import {
   Mail,
   Phone,
   Building2,
+  ChevronDown,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -21,19 +20,14 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessCRMIntegrationModal } from '../components/BusinessCRMIntegrationModal'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 
-const ACTIVE_STAGES = [
+const ALL_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50', borderColor: 'border-blue-200' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700', bgLight: 'bg-purple-50', borderColor: 'border-purple-200' },
   { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgLight: 'bg-emerald-50', borderColor: 'border-emerald-200' },
   { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-700', bgLight: 'bg-orange-50', borderColor: 'border-orange-200' },
-]
-
-const INACTIVE_STAGES = [
   { id: 'noshow', name: 'No Show', color: 'bg-slate-500', textColor: 'text-slate-700', bgLight: 'bg-slate-50', borderColor: 'border-slate-200' },
   { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50', borderColor: 'border-red-200' },
 ]
-
-const ALL_STAGES = [...ACTIVE_STAGES, ...INACTIVE_STAGES]
 
 export function BusinessCRM() {
   const {
@@ -46,13 +40,11 @@ export function BusinessCRM() {
   const { businessSettings, isTeamMember } = useBusinessAuth()
   const isReadOnly = isTeamMember
 
-
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set(['noshow', 'lost']))
+  const [filterStage, setFilterStage] = useState<string>('all')
   const [isIntegrationModalOpen, setIsIntegrationModalOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [addStage, setAddStage] = useState('prospect')
 
   // Add prospect modal state
   const [newContact, setNewContact] = useState('')
@@ -62,6 +54,7 @@ export function BusinessCRM() {
   const [addLoading, setAddLoading] = useState(false)
 
   const filteredProspects = prospects.filter(p => {
+    if (filterStage !== 'all' && p.stage !== filterStage) return false
     if (!searchQuery) return true
     const q = searchQuery.toLowerCase()
     return (
@@ -72,27 +65,6 @@ export function BusinessCRM() {
       (p.lastName || '').toLowerCase().includes(q)
     )
   })
-
-  const onDragEnd = (result: DropResult) => {
-    if (isReadOnly) return
-    const { destination, source, draggableId } = result
-    if (!destination) return
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return
-
-    const prospectId = parseInt(draggableId)
-    const newStage = destination.droppableId
-    updateProspect(prospectId, { stage: newStage })
-  }
-
-  const toggleColumn = (stageId: string) => {
-    const newCollapsed = new Set(collapsedColumns)
-    if (newCollapsed.has(stageId)) {
-      newCollapsed.delete(stageId)
-    } else {
-      newCollapsed.add(stageId)
-    }
-    setCollapsedColumns(newCollapsed)
-  }
 
   const getDisplayName = (deal: BusinessProspect) => {
     if (deal.firstName || deal.lastName) {
@@ -110,7 +82,7 @@ export function BusinessCRM() {
         email: newEmail,
         phone: newPhone,
         company: newCompany,
-        stage: addStage,
+        stage: 'prospect',
       } as any)
       setNewContact('')
       setNewEmail('')
@@ -165,7 +137,6 @@ export function BusinessCRM() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Sync button for connected CRMs (owner only) */}
           {!isReadOnly && crmProvider === 'hubspot' && hubspotConnected && (
             <button
               onClick={() => syncHubspot()}
@@ -198,9 +169,9 @@ export function BusinessCRM() {
         </div>
       </div>
 
-      {/* Search & Add */}
-      <div className="mb-4 flex items-center gap-3">
-        <div className="relative flex-1">
+      {/* Search & Filters & Add */}
+      <div className="mb-4 flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
@@ -210,9 +181,22 @@ export function BusinessCRM() {
             className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
           />
         </div>
+        <div className="relative">
+          <select
+            value={filterStage}
+            onChange={(e) => setFilterStage(e.target.value)}
+            className="appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 py-2.5 text-sm font-medium text-slate-600 focus:border-amber-500 focus:outline-none"
+          >
+            <option value="all">Toutes les étapes</option>
+            {ALL_STAGES.map(s => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+        </div>
         {!isReadOnly && (
           <button
-            onClick={() => { setAddStage('prospect'); setIsAddModalOpen(true) }}
+            onClick={() => setIsAddModalOpen(true)}
             className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-500 transition-all"
           >
             <Plus className="h-4 w-4" />
@@ -221,256 +205,130 @@ export function BusinessCRM() {
         )}
       </div>
 
-      {/* Team Member Table View */}
-      {isTeamMember ? (
-        <div className="flex-1 overflow-auto rounded-xl border border-slate-200 bg-white">
-          <table className="w-full min-w-[700px]">
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Contact</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Entreprise</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Email</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Étape</th>
-                <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Valeur</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredProspects.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-12 text-sm text-slate-400">
-                    Aucun prospect trouvé
-                  </td>
-                </tr>
-              ) : (
-                filteredProspects.map((deal) => {
-                  const stage = ALL_STAGES.find(s => s.id === deal.stage)
-                  return (
-                    <tr
-                      key={deal.id}
-                      onClick={() => setSelectedProspect(deal)}
-                      className="cursor-pointer hover:bg-amber-50/50 transition-colors"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
-                            <User className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <span className="text-sm font-semibold text-slate-800">{getDisplayName(deal)}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {deal.company ? (
-                          <div className="flex items-center gap-1.5">
-                            <Building2 className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                            <span className="text-sm text-slate-600">{deal.company}</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-slate-300">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {deal.email ? (
-                          <div className="flex items-center gap-1.5">
-                            <Mail className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                            <span className="text-sm text-slate-600 truncate max-w-[200px]">{deal.email}</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-slate-300">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {stage ? (
-                          <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full", stage.bgLight, stage.textColor)}>
-                            <span className={cn("h-2 w-2 rounded-full", stage.color)} />
-                            {stage.name}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-slate-300">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {deal.value ? (
-                          <span className="text-sm font-bold text-emerald-600">{deal.value.toLocaleString()} €</span>
-                        ) : (
-                          <span className="text-sm text-slate-300">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })
+      {/* Stats */}
+      <div className="mb-4 flex items-center gap-3 text-xs text-slate-500">
+        <span className="font-medium text-slate-700">{filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}</span>
+        {filterStage !== 'all' && (
+          <button onClick={() => setFilterStage('all')} className="text-amber-600 hover:text-amber-700 font-medium">
+            Réinitialiser
+          </button>
+        )}
+      </div>
+
+      {/* Table View */}
+      <div className="flex-1 overflow-auto rounded-xl border border-slate-200 bg-white">
+        <table className="w-full min-w-[800px]">
+          <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Contact</th>
+              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Entreprise</th>
+              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Email</th>
+              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Téléphone</th>
+              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Étape</th>
+              <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Valeur</th>
+              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Date</th>
+              {!isReadOnly && (
+                <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Actions</th>
               )}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-      /* Kanban (Owner view) */
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 overflow-x-auto">
-          <div className="flex gap-4 min-w-max pb-4" style={{ minHeight: '400px' }}>
-            {/* Active stages */}
-            {ACTIVE_STAGES.map((stage) => {
-              const stageDeals = filteredProspects.filter(d => d.stage === stage.id)
-              const isCollapsed = collapsedColumns.has(stage.id)
-
-              return (
-                <div key={stage.id} className={cn("flex flex-col rounded-xl border bg-white", stage.borderColor, isCollapsed ? "w-12" : "w-72")}>
-                  {/* Column header */}
-                  <button
-                    onClick={() => toggleColumn(stage.id)}
-                    className={cn("flex items-center gap-2 px-3 py-3 border-b", stage.borderColor)}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {filteredProspects.length === 0 ? (
+              <tr>
+                <td colSpan={isReadOnly ? 7 : 8} className="text-center py-12 text-sm text-slate-400">
+                  Aucun prospect trouvé
+                </td>
+              </tr>
+            ) : (
+              filteredProspects.map((deal) => {
+                const stage = ALL_STAGES.find(s => s.id === deal.stage)
+                return (
+                  <tr
+                    key={deal.id}
+                    onClick={() => setSelectedProspect(deal)}
+                    className="cursor-pointer hover:bg-amber-50/50 transition-colors"
                   >
-                    <div className={cn("h-3 w-3 rounded-full", stage.color)} />
-                    {!isCollapsed && (
-                      <>
-                        <span className="text-sm font-semibold text-slate-800 flex-1 text-left">{stage.name}</span>
-                        <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", stage.bgLight, stage.textColor)}>
-                          {stageDeals.length}
-                        </span>
-                        <ChevronDown className="h-4 w-4 text-slate-400" />
-                      </>
-                    )}
-                  </button>
-
-                  {!isCollapsed && (
-                    <Droppable droppableId={stage.id}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className={cn(
-                            "flex-1 p-2 space-y-2 overflow-y-auto",
-                            snapshot.isDraggingOver && stage.bgLight
-                          )}
-                        >
-                          {stageDeals.map((deal, index) => (
-                            <Draggable key={deal.id} draggableId={String(deal.id)} index={index}>
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  onClick={() => setSelectedProspect(deal)}
-                                  className={cn(
-                                    "rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer",
-                                    snapshot.isDragging && "shadow-lg ring-2 ring-amber-300"
-                                  )}
-                                >
-                                  <div className="flex items-start justify-between mb-1">
-                                    <div className="flex items-center gap-2">
-                                      <div className="h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center">
-                                        <User className="h-3.5 w-3.5 text-slate-500" />
-                                      </div>
-                                      <div>
-                                        <p className="text-sm font-semibold text-slate-800 leading-tight">{getDisplayName(deal)}</p>
-                                        {deal.company && <p className="text-xs text-slate-500">{deal.company}</p>}
-                                      </div>
-                                    </div>
-                                    {!isReadOnly && (
-                                      <button
-                                        onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
-                                        className="p-1 text-slate-300 hover:text-red-500 transition-colors"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </button>
-                                    )}
-                                  </div>
-                                  {deal.value && (
-                                    <p className="text-xs font-bold text-emerald-600 mt-1">{deal.value.toLocaleString()} €</p>
-                                  )}
-                                  {deal.email && (
-                                    <p className="text-xs text-slate-400 truncate mt-1">{deal.email}</p>
-                                  )}
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                          <User className="h-4 w-4 text-slate-500" />
                         </div>
-                      )}
-                    </Droppable>
-                  )}
-                </div>
-              )
-            })}
-
-            {/* Separator */}
-            <div className="w-px bg-slate-200 self-stretch mx-1" />
-
-            {/* Inactive stages */}
-            {INACTIVE_STAGES.map((stage) => {
-              const stageDeals = filteredProspects.filter(d => d.stage === stage.id)
-              const isCollapsed = collapsedColumns.has(stage.id)
-
-              return (
-                <div key={stage.id} className={cn("flex flex-col rounded-xl border bg-white", stage.borderColor, isCollapsed ? "w-12" : "w-64")}>
-                  <button
-                    onClick={() => toggleColumn(stage.id)}
-                    className={cn("flex items-center gap-2 px-3 py-3 border-b", stage.borderColor)}
-                  >
-                    <div className={cn("h-3 w-3 rounded-full", stage.color)} />
-                    {!isCollapsed && (
-                      <>
-                        <span className="text-sm font-semibold text-slate-800 flex-1 text-left">{stage.name}</span>
-                        <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", stage.bgLight, stage.textColor)}>
-                          {stageDeals.length}
-                        </span>
-                        <ChevronDown className="h-4 w-4 text-slate-400" />
-                      </>
-                    )}
-                  </button>
-
-                  {!isCollapsed && (
-                    <Droppable droppableId={stage.id}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className={cn(
-                            "flex-1 p-2 space-y-2 overflow-y-auto",
-                            snapshot.isDraggingOver && stage.bgLight
-                          )}
-                        >
-                          {stageDeals.map((deal, index) => (
-                            <Draggable key={deal.id} draggableId={String(deal.id)} index={index}>
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  onClick={() => setSelectedProspect(deal)}
-                                  className={cn(
-                                    "rounded-lg border border-slate-200 bg-white p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow",
-                                    snapshot.isDragging && "shadow-lg ring-2 ring-amber-300"
-                                  )}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center">
-                                      <User className="h-3 w-3 text-slate-400" />
-                                    </div>
-                                    <p className="text-sm font-medium text-slate-700 flex-1 truncate">{getDisplayName(deal)}</p>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
-                                      className="p-1 text-slate-300 hover:text-red-500 transition-colors"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
+                        <span className="text-sm font-semibold text-slate-800">{getDisplayName(deal)}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {deal.company ? (
+                        <div className="flex items-center gap-1.5">
+                          <Building2 className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                          <span className="text-sm text-slate-600">{deal.company}</span>
                         </div>
+                      ) : (
+                        <span className="text-sm text-slate-300">—</span>
                       )}
-                    </Droppable>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </DragDropContext>
-      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {deal.email ? (
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                          <span className="text-sm text-slate-600 truncate max-w-[200px]">{deal.email}</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {deal.phone ? (
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                          <span className="text-sm text-slate-600">{deal.phone}</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {stage ? (
+                        <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full", stage.bgLight, stage.textColor)}>
+                          <span className={cn("h-2 w-2 rounded-full", stage.color)} />
+                          {stage.name}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {deal.value ? (
+                        <span className="text-sm font-bold text-emerald-600">{deal.value.toLocaleString()} €</span>
+                      ) : (
+                        <span className="text-sm text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {deal.created_at ? (
+                        <span className="text-xs text-slate-500">
+                          {new Date(deal.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-slate-300">—</span>
+                      )}
+                    </td>
+                    {!isReadOnly && (
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
+                          className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                )
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Integration Modal */}
       <BusinessCRMIntegrationModal

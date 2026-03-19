@@ -28,6 +28,7 @@ import { supabase } from '../../lib/supabase'
 const ownerNavigation = [
   { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
   { name: 'CRM', href: '/business/crm', icon: GitBranch },
+  { name: 'Pipeline', href: '/business/pipeline-owner', icon: Target },
   { name: 'Campagnes', href: '/business/campagnes', icon: Megaphone },
   { name: 'Acquisition', href: '/business/acquisition', icon: BarChart3 },
   { name: 'Objectifs', href: '/business/objectifs', icon: Target },

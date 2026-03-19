@@ -78,6 +78,7 @@ import { BusinessAppointments } from './business/pages/BusinessAppointments'
 import { BusinessReminders } from './business/pages/BusinessReminders'
 import { BusinessAcquisition } from './business/pages/BusinessAcquisition'
 import { BusinessReport } from './business/pages/BusinessReport'
+import { BusinessPipeline } from './business/pages/BusinessPipeline'
 import { BusinessClosers } from './business/pages/BusinessClosers'
 import { BusinessSetters } from './business/pages/BusinessSetters'
 import { BusinessOrganization } from './business/pages/BusinessOrganization'
@@ -242,6 +243,7 @@ function AuthenticatedApp() {
         }>
           <Route path="dashboard" element={<TeamOnboardingGuard><BusinessDashboard /></TeamOnboardingGuard>} />
           <Route path="crm" element={<TeamOnboardingGuard><BusinessCRMRouter /></TeamOnboardingGuard>} />
+          <Route path="pipeline-owner" element={<OwnerOnlyWrapper><BusinessPipeline /></OwnerOnlyWrapper>} />
           <Route path="kpi" element={<OwnerOnlyWrapper><BusinessKPI /></OwnerOnlyWrapper>} />
           <Route path="campagnes" element={<OwnerOnlyWrapper><BusinessCampaigns /></OwnerOnlyWrapper>} />
           <Route path="acquisition" element={<OwnerOnlyWrapper><BusinessAcquisition /></OwnerOnlyWrapper>} />

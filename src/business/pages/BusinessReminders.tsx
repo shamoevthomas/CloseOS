@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Bell, Trash2, Check, Clock, AlertTriangle, CheckCircle2, Loader2, Plus, X, Search, User } from 'lucide-react'
+import { Bell, Trash2, Check, Clock, AlertTriangle, CheckCircle2, Loader2, Plus, X, Search, User, ChevronDown, Users, Calendar } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -16,6 +16,15 @@ interface Reminder {
   reminder_date: string
   created_at: string
   is_done: boolean
+  created_by_member_id?: string
+}
+
+interface TeamMember {
+  id: string
+  first_name: string
+  last_name: string
+  role: string
+  user_id: string
 }
 
 type ReminderStatus = 'upcoming' | 'overdue' | 'done'
@@ -36,12 +45,25 @@ function sortReminders(reminders: Reminder[]): Reminder[] {
 }
 
 export function BusinessReminders() {
-  const { user } = useBusinessAuth()
+  const { user, isTeamMember } = useBusinessAuth()
   const { prospects } = useBusinessProspects()
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [filterMember, setFilterMember] = useState<string>('all')
+  const [filterDate, setFilterDate] = useState<string>('')
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+
+  // Fetch team members for owner filter
+  useEffect(() => {
+    if (isTeamMember || !user?.id) return
+    supabase
+      .from('business_team_members')
+      .select('id, first_name, last_name, role, user_id')
+      .eq('business_owner_id', user.id)
+      .then(({ data }) => setTeamMembers(data || []))
+  }, [user?.id, isTeamMember])
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
@@ -108,6 +130,12 @@ export function BusinessReminders() {
     return p ? (p.contact || p.company || 'Prospect') : null
   }
 
+  const getMemberName = (memberId?: string): string | null => {
+    if (!memberId) return null
+    const m = teamMembers.find(t => t.id === memberId || t.user_id === memberId)
+    return m ? `${m.first_name} ${m.last_name}` : null
+  }
+
   const statusConfig: Record<ReminderStatus, { label: string; badge: string; icon: typeof Clock }> = {
     upcoming: { label: 'À venir', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: Clock },
     overdue: { label: 'Passé', badge: 'bg-red-100 text-red-700 border-red-200', icon: AlertTriangle },
@@ -115,7 +143,21 @@ export function BusinessReminders() {
   }
 
   const sorted = sortReminders(reminders)
-  const overdueCount = sorted.filter(r => getStatus(r) === 'overdue').length
+
+  // Apply filters
+  const filteredReminders = sorted.filter(r => {
+    if (!isTeamMember && filterMember !== 'all') {
+      if (r.created_by_member_id !== filterMember) return false
+    }
+    if (filterDate) {
+      const reminderDate = new Date(r.reminder_date).toISOString().slice(0, 10)
+      if (reminderDate !== filterDate) return false
+    }
+    return true
+  })
+
+  const overdueCount = filteredReminders.filter(r => getStatus(r) === 'overdue').length
+  const hasActiveFilters = filterMember !== 'all' || filterDate !== ''
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-amber-600" /></div>
@@ -124,7 +166,7 @@ export function BusinessReminders() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
             <Bell className="h-5 w-5 text-amber-700" />
@@ -137,9 +179,42 @@ export function BusinessReminders() {
             </p>
           </div>
         </div>
-        <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors">
-          <Plus className="h-4 w-4" /> Nouveau rappel
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Team member filter (owner only) */}
+          {!isTeamMember && teamMembers.length > 0 && (
+            <div className="relative">
+              <select
+                value={filterMember}
+                onChange={(e) => setFilterMember(e.target.value)}
+                className="appearance-none rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-2 text-xs font-medium text-slate-600 focus:border-amber-500 focus:outline-none"
+              >
+                <option value="all">Tous les membres</option>
+                {teamMembers.map(m => (
+                  <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
+                ))}
+              </select>
+              <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+            </div>
+          )}
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 focus:border-amber-500 focus:outline-none"
+          />
+          {hasActiveFilters && (
+            <button
+              onClick={() => { setFilterMember('all'); setFilterDate('') }}
+              className="text-xs text-amber-600 hover:text-amber-700 font-medium"
+            >
+              Réinitialiser
+            </button>
+          )}
+          <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors">
+            <Plus className="h-4 w-4" /> Nouveau rappel
+          </button>
+        </div>
       </div>
 
       {/* Overdue alert */}
@@ -153,7 +228,7 @@ export function BusinessReminders() {
       )}
 
       {/* Table */}
-      {sorted.length === 0 ? (
+      {filteredReminders.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 p-12 text-center">
           <Bell className="h-12 w-12 text-amber-300 mx-auto mb-4" />
           <p className="text-slate-600 font-medium">Aucun rappel programmé</p>
@@ -172,7 +247,7 @@ export function BusinessReminders() {
           </div>
 
           <div className="divide-y divide-amber-100">
-            {sorted.map(reminder => {
+            {filteredReminders.map(reminder => {
               const status = getStatus(reminder)
               const config = statusConfig[status]
               const StatusIcon = config.icon

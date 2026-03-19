@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   FileText, Download, Loader2, CalendarDays, Users, Megaphone,
   TrendingUp, DollarSign, UserCheck, UserX, Target, Activity,
-  ShoppingCart, Eye, Clock,
+  ShoppingCart, Eye, Clock, ChevronDown, LogIn, LogOut as LogOutIcon,
+  Phone, Bell, GitBranch, Calendar,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -22,6 +23,17 @@ interface TeamMember {
   email: string
   role: string
   joined_at: string
+}
+
+interface ActivityEvent {
+  id: string
+  member_name: string
+  member_id: string
+  action: string
+  detail: string
+  timestamp: Date
+  icon: any
+  color: string
 }
 
 interface Prospect {
@@ -90,26 +102,30 @@ export function BusinessReport() {
   const [exporting, setExporting] = useState(false)
   const [periodDays, setPeriodDays] = useState(7)
   const pdfRef = useRef<HTMLDivElement>(null)
+  const [activityFilterMember, setActivityFilterMember] = useState<string>('all')
 
   const [members, setMembers] = useState<TeamMember[]>([])
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [reminders, setReminders] = useState<any[]>([])
 
   const fetchAll = useCallback(async () => {
     if (!user?.id) return
     setLoading(true)
     try {
-      const [membersRes, prospectsRes, campaignsRes, appointmentsRes] = await Promise.all([
+      const [membersRes, prospectsRes, campaignsRes, appointmentsRes, remindersRes] = await Promise.all([
         supabase.from('business_team_members').select('id, first_name, last_name, email, role, joined_at').eq('business_owner_id', user.id),
-        supabase.from('business_prospects').select('id, stage, value, created_at, campaign_id, payment_type, installments').eq('user_id', user.id),
+        supabase.from('business_prospects').select('id, stage, value, created_at, campaign_id, payment_type, installments, assigned_to, contact').eq('user_id', user.id),
         supabase.from('business_campaigns').select('id, name, views, is_active, created_at').eq('user_id', user.id),
-        supabase.from('business_appointments').select('id, status, date, campaign_id, prospect_id, created_at').eq('user_id', user.id),
+        supabase.from('business_appointments').select('id, status, date, campaign_id, prospect_id, created_at, assigned_to').eq('user_id', user.id),
+        supabase.from('reminders').select('id, title, reminder_date, created_at, is_done, user_id, created_by_member_id').eq('user_id', user.id),
       ])
       setMembers(membersRes.data || [])
       setProspects(prospectsRes.data || [])
       setCampaigns(campaignsRes.data || [])
       setAppointments(appointmentsRes.data || [])
+      setReminders(remindersRes.data || [])
     } catch (err) {
       console.error('Error fetching report data:', err)
     } finally {
@@ -234,6 +250,118 @@ export function BusinessReport() {
 
   const periodLabel = PERIODS.find(p => p.days === periodDays)?.label || '7 jours'
 
+  // ─── Activity Feed (Today only) ───
+  const todayActivities = useMemo(() => {
+    if (periodDays !== 1) return []
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const getMemberName = (memberId: string | null) => {
+      if (!memberId) return 'Vous'
+      const m = members.find(mem => mem.id === memberId)
+      return m ? `${m.first_name} ${m.last_name}` : 'Membre'
+    }
+
+    const events: ActivityEvent[] = []
+
+    // Prospects created today
+    filteredProspects.forEach(p => {
+      if (!p.created_at) return
+      const d = new Date(p.created_at)
+      if (d >= today && d < tomorrow) {
+        events.push({
+          id: `prospect-${p.id}`,
+          member_name: getMemberName((p as any).assigned_to),
+          member_id: (p as any).assigned_to || 'owner',
+          action: 'a ajouté un prospect',
+          detail: (p as any).contact || `Prospect #${p.id}`,
+          timestamp: d,
+          icon: Users,
+          color: 'text-blue-600 bg-blue-50',
+        })
+      }
+    })
+
+    // Stage changes (won/lost/noshow today)
+    filteredProspects.forEach(p => {
+      if (!p.created_at) return
+      if (['won', 'lost', 'noshow'].includes(p.stage)) {
+        const d = new Date(p.created_at)
+        if (d >= today && d < tomorrow) {
+          const actionMap: Record<string, string> = {
+            won: 'a conclu une vente',
+            lost: 'a perdu un deal',
+            noshow: 'a marqué un no-show',
+          }
+          const colorMap: Record<string, string> = {
+            won: 'text-emerald-600 bg-emerald-50',
+            lost: 'text-red-600 bg-red-50',
+            noshow: 'text-slate-600 bg-slate-50',
+          }
+          events.push({
+            id: `stage-${p.id}-${p.stage}`,
+            member_name: getMemberName((p as any).assigned_to),
+            member_id: (p as any).assigned_to || 'owner',
+            action: actionMap[p.stage] || 'a modifié le pipeline',
+            detail: (p as any).contact || `Prospect #${p.id}`,
+            timestamp: d,
+            icon: GitBranch,
+            color: colorMap[p.stage] || 'text-slate-600 bg-slate-50',
+          })
+        }
+      }
+    })
+
+    // Appointments created today
+    filteredAppointments.forEach(a => {
+      if (!a.created_at) return
+      const d = new Date(a.created_at)
+      if (d >= today && d < tomorrow) {
+        events.push({
+          id: `appt-${a.id}`,
+          member_name: getMemberName((a as any).assigned_to),
+          member_id: (a as any).assigned_to || 'owner',
+          action: 'a fixé un rendez-vous',
+          detail: `Le ${a.date}`,
+          timestamp: d,
+          icon: Calendar,
+          color: 'text-purple-600 bg-purple-50',
+        })
+      }
+    })
+
+    // Reminders created today
+    reminders.forEach(r => {
+      if (!r.created_at) return
+      const d = new Date(r.created_at)
+      if (d >= today && d < tomorrow) {
+        events.push({
+          id: `reminder-${r.id}`,
+          member_name: getMemberName(r.created_by_member_id),
+          member_id: r.created_by_member_id || 'owner',
+          action: 'a programmé un rappel',
+          detail: r.title,
+          timestamp: d,
+          icon: Bell,
+          color: 'text-amber-600 bg-amber-50',
+        })
+      }
+    })
+
+    // Sort by time descending (most recent first)
+    events.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+
+    // Apply member filter
+    if (activityFilterMember !== 'all') {
+      return events.filter(e => e.member_id === activityFilterMember)
+    }
+
+    return events
+  }, [periodDays, filteredProspects, filteredAppointments, reminders, members, activityFilterMember])
+
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-amber-600 animate-spin" /></div>
   }
@@ -287,6 +415,64 @@ export function BusinessReport() {
         <KpiCard icon={UserX} label="No Show" value={formatPct(noshowRate)} sub={`${noshowLeads.length} leads`} color="rose" />
         <KpiCard icon={TrendingUp} label="Taux de perte" value={formatPct(lostRate)} sub={`${lostLeads.length} perdu${lostLeads.length > 1 ? 's' : ''}`} color="slate" />
       </div>
+
+      {/* ─── Activity Feed (Today only) ─── */}
+      {periodDays === 1 && (
+        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-[#493627] flex items-center gap-2">
+              <Activity className="h-4 w-4" /> Fil d'activité — Aujourd'hui
+            </h3>
+            {members.length > 0 && (
+              <div className="relative">
+                <select
+                  value={activityFilterMember}
+                  onChange={(e) => setActivityFilterMember(e.target.value)}
+                  className="appearance-none rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-1.5 text-xs font-medium text-slate-600 focus:border-amber-500 focus:outline-none"
+                >
+                  <option value="all">Tous les membres</option>
+                  <option value="owner">Moi (Owner)</option>
+                  {members.map(m => (
+                    <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
+                  ))}
+                </select>
+                <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+              </div>
+            )}
+          </div>
+
+          {todayActivities.length === 0 ? (
+            <div className="text-center py-8">
+              <Activity className="h-10 w-10 text-slate-200 mx-auto mb-2" />
+              <p className="text-sm text-slate-400">Aucune activité aujourd'hui</p>
+            </div>
+          ) : (
+            <div className="space-y-1 max-h-[400px] overflow-y-auto">
+              {todayActivities.map(event => {
+                const EventIcon = event.icon
+                return (
+                  <div key={event.id} className="flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-amber-50/50 transition-colors">
+                    <div className={`flex h-7 w-7 items-center justify-center rounded-lg shrink-0 ${event.color}`}>
+                      <EventIcon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-800">
+                        <span className="font-semibold">{event.member_name}</span>{' '}
+                        <span className="text-slate-500">{event.action}</span>
+                      </p>
+                      <p className="text-xs text-slate-400 truncate">{event.detail}</p>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium shrink-0 mt-0.5">
+                      {event.timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Charts row ─── */}
       <div className="grid gap-6 lg:grid-cols-2">

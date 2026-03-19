@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
-  ChevronDown, User, Mail, Megaphone
+  ChevronDown, User, Mail, Megaphone, Users
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { supabase } from '../../lib/supabase'
 
 interface Appointment {
   id: string
@@ -14,8 +15,16 @@ interface Appointment {
   status: 'pending' | 'confirmed' | 'cancelled' | 'done'
   notes: string | null
   created_at: string
+  assigned_to?: string
   prospect: { id: number; contact: string; email: string; phone: string } | null
   campaign: { id: string; name: string } | null
+}
+
+interface TeamMember {
+  id: string
+  first_name: string
+  last_name: string
+  role: string
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -34,6 +43,18 @@ export function BusinessAppointments() {
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterDate, setFilterDate] = useState<string>('')
+  const [filterMember, setFilterMember] = useState<string>('all')
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+
+  // Fetch team members for owner filter
+  useEffect(() => {
+    if (isTeamMember || !user?.id) return
+    supabase
+      .from('business_team_members')
+      .select('id, first_name, last_name, role')
+      .eq('business_owner_id', user.id)
+      .then(({ data }) => setTeamMembers(data || []))
+  }, [user?.id, isTeamMember])
 
   const fetchAppointments = useCallback(async () => {
     if (!effectiveUserId) return
@@ -72,6 +93,7 @@ export function BusinessAppointments() {
   const filtered = visibleAppointments.filter(a => {
     if (filterStatus !== 'all' && a.status !== filterStatus) return false
     if (filterDate && a.date !== filterDate) return false
+    if (!isTeamMember && filterMember !== 'all' && (a as any).assigned_to !== filterMember) return false
     return true
   })
 
@@ -79,6 +101,14 @@ export function BusinessAppointments() {
     const d = new Date(dateStr + 'T00:00:00')
     return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
   }
+
+  const getMemberName = (assignedTo?: string) => {
+    if (!assignedTo) return null
+    const m = teamMembers.find(t => t.id === assignedTo)
+    return m ? `${m.first_name} ${m.last_name}` : null
+  }
+
+  const hasActiveFilters = filterStatus !== 'all' || filterDate !== '' || filterMember !== 'all'
 
   if (loading) {
     return (
@@ -103,7 +133,24 @@ export function BusinessAppointments() {
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Team member filter (owner only) */}
+          {!isTeamMember && teamMembers.length > 0 && (
+            <div className="relative">
+              <select
+                value={filterMember}
+                onChange={(e) => setFilterMember(e.target.value)}
+                className="appearance-none rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-2 text-xs font-medium text-slate-600 focus:border-amber-500 focus:outline-none"
+              >
+                <option value="all">Tous les membres</option>
+                {teamMembers.map(m => (
+                  <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
+                ))}
+              </select>
+              <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+            </div>
+          )}
           <div className="relative">
             <select
               value={filterStatus}
@@ -125,9 +172,9 @@ export function BusinessAppointments() {
             onChange={(e) => setFilterDate(e.target.value)}
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 focus:border-amber-500 focus:outline-none"
           />
-          {(filterStatus !== 'all' || filterDate) && (
+          {hasActiveFilters && (
             <button
-              onClick={() => { setFilterStatus('all'); setFilterDate('') }}
+              onClick={() => { setFilterStatus('all'); setFilterDate(''); setFilterMember('all') }}
               className="text-xs text-amber-600 hover:text-amber-700 font-medium"
             >
               Réinitialiser
@@ -153,6 +200,7 @@ export function BusinessAppointments() {
       <div className="space-y-3">
         {filtered.map((appt) => {
           const statusConf = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending
+          const memberName = getMemberName((appt as any).assigned_to)
 
           return (
             <div key={appt.id} className="rounded-xl border border-amber-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -190,6 +238,12 @@ export function BusinessAppointments() {
                       <span className="flex items-center gap-1">
                         <Megaphone className="h-3.5 w-3.5" />
                         {appt.campaign.name}
+                      </span>
+                    )}
+                    {!isTeamMember && memberName && (
+                      <span className="flex items-center gap-1 text-amber-600 font-medium">
+                        <Users className="h-3.5 w-3.5" />
+                        {memberName}
                       </span>
                     )}
                   </div>

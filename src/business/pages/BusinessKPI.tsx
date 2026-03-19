@@ -9,6 +9,10 @@ import {
   UserX,
   XCircle,
   Users,
+  Award,
+  Ban,
+  Briefcase,
+  ArrowLeft,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -152,6 +156,7 @@ export function BusinessKPI() {
   const [activeTab, setActiveTab] = useState<Tab>('global')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
 
   // Fetch team members
   useEffect(() => {
@@ -481,7 +486,7 @@ export function BusinessKPI() {
       )}
 
       {/* ============ TEAM TAB ============ */}
-      {activeTab === 'team' && (
+      {activeTab === 'team' && !selectedMemberId && (
         <div className="space-y-6">
           <div className="bg-white rounded-xl border border-[#493627]/10 overflow-hidden">
             <div className="px-5 py-4 border-b border-[#493627]/10">
@@ -490,7 +495,7 @@ export function BusinessKPI() {
                 Performance par Membre
               </h3>
               <p className="text-xs text-[#493627]/50 mt-1">
-                Les statistiques affichées sont celles du compte principal. L'attribution individuelle sera disponible prochainement.
+                Cliquez sur un membre pour voir ses KPIs détaillés.
               </p>
             </div>
 
@@ -520,16 +525,32 @@ export function BusinessKPI() {
                   </tr>
 
                   {/* Team members */}
-                  {teamMembers.map(member => (
-                    <tr key={member.id} className="hover:bg-amber-50/30 transition-colors">
-                      <td className="px-5 py-3 font-medium text-[#493627]">{member.full_name}</td>
-                      <td className="px-5 py-3 text-[#493627]/60 capitalize">{member.role}</td>
-                      <td className="px-5 py-3 text-center text-[#493627]/40">—</td>
-                      <td className="px-5 py-3 text-center text-[#493627]/40">—</td>
-                      <td className="px-5 py-3 text-center text-[#493627]/40">—</td>
-                      <td className="px-5 py-3 text-center text-[#493627]/40">—</td>
-                    </tr>
-                  ))}
+                  {teamMembers.map(member => {
+                    const memberProspects = prospects.filter(p => p.assigned_to === member.id)
+                    const memberWon = memberProspects.filter(p => p.stage === 'won')
+                    const memberLost = memberProspects.filter(p => p.stage === 'lost')
+                    const memberNoshow = memberProspects.filter(p => p.stage === 'noshow')
+                    const memberCA = memberWon.reduce((s, p) => s + (p.value || 0), 0)
+                    const memberDecided = memberWon.length + memberLost.length + memberNoshow.length
+                    const memberConv = memberDecided > 0 ? (memberWon.length / memberDecided) * 100 : 0
+
+                    return (
+                      <tr
+                        key={member.id}
+                        onClick={() => setSelectedMemberId(member.id)}
+                        className="hover:bg-amber-50/30 transition-colors cursor-pointer"
+                      >
+                        <td className="px-5 py-3 font-medium text-[#493627]">
+                          <span className="hover:text-amber-600 transition-colors">{member.full_name}</span>
+                        </td>
+                        <td className="px-5 py-3 text-[#493627]/60 capitalize">{member.role}</td>
+                        <td className="px-5 py-3 text-center text-[#493627]">{memberProspects.length}</td>
+                        <td className="px-5 py-3 text-center text-[#493627]">{memberWon.length}</td>
+                        <td className="px-5 py-3 text-center text-emerald-700 font-medium">{formatCurrency(memberCA)}</td>
+                        <td className="px-5 py-3 text-center text-purple-700 font-medium">{memberConv.toFixed(1)}%</td>
+                      </tr>
+                    )
+                  })}
 
                   {teamMembers.length === 0 && (
                     <tr>
@@ -544,6 +565,168 @@ export function BusinessKPI() {
           </div>
         </div>
       )}
+
+      {/* ============ TEAM TAB - MEMBER DETAIL ============ */}
+      {activeTab === 'team' && selectedMemberId && (() => {
+        const member = teamMembers.find(m => m.id === selectedMemberId)
+        if (!member) return null
+
+        const memberProspects = prospects.filter(p => p.assigned_to === selectedMemberId)
+        const mWon = memberProspects.filter(p => p.stage === 'won')
+        const mLost = memberProspects.filter(p => p.stage === 'lost')
+        const mNoshow = memberProspects.filter(p => p.stage === 'noshow')
+        const mActive = memberProspects.filter(p => ['prospect', 'qualified', 'followup'].includes(p.stage))
+        const mRevenue = mWon.reduce((s, p) => s + (p.value || 0), 0)
+        const mDecided = mWon.length + mLost.length + mNoshow.length
+        const mConversion = mDecided > 0 ? (mWon.length / mDecided) * 100 : 0
+        const mNoShowRate = mDecided > 0 ? (mNoshow.length / mDecided) * 100 : 0
+        const mCommission = Math.round(mRevenue * 0.10)
+        const mAvgCommission = mWon.length > 0 ? Math.round(mCommission / mWon.length) : 0
+
+        // Chart data
+        const mChartData = (() => {
+          const monthMap: Record<string, { won: number; total: number; commission: number }> = {}
+          memberProspects.forEach(p => {
+            const d = p.created_at ? new Date(p.created_at) : null
+            if (!d) return
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+            if (!monthMap[key]) monthMap[key] = { won: 0, total: 0, commission: 0 }
+            monthMap[key].total++
+            if (p.stage === 'won') {
+              monthMap[key].won++
+              monthMap[key].commission += Math.round((p.value || 0) * 0.10)
+            }
+          })
+          return Object.entries(monthMap)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, val]) => ({
+              name: key,
+              closing: val.total > 0 ? Math.round((val.won / val.total) * 100) : 0,
+              commission: val.commission,
+            }))
+        })()
+
+        return (
+          <div className="space-y-6">
+            {/* Back button */}
+            <button
+              onClick={() => setSelectedMemberId(null)}
+              className="flex items-center gap-2 text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour à la liste
+            </button>
+
+            {/* Member header */}
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100">
+                <Users className="h-6 w-6 text-amber-700" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">{member.full_name}</h2>
+                <p className="text-sm text-slate-500 capitalize">{member.role}</p>
+              </div>
+            </div>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <KpiCard title="CA Généré" value={formatCurrency(mRevenue)} icon={DollarSign} color="emerald" />
+              <KpiCard title="Ventes Totales" value={mWon.length} icon={ShoppingCart} color="blue" />
+              <KpiCard title="Taux de Conversion" value={`${mConversion.toFixed(1)}%`} icon={Target} color="purple" />
+              <KpiCard title="Commission (10%)" value={formatCurrency(mCommission)} icon={Award} color="cyan" />
+              <KpiCard title="Taux de No Show" value={`${mNoShowRate.toFixed(1)}%`} icon={UserX} color="rose" />
+              <KpiCard title="Deals Perdus" value={mLost.length} icon={XCircle} color="slate" />
+            </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
+                <h3 className="text-sm font-semibold text-[#493627] mb-4">Historique Taux de Closing</h3>
+                <div className="h-64">
+                  {mChartData.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-sm text-slate-400">Pas encore de données</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={mChartData}>
+                        <defs>
+                          <linearGradient id="memberClosingGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#d97706" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#d97706" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" />
+                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#493627' }} />
+                        <YAxis tick={{ fontSize: 11, fill: '#493627' }} unit="%" />
+                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }} formatter={(v: number) => [`${v}%`, 'Closing']} />
+                        <Area type="monotone" dataKey="closing" stroke="#d97706" strokeWidth={2} fill="url(#memberClosingGrad)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
+                <h3 className="text-sm font-semibold text-[#493627] mb-4">Historique Commissions</h3>
+                <div className="h-64">
+                  {mChartData.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-sm text-slate-400">Pas encore de données</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={mChartData}>
+                        <defs>
+                          <linearGradient id="memberCommGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#059669" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#059669" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" />
+                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#493627' }} />
+                        <YAxis tick={{ fontSize: 11, fill: '#493627' }} unit="€" />
+                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }} formatter={(v: number) => [`${formatCurrency(v)} €`, 'Commission']} />
+                        <Area type="monotone" dataKey="commission" stroke="#059669" strokeWidth={2} fill="url(#memberCommGrad)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Pipeline Summary */}
+            <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
+              <h3 className="text-sm font-semibold text-[#493627] mb-4">Résumé du Pipeline</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-500">Total Leads</p>
+                    <p className="text-xl font-bold text-slate-900">{memberProspects.length}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
+                    <Briefcase className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-500">Deals en Cours</p>
+                    <p className="text-xl font-bold text-slate-900">{mActive.length}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                    <Award className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-500">Commission Moy.</p>
+                    <p className="text-xl font-bold text-slate-900">{formatCurrency(mAvgCommission)} €</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
