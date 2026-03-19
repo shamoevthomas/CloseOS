@@ -410,9 +410,9 @@ export function BusinessDashboard() {
                         </span>
                       </td>
                       <td className="py-2.5 px-2 text-center">
-                        <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                          <Circle className="h-1.5 w-1.5 fill-emerald-400 text-emerald-400" />
-                          Online
+                        <span className={`inline-flex items-center gap-1 text-xs ${m.is_online ? 'text-emerald-600' : 'text-slate-400'}`}>
+                          <Circle className={`h-1.5 w-1.5 fill-current ${m.is_online ? 'text-emerald-400' : 'text-slate-300'}`} />
+                          {m.is_online ? 'En ligne' : 'Hors ligne'}
                         </span>
                       </td>
                       <td className="py-2.5 pl-2 text-center text-xs text-slate-400 font-medium">—</td>

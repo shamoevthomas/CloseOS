@@ -227,11 +227,86 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     return { error };
   }, [user, initUser]);
 
+  // ─── Online presence tracking for team members ───
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const currentTeamMemberIdRef = useRef<string | null>(null);
+
+  const setOnlineStatus = useCallback(async (teamMemberId: string, online: boolean) => {
+    await supabase
+      .from('business_team_members')
+      .update({ is_online: online })
+      .eq('id', teamMemberId);
+  }, []);
+
+  const logConnectionEvent = useCallback(async (teamMemberId: string, businessOwnerId: string, eventType: 'connect' | 'disconnect') => {
+    await supabase.from('business_connection_log').insert({
+      team_member_id: teamMemberId,
+      business_owner_id: businessOwnerId,
+      event_type: eventType,
+    });
+  }, []);
+
+  const startPresence = useCallback((teamMemberId: string, businessOwnerId: string) => {
+    currentTeamMemberIdRef.current = teamMemberId;
+    // Set online + log connect
+    setOnlineStatus(teamMemberId, true);
+    logConnectionEvent(teamMemberId, businessOwnerId, 'connect');
+
+    // Heartbeat every 60s
+    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    heartbeatRef.current = setInterval(() => {
+      setOnlineStatus(teamMemberId, true);
+    }, 60000);
+
+    // beforeunload handler
+    const handleUnload = () => {
+      // Use sendBeacon for reliability on page close
+      const payload = JSON.stringify({ team_member_id: teamMemberId, is_online: false });
+      navigator.sendBeacon?.(
+        `${import.meta.env.VITE_SUPABASE_URL || ''}/rest/v1/business_team_members?id=eq.${teamMemberId}`,
+        new Blob([JSON.stringify({ is_online: false })], { type: 'application/json' })
+      );
+      // Also try direct update
+      setOnlineStatus(teamMemberId, false);
+      logConnectionEvent(teamMemberId, businessOwnerId, 'disconnect');
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    // Store cleanup ref
+    (window as any).__closeos_unload_handler = handleUnload;
+  }, [setOnlineStatus, logConnectionEvent]);
+
+  const stopPresence = useCallback(async () => {
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
+    }
+    const handler = (window as any).__closeos_unload_handler;
+    if (handler) {
+      window.removeEventListener('beforeunload', handler);
+      delete (window as any).__closeos_unload_handler;
+    }
+  }, []);
+
+  // Start presence when team member is detected
+  useEffect(() => {
+    if (isTeamMember && teamMember?.id && teamMember?.business_owner_id) {
+      startPresence(teamMember.id, teamMember.business_owner_id);
+    }
+    return () => { stopPresence(); };
+  }, [isTeamMember, teamMember?.id]);
+
   const logout = useCallback(async () => {
+    // Set offline before signing out
+    if (currentTeamMemberIdRef.current && teamMember?.business_owner_id) {
+      await setOnlineStatus(currentTeamMemberIdRef.current, false);
+      await logConnectionEvent(currentTeamMemberIdRef.current, teamMember.business_owner_id, 'disconnect');
+      currentTeamMemberIdRef.current = null;
+    }
+    await stopPresence();
     setUser(null);
     clearUserData();
     await supabase.auth.signOut();
-  }, [clearUserData]);
+  }, [clearUserData, teamMember?.business_owner_id, setOnlineStatus, logConnectionEvent, stopPresence]);
 
   return (
     <BusinessAuthContext.Provider value={{

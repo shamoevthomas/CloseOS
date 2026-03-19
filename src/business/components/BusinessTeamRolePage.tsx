@@ -19,6 +19,9 @@ import {
   Users,
   Save,
   CreditCard,
+  History,
+  LogIn,
+  LogOut,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
@@ -68,6 +71,13 @@ interface Appointment {
   status: string
   assigned_to: string
   prospect_id: number | null
+  created_at: string
+}
+
+interface ConnectionLog {
+  id: string
+  team_member_id: string
+  event_type: 'connect' | 'disconnect'
   created_at: string
 }
 
@@ -138,6 +148,7 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
   const [absences, setAbsences] = useState<Absence[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [connectionLogs, setConnectionLogs] = useState<ConnectionLog[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<string>('global')
 
@@ -145,7 +156,11 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
     if (!user) return
     setLoading(true)
     try {
-      const [membersRes, absencesRes, slotsRes, apptsRes] = await Promise.all([
+      // Fetch connection logs from the last 7 days
+      const oneWeekAgo = new Date()
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+
+      const [membersRes, absencesRes, slotsRes, apptsRes, logsRes] = await Promise.all([
         supabase
           .from('business_team_members')
           .select('*')
@@ -166,12 +181,19 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
           .from('business_appointments')
           .select('id, date, time, duration, status, assigned_to, prospect_id, created_at')
           .eq('user_id', user.id),
+        supabase
+          .from('business_connection_log')
+          .select('*')
+          .eq('business_owner_id', user.id)
+          .gte('created_at', oneWeekAgo.toISOString())
+          .order('created_at', { ascending: false }),
       ])
 
       setMembers(membersRes.data || [])
       setAbsences(absencesRes.data || [])
       setSlots(slotsRes.data || [])
       setAppointments(apptsRes.data || [])
+      setConnectionLogs(logsRes.data || [])
     } finally {
       setLoading(false)
     }
@@ -193,6 +215,7 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
   const memberAbsences = useMemo(() => activeMember ? absences.filter(a => a.team_member_id === activeMember.id) : [], [activeMember, absences])
   const memberSlots = useMemo(() => activeMember ? slots.filter(s => s.team_member_id === activeMember.id) : [], [activeMember, slots])
   const memberAppointments = useMemo(() => activeMember ? appointments.filter(a => a.assigned_to === activeMember.id) : [], [activeMember, appointments])
+  const memberLogs = useMemo(() => activeMember ? connectionLogs.filter(l => l.team_member_id === activeMember.id) : [], [activeMember, connectionLogs])
 
   if (loading) {
     return (
@@ -264,6 +287,7 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
           slots={memberSlots}
           prospects={prospects}
           appointments={memberAppointments}
+          connectionLogs={memberLogs}
           onPayDayChange={async (day: number) => {
             const { error } = await supabase
               .from('business_team_members')
@@ -432,6 +456,7 @@ function IndividualView({
   slots,
   prospects,
   appointments,
+  connectionLogs,
   onPayDayChange,
 }: {
   member: TeamMember
@@ -439,6 +464,7 @@ function IndividualView({
   slots: Slot[]
   prospects: any[]
   appointments: Appointment[]
+  connectionLogs: ConnectionLog[]
   onPayDayChange: (day: number) => Promise<void>
 }) {
   const color = getRoleColor(member.role)
@@ -516,6 +542,51 @@ function IndividualView({
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Connection History (1 week) */}
+      <div className="rounded-xl border border-slate-200 bg-white">
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100">
+          <History className="h-4 w-4 text-amber-600" />
+          <h4 className="text-sm font-semibold text-slate-900">Historique de connexion</h4>
+          <span className="text-xs text-slate-400 ml-auto">7 derniers jours</span>
+        </div>
+        <div className="p-5">
+          {connectionLogs.length === 0 ? (
+            <div className="text-center py-4">
+              <History className="h-6 w-6 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm text-slate-500">Aucun historique de connexion</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5 max-h-64 overflow-y-auto">
+              {connectionLogs.map(log => {
+                const date = new Date(log.created_at)
+                const isConnect = log.event_type === 'connect'
+                return (
+                  <div key={log.id} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-slate-50">
+                    <div className={cn(
+                      'flex h-7 w-7 items-center justify-center rounded-lg shrink-0',
+                      isConnect ? 'bg-emerald-50' : 'bg-red-50'
+                    )}>
+                      {isConnect
+                        ? <LogIn className="h-3.5 w-3.5 text-emerald-600" />
+                        : <LogOut className="h-3.5 w-3.5 text-red-500" />
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn('text-sm font-medium', isConnect ? 'text-emerald-700' : 'text-red-600')}>
+                        {isConnect ? 'Connexion' : 'Déconnexion'}
+                      </p>
+                    </div>
+                    <span className="text-xs text-slate-400 shrink-0">
+                      {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 
