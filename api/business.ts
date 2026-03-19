@@ -466,6 +466,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .update({ used: true, used_by: user_id })
           .eq('id', invitation.id)
 
+        // Check if user is already a team member for this owner
+        const { data: existing } = await supabase
+          .from('business_team_members')
+          .select('id')
+          .eq('user_id', user_id)
+          .eq('business_owner_id', invitation.inviter_id)
+          .single()
+
+        if (existing) {
+          // Update existing member's role instead of creating duplicate
+          const { data: member, error: updateErr } = await supabase
+            .from('business_team_members')
+            .update({
+              role: invitation.role,
+              first_name: first_name || undefined,
+              last_name: last_name || undefined,
+              email: email || undefined,
+            })
+            .eq('id', existing.id)
+            .select()
+            .single()
+          if (updateErr) return res.status(500).json({ error: updateErr.message })
+          return res.status(200).json({ member })
+        }
+
         const { data: member, error: memberError } = await supabase
           .from('business_team_members')
           .insert({
