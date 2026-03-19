@@ -11,12 +11,13 @@ import { BusinessProspectView } from '../components/BusinessProspectView'
 const ACTIVE_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-amber-500', light: 'bg-amber-50 border-amber-200', text: 'text-amber-700' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', light: 'bg-purple-50 border-purple-200', text: 'text-purple-700' },
-  { id: 'unqualified', name: 'Non-Qualifié', color: 'bg-yellow-500', light: 'bg-yellow-50 border-yellow-200', text: 'text-yellow-700' },
   { id: 'won', name: 'Gagné', color: 'bg-emerald-500', light: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700' },
   { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', light: 'bg-orange-50 border-orange-200', text: 'text-orange-700' },
 ]
 
 const INACTIVE_STAGES = [
+  { id: 'unqualified', name: 'Non-Qualifié', color: 'bg-yellow-500', light: 'bg-yellow-50 border-yellow-200', text: 'text-yellow-700' },
+  { id: 'noanswer', name: 'Pas de Réponse', color: 'bg-cyan-500', light: 'bg-cyan-50 border-cyan-200', text: 'text-cyan-600' },
   { id: 'noshow', name: 'No Show', color: 'bg-slate-500', light: 'bg-slate-50 border-slate-200', text: 'text-slate-600' },
   { id: 'lost', name: 'Perdu', color: 'bg-red-500', light: 'bg-red-50 border-red-200', text: 'text-red-600' },
 ]

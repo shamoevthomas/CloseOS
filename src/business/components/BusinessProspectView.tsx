@@ -17,6 +17,7 @@ const ALL_STAGES = [
   { id: 'unqualified', name: 'Non-Qualifié', color: 'bg-yellow-500' },
   { id: 'won', name: 'Gagné', color: 'bg-emerald-500' },
   { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' },
+  { id: 'noanswer', name: 'Pas de Réponse', color: 'bg-cyan-500' },
   { id: 'noshow', name: 'No Show', color: 'bg-slate-600' },
   { id: 'lost', name: 'Perdu', color: 'bg-red-500' },
 ]

@@ -207,6 +207,7 @@ export function BusinessReport() {
       { id: 'followup', name: 'Follow Up', color: '#f59e0b' },
       { id: 'won', name: 'Gagné', color: '#059669' },
       { id: 'lost', name: 'Perdu', color: '#ef4444' },
+      { id: 'noanswer', name: 'Pas de Réponse', color: '#06b6d4' },
       { id: 'noshow', name: 'No Show', color: '#64748b' },
     ]
     return stages.map(s => ({
