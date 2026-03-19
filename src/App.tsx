@@ -92,6 +92,7 @@ import { SetterKPI } from './business/pages/SetterKPI'
 import { CloserAppels } from './business/pages/CloserAppels'
 import { CloserObjectifs } from './business/pages/CloserObjectifs'
 import { CloserCallDetails } from './business/pages/CloserCallDetails'
+import { SetterCallDetails } from './business/pages/SetterCallDetails'
 import { CloserCallRoom } from './business/pages/CloserCallRoom'
 import { CloserDashboard } from './business/pages/CloserDashboard'
 import { CloserFormules } from './business/pages/CloserFormules'
@@ -122,6 +123,12 @@ function OwnerOnlyWrapper({ children }: { children: React.ReactNode }) {
 // CRM route wrapper: everyone sees the same CRM view
 function BusinessCRMRouter() {
   return <BusinessCRM />
+}
+
+function CallDetailsRouter() {
+  const { teamMember } = useBusinessAuth()
+  if (teamMember?.role?.toLowerCase() === 'setter') return <SetterCallDetails />
+  return <CloserCallDetails />
 }
 
 
@@ -259,7 +266,7 @@ function AuthenticatedApp() {
           <Route path="setter-kpi" element={<TeamOnboardingGuard><SetterKPI /></TeamOnboardingGuard>} />
           <Route path="closer-objectifs" element={<TeamOnboardingGuard><CloserObjectifs /></TeamOnboardingGuard>} />
           <Route path="appels" element={<TeamOnboardingGuard><CloserAppels /></TeamOnboardingGuard>} />
-          <Route path="appels/:id" element={<TeamOnboardingGuard><CloserCallDetails /></TeamOnboardingGuard>} />
+          <Route path="appels/:id" element={<TeamOnboardingGuard><CallDetailsRouter /></TeamOnboardingGuard>} />
           <Route path="agenda" element={<TeamOnboardingGuard><CloserAgenda /></TeamOnboardingGuard>} />
           <Route path="factures" element={<TeamOnboardingGuard><CloserFactures /></TeamOnboardingGuard>} />
           <Route path="organisation" element={<BusinessOrganization />} />
