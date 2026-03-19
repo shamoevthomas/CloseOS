@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Monitor, PhoneOff, ChevronDown, ExternalLink, FileText,
-  Briefcase, BookOpen, ScrollText, Tag, User,
+  Briefcase, BookOpen, ScrollText, Tag, User, Clock,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -40,6 +40,10 @@ export function CloserCallRoom() {
   const [showProspectView, setShowProspectView] = useState(false)
   const prospect = prospectIdFromParams ? prospects.find(p => String(p.id) === prospectIdFromParams) : null
 
+  // Previous call notes
+  const [previousNotes, setPreviousNotes] = useState<{ id: string; date: string; notes: string }[]>([])
+  const [selectedPreviousNote, setSelectedPreviousNote] = useState<string>('')
+
   const [isPanelOpen, setIsPanelOpen] = useState(true)
   const [notes, setNotes] = useState('')
   const [callDuration, setCallDuration] = useState(0)
@@ -60,6 +64,21 @@ export function CloserCallRoom() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
+
+  // Load previous call notes for this prospect
+  useEffect(() => {
+    if (!prospectIdFromParams) return
+    const pid = Number(prospectIdFromParams)
+    supabase
+      .from('business_call_history')
+      .select('id, created_at, notes')
+      .or(`prospect_id.eq.${pid},contact_id.eq.${pid}`)
+      .not('notes', 'is', null)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setPreviousNotes(data.filter(d => d.notes?.trim()).map(d => ({ id: String(d.id), date: d.created_at, notes: d.notes })))
+      })
+  }, [prospectIdFromParams])
 
   // Load scripts + offers
   useEffect(() => {
@@ -194,8 +213,8 @@ export function CloserCallRoom() {
       // Create a call record if none exists
       try {
         const { data } = await supabase.from('business_call_history').insert({
-          team_member_id: teamMember?.id,
-          business_owner_id: ownerUserId,
+          team_member_id: teamMember?.id || null,
+          business_owner_id: ownerUserId || user?.id,
           contact_name: contactName,
           contact_id: prospectIdFromParams ? Number(prospectIdFromParams) : null,
           prospect_id: prospectIdFromParams ? Number(prospectIdFromParams) : null,
@@ -390,10 +409,45 @@ export function CloserCallRoom() {
               <span className="text-xs text-slate-400">Sauvegarde auto</span>
             </div>
           </div>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
-            placeholder="Commencez à écrire vos notes ici... (Situation actuelle, Douleurs, Objectifs, Budget...)"
-            className="flex-1 w-full bg-transparent p-8 text-slate-800 placeholder-slate-300 resize-none focus:outline-none text-lg leading-relaxed"
-            autoFocus />
+
+          {/* Previous notes tabs */}
+          {previousNotes.length > 0 && (
+            <div className="px-4 pt-3 pb-2 border-b border-amber-100 flex gap-2 flex-wrap">
+              <button
+                onClick={() => setSelectedPreviousNote('')}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                  !selectedPreviousNote ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                )}
+              >
+                Notes actuelles
+              </button>
+              {previousNotes.map(n => (
+                <button
+                  key={n.id}
+                  onClick={() => setSelectedPreviousNote(n.id)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5',
+                    selectedPreviousNote === n.id ? 'bg-purple-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                  )}
+                >
+                  <Clock className="h-3 w-3" />
+                  {new Date(n.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selectedPreviousNote ? (
+            <div className="flex-1 overflow-y-auto p-8 text-slate-600 text-lg leading-relaxed whitespace-pre-wrap">
+              {previousNotes.find(n => n.id === selectedPreviousNote)?.notes || 'Aucune note'}
+            </div>
+          ) : (
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
+              placeholder="Commencez à écrire vos notes ici... (Situation actuelle, Douleurs, Objectifs, Budget...)"
+              className="flex-1 w-full bg-transparent p-8 text-slate-800 placeholder-slate-300 resize-none focus:outline-none text-lg leading-relaxed"
+              autoFocus />
+          )}
         </div>
       </div>
 
