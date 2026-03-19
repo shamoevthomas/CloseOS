@@ -39,6 +39,7 @@ const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/organisation': { title: 'Organisation', subtitle: "Informations de votre organisation" },
   '/business/objectifs': { title: 'Mes Objectifs', subtitle: 'Suivez vos objectifs assignés' },
   '/business/closer-objectifs': { title: 'Objectifs', subtitle: 'Objectifs d\'organisation, assignés et personnels' },
+  '/business/setter-kpi': { title: 'KPI & Performance', subtitle: 'Vos indicateurs de performance setter' },
 }
 
 export function BusinessLayout() {

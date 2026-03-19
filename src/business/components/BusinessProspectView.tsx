@@ -55,20 +55,26 @@ export function BusinessProspectView({
   onUpdate,
   onDelete,
 }: BusinessProspectViewProps) {
-  const { user, isTeamMember } = useBusinessAuth()
+  const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
   const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string }[]>([])
 
-  // Fetch team members for assignment (owner only)
+  // Setters with role Setter or Setter-Closer can assign closers
+  const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
+  const canAssign = !isTeamMember || isSetter
+
+  // Fetch team members for assignment (owner + setters)
   useEffect(() => {
-    if (isTeamMember || !user?.id) return
+    if (!canAssign) return
+    const ownerId = isTeamMember ? ownerUserId : user?.id
+    if (!ownerId) return
     supabase
       .from('business_team_members')
       .select('id, first_name, last_name, role')
-      .eq('business_owner_id', user.id)
+      .eq('business_owner_id', ownerId)
       .then(({ data }) => {
         if (data) setTeamMembers(data)
       })
-  }, [user?.id, isTeamMember])
+  }, [user?.id, ownerUserId, isTeamMember, canAssign])
 
   const [local, setLocal] = useState<BusinessProspect>(prospect)
   const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'rappels'>('info')
@@ -359,24 +365,53 @@ export function BusinessProspectView({
                     </select>
                   </div>
 
-                  {/* Assignment (owner only) */}
-                  {!isTeamMember && teamMembers.length > 0 && (
-                    <div>
-                      <label className="mb-2 block text-xs font-medium text-slate-500">Assigner à</label>
-                      <select
-                        value={(local as any).assigned_to || ''}
-                        onChange={(e) => handleUpdate({ assigned_to: e.target.value || null } as any)}
-                        className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
-                      >
-                        <option value="">Non assigné</option>
-                        {teamMembers.map(tm => (
-                          <option key={tm.id} value={tm.id}>
-                            {tm.first_name} {tm.last_name} ({tm.role})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
+                  {/* Assignment: separate Closer and Setter dropdowns */}
+                  {canAssign && teamMembers.length > 0 && (() => {
+                    const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer')
+                    const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer')
+
+                    return (
+                      <div className="space-y-3">
+                        {/* Assign Closer */}
+                        {closers.length > 0 && (
+                          <div>
+                            <label className="mb-2 block text-xs font-medium text-slate-500">Assigner un Closer</label>
+                            <select
+                              value={closers.find(c => c.id === (local as any).assigned_to)?.id || ''}
+                              onChange={(e) => handleUpdate({ assigned_to: e.target.value || null } as any)}
+                              className="w-full rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none"
+                            >
+                              <option value="">Aucun closer assigné</option>
+                              {closers.map(tm => (
+                                <option key={tm.id} value={tm.id}>
+                                  {tm.first_name} {tm.last_name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {/* Assign Setter (owner only — setters don't assign other setters) */}
+                        {!isTeamMember && setters.length > 0 && (
+                          <div>
+                            <label className="mb-2 block text-xs font-medium text-slate-500">Assigner un Setter</label>
+                            <select
+                              value={setters.find(s => s.id === (local as any).assigned_setter)?.id || ''}
+                              onChange={(e) => handleUpdate({ assigned_setter: e.target.value || null } as any)}
+                              className="w-full rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm text-slate-900 focus:border-purple-500 focus:outline-none"
+                            >
+                              <option value="">Aucun setter assigné</option>
+                              {setters.map(tm => (
+                                <option key={tm.id} value={tm.id}>
+                                  {tm.first_name} {tm.last_name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
 
                   {/* Linked Formula */}
                   {formula && (

@@ -27,6 +27,7 @@ export interface BusinessProspect {
   installments?: number
   probability?: number
   assigned_to?: string
+  assigned_setter?: string
   hubspot_contact_id?: string
   call_notes?: {
     id: string

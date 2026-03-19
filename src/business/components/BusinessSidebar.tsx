@@ -42,20 +42,23 @@ const ownerNavigation = [
   { name: 'Setters', href: '/business/setters', icon: Headphones },
 ]
 
-const teamMemberNavigation = [
-  { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
-  { name: 'CRM', href: '/business/crm', icon: GitBranch },
-  { name: 'Pipeline', href: '/business/pipeline', icon: Target },
-  { name: 'Objectifs', href: '/business/closer-objectifs', icon: Target },
-  { name: 'Disponibilité', href: '/business/disponibilite', icon: Calendar },
-  { name: 'KPI', href: '/business/closer-kpi', icon: TrendingUp },
-  { name: 'Formules', href: '/business/formules', icon: Package },
-  { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
-  { name: 'Appels', href: '/business/appels', icon: Headphones },
-  { name: 'Agenda', href: '/business/agenda', icon: Calendar },
-  { name: 'Factures', href: '/business/factures', icon: FileText },
-  { name: 'Rappels', href: '/business/rappels', icon: Bell },
-]
+const getTeamMemberNavigation = (role?: string) => {
+  const isSetter = role === 'Setter' || role === 'Setter-Closer'
+  return [
+    { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
+    { name: 'CRM', href: '/business/crm', icon: GitBranch },
+    { name: 'Pipeline', href: '/business/pipeline', icon: Target },
+    { name: 'Objectifs', href: '/business/closer-objectifs', icon: Target },
+    { name: 'Disponibilité', href: '/business/disponibilite', icon: Calendar },
+    { name: 'KPI', href: isSetter ? '/business/setter-kpi' : '/business/closer-kpi', icon: TrendingUp },
+    { name: 'Formules', href: '/business/formules', icon: Package },
+    { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
+    { name: 'Appels', href: '/business/appels', icon: Headphones },
+    { name: 'Agenda', href: '/business/agenda', icon: Calendar },
+    { name: 'Factures', href: '/business/factures', icon: FileText },
+    { name: 'Rappels', href: '/business/rappels', icon: Bell },
+  ]
+}
 
 interface BusinessSidebarProps {
   isOpen?: boolean
@@ -67,7 +70,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
   const navigate = useNavigate()
   const { logout, user, businessProfile, businessSettings, isTeamMember, teamMember } = useBusinessAuth()
   const hasAcknowledgedOnboarding = !isTeamMember || !!teamMember?.onboarding_acknowledged
-  const navigation = isTeamMember ? teamMemberNavigation : ownerNavigation
+  const navigation = isTeamMember ? getTeamMemberNavigation(teamMember?.role) : ownerNavigation
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)

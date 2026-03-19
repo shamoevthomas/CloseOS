@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
-  ChevronDown, User, Mail, Megaphone, Users
+  ChevronDown, User, Mail, Megaphone, Users, Link2, Copy, Plus, X, Save,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -27,6 +27,14 @@ interface TeamMember {
   role: string
 }
 
+interface BookingLink {
+  id: string
+  label: string
+  duration: number
+  link: string
+  created_at: string
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   pending: { label: 'En attente', color: 'text-amber-700', bg: 'bg-amber-100' },
   confirmed: { label: 'Confirmé', color: 'text-blue-700', bg: 'bg-blue-100' },
@@ -46,6 +54,15 @@ export function BusinessAppointments() {
   const [filterMember, setFilterMember] = useState<string>('all')
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
 
+  // Booking links (setter feature)
+  const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
+  const [bookingLinks, setBookingLinks] = useState<BookingLink[]>([])
+  const [showCreateLink, setShowCreateLink] = useState(false)
+  const [newLinkLabel, setNewLinkLabel] = useState('')
+  const [newLinkDuration, setNewLinkDuration] = useState(30)
+  const [newLinkUrl, setNewLinkUrl] = useState('')
+  const [savingLink, setSavingLink] = useState(false)
+
   // Fetch team members for owner filter
   useEffect(() => {
     if (isTeamMember || !user?.id) return
@@ -55,6 +72,52 @@ export function BusinessAppointments() {
       .eq('business_owner_id', user.id)
       .then(({ data }) => setTeamMembers(data || []))
   }, [user?.id, isTeamMember])
+
+  // Fetch booking links for setter
+  useEffect(() => {
+    if (!isSetter || !teamMember?.id) return
+    supabase
+      .from('business_booking_links')
+      .select('*')
+      .eq('team_member_id', teamMember.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setBookingLinks(data || []))
+  }, [isSetter, teamMember?.id])
+
+  const handleCreateBookingLink = async () => {
+    if (!teamMember?.id || !ownerUserId || !newLinkLabel.trim() || !newLinkUrl.trim()) return
+    setSavingLink(true)
+    const { data, error } = await supabase
+      .from('business_booking_links')
+      .insert({
+        team_member_id: teamMember.id,
+        business_owner_id: ownerUserId,
+        label: newLinkLabel.trim(),
+        duration: newLinkDuration,
+        link: newLinkUrl.trim(),
+      })
+      .select()
+      .single()
+    setSavingLink(false)
+    if (error) { toast.error('Erreur lors de la création'); return }
+    if (data) setBookingLinks(prev => [data, ...prev])
+    setShowCreateLink(false)
+    setNewLinkLabel('')
+    setNewLinkDuration(30)
+    setNewLinkUrl('')
+    toast.success('Lien de booking créé')
+  }
+
+  const handleDeleteBookingLink = async (id: string) => {
+    await supabase.from('business_booking_links').delete().eq('id', id)
+    setBookingLinks(prev => prev.filter(l => l.id !== id))
+    toast.success('Lien supprimé')
+  }
+
+  const handleCopyLink = (link: string) => {
+    navigator.clipboard.writeText(link)
+    toast.success('Lien copié !')
+  }
 
   const fetchAppointments = useCallback(async () => {
     if (!effectiveUserId) return
@@ -182,6 +245,123 @@ export function BusinessAppointments() {
           )}
         </div>
       </div>
+
+      {/* Booking Links Section (Setter only) */}
+      {isSetter && (
+        <div className="rounded-xl border border-purple-200 bg-white p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+              <Link2 className="h-4 w-4 text-purple-600" />
+              Liens de Booking
+            </h3>
+            <button
+              onClick={() => setShowCreateLink(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700 transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" /> Créer un lien
+            </button>
+          </div>
+
+          {/* Create link form */}
+          {showCreateLink && (
+            <div className="rounded-lg border border-purple-100 bg-purple-50 p-4 mb-4 space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Nom du lien</label>
+                <input
+                  type="text"
+                  value={newLinkLabel}
+                  onChange={e => setNewLinkLabel(e.target.value)}
+                  placeholder="Ex: RDV Découverte 30min"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Durée (minutes)</label>
+                <select
+                  value={newLinkDuration}
+                  onChange={e => setNewLinkDuration(Number(e.target.value))}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                >
+                  <option value={15}>15 min</option>
+                  <option value={30}>30 min</option>
+                  <option value={45}>45 min</option>
+                  <option value={60}>60 min</option>
+                  <option value={90}>90 min</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">URL du lien (Calendly, Cal.com, etc.)</label>
+                <input
+                  type="url"
+                  value={newLinkUrl}
+                  onChange={e => setNewLinkUrl(e.target.value)}
+                  placeholder="https://calendly.com/..."
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowCreateLink(false)}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleCreateBookingLink}
+                  disabled={savingLink || !newLinkLabel.trim() || !newLinkUrl.trim()}
+                  className="flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                >
+                  {savingLink ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                  Enregistrer
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Existing links */}
+          {bookingLinks.length === 0 && !showCreateLink ? (
+            <p className="text-sm text-slate-400 text-center py-4">
+              Aucun lien de booking. Créez-en un pour faciliter la prise de rendez-vous.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {bookingLinks.map(bl => (
+                <div key={bl.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-900">{bl.label}</p>
+                    <p className="text-xs text-slate-400 truncate">{bl.link} · {bl.duration}min</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 ml-3">
+                    <button
+                      onClick={() => handleCopyLink(bl.link)}
+                      className="rounded-lg p-1.5 text-purple-600 hover:bg-purple-50 transition-colors"
+                      title="Copier le lien"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
+                    <a
+                      href={bl.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition-colors"
+                      title="Ouvrir"
+                    >
+                      <Link2 className="h-4 w-4" />
+                    </a>
+                    <button
+                      onClick={() => handleDeleteBookingLink(bl.id)}
+                      className="rounded-lg p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title="Supprimer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Empty state */}
       {filtered.length === 0 && (
