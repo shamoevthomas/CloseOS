@@ -40,8 +40,7 @@ export function CloserCallRoom() {
   const [showProspectView, setShowProspectView] = useState(false)
   const prospect = prospectIdFromParams ? prospects.find(p => String(p.id) === prospectIdFromParams) : null
 
-  // Previous call notes
-  const [previousNotes, setPreviousNotes] = useState<{ id: string; date: string; notes: string }[]>([])
+  // Previous call notes from prospect's call_notes field
   const [selectedPreviousNote, setSelectedPreviousNote] = useState<string>('')
 
   const [isPanelOpen, setIsPanelOpen] = useState(true)
@@ -65,20 +64,8 @@ export function CloserCallRoom() {
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
 
-  // Load previous call notes for this prospect
-  useEffect(() => {
-    if (!prospectIdFromParams) return
-    const pid = Number(prospectIdFromParams)
-    supabase
-      .from('business_call_history')
-      .select('id, created_at, notes')
-      .or(`prospect_id.eq.${pid},contact_id.eq.${pid}`)
-      .not('notes', 'is', null)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (data) setPreviousNotes(data.filter(d => d.notes?.trim()).map(d => ({ id: String(d.id), date: d.created_at, notes: d.notes })))
-      })
-  }, [prospectIdFromParams])
+  // Get previous notes from prospect's call_notes
+  const previousNotes = (prospect?.call_notes || []).filter((n: any) => n.content?.trim())
 
   // Load scripts + offers
   useEffect(() => {
@@ -422,7 +409,7 @@ export function CloserCallRoom() {
               >
                 Notes actuelles
               </button>
-              {previousNotes.map(n => (
+              {previousNotes.map((n: any) => (
                 <button
                   key={n.id}
                   onClick={() => setSelectedPreviousNote(n.id)}
@@ -440,7 +427,7 @@ export function CloserCallRoom() {
 
           {selectedPreviousNote ? (
             <div className="flex-1 overflow-y-auto p-8 text-slate-600 text-lg leading-relaxed whitespace-pre-wrap">
-              {previousNotes.find(n => n.id === selectedPreviousNote)?.notes || 'Aucune note'}
+              {previousNotes.find((n: any) => n.id === selectedPreviousNote)?.content || 'Aucune note'}
             </div>
           ) : (
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
