@@ -94,7 +94,6 @@ import { CloserObjectifs } from './business/pages/CloserObjectifs'
 import { CloserCallDetails } from './business/pages/CloserCallDetails'
 import { CloserCallRoom } from './business/pages/CloserCallRoom'
 import { CloserDashboard } from './business/pages/CloserDashboard'
-import { CloserCRM } from './business/pages/CloserCRM'
 import { CloserFormules } from './business/pages/CloserFormules'
 import { CloserAgenda } from './business/pages/CloserAgenda'
 import { CloserFactures } from './business/pages/CloserFactures'
@@ -120,10 +119,8 @@ function OwnerOnlyWrapper({ children }: { children: React.ReactNode }) {
   return <OwnerOnlyRoute>{children}</OwnerOnlyRoute>
 }
 
-// CRM route wrapper: shows CloserCRM table view for team members, BusinessCRM kanban for owners
+// CRM route wrapper: everyone sees the same CRM view
 function BusinessCRMRouter() {
-  const { isTeamMember } = useBusinessAuth()
-  if (isTeamMember) return <CloserCRM />
   return <BusinessCRM />
 }
 

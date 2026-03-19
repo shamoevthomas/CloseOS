@@ -37,8 +37,8 @@ export function BusinessCRM() {
     hubspotConnected, pipedriveConnected,
     nextSyncSeconds,
   } = useBusinessProspects()
-  const { businessSettings, isTeamMember } = useBusinessAuth()
-  const isReadOnly = isTeamMember
+  const { businessSettings } = useBusinessAuth()
+  const isReadOnly = false
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')

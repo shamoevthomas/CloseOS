@@ -28,7 +28,7 @@ export function CloserPipeline() {
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set(['noshow', 'lost']))
 
-  const myProspects = prospects.filter(p => p.assigned_to === teamMember?.id)
+  const myProspects = prospects.filter(p => p.assigned_to === teamMember?.id || p.assigned_setter === teamMember?.id)
 
   const filteredProspects = myProspects.filter(p => {
     if (!searchQuery) return true
