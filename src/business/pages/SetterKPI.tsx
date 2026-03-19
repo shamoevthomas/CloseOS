@@ -91,19 +91,15 @@ export function SetterKPI() {
   const respondedProspects = contactedProspects.filter(p => p.stage !== 'noanswer')
   const responseRate = contactedProspects.length > 0 ? (respondedProspects.length / contactedProspects.length) * 100 : 0
 
-  // Taux de Booking: exclut "noanswer" et "unqualified" SEULEMENT si c'est le setter qui a mis en non-qualifié
+  // Taux de Booking: contactés qui ne sont pas en noanswer ni en unqualified (sauf si c'est un closer qui a mis unqualified)
   const qualifiedProspects = myProspects.filter(p => p.stage === 'qualified')
-  const unqualifiedBySetter = contactedProspects.filter(p => p.stage === 'unqualified' && p.stage_changed_by === teamMember?.id)
   const bookedProspects = contactedProspects.filter(p => {
     if (p.stage === 'noanswer') return false
+    // Non-qualifié par le setter = pas booké. Non-qualifié par un closer = on considère quand même booké pour le setter
     if (p.stage === 'unqualified' && p.stage_changed_by === teamMember?.id) return false
     return true
   })
-  const bookingTotal = contactedProspects.filter(p => {
-    if (p.stage === 'noanswer') return false
-    if (p.stage === 'unqualified' && p.stage_changed_by !== teamMember?.id) return false
-    return true
-  }).length
+  const bookingTotal = contactedProspects.length
   const bookingRate = bookingTotal > 0 ? (bookedProspects.length / bookingTotal) * 100 : 0
 
   // Taux de Conversion: prospects qualifiés par le setter qui sont en "won"
