@@ -51,6 +51,8 @@ const MONTH_NAMES = [
 interface TeamMember {
   id: string
   user_id: string
+  first_name: string
+  last_name: string
   full_name: string
   email: string
   role: string
@@ -163,10 +165,13 @@ export function BusinessKPI() {
     if (!user?.id) return
     supabase
       .from('business_team_members')
-      .select('id, user_id, full_name, email, role')
-      .eq('owner_id', user.id)
+      .select('id, user_id, first_name, last_name, email, role')
+      .eq('business_owner_id', user.id)
       .then(({ data }) => {
-        setTeamMembers(data || [])
+        setTeamMembers((data || []).map(m => ({
+          ...m,
+          full_name: `${m.first_name} ${m.last_name}`.trim(),
+        })))
       })
   }, [user?.id])
 
