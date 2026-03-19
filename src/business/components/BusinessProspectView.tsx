@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   X, Phone, Mail, Calendar, Pencil, Trash2,
   MessageCircle, Save, Clock, Plus, ChevronDown,
   Bell, Check, Loader2, FileText, ClipboardList,
-  Package, ExternalLink,
+  Package, ExternalLink, PhoneCall,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -57,6 +58,7 @@ export function BusinessProspectView({
   onUpdate,
   onDelete,
 }: BusinessProspectViewProps) {
+  const navigate = useNavigate()
   const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
   const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string }[]>([])
 
@@ -312,6 +314,12 @@ export function BusinessProspectView({
                   <MessageCircle className="h-4 w-4" /> WhatsApp
                 </button>
               </div>
+              <button
+                onClick={() => navigate(`/business/cockpit?name=${encodeURIComponent(local.contact)}&prospectId=${prospect.id}`)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-purple-700 mb-3"
+              >
+                <PhoneCall className="h-4 w-4" /> Ouvrir le Call Room
+              </button>
               <button
                 onClick={() => setShowReminderForm(true)}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-amber-700 mb-5"
