@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Search, Loader2, Filter, Calendar, ChevronDown,
-  Building2, Mail, Phone, User, X,
+  Building2, Mail, Phone, User, X, UserPlus, Tag,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
+import toast from 'react-hot-toast'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { supabase } from '../../lib/supabase'
@@ -33,6 +34,15 @@ interface Formula {
 
 const formatCurrency = (n: number) => n.toLocaleString('fr-FR') + ' €'
 
+const SOURCES = [
+  'LinkedIn Ads',
+  'Facebook Ads',
+  'Prospection',
+  'Recommandation',
+  'Organique',
+  'Autre'
+]
+
 function getStageConfig(stageId: string) {
   return ALL_STAGES.find(s => s.id === stageId) || ALL_STAGES[0]
 }
@@ -43,12 +53,25 @@ function getDisplayName(p: BusinessProspect) {
 }
 
 export function CloserCRM() {
-  const { prospects, updateProspect, deleteProspect, loading } = useBusinessProspects()
+  const { prospects, addProspect, updateProspect, deleteProspect, loading } = useBusinessProspects()
   const { user, teamMember, ownerUserId } = useBusinessAuth()
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+
+  // Create prospect modal
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [newProspectForm, setNewProspectForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    company: '',
+    formulaId: '',
+    source: 'LinkedIn Ads'
+  })
 
   // Filters
   const [filterStage, setFilterStage] = useState('')
@@ -135,6 +158,44 @@ export function CloserCRM() {
     setFilterDateTo('')
   }
 
+  const handleCreateProspect = async () => {
+    if (!newProspectForm.firstName && !newProspectForm.lastName) return
+    setIsCreating(true)
+    try {
+      const contactName = `${newProspectForm.firstName} ${newProspectForm.lastName}`.trim()
+      const selectedFormula = formulas.find(f => String(f.id) === newProspectForm.formulaId)
+
+      const newData: any = {
+        contact: contactName,
+        firstName: newProspectForm.firstName,
+        lastName: newProspectForm.lastName,
+        email: newProspectForm.email,
+        phone: newProspectForm.phone,
+        company: newProspectForm.company,
+        source: newProspectForm.source,
+        stage: 'prospect',
+        assigned_to: teamMember?.id || null,
+        created_at: new Date().toISOString(),
+      }
+
+      if (selectedFormula) {
+        newData.formula_id = selectedFormula.id
+        newData.offer = selectedFormula.name
+        newData.value = selectedFormula.price
+      }
+
+      await addProspect(newData)
+
+      setIsCreateModalOpen(false)
+      setNewProspectForm({ firstName: '', lastName: '', email: '', phone: '', company: '', formulaId: '', source: 'LinkedIn Ads' })
+      toast.success('Prospect créé')
+    } catch {
+      toast.error('Erreur lors de la création')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
   const getTeamMemberName = (id?: string) => {
     if (!id) return '-'
     const member = teamMembers.find(m => m.id === id)
@@ -181,6 +242,15 @@ export function CloserCRM() {
                 className="pl-10 pr-4 py-2 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-400 w-64"
               />
             </div>
+
+            {/* New prospect button */}
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-amber-600 text-white hover:bg-amber-500 font-medium shadow-sm"
+            >
+              <UserPlus className="h-4 w-4" />
+              Nouveau prospect
+            </button>
 
             {/* Filter toggle */}
             <button
@@ -441,6 +511,97 @@ export function CloserCRM() {
           onUpdate={updateProspect}
           onDelete={deleteProspect}
         />
+      )}
+
+      {/* Create prospect modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
+          <div className="relative w-full max-w-lg rounded-2xl bg-white border border-slate-200 shadow-2xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-slate-900">Nouveau Prospect</h2>
+              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="h-6 w-6" /></button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Prénom *</label>
+                  <input type="text" value={newProspectForm.firstName}
+                    onChange={e => setNewProspectForm({ ...newProspectForm, firstName: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none"
+                    placeholder="Jean" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Nom *</label>
+                  <input type="text" value={newProspectForm.lastName}
+                    onChange={e => setNewProspectForm({ ...newProspectForm, lastName: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none"
+                    placeholder="Dupont" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                <input type="email" value={newProspectForm.email}
+                  onChange={e => setNewProspectForm({ ...newProspectForm, email: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none"
+                  placeholder="jean@entreprise.com" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Téléphone</label>
+                <input type="text" value={newProspectForm.phone}
+                  onChange={e => setNewProspectForm({ ...newProspectForm, phone: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none"
+                  placeholder="+33 6 ..." />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Entreprise</label>
+                <input type="text" value={newProspectForm.company}
+                  onChange={e => setNewProspectForm({ ...newProspectForm, company: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none"
+                  placeholder="Nom de l'entreprise" />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-1.5">
+                  <Tag className="h-3 w-3" /> Offre / Formule
+                </label>
+                <select value={newProspectForm.formulaId}
+                  onChange={e => setNewProspectForm({ ...newProspectForm, formulaId: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none">
+                  <option value="">Aucune</option>
+                  {formulas.map(f => (
+                    <option key={f.id} value={f.id}>{f.name} - {formatCurrency(f.price)}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Source</label>
+                <select value={newProspectForm.source}
+                  onChange={e => setNewProspectForm({ ...newProspectForm, source: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none">
+                  {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button onClick={() => setIsCreateModalOpen(false)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-lg transition-colors">
+                  Annuler
+                </button>
+                <button onClick={handleCreateProspect}
+                  disabled={(!newProspectForm.firstName && !newProspectForm.lastName) || isCreating}
+                  className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50">
+                  {isCreating ? 'Création...' : 'Créer le prospect'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
