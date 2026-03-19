@@ -76,21 +76,20 @@ export function CloserCallDetails() {
   const liveNotes = (location.state as any)?.liveNotes || ''
 
   useEffect(() => {
-    if (!id || !teamMember?.id) return
+    if (!id) return
     setLoading(true)
-    supabase
+    const query = supabase
       .from('business_call_history')
       .select('*')
       .eq('id', id)
-      .eq('team_member_id', teamMember.id)
-      .single()
-      .then(({ data }) => {
-        setCall(data)
-        setNotes(data?.notes || liveNotes || '')
-        if (liveNotes) setActiveTab('notes')
-        setLoading(false)
-      })
-  }, [id, teamMember?.id])
+
+    query.single().then(({ data }) => {
+      setCall(data)
+      setNotes(data?.notes || liveNotes || '')
+      if (liveNotes) setActiveTab('notes')
+      setLoading(false)
+    })
+  }, [id])
 
   // Fetch formulas for commission
   useEffect(() => {
