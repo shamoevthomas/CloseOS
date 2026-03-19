@@ -88,6 +88,7 @@ import { CloserRendezVous } from './business/pages/CloserRendezVous'
 import { CloserDisponibilite } from './business/pages/CloserDisponibilite'
 import { CloserKPI } from './business/pages/CloserKPI'
 import { CloserAppels } from './business/pages/CloserAppels'
+import { CloserObjectifs } from './business/pages/CloserObjectifs'
 import { CloserCallDetails } from './business/pages/CloserCallDetails'
 import { CloserCallRoom } from './business/pages/CloserCallRoom'
 import { CloserDashboard } from './business/pages/CloserDashboard'
@@ -255,6 +256,7 @@ function AuthenticatedApp() {
           <Route path="pipeline" element={<TeamOnboardingGuard><CloserPipeline /></TeamOnboardingGuard>} />
           <Route path="disponibilite" element={<TeamOnboardingGuard><CloserDisponibilite /></TeamOnboardingGuard>} />
           <Route path="closer-kpi" element={<TeamOnboardingGuard><CloserKPI /></TeamOnboardingGuard>} />
+          <Route path="closer-objectifs" element={<TeamOnboardingGuard><CloserObjectifs /></TeamOnboardingGuard>} />
           <Route path="appels" element={<TeamOnboardingGuard><CloserAppels /></TeamOnboardingGuard>} />
           <Route path="appels/:id" element={<TeamOnboardingGuard><CloserCallDetails /></TeamOnboardingGuard>} />
           <Route path="agenda" element={<TeamOnboardingGuard><CloserAgenda /></TeamOnboardingGuard>} />

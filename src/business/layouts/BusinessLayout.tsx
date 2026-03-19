@@ -37,6 +37,7 @@ const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/rappels': { title: 'Rappels', subtitle: 'Vos rappels personnels' },
   '/business/organisation': { title: 'Organisation', subtitle: "Informations de votre organisation" },
   '/business/objectifs': { title: 'Mes Objectifs', subtitle: 'Suivez vos objectifs assignés' },
+  '/business/closer-objectifs': { title: 'Objectifs', subtitle: 'Objectifs d\'organisation, assignés et personnels' },
 }
 
 export function BusinessLayout() {

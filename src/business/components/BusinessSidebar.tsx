@@ -45,6 +45,7 @@ const teamMemberNavigation = [
   { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
   { name: 'CRM', href: '/business/crm', icon: GitBranch },
   { name: 'Pipeline', href: '/business/pipeline', icon: Target },
+  { name: 'Objectifs', href: '/business/closer-objectifs', icon: Target },
   { name: 'Disponibilité', href: '/business/disponibilite', icon: Calendar },
   { name: 'KPI', href: '/business/closer-kpi', icon: TrendingUp },
   { name: 'Formules', href: '/business/formules', icon: Package },

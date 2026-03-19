@@ -747,6 +747,77 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true })
     }
 
+    // ─── Personal Objectives CRUD (for team members) ───
+    if (action === 'personal-objectives-list' && req.method === 'GET') {
+      const team_member_id = req.query.team_member_id as string
+      if (!team_member_id) return res.status(400).json({ error: 'team_member_id required' })
+
+      const { data, error } = await supabase
+        .from('business_personal_objectives')
+        .select('*')
+        .eq('team_member_id', team_member_id)
+        .order('created_at', { ascending: true })
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ objectives: data || [] })
+    }
+
+    if (action === 'personal-objectives-create' && req.method === 'POST') {
+      const { team_member_id, business_owner_id, label, metric, target_value, period, deadline, visible_to_owner } = req.body
+      if (!team_member_id || !business_owner_id || !label) {
+        return res.status(400).json({ error: 'team_member_id, business_owner_id, and label required' })
+      }
+
+      const { data, error } = await supabase
+        .from('business_personal_objectives')
+        .insert({
+          team_member_id,
+          business_owner_id,
+          label,
+          metric: metric || 'custom',
+          target_value: target_value || 0,
+          period: period || 'monthly',
+          deadline: deadline || null,
+          visible_to_owner: visible_to_owner ?? false,
+        })
+        .select()
+        .single()
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ objective: data })
+    }
+
+    if (action === 'personal-objectives-update' && req.method === 'PUT') {
+      const { team_member_id, id, ...updates } = req.body
+      if (!team_member_id || !id) return res.status(400).json({ error: 'team_member_id and id required' })
+
+      const { data, error } = await supabase
+        .from('business_personal_objectives')
+        .update(updates)
+        .eq('id', id)
+        .eq('team_member_id', team_member_id)
+        .select()
+        .single()
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ objective: data })
+    }
+
+    if (action === 'personal-objectives-delete' && req.method === 'DELETE') {
+      const id = req.query.id as string
+      const team_member_id = req.query.team_member_id as string
+      if (!team_member_id || !id) return res.status(400).json({ error: 'team_member_id and id required' })
+
+      const { error } = await supabase
+        .from('business_personal_objectives')
+        .delete()
+        .eq('id', id)
+        .eq('team_member_id', team_member_id)
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ success: true })
+    }
+
     // ─── Acquisition stats ───
     if (action === 'acquisition-stats' && req.method === 'GET') {
       const user_id = req.query.user_id as string
