@@ -148,37 +148,63 @@ export function BusinessInvitation() {
   };
 
   // Handle Google OAuth return — auto-accept invitation
+  // Uses auth state listener to reliably detect when Google OAuth completes
+  const [oauthHandled, setOauthHandled] = useState(false);
+
+  const doAcceptOAuth = async (user: any) => {
+    if (oauthHandled) return;
+    setOauthHandled(true);
+    localStorage.removeItem('pending_invitation_token');
+    setSubmitLoading(true);
+
+    try {
+      const fullName = user.user_metadata?.full_name || '';
+      const parts = fullName.split(' ');
+      await acceptInvitation(
+        user.id,
+        user.email || '',
+        parts[0] || '',
+        parts.slice(1).join(' ') || '',
+      );
+      setSuccess(true);
+      setTimeout(() => navigate('/business/organisation'), 2500);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de l\'acceptation.');
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  // Listen for auth state changes (fires when Supabase processes OAuth hash)
+  useEffect(() => {
+    const pendingToken = localStorage.getItem('pending_invitation_token');
+    if (!pendingToken) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user && invitation && !oauthHandled) {
+          await doAcceptOAuth(session.user);
+        }
+      }
+    );
+
+    return () => { subscription.unsubscribe(); };
+  }, [invitation, oauthHandled]);
+
+  // Also try immediately on mount + when invitation loads (for cases where auth is already resolved)
   useEffect(() => {
     const handleOAuthReturn = async () => {
       const pendingToken = localStorage.getItem('pending_invitation_token');
-      if (!pendingToken || !invitation) return;
+      if (!pendingToken || !invitation || oauthHandled) return;
 
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-
-      localStorage.removeItem('pending_invitation_token');
-      setSubmitLoading(true);
-
-      try {
-        const fullName = session.user.user_metadata?.full_name || '';
-        const parts = fullName.split(' ');
-        await acceptInvitation(
-          session.user.id,
-          session.user.email || '',
-          parts[0] || '',
-          parts.slice(1).join(' ') || '',
-        );
-        setSuccess(true);
-        setTimeout(() => navigate('/business/organisation'), 2500);
-      } catch (err: any) {
-        setError(err.message || 'Erreur lors de l\'acceptation.');
-      } finally {
-        setSubmitLoading(false);
+      if (session?.user) {
+        await doAcceptOAuth(session.user);
       }
     };
 
     handleOAuthReturn();
-  }, [invitation]);
+  }, [invitation, oauthHandled]);
 
   const inviterName = invitation?.inviter?.full_name || 'Un manager';
   const inviterFirstName = inviterName.split(' ')[0];
