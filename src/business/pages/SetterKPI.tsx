@@ -86,10 +86,10 @@ export function SetterKPI() {
   // Setter prospects = prospects assigned to this setter via assigned_setter
   const myProspects = prospects.filter(p => p.assigned_setter === teamMember?.id)
 
-  // Taux de Réponse: prospects qui ne sont PAS en "noanswer" / total assignés
-  const noAnswerProspects = myProspects.filter(p => p.stage === 'noanswer')
-  const respondedProspects = myProspects.filter(p => p.stage !== 'noanswer')
-  const responseRate = myProspects.length > 0 ? (respondedProspects.length / myProspects.length) * 100 : 0
+  // Taux de Réponse: prospects contactés (hors stage "prospect") qui ne sont PAS en "noanswer"
+  const contactedProspects = myProspects.filter(p => p.stage !== 'prospect')
+  const respondedProspects = contactedProspects.filter(p => p.stage !== 'noanswer')
+  const responseRate = contactedProspects.length > 0 ? (respondedProspects.length / contactedProspects.length) * 100 : 0
 
   // Taux de Booking: prospects "qualified" / (qualified + unqualified)
   const qualifiedProspects = myProspects.filter(p => p.stage === 'qualified')
@@ -272,7 +272,7 @@ export function SetterKPI() {
             <span className="text-xs font-medium text-slate-500">Taux de Réponse</span>
           </div>
           <p className="text-2xl font-bold text-purple-700">{formatPercent(responseRate)}%</p>
-          <p className="text-xs text-slate-400 mt-1">{respondedProspects.length} réponses / {myProspects.length} prospects assignés</p>
+          <p className="text-xs text-slate-400 mt-1">{respondedProspects.length} réponses / {contactedProspects.length} contactés</p>
         </div>
         <div className="bg-white rounded-2xl border border-purple-200 p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
