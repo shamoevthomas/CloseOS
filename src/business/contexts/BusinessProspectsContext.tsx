@@ -28,6 +28,7 @@ export interface BusinessProspect {
   probability?: number
   assigned_to?: string
   assigned_setter?: string
+  stage_changed_by?: string
   hubspot_contact_id?: string
   call_notes?: {
     id: string
@@ -60,7 +61,7 @@ const SYNC_INTERVAL_SECONDS = 120
 export function BusinessProspectsProvider({ children }: { children: ReactNode }) {
   const [prospects, setProspects] = useState<BusinessProspect[]>([])
   const [loading, setLoading] = useState(true)
-  const { user, loading: authLoading, businessSettings, isTeamMember, ownerUserId } = useBusinessAuth()
+  const { user, loading: authLoading, businessSettings, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
   // Wait for auth to fully resolve before computing userId
   // When authLoading is false and user exists, isTeamMember/ownerUserId are finalized
   const userId = authLoading ? null : (isTeamMember ? ownerUserId : user?.id)
@@ -314,6 +315,12 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
 
   const updateProspect = async (id: number, updates: Partial<BusinessProspect>) => {
     const previousProspects = prospects
+
+    // Track who changed the stage
+    if (updates.stage) {
+      const changedBy = isTeamMember ? (teamMember?.id || user?.id) : 'owner'
+      updates.stage_changed_by = changedBy
+    }
 
     // Optimistic update
     setProspects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
