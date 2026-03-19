@@ -91,11 +91,11 @@ export function SetterKPI() {
   const respondedProspects = contactedProspects.filter(p => p.stage !== 'noanswer')
   const responseRate = contactedProspects.length > 0 ? (respondedProspects.length / contactedProspects.length) * 100 : 0
 
-  // Taux de Booking: prospects "qualified" / (qualified + unqualified)
+  // Taux de Booking: prospects dans tous les statuts sauf "noanswer" et "unqualified" / total contactés (hors prospect)
   const qualifiedProspects = myProspects.filter(p => p.stage === 'qualified')
-  const unqualifiedProspects = myProspects.filter(p => p.stage === 'unqualified')
-  const bookingTotal = qualifiedProspects.length + unqualifiedProspects.length
-  const bookingRate = bookingTotal > 0 ? (qualifiedProspects.length / bookingTotal) * 100 : 0
+  const bookedProspects = contactedProspects.filter(p => p.stage !== 'noanswer' && p.stage !== 'unqualified')
+  const bookingTotal = contactedProspects.length
+  const bookingRate = bookingTotal > 0 ? (bookedProspects.length / bookingTotal) * 100 : 0
 
   // Taux de Conversion: prospects qualifiés par le setter qui sont en "won"
   const qualifiedByMeAll = myProspects.filter(p => ['qualified', 'won', 'lost', 'noshow', 'followup'].includes(p.stage))
@@ -282,7 +282,7 @@ export function SetterKPI() {
             <span className="text-xs font-medium text-slate-500">Taux de Booking</span>
           </div>
           <p className="text-2xl font-bold text-purple-700">{formatPercent(bookingRate)}%</p>
-          <p className="text-xs text-slate-400 mt-1">{qualifiedProspects.length} qualifiés / {bookingTotal} traités</p>
+          <p className="text-xs text-slate-400 mt-1">{bookedProspects.length} bookés / {bookingTotal} contactés</p>
         </div>
       </div>
 
