@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Monitor, PhoneOff, ChevronDown, ExternalLink, FileText,
-  Briefcase, BookOpen, ScrollText, Tag,
+  Briefcase, BookOpen, ScrollText, Tag, User, Clock,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
+import { BusinessProspectView } from '../components/BusinessProspectView'
 import { cn } from '../../lib/utils'
 
 interface Script {
@@ -25,12 +27,22 @@ interface Offer {
 }
 
 export function CloserCallRoom() {
-  const { teamMember, ownerUserId } = useBusinessAuth()
+  const { teamMember, ownerUserId, user } = useBusinessAuth()
+  const { prospects, updateProspect, deleteProspect } = useBusinessProspects()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const callIdFromParams = searchParams.get('id')
   const contactName = searchParams.get('name') || 'Appel'
+  const prospectIdFromParams = searchParams.get('prospectId')
   const callIdRef = useRef<string | null>(callIdFromParams)
+
+  // Prospect view
+  const [showProspectView, setShowProspectView] = useState(false)
+  const prospect = prospectIdFromParams ? prospects.find(p => String(p.id) === prospectIdFromParams) : null
+
+  // Previous call notes for this prospect
+  const [previousNotes, setPreviousNotes] = useState<{ id: string; date: string; notes: string }[]>([])
+  const [selectedPreviousNote, setSelectedPreviousNote] = useState<string>('')
 
   const [isPanelOpen, setIsPanelOpen] = useState(true)
   const [notes, setNotes] = useState('')
@@ -52,6 +64,20 @@ export function CloserCallRoom() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
+
+  // Load previous call notes for this prospect
+  useEffect(() => {
+    if (!prospectIdFromParams) return
+    const pid = Number(prospectIdFromParams)
+    supabase
+      .from('business_call_history')
+      .select('id, created_at, notes')
+      .or(`prospect_id.eq.${pid},contact_id.eq.${pid}`)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setPreviousNotes(data.filter(d => d.notes).map(d => ({ id: String(d.id), date: d.created_at, notes: d.notes })))
+      })
+  }, [prospectIdFromParams])
 
   // Load scripts + offers
   useEffect(() => {
@@ -173,13 +199,33 @@ export function CloserCallRoom() {
 
   const handleLeave = async () => {
     if (isRecording) { stopRecording(); await new Promise(r => setTimeout(r, 2000)) }
-    const finalCallId = callIdRef.current
+    let finalCallId = callIdRef.current
+
     if (finalCallId) {
       try {
         await supabase.from('business_call_history').update({
           duration: formatDuration(callDuration),
+          notes,
         }).eq('id', finalCallId)
       } catch (e) { console.error('Erreur sauvegarde durée', e) }
+    } else {
+      // Create a call record if none exists
+      try {
+        const { data } = await supabase.from('business_call_history').insert({
+          team_member_id: teamMember?.id,
+          business_owner_id: ownerUserId,
+          contact_name: contactName,
+          contact_id: prospectIdFromParams ? Number(prospectIdFromParams) : null,
+          prospect_id: prospectIdFromParams ? Number(prospectIdFromParams) : null,
+          duration: formatDuration(callDuration),
+          notes,
+          answered: true,
+        }).select().single()
+        if (data) finalCallId = data.id
+      } catch (e) { console.error('Erreur création appel', e) }
+    }
+
+    if (finalCallId) {
       navigate(`/business/appels/${finalCallId}`, { state: { liveNotes: notes } })
     } else {
       navigate('/business/appels')
@@ -208,6 +254,12 @@ export function CloserCallRoom() {
         </div>
 
         <div className="flex items-center gap-3">
+          {prospect && (
+            <button onClick={() => setShowProspectView(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-purple-200 bg-purple-50 hover:bg-purple-100 text-sm font-medium text-purple-700">
+              <User className="h-4 w-4" /> Fiche Prospect
+            </button>
+          )}
           <button onClick={() => window.open('https://meet.google.com', '_blank')}
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-sm font-medium">
             <ExternalLink className="h-4 w-4" /> Meet
@@ -347,21 +399,66 @@ export function CloserCallRoom() {
 
         {/* Notes Panel */}
         <div className="flex-1 flex flex-col bg-amber-50/30 border-l border-amber-200">
-          <div className="p-4 border-b border-amber-100 flex justify-between items-center">
-            <h3 className="font-bold text-slate-500 text-sm tracking-wider flex items-center gap-2">
-              <FileText className="h-4 w-4" /> PRISE DE NOTES
-            </h3>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              <span className="text-xs text-slate-400">Sauvegarde auto</span>
+          <div className="p-4 border-b border-amber-100 flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-slate-500 text-sm tracking-wider flex items-center gap-2">
+                <FileText className="h-4 w-4" /> PRISE DE NOTES
+              </h3>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-xs text-slate-400">Sauvegarde auto</span>
+              </div>
             </div>
+            {previousNotes.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Clock className="h-3.5 w-3.5 text-slate-400" />
+                <select
+                  value={selectedPreviousNote}
+                  onChange={(e) => {
+                    setSelectedPreviousNote(e.target.value)
+                  }}
+                  className="flex-1 text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-600 focus:outline-none focus:border-amber-500"
+                >
+                  <option value="">Notes précédentes ({previousNotes.length})</option>
+                  {previousNotes.map(n => (
+                    <option key={n.id} value={n.id}>
+                      {new Date(n.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
-            placeholder="Commencez à écrire vos notes ici... (Situation actuelle, Douleurs, Objectifs, Budget...)"
-            className="flex-1 w-full bg-transparent p-8 text-slate-800 placeholder-slate-300 resize-none focus:outline-none text-lg leading-relaxed"
-            autoFocus />
+          {selectedPreviousNote ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
+                <span className="text-xs font-medium text-amber-700">Note précédente (lecture seule)</span>
+                <button onClick={() => setSelectedPreviousNote('')} className="text-xs text-amber-600 hover:text-amber-800 font-medium">
+                  Retour aux notes actuelles
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-8 text-slate-600 text-lg leading-relaxed whitespace-pre-wrap">
+                {previousNotes.find(n => n.id === selectedPreviousNote)?.notes || 'Aucune note'}
+              </div>
+            </div>
+          ) : (
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
+              placeholder="Commencez à écrire vos notes ici... (Situation actuelle, Douleurs, Objectifs, Budget...)"
+              className="flex-1 w-full bg-transparent p-8 text-slate-800 placeholder-slate-300 resize-none focus:outline-none text-lg leading-relaxed"
+              autoFocus />
+          )}
         </div>
       </div>
+
+      {/* Prospect View Modal */}
+      {showProspectView && prospect && (
+        <BusinessProspectView
+          prospect={prospect}
+          onClose={() => setShowProspectView(false)}
+          onUpdate={updateProspect}
+          onDelete={deleteProspect}
+        />
+      )}
     </div>
   )
 }
