@@ -36,7 +36,7 @@ export function CloserCallDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { teamMember, ownerUserId } = useBusinessAuth()
+  const { user, teamMember, ownerUserId } = useBusinessAuth()
   const { prospects, updateProspect } = useBusinessProspects()
 
   const [call, setCall] = useState<any>(null)
@@ -83,7 +83,8 @@ export function CloserCallDetails() {
       .select('*')
       .eq('id', id)
 
-    query.single().then(({ data }) => {
+    query.single().then(({ data, error }) => {
+      if (error) console.error('Erreur chargement appel:', error.message)
       setCall(data)
       setNotes(data?.notes || liveNotes || '')
       if (liveNotes) setActiveTab('notes')
@@ -93,8 +94,9 @@ export function CloserCallDetails() {
 
   // Fetch formulas for commission
   useEffect(() => {
-    if (!ownerUserId) return
-    fetch(`/api/business?action=formulas-list&user_id=${ownerUserId}`)
+    const uid = ownerUserId || user?.id
+    if (!uid) return
+    fetch(`/api/business?action=formulas-list&user_id=${uid}`)
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) setFormulas(data)

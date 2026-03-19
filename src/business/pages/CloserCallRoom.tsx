@@ -198,19 +198,20 @@ export function CloserCallRoom() {
       } catch (e) { console.error('Erreur sauvegarde durée', e) }
     } else {
       // Create a call record if none exists
-      try {
-        const { data } = await supabase.from('business_call_history').insert({
-          team_member_id: teamMember?.id || null,
-          business_owner_id: ownerUserId || user?.id,
-          contact_name: contactName,
-          contact_id: prospectIdFromParams ? Number(prospectIdFromParams) : null,
-          prospect_id: prospectIdFromParams ? Number(prospectIdFromParams) : null,
-          duration: formatDuration(callDuration),
-          notes,
-          answered: true,
-        }).select().single()
-        if (data) finalCallId = data.id
-      } catch (e) { console.error('Erreur création appel', e) }
+      const { data, error } = await supabase.from('business_call_history').insert({
+        team_member_id: teamMember?.id || null,
+        business_owner_id: ownerUserId || user?.id,
+        contact_name: contactName,
+        contact_id: prospectIdFromParams ? Number(prospectIdFromParams) : null,
+        prospect_id: prospectIdFromParams ? Number(prospectIdFromParams) : null,
+        duration: formatDuration(callDuration),
+        notes,
+        answered: true,
+      }).select().single()
+      if (error) {
+        console.error('Erreur création appel:', error.message, error.details, error.hint)
+      }
+      if (data) finalCallId = data.id
     }
 
     if (finalCallId) {
