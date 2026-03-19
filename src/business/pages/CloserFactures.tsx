@@ -1,220 +1,337 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { supabase } from '../../lib/supabase'
-import { FileText, DollarSign, TrendingUp, Loader2, Receipt } from 'lucide-react'
+import {
+  TrendingUp, DollarSign, Calendar, FileText, CreditCard, Clock,
+  Info, Eye, Download, Loader2, Receipt,
+} from 'lucide-react'
 import { cn } from '../../lib/utils'
 
-interface Invoice {
-  id: string
-  prospect_id: number
-  amount: number
-  status: 'draft' | 'sent' | 'paid' | 'overdue'
-  created_at: string
-  contact_name: string
-}
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
 
-const STATUS_CONFIG: Record<Invoice['status'], { label: string; bg: string; text: string }> = {
-  draft: { label: 'Brouillon', bg: 'bg-slate-100', text: 'text-slate-700' },
-  sent: { label: 'Envoyée', bg: 'bg-blue-100', text: 'text-blue-700' },
-  paid: { label: 'Payée', bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  overdue: { label: 'En retard', bg: 'bg-red-100', text: 'text-red-700' },
+const getStatusConfig = (status: string) => {
+  switch (status) {
+    case 'payé': return { label: 'Payé', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' }
+    case 'envoyée': return { label: 'Envoyée', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' }
+    case 'générée': return { label: 'Générée', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' }
+    case 'retard': return { label: 'En retard', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' }
+    case 'en attente': case 'en_attente': return { label: 'En attente', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' }
+    default: return { label: status || 'Brouillon', bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' }
+  }
 }
-
-const formatCurrency = (n: number) => n.toLocaleString('fr-FR') + ' \u20ac'
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 
 export function CloserFactures() {
-  const { teamMember, ownerUserId } = useBusinessAuth()
+  const { user, teamMember, ownerUserId } = useBusinessAuth()
   const { prospects } = useBusinessProspects()
 
-  const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [savedInvoices, setSavedInvoices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [hasTable, setHasTable] = useState(true)
 
-  // Fetch invoices from business_invoices, fallback to won prospects
+  const now = new Date()
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+
+  const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split('T')[0])
+  const [endDate, setEndDate] = useState(lastDayOfMonth.toISOString().split('T')[0])
+
+  // Fetch invoices from invoices table (organization-level)
   useEffect(() => {
-    if (!ownerUserId || !teamMember?.id) return
-
+    if (!ownerUserId) return
     const fetchInvoices = async () => {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('business_invoices')
+      // Try business_invoices first, then invoices table
+      let { data, error } = await supabase
+        .from('invoices')
         .select('*')
-        .eq('business_owner_id', ownerUserId)
+        .eq('user_id', ownerUserId)
         .order('created_at', { ascending: false })
 
       if (error) {
-        // Table likely doesn't exist — fallback to won prospects
-        setHasTable(false)
-        setInvoices([])
-      } else {
-        setHasTable(true)
-        // Filter to invoices related to prospects assigned to this closer
-        const myProspectIds = new Set(
-          prospects
-            .filter((p) => p.assigned_to === teamMember.id)
-            .map((p) => p.id)
-        )
-        setInvoices((data as Invoice[]).filter((inv) => myProspectIds.has(inv.prospect_id)))
+        // Fallback: try business_invoices
+        const res = await supabase
+          .from('business_invoices')
+          .select('*')
+          .eq('business_owner_id', ownerUserId)
+          .order('created_at', { ascending: false })
+        data = res.data
       }
+
+      setSavedInvoices(data || [])
       setLoading(false)
     }
-
     fetchInvoices()
-  }, [ownerUserId, teamMember?.id, prospects])
+  }, [ownerUserId])
 
-  // Won prospects as pseudo-invoices fallback
-  const wonProspects = useMemo(
-    () => prospects.filter((p) => p.stage === 'won' && p.assigned_to === teamMember?.id),
+  // Won prospects assigned to me
+  const myWonProspects = useMemo(
+    () => prospects.filter(p => p.stage === 'won' && p.assigned_to === teamMember?.id),
     [prospects, teamMember?.id]
   )
 
-  const displayData = hasTable ? invoices : []
-  const fallbackMode = !hasTable
+  // Filter invoices by date range
+  const filteredInvoices = useMemo(() => {
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    end.setHours(23, 59, 59, 999)
+    return savedInvoices.filter(inv => {
+      const d = new Date(inv.created_at)
+      return d >= start && d <= end
+    })
+  }, [savedInvoices, startDate, endDate])
 
-  // KPI calculations
-  const totalFacture = useMemo(() => {
-    if (fallbackMode) return wonProspects.reduce((sum, p) => sum + (p.value || 0), 0)
-    return invoices.reduce((sum, inv) => sum + inv.amount, 0)
-  }, [fallbackMode, invoices, wonProspects])
+  // KPIs
+  const totalRevenue = useMemo(() =>
+    myWonProspects.reduce((sum, p) => sum + (p.value || 0), 0),
+    [myWonProspects]
+  )
 
-  const count = fallbackMode ? wonProspects.length : invoices.length
+  const pendingInvoices = useMemo(() =>
+    filteredInvoices.filter(inv => ['en_attente', 'retard', 'en attente'].includes(inv.status)),
+    [filteredInvoices]
+  )
 
-  const commissionEstimee = useMemo(() => totalFacture * 0.1, [totalFacture])
+  const pendingAmount = useMemo(() =>
+    pendingInvoices.reduce((sum, inv) => sum + (inv.amount_ttc || 0), 0),
+    [pendingInvoices]
+  )
+
+  const commissionEstimee = useMemo(() => totalRevenue * 0.1, [totalRevenue])
+
+  const inputCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all"
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
       </div>
     )
   }
 
-  const getDisplayName = (p: typeof wonProspects[0]) => {
-    if (p.firstName || p.lastName) return `${p.firstName || ''} ${p.lastName || ''}`.trim()
-    return p.contact || 'Prospect sans nom'
-  }
-
   return (
-    <div className="flex h-full flex-col p-8 overflow-hidden bg-slate-950 -m-6 rounded-xl">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
-            <Receipt className="h-5 w-5 text-amber-500" />
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+          <Receipt className="h-5 w-5 text-amber-700" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-slate-900">Factures & Commissions</h1>
+          <p className="text-xs text-slate-500">Suivez vos commissions et l'historique des factures</p>
+        </div>
+      </div>
+
+      {/* Date Picker */}
+      <div className="flex flex-col md:flex-row items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
+            <Calendar className="h-4 w-4 text-amber-600" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Factures</h1>
-            <p className="text-sm text-slate-400 mt-0.5">
-              {fallbackMode ? 'Deals gagn\u00e9s' : 'Vos factures'}
-            </p>
+          <span className="text-sm font-semibold text-slate-700">Période :</span>
+        </div>
+        <div className="flex items-center gap-3 flex-1">
+          <div className="flex-1">
+            <label className="mb-1 block text-xs font-medium text-slate-500">Date de début</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputCls} />
+          </div>
+          <span className="mt-5 text-slate-400">→</span>
+          <div className="flex-1">
+            <label className="mb-1 block text-xs font-medium text-slate-500">Date de fin</label>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputCls} />
           </div>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 shrink-0">
-        <div className="rounded-xl border border-slate-800 bg-white/[0.03] p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10">
-              <DollarSign className="h-4 w-4 text-amber-500" />
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50">
+              <TrendingUp className="h-4 w-4 text-emerald-600" />
             </div>
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total factur\u00e9</span>
+            <span className="text-xs font-medium text-slate-500">CA Généré</span>
           </div>
-          <p className="text-2xl font-bold text-white">{formatCurrency(totalFacture)}</p>
+          <p className="text-xl font-bold text-slate-900">{formatCurrency(totalRevenue)}</p>
+          <p className="text-[11px] text-slate-400 mt-1">{myWonProspects.length} deal(s) gagné(s)</p>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-white/[0.03] p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10">
-              <FileText className="h-4 w-4 text-amber-500" />
+        <div className="bg-white rounded-2xl border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
+              <DollarSign className="h-4 w-4 text-amber-600" />
             </div>
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Nombre de factures</span>
+            <span className="text-xs font-medium text-slate-500">Ma Commission</span>
           </div>
-          <p className="text-2xl font-bold text-white">{count}</p>
+          <p className="text-xl font-bold text-slate-900">{formatCurrency(commissionEstimee)}</p>
+          <p className="text-[11px] text-slate-400 mt-1">10% du CA</p>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-white/[0.03] p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10">
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
+        <div className="bg-white rounded-2xl border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
+              <CreditCard className="h-4 w-4 text-blue-600" />
             </div>
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Commission estim\u00e9e</span>
+            <span className="text-xs font-medium text-slate-500">Commission Moy.</span>
           </div>
-          <p className="text-2xl font-bold text-emerald-400">{formatCurrency(commissionEstimee)}</p>
-          <p className="text-xs text-slate-500 mt-1">10% du total factur\u00e9</p>
+          <p className="text-xl font-bold text-slate-900">
+            {myWonProspects.length > 0 ? formatCurrency(commissionEstimee / myWonProspects.length) : formatCurrency(0)}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-1">Par deal</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50">
+              <Clock className="h-4 w-4 text-rose-600" />
+            </div>
+            <span className="text-xs font-medium text-slate-500">En attente</span>
+          </div>
+          <p className="text-xl font-bold text-slate-900">{formatCurrency(pendingAmount)}</p>
+          <p className="text-[11px] text-slate-400 mt-1">{pendingInvoices.length} facture(s)</p>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="flex-1 overflow-auto rounded-xl border border-slate-800 bg-white/[0.02]">
-        {/* Table header */}
-        <div className="grid grid-cols-4 gap-4 border-b border-slate-800 px-6 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-          <span>Contact</span>
-          <span>Montant</span>
-          <span>Date</span>
-          <span>Statut</span>
+      {/* Détails comptant / échelonné */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <Info className="h-4 w-4 text-amber-600" />
+          Détails de la période
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Comptant */}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                <span className="text-sm font-semibold text-slate-700">Paiement Comptant</span>
+              </div>
+              <span className="text-lg font-bold text-slate-900">
+                {myWonProspects.filter(p => !p.installments || p.installments <= 1).length}
+              </span>
+            </div>
+            <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                style={{
+                  width: myWonProspects.length > 0
+                    ? `${(myWonProspects.filter(p => !p.installments || p.installments <= 1).length / myWonProspects.length) * 100}%`
+                    : '0%'
+                }}
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-2 text-right">
+              Total : <span className="font-semibold text-emerald-600">
+                {formatCurrency(myWonProspects.filter(p => !p.installments || p.installments <= 1).reduce((s, p) => s + (p.value || 0), 0))}
+              </span>
+            </p>
+          </div>
+
+          {/* Plusieurs fois */}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                <span className="text-sm font-semibold text-slate-700">Paiement en plusieurs fois</span>
+              </div>
+              <span className="text-lg font-bold text-slate-900">
+                {myWonProspects.filter(p => p.installments && p.installments > 1).length}
+              </span>
+            </div>
+            <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 rounded-full transition-all duration-700"
+                style={{
+                  width: myWonProspects.length > 0
+                    ? `${(myWonProspects.filter(p => p.installments && p.installments > 1).length / myWonProspects.length) * 100}%`
+                    : '0%'
+                }}
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-2 text-right">
+              Total : <span className="font-semibold text-blue-600">
+                {formatCurrency(myWonProspects.filter(p => p.installments && p.installments > 1).reduce((s, p) => s + (p.value || 0), 0))}
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Historique des factures */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100">
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+            <FileText className="h-4 w-4 text-amber-600" />
+            Historique des factures
+          </h3>
         </div>
 
-        {/* Rows */}
-        {fallbackMode ? (
-          wonProspects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <FileText className="h-10 w-10 text-slate-700 mb-3" />
-              <p className="text-sm text-slate-500">Aucun deal gagn\u00e9 pour le moment</p>
-            </div>
-          ) : (
-            wonProspects.map((p) => (
-              <div
-                key={p.id}
-                className="grid grid-cols-4 gap-4 items-center border-b border-slate-800/50 px-6 py-4 hover:bg-white/[0.02] transition-colors"
-              >
-                <span className="text-sm font-medium text-white truncate">{getDisplayName(p)}</span>
-                <span className="text-sm text-white font-medium">{formatCurrency(p.value || 0)}</span>
-                <span className="text-sm text-slate-400">
-                  {p.updated_at ? formatDate(p.updated_at) : '-'}
-                </span>
-                <span>
-                  <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-                    Gagn\u00e9
-                  </span>
-                </span>
-              </div>
-            ))
-          )
-        ) : displayData.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <FileText className="h-10 w-10 text-slate-700 mb-3" />
-            <p className="text-sm text-slate-500">Aucune facture pour le moment</p>
-          </div>
-        ) : (
-          displayData.map((inv) => {
-            const config = STATUS_CONFIG[inv.status]
-            return (
-              <div
-                key={inv.id}
-                className="grid grid-cols-4 gap-4 items-center border-b border-slate-800/50 px-6 py-4 hover:bg-white/[0.02] transition-colors"
-              >
-                <span className="text-sm font-medium text-white truncate">{inv.contact_name}</span>
-                <span className="text-sm text-white font-medium">{formatCurrency(inv.amount)}</span>
-                <span className="text-sm text-slate-400">{formatDate(inv.created_at)}</span>
-                <span>
-                  <span
-                    className={cn(
-                      'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                      config.bg,
-                      config.text
-                    )}
-                  >
-                    {config.label}
-                  </span>
-                </span>
-              </div>
-            )
-          })
-        )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-100">
+              <tr>
+                <th className="px-5 py-3 font-medium tracking-wider">N° Facture</th>
+                <th className="px-5 py-3 font-medium tracking-wider">Date</th>
+                <th className="px-5 py-3 font-medium tracking-wider">Client / Offre</th>
+                <th className="px-5 py-3 font-medium tracking-wider">Montant TTC</th>
+                <th className="px-5 py-3 font-medium tracking-wider">Statut</th>
+                <th className="px-5 py-3 text-right font-medium tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredInvoices.map((inv) => {
+                const config = getStatusConfig(inv.status)
+                return (
+                  <tr key={inv.id} className="hover:bg-slate-50 transition-colors group">
+                    <td className="px-5 py-3.5 font-mono text-sm font-medium text-amber-700">{inv.invoice_number}</td>
+                    <td className="px-5 py-3.5 text-slate-600">{new Date(inv.created_at).toLocaleDateString('fr-FR')}</td>
+                    <td className="px-5 py-3.5">
+                      <div className="font-medium text-slate-900">{inv.client_name}</div>
+                      {inv.offer_name && <div className="text-xs text-slate-400">{inv.offer_name}</div>}
+                    </td>
+                    <td className="px-5 py-3.5 font-semibold text-slate-900">{formatCurrency(inv.amount_ttc || 0)}</td>
+                    <td className="px-5 py-3.5">
+                      <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border', config.bg, config.text, config.border)}>
+                        {config.label}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      {inv.pdf_url && (
+                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <a
+                            href={inv.pdf_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-amber-600 transition-colors"
+                            title="Voir"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </a>
+                          <a
+                            href={inv.pdf_url}
+                            download
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition-colors"
+                            title="Télécharger"
+                          >
+                            <Download className="h-4 w-4" />
+                          </a>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+              {filteredInvoices.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-16 text-center">
+                    <FileText className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                    <p className="text-sm text-slate-500">Aucune facture sur cette période</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )

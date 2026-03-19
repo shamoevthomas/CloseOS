@@ -168,90 +168,73 @@ export function CloserKPI() {
   const v = getTabValues()
   const avgCommission = v.sales > 0 ? Math.round(v.commission / v.sales) : 0
 
+  const inputCls = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 bg-slate-950">
-        <Loader2 className="h-8 w-8 text-amber-400 animate-spin" />
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="relative p-6 rounded-2xl bg-slate-800/40 border border-white/5 backdrop-blur-md">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/20">
-              <TrendingUp className="w-6 h-6 text-amber-400" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                Performance
-              </h1>
-              <p className="text-sm text-slate-400 mt-0.5">Vos indicateurs de performance</p>
-            </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+            <TrendingUp className="h-5 w-5 text-amber-700" />
           </div>
-          <button
-            onClick={() => setIsConfigOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700/50 border border-white/10 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-all"
-          >
-            <Settings className="h-4 w-4" /> Configurer
-          </button>
+          <div>
+            <h1 className="text-lg font-bold text-slate-900">Performance</h1>
+            <p className="text-xs text-slate-500">Vos indicateurs de performance</p>
+          </div>
         </div>
+        <button
+          onClick={() => setIsConfigOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+        >
+          <Settings className="h-4 w-4" /> Configurer
+        </button>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => setActiveTab('personal')}
-          className={cn(
-            'px-5 py-2.5 rounded-full text-sm font-medium transition-all',
-            activeTab === 'personal'
-              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25'
-              : 'bg-slate-800/40 text-slate-400 border border-white/5 hover:bg-slate-800/60 hover:text-slate-200'
-          )}
-        >
-          Global (Personnel)
-        </button>
-        <button
-          onClick={() => setActiveTab('org')}
-          className={cn(
-            'px-5 py-2.5 rounded-full text-sm font-medium transition-all',
-            activeTab === 'org'
-              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25'
-              : 'bg-slate-800/40 text-slate-400 border border-white/5 hover:bg-slate-800/60 hover:text-slate-200'
-          )}
-        >
-          Organisation
-        </button>
-        <button
-          onClick={() => setActiveTab('offer')}
-          className={cn(
-            'px-5 py-2.5 rounded-full text-sm font-medium transition-all',
-            activeTab === 'offer'
-              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25'
-              : 'bg-slate-800/40 text-slate-400 border border-white/5 hover:bg-slate-800/60 hover:text-slate-200'
-          )}
-        >
-          Par Offre
-        </button>
+        {[
+          { key: 'personal' as const, label: 'Global (Personnel)' },
+          { key: 'org' as const, label: 'Organisation' },
+          { key: 'offer' as const, label: 'Par Offre' },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={cn(
+              'px-4 py-2 rounded-xl text-sm font-medium transition-all',
+              activeTab === tab.key
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'org' && (
-        <div className="rounded-xl bg-slate-800/30 border border-white/5 px-4 py-3">
-          <p className="text-sm text-slate-400 text-center">Vue en lecture seule des KPIs de l'organisation.</p>
+        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+          <p className="text-sm text-amber-700 text-center">Vue en lecture seule des KPIs de l'organisation.</p>
         </div>
       )}
 
       {activeTab === 'offer' && (
-        <div className="rounded-xl bg-slate-800/30 border border-white/5 px-4 py-3">
+        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">KPIs par offre/formule</p>
+            <p className="text-sm text-amber-700">KPIs par offre/formule</p>
             <select
               value={selectedOfferId || ''}
               onChange={(e) => setSelectedOfferId(e.target.value)}
-              className="rounded-lg bg-slate-800 border border-white/10 text-sm text-white px-3 py-1.5 focus:border-amber-500 focus:outline-none"
+              className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-amber-500 focus:outline-none"
             >
               {formulas.length === 0 && <option value="">Aucune formule</option>}
               {formulas.map(f => (
@@ -263,54 +246,54 @@ export function CloserKPI() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <KpiCard title="CA Genere" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title="Ventes Totales" value={v.sales} icon={ShoppingCart} color="blue" />
         <KpiCard title="Taux de Conversion" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" />
-        <KpiCard title="Mes Commissions" value={`${formatCurrency(v.commission)} €`} icon={Award} color="amber" glow />
+        <KpiCard title="Mes Commissions" value={`${formatCurrency(v.commission)} €`} icon={Award} color="amber" highlight />
         <KpiCard title="Taux de No Show" value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" />
         <KpiCard title="Deals Perdus" value={v.lost} icon={Ban} color="slate" />
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
-          <h3 className="text-lg font-semibold text-white mb-6">Historique Taux de Closing</h3>
-          <div className="h-64">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <h3 className="text-sm font-semibold text-slate-900 mb-4">Historique Taux de Closing</h3>
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="colorClosing" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                  <linearGradient id="colorClosingBiz" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#d97706" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#d97706" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} unit="%" />
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }} />
-                <Area type="monotone" dataKey="closing" stroke="#a855f7" strokeWidth={2} fill="url(#colorClosing)" />
+                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', color: '#0f172a' }} />
+                <Area type="monotone" dataKey="closing" stroke="#d97706" strokeWidth={2} fill="url(#colorClosingBiz)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
-          <h3 className="text-lg font-semibold text-white mb-6">Historique Commissions</h3>
-          <div className="h-64">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <h3 className="text-sm font-semibold text-slate-900 mb-4">Historique Commissions</h3>
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="colorCommission" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                  <linearGradient id="colorCommissionBiz" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} unit="€" />
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }} />
-                <Area type="monotone" dataKey="commission" stroke="#10b981" strokeWidth={2} fill="url(#colorCommission)" />
+                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', color: '#0f172a' }} />
+                <Area type="monotone" dataKey="commission" stroke="#10b981" strokeWidth={2} fill="url(#colorCommissionBiz)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -318,8 +301,8 @@ export function CloserKPI() {
       </div>
 
       {/* Pipeline Summary */}
-      <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
-        <h3 className="text-lg font-semibold text-white mb-4">Resume du Pipeline</h3>
+      <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <h3 className="text-sm font-semibold text-slate-900 mb-4">Resume du Pipeline</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <SummaryItem label="Total Leads" value={v.leads} icon={Users} color="indigo" />
           <SummaryItem label="Deals en Cours" value={v.deals} icon={Briefcase} color="cyan" />
@@ -329,43 +312,50 @@ export function CloserKPI() {
 
       {/* Config Modal */}
       {isConfigOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-white/10 p-6 shadow-2xl relative">
-            <button onClick={() => setIsConfigOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
-              <X className="h-5 w-5" />
-            </button>
-            <h2 className="text-lg font-bold text-white mb-6">Configuration KPI</h2>
-            <div className="space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white border border-slate-200 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+              <h2 className="text-lg font-bold text-slate-900">Configuration KPI</h2>
+              <button onClick={() => setIsConfigOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Objectif de revenue (€)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Objectif de revenue (€)</label>
                 <input
                   type="number"
                   value={kpiConfig.revenue_target}
                   onChange={e => setKpiConfig(prev => ({ ...prev, revenue_target: Number(e.target.value) }))}
-                  className="w-full rounded-xl bg-slate-800 border border-white/10 text-white py-2.5 px-4 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none placeholder-slate-500"
+                  className={inputCls}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Appels prevus / mois</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Appels prevus / mois</label>
                 <input
                   type="number"
                   value={kpiConfig.planned_calls}
                   onChange={e => setKpiConfig(prev => ({ ...prev, planned_calls: Number(e.target.value) }))}
-                  className="w-full rounded-xl bg-slate-800 border border-white/10 text-white py-2.5 px-4 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none placeholder-slate-500"
+                  className={inputCls}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Taux de commission (%)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Taux de commission (%)</label>
                 <input
                   type="number"
                   value={kpiConfig.commission_rate}
                   onChange={e => setKpiConfig(prev => ({ ...prev, commission_rate: Number(e.target.value) }))}
-                  className="w-full rounded-xl bg-slate-800 border border-white/10 text-white py-2.5 px-4 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none placeholder-slate-500"
+                  className={inputCls}
                 />
               </div>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+              <button onClick={() => setIsConfigOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                Annuler
+              </button>
               <button
                 onClick={saveConfig}
-                className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 py-2.5 font-bold text-white hover:from-amber-400 hover:to-orange-400 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25"
+                className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
               >
                 <Save className="h-4 w-4" /> Sauvegarder
               </button>
@@ -379,42 +369,46 @@ export function CloserKPI() {
 
 /* -- Inline Components -- */
 
-const KpiCard = ({ title, value, icon: Icon, color, glow }: any) => {
+const KpiCard = ({ title, value, icon: Icon, color, highlight }: any) => {
   const colors: any = {
-    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    blue: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-    purple: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
-    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    rose: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
-    slate: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
+    emerald: { icon: 'bg-emerald-50 text-emerald-600', border: highlight ? '' : '' },
+    blue: { icon: 'bg-blue-50 text-blue-600' },
+    purple: { icon: 'bg-purple-50 text-purple-600' },
+    amber: { icon: 'bg-amber-50 text-amber-600' },
+    rose: { icon: 'bg-rose-50 text-rose-600' },
+    slate: { icon: 'bg-slate-100 text-slate-600' },
   }
+  const c = colors[color] || colors.slate
   return (
-    <div className={`relative p-6 rounded-2xl bg-slate-800/40 border border-white/5 backdrop-blur-md transition-all hover:bg-slate-800/60 group ${glow ? 'shadow-lg shadow-amber-500/10 border-amber-500/30' : ''}`}>
-      <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 rounded-xl ${colors[color] || colors.slate} group-hover:scale-110 transition-transform duration-300`}>
-          <Icon className="w-6 h-6" />
+    <div className={cn(
+      'bg-white rounded-2xl border p-5 transition-all hover:shadow-md',
+      highlight ? 'border-amber-200 shadow-sm' : 'border-slate-200'
+    )}>
+      <div className="flex items-center gap-3 mb-3">
+        <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl', c.icon)}>
+          <Icon className="h-4 w-4" />
         </div>
+        <span className="text-xs font-medium text-slate-500">{title}</span>
       </div>
-      <h3 className="text-slate-400 text-sm font-medium mb-1">{title}</h3>
-      <p className="text-3xl font-bold text-white tracking-tight">{value}</p>
+      <p className="text-2xl font-bold text-slate-900">{value}</p>
     </div>
   )
 }
 
 const SummaryItem = ({ label, value, icon: Icon, color }: any) => {
   const colors: any = {
-    indigo: 'text-indigo-400 bg-indigo-500/10',
-    cyan: 'text-cyan-400 bg-cyan-500/10',
-    amber: 'text-amber-400 bg-amber-500/10',
+    indigo: 'bg-indigo-50 text-indigo-600',
+    cyan: 'bg-cyan-50 text-cyan-600',
+    amber: 'bg-amber-50 text-amber-600',
   }
   return (
-    <div className="flex items-center gap-5 p-4 rounded-xl hover:bg-white/5 transition-colors">
-      <div className={`p-4 rounded-2xl ${colors[color]}`}>
-        <Icon className="w-8 h-8" />
+    <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+      <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', colors[color])}>
+        <Icon className="h-5 w-5" />
       </div>
       <div>
-        <p className="text-slate-400 text-sm font-medium mb-1">{label}</p>
-        <p className="text-2xl font-bold text-white">{value}</p>
+        <p className="text-xs font-medium text-slate-500">{label}</p>
+        <p className="text-xl font-bold text-slate-900">{value}</p>
       </div>
     </div>
   )
