@@ -99,10 +99,11 @@ import { CloserFormules } from './business/pages/CloserFormules'
 import { CloserAgenda } from './business/pages/CloserAgenda'
 import { CloserFactures } from './business/pages/CloserFactures'
 
-// Owner-only route guard for business pages
+// Owner-only route guard for business pages (Head of Sales also allowed)
 function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
-  const { isTeamMember } = useBusinessAuth()
-  if (isTeamMember) return <Navigate to="/business/dashboard" replace />
+  const { isTeamMember, teamMember } = useBusinessAuth()
+  const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
+  if (isTeamMember && !isHeadOfSales) return <Navigate to="/business/dashboard" replace />
   return <>{children}</>
 }
 
@@ -118,6 +119,14 @@ function TeamOnboardingGuard({ children }: { children: React.ReactNode }) {
 // Wrapper to use BusinessAuth inside routes
 function OwnerOnlyWrapper({ children }: { children: React.ReactNode }) {
   return <OwnerOnlyRoute>{children}</OwnerOnlyRoute>
+}
+
+// Campaign route guard: owner always, Head of Sales only if can_manage_campaigns
+function CampaignGuard({ children }: { children: React.ReactNode }) {
+  const { isTeamMember, teamMember } = useBusinessAuth()
+  if (!isTeamMember) return <>{children}</>
+  if (teamMember?.role === 'Head of Sales' && teamMember?.can_manage_campaigns) return <>{children}</>
+  return <Navigate to="/business/dashboard" replace />
 }
 
 // CRM route wrapper: everyone sees the same CRM view
@@ -250,7 +259,7 @@ function AuthenticatedApp() {
           <Route path="crm" element={<TeamOnboardingGuard><BusinessCRMRouter /></TeamOnboardingGuard>} />
           <Route path="pipeline-owner" element={<OwnerOnlyWrapper><BusinessPipeline /></OwnerOnlyWrapper>} />
           <Route path="kpi" element={<OwnerOnlyWrapper><BusinessKPI /></OwnerOnlyWrapper>} />
-          <Route path="campagnes" element={<OwnerOnlyWrapper><BusinessCampaigns /></OwnerOnlyWrapper>} />
+          <Route path="campagnes" element={<CampaignGuard><BusinessCampaigns /></CampaignGuard>} />
           <Route path="acquisition" element={<OwnerOnlyWrapper><BusinessAcquisition /></OwnerOnlyWrapper>} />
           <Route path="objectifs" element={<TeamOnboardingGuard><BusinessObjectives /></TeamOnboardingGuard>} />
           <Route path="formules" element={<TeamOnboardingGuard><BusinessFormules /></TeamOnboardingGuard>} />

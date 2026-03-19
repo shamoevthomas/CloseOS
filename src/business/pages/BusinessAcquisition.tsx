@@ -28,15 +28,16 @@ const formatCurrency = (value: number): string =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value)
 
 export function BusinessAcquisition() {
-  const { user } = useBusinessAuth()
+  const { user, ownerUserId } = useBusinessAuth()
+  const effectiveUserId = ownerUserId || user?.id
   const [stats, setStats] = useState<CampaignStat[]>([])
   const [loading, setLoading] = useState(true)
   const [pieView, setPieView] = useState<'views' | 'conversion'>('views')
 
   const fetchStats = useCallback(async () => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     try {
-      const res = await fetch(`${API_URL}?action=acquisition-stats&user_id=${user.id}`)
+      const res = await fetch(`${API_URL}?action=acquisition-stats&user_id=${effectiveUserId}`)
       const data = await res.json()
       if (data.stats) setStats(data.stats)
     } catch (err) {
@@ -44,7 +45,7 @@ export function BusinessAcquisition() {
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [effectiveUserId])
 
   useEffect(() => { fetchStats() }, [fetchStats])
 

@@ -42,6 +42,26 @@ const ownerNavigation = [
   { name: 'Setters', href: '/business/setters', icon: Headphones },
 ]
 
+const getHeadOfSalesNavigation = (canManageCampaigns?: boolean) => {
+  const nav = [
+    { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
+    { name: 'CRM', href: '/business/crm', icon: GitBranch },
+    { name: 'Pipeline', href: '/business/pipeline-owner', icon: Target },
+    ...(canManageCampaigns ? [{ name: 'Campagnes', href: '/business/campagnes', icon: Megaphone }] : []),
+    { name: 'Acquisition', href: '/business/acquisition', icon: BarChart3 },
+    { name: 'Objectifs', href: '/business/objectifs', icon: Target },
+    { name: 'Formules', href: '/business/formules', icon: Package },
+    { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
+    { name: 'Rappels', href: '/business/rappels', icon: Bell },
+    { name: 'Rapport', href: '/business/report', icon: FileText },
+    { name: 'KPI', href: '/business/kpi', icon: TrendingUp },
+    { name: 'Équipe', href: '/business/team', icon: Users },
+    { name: 'Closers', href: '/business/closers', icon: UserCheck },
+    { name: 'Setters', href: '/business/setters', icon: Headphones },
+  ]
+  return nav
+}
+
 const getTeamMemberNavigation = (role?: string) => {
   const isSetter = role === 'Setter' || role === 'Setter-Closer'
   return [
@@ -70,7 +90,12 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
   const navigate = useNavigate()
   const { logout, user, businessProfile, businessSettings, isTeamMember, teamMember } = useBusinessAuth()
   const hasAcknowledgedOnboarding = !isTeamMember || !!teamMember?.onboarding_acknowledged
-  const navigation = isTeamMember ? getTeamMemberNavigation(teamMember?.role) : ownerNavigation
+  const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
+  const navigation = isHeadOfSales
+    ? getHeadOfSalesNavigation(!!teamMember?.can_manage_campaigns)
+    : isTeamMember
+      ? getTeamMemberNavigation(teamMember?.role)
+      : ownerNavigation
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)

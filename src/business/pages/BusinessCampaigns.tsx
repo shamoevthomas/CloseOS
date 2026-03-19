@@ -47,7 +47,8 @@ const SOURCES = ['Direct', 'Google Ads', 'Facebook Ads', 'Instagram', 'LinkedIn'
 const API_URL = '/api/business'
 
 export function BusinessCampaigns() {
-  const { user } = useBusinessAuth()
+  const { user, ownerUserId } = useBusinessAuth()
+  const effectiveUserId = ownerUserId || user?.id
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -80,9 +81,9 @@ export function BusinessCampaigns() {
   const [formCustomFields, setFormCustomFields] = useState<CustomField[]>([])
 
   const fetchCampaigns = useCallback(async () => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     try {
-      const res = await fetch(`${API_URL}?action=campaigns-list&user_id=${user.id}`)
+      const res = await fetch(`${API_URL}?action=campaigns-list&user_id=${effectiveUserId}`)
       const data = await res.json()
       if (data.campaigns) setCampaigns(data.campaigns)
     } catch (err) {
@@ -90,18 +91,18 @@ export function BusinessCampaigns() {
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [effectiveUserId])
 
   const fetchFormulas = useCallback(async () => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     try {
-      const res = await fetch(`${API_URL}?action=formulas-list&user_id=${user.id}`)
+      const res = await fetch(`${API_URL}?action=formulas-list&user_id=${effectiveUserId}`)
       const data = await res.json()
       if (data.formulas) setFormulas(data.formulas)
     } catch (err) {
       console.error('Error fetching formulas:', err)
     }
-  }, [user?.id])
+  }, [effectiveUserId])
 
   useEffect(() => { fetchCampaigns(); fetchFormulas() }, [fetchCampaigns, fetchFormulas])
 
@@ -133,7 +134,7 @@ export function BusinessCampaigns() {
   }
 
   const getPayload = () => ({
-    user_id: user?.id, name: formName, description: formDescription, source: formSource,
+    user_id: effectiveUserId, name: formName, description: formDescription, source: formSource,
     utm_source: formUtmSource || null, utm_medium: formUtmMedium || null, utm_campaign: formUtmCampaign || null,
     custom_fields: formCustomFields,
     landing_title: formLandingTitle || null, landing_subtitle: formLandingSubtitle || null,
@@ -174,7 +175,7 @@ export function BusinessCampaigns() {
     try {
       await fetch(`${API_URL}?action=campaigns-update`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user?.id, id: campaign.id, is_active: !campaign.is_active }),
+        body: JSON.stringify({ user_id: effectiveUserId, id: campaign.id, is_active: !campaign.is_active }),
       })
       fetchCampaigns()
       toast.success(campaign.is_active ? 'Campagne désactivée' : 'Campagne activée')
@@ -184,7 +185,7 @@ export function BusinessCampaigns() {
   const deleteCampaign = async (campaign: Campaign) => {
     if (!confirm(`Supprimer la campagne "${campaign.name}" ?`)) return
     try {
-      await fetch(`${API_URL}?action=campaigns-delete&id=${campaign.id}&user_id=${user?.id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}?action=campaigns-delete&id=${campaign.id}&user_id=${effectiveUserId}`, { method: 'DELETE' })
       toast.success('Campagne supprimée'); fetchCampaigns()
     } catch { toast.error('Erreur') }
   }

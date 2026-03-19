@@ -72,11 +72,13 @@ const ROLE_COLORS: Record<string, string> = {
 // ─── Component ───
 
 export function BusinessDashboard() {
-  const { user, isTeamMember } = useBusinessAuth()
+  const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
+  const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
 
-  if (isTeamMember) {
+  if (isTeamMember && !isHeadOfSales) {
     return <CloserDashboard />
   }
+  const effectiveUserId = ownerUserId || user?.id
   const [loading, setLoading] = useState(true)
 
   const [prospects, setProspects] = useState<Prospect[]>([])
@@ -87,15 +89,15 @@ export function BusinessDashboard() {
   const [objectives, setObjectives] = useState<Objective[]>([])
 
   const fetchAll = useCallback(async () => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     setLoading(true)
     try {
       const [prospectsRes, campaignsRes, appointmentsRes, membersRes, remindersRes] = await Promise.all([
-        supabase.from('business_prospects').select('*').eq('user_id', user.id),
-        supabase.from('business_campaigns').select('*').eq('user_id', user.id),
-        supabase.from('business_appointments').select('*').eq('user_id', user.id),
-        supabase.from('business_team_members').select('*').eq('business_owner_id', user.id),
-        supabase.from('reminders').select('*').eq('user_id', user.id).eq('is_done', false).order('reminder_date', { ascending: true }).limit(5),
+        supabase.from('business_prospects').select('*').eq('user_id', effectiveUserId),
+        supabase.from('business_campaigns').select('*').eq('user_id', effectiveUserId),
+        supabase.from('business_appointments').select('*').eq('user_id', effectiveUserId),
+        supabase.from('business_team_members').select('*').eq('business_owner_id', effectiveUserId),
+        supabase.from('reminders').select('*').eq('user_id', effectiveUserId).eq('is_done', false).order('reminder_date', { ascending: true }).limit(5),
       ])
       setProspects(prospectsRes.data || [])
       setCampaigns(campaignsRes.data || [])
@@ -105,7 +107,7 @@ export function BusinessDashboard() {
 
       // Fetch objectives via API
       try {
-        const res = await fetch(`/api/business?action=objectives-list&user_id=${user.id}`)
+        const res = await fetch(`/api/business?action=objectives-list&user_id=${effectiveUserId}`)
         const data = await res.json()
         if (data.objectives) setObjectives(data.objectives)
       } catch { /* ignore */ }
@@ -114,7 +116,7 @@ export function BusinessDashboard() {
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [effectiveUserId])
 
   useEffect(() => { fetchAll() }, [fetchAll])
 

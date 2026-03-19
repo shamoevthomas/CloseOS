@@ -97,7 +97,8 @@ const ROLE_COLORS: Record<string, string> = {
 // ─── Component ───
 
 export function BusinessReport() {
-  const { user } = useBusinessAuth()
+  const { user, ownerUserId } = useBusinessAuth()
+  const effectiveUserId = ownerUserId || user?.id
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [periodDays, setPeriodDays] = useState(7)
@@ -111,15 +112,15 @@ export function BusinessReport() {
   const [reminders, setReminders] = useState<any[]>([])
 
   const fetchAll = useCallback(async () => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     setLoading(true)
     try {
       const [membersRes, prospectsRes, campaignsRes, appointmentsRes, remindersRes] = await Promise.all([
-        supabase.from('business_team_members').select('id, first_name, last_name, email, role, joined_at').eq('business_owner_id', user.id),
-        supabase.from('business_prospects').select('id, stage, value, created_at, campaign_id, payment_type, installments, assigned_to, contact').eq('user_id', user.id),
-        supabase.from('business_campaigns').select('id, name, views, is_active, created_at').eq('user_id', user.id),
-        supabase.from('business_appointments').select('id, status, date, campaign_id, prospect_id, created_at, assigned_to').eq('user_id', user.id),
-        supabase.from('reminders').select('id, title, reminder_date, created_at, is_done, user_id, created_by_member_id').eq('user_id', user.id),
+        supabase.from('business_team_members').select('id, first_name, last_name, email, role, joined_at').eq('business_owner_id', effectiveUserId),
+        supabase.from('business_prospects').select('id, stage, value, created_at, campaign_id, payment_type, installments, assigned_to, contact').eq('user_id', effectiveUserId),
+        supabase.from('business_campaigns').select('id, name, views, is_active, created_at').eq('user_id', effectiveUserId),
+        supabase.from('business_appointments').select('id, status, date, campaign_id, prospect_id, created_at, assigned_to').eq('user_id', effectiveUserId),
+        supabase.from('reminders').select('id, title, reminder_date, created_at, is_done, user_id, created_by_member_id').eq('user_id', effectiveUserId),
       ])
       setMembers(membersRes.data || [])
       setProspects(prospectsRes.data || [])
@@ -131,7 +132,7 @@ export function BusinessReport() {
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [effectiveUserId])
 
   useEffect(() => { fetchAll() }, [fetchAll])
 

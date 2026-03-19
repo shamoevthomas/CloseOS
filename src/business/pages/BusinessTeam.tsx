@@ -29,7 +29,8 @@ const getRoleColor = (role: string) =>
   ROLE_COLORS[role] || { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200' }
 
 export function BusinessTeam() {
-  const { user } = useBusinessAuth()
+  const { user, ownerUserId } = useBusinessAuth()
+  const effectiveUserId = ownerUserId || user?.id
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
@@ -41,7 +42,7 @@ export function BusinessTeam() {
       const { data, error } = await supabase
         .from('business_team_members')
         .select('*')
-        .eq('business_owner_id', user.id)
+        .eq('business_owner_id', effectiveUserId)
         .order('joined_at', { ascending: true })
 
       if (error) {

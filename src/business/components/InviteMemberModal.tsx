@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, Copy, Check, Loader2, Link as LinkIcon } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 
-const DEFAULT_ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Manager', 'Admin'];
+const DEFAULT_ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Manager', 'Admin', 'Head of Sales'];
 
 interface Props {
   isOpen: boolean;
@@ -16,6 +16,7 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [canManageCampaigns, setCanManageCampaigns] = useState(false);
 
   if (!isOpen) return null;
 
@@ -36,6 +37,7 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
         body: JSON.stringify({
           inviter_id: user.id,
           role,
+          can_manage_campaigns: role === 'Head of Sales' ? canManageCampaigns : false,
         }),
       });
 
@@ -68,6 +70,7 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
     setSelectedRole('Closer');
     setCustomRole('');
     setCopied(false);
+    setCanManageCampaigns(false);
     onClose();
   };
 
@@ -124,6 +127,30 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
                   placeholder="Nom du rôle personnalisé..."
                 />
+              </div>
+            )}
+
+            {selectedRole === 'Head of Sales' && (
+              <div className="mb-4 rounded-xl border border-purple-200 bg-purple-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Gestion des campagnes</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Lui donner accès à la page Campagnes</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCanManageCampaigns(!canManageCampaigns)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                      canManageCampaigns ? 'bg-purple-600' : 'bg-slate-300'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transform transition-transform duration-200 ease-in-out ${
+                        canManageCampaigns ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             )}
 

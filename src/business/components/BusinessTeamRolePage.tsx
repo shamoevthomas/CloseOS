@@ -142,7 +142,8 @@ interface BusinessTeamRolePageProps {
 }
 
 export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon }: BusinessTeamRolePageProps) {
-  const { user } = useBusinessAuth()
+  const { user, ownerUserId } = useBusinessAuth()
+  const effectiveUserId = ownerUserId || user?.id
   const { prospects } = useBusinessProspects()
   const [members, setMembers] = useState<TeamMember[]>([])
   const [absences, setAbsences] = useState<Absence[]>([])
@@ -164,27 +165,27 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
         supabase
           .from('business_team_members')
           .select('*')
-          .eq('business_owner_id', user.id)
+          .eq('business_owner_id', effectiveUserId)
           .in('role', roleFilter)
           .order('joined_at', { ascending: true }),
         supabase
           .from('business_absences')
           .select('*')
-          .eq('business_owner_id', user.id),
+          .eq('business_owner_id', effectiveUserId),
         supabase
           .from('business_availability_slots')
           .select('*')
-          .eq('business_owner_id', user.id)
+          .eq('business_owner_id', effectiveUserId)
           .order('day_of_week')
           .order('start_time'),
         supabase
           .from('business_appointments')
           .select('id, date, time, duration, status, assigned_to, prospect_id, created_at')
-          .eq('user_id', user.id),
+          .eq('user_id', effectiveUserId),
         supabase
           .from('business_connection_log')
           .select('*')
-          .eq('business_owner_id', user.id)
+          .eq('business_owner_id', effectiveUserId)
           .gte('created_at', oneWeekAgo.toISOString())
           .order('created_at', { ascending: false }),
       ])
@@ -205,8 +206,8 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
     if (!user?.id) return
     const channel = supabase
       .channel(`business-${pageLabel.toLowerCase()}-realtime`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'business_team_members', filter: `business_owner_id=eq.${user.id}` }, () => loadData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'business_absences', filter: `business_owner_id=eq.${user.id}` }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'business_team_members', filter: `business_owner_id=eq.${effectiveUserId}` }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'business_absences', filter: `business_owner_id=eq.${effectiveUserId}` }, () => loadData())
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [user?.id, loadData])

@@ -43,7 +43,8 @@ interface Formula {
 
 export function BusinessPipeline() {
   const { prospects, updateProspect, deleteProspect } = useBusinessProspects()
-  const { user } = useBusinessAuth()
+  const { user, ownerUserId } = useBusinessAuth()
+  const effectiveUserId = ownerUserId || user?.id
 
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban')
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
@@ -61,17 +62,17 @@ export function BusinessPipeline() {
 
   // Fetch team + formulas
   useEffect(() => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     supabase
       .from('business_team_members')
       .select('id, first_name, last_name, role')
-      .eq('business_owner_id', user.id)
+      .eq('business_owner_id', effectiveUserId)
       .then(({ data }) => setTeamMembers(data || []))
-    fetch(`/api/business?action=formulas-list&user_id=${user.id}`)
+    fetch(`/api/business?action=formulas-list&user_id=${effectiveUserId}`)
       .then(r => r.json())
       .then(data => setFormulas(data.formulas || []))
       .catch(() => {})
-  }, [user?.id])
+  }, [effectiveUserId])
 
   // Filter logic
   const filtered = useMemo(() => {

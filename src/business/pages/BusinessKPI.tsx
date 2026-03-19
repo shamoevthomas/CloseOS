@@ -154,7 +154,8 @@ const TABS: { key: Tab; label: string }[] = [
 
 export function BusinessKPI() {
   const { prospects } = useBusinessProspects()
-  const { user } = useBusinessAuth()
+  const { user, ownerUserId } = useBusinessAuth()
+  const effectiveUserId = ownerUserId || user?.id
   const [activeTab, setActiveTab] = useState<Tab>('global')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -162,18 +163,18 @@ export function BusinessKPI() {
 
   // Fetch team members
   useEffect(() => {
-    if (!user?.id) return
+    if (!effectiveUserId) return
     supabase
       .from('business_team_members')
       .select('id, user_id, first_name, last_name, email, role')
-      .eq('business_owner_id', user.id)
+      .eq('business_owner_id', effectiveUserId)
       .then(({ data }) => {
         setTeamMembers((data || []).map(m => ({
           ...m,
           full_name: `${m.first_name} ${m.last_name}`.trim(),
         })))
       })
-  }, [user?.id])
+  }, [effectiveUserId])
 
   // ---- GLOBAL KPIs ----
   const globalKpis = useMemo(() => computeKpis(prospects), [prospects])
