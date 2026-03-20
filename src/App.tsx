@@ -98,6 +98,7 @@ import { CloserDashboard } from './business/pages/CloserDashboard'
 import { CloserFormules } from './business/pages/CloserFormules'
 import { CloserAgenda } from './business/pages/CloserAgenda'
 import { CloserFactures } from './business/pages/CloserFactures'
+import { OwnerFactures } from './business/pages/OwnerFactures'
 
 // Owner-only route guard for business pages (Head of Sales also allowed)
 function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
@@ -138,6 +139,13 @@ function CallDetailsRouter() {
   const { teamMember } = useBusinessAuth()
   if (teamMember?.role?.toLowerCase() === 'setter') return <SetterCallDetails />
   return <CloserCallDetails />
+}
+
+function FacturesRouter() {
+  const { isTeamMember, teamMember } = useBusinessAuth()
+  const isOwnerOrHoS = !isTeamMember || teamMember?.role === 'Head of Sales'
+  if (isOwnerOrHoS) return <OwnerFactures />
+  return <CloserFactures />
 }
 
 
@@ -277,7 +285,7 @@ function AuthenticatedApp() {
           <Route path="appels" element={<TeamOnboardingGuard><CloserAppels /></TeamOnboardingGuard>} />
           <Route path="appels/:id" element={<TeamOnboardingGuard><CallDetailsRouter /></TeamOnboardingGuard>} />
           <Route path="agenda" element={<TeamOnboardingGuard><CloserAgenda /></TeamOnboardingGuard>} />
-          <Route path="factures" element={<TeamOnboardingGuard><CloserFactures /></TeamOnboardingGuard>} />
+          <Route path="factures" element={<TeamOnboardingGuard><FacturesRouter /></TeamOnboardingGuard>} />
           <Route path="organisation" element={<BusinessOrganization />} />
         </Route>
 
