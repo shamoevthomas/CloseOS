@@ -127,10 +127,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       setUser(currentUser);
 
       if (currentUser) {
-        await Promise.race([
-          initUser(currentUser.id),
-          new Promise(resolve => setTimeout(resolve, 4000))
-        ]);
+        await initUser(currentUser.id);
       } else {
         clearUserData();
       }
