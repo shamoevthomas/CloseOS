@@ -234,7 +234,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const setOnlineStatus = useCallback(async (teamMemberId: string, online: boolean) => {
     await supabase
       .from('business_team_members')
-      .update({ is_online: online })
+      .update({ is_online: online, last_heartbeat_at: new Date().toISOString() })
       .eq('id', teamMemberId);
   }, []);
 
@@ -258,21 +258,26 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       setOnlineStatus(teamMemberId, true);
     }, 60000);
 
-    // beforeunload handler
-    const handleUnload = () => {
-      // Use sendBeacon for reliability on page close
-      const payload = JSON.stringify({ team_member_id: teamMemberId, is_online: false });
-      navigator.sendBeacon?.(
-        `${import.meta.env.VITE_SUPABASE_URL || ''}/rest/v1/business_team_members?id=eq.${teamMemberId}`,
-        new Blob([JSON.stringify({ is_online: false })], { type: 'application/json' })
-      );
-      // Also try direct update
-      setOnlineStatus(teamMemberId, false);
-      logConnectionEvent(teamMemberId, businessOwnerId, 'disconnect');
+    // beforeunload + visibilitychange handlers for reliable disconnect
+    const handleDisconnect = () => {
+      // Use sendBeacon to our API route — works reliably on page close
+      const payload = JSON.stringify({ team_member_id: teamMemberId, business_owner_id: businessOwnerId, action: 'disconnect' });
+      navigator.sendBeacon?.('/api/presence', new Blob([payload], { type: 'application/json' }));
     };
-    window.addEventListener('beforeunload', handleUnload);
-    // Store cleanup ref
-    (window as any).__closeos_unload_handler = handleUnload;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleDisconnect();
+      } else if (document.visibilityState === 'visible') {
+        // User came back — re-establish presence
+        setOnlineStatus(teamMemberId, true);
+        logConnectionEvent(teamMemberId, businessOwnerId, 'connect');
+      }
+    };
+    window.addEventListener('beforeunload', handleDisconnect);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Store cleanup refs
+    (window as any).__closeos_unload_handler = handleDisconnect;
+    (window as any).__closeos_visibility_handler = handleVisibilityChange;
   }, [setOnlineStatus, logConnectionEvent]);
 
   const stopPresence = useCallback(async () => {
@@ -280,10 +285,15 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       clearInterval(heartbeatRef.current);
       heartbeatRef.current = null;
     }
-    const handler = (window as any).__closeos_unload_handler;
-    if (handler) {
-      window.removeEventListener('beforeunload', handler);
+    const unloadHandler = (window as any).__closeos_unload_handler;
+    if (unloadHandler) {
+      window.removeEventListener('beforeunload', unloadHandler);
       delete (window as any).__closeos_unload_handler;
+    }
+    const visHandler = (window as any).__closeos_visibility_handler;
+    if (visHandler) {
+      document.removeEventListener('visibilitychange', visHandler);
+      delete (window as any).__closeos_visibility_handler;
     }
   }, []);
 

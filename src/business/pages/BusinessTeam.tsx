@@ -14,7 +14,15 @@ interface TeamMember {
   last_name: string
   email: string
   is_online: boolean
+  last_heartbeat_at: string | null
   joined_at: string
+}
+
+const isReallyOnline = (member: TeamMember) => {
+  if (!member.is_online) return false
+  if (!member.last_heartbeat_at) return member.is_online
+  const diff = Date.now() - new Date(member.last_heartbeat_at).getTime()
+  return diff < 2 * 60 * 1000 // 2 minutes
 }
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -166,7 +174,7 @@ export function BusinessTeam() {
                         <Circle
                           className={cn(
                             "absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 fill-current",
-                            member.is_online ? "text-emerald-500" : "text-slate-300"
+                            isReallyOnline(member) ? "text-emerald-500" : "text-slate-300"
                           )}
                         />
                       </div>

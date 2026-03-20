@@ -38,9 +38,17 @@ interface TeamMember {
   last_name: string
   email: string
   is_online: boolean
+  last_heartbeat_at: string | null
   joined_at: string
   date_of_birth: string | null
   pay_day?: number | null
+}
+
+const isReallyOnline = (member: TeamMember) => {
+  if (!member.is_online) return false
+  if (!member.last_heartbeat_at) return member.is_online
+  const diff = Date.now() - new Date(member.last_heartbeat_at).getTime()
+  return diff < 2 * 60 * 1000
 }
 
 interface Absence {
@@ -262,7 +270,7 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
               <Circle
                 className={cn(
                   'absolute -bottom-0.5 -right-0.5 h-2 w-2 fill-current',
-                  member.is_online ? 'text-emerald-500' : 'text-slate-300'
+                  isReallyOnline(member) ? 'text-emerald-500' : 'text-slate-300'
                 )}
               />
             </div>
@@ -360,7 +368,7 @@ function GlobalView({
                   <Circle
                     className={cn(
                       'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 fill-current',
-                      member.is_online ? 'text-emerald-500' : 'text-slate-300'
+                      isReallyOnline(member) ? 'text-emerald-500' : 'text-slate-300'
                     )}
                   />
                 </div>
@@ -392,8 +400,8 @@ function GlobalView({
                   <span>{memberSlots.length} créneau{memberSlots.length !== 1 ? 'x' : ''}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Circle className={cn('h-2.5 w-2.5 fill-current', member.is_online ? 'text-emerald-500' : 'text-slate-300')} />
-                  <span>{member.is_online ? 'En ligne' : 'Hors ligne'}</span>
+                  <Circle className={cn('h-2.5 w-2.5 fill-current', isReallyOnline(member) ? 'text-emerald-500' : 'text-slate-300')} />
+                  <span>{isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}</span>
                 </div>
               </div>
 
@@ -511,7 +519,7 @@ function IndividualView({
             <Circle
               className={cn(
                 'absolute -bottom-0.5 -right-0.5 h-4 w-4 fill-current',
-                member.is_online ? 'text-emerald-500' : 'text-slate-300'
+                isReallyOnline(member) ? 'text-emerald-500' : 'text-slate-300'
               )}
             />
           </div>
@@ -538,8 +546,8 @@ function IndividualView({
                 Arrivée le {formatDate(member.joined_at)} ({formatAnciennete(member.joined_at)})
               </div>
               <div className="flex items-center gap-2">
-                <Circle className={cn('h-3 w-3 fill-current', member.is_online ? 'text-emerald-500' : 'text-slate-300')} />
-                {member.is_online ? 'En ligne' : 'Hors ligne'}
+                <Circle className={cn('h-3 w-3 fill-current', isReallyOnline(member) ? 'text-emerald-500' : 'text-slate-300')} />
+                {isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}
               </div>
             </div>
           </div>
