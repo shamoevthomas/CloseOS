@@ -912,7 +912,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'campaigns-create' && req.method === 'POST') {
-      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay } = req.body
+      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay, booking_duration, booking_title, booking_description, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -950,6 +950,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           formula_id: formula_id || null,
           capture_type: capture_type || 'with_rdv',
           popup_delay: popup_delay ?? 0,
+          booking_duration: booking_duration ?? 30,
+          booking_title: booking_title || null,
+          booking_description: booking_description || null,
+          booking_with: booking_with || 'closer',
+          booking_assign_mode: booking_assign_mode || 'all_role',
+          booking_assigned_members: booking_assigned_members || [],
+          booking_distribution: booking_distribution || 'round_robin',
         })
         .select()
         .single()

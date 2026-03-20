@@ -4,7 +4,7 @@ import {
   Plus, Megaphone, Code, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, Link, Users, ChevronDown, Video,
   CalendarCheck, UserPlus, Monitor, Layers, MessageSquare, Clock, Copy, Eye,
-  Paintbrush, Type, Palette
+  Paintbrush, Type, Palette, ArrowRightCircle, Shuffle, UserCheck, UsersRound
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -36,6 +36,13 @@ interface Campaign {
   formula_id: string | null
   capture_type: 'with_rdv' | 'without_rdv'
   popup_delay: number
+  booking_duration: number
+  booking_title: string | null
+  booking_description: string | null
+  booking_with: 'closer' | 'setter'
+  booking_assign_mode: 'specific' | 'all_role' | 'multiple'
+  booking_assigned_members: string[]
+  booking_distribution: 'round_robin' | 'random'
   created_at: string
   business_prospects: { count: number }[]
 }
@@ -46,7 +53,23 @@ interface Formula {
   price: number
 }
 
+interface TeamMember {
+  id: string
+  first_name: string
+  last_name: string
+  role: string
+}
+
 const SOURCES = ['Direct', 'Google Ads', 'Facebook Ads', 'Instagram', 'LinkedIn', 'Email', 'Autre']
+
+const BOOKING_DURATIONS = [
+  { value: 15, label: '15 min' },
+  { value: 30, label: '30 min' },
+  { value: 45, label: '45 min' },
+  { value: 60, label: '1h' },
+  { value: 90, label: '1h30' },
+  { value: 120, label: '2h' },
+]
 
 const API_URL = '/api/business'
 
@@ -58,7 +81,10 @@ export function BusinessCampaigns() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
   const [saving, setSaving] = useState(false)
-  const [modalTab, setModalTab] = useState<'general' | 'landing' | 'fields'>('general')
+  const [modalTab, setModalTab] = useState<'general' | 'landing' | 'fields' | 'booking'>('general')
+
+  // Team members for booking assignment
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
 
   // Formulas for dropdown
   const [formulas, setFormulas] = useState<Formula[]>([])
@@ -88,6 +114,15 @@ export function BusinessCampaigns() {
   const [formCaptureType, setFormCaptureType] = useState<'with_rdv' | 'without_rdv'>('with_rdv')
   const [formPopupDelay, setFormPopupDelay] = useState(0)
 
+  // Booking config (only for with_rdv)
+  const [formBookingDuration, setFormBookingDuration] = useState(30)
+  const [formBookingTitle, setFormBookingTitle] = useState('')
+  const [formBookingDescription, setFormBookingDescription] = useState('')
+  const [formBookingWith, setFormBookingWith] = useState<'closer' | 'setter'>('closer')
+  const [formBookingAssignMode, setFormBookingAssignMode] = useState<'specific' | 'all_role' | 'multiple'>('all_role')
+  const [formBookingAssignedMembers, setFormBookingAssignedMembers] = useState<string[]>([])
+  const [formBookingDistribution, setFormBookingDistribution] = useState<'round_robin' | 'random'>('round_robin')
+
   const fetchCampaigns = useCallback(async () => {
     if (!effectiveUserId) return
     try {
@@ -112,7 +147,26 @@ export function BusinessCampaigns() {
     }
   }, [effectiveUserId])
 
-  useEffect(() => { fetchCampaigns(); fetchFormulas() }, [fetchCampaigns, fetchFormulas])
+  const fetchTeamMembers = useCallback(async () => {
+    if (!effectiveUserId) return
+    const { supabase } = await import('../../lib/supabase')
+    const [tmRes, ownerRes] = await Promise.all([
+      supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
+      supabase.from('business_users').select('id, full_name').eq('id', effectiveUserId).single(),
+    ])
+    const members: TeamMember[] = (tmRes.data || []).map((m: any) => ({ id: m.id, first_name: m.first_name, last_name: m.last_name, role: m.role }))
+    if (ownerRes.data) {
+      members.unshift({
+        id: ownerRes.data.id,
+        first_name: (ownerRes.data.full_name || 'Owner').split(' ')[0],
+        last_name: (ownerRes.data.full_name || '').split(' ').slice(1).join(' '),
+        role: 'Owner',
+      })
+    }
+    setTeamMembers(members)
+  }, [effectiveUserId])
+
+  useEffect(() => { fetchCampaigns(); fetchFormulas(); fetchTeamMembers() }, [fetchCampaigns, fetchFormulas, fetchTeamMembers])
 
   const resetForm = () => {
     setFormName(''); setFormDescription(''); setFormSource('Direct')
@@ -122,6 +176,9 @@ export function BusinessCampaigns() {
     setFormEmailRequired(true); setFormPhoneRequired(false)
     setFormCustomFields([]); setEditingCampaign(null); setModalTab('general')
     setFormFormulaId(null); setFormCaptureType('with_rdv'); setFormPopupDelay(0)
+    setFormBookingDuration(30); setFormBookingTitle(''); setFormBookingDescription('')
+    setFormBookingWith('closer'); setFormBookingAssignMode('all_role')
+    setFormBookingAssignedMembers([]); setFormBookingDistribution('round_robin')
   }
 
   const openCreate = () => { resetForm(); setIsModalOpen(true) }
@@ -140,6 +197,13 @@ export function BusinessCampaigns() {
     setFormFormulaId(campaign.formula_id || null)
     setFormCaptureType(campaign.capture_type || 'with_rdv')
     setFormPopupDelay(campaign.popup_delay ?? 0)
+    setFormBookingDuration(campaign.booking_duration ?? 30)
+    setFormBookingTitle(campaign.booking_title || '')
+    setFormBookingDescription(campaign.booking_description || '')
+    setFormBookingWith(campaign.booking_with || 'closer')
+    setFormBookingAssignMode(campaign.booking_assign_mode || 'all_role')
+    setFormBookingAssignedMembers(campaign.booking_assigned_members || [])
+    setFormBookingDistribution(campaign.booking_distribution || 'round_robin')
     setModalTab('general'); setIsModalOpen(true)
   }
 
@@ -154,6 +218,13 @@ export function BusinessCampaigns() {
     redirect_url: formRedirectUrl || null,
     capture_type: formCaptureType,
     popup_delay: formPopupDelay,
+    booking_duration: formBookingDuration,
+    booking_title: formBookingTitle || null,
+    booking_description: formBookingDescription || null,
+    booking_with: formBookingWith,
+    booking_assign_mode: formBookingAssignMode,
+    booking_assigned_members: formBookingAssignedMembers,
+    booking_distribution: formBookingDistribution,
   })
 
   const handleSave = async () => {
@@ -404,16 +475,17 @@ export function BusinessCampaigns() {
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-100 px-6 flex-shrink-0">
+            <div className="flex border-b border-slate-100 px-6 flex-shrink-0 overflow-x-auto">
               {([
-                { key: 'general', label: 'Général' },
-                { key: 'landing', label: 'Page de capture' },
-                { key: 'fields', label: 'Champs & Options' },
-              ] as const).map(tab => (
+                { key: 'general' as const, label: 'Général' },
+                { key: 'landing' as const, label: 'Page de capture' },
+                { key: 'fields' as const, label: 'Champs & Options' },
+                ...(formCaptureType === 'with_rdv' ? [{ key: 'booking' as const, label: 'Booking' }] : []),
+              ]).map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setModalTab(tab.key)}
-                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                     modalTab === tab.key
                       ? 'border-amber-600 text-amber-700'
                       : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -628,6 +700,257 @@ export function BusinessCampaigns() {
                         <button onClick={() => removeCustomField(idx)} className="text-red-400 hover:text-red-600"><X className="h-4 w-4" /></button>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Booking tab (only for with_rdv) */}
+              {modalTab === 'booking' && formCaptureType === 'with_rdv' && (
+                <div className="space-y-5">
+                  {/* Duration */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Durée du rendez-vous</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {BOOKING_DURATIONS.map(d => (
+                        <button
+                          key={d.value}
+                          type="button"
+                          onClick={() => setFormBookingDuration(d.value)}
+                          className={`rounded-lg border-2 px-4 py-2 text-sm font-medium transition-all ${
+                            formBookingDuration === d.value
+                              ? 'border-amber-500 bg-amber-50 text-amber-700'
+                              : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Titre du rendez-vous</label>
+                    <input
+                      type="text"
+                      value={formBookingTitle}
+                      onChange={(e) => setFormBookingTitle(e.target.value)}
+                      placeholder="Ex: Appel découverte — {{lead_name}} × {{assignee_name}}"
+                      className={inputCls}
+                    />
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {[
+                        { var: '{{lead_name}}', label: 'Nom du lead' },
+                        { var: '{{assignee_name}}', label: 'Nom du closer/setter' },
+                        { var: '{{formula_name}}', label: "Nom de l'offre" },
+                        { var: '{{campaign_name}}', label: 'Nom de la campagne' },
+                      ].map(v => (
+                        <button
+                          key={v.var}
+                          type="button"
+                          onClick={() => setFormBookingTitle(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + v.var)}
+                          className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-mono text-slate-600 hover:bg-slate-200 transition-colors"
+                          title={v.label}
+                        >
+                          {v.var}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Description du rendez-vous</label>
+                    <textarea
+                      value={formBookingDescription}
+                      onChange={(e) => setFormBookingDescription(e.target.value)}
+                      rows={3}
+                      placeholder="Ex: Appel de qualification avec {{lead_name}}. Offre : {{formula_name}}"
+                      className={`${inputCls} resize-none`}
+                    />
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {[
+                        { var: '{{lead_name}}', label: 'Nom du lead' },
+                        { var: '{{lead_email}}', label: 'Email du lead' },
+                        { var: '{{lead_phone}}', label: 'Téléphone du lead' },
+                        { var: '{{assignee_name}}', label: 'Nom du closer/setter' },
+                        { var: '{{formula_name}}', label: "Nom de l'offre" },
+                        { var: '{{campaign_name}}', label: 'Nom de la campagne' },
+                      ].map(v => (
+                        <button
+                          key={v.var}
+                          type="button"
+                          onClick={() => setFormBookingDescription(prev => prev + (prev && !prev.endsWith('\n') && !prev.endsWith(' ') ? ' ' : '') + v.var)}
+                          className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-mono text-slate-600 hover:bg-slate-200 transition-colors"
+                          title={v.label}
+                        >
+                          {v.var}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* RDV with Closer or Setter switch */}
+                  <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-3">Rendez-vous avec</label>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => { setFormBookingWith('closer'); setFormBookingAssignedMembers([]) }}
+                        className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                          formBookingWith === 'closer'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        <UserCheck className="h-4 w-4" /> Closer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setFormBookingWith('setter'); setFormBookingAssignedMembers([]) }}
+                        className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                          formBookingWith === 'setter'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        <UserCheck className="h-4 w-4" /> Setter
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Assignment mode */}
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-3">
+                      Mode d'assignation des {formBookingWith === 'closer' ? 'Closers' : 'Setters'}
+                    </label>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => { setFormBookingAssignMode('specific'); setFormBookingAssignedMembers([]) }}
+                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                          formBookingAssignMode === 'specific'
+                            ? 'border-amber-500 bg-amber-50 text-amber-700'
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        <UserCheck className="h-3.5 w-3.5" /> Un membre précis
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setFormBookingAssignMode('all_role'); setFormBookingAssignedMembers([]) }}
+                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                          formBookingAssignMode === 'all_role'
+                            ? 'border-amber-500 bg-amber-50 text-amber-700'
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        <UsersRound className="h-3.5 w-3.5" /> Tout le rôle
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setFormBookingAssignMode('multiple'); setFormBookingAssignedMembers([]) }}
+                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                          formBookingAssignMode === 'multiple'
+                            ? 'border-amber-500 bg-amber-50 text-amber-700'
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        <Users className="h-3.5 w-3.5" /> Plusieurs membres
+                      </button>
+                    </div>
+
+                    {/* Specific member selector */}
+                    {formBookingAssignMode === 'specific' && (
+                      <div className="mt-3">
+                        <div className="relative">
+                          <select
+                            value={formBookingAssignedMembers[0] || ''}
+                            onChange={(e) => setFormBookingAssignedMembers(e.target.value ? [e.target.value] : [])}
+                            className={selectCls}
+                          >
+                            <option value="">Choisir un membre</option>
+                            {teamMembers
+                              .filter(m => {
+                                if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
+                                return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'
+                              })
+                              .map(m => (
+                                <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
+                              ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Multiple members selector */}
+                    {formBookingAssignMode === 'multiple' && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs text-slate-500">Sélectionnez les membres à inclure :</p>
+                        <div className="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-slate-200 bg-white p-2">
+                          {teamMembers
+                            .filter(m => {
+                              if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
+                              return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'
+                            })
+                            .map(m => (
+                              <label key={m.id} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-50 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formBookingAssignedMembers.includes(m.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setFormBookingAssignedMembers(prev => [...prev, m.id])
+                                    } else {
+                                      setFormBookingAssignedMembers(prev => prev.filter(id => id !== m.id))
+                                    }
+                                  }}
+                                  className="rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                                />
+                                <span className="text-sm text-slate-700">{m.first_name} {m.last_name}</span>
+                                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{m.role}</span>
+                              </label>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Distribution mode (for all_role and multiple) */}
+                    {(formBookingAssignMode === 'all_role' || formBookingAssignMode === 'multiple') && (
+                      <div className="mt-4 pt-3 border-t border-amber-200">
+                        <label className="block text-xs font-medium text-slate-600 mb-2">Distribution des rendez-vous</label>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setFormBookingDistribution('round_robin')}
+                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                              formBookingDistribution === 'round_robin'
+                                ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            }`}
+                          >
+                            <ArrowRightCircle className="h-4 w-4" /> Tournante
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormBookingDistribution('random')}
+                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                              formBookingDistribution === 'random'
+                                ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            }`}
+                          >
+                            <Shuffle className="h-4 w-4" /> Hasard
+                          </button>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-2">
+                          {formBookingDistribution === 'round_robin'
+                            ? 'Les rendez-vous sont distribués à tour de rôle entre les membres.'
+                            : 'Les rendez-vous sont assignés aléatoirement.'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
