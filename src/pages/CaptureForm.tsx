@@ -74,6 +74,21 @@ export function CaptureForm() {
   const [searchParams] = useSearchParams()
   const isEmbed = searchParams.get('embed') === 'true'
 
+  // Style customization from URL params
+  const paramPc = searchParams.get('pc')
+  const paramBg = searchParams.get('bg')
+  const paramTc = searchParams.get('tc')
+  const paramBr = searchParams.get('br')
+  const paramFont = searchParams.get('font')
+
+  const primaryColor = paramPc ? `#${paramPc}` : '#2563eb'
+  const bgColor = paramBg ? `#${paramBg}` : '#ffffff'
+  const textColor = paramTc ? `#${paramTc}` : '#0f172a'
+  const borderRadius = paramBr ? `${paramBr}px` : '12px'
+  const fontFamily = paramFont ? `${paramFont}, system-ui, sans-serif` : undefined
+
+  const hasCustomStyle = !!(paramPc || paramBg || paramTc || paramBr || paramFont)
+
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -222,11 +237,33 @@ export function CaptureForm() {
     )
   }
 
-  const inputCls = "w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+  const inputCls = "w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-1 transition-colors"
   const videoEmbedUrl = campaign?.landing_video_url ? toEmbedUrl(campaign.landing_video_url) : null
 
+  const customStyle: React.CSSProperties = hasCustomStyle ? {
+    '--co-primary': primaryColor,
+    '--co-bg': bgColor,
+    '--co-text': textColor,
+    '--co-radius': borderRadius,
+    fontFamily,
+    backgroundColor: bgColor,
+    color: textColor,
+  } as React.CSSProperties : {}
+
+  const inputStyle: React.CSSProperties = hasCustomStyle ? {
+    borderRadius,
+    color: textColor,
+    borderColor: `${primaryColor}33`,
+  } : {}
+
+  const btnStyle: React.CSSProperties = hasCustomStyle ? {
+    backgroundColor: primaryColor,
+    borderRadius,
+    color: '#fff',
+  } : {}
+
   return (
-    <div className={`min-h-screen ${isEmbed ? '' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen ${isEmbed ? '' : 'bg-slate-50'}`} style={customStyle}>
       <div className={`mx-auto flex min-h-screen ${isEmbed ? '' : 'max-w-6xl'}`}>
 
         {/* LEFT SIDE - Marketing */}
@@ -327,34 +364,34 @@ export function CaptureForm() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-1">Prénom *</label>
-                      <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jean" className={inputCls} />
+                      <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jean" className={inputCls} style={inputStyle} />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-1">Nom</label>
-                      <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Dupont" className={inputCls} />
+                      <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Dupont" className={inputCls} style={inputStyle} />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1">Email {campaign?.email_required ? '*' : ''}</label>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jean@example.com" className={inputCls} />
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jean@example.com" className={inputCls} style={inputStyle} />
                   </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1">Téléphone {campaign?.phone_required ? '*' : ''}</label>
-                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+33 6 12 34 56 78" className={inputCls} />
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+33 6 12 34 56 78" className={inputCls} style={inputStyle} />
                   </div>
 
                   {(campaign?.custom_fields || []).map((field, idx) => (
                     <div key={idx}>
                       <label className="block text-sm font-semibold text-slate-700 mb-1">{field.label} {field.required ? '*' : ''}</label>
                       {field.type === 'select' ? (
-                        <select value={customData[field.label] || ''} onChange={(e) => setCustomData({ ...customData, [field.label]: e.target.value })} className={inputCls}>
+                        <select value={customData[field.label] || ''} onChange={(e) => setCustomData({ ...customData, [field.label]: e.target.value })} className={inputCls} style={inputStyle}>
                           <option value="">Sélectionner...</option>
                           {(field.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                         </select>
                       ) : (
-                        <input type={field.type} value={customData[field.label] || ''} onChange={(e) => setCustomData({ ...customData, [field.label]: e.target.value })} placeholder={field.label} className={inputCls} />
+                        <input type={field.type} value={customData[field.label] || ''} onChange={(e) => setCustomData({ ...customData, [field.label]: e.target.value })} placeholder={field.label} className={inputCls} style={inputStyle} />
                       )}
                     </div>
                   ))}
@@ -369,6 +406,7 @@ export function CaptureForm() {
                   onClick={handleSubmit}
                   disabled={!isInfoComplete || submitting}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  style={btnStyle}
                 >
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><span>S'inscrire</span><ArrowRight className="h-4 w-4" /></>}
                 </button>
@@ -473,6 +511,7 @@ export function CaptureForm() {
                   onClick={handleSubmit}
                   disabled={!isInfoComplete || !selectedDate || !selectedTime || submitting}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  style={btnStyle}
                 >
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><span>Réserver mon créneau</span><ArrowRight className="h-4 w-4" /></>}
                 </button>

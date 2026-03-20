@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import {
   Plus, Megaphone, Code, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, Link, Users, ChevronDown, Video,
-  CalendarCheck, UserPlus, Monitor, Layers, MessageSquare, Clock, Copy, Eye
+  CalendarCheck, UserPlus, Monitor, Layers, MessageSquare, Clock, Copy, Eye,
+  Paintbrush, Type, Palette
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -203,39 +204,85 @@ export function BusinessCampaigns() {
 
   // Embed code modal
   const [embedModalCampaign, setEmbedModalCampaign] = useState<Campaign | null>(null)
+  const [embedModalFormat, setEmbedModalFormat] = useState<'iframe' | 'popup'>('iframe')
+  const [embedTab, setEmbedTab] = useState<'code' | 'style'>('code')
+
+  // Style customization
+  const [styleFont, setStyleFont] = useState('Inter, system-ui, sans-serif')
+  const [stylePrimaryColor, setStylePrimaryColor] = useState('#2563eb')
+  const [styleBgColor, setStyleBgColor] = useState('#ffffff')
+  const [styleTextColor, setStyleTextColor] = useState('#0f172a')
+  const [styleRadius, setStyleRadius] = useState(12)
+
+  const FONTS = [
+    { label: 'Inter (défaut)', value: 'Inter, system-ui, sans-serif' },
+    { label: 'Poppins', value: 'Poppins, sans-serif' },
+    { label: 'Roboto', value: 'Roboto, sans-serif' },
+    { label: 'Open Sans', value: 'Open Sans, sans-serif' },
+    { label: 'Montserrat', value: 'Montserrat, sans-serif' },
+    { label: 'Lato', value: 'Lato, sans-serif' },
+    { label: 'Playfair Display', value: 'Playfair Display, serif' },
+  ]
+
+  const openEmbedModal = (campaign: Campaign, format: 'iframe' | 'popup') => {
+    setEmbedModalCampaign(campaign)
+    setEmbedModalFormat(format)
+    setEmbedTab('code')
+    setStyleFont('Inter, system-ui, sans-serif')
+    setStylePrimaryColor('#2563eb')
+    setStyleBgColor('#ffffff')
+    setStyleTextColor('#0f172a')
+    setStyleRadius(12)
+  }
 
   const getCaptureUrl = (slug: string) => `${window.location.origin}/capture/${slug}`
-  const getIframeCode = (slug: string) =>
-    `<iframe src="${getCaptureUrl(slug)}?embed=true" width="100%" height="800" frameborder="0" style="border:none;"></iframe>`
 
-  const getPopupCode = (campaign: Campaign) => {
-    const url = getCaptureUrl(campaign.slug)
-    const delay = campaign.popup_delay ?? 0
+  const getStyleParams = () => {
+    const params = new URLSearchParams()
+    params.set('embed', 'true')
+    if (stylePrimaryColor !== '#2563eb') params.set('pc', stylePrimaryColor.replace('#', ''))
+    if (styleBgColor !== '#ffffff') params.set('bg', styleBgColor.replace('#', ''))
+    if (styleTextColor !== '#0f172a') params.set('tc', styleTextColor.replace('#', ''))
+    if (styleRadius !== 12) params.set('br', String(styleRadius))
+    if (styleFont !== 'Inter, system-ui, sans-serif') params.set('font', styleFont.split(',')[0].trim())
+    return params.toString()
+  }
+
+  const getStyledIframeUrl = (slug: string) => `${getCaptureUrl(slug)}?${getStyleParams()}`
+
+  const getIframeCode = useMemo(() => {
+    if (!embedModalCampaign) return ''
+    const url = getStyledIframeUrl(embedModalCampaign.slug)
+    return `<iframe src="${url}" width="100%" height="800" frameborder="0" style="border:none;border-radius:${styleRadius}px;"></iframe>`
+  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont])
+
+  const getPopupCode = useMemo(() => {
+    if (!embedModalCampaign) return ''
+    const url = getStyledIframeUrl(embedModalCampaign.slug)
+    const delay = embedModalCampaign.popup_delay ?? 0
     return `<!-- CloseOS Capture Popup -->
 <div id="closeos-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);justify-content:center;align-items:center;">
-  <div style="position:relative;width:90%;max-width:520px;max-height:90vh;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.25);">
-    <iframe src="${url}?embed=true" width="100%" height="700" frameborder="0" style="border:none;display:block;"></iframe>
+  <div style="position:relative;width:90%;max-width:520px;max-height:90vh;background:${styleBgColor};border-radius:${styleRadius}px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.25);">
+    <iframe src="${url}" width="100%" height="700" frameborder="0" style="border:none;display:block;"></iframe>
   </div>
 </div>
 <script>
 (function(){
   var overlay = document.getElementById('closeos-overlay');
-  var filled = localStorage.getItem('closeos_filled_${campaign.slug}');
+  var filled = localStorage.getItem('closeos_filled_${embedModalCampaign.slug}');
   if (filled) return;
-  // Block scrolling
   document.body.style.overflow = 'hidden';
   ${delay > 0 ? `setTimeout(function(){ overlay.style.display='flex'; }, ${delay * 1000});` : `overlay.style.display='flex';`}
-  // Listen for form completion
   window.addEventListener('message', function(e){
     if(e.data === 'closeos-capture-done'){
       overlay.style.display='none';
       document.body.style.overflow='';
-      localStorage.setItem('closeos_filled_${campaign.slug}','1');
+      localStorage.setItem('closeos_filled_${embedModalCampaign.slug}','1');
     }
   });
 })();
 </script>`
-  }
+  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont])
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text); toast.success(`${label} copié !`)
@@ -322,10 +369,10 @@ export function BusinessCampaigns() {
                 <button onClick={() => copyToClipboard(getCaptureUrl(campaign.slug), 'Lien')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors" title="Page entière">
                   <Monitor className="h-3.5 w-3.5" /> Page
                 </button>
-                <button onClick={() => copyToClipboard(getIframeCode(campaign.slug), 'Code iframe')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors" title="Iframe">
+                <button onClick={() => openEmbedModal(campaign, 'iframe')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors" title="Iframe">
                   <Layers className="h-3.5 w-3.5" /> Iframe
                 </button>
-                <button onClick={() => setEmbedModalCampaign(campaign)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors" title="Popup">
+                <button onClick={() => openEmbedModal(campaign, 'popup')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors" title="Popup">
                   <MessageSquare className="h-3.5 w-3.5" /> Popup
                 </button>
               </div>
@@ -599,68 +646,240 @@ export function BusinessCampaigns() {
           </div>
         </div>
       )}
-      {/* Popup Embed Code Modal */}
+      {/* Embed Code Modal (Iframe & Popup) */}
       {embedModalCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl">
+          <div className="w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl bg-white shadow-2xl">
+            {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 flex-shrink-0">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Code Popup — {embedModalCampaign.name}</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Copiez ce code et collez-le juste avant la balise {'</body>'} de votre site</p>
+              <div className="flex items-center gap-4">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">{embedModalCampaign.name}</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Intégrez le formulaire sur votre site</p>
+                </div>
+                {/* Format toggle */}
+                <div className="flex rounded-lg border border-slate-200 overflow-hidden ml-4">
+                  <button
+                    onClick={() => setEmbedModalFormat('iframe')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                      embedModalFormat === 'iframe' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Layers className="h-3.5 w-3.5" /> Iframe
+                  </button>
+                  <button
+                    onClick={() => setEmbedModalFormat('popup')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                      embedModalFormat === 'popup' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" /> Popup
+                  </button>
+                </div>
               </div>
               <button onClick={() => setEmbedModalCampaign(null)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              {/* How it works */}
-              <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
-                <h4 className="text-sm font-bold text-blue-700 mb-2 flex items-center gap-2">
-                  <Eye className="h-4 w-4" /> Comment ça marche
-                </h4>
-                <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
-                  <li>Le popup s'affiche {embedModalCampaign.popup_delay ? `après ${embedModalCampaign.popup_delay} secondes` : 'instantanément'} au chargement de la page</li>
-                  <li>Le site est bloqué (scroll désactivé, overlay sombre) tant que le formulaire n'est pas rempli</li>
-                  <li>Une fois le formulaire soumis, le popup disparaît et le visiteur peut naviguer normalement</li>
-                  <li>Le visiteur ne reverra plus le popup grâce au localStorage</li>
-                </ol>
-              </div>
-
-              {/* The code */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-slate-700">Code à intégrer</label>
-                  <button
-                    onClick={() => copyToClipboard(getPopupCode(embedModalCampaign), 'Code popup')}
-                    className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
-                  >
-                    <Copy className="h-3.5 w-3.5" /> Copier le code
-                  </button>
-                </div>
-                <pre className="rounded-xl border border-slate-200 bg-slate-900 p-4 text-xs text-green-400 overflow-x-auto max-h-[300px] overflow-y-auto whitespace-pre-wrap break-all">
-                  {getPopupCode(embedModalCampaign)}
-                </pre>
-              </div>
-
-              {/* Other formats */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), 'Lien page entière')}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  <Monitor className="h-4 w-4" /> Copier lien page
-                </button>
-                <button
-                  onClick={() => copyToClipboard(getIframeCode(embedModalCampaign.slug), 'Code iframe')}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  <Layers className="h-4 w-4" /> Copier code iframe
-                </button>
-              </div>
+            {/* Tabs */}
+            <div className="flex border-b border-slate-100 px-6 flex-shrink-0">
+              <button
+                onClick={() => setEmbedTab('code')}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  embedTab === 'code' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Code className="h-4 w-4" /> Code & Tuto
+              </button>
+              <button
+                onClick={() => setEmbedTab('style')}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  embedTab === 'style' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Paintbrush className="h-4 w-4" /> Personnaliser
+              </button>
             </div>
 
-            <div className="flex justify-end border-t border-slate-100 px-6 py-4 flex-shrink-0">
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              {embedTab === 'code' && (
+                <div className="p-6 space-y-5">
+                  {/* Tutorial */}
+                  <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
+                    <h4 className="text-sm font-bold text-blue-700 mb-2 flex items-center gap-2">
+                      <Eye className="h-4 w-4" /> Comment ça marche
+                    </h4>
+                    {embedModalFormat === 'popup' ? (
+                      <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
+                        <li>Le popup s'affiche {embedModalCampaign.popup_delay ? `après ${embedModalCampaign.popup_delay} secondes` : 'instantanément'} au chargement de la page</li>
+                        <li>Le site est bloqué (scroll désactivé, overlay sombre) tant que le formulaire n'est pas rempli</li>
+                        <li>Une fois le formulaire soumis, le popup disparaît et le visiteur peut naviguer normalement</li>
+                        <li>Le visiteur ne reverra plus le popup grâce au localStorage</li>
+                        <li>Collez le code juste avant la balise <code className="bg-blue-100 px-1 rounded">{'</body>'}</code> de votre site</li>
+                      </ol>
+                    ) : (
+                      <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
+                        <li>Copiez le code iframe ci-dessous</li>
+                        <li>Collez-le dans le HTML de votre page, à l'endroit où vous souhaitez afficher le formulaire</li>
+                        <li>Ajustez la hauteur (<code className="bg-blue-100 px-1 rounded">height</code>) si nécessaire</li>
+                        <li>Le formulaire s'adapte automatiquement à la largeur du conteneur</li>
+                      </ol>
+                    )}
+                  </div>
+
+                  {/* Code block */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-slate-700">Code à intégrer</label>
+                      <button
+                        onClick={() => copyToClipboard(embedModalFormat === 'popup' ? getPopupCode : getIframeCode, `Code ${embedModalFormat}`)}
+                        className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
+                      >
+                        <Copy className="h-3.5 w-3.5" /> Copier le code
+                      </button>
+                    </div>
+                    <pre className="rounded-xl border border-slate-200 bg-slate-900 p-4 text-xs text-green-400 overflow-x-auto max-h-[250px] overflow-y-auto whitespace-pre-wrap break-all font-mono">
+                      {embedModalFormat === 'popup' ? getPopupCode : getIframeCode}
+                    </pre>
+                  </div>
+
+                  {/* Quick copy other format */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), 'Lien page entière')}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                      <Monitor className="h-4 w-4" /> Copier lien page entière
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {embedTab === 'style' && (
+                <div className="flex divide-x divide-slate-200 min-h-[500px]">
+                  {/* Left: Controls */}
+                  <div className="w-[280px] flex-shrink-0 p-5 space-y-5 overflow-y-auto">
+                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Palette className="h-4 w-4 text-amber-600" /> Style
+                    </h4>
+
+                    {/* Font */}
+                    <div>
+                      <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 mb-1.5">
+                        <Type className="h-3.5 w-3.5" /> Police
+                      </label>
+                      <select
+                        value={styleFont}
+                        onChange={(e) => setStyleFont(e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
+                      >
+                        {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Primary color */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1.5 block">Couleur principale</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={stylePrimaryColor}
+                          onChange={(e) => setStylePrimaryColor(e.target.value)}
+                          className="h-8 w-8 rounded border border-slate-200 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={stylePrimaryColor}
+                          onChange={(e) => setStylePrimaryColor(e.target.value)}
+                          className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Background color */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1.5 block">Fond</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={styleBgColor}
+                          onChange={(e) => setStyleBgColor(e.target.value)}
+                          className="h-8 w-8 rounded border border-slate-200 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={styleBgColor}
+                          onChange={(e) => setStyleBgColor(e.target.value)}
+                          className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Text color */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1.5 block">Texte</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={styleTextColor}
+                          onChange={(e) => setStyleTextColor(e.target.value)}
+                          className="h-8 w-8 rounded border border-slate-200 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={styleTextColor}
+                          onChange={(e) => setStyleTextColor(e.target.value)}
+                          className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Border radius */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1.5 block">Arrondi des coins — {styleRadius}px</label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={24}
+                        value={styleRadius}
+                        onChange={(e) => setStyleRadius(Number(e.target.value))}
+                        className="w-full accent-amber-600"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-400">
+                        <span>Carré</span><span>Arrondi</span>
+                      </div>
+                    </div>
+
+                    {/* Copy button */}
+                    <button
+                      onClick={() => copyToClipboard(embedModalFormat === 'popup' ? getPopupCode : getIframeCode, `Code ${embedModalFormat}`)}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
+                    >
+                      <Copy className="h-4 w-4" /> Copier le code
+                    </button>
+                  </div>
+
+                  {/* Right: Live preview */}
+                  <div className="flex-1 bg-slate-100 p-5 flex flex-col">
+                    <p className="text-xs font-medium text-slate-500 mb-3 flex items-center gap-1.5">
+                      <Eye className="h-3.5 w-3.5" /> Aperçu en temps réel
+                    </p>
+                    <div className="flex-1 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+                      <iframe
+                        src={getStyledIframeUrl(embedModalCampaign.slug)}
+                        className="w-full h-full min-h-[450px]"
+                        style={{ border: 'none' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end border-t border-slate-100 px-6 py-3 flex-shrink-0">
               <button onClick={() => setEmbedModalCampaign(null)} className="rounded-xl bg-slate-100 px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors">
                 Fermer
               </button>
