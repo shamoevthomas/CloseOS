@@ -65,13 +65,15 @@ export function BusinessCRM() {
 
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
 
-  // Determine if current user auto-assigns
-  const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
-  const isCloser = isTeamMember && (teamMember?.role === 'Closer' || teamMember?.role === 'Setter-Closer')
-  const isSetterCloserSelf = isTeamMember && teamMember?.role === 'Setter-Closer' && teamMember?.setter_scope === 'self'
+  // Role-based auto-assignment logic
+  const isPureSetter = isTeamMember && teamMember?.role === 'Setter'
+  const isSetterCloser = isTeamMember && teamMember?.role === 'Setter-Closer'
+  const isPureCloser = isTeamMember && teamMember?.role === 'Closer'
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
-  // Setters auto-assign themselves, everyone else must pick
-  const needsSetterPicker = !isSetter
+  // Setter & Setter-Closer auto-assign setter; Closer & others need picker
+  const needsSetterPicker = !isPureSetter && !isSetterCloser
+  // Setter auto-assigns setter only; Closer auto-assigns closer only; Setter-Closer auto-assigns both
+  const needsCloserPicker = !isSetterCloser && !isPureCloser
 
   // Fetch formulas + team members
   useEffect(() => {
@@ -143,23 +145,27 @@ export function BusinessCRM() {
     if (!newContact) return
     // Determine setter
     let setterId: string | null = null
-    if (isSetter) {
-      // Setter or Setter-Closer auto-assigns self
+    if (isPureSetter || isSetterCloser) {
       setterId = teamMember?.id || null
     } else {
       setterId = newSetterId || null
     }
-    if (!setterId) return // setter is required
+    // Setter is required only if user needs picker (Closer/Owner/HoS/Admin)
+    if (needsSetterPicker && !setterId) return
 
     // Determine closer
     let closerId: string | null = null
-    if (isSetterCloserSelf) {
-      // Setter-Closer self scope: auto-assign self as closer too
+    if (isSetterCloser) {
+      // Setter-Closer: auto-assign self as closer
       closerId = teamMember?.id || null
-    } else if (isCloser && !isSetter) {
+    } else if (isPureCloser) {
       // Pure Closer: auto-assign self as closer
       closerId = teamMember?.id || null
+    } else if (isPureSetter) {
+      // Pure Setter: closer vide
+      closerId = null
     } else {
+      // Owner/HoS/Admin: from picker (optional)
       closerId = newCloserId || null
     }
 
@@ -519,12 +525,58 @@ export function BusinessCRM() {
               )}
 
               {/* Setter assignment */}
-              {isSetter ? (
+              {isPureSetter ? (
                 <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5">
                   <p className="text-xs font-medium text-amber-700">
                     Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
-                    {isSetterCloserSelf && <span className="ml-1">• Closer assigné automatiquement</span>}
                   </p>
+                </div>
+              ) : isSetterCloser ? (
+                <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5">
+                  <p className="text-xs font-medium text-amber-700">
+                    Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
+                    <span className="ml-1">• Closer assigné automatiquement</span>
+                  </p>
+                </div>
+              ) : isPureCloser ? (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Setter <span className="text-slate-400 font-normal">(facultatif)</span></label>
+                  <div className="flex gap-2">
+                    <select
+                      value={newSetterId}
+                      onChange={(e) => setNewSetterId(e.target.value)}
+                      className="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    >
+                      <option value="">Aucun setter</option>
+                      {teamSetters.map(s => (
+                        <option key={s.id} value={s.id}>{s.first_name} {s.last_name} {s.role === 'Owner' ? '(Owner)' : `(${s.role})`}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = getNextSetter()
+                        if (next) setNewSetterId(next.id)
+                      }}
+                      className="flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-all whitespace-nowrap"
+                      title="Tournante (round-robin)"
+                    >
+                      <ArrowRightCircle className="h-3.5 w-3.5" />
+                      Tournante
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const rnd = getRandomSetter()
+                        if (rnd) setNewSetterId(rnd.id)
+                      }}
+                      className="flex items-center gap-1 rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-all whitespace-nowrap"
+                      title="Hasard (aléatoire)"
+                    >
+                      <Shuffle className="h-3.5 w-3.5" />
+                      Hasard
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div>
@@ -568,8 +620,14 @@ export function BusinessCRM() {
                 </div>
               )}
 
-              {/* Closer assignment (optional) — hidden for Setter-Closer self (auto-assigned) and pure Closer (auto-assigned) */}
-              {!isSetterCloserSelf && !(isCloser && !isSetter) && (
+              {/* Closer assignment — only for Owner/HoS/Admin (optional) and pure Closer (auto-assigned) */}
+              {isPureCloser ? (
+                <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-2.5">
+                  <p className="text-xs font-medium text-blue-700">
+                    Closer : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
+                  </p>
+                </div>
+              ) : needsCloserPicker && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Closer <span className="text-slate-400 font-normal">(facultatif)</span></label>
                   <select
@@ -585,15 +643,6 @@ export function BusinessCRM() {
                 </div>
               )}
 
-              {/* Pure Closer auto-assign message */}
-              {isCloser && !isSetter && (
-                <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-2.5">
-                  <p className="text-xs font-medium text-blue-700">
-                    Closer : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
-                  </p>
-                </div>
-              )}
-
               <div className="flex gap-3 mt-4">
                 <button
                   onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
@@ -603,7 +652,7 @@ export function BusinessCRM() {
                 </button>
                 <button
                   onClick={handleAddProspect}
-                  disabled={addLoading || !newContact || (needsSetterPicker && !newSetterId)}
+                  disabled={addLoading || !newContact || (isOwnerView && !newSetterId)}
                   className="flex-1 rounded-xl bg-amber-600 py-2.5 font-bold text-white hover:bg-amber-500 transition-all disabled:opacity-50"
                 >
                   {addLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Ajouter'}
