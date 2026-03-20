@@ -22,11 +22,17 @@ import {
   Receipt,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 
-const ownerNavigation = [
+interface NavItem {
+  name: string
+  href: string
+  icon: any
+}
+
+const ownerNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
   { name: 'CRM', href: '/business/crm', icon: GitBranch },
   { name: 'Pipeline', href: '/business/pipeline-owner', icon: Target },
@@ -44,8 +50,8 @@ const ownerNavigation = [
   { name: 'Équipe', href: '/business/team', icon: Users },
 ]
 
-const getHeadOfSalesNavigation = (canManageCampaigns?: boolean) => {
-  const nav = [
+const getHeadOfSalesNavigation = (canManageCampaigns?: boolean): NavItem[] => {
+  const nav: NavItem[] = [
     { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
     { name: 'CRM', href: '/business/crm', icon: GitBranch },
     { name: 'Pipeline', href: '/business/pipeline-owner', icon: Target },
@@ -65,7 +71,7 @@ const getHeadOfSalesNavigation = (canManageCampaigns?: boolean) => {
   return nav
 }
 
-const getTeamMemberNavigation = (role?: string) => {
+const getTeamMemberNavigation = (role?: string): NavItem[] => {
   const isSetter = role === 'Setter' || role === 'Setter-Closer'
   const isSetterCloser = role === 'Setter-Closer'
   return [
@@ -91,6 +97,76 @@ const getTeamMemberNavigation = (role?: string) => {
   ]
 }
 
+// Map page permission keys → sidebar hrefs
+const PAGE_KEY_TO_HREF: Record<string, string> = {
+  'dashboard': '/business/dashboard',
+  'crm': '/business/crm',
+  'pipeline': '/business/pipeline',
+  'campagnes': '/business/campagnes',
+  'acquisition': '/business/acquisition',
+  'objectifs': '/business/closer-objectifs',
+  'formules': '/business/formules',
+  'appels': '/business/appels',
+  'rendez-vous': '/business/rendez-vous',
+  'agenda': '/business/agenda',
+  'rappels': '/business/rappels',
+  'factures': '/business/factures',
+  'rapport': '/business/report',
+  'kpi': '/business/closer-kpi',
+  'equipe': '/business/team',
+}
+
+const PAGE_KEY_TO_ICON: Record<string, any> = {
+  'dashboard': LayoutDashboard,
+  'crm': GitBranch,
+  'pipeline': Target,
+  'campagnes': Megaphone,
+  'acquisition': BarChart3,
+  'objectifs': Target,
+  'formules': Package,
+  'appels': Headphones,
+  'rendez-vous': Calendar,
+  'agenda': Calendar,
+  'rappels': Bell,
+  'factures': Receipt,
+  'rapport': FileText,
+  'kpi': TrendingUp,
+  'equipe': Users,
+}
+
+const PAGE_KEY_TO_LABEL: Record<string, string> = {
+  'dashboard': 'Dashboard',
+  'crm': 'CRM',
+  'pipeline': 'Pipeline',
+  'campagnes': 'Campagnes',
+  'acquisition': 'Acquisition',
+  'objectifs': 'Objectifs',
+  'formules': 'Formules',
+  'appels': 'Appels',
+  'rendez-vous': 'Rendez-vous',
+  'agenda': 'Agenda',
+  'rappels': 'Rappels',
+  'factures': 'Factures',
+  'rapport': 'Rapport',
+  'kpi': 'KPI',
+  'equipe': 'Équipe',
+}
+
+function getCustomRoleNavigation(customPermissions: any): NavItem[] {
+  if (!customPermissions?.pages) return []
+  const nav: NavItem[] = []
+  for (const [key, perm] of Object.entries(customPermissions.pages) as [string, any][]) {
+    if (perm.access && PAGE_KEY_TO_HREF[key]) {
+      nav.push({
+        name: PAGE_KEY_TO_LABEL[key] || key,
+        href: PAGE_KEY_TO_HREF[key],
+        icon: PAGE_KEY_TO_ICON[key] || LayoutDashboard,
+      })
+    }
+  }
+  return nav
+}
+
 interface BusinessSidebarProps {
   isOpen?: boolean
   onClose?: () => void
@@ -102,11 +178,20 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
   const { logout, user, businessProfile, businessSettings, isTeamMember, teamMember } = useBusinessAuth()
   const hasAcknowledgedOnboarding = !isTeamMember || !!teamMember?.onboarding_acknowledged
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
-  const navigation = isHeadOfSales
-    ? getHeadOfSalesNavigation(!!teamMember?.can_manage_campaigns)
-    : isTeamMember
-      ? getTeamMemberNavigation(teamMember?.role)
-      : ownerNavigation
+  const isAdmin = isTeamMember && teamMember?.role === 'Admin'
+
+  // Standard roles
+  const STANDARD_ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Admin', 'Head of Sales']
+  const isCustomRole = isTeamMember && teamMember?.role && !STANDARD_ROLES.includes(teamMember.role)
+
+  const navigation = useMemo(() => {
+    if (!isTeamMember) return ownerNavigation
+    if (isAdmin) return ownerNavigation // Admin = mêmes droits que Owner
+    if (isHeadOfSales) return getHeadOfSalesNavigation(!!teamMember?.can_manage_campaigns)
+    if (isCustomRole && teamMember?.custom_permissions) return getCustomRoleNavigation(teamMember.custom_permissions)
+    return getTeamMemberNavigation(teamMember?.role)
+  }, [isTeamMember, isAdmin, isHeadOfSales, isCustomRole, teamMember?.role, teamMember?.can_manage_campaigns, teamMember?.custom_permissions])
+
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
@@ -238,7 +323,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
             <>
               <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)} />
               <div className="absolute bottom-full left-4 right-4 z-20 mb-2 overflow-hidden rounded-xl border border-amber-200 bg-white shadow-xl">
-                {!isTeamMember && (
+                {(!isTeamMember || isAdmin) && (
                   <button
                     onClick={() => { setIsMenuOpen(false); onOpenSettings?.() }}
                     className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-amber-50 hover:text-slate-900"

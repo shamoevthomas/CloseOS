@@ -66,7 +66,7 @@ export function BusinessAppointments() {
 
   // Booking links (setter + owner/HoS)
   const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
-  const isOwnerOrHoS = !isTeamMember || teamMember?.role === 'Head of Sales'
+  const isOwnerOrHoS = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const isCloserOnly = isTeamMember && teamMember?.role === 'Closer'
   const isSetterCloserSelf = isTeamMember && teamMember?.role === 'Setter-Closer' && teamMember?.setter_scope === 'self'
   const showBookingSection = isSetter || isOwnerOrHoS

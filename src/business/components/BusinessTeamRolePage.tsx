@@ -93,7 +93,6 @@ const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> 
   'Closer': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
   'Setter': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
   'Setter-Closer': { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
-  'Manager': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
   'Admin': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
 }
 

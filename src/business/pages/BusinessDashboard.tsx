@@ -82,8 +82,9 @@ const ROLE_COLORS: Record<string, string> = {
 export function BusinessDashboard() {
   const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
+  const isAdmin = isTeamMember && teamMember?.role === 'Admin'
 
-  if (isTeamMember && !isHeadOfSales) {
+  if (isTeamMember && !isHeadOfSales && !isAdmin) {
     return <CloserDashboard />
   }
   const effectiveUserId = ownerUserId || user?.id

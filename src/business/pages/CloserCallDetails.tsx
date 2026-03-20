@@ -44,7 +44,7 @@ export function CloserCallDetails() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
-  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales'
+  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const { prospects, updateProspect } = useBusinessProspects()
   const { createEvent: createGoogleEvent, isConnected: isGoogleConnected } = useBusinessGoogleCalendar()
 

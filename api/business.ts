@@ -406,7 +406,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ─── Invitation actions (method-based routing for backward compat) ───
     if (action === 'invitation') {
       if (req.method === 'POST') {
-        const { inviter_id, role, can_manage_campaigns, setter_scope } = req.body
+        const { inviter_id, role, can_manage_campaigns, setter_scope, custom_permissions } = req.body
         if (!inviter_id || !role) {
           return res.status(400).json({ error: 'inviter_id and role are required' })
         }
@@ -419,6 +419,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             role,
             can_manage_campaigns: !!can_manage_campaigns,
             setter_scope: setter_scope || null,
+            custom_permissions: custom_permissions || null,
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           })
           .select()
@@ -484,6 +485,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               role: invitation.role,
               can_manage_campaigns: !!invitation.can_manage_campaigns,
               setter_scope: invitation.setter_scope || null,
+              custom_permissions: invitation.custom_permissions || null,
               first_name: first_name || undefined,
               last_name: last_name || undefined,
               email: email || undefined,
@@ -503,6 +505,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             role: invitation.role,
             can_manage_campaigns: !!invitation.can_manage_campaigns,
             setter_scope: invitation.setter_scope || null,
+            custom_permissions: invitation.custom_permissions || null,
             first_name: first_name || '',
             last_name: last_name || '',
             email: email || '',

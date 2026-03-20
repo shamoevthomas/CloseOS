@@ -103,7 +103,8 @@ import { OwnerFactures } from './business/pages/OwnerFactures'
 function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
   const { isTeamMember, teamMember } = useBusinessAuth()
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
-  if (isTeamMember && !isHeadOfSales) return <Navigate to="/business/dashboard" replace />
+  const isAdmin = isTeamMember && teamMember?.role === 'Admin'
+  if (isTeamMember && !isHeadOfSales && !isAdmin) return <Navigate to="/business/dashboard" replace />
   return <>{children}</>
 }
 
@@ -125,6 +126,7 @@ function OwnerOnlyWrapper({ children }: { children: React.ReactNode }) {
 function CampaignGuard({ children }: { children: React.ReactNode }) {
   const { isTeamMember, teamMember } = useBusinessAuth()
   if (!isTeamMember) return <>{children}</>
+  if (teamMember?.role === 'Admin') return <>{children}</>
   if (teamMember?.role === 'Head of Sales' && teamMember?.can_manage_campaigns) return <>{children}</>
   return <Navigate to="/business/dashboard" replace />
 }
@@ -142,7 +144,7 @@ function CallDetailsRouter() {
 
 function FacturesRouter() {
   const { isTeamMember, teamMember } = useBusinessAuth()
-  const isOwnerOrHoS = !isTeamMember || teamMember?.role === 'Head of Sales'
+  const isOwnerOrHoS = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   if (isOwnerOrHoS) return <OwnerFactures />
   return <CloserFactures />
 }

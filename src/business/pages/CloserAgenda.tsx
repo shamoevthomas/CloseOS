@@ -144,7 +144,7 @@ export function CloserAgenda() {
   const { user, teamMember, ownerUserId, isTeamMember, userTimezone } = useBusinessAuth()
   const { googleEvents, isConnected, login, isLoading: gLoading } = useBusinessGoogleCalendar()
   const effectiveUserId = ownerUserId || user?.id
-  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales'
+  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
 
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<ViewMode>('week')

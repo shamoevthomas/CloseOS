@@ -32,7 +32,7 @@ export function CloserAppels() {
   const navigate = useNavigate()
   const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
   const { prospects } = useBusinessProspects()
-  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales'
+  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const effectiveOwnerId = ownerUserId || user?.id
 
   const [callHistory, setCallHistory] = useState<CallHistoryItem[]>([])

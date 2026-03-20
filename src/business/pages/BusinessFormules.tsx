@@ -38,7 +38,7 @@ interface TeamMemberBasic {
 }
 
 const RESOURCE_TYPES: Resource['type'][] = ['PDF', 'Vidéo', 'Lien', 'Autre']
-const ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Head of Sales', 'Manager', 'Admin']
+const ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Head of Sales', 'Admin']
 
 const API_URL = '/api/business'
 

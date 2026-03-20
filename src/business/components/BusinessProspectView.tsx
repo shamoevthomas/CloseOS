@@ -382,8 +382,8 @@ export function BusinessProspectView({
 
                   {/* Assignment: separate Closer and Setter dropdowns */}
                   {canAssign && teamMembers.length > 0 && (() => {
-                    const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales')
-                    const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales')
+                    const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales' || tm.role === 'Admin')
+                    const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales' || tm.role === 'Admin')
 
                     return (
                       <div className="space-y-3">
