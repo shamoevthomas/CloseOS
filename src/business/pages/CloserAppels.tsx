@@ -30,8 +30,10 @@ interface CallHistoryItem {
 
 export function CloserAppels() {
   const navigate = useNavigate()
-  const { teamMember, ownerUserId } = useBusinessAuth()
+  const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
   const { prospects } = useBusinessProspects()
+  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales'
+  const effectiveOwnerId = ownerUserId || user?.id
 
   const [callHistory, setCallHistory] = useState<CallHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,27 +58,31 @@ export function CloserAppels() {
   const [editingCallId, setEditingCallId] = useState<number | null>(null)
   const [editingName, setEditingName] = useState('')
 
-  const myProspects = prospects.filter(p => p.assigned_to === teamMember?.id)
+  const myProspects = isOwnerView ? prospects : prospects.filter(p => p.assigned_to === teamMember?.id)
 
   // Load call history
   useEffect(() => {
-    if (!teamMember?.id) return
+    if (!effectiveOwnerId && !teamMember?.id) return
     setLoading(true)
-    supabase
-      .from('business_call_history')
-      .select('*')
-      .eq('team_member_id', teamMember.id)
-      .order('date', { ascending: false })
-      .then(({ data }) => {
-        setCallHistory(data || [])
-        setLoading(false)
-      })
-  }, [teamMember?.id])
+    const query = supabase.from('business_call_history').select('*').order('date', { ascending: false })
+    if (isOwnerView) {
+      query.eq('business_owner_id', effectiveOwnerId!)
+    } else {
+      query.eq('team_member_id', teamMember!.id)
+    }
+    query.then(({ data }) => {
+      setCallHistory(data || [])
+      setLoading(false)
+    })
+  }, [teamMember?.id, effectiveOwnerId, isOwnerView])
 
   // Load scripts
   const fetchScripts = async () => {
-    if (!teamMember?.id) return
-    const { data } = await supabase.from('business_user_scripts').select('*').eq('team_member_id', teamMember.id).order('id')
+    if (!teamMember?.id && !effectiveOwnerId) return
+    const query = isOwnerView
+      ? supabase.from('business_user_scripts').select('*').eq('business_owner_id', effectiveOwnerId!).order('id')
+      : supabase.from('business_user_scripts').select('*').eq('team_member_id', teamMember!.id).order('id')
+    const { data } = await query
     if (data && data.length > 0) {
       setScripts(data)
       setSelectedScriptId(data[0].id)
@@ -99,11 +105,11 @@ export function CloserAppels() {
   }
 
   const handleSaveScript = async () => {
-    if (!scriptTitle.trim() || !teamMember?.id || !ownerUserId) return
+    if (!scriptTitle.trim() || !effectiveOwnerId) return
     setIsSavingScript(true)
     try {
       if (selectedScriptId === 'new') {
-        const { data, error } = await supabase.from('business_user_scripts').insert([{ team_member_id: teamMember.id, business_owner_id: ownerUserId, title: scriptTitle, content: scriptContent }]).select()
+        const { data, error } = await supabase.from('business_user_scripts').insert([{ team_member_id: teamMember?.id || null, business_owner_id: effectiveOwnerId, title: scriptTitle, content: scriptContent }]).select()
         if (error) throw error
         if (data) { setScripts([...scripts, data[0]]); setSelectedScriptId(data[0].id) }
       } else {
@@ -132,7 +138,7 @@ export function CloserAppels() {
   }
 
   const startCockpit = async () => {
-    if (!teamMember?.id || !ownerUserId) return
+    if (!effectiveOwnerId) return
     let contactName = 'Appel Vidéo'
     let contactId = 0
     if (selectedProspectId) {
@@ -141,8 +147,8 @@ export function CloserAppels() {
     }
 
     const { data: newCall } = await supabase.from('business_call_history').insert([{
-      team_member_id: teamMember.id,
-      business_owner_id: ownerUserId,
+      team_member_id: teamMember?.id || null,
+      business_owner_id: effectiveOwnerId,
       contact_id: contactId,
       contact_name: contactName,
       contact_type: 'prospect',

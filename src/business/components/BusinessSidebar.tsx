@@ -19,6 +19,7 @@ import {
   Headphones,
   Target,
   Building2,
+  Phone,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect } from 'react'
@@ -33,6 +34,7 @@ const ownerNavigation = [
   { name: 'Acquisition', href: '/business/acquisition', icon: BarChart3 },
   { name: 'Objectifs', href: '/business/objectifs', icon: Target },
   { name: 'Formules', href: '/business/formules', icon: Package },
+  { name: 'Appels', href: '/business/appels', icon: Phone },
   { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
   { name: 'Rappels', href: '/business/rappels', icon: Bell },
   { name: 'Rapport', href: '/business/report', icon: FileText },
@@ -51,6 +53,7 @@ const getHeadOfSalesNavigation = (canManageCampaigns?: boolean) => {
     { name: 'Acquisition', href: '/business/acquisition', icon: BarChart3 },
     { name: 'Objectifs', href: '/business/objectifs', icon: Target },
     { name: 'Formules', href: '/business/formules', icon: Package },
+    { name: 'Appels', href: '/business/appels', icon: Phone },
     { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
     { name: 'Rappels', href: '/business/rappels', icon: Bell },
     { name: 'Rapport', href: '/business/report', icon: FileText },
