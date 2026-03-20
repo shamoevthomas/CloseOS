@@ -221,7 +221,7 @@ export function BusinessCampaigns() {
     booking_duration: formBookingDuration,
     booking_title: formBookingTitle || null,
     booking_description: formBookingDescription || null,
-    booking_with: formBookingWith,
+    booking_with: formCaptureType === 'without_rdv' ? 'setter' : formBookingWith,
     booking_assign_mode: formBookingAssignMode,
     booking_assigned_members: formBookingAssignedMembers,
     booking_distribution: formBookingDistribution,
@@ -480,7 +480,7 @@ export function BusinessCampaigns() {
                 { key: 'general' as const, label: 'Général' },
                 { key: 'landing' as const, label: 'Page de capture' },
                 { key: 'fields' as const, label: 'Champs & Options' },
-                ...(formCaptureType === 'with_rdv' ? [{ key: 'booking' as const, label: 'Booking' }] : []),
+                { key: 'booking' as const, label: formCaptureType === 'with_rdv' ? 'Booking' : 'Assignation' },
               ]).map(tab => (
                 <button
                   key={tab.key}
@@ -704,125 +704,138 @@ export function BusinessCampaigns() {
                 </div>
               )}
 
-              {/* Booking tab (only for with_rdv) */}
-              {modalTab === 'booking' && formCaptureType === 'with_rdv' && (
+              {/* Booking / Assignation tab */}
+              {modalTab === 'booking' && (
                 <div className="space-y-5">
-                  {/* Duration */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Durée du rendez-vous</label>
-                    <div className="flex gap-2 flex-wrap">
-                      {BOOKING_DURATIONS.map(d => (
-                        <button
-                          key={d.value}
-                          type="button"
-                          onClick={() => setFormBookingDuration(d.value)}
-                          className={`rounded-lg border-2 px-4 py-2 text-sm font-medium transition-all ${
-                            formBookingDuration === d.value
-                              ? 'border-amber-500 bg-amber-50 text-amber-700'
-                              : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                          }`}
-                        >
-                          {d.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  {/* Booking-specific fields (only with_rdv) */}
+                  {formCaptureType === 'with_rdv' && (
+                    <>
+                      {/* Duration */}
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Durée du rendez-vous</label>
+                        <div className="flex gap-2 flex-wrap">
+                          {BOOKING_DURATIONS.map(d => (
+                            <button
+                              key={d.value}
+                              type="button"
+                              onClick={() => setFormBookingDuration(d.value)}
+                              className={`rounded-lg border-2 px-4 py-2 text-sm font-medium transition-all ${
+                                formBookingDuration === d.value
+                                  ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                  : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                              }`}
+                            >
+                              {d.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
-                  {/* Title */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Titre du rendez-vous</label>
-                    <input
-                      type="text"
-                      value={formBookingTitle}
-                      onChange={(e) => setFormBookingTitle(e.target.value)}
-                      placeholder="Ex: Appel découverte — {{lead_name}} × {{assignee_name}}"
-                      className={inputCls}
-                    />
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {[
-                        { var: '{{lead_name}}', label: 'Nom du lead' },
-                        { var: '{{assignee_name}}', label: 'Nom du closer/setter' },
-                        { var: '{{formula_name}}', label: "Nom de l'offre" },
-                        { var: '{{campaign_name}}', label: 'Nom de la campagne' },
-                      ].map(v => (
-                        <button
-                          key={v.var}
-                          type="button"
-                          onClick={() => setFormBookingTitle(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + v.var)}
-                          className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-mono text-slate-600 hover:bg-slate-200 transition-colors"
-                          title={v.label}
-                        >
-                          {v.var}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                      {/* Title */}
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Titre du rendez-vous</label>
+                        <input
+                          type="text"
+                          value={formBookingTitle}
+                          onChange={(e) => setFormBookingTitle(e.target.value)}
+                          placeholder="Ex: Appel découverte — {{lead_name}} × {{assignee_name}}"
+                          className={inputCls}
+                        />
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {[
+                            { var: '{{lead_name}}', label: 'Nom du lead' },
+                            { var: '{{assignee_name}}', label: 'Nom du closer/setter' },
+                            { var: '{{formula_name}}', label: "Nom de l'offre" },
+                            { var: '{{campaign_name}}', label: 'Nom de la campagne' },
+                          ].map(v => (
+                            <button
+                              key={v.var}
+                              type="button"
+                              onClick={() => setFormBookingTitle(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + v.var)}
+                              className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-mono text-slate-600 hover:bg-slate-200 transition-colors"
+                              title={v.label}
+                            >
+                              {v.var}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
-                  {/* Description */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Description du rendez-vous</label>
-                    <textarea
-                      value={formBookingDescription}
-                      onChange={(e) => setFormBookingDescription(e.target.value)}
-                      rows={3}
-                      placeholder="Ex: Appel de qualification avec {{lead_name}}. Offre : {{formula_name}}"
-                      className={`${inputCls} resize-none`}
-                    />
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {[
-                        { var: '{{lead_name}}', label: 'Nom du lead' },
-                        { var: '{{lead_email}}', label: 'Email du lead' },
-                        { var: '{{lead_phone}}', label: 'Téléphone du lead' },
-                        { var: '{{assignee_name}}', label: 'Nom du closer/setter' },
-                        { var: '{{formula_name}}', label: "Nom de l'offre" },
-                        { var: '{{campaign_name}}', label: 'Nom de la campagne' },
-                      ].map(v => (
-                        <button
-                          key={v.var}
-                          type="button"
-                          onClick={() => setFormBookingDescription(prev => prev + (prev && !prev.endsWith('\n') && !prev.endsWith(' ') ? ' ' : '') + v.var)}
-                          className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-mono text-slate-600 hover:bg-slate-200 transition-colors"
-                          title={v.label}
-                        >
-                          {v.var}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                      {/* Description */}
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Description du rendez-vous</label>
+                        <textarea
+                          value={formBookingDescription}
+                          onChange={(e) => setFormBookingDescription(e.target.value)}
+                          rows={3}
+                          placeholder="Ex: Appel de qualification avec {{lead_name}}. Offre : {{formula_name}}"
+                          className={`${inputCls} resize-none`}
+                        />
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {[
+                            { var: '{{lead_name}}', label: 'Nom du lead' },
+                            { var: '{{lead_email}}', label: 'Email du lead' },
+                            { var: '{{lead_phone}}', label: 'Téléphone du lead' },
+                            { var: '{{assignee_name}}', label: 'Nom du closer/setter' },
+                            { var: '{{formula_name}}', label: "Nom de l'offre" },
+                            { var: '{{campaign_name}}', label: 'Nom de la campagne' },
+                          ].map(v => (
+                            <button
+                              key={v.var}
+                              type="button"
+                              onClick={() => setFormBookingDescription(prev => prev + (prev && !prev.endsWith('\n') && !prev.endsWith(' ') ? ' ' : '') + v.var)}
+                              className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-mono text-slate-600 hover:bg-slate-200 transition-colors"
+                              title={v.label}
+                            >
+                              {v.var}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
-                  {/* RDV with Closer or Setter switch */}
-                  <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-3">Rendez-vous avec</label>
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => { setFormBookingWith('closer'); setFormBookingAssignedMembers([]) }}
-                        className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
-                          formBookingWith === 'closer'
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                        }`}
-                      >
-                        <UserCheck className="h-4 w-4" /> Closer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setFormBookingWith('setter'); setFormBookingAssignedMembers([]) }}
-                        className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
-                          formBookingWith === 'setter'
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                        }`}
-                      >
-                        <UserCheck className="h-4 w-4" /> Setter
-                      </button>
-                    </div>
-                  </div>
+                      {/* RDV with Closer or Setter switch */}
+                      <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-3">Rendez-vous avec</label>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => { setFormBookingWith('closer'); setFormBookingAssignedMembers([]) }}
+                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                              formBookingWith === 'closer'
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            }`}
+                          >
+                            <UserCheck className="h-4 w-4" /> Closer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setFormBookingWith('setter'); setFormBookingAssignedMembers([]) }}
+                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                              formBookingWith === 'setter'
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            }`}
+                          >
+                            <UserCheck className="h-4 w-4" /> Setter
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
 
-                  {/* Assignment mode */}
+                  {/* Info banner for without_rdv */}
+                  {formCaptureType === 'without_rdv' && (
+                    <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-4">
+                      <p className="text-sm font-medium text-purple-700">Campagne sans rendez-vous</p>
+                      <p className="text-xs text-purple-600 mt-1">Les leads capturés seront assignés à un Setter pour le traitement.</p>
+                    </div>
+                  )}
+
+                  {/* Assignment mode — always visible */}
                   <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
                     <label className="block text-sm font-medium text-slate-700 mb-3">
-                      Mode d'assignation des {formBookingWith === 'closer' ? 'Closers' : 'Setters'}
+                      Mode d'assignation des {formCaptureType === 'without_rdv' ? 'Setters' : (formBookingWith === 'closer' ? 'Closers' : 'Setters')}
                     </label>
                     <div className="flex gap-2 flex-wrap">
                       <button
@@ -872,7 +885,8 @@ export function BusinessCampaigns() {
                             <option value="">Choisir un membre</option>
                             {teamMembers
                               .filter(m => {
-                                if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
+                                const assignRole = formCaptureType === 'without_rdv' ? 'setter' : formBookingWith
+                                if (assignRole === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
                                 return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'
                               })
                               .map(m => (
