@@ -26,22 +26,35 @@ interface Formula {
   is_active: boolean
 }
 
+interface TeamSetter {
+  id: string
+  first_name: string
+  last_name: string
+  role: string
+}
+
 const formatCurrency = (n: number) => n.toLocaleString('fr-FR')
 const formatPercent = (n: number) => n.toFixed(1)
 
 export function SetterKPI() {
-  const { teamMember, ownerUserId } = useBusinessAuth()
+  const { teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
+  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const { prospects } = useBusinessProspects()
-  const [activeTab, setActiveTab] = useState<'personal' | 'org' | 'offer'>('personal')
+  const [activeTab, setActiveTab] = useState<'personal' | 'org' | 'offer' | 'member'>(isOwnerView ? 'org' : 'personal')
   const [kpiConfig, setKpiConfig] = useState<KpiConfig>({ planned_calls: 20, revenue_target: 10000, commission_rate: 10 })
   const [isConfigOpen, setIsConfigOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [formulas, setFormulas] = useState<Formula[]>([])
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null)
+  const [teamSetters, setTeamSetters] = useState<TeamSetter[]>([])
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
 
   // Load KPI config
   useEffect(() => {
-    if (!teamMember?.id) return
+    if (!teamMember?.id) {
+      if (isOwnerView) setLoading(false)
+      return
+    }
     setLoading(true)
     supabase
       .from('business_kpi_config')
@@ -53,7 +66,7 @@ export function SetterKPI() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [teamMember?.id])
+  }, [teamMember?.id, isOwnerView])
 
   // Load formulas for per-offer tab
   useEffect(() => {
@@ -71,6 +84,22 @@ export function SetterKPI() {
       .catch(() => {})
   }, [ownerUserId])
 
+  // Load team setters for member tab (owner view only)
+  useEffect(() => {
+    if (!isOwnerView || !ownerUserId) return
+    supabase
+      .from('business_team_members')
+      .select('id, first_name, last_name, role')
+      .eq('business_owner_id', ownerUserId)
+      .in('role', ['Setter', 'Setter-Closer'])
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setTeamSetters(data)
+          if (!selectedMemberId) setSelectedMemberId(data[0].id)
+        }
+      })
+  }, [isOwnerView, ownerUserId])
+
   const saveConfig = async () => {
     if (!teamMember?.id || !ownerUserId) return
     const { error } = await supabase.from('business_kpi_config').upsert({
@@ -86,35 +115,42 @@ export function SetterKPI() {
   // Setter prospects = prospects assigned to this setter via assigned_setter
   const myProspects = prospects.filter(p => p.assigned_setter === teamMember?.id)
 
-  // Taux de Réponse: prospects contactés (hors stage "prospect") qui ne sont PAS en "noanswer"
-  const contactedProspects = myProspects.filter(p => p.stage !== 'prospect')
-  const respondedProspects = contactedProspects.filter(p => p.stage !== 'noanswer')
-  const responseRate = contactedProspects.length > 0 ? (respondedProspects.length / contactedProspects.length) * 100 : 0
+  // Member prospects (for member tab)
+  const memberProspects = useMemo(() => {
+    if (!selectedMemberId) return []
+    return prospects.filter(p => p.assigned_setter === selectedMemberId)
+  }, [prospects, selectedMemberId])
 
-  // Taux de Booking: contactés qui ne sont pas en noanswer ni en unqualified (sauf si c'est un closer qui a mis unqualified)
-  const qualifiedProspects = myProspects.filter(p => p.stage === 'qualified')
-  const bookedProspects = contactedProspects.filter(p => {
-    if (p.stage === 'noanswer') return false
-    // Non-qualifié par le setter = pas booké. Non-qualifié par un closer = on considère quand même booké pour le setter
-    if (p.stage === 'unqualified' && p.stage_changed_by === teamMember?.id) return false
-    return true
-  })
-  const bookingTotal = contactedProspects.length
-  const bookingRate = bookingTotal > 0 ? (bookedProspects.length / bookingTotal) * 100 : 0
+  // Helper: compute setter KPIs for a given set of prospects
+  const computeSetterKpis = (src: any[], memberId?: string) => {
+    const contacted = src.filter((p: any) => p.stage !== 'prospect')
+    const responded = contacted.filter((p: any) => p.stage !== 'noanswer')
+    const responseRate = contacted.length > 0 ? (responded.length / contacted.length) * 100 : 0
 
-  // Taux de Conversion: prospects qualifiés par le setter qui sont en "won"
-  const qualifiedByMeAll = myProspects.filter(p => ['qualified', 'won', 'lost', 'noshow', 'followup'].includes(p.stage))
-  const wonProspects = myProspects.filter(p => p.stage === 'won')
-  const conversionRate = qualifiedByMeAll.length > 0 ? (wonProspects.length / qualifiedByMeAll.length) * 100 : 0
+    const booked = contacted.filter((p: any) => {
+      if (p.stage === 'noanswer') return false
+      if (p.stage === 'unqualified' && p.stage_changed_by === memberId) return false
+      return true
+    })
+    const bookingRate = contacted.length > 0 ? (booked.length / contacted.length) * 100 : 0
 
-  // Taux de No Show: prospects qualifiés par le setter qui sont en "noshow"
-  const noShowProspects = myProspects.filter(p => p.stage === 'noshow')
-  const noShowRate = qualifiedByMeAll.length > 0 ? (noShowProspects.length / qualifiedByMeAll.length) * 100 : 0
+    const qualifiedAll = src.filter((p: any) => ['qualified', 'won', 'lost', 'noshow', 'followup'].includes(p.stage))
+    const won = src.filter((p: any) => p.stage === 'won')
+    const noShow = src.filter((p: any) => p.stage === 'noshow')
+    const lost = src.filter((p: any) => p.stage === 'lost')
+    const conversionRate = qualifiedAll.length > 0 ? (won.length / qualifiedAll.length) * 100 : 0
+    const noShowRate = qualifiedAll.length > 0 ? (noShow.length / qualifiedAll.length) * 100 : 0
+    const revenue = won.reduce((sum: number, p: any) => sum + (p.value || 0), 0)
 
-  const lostProspects = myProspects.filter(p => p.stage === 'lost')
-  const totalRevenue = wonProspects.reduce((sum, p) => sum + (p.value || 0), 0)
-  const totalSales = wonProspects.length
-  const commission = Math.round(totalRevenue * (kpiConfig.commission_rate / 100))
+    return {
+      contacted, responded, responseRate, booked, bookingRate,
+      qualifiedAll, won, noShow, lost, conversionRate, noShowRate, revenue,
+    }
+  }
+
+  // Personal KPIs
+  const personal = computeSetterKpis(myProspects, teamMember?.id)
+  const commission = Math.round(personal.revenue * (kpiConfig.commission_rate / 100))
 
   // Org KPIs (all prospects)
   const orgWon = prospects.filter(p => p.stage === 'won')
@@ -129,8 +165,9 @@ export function SetterKPI() {
   // Per-offer KPIs
   const offerProspects = useMemo(() => {
     if (!selectedOfferId) return []
-    return myProspects.filter(p => (p as any).offer_id === selectedOfferId || (p as any).formula_id === selectedOfferId)
-  }, [myProspects, selectedOfferId])
+    const base = isOwnerView ? prospects : myProspects
+    return base.filter(p => (p as any).offer_id === selectedOfferId || (p as any).formula_id === selectedOfferId)
+  }, [isOwnerView, myProspects, prospects, selectedOfferId])
 
   const offerWon = offerProspects.filter(p => p.stage === 'won')
   const offerNoShow = offerProspects.filter(p => p.stage === 'noshow')
@@ -141,9 +178,13 @@ export function SetterKPI() {
   const offerNoShowRate = offerClosedTotal > 0 ? (offerNoShow.length / offerClosedTotal) * 100 : 0
   const offerCommission = Math.round(offerRevenue * (kpiConfig.commission_rate / 100))
 
+  // Member KPIs
+  const member = computeSetterKpis(memberProspects, selectedMemberId || undefined)
+  const memberCommission = Math.round(member.revenue * (kpiConfig.commission_rate / 100))
+
   // Chart data: group prospects by month
   const chartData = useMemo(() => {
-    const source = activeTab === 'personal' ? myProspects : activeTab === 'org' ? prospects : offerProspects
+    const source = activeTab === 'personal' ? myProspects : activeTab === 'org' ? prospects : activeTab === 'member' ? memberProspects : offerProspects
     const monthMap: Record<string, { won: number; total: number; commission: number }> = {}
     source.forEach(p => {
       const date = new Date(p.created_at || Date.now())
@@ -162,7 +203,7 @@ export function SetterKPI() {
         closing: val.total > 0 ? Math.round((val.won / val.total) * 100) : 0,
         commission: val.commission,
       }))
-  }, [prospects, myProspects, offerProspects, activeTab, kpiConfig.commission_rate])
+  }, [prospects, myProspects, offerProspects, memberProspects, activeTab, kpiConfig.commission_rate])
 
   // Current tab values
   const getTabValues = () => {
@@ -180,9 +221,16 @@ export function SetterKPI() {
         leads: offerProspects.length, deals: offerProspects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
       }
     }
+    if (activeTab === 'member') {
+      return {
+        revenue: member.revenue, sales: member.won.length, conversion: member.conversionRate,
+        commission: memberCommission, noShowRate: member.noShowRate, lost: member.lost.length,
+        leads: memberProspects.length, deals: memberProspects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
+      }
+    }
     return {
-      revenue: totalRevenue, sales: totalSales, conversion: conversionRate,
-      commission, noShowRate, lost: lostProspects.length,
+      revenue: personal.revenue, sales: personal.won.length, conversion: personal.conversionRate,
+      commission, noShowRate: personal.noShowRate, lost: personal.lost.length,
       leads: myProspects.length, deals: myProspects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
     }
   }
@@ -190,7 +238,24 @@ export function SetterKPI() {
   const v = getTabValues()
   const avgCommission = v.sales > 0 ? Math.round(v.commission / v.sales) : 0
 
+  // Setter-specific display values (personal or member tab)
+  const setterDisplay = activeTab === 'member' ? member : personal
+  const showSetterCards = activeTab === 'personal' || activeTab === 'member'
+
   const inputCls = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+
+  // Tabs definition
+  const tabs = isOwnerView
+    ? [
+        { key: 'org' as const, label: 'Organisation' },
+        { key: 'offer' as const, label: 'Par Offre' },
+        { key: 'member' as const, label: 'Membre' },
+      ]
+    : [
+        { key: 'personal' as const, label: 'Global (Personnel)' },
+        { key: 'org' as const, label: 'Organisation' },
+        { key: 'offer' as const, label: 'Par Offre' },
+      ]
 
   if (loading) {
     return (
@@ -210,24 +275,22 @@ export function SetterKPI() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-slate-900">Performance Setter</h1>
-            <p className="text-xs text-slate-500">Vos indicateurs de performance</p>
+            <p className="text-xs text-slate-500">{isOwnerView ? "Vue d'ensemble de l'équipe" : 'Vos indicateurs de performance'}</p>
           </div>
         </div>
-        <button
-          onClick={() => setIsConfigOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-        >
-          <Settings className="h-4 w-4" /> Configurer
-        </button>
+        {!isOwnerView && (
+          <button
+            onClick={() => setIsConfigOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            <Settings className="h-4 w-4" /> Configurer
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap">
-        {[
-          { key: 'personal' as const, label: 'Global (Personnel)' },
-          { key: 'org' as const, label: 'Organisation' },
-          { key: 'offer' as const, label: 'Par Offre' },
-        ].map(tab => (
+        {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
@@ -267,37 +330,57 @@ export function SetterKPI() {
         </div>
       )}
 
-      {/* Setter-specific KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-purple-200 p-5 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
-              <PhoneIncoming className="h-4 w-4 text-purple-600" />
-            </div>
-            <span className="text-xs font-medium text-slate-500">Taux de Réponse</span>
+      {activeTab === 'member' && (
+        <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-purple-700">KPIs par membre (Setter)</p>
+            <select
+              value={selectedMemberId || ''}
+              onChange={(e) => setSelectedMemberId(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-purple-500 focus:outline-none"
+            >
+              {teamSetters.length === 0 && <option value="">Aucun setter</option>}
+              {teamSetters.map(s => (
+                <option key={s.id} value={s.id}>{s.first_name} {s.last_name} ({s.role})</option>
+              ))}
+            </select>
           </div>
-          <p className="text-2xl font-bold text-purple-700">{formatPercent(responseRate)}%</p>
-          <p className="text-xs text-slate-400 mt-1">{respondedProspects.length} réponses / {contactedProspects.length} contactés</p>
         </div>
-        <div className="bg-white rounded-2xl border border-purple-200 p-5 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
-              <CalendarCheck className="h-4 w-4 text-purple-600" />
+      )}
+
+      {/* Setter-specific KPI Cards (personal or member tab) */}
+      {showSetterCards && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl border border-purple-200 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
+                <PhoneIncoming className="h-4 w-4 text-purple-600" />
+              </div>
+              <span className="text-xs font-medium text-slate-500">Taux de Réponse</span>
             </div>
-            <span className="text-xs font-medium text-slate-500">Taux de Booking</span>
+            <p className="text-2xl font-bold text-purple-700">{formatPercent(setterDisplay.responseRate)}%</p>
+            <p className="text-xs text-slate-400 mt-1">{setterDisplay.responded.length} réponses / {setterDisplay.contacted.length} contactés</p>
           </div>
-          <p className="text-2xl font-bold text-purple-700">{formatPercent(bookingRate)}%</p>
-          <p className="text-xs text-slate-400 mt-1">{bookedProspects.length} bookés / {bookingTotal} contactés</p>
+          <div className="bg-white rounded-2xl border border-purple-200 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
+                <CalendarCheck className="h-4 w-4 text-purple-600" />
+              </div>
+              <span className="text-xs font-medium text-slate-500">Taux de Booking</span>
+            </div>
+            <p className="text-2xl font-bold text-purple-700">{formatPercent(setterDisplay.bookingRate)}%</p>
+            <p className="text-xs text-slate-400 mt-1">{setterDisplay.booked.length} bookés / {setterDisplay.contacted.length} contactés</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Standard KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <KpiCard title="CA Généré" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title="Ventes Totales" value={v.sales} icon={ShoppingCart} color="blue" />
-        <KpiCard title="Taux de Conversion" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" subtitle={`${wonProspects.length} gagnés / ${qualifiedByMeAll.length} qualifiés`} />
-        <KpiCard title="Mes Commissions" value={`${formatCurrency(v.commission)} €`} icon={Award} color="amber" highlight />
-        <KpiCard title="Taux de No Show" value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" subtitle={`${noShowProspects.length} no shows / ${qualifiedByMeAll.length} qualifiés`} />
+        <KpiCard title="Taux de Conversion" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" subtitle={showSetterCards ? `${setterDisplay.won.length} gagnés / ${setterDisplay.qualifiedAll.length} qualifiés` : undefined} />
+        <KpiCard title={isOwnerView ? 'Commissions' : 'Mes Commissions'} value={`${formatCurrency(v.commission)} €`} icon={Award} color="amber" highlight />
+        <KpiCard title="Taux de No Show" value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" subtitle={showSetterCards ? `${setterDisplay.noShow.length} no shows / ${setterDisplay.qualifiedAll.length} qualifiés` : undefined} />
         <KpiCard title="Deals Perdus" value={v.lost} icon={Ban} color="slate" />
       </div>
 
@@ -356,8 +439,8 @@ export function SetterKPI() {
         </div>
       </div>
 
-      {/* Config Modal */}
-      {isConfigOpen && (
+      {/* Config Modal (team members only) */}
+      {isConfigOpen && !isOwnerView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl bg-white border border-slate-200 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">

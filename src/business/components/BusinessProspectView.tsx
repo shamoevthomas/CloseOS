@@ -60,7 +60,7 @@ export function BusinessProspectView({
 }: BusinessProspectViewProps) {
   const navigate = useNavigate()
   const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
-  const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string }[]>([])
+  const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string; setter_scope?: string }[]>([])
 
   // Setters with role Setter or Setter-Closer can assign closers (unless setter_scope is 'self')
   const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
@@ -73,7 +73,7 @@ export function BusinessProspectView({
     const ownerId = isTeamMember ? ownerUserId : user?.id
     if (!ownerId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', ownerId),
+      supabase.from('business_team_members').select('id, first_name, last_name, role, setter_scope').eq('business_owner_id', ownerId),
       supabase.from('business_users').select('id, full_name, email').eq('id', ownerId).single(),
     ]).then(([tmRes, ownerRes]) => {
       const list = tmRes.data || []
@@ -412,7 +412,18 @@ export function BusinessProspectView({
                             <label className="mb-2 block text-xs font-medium text-slate-500">Assigner un Setter</label>
                             <select
                               value={setters.find(s => s.id === (local as any).assigned_setter)?.id || ''}
-                              onChange={(e) => handleUpdate({ assigned_setter: e.target.value || null } as any)}
+                              onChange={(e) => {
+                                const setterId = e.target.value || null
+                                const updates: any = { assigned_setter: setterId }
+                                // Auto-assign as closer if Setter-Closer with 'self' scope
+                                if (setterId) {
+                                  const selected = teamMembers.find(tm => tm.id === setterId)
+                                  if (selected?.role === 'Setter-Closer' && selected?.setter_scope === 'self') {
+                                    updates.assigned_to = setterId
+                                  }
+                                }
+                                handleUpdate(updates)
+                              }}
                               className="w-full rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm text-slate-900 focus:border-purple-500 focus:outline-none"
                             >
                               <option value="">Aucun setter assigné</option>

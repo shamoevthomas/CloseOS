@@ -25,22 +25,35 @@ interface Formula {
   is_active: boolean
 }
 
+interface TeamCloser {
+  id: string
+  first_name: string
+  last_name: string
+  role: string
+}
+
 const formatCurrency = (n: number) => n.toLocaleString('fr-FR')
 const formatPercent = (n: number) => n.toFixed(1)
 
 export function CloserKPI() {
-  const { teamMember, ownerUserId } = useBusinessAuth()
+  const { teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
+  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const { prospects } = useBusinessProspects()
-  const [activeTab, setActiveTab] = useState<'personal' | 'org' | 'offer'>('personal')
+  const [activeTab, setActiveTab] = useState<'personal' | 'org' | 'offer' | 'member'>(isOwnerView ? 'org' : 'personal')
   const [kpiConfig, setKpiConfig] = useState<KpiConfig>({ planned_calls: 20, revenue_target: 10000, commission_rate: 10 })
   const [isConfigOpen, setIsConfigOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [formulas, setFormulas] = useState<Formula[]>([])
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null)
+  const [teamClosers, setTeamClosers] = useState<TeamCloser[]>([])
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
 
   // Load KPI config
   useEffect(() => {
-    if (!teamMember?.id) return
+    if (!teamMember?.id) {
+      if (isOwnerView) setLoading(false)
+      return
+    }
     setLoading(true)
     supabase
       .from('business_kpi_config')
@@ -52,7 +65,7 @@ export function CloserKPI() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [teamMember?.id])
+  }, [teamMember?.id, isOwnerView])
 
   // Load formulas for per-offer tab
   useEffect(() => {
@@ -70,6 +83,22 @@ export function CloserKPI() {
       .catch(() => {})
   }, [ownerUserId])
 
+  // Load team closers for member tab (owner view only)
+  useEffect(() => {
+    if (!isOwnerView || !ownerUserId) return
+    supabase
+      .from('business_team_members')
+      .select('id, first_name, last_name, role')
+      .eq('business_owner_id', ownerUserId)
+      .in('role', ['Closer', 'Setter-Closer'])
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setTeamClosers(data)
+          if (!selectedMemberId) setSelectedMemberId(data[0].id)
+        }
+      })
+  }, [isOwnerView, ownerUserId])
+
   const saveConfig = async () => {
     if (!teamMember?.id || !ownerUserId) return
     const { error } = await supabase.from('business_kpi_config').upsert({
@@ -78,50 +107,53 @@ export function CloserKPI() {
       config: kpiConfig,
     }, { onConflict: 'team_member_id' })
     if (error) { toast.error('Erreur de sauvegarde'); return }
-    toast.success('Configuration sauvegardee')
+    toast.success('Configuration sauvegardée')
     setIsConfigOpen(false)
   }
 
-  // Calculate personal KPIs from assigned prospects
+  // Helper: compute closer KPIs for a set of prospects
+  const computeCloserKpis = (src: any[]) => {
+    const won = src.filter((p: any) => p.stage === 'won')
+    const noShow = src.filter((p: any) => p.stage === 'noshow')
+    const lost = src.filter((p: any) => p.stage === 'lost')
+    const revenue = won.reduce((sum: number, p: any) => sum + (p.value || 0), 0)
+    const closedTotal = won.length + lost.length + noShow.length
+    const conversionRate = closedTotal > 0 ? (won.length / closedTotal) * 100 : 0
+    const noShowRate = closedTotal > 0 ? (noShow.length / closedTotal) * 100 : 0
+    return { won, noShow, lost, revenue, closedTotal, conversionRate, noShowRate }
+  }
+
+  // Personal KPIs
   const myProspects = prospects.filter(p => p.assigned_to === teamMember?.id)
-  const wonProspects = myProspects.filter(p => p.stage === 'won')
-  const noShowProspects = myProspects.filter(p => p.stage === 'noshow')
-  const lostProspects = myProspects.filter(p => p.stage === 'lost')
-  const totalRevenue = wonProspects.reduce((sum, p) => sum + (p.value || 0), 0)
-  const totalSales = wonProspects.length
-  const closedTotal = wonProspects.length + lostProspects.length + noShowProspects.length
-  const conversionRate = closedTotal > 0 ? (wonProspects.length / closedTotal) * 100 : 0
-  const noShowRate = closedTotal > 0 ? (noShowProspects.length / closedTotal) * 100 : 0
-  const commission = Math.round(totalRevenue * (kpiConfig.commission_rate / 100))
+  const personal = computeCloserKpis(myProspects)
+  const commission = Math.round(personal.revenue * (kpiConfig.commission_rate / 100))
+
+  // Member prospects
+  const memberProspects = useMemo(() => {
+    if (!selectedMemberId) return []
+    return prospects.filter(p => p.assigned_to === selectedMemberId)
+  }, [prospects, selectedMemberId])
+
+  const member = computeCloserKpis(memberProspects)
+  const memberCommission = Math.round(member.revenue * (kpiConfig.commission_rate / 100))
 
   // Org KPIs (all prospects)
-  const orgWon = prospects.filter(p => p.stage === 'won')
-  const orgNoShow = prospects.filter(p => p.stage === 'noshow')
-  const orgLost = prospects.filter(p => p.stage === 'lost')
-  const orgRevenue = orgWon.reduce((sum, p) => sum + (p.value || 0), 0)
-  const orgClosedTotal = orgWon.length + orgLost.length + orgNoShow.length
-  const orgConversion = orgClosedTotal > 0 ? (orgWon.length / orgClosedTotal) * 100 : 0
-  const orgNoShowRate = orgClosedTotal > 0 ? (orgNoShow.length / orgClosedTotal) * 100 : 0
-  const orgCommission = Math.round(orgRevenue * (kpiConfig.commission_rate / 100))
+  const org = computeCloserKpis(prospects)
+  const orgCommission = Math.round(org.revenue * (kpiConfig.commission_rate / 100))
 
   // Per-offer KPIs
   const offerProspects = useMemo(() => {
     if (!selectedOfferId) return []
-    return myProspects.filter(p => (p as any).offer_id === selectedOfferId || (p as any).formula_id === selectedOfferId)
-  }, [myProspects, selectedOfferId])
+    const base = isOwnerView ? prospects : myProspects
+    return base.filter(p => (p as any).offer_id === selectedOfferId || (p as any).formula_id === selectedOfferId)
+  }, [isOwnerView, myProspects, prospects, selectedOfferId])
 
-  const offerWon = offerProspects.filter(p => p.stage === 'won')
-  const offerNoShow = offerProspects.filter(p => p.stage === 'noshow')
-  const offerLost = offerProspects.filter(p => p.stage === 'lost')
-  const offerRevenue = offerWon.reduce((sum, p) => sum + (p.value || 0), 0)
-  const offerClosedTotal = offerWon.length + offerLost.length + offerNoShow.length
-  const offerConversion = offerClosedTotal > 0 ? (offerWon.length / offerClosedTotal) * 100 : 0
-  const offerNoShowRate = offerClosedTotal > 0 ? (offerNoShow.length / offerClosedTotal) * 100 : 0
-  const offerCommission = Math.round(offerRevenue * (kpiConfig.commission_rate / 100))
+  const offer = computeCloserKpis(offerProspects)
+  const offerCommission = Math.round(offer.revenue * (kpiConfig.commission_rate / 100))
 
   // Chart data: group prospects by month
   const chartData = useMemo(() => {
-    const source = activeTab === 'personal' ? myProspects : activeTab === 'org' ? prospects : offerProspects
+    const source = activeTab === 'personal' ? myProspects : activeTab === 'org' ? prospects : activeTab === 'member' ? memberProspects : offerProspects
     const monthMap: Record<string, { won: number; total: number; commission: number }> = {}
     source.forEach(p => {
       const date = new Date(p.created_at || Date.now())
@@ -140,27 +172,34 @@ export function CloserKPI() {
         closing: val.total > 0 ? Math.round((val.won / val.total) * 100) : 0,
         commission: val.commission,
       }))
-  }, [prospects, myProspects, offerProspects, activeTab, kpiConfig.commission_rate])
+  }, [prospects, myProspects, offerProspects, memberProspects, activeTab, kpiConfig.commission_rate])
 
   // Current tab values
   const getTabValues = () => {
     if (activeTab === 'org') {
       return {
-        revenue: orgRevenue, sales: orgWon.length, conversion: orgConversion,
-        commission: orgCommission, noShowRate: orgNoShowRate, lost: orgLost.length,
+        revenue: org.revenue, sales: org.won.length, conversion: org.conversionRate,
+        commission: orgCommission, noShowRate: org.noShowRate, lost: org.lost.length,
         leads: prospects.length, deals: prospects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
       }
     }
     if (activeTab === 'offer') {
       return {
-        revenue: offerRevenue, sales: offerWon.length, conversion: offerConversion,
-        commission: offerCommission, noShowRate: offerNoShowRate, lost: offerLost.length,
+        revenue: offer.revenue, sales: offer.won.length, conversion: offer.conversionRate,
+        commission: offerCommission, noShowRate: offer.noShowRate, lost: offer.lost.length,
         leads: offerProspects.length, deals: offerProspects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
       }
     }
+    if (activeTab === 'member') {
+      return {
+        revenue: member.revenue, sales: member.won.length, conversion: member.conversionRate,
+        commission: memberCommission, noShowRate: member.noShowRate, lost: member.lost.length,
+        leads: memberProspects.length, deals: memberProspects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
+      }
+    }
     return {
-      revenue: totalRevenue, sales: totalSales, conversion: conversionRate,
-      commission, noShowRate, lost: lostProspects.length,
+      revenue: personal.revenue, sales: personal.won.length, conversion: personal.conversionRate,
+      commission, noShowRate: personal.noShowRate, lost: personal.lost.length,
       leads: myProspects.length, deals: myProspects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
     }
   }
@@ -169,6 +208,19 @@ export function CloserKPI() {
   const avgCommission = v.sales > 0 ? Math.round(v.commission / v.sales) : 0
 
   const inputCls = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+
+  // Tabs definition
+  const tabs = isOwnerView
+    ? [
+        { key: 'org' as const, label: 'Organisation' },
+        { key: 'offer' as const, label: 'Par Offre' },
+        { key: 'member' as const, label: 'Membre' },
+      ]
+    : [
+        { key: 'personal' as const, label: 'Global (Personnel)' },
+        { key: 'org' as const, label: 'Organisation' },
+        { key: 'offer' as const, label: 'Par Offre' },
+      ]
 
   if (loading) {
     return (
@@ -187,25 +239,23 @@ export function CloserKPI() {
             <TrendingUp className="h-5 w-5 text-amber-700" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Performance</h1>
-            <p className="text-xs text-slate-500">Vos indicateurs de performance</p>
+            <h1 className="text-lg font-bold text-slate-900">Performance Closer</h1>
+            <p className="text-xs text-slate-500">{isOwnerView ? "Vue d'ensemble de l'équipe" : 'Vos indicateurs de performance'}</p>
           </div>
         </div>
-        <button
-          onClick={() => setIsConfigOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-        >
-          <Settings className="h-4 w-4" /> Configurer
-        </button>
+        {!isOwnerView && (
+          <button
+            onClick={() => setIsConfigOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            <Settings className="h-4 w-4" /> Configurer
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap">
-        {[
-          { key: 'personal' as const, label: 'Global (Personnel)' },
-          { key: 'org' as const, label: 'Organisation' },
-          { key: 'offer' as const, label: 'Par Offre' },
-        ].map(tab => (
+        {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
@@ -245,12 +295,30 @@ export function CloserKPI() {
         </div>
       )}
 
+      {activeTab === 'member' && (
+        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-amber-700">KPIs par membre (Closer)</p>
+            <select
+              value={selectedMemberId || ''}
+              onChange={(e) => setSelectedMemberId(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-amber-500 focus:outline-none"
+            >
+              {teamClosers.length === 0 && <option value="">Aucun closer</option>}
+              {teamClosers.map(c => (
+                <option key={c.id} value={c.id}>{c.first_name} {c.last_name} ({c.role})</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <KpiCard title="CA Genere" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
+        <KpiCard title="CA Généré" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title="Ventes Totales" value={v.sales} icon={ShoppingCart} color="blue" />
         <KpiCard title="Taux de Conversion" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" />
-        <KpiCard title="Mes Commissions" value={`${formatCurrency(v.commission)} €`} icon={Award} color="amber" highlight />
+        <KpiCard title={isOwnerView ? 'Commissions' : 'Mes Commissions'} value={`${formatCurrency(v.commission)} €`} icon={Award} color="amber" highlight />
         <KpiCard title="Taux de No Show" value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" />
         <KpiCard title="Deals Perdus" value={v.lost} icon={Ban} color="slate" />
       </div>
@@ -302,7 +370,7 @@ export function CloserKPI() {
 
       {/* Pipeline Summary */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5">
-        <h3 className="text-sm font-semibold text-slate-900 mb-4">Resume du Pipeline</h3>
+        <h3 className="text-sm font-semibold text-slate-900 mb-4">Résumé du Pipeline</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <SummaryItem label="Total Leads" value={v.leads} icon={Users} color="indigo" />
           <SummaryItem label="Deals en Cours" value={v.deals} icon={Briefcase} color="cyan" />
@@ -310,8 +378,8 @@ export function CloserKPI() {
         </div>
       </div>
 
-      {/* Config Modal */}
-      {isConfigOpen && (
+      {/* Config Modal (team members only) */}
+      {isConfigOpen && !isOwnerView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl bg-white border border-slate-200 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
@@ -331,7 +399,7 @@ export function CloserKPI() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Appels prevus / mois</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Appels prévus / mois</label>
                 <input
                   type="number"
                   value={kpiConfig.planned_calls}
@@ -371,7 +439,7 @@ export function CloserKPI() {
 
 const KpiCard = ({ title, value, icon: Icon, color, highlight }: any) => {
   const colors: any = {
-    emerald: { icon: 'bg-emerald-50 text-emerald-600', border: highlight ? '' : '' },
+    emerald: { icon: 'bg-emerald-50 text-emerald-600' },
     blue: { icon: 'bg-blue-50 text-blue-600' },
     purple: { icon: 'bg-purple-50 text-purple-600' },
     amber: { icon: 'bg-amber-50 text-amber-600' },

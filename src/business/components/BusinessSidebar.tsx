@@ -47,6 +47,8 @@ const ownerNavigation: NavItem[] = [
   { name: 'Factures', href: '/business/factures', icon: Receipt },
   { name: 'Rapport', href: '/business/report', icon: FileText },
   { name: 'KPI', href: '/business/kpi', icon: TrendingUp },
+  { name: 'KPI Setter', href: '/business/setter-kpi', icon: TrendingUp },
+  { name: 'KPI Closer', href: '/business/closer-kpi', icon: TrendingUp },
   { name: 'Équipe', href: '/business/team', icon: Users },
 ]
 
@@ -66,6 +68,8 @@ const getHeadOfSalesNavigation = (canManageCampaigns?: boolean): NavItem[] => {
     { name: 'Factures', href: '/business/factures', icon: Receipt },
     { name: 'Rapport', href: '/business/report', icon: FileText },
     { name: 'KPI', href: '/business/kpi', icon: TrendingUp },
+    { name: 'KPI Setter', href: '/business/setter-kpi', icon: TrendingUp },
+    { name: 'KPI Closer', href: '/business/closer-kpi', icon: TrendingUp },
     { name: 'Équipe', href: '/business/team', icon: Users },
   ]
   return nav
@@ -97,76 +101,6 @@ const getTeamMemberNavigation = (role?: string): NavItem[] => {
   ]
 }
 
-// Map page permission keys → sidebar hrefs
-const PAGE_KEY_TO_HREF: Record<string, string> = {
-  'dashboard': '/business/dashboard',
-  'crm': '/business/crm',
-  'pipeline': '/business/pipeline',
-  'campagnes': '/business/campagnes',
-  'acquisition': '/business/acquisition',
-  'objectifs': '/business/closer-objectifs',
-  'formules': '/business/formules',
-  'appels': '/business/appels',
-  'rendez-vous': '/business/rendez-vous',
-  'agenda': '/business/agenda',
-  'rappels': '/business/rappels',
-  'factures': '/business/factures',
-  'rapport': '/business/report',
-  'kpi': '/business/closer-kpi',
-  'equipe': '/business/team',
-}
-
-const PAGE_KEY_TO_ICON: Record<string, any> = {
-  'dashboard': LayoutDashboard,
-  'crm': GitBranch,
-  'pipeline': Target,
-  'campagnes': Megaphone,
-  'acquisition': BarChart3,
-  'objectifs': Target,
-  'formules': Package,
-  'appels': Headphones,
-  'rendez-vous': Calendar,
-  'agenda': Calendar,
-  'rappels': Bell,
-  'factures': Receipt,
-  'rapport': FileText,
-  'kpi': TrendingUp,
-  'equipe': Users,
-}
-
-const PAGE_KEY_TO_LABEL: Record<string, string> = {
-  'dashboard': 'Dashboard',
-  'crm': 'CRM',
-  'pipeline': 'Pipeline',
-  'campagnes': 'Campagnes',
-  'acquisition': 'Acquisition',
-  'objectifs': 'Objectifs',
-  'formules': 'Formules',
-  'appels': 'Appels',
-  'rendez-vous': 'Rendez-vous',
-  'agenda': 'Agenda',
-  'rappels': 'Rappels',
-  'factures': 'Factures',
-  'rapport': 'Rapport',
-  'kpi': 'KPI',
-  'equipe': 'Équipe',
-}
-
-function getCustomRoleNavigation(customPermissions: any): NavItem[] {
-  if (!customPermissions?.pages) return []
-  const nav: NavItem[] = []
-  for (const [key, perm] of Object.entries(customPermissions.pages) as [string, any][]) {
-    if (perm.access && PAGE_KEY_TO_HREF[key]) {
-      nav.push({
-        name: PAGE_KEY_TO_LABEL[key] || key,
-        href: PAGE_KEY_TO_HREF[key],
-        icon: PAGE_KEY_TO_ICON[key] || LayoutDashboard,
-      })
-    }
-  }
-  return nav
-}
-
 interface BusinessSidebarProps {
   isOpen?: boolean
   onClose?: () => void
@@ -180,17 +114,12 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
   const isAdmin = isTeamMember && teamMember?.role === 'Admin'
 
-  // Standard roles
-  const STANDARD_ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Admin', 'Head of Sales']
-  const isCustomRole = isTeamMember && teamMember?.role && !STANDARD_ROLES.includes(teamMember.role)
-
   const navigation = useMemo(() => {
     if (!isTeamMember) return ownerNavigation
-    if (isAdmin) return ownerNavigation // Admin = mêmes droits que Owner
+    if (isAdmin) return ownerNavigation
     if (isHeadOfSales) return getHeadOfSalesNavigation(!!teamMember?.can_manage_campaigns)
-    if (isCustomRole && teamMember?.custom_permissions) return getCustomRoleNavigation(teamMember.custom_permissions)
     return getTeamMemberNavigation(teamMember?.role)
-  }, [isTeamMember, isAdmin, isHeadOfSales, isCustomRole, teamMember?.role, teamMember?.can_manage_campaigns, teamMember?.custom_permissions])
+  }, [isTeamMember, isAdmin, isHeadOfSales, teamMember?.role, teamMember?.can_manage_campaigns])
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
