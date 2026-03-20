@@ -79,8 +79,7 @@ import { BusinessReminders } from './business/pages/BusinessReminders'
 import { BusinessAcquisition } from './business/pages/BusinessAcquisition'
 import { BusinessReport } from './business/pages/BusinessReport'
 import { BusinessPipeline } from './business/pages/BusinessPipeline'
-import { BusinessClosers } from './business/pages/BusinessClosers'
-import { BusinessSetters } from './business/pages/BusinessSetters'
+// BusinessClosers and BusinessSetters removed — merged into BusinessTeam
 import { BusinessOrganization } from './business/pages/BusinessOrganization'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
 import { CaptureForm } from './pages/CaptureForm'
@@ -274,9 +273,9 @@ function AuthenticatedApp() {
           <Route path="rendez-vous" element={<TeamOnboardingGuard><BusinessAppointments /></TeamOnboardingGuard>} />
           <Route path="rappels" element={<TeamOnboardingGuard><BusinessReminders /></TeamOnboardingGuard>} />
           <Route path="report" element={<OwnerOnlyWrapper><BusinessReport /></OwnerOnlyWrapper>} />
-          <Route path="team" element={<OwnerOnlyWrapper><BusinessTeam /></OwnerOnlyWrapper>} />
-          <Route path="closers" element={<OwnerOnlyWrapper><BusinessClosers /></OwnerOnlyWrapper>} />
-          <Route path="setters" element={<OwnerOnlyWrapper><BusinessSetters /></OwnerOnlyWrapper>} />
+          <Route path="team" element={<TeamOnboardingGuard><BusinessTeam /></TeamOnboardingGuard>} />
+          <Route path="closers" element={<Navigate to="/business/team" replace />} />
+          <Route path="setters" element={<Navigate to="/business/team" replace />} />
           <Route path="pipeline" element={<TeamOnboardingGuard><CloserPipeline /></TeamOnboardingGuard>} />
           <Route path="disponibilite" element={<TeamOnboardingGuard><CloserDisponibilite /></TeamOnboardingGuard>} />
           <Route path="closer-kpi" element={<TeamOnboardingGuard><CloserKPI /></TeamOnboardingGuard>} />

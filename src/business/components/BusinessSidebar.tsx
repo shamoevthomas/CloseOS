@@ -15,7 +15,6 @@ import {
   Bell,
   BarChart3,
   FileText,
-  UserCheck,
   Headphones,
   Target,
   Building2,
@@ -43,8 +42,6 @@ const ownerNavigation = [
   { name: 'Rapport', href: '/business/report', icon: FileText },
   { name: 'KPI', href: '/business/kpi', icon: TrendingUp },
   { name: 'Équipe', href: '/business/team', icon: Users },
-  { name: 'Closers', href: '/business/closers', icon: UserCheck },
-  { name: 'Setters', href: '/business/setters', icon: Headphones },
 ]
 
 const getHeadOfSalesNavigation = (canManageCampaigns?: boolean) => {
@@ -64,8 +61,6 @@ const getHeadOfSalesNavigation = (canManageCampaigns?: boolean) => {
     { name: 'Rapport', href: '/business/report', icon: FileText },
     { name: 'KPI', href: '/business/kpi', icon: TrendingUp },
     { name: 'Équipe', href: '/business/team', icon: Users },
-    { name: 'Closers', href: '/business/closers', icon: UserCheck },
-    { name: 'Setters', href: '/business/setters', icon: Headphones },
   ]
   return nav
 }
@@ -85,6 +80,7 @@ const getTeamMemberNavigation = (role?: string) => {
     { name: 'Agenda', href: '/business/agenda', icon: Calendar },
     { name: 'Factures', href: '/business/factures', icon: FileText },
     { name: 'Rappels', href: '/business/rappels', icon: Bell },
+    { name: 'Équipe', href: '/business/team', icon: Users },
   ]
 }
 
