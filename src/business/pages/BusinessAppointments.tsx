@@ -32,6 +32,8 @@ interface BookingLink {
   label: string
   duration: number
   link: string
+  slug: string
+  team_member_id: string | null
   created_at: string
 }
 
@@ -62,18 +64,18 @@ export function BusinessAppointments() {
   const [showCreateLink, setShowCreateLink] = useState(false)
   const [newLinkLabel, setNewLinkLabel] = useState('')
   const [newLinkDuration, setNewLinkDuration] = useState(30)
-  const [newLinkUrl, setNewLinkUrl] = useState('')
+  const [newLinkMemberId, setNewLinkMemberId] = useState<string>('')
   const [savingLink, setSavingLink] = useState(false)
 
-  // Fetch team members for owner filter
+  // Fetch team members for owner/HoS filter
   useEffect(() => {
-    if (isTeamMember || !user?.id) return
+    if (!isOwnerOrHoS || !effectiveUserId) return
     supabase
       .from('business_team_members')
       .select('id, first_name, last_name, role')
-      .eq('business_owner_id', user.id)
+      .eq('business_owner_id', effectiveUserId)
       .then(({ data }) => setTeamMembers(data || []))
-  }, [user?.id, isTeamMember])
+  }, [effectiveUserId, isOwnerOrHoS])
 
   // Fetch booking links
   useEffect(() => {
@@ -90,25 +92,28 @@ export function BusinessAppointments() {
         .from('business_booking_links')
         .select('*')
         .eq('business_owner_id', effectiveUserId)
-        .is('team_member_id', null)
         .order('created_at', { ascending: false })
         .then(({ data }) => setBookingLinks(data || []))
     }
   }, [showBookingSection, isSetter, isOwnerOrHoS, teamMember?.id, effectiveUserId])
 
   const handleCreateBookingLink = async () => {
-    if (!newLinkLabel.trim() || !newLinkUrl.trim()) return
+    if (!newLinkLabel.trim()) return
     const ownerId = isOwnerOrHoS ? effectiveUserId : ownerUserId
     if (!ownerId) return
     setSavingLink(true)
+    const slug = crypto.randomUUID().slice(0, 8)
+    const memberIdToUse = isSetter ? teamMember?.id : (newLinkMemberId || null)
+    const bookingUrl = `${window.location.origin}/book/${slug}`
     const { data, error } = await supabase
       .from('business_booking_links')
       .insert({
-        team_member_id: isSetter ? teamMember?.id : null,
+        team_member_id: memberIdToUse,
         business_owner_id: ownerId,
         label: newLinkLabel.trim(),
         duration: newLinkDuration,
-        link: newLinkUrl.trim(),
+        link: bookingUrl,
+        slug,
       })
       .select()
       .single()
@@ -118,7 +123,7 @@ export function BusinessAppointments() {
     setShowCreateLink(false)
     setNewLinkLabel('')
     setNewLinkDuration(30)
-    setNewLinkUrl('')
+    setNewLinkMemberId('')
     toast.success('Lien de booking créé')
   }
 
@@ -303,16 +308,22 @@ export function BusinessAppointments() {
                   <option value={90}>90 min</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">URL du lien (Calendly, Cal.com, etc.)</label>
-                <input
-                  type="url"
-                  value={newLinkUrl}
-                  onChange={e => setNewLinkUrl(e.target.value)}
-                  placeholder="https://calendly.com/..."
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
-                />
-              </div>
+              {isOwnerOrHoS && teamMembers.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Utiliser le calendrier de</label>
+                  <select
+                    value={newLinkMemberId}
+                    onChange={e => setNewLinkMemberId(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                  >
+                    <option value="">Aucun (gestion manuelle)</option>
+                    {teamMembers.map(m => (
+                      <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-slate-400 mt-1">Les créneaux seront basés sur les disponibilités de ce membre.</p>
+                </div>
+              )}
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setShowCreateLink(false)}
@@ -322,7 +333,7 @@ export function BusinessAppointments() {
                 </button>
                 <button
                   onClick={handleCreateBookingLink}
-                  disabled={savingLink || !newLinkLabel.trim() || !newLinkUrl.trim()}
+                  disabled={savingLink || !newLinkLabel.trim()}
                   className="flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700 disabled:opacity-50 transition-colors"
                 >
                   {savingLink ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
@@ -339,22 +350,29 @@ export function BusinessAppointments() {
             </p>
           ) : (
             <div className="space-y-2">
-              {bookingLinks.map(bl => (
+              {bookingLinks.map(bl => {
+                const bookingUrl = bl.slug ? `${window.location.origin}/book/${bl.slug}` : bl.link
+                const memberName = bl.team_member_id ? teamMembers.find(m => m.id === bl.team_member_id) : null
+                return (
                 <div key={bl.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-slate-900">{bl.label}</p>
-                    <p className="text-xs text-slate-400 truncate">{bl.link} · {bl.duration}min</p>
+                    <p className="text-xs text-slate-400 truncate">
+                      {bl.duration}min
+                      {memberName && ` · ${memberName.first_name} ${memberName.last_name}`}
+                      {!bl.team_member_id && isOwnerOrHoS && ' · Gestion manuelle'}
+                    </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0 ml-3">
                     <button
-                      onClick={() => handleCopyLink(bl.link)}
+                      onClick={() => handleCopyLink(bookingUrl)}
                       className="rounded-lg p-1.5 text-purple-600 hover:bg-purple-50 transition-colors"
                       title="Copier le lien"
                     >
                       <Copy className="h-4 w-4" />
                     </button>
                     <a
-                      href={bl.link}
+                      href={bookingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition-colors"
@@ -371,7 +389,8 @@ export function BusinessAppointments() {
                     </button>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

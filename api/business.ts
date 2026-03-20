@@ -1056,6 +1056,181 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true })
     }
 
+    // ─── Native CloseOS booking: fetch info + available slots ───
+    if (action === 'booking-info' && req.method === 'GET') {
+      const slug = req.query.slug as string
+      if (!slug) return res.status(400).json({ error: 'slug required' })
+
+      const { data: link, error: linkErr } = await supabase
+        .from('business_booking_links')
+        .select('*')
+        .eq('slug', slug)
+        .single()
+
+      if (linkErr || !link) return res.status(404).json({ error: 'Booking link not found' })
+
+      // Fetch business settings for branding
+      const { data: settings } = await supabase
+        .from('business_settings')
+        .select('company_name, logo_url')
+        .eq('user_id', link.business_owner_id)
+        .single()
+
+      // If team_member_id exists, compute available slots
+      if (link.team_member_id) {
+        const today = new Date().toISOString().split('T')[0]
+        const [slotsRes, absencesRes, appointmentsRes] = await Promise.all([
+          supabase.from('business_availability_slots').select('*').eq('team_member_id', link.team_member_id),
+          supabase.from('business_absences').select('start_date, end_date').eq('team_member_id', link.team_member_id).gte('end_date', today),
+          supabase.from('business_appointments').select('date, time, duration').eq('assigned_to', link.team_member_id).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed']),
+        ])
+
+        const weeklySlots = slotsRes.data || []
+        const absences = absencesRes.data || []
+        const existingAppointments = appointmentsRes.data || []
+        const duration = link.duration || 30
+        const now = new Date()
+        const availableSlots: { date: string; time: string }[] = []
+
+        for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
+          const date = new Date(now)
+          date.setDate(date.getDate() + dayOffset)
+          const jsDay = date.getDay()
+          const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1
+          const dateStr = date.toISOString().split('T')[0]
+
+          const isAbsent = absences.some((a: any) => dateStr >= a.start_date && dateStr <= a.end_date)
+          if (isAbsent) continue
+
+          const daySlots = weeklySlots.filter((s: any) => s.day_of_week === dayOfWeek)
+          if (daySlots.length === 0) continue
+
+          const dayAppointments = existingAppointments.filter((a: any) => a.date === dateStr)
+
+          for (const slot of daySlots) {
+            const [startH, startM] = (slot as any).start_time.split(':').map(Number)
+            const [endH, endM] = (slot as any).end_time.split(':').map(Number)
+            const startMinutes = startH * 60 + startM
+            const endMinutes = endH * 60 + endM
+
+            for (let mins = startMinutes; mins + duration <= endMinutes; mins += duration) {
+              const h = Math.floor(mins / 60)
+              const m = mins % 60
+              const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+
+              if (dayOffset === 0) {
+                const slotTime = new Date(date)
+                slotTime.setHours(h, m, 0, 0)
+                if (slotTime <= now) continue
+              }
+
+              const hasConflict = dayAppointments.some((appt: any) => {
+                const [aH, aM] = appt.time.split(':').map(Number)
+                const apptStart = aH * 60 + aM
+                const apptEnd = apptStart + (appt.duration || 30)
+                return mins < apptEnd && (mins + duration) > apptStart
+              })
+              if (hasConflict) continue
+
+              availableSlots.push({ date: dateStr, time: timeStr })
+            }
+          }
+        }
+
+        return res.status(200).json({
+          label: link.label,
+          duration: link.duration,
+          companyName: settings?.company_name || null,
+          logoUrl: settings?.logo_url || null,
+          slots: availableSlots,
+        })
+      }
+
+      // No team member (owner link) — free mode
+      return res.status(200).json({
+        label: link.label,
+        duration: link.duration,
+        companyName: settings?.company_name || null,
+        logoUrl: settings?.logo_url || null,
+        freeMode: true,
+      })
+    }
+
+    // ─── Native CloseOS booking: submit ───
+    if (action === 'booking-submit' && req.method === 'POST') {
+      const { slug, name, email, phone, date, time } = req.body
+      if (!slug || !name || !date || !time) return res.status(400).json({ error: 'slug, name, date, time required' })
+
+      const { data: link, error: linkErr } = await supabase
+        .from('business_booking_links')
+        .select('*')
+        .eq('slug', slug)
+        .single()
+
+      if (linkErr || !link) return res.status(404).json({ error: 'Booking link not found' })
+
+      // Re-validate slot availability if team_member_id exists
+      if (link.team_member_id) {
+        const { data: conflicts } = await supabase
+          .from('business_appointments')
+          .select('id, time, duration')
+          .eq('assigned_to', link.team_member_id)
+          .eq('date', date)
+          .in('status', ['upcoming', 'pending', 'confirmed'])
+
+        const [rH, rM] = time.split(':').map(Number)
+        const reqStart = rH * 60 + rM
+        const reqEnd = reqStart + (link.duration || 30)
+        const hasConflict = (conflicts || []).some((appt: any) => {
+          const [aH, aM] = appt.time.split(':').map(Number)
+          const apptStart = aH * 60 + aM
+          const apptEnd = apptStart + (appt.duration || 30)
+          return reqStart < apptEnd && reqEnd > apptStart
+        })
+        if (hasConflict) return res.status(409).json({ error: 'Ce créneau vient d\'être réservé. Veuillez en choisir un autre.' })
+      }
+
+      // Create prospect
+      const nameParts = name.trim().split(' ')
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ') || ''
+
+      const { data: prospect, error: prospErr } = await supabase
+        .from('business_prospects')
+        .insert({
+          user_id: link.business_owner_id,
+          contact: name,
+          firstName,
+          lastName,
+          email: email || '',
+          phone: phone || '',
+          stage: 'prospect',
+        })
+        .select()
+        .single()
+
+      if (prospErr) return res.status(500).json({ error: prospErr.message })
+
+      // Create appointment
+      const { data: appointment, error: apptErr } = await supabase
+        .from('business_appointments')
+        .insert({
+          user_id: link.business_owner_id,
+          prospect_id: prospect.id,
+          assigned_to: link.team_member_id || null,
+          date,
+          time,
+          duration: link.duration || 30,
+          status: 'pending',
+        })
+        .select()
+        .single()
+
+      if (apptErr) return res.status(500).json({ error: apptErr.message })
+
+      return res.status(200).json({ prospect, appointment })
+    }
+
     // ─── Public capture endpoint (no auth) ───
     if (action === 'capture-submit' && req.method === 'POST') {
       const { slug, name, email, phone, custom_data, date, time } = req.body
