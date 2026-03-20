@@ -858,6 +858,22 @@ const rolesData: RoleData[] = [
 const FeaturesByRole = () => {
   const [activeRole, setActiveRole] = useState<RoleKey>('owner');
   const currentRole = rolesData.find(r => r.id === activeRole)!;
+  const tabContainerRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<Map<RoleKey, HTMLButtonElement>>(new Map());
+  const [bubbleStyle, setBubbleStyle] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    const btn = tabRefs.current.get(activeRole);
+    const container = tabContainerRef.current;
+    if (btn && container) {
+      const containerRect = container.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      setBubbleStyle({
+        left: btnRect.left - containerRect.left,
+        width: btnRect.width,
+      });
+    }
+  }, [activeRole]);
 
   return (
     <section className="px-6 md:px-20 py-24 max-w-7xl mx-auto">
@@ -879,22 +895,44 @@ const FeaturesByRole = () => {
         </p>
       </motion.div>
 
-      {/* Role Tabs */}
-      <div className="flex flex-wrap justify-center gap-3 mb-12">
-        {rolesData.map((role) => (
-          <button
-            key={role.id}
-            onClick={() => setActiveRole(role.id)}
-            className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-bold transition-all duration-200 active:scale-[0.97] border ${
-              activeRole === role.id
-                ? 'bg-[#111111] text-white border-[#111111] shadow-lg'
-                : 'bg-white text-stone-500 border-stone-200 hover:text-[#111111] hover:border-stone-300'
-            }`}
+      {/* Role Tabs — Liquid Glass */}
+      <div className="flex justify-center mb-12">
+        <div
+          ref={tabContainerRef}
+          className="relative inline-flex rounded-2xl border border-stone-200/60 bg-white/60 backdrop-blur-md shadow-[0_0_9px_rgba(0,0,0,0.06),0_3px_12px_rgba(0,0,0,0.08)] p-1"
+        >
+          {rolesData.map((role) => (
+            <button
+              key={role.id}
+              ref={(el) => { if (el) tabRefs.current.set(role.id, el); }}
+              onClick={() => setActiveRole(role.id)}
+              className="relative z-10 flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-bold transition-colors duration-300 cursor-pointer select-none"
+              style={{ color: activeRole === role.id ? '#ffffff' : '#78716c' }}
+            >
+              {role.icon}
+              {role.label}
+            </button>
+          ))}
+
+          {/* Sliding liquid-glass bubble */}
+          <motion.div
+            className="absolute z-0 top-1 bottom-1 rounded-xl bg-[#111111] shadow-[inset_0_1px_0px_rgba(255,255,255,0.15),0_0_12px_rgba(0,0,0,0.2),0_4px_12px_rgba(0,0,0,0.15)]"
+            animate={{
+              left: bubbleStyle.left,
+              width: bubbleStyle.width,
+            }}
+            transition={{
+              type: 'spring',
+              stiffness: 400,
+              damping: 32,
+              mass: 0.8,
+            }}
           >
-            {role.icon}
-            {role.label}
-          </button>
-        ))}
+            {/* Glass gradient overlays */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/15 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-tl from-white/10 via-transparent to-transparent pointer-events-none" />
+          </motion.div>
+        </div>
       </div>
 
       {/* Role Content */}
