@@ -116,6 +116,7 @@ export function BusinessProspectView({
 
   // Formula & Campaign
   const [formula, setFormula] = useState<Formula | null>(null)
+  const [allFormulas, setAllFormulas] = useState<Formula[]>([])
   const [campaign, setCampaign] = useState<Campaign | null>(null)
 
   // Sync local on prop change
@@ -129,17 +130,24 @@ export function BusinessProspectView({
     setEditedPhone(p.phone)
   }, [prospect])
 
-  // Fetch linked formula
+  // Fetch all formulas
   useEffect(() => {
-    if (!user?.id || !prospect.formula_id) { setFormula(null); return }
-    fetch(`${API_URL}?action=formulas-list&user_id=${user.id}`)
+    const effectiveId = isTeamMember ? ownerUserId : user?.id
+    if (!effectiveId) return
+    fetch(`${API_URL}?action=formulas-list&user_id=${effectiveId}`)
       .then(r => r.json())
       .then(data => {
-        const f = (data.formulas || []).find((f: Formula) => f.id === prospect.formula_id)
-        setFormula(f || null)
+        const formulas = data.formulas || []
+        setAllFormulas(formulas)
+        if (prospect.formula_id) {
+          const f = formulas.find((f: Formula) => f.id === prospect.formula_id)
+          setFormula(f || null)
+        } else {
+          setFormula(null)
+        }
       })
-      .catch(() => setFormula(null))
-  }, [user?.id, prospect.formula_id])
+      .catch(() => { setAllFormulas([]); setFormula(null) })
+  }, [user?.id, ownerUserId, isTeamMember, prospect.formula_id])
 
   // Fetch linked campaign
   useEffect(() => {
@@ -439,36 +447,40 @@ export function BusinessProspectView({
                     )
                   })()}
 
-                  {/* Linked Formula */}
-                  {formula && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                        <Package className="h-4 w-4 text-amber-600" /> Formule associée
-                      </h3>
-                      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-semibold text-slate-900">{formula.name}</span>
-                          <span className="text-sm font-bold text-amber-700">{formula.price?.toFixed(2)} €</span>
-                        </div>
-                        {formula.description && <p className="text-xs text-slate-500 mb-2">{formula.description}</p>}
-                        {formula.resources && formula.resources.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {formula.resources.map((r, i) => (
-                              <a
-                                key={i}
-                                href={r.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 rounded-full bg-white border border-amber-200 px-2.5 py-1 text-xs text-amber-700 hover:bg-amber-100 transition-colors"
-                              >
-                                <ExternalLink className="h-3 w-3" /> {r.name || r.type}
-                              </a>
-                            ))}
-                          </div>
-                        )}
+                  {/* Offre / Formule */}
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-slate-500">Offre / Formule</label>
+                    <select
+                      value={(local as any).formula_id || ''}
+                      onChange={(e) => {
+                        const fId = e.target.value || null
+                        const selected = allFormulas.find(f => f.id === fId)
+                        handleUpdate({ formula_id: fId, value: selected?.price || 0 } as any)
+                        setFormula(selected || null)
+                      }}
+                      className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
+                    >
+                      <option value="">Aucune offre</option>
+                      {allFormulas.map(f => (
+                        <option key={f.id} value={f.id}>{f.name} — {f.price}€</option>
+                      ))}
+                    </select>
+                    {formula && formula.resources && formula.resources.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {formula.resources.map((r, i) => (
+                          <a
+                            key={i}
+                            href={r.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded-full bg-white border border-amber-200 px-2.5 py-1 text-xs text-amber-700 hover:bg-amber-100 transition-colors"
+                          >
+                            <ExternalLink className="h-3 w-3" /> {r.name || r.type}
+                          </a>
+                        ))}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {/* Linked Campaign */}
                   {campaign && (

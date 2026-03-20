@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   User,
   Search,
@@ -39,7 +39,7 @@ export function BusinessCRM() {
     hubspotConnected, pipedriveConnected,
     nextSyncSeconds,
   } = useBusinessProspects()
-  const { businessSettings } = useBusinessAuth()
+  const { businessSettings, user, isTeamMember, ownerUserId } = useBusinessAuth()
   const isReadOnly = false
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
@@ -53,7 +53,19 @@ export function BusinessCRM() {
   const [newEmail, setNewEmail] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newCompany, setNewCompany] = useState('')
+  const [newFormulaId, setNewFormulaId] = useState('')
   const [addLoading, setAddLoading] = useState(false)
+  const [formulas, setFormulas] = useState<{ id: string; name: string; price: number }[]>([])
+
+  // Fetch formulas for creation modal
+  const effectiveUserId = isTeamMember ? ownerUserId : user?.id
+  useEffect(() => {
+    if (!effectiveUserId) return
+    fetch(`/api/business?action=formulas-list&user_id=${effectiveUserId}`)
+      .then(r => r.json())
+      .then(data => { if (data.formulas) setFormulas(data.formulas) })
+      .catch(() => {})
+  }, [effectiveUserId])
 
   const filteredProspects = prospects.filter(p => {
     if (filterStage !== 'all' && p.stage !== filterStage) return false
@@ -78,6 +90,7 @@ export function BusinessCRM() {
   const handleAddProspect = async () => {
     if (!newContact) return
     setAddLoading(true)
+    const selectedFormula = formulas.find(f => f.id === newFormulaId)
     try {
       await addProspect({
         contact: newContact,
@@ -85,11 +98,13 @@ export function BusinessCRM() {
         phone: newPhone,
         company: newCompany,
         stage: 'prospect',
+        ...(newFormulaId ? { formula_id: newFormulaId, value: selectedFormula?.price || 0 } : {}),
       } as any)
       setNewContact('')
       setNewEmail('')
       setNewPhone('')
       setNewCompany('')
+      setNewFormulaId('')
       setIsAddModalOpen(false)
     } catch (err) {
       console.error(err)
@@ -409,6 +424,21 @@ export function BusinessCRM() {
                   placeholder="Acme Corp"
                 />
               </div>
+              {formulas.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Offre / Formule</label>
+                  <select
+                    value={newFormulaId}
+                    onChange={(e) => setNewFormulaId(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  >
+                    <option value="">Aucune offre</option>
+                    {formulas.map(f => (
+                      <option key={f.id} value={f.id}>{f.name} — {f.price}€</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="flex gap-3 mt-4">
                 <button
