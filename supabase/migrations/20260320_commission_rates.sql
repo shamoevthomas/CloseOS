@@ -1,26 +1,28 @@
--- Role-level commission rates per business
-CREATE TABLE IF NOT EXISTS business_role_commissions (
+-- Per-formula commission rates (role-level and member-level overrides)
+CREATE TABLE IF NOT EXISTS business_formula_commissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   business_owner_id uuid REFERENCES business_users(id) ON DELETE CASCADE,
-  role text NOT NULL,
+  formula_id uuid NOT NULL,
+  role text,
+  team_member_id uuid REFERENCES business_team_members(id) ON DELETE CASCADE,
   rate numeric NOT NULL DEFAULT 0,
   created_at timestamptz DEFAULT now(),
-  UNIQUE(business_owner_id, role)
+  UNIQUE(formula_id, role, team_member_id)
 );
 
-ALTER TABLE business_role_commissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE business_formula_commissions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Owners can manage role commissions"
-  ON business_role_commissions FOR ALL
+CREATE POLICY "Owners can manage formula commissions"
+  ON business_formula_commissions FOR ALL
   USING (auth.uid() = business_owner_id);
 
-CREATE POLICY "Team members can read role commissions"
-  ON business_role_commissions FOR SELECT
+CREATE POLICY "Team members can read formula commissions"
+  ON business_formula_commissions FOR SELECT
   USING (
     business_owner_id IN (
       SELECT business_owner_id FROM business_team_members WHERE user_id = auth.uid()
     )
   );
 
--- Per-member commission override (null = use role default)
+-- Per-member commission override column (kept for potential direct use)
 ALTER TABLE business_team_members ADD COLUMN IF NOT EXISTS commission_rate numeric;
