@@ -54,8 +54,10 @@ export function BusinessAppointments() {
   const [filterMember, setFilterMember] = useState<string>('all')
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
 
-  // Booking links (setter feature)
+  // Booking links (setter + owner/HoS)
   const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
+  const isOwnerOrHoS = !isTeamMember || teamMember?.role === 'Head of Sales'
+  const showBookingSection = isSetter || isOwnerOrHoS
   const [bookingLinks, setBookingLinks] = useState<BookingLink[]>([])
   const [showCreateLink, setShowCreateLink] = useState(false)
   const [newLinkLabel, setNewLinkLabel] = useState('')
@@ -73,25 +75,37 @@ export function BusinessAppointments() {
       .then(({ data }) => setTeamMembers(data || []))
   }, [user?.id, isTeamMember])
 
-  // Fetch booking links for setter
+  // Fetch booking links
   useEffect(() => {
-    if (!isSetter || !teamMember?.id) return
-    supabase
-      .from('business_booking_links')
-      .select('*')
-      .eq('team_member_id', teamMember.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => setBookingLinks(data || []))
-  }, [isSetter, teamMember?.id])
+    if (!showBookingSection) return
+    if (isSetter && teamMember?.id) {
+      supabase
+        .from('business_booking_links')
+        .select('*')
+        .eq('team_member_id', teamMember.id)
+        .order('created_at', { ascending: false })
+        .then(({ data }) => setBookingLinks(data || []))
+    } else if (isOwnerOrHoS && effectiveUserId) {
+      supabase
+        .from('business_booking_links')
+        .select('*')
+        .eq('business_owner_id', effectiveUserId)
+        .is('team_member_id', null)
+        .order('created_at', { ascending: false })
+        .then(({ data }) => setBookingLinks(data || []))
+    }
+  }, [showBookingSection, isSetter, isOwnerOrHoS, teamMember?.id, effectiveUserId])
 
   const handleCreateBookingLink = async () => {
-    if (!teamMember?.id || !ownerUserId || !newLinkLabel.trim() || !newLinkUrl.trim()) return
+    if (!newLinkLabel.trim() || !newLinkUrl.trim()) return
+    const ownerId = isOwnerOrHoS ? effectiveUserId : ownerUserId
+    if (!ownerId) return
     setSavingLink(true)
     const { data, error } = await supabase
       .from('business_booking_links')
       .insert({
-        team_member_id: teamMember.id,
-        business_owner_id: ownerUserId,
+        team_member_id: isSetter ? teamMember?.id : null,
+        business_owner_id: ownerId,
         label: newLinkLabel.trim(),
         duration: newLinkDuration,
         link: newLinkUrl.trim(),
@@ -246,8 +260,8 @@ export function BusinessAppointments() {
         </div>
       </div>
 
-      {/* Booking Links Section (Setter only) */}
-      {isSetter && (
+      {/* Booking Links Section */}
+      {showBookingSection && (
         <div className="rounded-xl border border-purple-200 bg-white p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
