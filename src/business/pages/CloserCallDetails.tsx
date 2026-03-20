@@ -74,6 +74,7 @@ export function CloserCallDetails() {
   const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const isSetterCloser = isTeamMember && teamMember?.role === 'Setter-Closer'
+  const isSetterCloserSelf = isSetterCloser && teamMember?.setter_scope === 'self'
   const showSetterOutcomes = isOwnerView || isSetterCloser
   const { prospects, updateProspect } = useBusinessProspects()
   const { createEvent: createGoogleEvent, isConnected: isGoogleConnected } = useBusinessGoogleCalendar()
@@ -322,7 +323,7 @@ export function CloserCallDetails() {
       if (!lostReason) return false
       if (lostReason === 'Autre' && !lostReasonOther.trim()) return false
     }
-    if (selectedOutcome === 'qualified' && (!selectedCloser || !selectedSlot)) return false
+    if (selectedOutcome === 'qualified' && !isSetterCloserSelf && (!selectedCloser || !selectedSlot)) return false
     if (selectedOutcome === 'booklater' && (!reminderTitle || !reminderDate || !reminderTime)) return false
     return true
   }
@@ -350,10 +351,14 @@ export function CloserCallDetails() {
         const reason = lostReason === 'Autre' ? lostReasonOther : lostReason
         technicalSummary += `\n- Motif: ${reason}`
       }
-      if (selectedOutcome === 'qualified' && selectedCloser && selectedSlot) {
-        technicalSummary += `\n- Closer assigné: ${selectedCloser.first_name} ${selectedCloser.last_name}`
-        technicalSummary += `\n- RDV: ${selectedSlot.dateLabel} à ${selectedSlot.timeLabel}`
-        technicalSummary += `\n- Mode: ${assignmentMode === 'suivant' ? 'Tournante' : assignmentMode === 'hasard' ? 'Hasard' : 'Manuel'}`
+      if (selectedOutcome === 'qualified') {
+        if (isSetterCloserSelf) {
+          technicalSummary += `\n- Auto-assigné (Setter-Closer)`
+        } else if (selectedCloser && selectedSlot) {
+          technicalSummary += `\n- Closer assigné: ${selectedCloser.first_name} ${selectedCloser.last_name}`
+          technicalSummary += `\n- RDV: ${selectedSlot.dateLabel} à ${selectedSlot.timeLabel}`
+          technicalSummary += `\n- Mode: ${assignmentMode === 'suivant' ? 'Tournante' : assignmentMode === 'hasard' ? 'Hasard' : 'Manuel'}`
+        }
       }
       if (selectedOutcome === 'booklater') {
         technicalSummary += `\n- À booker plus tard — Rappel: ${reminderDate} à ${reminderTime}`
@@ -374,8 +379,12 @@ export function CloserCallDetails() {
           updates.payment_type = paymentType
           updates.installments = paymentType === 'installments' ? installmentsCount : null
         }
-        if (selectedOutcome === 'qualified' && selectedCloser) {
-          updates.assigned_to = selectedCloser.id
+        if (selectedOutcome === 'qualified') {
+          if (isSetterCloserSelf && teamMember?.id) {
+            updates.assigned_to = teamMember.id
+          } else if (selectedCloser) {
+            updates.assigned_to = selectedCloser.id
+          }
         }
 
         // Save call notes as JSONB
@@ -797,8 +806,17 @@ export function CloserCallDetails() {
               </div>
             )}
 
+            {/* Qualified: auto-assign for setter-closer self */}
+            {selectedOutcome === 'qualified' && isSetterCloserSelf && (
+              <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-4">
+                <p className="text-sm text-purple-700 text-center">
+                  Le prospect sera automatiquement assigné à vous en tant que Closer.
+                </p>
+              </div>
+            )}
+
             {/* Qualified: Closer assignment + scheduling (setter outcome) */}
-            {selectedOutcome === 'qualified' && showSetterOutcomes && (
+            {selectedOutcome === 'qualified' && showSetterOutcomes && !isSetterCloserSelf && (
               <div className="space-y-5">
                 {/* Step 1: Closer Assignment */}
                 <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-6">
