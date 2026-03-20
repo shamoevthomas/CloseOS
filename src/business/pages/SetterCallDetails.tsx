@@ -13,6 +13,7 @@ import toast from 'react-hot-toast'
 
 const setterOutcomes = [
   { id: 'qualified', label: 'Qualifié', description: 'Prospect qualifié', icon: CheckCircle2, color: 'emerald', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600' },
+  { id: 'booklater', label: 'À booker plus tard', description: 'Qualifié, rappel', icon: Clock, color: 'orange', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600' },
   { id: 'unqualified', label: 'Non Qualifié', description: 'Prospect non qualifié', icon: XCircle, color: 'red', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-600' },
   { id: 'noanswer', label: 'Pas de Réponse', description: 'Aucune réponse', icon: XCircle, color: 'slate', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600' },
 ]
@@ -62,7 +63,7 @@ export function SetterCallDetails() {
   // Closer assignment
   const [closers, setClosers] = useState<Closer[]>([])
   const [selectedCloser, setSelectedCloser] = useState<Closer | null>(null)
-  const [assignmentMode, setAssignmentMode] = useState<'suivant' | 'hasard' | null>(null)
+  const [assignmentMode, setAssignmentMode] = useState<'suivant' | 'hasard' | 'manual' | null>(null)
 
   // Scheduling
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
@@ -157,6 +158,18 @@ export function SetterCallDetails() {
       loadAvailableSlots(closer.id)
     } else {
       toast.error('Aucun closer disponible')
+    }
+  }
+
+  // Handle manual closer selection
+  const handleManualSelect = (closerId: string) => {
+    const closer = closers.find(c => c.id === closerId) || null
+    if (closer) {
+      setAssignmentMode('manual')
+      setSelectedCloser(closer)
+      setSelectedSlot(null)
+      setAvailableSlots([])
+      loadAvailableSlots(closer.id)
     }
   }
 
@@ -265,6 +278,7 @@ export function SetterCallDetails() {
   const isFormValid = () => {
     if (!selectedOutcome) return false
     if (selectedOutcome === 'qualified' && (!selectedCloser || !selectedSlot)) return false
+    if (selectedOutcome === 'booklater' && (!reminderTitle || !reminderDate || !reminderTime)) return false
     return true
   }
 
@@ -273,7 +287,7 @@ export function SetterCallDetails() {
     setSaving(true)
     try {
       const stageMap: Record<string, string> = {
-        qualified: 'qualified', unqualified: 'unqualified', noanswer: 'noanswer'
+        qualified: 'qualified', booklater: 'qualified', unqualified: 'unqualified', noanswer: 'noanswer'
       }
 
       // Build technical summary
@@ -281,7 +295,10 @@ export function SetterCallDetails() {
       if (selectedOutcome === 'qualified' && selectedCloser && selectedSlot) {
         technicalSummary += `\n- Closer assigné: ${selectedCloser.first_name} ${selectedCloser.last_name}`
         technicalSummary += `\n- RDV: ${selectedSlot.dateLabel} à ${selectedSlot.timeLabel}`
-        technicalSummary += `\n- Mode: ${assignmentMode === 'suivant' ? 'Tournante' : 'Hasard'}`
+        technicalSummary += `\n- Mode: ${assignmentMode === 'suivant' ? 'Tournante' : assignmentMode === 'hasard' ? 'Hasard' : 'Manuel'}`
+      }
+      if (selectedOutcome === 'booklater') {
+        technicalSummary += `\n- À booker plus tard — Rappel: ${reminderDate} à ${reminderTime}`
       }
 
       // Save notes to call history
@@ -311,6 +328,20 @@ export function SetterCallDetails() {
         }]
 
         await updateProspect(prospect.id, updates)
+      }
+
+      // If booklater: create reminder (no closer assignment)
+      if (selectedOutcome === 'booklater' && effectiveOwnerId) {
+        const reminderDateTime = `${reminderDate}T${reminderTime}:00`
+        await supabase.from('business_reminders').insert([{
+          user_id: effectiveOwnerId,
+          team_member_id: teamMember?.id,
+          call_id: call.id,
+          title: reminderTitle,
+          description: reminderDescription || null,
+          reminder_date: reminderDateTime,
+          is_done: false,
+        }])
       }
 
       // If qualified: create appointment and update round-robin
@@ -465,7 +496,7 @@ export function SetterCallDetails() {
               <label className="mb-4 block text-sm font-bold text-slate-900">
                 Résultat de l'appel <span className="text-red-500">*</span>
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {setterOutcomes.map(outcome => {
                   const Icon = outcome.icon
                   const isSelected = selectedOutcome === outcome.id
@@ -479,6 +510,9 @@ export function SetterCallDetails() {
                           setSelectedSlot(null)
                           setAssignmentMode(null)
                           setAvailableSlots([])
+                        }
+                        if (outcome.id === 'booklater') {
+                          setActiveTab('reminder')
                         }
                       }}
                       className={cn(
@@ -527,6 +561,21 @@ export function SetterCallDetails() {
                     </div>
                   ) : (
                     <>
+                      {/* Manual closer dropdown */}
+                      <div className="mb-4">
+                        <label className="mb-2 block text-xs font-medium text-purple-600">Sélectionner manuellement</label>
+                        <select
+                          value={assignmentMode === 'manual' ? selectedCloser?.id || '' : ''}
+                          onChange={(e) => e.target.value && handleManualSelect(e.target.value)}
+                          className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                        >
+                          <option value="">— Choisir un closer —</option>
+                          {closers.map(c => (
+                            <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
+                          ))}
+                        </select>
+                      </div>
+
                       <div className="flex gap-3 mb-4">
                         <button
                           onClick={() => handleAssign('suivant')}
@@ -564,7 +613,7 @@ export function SetterCallDetails() {
                             <p className="text-xs text-slate-500">{selectedCloser.email}</p>
                           </div>
                           <div className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
-                            {assignmentMode === 'suivant' ? 'Tournante' : 'Hasard'}
+                            {assignmentMode === 'suivant' ? 'Tournante' : assignmentMode === 'hasard' ? 'Hasard' : 'Manuel'}
                           </div>
                         </div>
                       )}

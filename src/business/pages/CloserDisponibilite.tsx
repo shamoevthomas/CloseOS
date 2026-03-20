@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 import {
-  Calendar, Clock, Plus, Trash2, Loader2, X, CalendarOff,
+  Calendar, Clock, Plus, Trash2, Loader2, X, CalendarOff, Copy, ChevronDown,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -34,6 +34,9 @@ export function CloserDisponibilite() {
   const [addingDay, setAddingDay] = useState<number | null>(null)
   const [newStart, setNewStart] = useState('09:00')
   const [newEnd, setNewEnd] = useState('12:00')
+
+  // Copy slots
+  const [copyingDay, setCopyingDay] = useState<number | null>(null)
 
   // Add absence form
   const [showAbsenceForm, setShowAbsenceForm] = useState(false)
@@ -96,6 +99,24 @@ export function CloserDisponibilite() {
     const { error } = await supabase.from('business_availability_slots').delete().eq('id', id)
     if (error) { toast.error('Erreur'); return }
     setSlots(prev => prev.filter(s => s.id !== id))
+  }
+
+  const handleCopySlots = async (fromDay: number, toDay: number) => {
+    if (!teamMember?.id || !ownerUserId) return
+    const sourceSlots = slots.filter(s => s.day_of_week === fromDay)
+    if (sourceSlots.length === 0) { toast.error('Aucun créneau à copier'); return }
+    for (const slot of sourceSlots) {
+      await supabase.from('business_availability_slots').insert([{
+        team_member_id: teamMember.id,
+        business_owner_id: ownerUserId,
+        day_of_week: toDay,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+      }])
+    }
+    toast.success(`Créneaux copiés vers ${DAYS[toDay]}`)
+    setCopyingDay(null)
+    fetchData()
   }
 
   const handleAddAbsence = async () => {
@@ -169,6 +190,35 @@ export function CloserDisponibilite() {
                       </div>
                     ))}
                     {daySlots.length === 0 && <span className="text-xs text-slate-400 italic">Aucun créneau</span>}
+                    {daySlots.length > 0 && (
+                      <div className="relative inline-block">
+                        <button
+                          onClick={() => setCopyingDay(copyingDay === idx ? null : idx)}
+                          className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500 hover:text-amber-600 hover:border-amber-300 transition-colors"
+                        >
+                          <Copy className="h-3 w-3" /> Copier <ChevronDown className="h-3 w-3" />
+                        </button>
+                        {copyingDay === idx && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setCopyingDay(null)} />
+                            <div className="absolute top-full left-0 mt-1 z-20 rounded-xl border border-amber-200 bg-white shadow-xl py-1 min-w-[140px]">
+                              {DAYS.map((targetDay, targetIdx) => {
+                                if (targetIdx === idx) return null
+                                return (
+                                  <button
+                                    key={targetIdx}
+                                    onClick={() => handleCopySlots(idx, targetIdx)}
+                                    className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                                  >
+                                    {targetDay}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                   {addingDay === idx ? (
                     <div className="flex items-center gap-2">

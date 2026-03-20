@@ -18,11 +18,17 @@ const objectionReasons = [
   'Autre'
 ]
 
-const outcomes = [
+const closerOutcomes = [
   { id: 'won', label: 'Vente', description: 'Deal gagné', icon: CheckCircle2, color: 'emerald', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600' },
-  { id: 'followup', label: 'À recontacter', description: 'Follow-up nécessaire', icon: Clock, color: 'orange', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600' },
+  { id: 'followup', label: 'Follow up', description: 'Follow-up nécessaire', icon: Clock, color: 'orange', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600' },
   { id: 'lost', label: 'Perdu', description: 'Deal perdu', icon: XCircle, color: 'red', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-600' },
   { id: 'noshow', label: 'No Show', description: 'Pas de réponse', icon: XCircle, color: 'slate', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600' },
+]
+
+const setterOutcomesForOwner = [
+  { id: 'qualified', label: 'Qualifié', description: 'Prospect qualifié', icon: CheckCircle2, color: 'purple', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-600' },
+  { id: 'unqualified', label: 'Non Qualifié', description: 'Prospect non qualifié', icon: XCircle, color: 'rose', bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-600' },
+  { id: 'noanswer', label: 'Pas de Réponse', description: 'Aucune réponse', icon: XCircle, color: 'zinc', bg: 'bg-zinc-50', border: 'border-zinc-200', text: 'text-zinc-600' },
 ]
 
 interface Formula {
@@ -36,7 +42,8 @@ export function CloserCallDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, teamMember, ownerUserId } = useBusinessAuth()
+  const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
+  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales'
   const { prospects, updateProspect } = useBusinessProspects()
 
   const [call, setCall] = useState<any>(null)
@@ -155,7 +162,8 @@ export function CloserCallDetails() {
     setSaving(true)
     try {
       const stageMap: Record<string, string> = {
-        won: 'won', lost: 'lost', followup: 'qualified', noshow: 'noshow'
+        won: 'won', lost: 'lost', followup: 'qualified', noshow: 'noshow',
+        qualified: 'qualified', unqualified: 'unqualified', noanswer: 'noanswer',
       }
 
       // Build technical summary
@@ -339,10 +347,10 @@ export function CloserCallDetails() {
             {/* Outcome Selection */}
             <div className="rounded-xl border border-slate-200 bg-white p-6">
               <label className="mb-4 block text-sm font-bold text-slate-900">
-                Résultat de l'appel <span className="text-red-500">*</span>
+                Résultat de l'appel — Closer <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {outcomes.map(outcome => {
+                {closerOutcomes.map(outcome => {
                   const Icon = outcome.icon
                   const isSelected = selectedOutcome === outcome.id
                   return (
@@ -377,6 +385,50 @@ export function CloserCallDetails() {
                   )
                 })}
               </div>
+
+              {isOwnerView && (
+                <>
+                  <label className="mt-6 mb-4 block text-sm font-bold text-slate-900">
+                    Résultat de l'appel — Setter
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {setterOutcomesForOwner.map(outcome => {
+                      const Icon = outcome.icon
+                      const isSelected = selectedOutcome === outcome.id
+                      return (
+                        <button
+                          key={outcome.id}
+                          onClick={() => setSelectedOutcome(outcome.id)}
+                          className={cn(
+                            'group relative flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all',
+                            isSelected
+                              ? `${outcome.bg} ${outcome.border} ring-2 ring-amber-300`
+                              : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                          )}
+                        >
+                          <div className={cn(
+                            'flex h-12 w-12 items-center justify-center rounded-full transition-all',
+                            isSelected ? outcome.bg : 'bg-slate-100 group-hover:bg-slate-200'
+                          )}>
+                            <Icon className={cn('h-6 w-6 transition-colors', isSelected ? outcome.text : 'text-slate-400 group-hover:text-slate-500')} />
+                          </div>
+                          <div className="text-center">
+                            <p className={cn('text-sm font-semibold', isSelected ? 'text-slate-900' : 'text-slate-600')}>{outcome.label}</p>
+                            <p className="mt-0.5 text-xs text-slate-500">{outcome.description}</p>
+                          </div>
+                          {isSelected && (
+                            <div className="absolute -top-2 -right-2">
+                              <div className={cn('rounded-full p-1 border-2', outcome.bg, outcome.border)}>
+                                <CheckCircle2 className={cn('h-4 w-4', outcome.text)} />
+                              </div>
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Won: Payment Terms & Commission */}
