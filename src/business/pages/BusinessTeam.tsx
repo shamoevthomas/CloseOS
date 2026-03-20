@@ -236,7 +236,7 @@ export function BusinessTeam() {
   const { prospects } = useBusinessProspects()
 
   const [members, setMembers] = useState<TeamMember[]>([])
-  const [ownerInfo, setOwnerInfo] = useState<{ full_name: string; email: string; phone: string | null; avatar_url: string | null; created_at: string } | null>(null)
+  const [ownerInfo, setOwnerInfo] = useState<{ full_name: string; email: string; phone: string | null; avatar_url: string | null; created_at: string; timezone: string | null } | null>(null)
   const [absences, setAbsences] = useState<Absence[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -254,7 +254,7 @@ export function BusinessTeam() {
 
       const [membersRes, ownerRes, absencesRes, slotsRes, apptsRes, logsRes] = await Promise.all([
         supabase.from('business_team_members').select('*').eq('business_owner_id', effectiveUserId).order('joined_at', { ascending: true }),
-        supabase.from('business_users').select('full_name, email, phone, avatar_url, created_at').eq('id', effectiveUserId).single(),
+        supabase.from('business_users').select('full_name, email, phone, avatar_url, created_at, timezone').eq('id', effectiveUserId).single(),
         supabase.from('business_absences').select('*').eq('business_owner_id', effectiveUserId),
         supabase.from('business_availability_slots').select('*').eq('business_owner_id', effectiveUserId).order('day_of_week').order('start_time'),
         supabase.from('business_appointments').select('id, date, time, duration, status, assigned_to, prospect_id, created_at').eq('user_id', effectiveUserId),
@@ -394,6 +394,7 @@ export function BusinessTeam() {
           joined_at: ownerInfo.created_at || new Date().toISOString(),
           avatar_url: ownerInfo.avatar_url || null,
           date_of_birth: null,
+          timezone: ownerInfo.timezone || null,
           _isOwner: true,
         }
         return (
@@ -415,6 +416,12 @@ export function BusinessTeam() {
                     <span className={cn('inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full', ownerColor.bg, ownerColor.text)}>
                       Owner
                     </span>
+                    {ownerInfo.timezone && (
+                      <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
+                        <Globe className="h-3 w-3" />
+                        <span>{getTimezoneLabel(ownerInfo.timezone)}</span>
+                      </div>
+                    )}
                     <ContactInfo member={ownerAsMember} />
                   </div>
                 </div>
