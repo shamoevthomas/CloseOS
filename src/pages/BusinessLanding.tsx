@@ -234,35 +234,7 @@ export const BusinessLanding: React.FC = () => {
             </div>
 
             {/* Capture Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
-              <div className="lg:col-span-5 flex flex-col justify-center">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6 w-fit">
-                  <Megaphone className="size-3.5 text-stone-600" />
-                  <span className="text-xs font-bold text-stone-600 uppercase tracking-widest">Capture de Leads</span>
-                </div>
-                <h3 className="text-3xl md:text-4xl font-bold text-[#111111] tracking-tight mb-4">Captez vos prospects automatiquement</h3>
-                <p className="text-stone-500 text-lg font-medium leading-relaxed mb-6">
-                  Créez des pages de capture, intégrez un formulaire en embed ou lancez un popup directement sur votre site. Chaque lead est automatiquement injecté dans votre CRM avec le bon setter/closer assigné.
-                </p>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-stone-700 font-medium">
-                    <CheckCircle className="size-5 text-emerald-500 flex-shrink-0" />
-                    <span>Page de capture hébergée & personnalisable</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-stone-700 font-medium">
-                    <CheckCircle className="size-5 text-emerald-500 flex-shrink-0" />
-                    <span>Embed iframe intégrable sur n'importe quel site</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-stone-700 font-medium">
-                    <CheckCircle className="size-5 text-emerald-500 flex-shrink-0" />
-                    <span>Popup déclenchable au clic ou en automatique</span>
-                  </div>
-                </div>
-              </div>
-              <div className="lg:col-span-7">
-                <CapturePreview />
-              </div>
-            </div>
+            <CaptureSection />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-16 border-t border-stone-200">
               <CRMKPI index={0} title="KPI CRM • Pipeline" value="452,000€" description="Valeur totale du pipeline en cours" />
@@ -578,136 +550,248 @@ const CRMFeature = ({ icon, title, description, extra, index }: any) => (
   </motion.div>
 );
 
-const CapturePreview = () => {
+const CaptureSection = () => {
   const [captureTab, setCaptureTab] = useState<'page' | 'embed' | 'popup'>('page');
+
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.98 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.8 }}
-      className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
-    >
-      {/* Tab bar */}
-      <div className="flex border-b border-stone-100 bg-stone-50">
-        {([
-          { key: 'page' as const, label: 'Page' },
-          { key: 'embed' as const, label: 'Embed' },
-          { key: 'popup' as const, label: 'Popup' },
-        ]).map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setCaptureTab(tab.key)}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
-              captureTab === tab.key
-                ? 'text-[#111111] border-b-2 border-[#111111]'
-                : 'text-stone-400 hover:text-stone-600'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
+      {/* Left — Text */}
+      <div className="lg:col-span-5 flex flex-col justify-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6 w-fit">
+          <Megaphone className="size-3.5 text-stone-600" />
+          <span className="text-xs font-bold text-stone-600 uppercase tracking-widest">Capture de Leads</span>
+        </div>
+        <h3 className="text-3xl md:text-4xl font-bold text-[#111111] tracking-tight mb-4">Captez vos prospects automatiquement</h3>
+        <p className="text-stone-500 text-lg font-medium leading-relaxed mb-6">
+          Créez des pages de capture, intégrez un formulaire en embed ou lancez un popup directement sur votre site. Chaque lead est automatiquement injecté dans votre CRM avec le bon setter/closer assigné.
+        </p>
+        <div className="space-y-3">
+          <div className="flex items-start gap-3 text-stone-700 font-medium">
+            <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+            <span>100% personnalisable : couleur de fond, police, titre, sous-titre et description</span>
+          </div>
+          <div className="flex items-start gap-3 text-stone-700 font-medium">
+            <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+            <span>Embed iframe intégrable sur n'importe quel site</span>
+          </div>
+          <div className="flex items-start gap-3 text-stone-700 font-medium">
+            <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+            <span>Popup déclenchable au clic ou en automatique</span>
+          </div>
+          {captureTab === 'page' && (
+            <div className="flex items-start gap-3 text-stone-700 font-medium">
+              <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+              <span>Ajoutez une vidéo de présentation avec un lien de redirection</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Preview content */}
-      <div className="p-6 md:p-8">
-        {captureTab === 'page' && (
-          <div className="space-y-5">
-            {/* Mock browser bar */}
-            <div className="bg-stone-100 rounded-xl p-3 flex items-center gap-3">
-              <div className="flex gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-              </div>
-              <div className="flex-1 bg-white rounded-lg px-3 py-1.5 text-xs text-stone-400 font-mono">
-                closeos.fr/capture/mastermind-2026
-              </div>
-            </div>
-            {/* Mock capture page */}
-            <div className="bg-gradient-to-br from-[#111111] to-[#1a1a2e] rounded-2xl p-8 text-center space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mx-auto">
-                <Megaphone className="size-6 text-white" />
-              </div>
-              <h4 className="text-white text-xl font-bold">Réservez votre appel stratégique</h4>
-              <p className="text-stone-400 text-sm font-medium">Découvrez comment scaler votre business en 30 minutes</p>
-              <div className="space-y-3 max-w-xs mx-auto">
-                <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-left text-sm text-stone-400">Votre prénom</div>
-                <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-left text-sm text-stone-400">votre@email.com</div>
-                <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-left text-sm text-stone-400">+33 6 00 00 00 00</div>
-                <div className="bg-white text-[#111111] rounded-xl px-4 py-3 text-sm font-bold text-center">Réserver mon créneau</div>
-              </div>
-            </div>
+      {/* Right — Preview */}
+      <div className="lg:col-span-7">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
+        >
+          {/* Tab bar */}
+          <div className="flex border-b border-stone-100 bg-stone-50">
+            {([
+              { key: 'page' as const, label: 'Page' },
+              { key: 'embed' as const, label: 'Embed' },
+              { key: 'popup' as const, label: 'Popup' },
+            ]).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setCaptureTab(tab.key)}
+                className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
+                  captureTab === tab.key
+                    ? 'text-[#111111] border-b-2 border-[#111111]'
+                    : 'text-stone-400 hover:text-stone-600'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-        )}
 
-        {captureTab === 'embed' && (
-          <div className="space-y-5">
-            {/* Code snippet */}
-            <div className="bg-[#111111] rounded-xl p-5 font-mono text-xs leading-relaxed overflow-x-auto">
-              <span className="text-stone-500">{'<!-- Embed CloseOS -->'}</span>
-              <br />
-              <span className="text-sky-400">{'<iframe'}</span>
-              <br />
-              <span className="text-stone-400 ml-4">{'src='}</span>
-              <span className="text-emerald-400">{'"https://closeos.fr/embed/abc123"'}</span>
-              <br />
-              <span className="text-stone-400 ml-4">{'width='}</span>
-              <span className="text-emerald-400">{'"100%"'}</span>
-              <span className="text-stone-400">{' height='}</span>
-              <span className="text-emerald-400">{'"600"'}</span>
-              <br />
-              <span className="text-sky-400">{'/>'}</span>
-            </div>
-            {/* Mock embedded result */}
-            <div className="border-2 border-dashed border-stone-200 rounded-2xl p-6 text-center space-y-3">
-              <div className="bg-stone-100 rounded-xl p-6 space-y-3">
-                <h4 className="text-[#111111] font-bold">Formulaire intégré à votre site</h4>
-                <p className="text-stone-400 text-sm">Le formulaire s'adapte au design de votre page</p>
-                <div className="flex gap-2 max-w-sm mx-auto">
-                  <div className="flex-1 bg-white border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400 text-left">Email</div>
-                  <div className="bg-[#111111] text-white rounded-lg px-4 py-2 text-xs font-bold">Envoyer</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {captureTab === 'popup' && (
-          <div className="relative">
-            {/* Mock website behind */}
-            <div className="bg-stone-50 rounded-2xl p-6 space-y-3 opacity-40">
-              <div className="h-4 bg-stone-200 rounded w-3/4" />
-              <div className="h-3 bg-stone-200 rounded w-full" />
-              <div className="h-3 bg-stone-200 rounded w-5/6" />
-              <div className="h-20 bg-stone-200 rounded-xl w-full mt-4" />
-              <div className="h-3 bg-stone-200 rounded w-2/3" />
-            </div>
-            {/* Popup overlay */}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px] rounded-2xl">
-              <div className="bg-white rounded-2xl shadow-2xl p-6 w-[280px] space-y-4 border border-stone-200">
-                <div className="flex justify-between items-start">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff2f2f] to-[#8a43e1] flex items-center justify-center">
-                    <Zap className="size-5 text-white" />
+          {/* Preview content */}
+          <div className="p-5 md:p-6">
+            {captureTab === 'page' && (
+              <div className="space-y-4">
+                {/* Browser bar */}
+                <div className="bg-stone-100 rounded-xl p-3 flex items-center gap-3">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                   </div>
-                  <div className="w-6 h-6 rounded-full bg-stone-100 flex items-center justify-center">
-                    <X className="size-3 text-stone-400" />
+                  <div className="flex-1 bg-white rounded-lg px-3 py-1.5 text-xs text-stone-400 font-mono">
+                    closeos.fr/capture/mastermind-2026
                   </div>
                 </div>
-                <div>
-                  <h4 className="text-[#111111] font-bold text-base">Dernières places !</h4>
-                  <p className="text-stone-400 text-xs mt-1">Inscrivez-vous avant la clôture</p>
-                </div>
-                <div className="space-y-2">
-                  <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400">votre@email.com</div>
-                  <div className="bg-[#111111] text-white rounded-lg px-3 py-2 text-xs font-bold text-center">Je m'inscris</div>
+                {/* Capture page — two columns: form left, agenda right */}
+                <div className="bg-gradient-to-br from-[#111111] to-[#1a1a2e] rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Left — Registration form */}
+                  <div className="space-y-3">
+                    <h4 className="text-white text-lg font-bold leading-tight">Réservez votre appel stratégique</h4>
+                    <p className="text-stone-400 text-xs font-medium">Remplissez vos informations pour accéder au calendrier</p>
+                    <div className="space-y-2">
+                      <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-xs text-stone-400">Votre prénom</div>
+                      <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-xs text-stone-400">votre@email.com</div>
+                      <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-xs text-stone-400">+33 6 00 00 00 00</div>
+                    </div>
+                    <div className="bg-white text-[#111111] rounded-lg px-4 py-2.5 text-xs font-bold text-center">Continuer</div>
+                  </div>
+                  {/* Right — Blurred agenda */}
+                  <div className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10 p-4">
+                    <div className="absolute inset-0 backdrop-blur-md bg-white/5 z-10 flex items-center justify-center">
+                      <div className="text-center px-4">
+                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-2">
+                          <Calendar className="size-5 text-white/60" />
+                        </div>
+                        <p className="text-white/70 text-xs font-bold">D'abord remplir les informations</p>
+                      </div>
+                    </div>
+                    {/* Fake calendar grid behind blur */}
+                    <div className="opacity-30 space-y-2">
+                      <div className="flex gap-1">
+                        {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'].map(d => (
+                          <div key={d} className="flex-1 text-center text-[8px] text-white/50 font-bold">{d}</div>
+                        ))}
+                      </div>
+                      {[0, 1, 2].map(row => (
+                        <div key={row} className="flex gap-1">
+                          {[0, 1, 2, 3, 4].map(col => (
+                            <div key={col} className={`flex-1 h-6 rounded ${col === 2 && row === 1 ? 'bg-emerald-500/40' : 'bg-white/10'}`} />
+                          ))}
+                        </div>
+                      ))}
+                      <div className="space-y-1 mt-2">
+                        {['09:00', '09:30', '10:00', '10:30'].map(t => (
+                          <div key={t} className="bg-white/10 rounded px-2 py-1 text-[8px] text-white/40">{t}</div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {captureTab === 'embed' && (
+              <div className="space-y-4">
+                {/* Browser bar — CloseOS Sales site */}
+                <div className="bg-stone-100 rounded-xl p-3 flex items-center gap-3">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <div className="flex-1 bg-white rounded-lg px-3 py-1.5 text-xs text-stone-400 font-mono">
+                    closeos.fr/sales
+                  </div>
+                </div>
+                {/* Fake CloseOS Sales page with embedded form */}
+                <div className="bg-[#020617] rounded-2xl overflow-hidden">
+                  {/* Fake nav */}
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
+                    <img src="/logo Sales.png" alt="CloseOS Sales" className="h-6 object-contain" />
+                    <div className="flex gap-4">
+                      <div className="h-2 w-12 bg-white/20 rounded" />
+                      <div className="h-2 w-12 bg-white/20 rounded" />
+                      <div className="h-2 w-10 bg-white/20 rounded" />
+                    </div>
+                  </div>
+                  {/* Page content */}
+                  <div className="p-5 space-y-4">
+                    {/* Hero skeleton */}
+                    <div className="text-center space-y-2 py-3">
+                      <div className="h-4 bg-white/10 rounded w-3/4 mx-auto" />
+                      <div className="h-3 bg-white/10 rounded w-1/2 mx-auto" />
+                    </div>
+                    {/* Embedded capture form */}
+                    <div className="border-2 border-dashed border-white/20 rounded-xl p-1">
+                      <div className="bg-gradient-to-br from-[#111111] to-[#1a1a2e] rounded-lg p-5 space-y-3 text-center">
+                        <h4 className="text-white text-sm font-bold">Rejoignez le Mastermind</h4>
+                        <p className="text-stone-400 text-[10px]">Réservez votre appel découverte</p>
+                        <div className="space-y-2 max-w-[200px] mx-auto">
+                          <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-[10px] text-stone-400 text-left">Prénom</div>
+                          <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-[10px] text-stone-400 text-left">Email</div>
+                          <div className="bg-white text-[#111111] rounded-lg px-3 py-2 text-[10px] font-bold">Réserver</div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* More content skeleton */}
+                    <div className="space-y-2 pt-2">
+                      <div className="h-2.5 bg-white/10 rounded w-full" />
+                      <div className="h-2.5 bg-white/10 rounded w-5/6" />
+                      <div className="h-2.5 bg-white/10 rounded w-2/3" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {captureTab === 'popup' && (
+              <div className="relative">
+                {/* Bigger fake website */}
+                <div className="bg-stone-50 rounded-2xl p-6 space-y-4 opacity-40">
+                  {/* Fake nav */}
+                  <div className="flex items-center justify-between">
+                    <div className="h-4 w-24 bg-stone-300 rounded" />
+                    <div className="flex gap-3">
+                      <div className="h-3 w-14 bg-stone-200 rounded" />
+                      <div className="h-3 w-14 bg-stone-200 rounded" />
+                      <div className="h-3 w-14 bg-stone-200 rounded" />
+                    </div>
+                  </div>
+                  {/* Hero */}
+                  <div className="text-center space-y-2 py-4">
+                    <div className="h-5 bg-stone-300 rounded w-2/3 mx-auto" />
+                    <div className="h-3 bg-stone-200 rounded w-1/2 mx-auto" />
+                  </div>
+                  {/* Content blocks */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="h-16 bg-stone-200 rounded-xl" />
+                    <div className="h-16 bg-stone-200 rounded-xl" />
+                    <div className="h-16 bg-stone-200 rounded-xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-3 bg-stone-200 rounded w-full" />
+                    <div className="h-3 bg-stone-200 rounded w-5/6" />
+                    <div className="h-3 bg-stone-200 rounded w-4/6" />
+                  </div>
+                  <div className="h-20 bg-stone-200 rounded-xl" />
+                </div>
+                {/* Popup overlay */}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px] rounded-2xl">
+                  <div className="bg-white rounded-2xl shadow-2xl p-6 w-[280px] space-y-4 border border-stone-200">
+                    <div className="flex justify-between items-start">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff2f2f] to-[#8a43e1] flex items-center justify-center">
+                        <Zap className="size-5 text-white" />
+                      </div>
+                      <div className="w-6 h-6 rounded-full bg-stone-100 flex items-center justify-center">
+                        <X className="size-3 text-stone-400" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[#111111] font-bold text-base">Dernières places !</h4>
+                      <p className="text-stone-400 text-xs mt-1">Inscrivez-vous avant la clôture</p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400">votre@email.com</div>
+                      <div className="bg-[#111111] text-white rounded-lg px-3 py-2 text-xs font-bold text-center">Je m'inscris</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </motion.div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
