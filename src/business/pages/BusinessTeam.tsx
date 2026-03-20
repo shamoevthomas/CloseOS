@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
-  Plus, Users, User, Circle, Loader2, Trash2, ArrowLeft,
+  Plus, Users, User, Circle, Loader2, Trash2, ArrowLeft, Phone,
   Calendar, Clock, BarChart3, GitBranch, CalendarDays, Mail,
   AlertCircle, DollarSign, ShoppingCart, Target, UserX, Ban,
-  Save, CreditCard, History, LogIn, LogOut,
+  Save, CreditCard, History, LogIn, LogOut, Pencil, Check, X,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
@@ -20,12 +20,14 @@ interface TeamMember {
   first_name: string
   last_name: string
   email: string
+  phone?: string | null
   is_online: boolean
   last_heartbeat_at: string | null
   joined_at: string
   avatar_url: string | null
   date_of_birth: string | null
   pay_day?: number | null
+  _isOwner?: boolean
 }
 
 interface Absence {
@@ -142,6 +144,89 @@ function Avatar({ member, size = 'md' }: { member: TeamMember; size?: 'sm' | 'md
   )
 }
 
+function ContactInfo({ member }: { member: TeamMember }) {
+  const { user, isTeamMember, teamMember } = useBusinessAuth()
+  const [editing, setEditing] = useState(false)
+  const [phone, setPhone] = useState(member.phone || '')
+  const [saving, setSaving] = useState(false)
+
+  const isOwnCard = member._isOwner
+    ? user?.id === member.user_id
+    : (isTeamMember ? teamMember?.id === member.id : user?.id === member.user_id)
+
+  const cleanPhone = (member.phone || '').replace(/[^0-9+]/g, '')
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    setSaving(true)
+    try {
+      if (member._isOwner) {
+        await supabase.from('business_users').update({ phone }).eq('id', member.user_id)
+      } else {
+        await supabase.from('business_team_members').update({ phone }).eq('id', member.id)
+      }
+      member.phone = phone
+      toast.success('Numéro mis à jour')
+      setEditing(false)
+    } catch {
+      toast.error('Erreur')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="mt-2 pt-1.5 border-t border-slate-100 space-y-1" onClick={e => e.stopPropagation()}>
+      <div className="flex items-center gap-1.5 text-xs text-slate-500">
+        <Mail className="h-3 w-3 shrink-0" />
+        <span className="truncate">{member.email}</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-xs text-slate-500">
+        <Phone className="h-3 w-3 shrink-0" />
+        {editing ? (
+          <div className="flex items-center gap-1 flex-1">
+            <input
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="+33612345678"
+              className="flex-1 min-w-0 rounded border border-slate-200 px-1.5 py-0.5 text-xs focus:border-amber-400 focus:outline-none"
+              onClick={e => e.stopPropagation()}
+            />
+            <button onClick={handleSave} disabled={saving} className="text-emerald-600 hover:text-emerald-700">
+              <Check className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={e => { e.stopPropagation(); setEditing(false); setPhone(member.phone || '') }} className="text-slate-400 hover:text-slate-600">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 flex-1 min-w-0">
+            {member.phone ? (
+              <a
+                href={`https://wa.me/${cleanPhone}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-600 hover:underline truncate"
+                onClick={e => e.stopPropagation()}
+              >
+                {member.phone}
+              </a>
+            ) : (
+              <span className="text-slate-400 italic">Non renseigné</span>
+            )}
+            {isOwnCard && (
+              <button onClick={e => { e.stopPropagation(); setEditing(true) }} className="text-slate-400 hover:text-amber-600 ml-auto shrink-0">
+                <Pencil className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function BusinessTeam() {
   const { user, ownerUserId, isTeamMember, teamMember, businessProfile } = useBusinessAuth()
   const effectiveUserId = ownerUserId || user?.id
@@ -149,7 +234,7 @@ export function BusinessTeam() {
   const { prospects } = useBusinessProspects()
 
   const [members, setMembers] = useState<TeamMember[]>([])
-  const [ownerInfo, setOwnerInfo] = useState<{ full_name: string; email: string; avatar_url: string | null; created_at: string } | null>(null)
+  const [ownerInfo, setOwnerInfo] = useState<{ full_name: string; email: string; phone: string | null; avatar_url: string | null; created_at: string } | null>(null)
   const [absences, setAbsences] = useState<Absence[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -167,7 +252,7 @@ export function BusinessTeam() {
 
       const [membersRes, ownerRes, absencesRes, slotsRes, apptsRes, logsRes] = await Promise.all([
         supabase.from('business_team_members').select('*').eq('business_owner_id', effectiveUserId).order('joined_at', { ascending: true }),
-        supabase.from('business_users').select('full_name, email, avatar_url, created_at').eq('id', effectiveUserId).single(),
+        supabase.from('business_users').select('full_name, email, phone, avatar_url, created_at').eq('id', effectiveUserId).single(),
         supabase.from('business_absences').select('*').eq('business_owner_id', effectiveUserId),
         supabase.from('business_availability_slots').select('*').eq('business_owner_id', effectiveUserId).order('day_of_week').order('start_time'),
         supabase.from('business_appointments').select('id, date, time, duration, status, assigned_to, prospect_id, created_at').eq('user_id', effectiveUserId),
@@ -301,11 +386,13 @@ export function BusinessTeam() {
           first_name: nameParts[0] || 'Owner',
           last_name: nameParts.slice(1).join(' ') || '',
           email: ownerInfo.email || '',
+          phone: ownerInfo.phone || null,
           is_online: true,
           last_heartbeat_at: null,
           joined_at: ownerInfo.created_at || new Date().toISOString(),
           avatar_url: ownerInfo.avatar_url || null,
           date_of_birth: null,
+          _isOwner: true,
         }
         return (
           <div className={cn("rounded-xl border bg-white", ownerColor.border)}>
@@ -326,7 +413,7 @@ export function BusinessTeam() {
                     <span className={cn('inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full', ownerColor.bg, ownerColor.text)}>
                       Owner
                     </span>
-                    <p className="mt-1.5 text-xs text-slate-500 truncate">{ownerInfo.email}</p>
+                    <ContactInfo member={ownerAsMember} />
                   </div>
                 </div>
               </div>
@@ -400,6 +487,7 @@ export function BusinessTeam() {
                                 <span>{isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}</span>
                               </div>
                             </div>
+                            <ContactInfo member={member} />
                             {memberAbsCount > 0 && (
                               <div className="mt-2 pt-1.5 border-t border-slate-100 text-xs text-amber-600 font-medium">
                                 {memberAbsCount} absence{memberAbsCount > 1 ? 's' : ''}
@@ -555,6 +643,16 @@ function IndividualView({
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-slate-400" />
                 {member.email}
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-slate-400" />
+                {member.phone ? (
+                  <a href={`https://wa.me/${(member.phone || '').replace(/[^0-9+]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">
+                    {member.phone}
+                  </a>
+                ) : (
+                  <span className="text-slate-400 italic">Téléphone non renseigné</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-slate-400" />
