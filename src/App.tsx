@@ -70,7 +70,7 @@ import { BusinessDashboard } from './business/pages/BusinessDashboard'
 import { BusinessCRM } from './business/pages/BusinessCRM'
 import { BusinessTeam } from './business/pages/BusinessTeam'
 import { BusinessInvitation } from './business/pages/BusinessInvitation'
-import { BusinessKPI } from './business/pages/BusinessKPI'
+// BusinessKPI retiré — utiliser SetterKPI et CloserKPI
 import { BusinessCampaigns } from './business/pages/BusinessCampaigns'
 import { BusinessFormules } from './business/pages/BusinessFormules'
 import { BusinessObjectives } from './business/pages/BusinessObjectives'
@@ -138,7 +138,7 @@ function BusinessCRMRouter() {
 
 function CallDetailsRouter() {
   const { teamMember } = useBusinessAuth()
-  if (teamMember?.role?.toLowerCase() === 'setter') return <SetterCallDetails />
+  if (teamMember?.role === 'Setter') return <SetterCallDetails />
   return <CloserCallDetails />
 }
 
@@ -267,7 +267,7 @@ function AuthenticatedApp() {
           <Route path="dashboard" element={<TeamOnboardingGuard><BusinessDashboard /></TeamOnboardingGuard>} />
           <Route path="crm" element={<TeamOnboardingGuard><BusinessCRMRouter /></TeamOnboardingGuard>} />
           <Route path="pipeline-owner" element={<OwnerOnlyWrapper><BusinessPipeline /></OwnerOnlyWrapper>} />
-          <Route path="kpi" element={<OwnerOnlyWrapper><BusinessKPI /></OwnerOnlyWrapper>} />
+          {/* KPI classique retiré — utiliser setter-kpi et closer-kpi */}
           <Route path="campagnes" element={<CampaignGuard><BusinessCampaigns /></CampaignGuard>} />
           <Route path="acquisition" element={<OwnerOnlyWrapper><BusinessAcquisition /></OwnerOnlyWrapper>} />
           <Route path="objectifs" element={<TeamOnboardingGuard><BusinessObjectives /></TeamOnboardingGuard>} />
