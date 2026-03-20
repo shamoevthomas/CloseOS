@@ -67,13 +67,20 @@ const getHeadOfSalesNavigation = (canManageCampaigns?: boolean) => {
 
 const getTeamMemberNavigation = (role?: string) => {
   const isSetter = role === 'Setter' || role === 'Setter-Closer'
+  const isSetterCloser = role === 'Setter-Closer'
   return [
     { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
     { name: 'CRM', href: '/business/crm', icon: GitBranch },
     { name: 'Pipeline', href: '/business/pipeline', icon: Target },
     { name: 'Objectifs', href: '/business/closer-objectifs', icon: Target },
     { name: 'Disponibilité', href: '/business/disponibilite', icon: Calendar },
-    { name: 'KPI', href: isSetter ? '/business/setter-kpi' : '/business/closer-kpi', icon: TrendingUp },
+    ...(isSetterCloser
+      ? [
+          { name: 'KPI Setter', href: '/business/setter-kpi', icon: TrendingUp },
+          { name: 'KPI Closer', href: '/business/closer-kpi', icon: TrendingUp },
+        ]
+      : [{ name: 'KPI', href: isSetter ? '/business/setter-kpi' : '/business/closer-kpi', icon: TrendingUp }]
+    ),
     { name: 'Formules', href: '/business/formules', icon: Package },
     { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
     { name: 'Appels', href: '/business/appels', icon: Headphones },

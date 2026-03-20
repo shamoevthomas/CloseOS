@@ -64,8 +64,9 @@ export function BusinessAppointments() {
   const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
   const isOwnerOrHoS = !isTeamMember || teamMember?.role === 'Head of Sales'
   const isCloserOnly = isTeamMember && teamMember?.role === 'Closer'
+  const isSetterCloserSelf = isTeamMember && teamMember?.role === 'Setter-Closer' && teamMember?.setter_scope === 'self'
   const showBookingSection = isSetter || isOwnerOrHoS
-  const canBookForOthers = !isCloserOnly // everyone except pure closers
+  const canBookForOthers = !isCloserOnly && !isSetterCloserSelf // closers and setter-closer(self) can't book for others
   const [bookingLinks, setBookingLinks] = useState<BookingLink[]>([])
   const [showCreateLink, setShowCreateLink] = useState(false)
   const [newLinkLabel, setNewLinkLabel] = useState('')
@@ -126,7 +127,7 @@ export function BusinessAppointments() {
     if (!ownerId) return
     setSavingLink(true)
     const slug = crypto.randomUUID().slice(0, 8)
-    const memberIdToUse = isSetter ? teamMember?.id : (newLinkMemberId || null)
+    const memberIdToUse = (isSetter && !canBookForOthers) ? teamMember?.id : (newLinkMemberId || (isSetter ? teamMember?.id : null))
     const bookingUrl = `${window.location.origin}/book/${slug}`
     const { data, error } = await supabase
       .from('business_booking_links')
@@ -553,7 +554,7 @@ export function BusinessAppointments() {
                   <option value={90}>90 min</option>
                 </select>
               </div>
-              {isOwnerOrHoS && (
+              {(isOwnerOrHoS || (isSetter && canBookForOthers)) && (
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Pour qui ?</label>
                   <select

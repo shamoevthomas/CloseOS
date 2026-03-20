@@ -62,9 +62,10 @@ export function BusinessProspectView({
   const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
   const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string }[]>([])
 
-  // Setters with role Setter or Setter-Closer can assign closers
+  // Setters with role Setter or Setter-Closer can assign closers (unless setter_scope is 'self')
   const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
-  const canAssign = !isTeamMember || isSetter
+  const isSetterCloserSelf = isTeamMember && teamMember?.role === 'Setter-Closer' && teamMember?.setter_scope === 'self'
+  const canAssign = !isTeamMember || (isSetter && !isSetterCloserSelf)
 
   // Fetch team members + owner for assignment
   useEffect(() => {

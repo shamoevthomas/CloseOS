@@ -17,6 +17,7 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [canManageCampaigns, setCanManageCampaigns] = useState(false);
+  const [setterScope, setSetterScope] = useState<'self' | 'all'>('self');
 
   if (!isOpen) return null;
 
@@ -38,6 +39,7 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
           inviter_id: user.id,
           role,
           can_manage_campaigns: role === 'Head of Sales' ? canManageCampaigns : false,
+          setter_scope: role === 'Setter-Closer' ? setterScope : null,
         }),
       });
 
@@ -71,6 +73,7 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
     setCustomRole('');
     setCopied(false);
     setCanManageCampaigns(false);
+    setSetterScope('self');
     onClose();
   };
 
@@ -151,6 +154,42 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
                     />
                   </button>
                 </div>
+              </div>
+            )}
+
+            {selectedRole === 'Setter-Closer' && (
+              <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+                <p className="text-sm font-medium text-slate-900 mb-3">Mode de setting</p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSetterScope('self')}
+                    className={`flex-1 rounded-lg border py-2.5 px-3 text-sm font-medium transition-all ${
+                      setterScope === 'self'
+                        ? 'border-indigo-500 bg-indigo-100 text-indigo-700'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Set pour lui-même
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSetterScope('all')}
+                    className={`flex-1 rounded-lg border py-2.5 px-3 text-sm font-medium transition-all ${
+                      setterScope === 'all'
+                        ? 'border-indigo-500 bg-indigo-100 text-indigo-700'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Set pour tout le monde
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  {setterScope === 'self'
+                    ? "Ne peut booker que pour lui-même et ne peut pas assigner de prospects à d'autres closers."
+                    : "Peut booker des RDV pour les autres membres et assigner des prospects aux closers."
+                  }
+                </p>
               </div>
             )}
 
