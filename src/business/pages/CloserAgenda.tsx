@@ -130,10 +130,18 @@ const API_URL = '/api/business'
 
 /* ─── Component ───────────────────────────────────── */
 
+interface TeamMemberOption {
+  id: string
+  first_name: string
+  last_name: string
+  role: string
+}
+
 export function CloserAgenda() {
-  const { user, teamMember, ownerUserId } = useBusinessAuth()
+  const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
   const { googleEvents, isConnected, login, isLoading: gLoading } = useBusinessGoogleCalendar()
   const effectiveUserId = ownerUserId || user?.id
+  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales'
 
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<ViewMode>('week')
@@ -144,9 +152,23 @@ export function CloserAgenda() {
   const [loading, setLoading] = useState(true)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
 
+  // Owner: team member selector
+  const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([])
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('all')
+
   const dayScrollRef = useRef<HTMLDivElement>(null)
   const weekScrollRef = useRef<HTMLDivElement>(null)
   const dateInputRef = useRef<HTMLInputElement>(null)
+
+  // Fetch team members for owner view
+  useEffect(() => {
+    if (!isOwnerView || !effectiveUserId) return
+    supabase
+      .from('business_team_members')
+      .select('id, first_name, last_name, role')
+      .eq('business_owner_id', effectiveUserId)
+      .then(({ data }) => { if (data) setTeamMembers(data) })
+  }, [isOwnerView, effectiveUserId])
 
   // Fetch data
   const fetchAppointments = useCallback(async () => {
@@ -155,10 +177,19 @@ export function CloserAgenda() {
       const res = await fetch(`${API_URL}?action=appointments-list&user_id=${effectiveUserId}`)
       const data = await res.json()
       if (data.appointments) {
-        setAppointments((data.appointments as Appointment[]).filter(a => a.assigned_to === teamMember?.id))
+        if (isOwnerView) {
+          // Owner sees all or filtered by selected member
+          setAppointments(
+            selectedMemberId === 'all'
+              ? (data.appointments as Appointment[])
+              : (data.appointments as Appointment[]).filter(a => a.assigned_to === selectedMemberId)
+          )
+        } else {
+          setAppointments((data.appointments as Appointment[]).filter(a => a.assigned_to === teamMember?.id))
+        }
       }
     } catch (err) { console.error('Error fetching appointments:', err) }
-  }, [effectiveUserId, teamMember?.id])
+  }, [effectiveUserId, teamMember?.id, isOwnerView, selectedMemberId])
 
   const fetchReminders = useCallback(async () => {
     if (!user?.id) return
@@ -227,8 +258,9 @@ export function CloserAgenda() {
       }
     }
 
-    // Google events
-    for (const ge of googleEvents) {
+    // Google events — only show own Google calendar, not when viewing a specific team member
+    const showGoogleEvents = !isOwnerView || selectedMemberId === 'all'
+    for (const ge of (showGoogleEvents ? googleEvents : [])) {
       if (!ge.start || ge.allDay) continue
       const start = ge.start instanceof Date ? ge.start : new Date(ge.start)
       if (!isSameDay(start, date)) continue
@@ -250,7 +282,7 @@ export function CloserAgenda() {
     }
 
     return events
-  }, [appointments, reminders, googleEvents])
+  }, [appointments, reminders, googleEvents, isOwnerView, selectedMemberId])
 
   const getAllDayGoogleEvents = useCallback((date: Date) => {
     return googleEvents.filter(e => {
@@ -560,6 +592,22 @@ export function CloserAgenda() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Owner: team member filter */}
+          {isOwnerView && teamMembers.length > 0 && (
+            <select
+              value={selectedMemberId}
+              onChange={e => setSelectedMemberId(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              <option value="all">Tous les membres</option>
+              {teamMembers.map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.first_name} {m.last_name} ({m.role})
+                </option>
+              ))}
+            </select>
+          )}
+
           {/* View toggle */}
           <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1">
             {(['day', 'week', 'month'] as ViewMode[]).map(v => (
