@@ -264,7 +264,7 @@ export const BusinessLanding: React.FC = () => {
             <div className="space-y-4">
               <FAQItem
                 question="A qui est destiné cet outil ?"
-                answer={<p>Il est destiné à toute personne qui gère une ou des équipes de closing : <strong>infopreneurs</strong>, <strong>Agences</strong>, <strong>Head of Sales</strong>...</p>}
+                answer={<p>Il est destiné à toute personne qui vend en ligne : <strong>infopreneurs</strong>, <strong>agences</strong>, <strong>Head of Sales</strong>, mais aussi les <strong>solopreneurs</strong> et ceux qui lancent des <strong>Challenges</strong>. Quand on parle d'équipe, on ne parle pas forcément d'une grosse structure — même un closer seul ou un duo setter/closer peut tirer parti de l'outil.</p>}
               />
               <FAQItem
                 question="CloseOS Business est-il compatible avec mes outils CRM actuels ?"
