@@ -154,7 +154,7 @@ export function CloserAgenda() {
 
   // Owner: team member selector
   const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([])
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('all')
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('perso')
 
   const dayScrollRef = useRef<HTMLDivElement>(null)
   const weekScrollRef = useRef<HTMLDivElement>(null)
@@ -178,12 +178,13 @@ export function CloserAgenda() {
       const data = await res.json()
       if (data.appointments) {
         if (isOwnerView) {
-          // Owner sees all or filtered by selected member
-          setAppointments(
-            selectedMemberId === 'all'
-              ? (data.appointments as Appointment[])
-              : (data.appointments as Appointment[]).filter(a => a.assigned_to === selectedMemberId)
-          )
+          if (selectedMemberId === 'perso') {
+            setAppointments([]) // Personal agenda: only Google + reminders, no team appointments
+          } else if (selectedMemberId === 'all') {
+            setAppointments(data.appointments as Appointment[])
+          } else {
+            setAppointments((data.appointments as Appointment[]).filter(a => a.assigned_to === selectedMemberId))
+          }
         } else {
           setAppointments((data.appointments as Appointment[]).filter(a => a.assigned_to === teamMember?.id))
         }
@@ -259,7 +260,7 @@ export function CloserAgenda() {
     }
 
     // Google events — only show own Google calendar, not when viewing a specific team member
-    const showGoogleEvents = !isOwnerView || selectedMemberId === 'all'
+    const showGoogleEvents = !isOwnerView || selectedMemberId === 'perso' || selectedMemberId === 'all'
     for (const ge of (showGoogleEvents ? googleEvents : [])) {
       if (!ge.start || ge.allDay) continue
       const start = ge.start instanceof Date ? ge.start : new Date(ge.start)
@@ -599,6 +600,7 @@ export function CloserAgenda() {
               onChange={e => setSelectedMemberId(e.target.value)}
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
+              <option value="perso">Mon agenda</option>
               <option value="all">Tous les membres</option>
               {teamMembers.map(m => (
                 <option key={m.id} value={m.id}>
