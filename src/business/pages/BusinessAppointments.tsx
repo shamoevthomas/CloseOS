@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
-  ChevronDown, User, Mail, Megaphone, Users, Link2, Copy, Plus, X, Save,
+  ChevronDown, User, Mail, Megaphone, Users, Link2, Copy, Plus, X, Save, Video,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -14,6 +15,8 @@ interface Appointment {
   duration: number
   status: 'pending' | 'confirmed' | 'cancelled' | 'done'
   notes: string | null
+  title?: string | null
+  google_meet_link?: string | null
   created_at: string
   assigned_to?: string
   prospect: { id: number; contact: string; email: string; phone: string } | null
@@ -48,6 +51,7 @@ const API_URL = '/api/business'
 
 export function BusinessAppointments() {
   const { user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
+  const { isConnected: isGoogleConnected, createEvent: createGoogleEvent } = useBusinessGoogleCalendar()
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,7 +63,9 @@ export function BusinessAppointments() {
   // Booking links (setter + owner/HoS)
   const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
   const isOwnerOrHoS = !isTeamMember || teamMember?.role === 'Head of Sales'
+  const isCloserOnly = isTeamMember && teamMember?.role === 'Closer'
   const showBookingSection = isSetter || isOwnerOrHoS
+  const canBookForOthers = !isCloserOnly // everyone except pure closers
   const [bookingLinks, setBookingLinks] = useState<BookingLink[]>([])
   const [showCreateLink, setShowCreateLink] = useState(false)
   const [newLinkLabel, setNewLinkLabel] = useState('')
@@ -67,15 +73,26 @@ export function BusinessAppointments() {
   const [newLinkMemberId, setNewLinkMemberId] = useState<string>('')
   const [savingLink, setSavingLink] = useState(false)
 
-  // Fetch team members for owner/HoS filter
+  // Book RDV modal state
+  const [showBookModal, setShowBookModal] = useState(false)
+  const [bookTitle, setBookTitle] = useState('')
+  const [bookDate, setBookDate] = useState('')
+  const [bookTime, setBookTime] = useState('')
+  const [bookDuration, setBookDuration] = useState(30)
+  const [bookMemberId, setBookMemberId] = useState<string>('')
+  const [bookNotes, setBookNotes] = useState('')
+  const [bookWithMeet, setBookWithMeet] = useState(true)
+  const [bookSaving, setBookSaving] = useState(false)
+
+  // Fetch team members for everyone (needed for booking modal + filters)
   useEffect(() => {
-    if (!isOwnerOrHoS || !effectiveUserId) return
+    if (!effectiveUserId) return
     supabase
       .from('business_team_members')
       .select('id, first_name, last_name, role')
       .eq('business_owner_id', effectiveUserId)
       .then(({ data }) => setTeamMembers(data || []))
-  }, [effectiveUserId, isOwnerOrHoS])
+  }, [effectiveUserId])
 
   // Fetch booking links
   useEffect(() => {
@@ -167,6 +184,80 @@ export function BusinessAppointments() {
     }
   }
 
+  // ─── Book a RDV ───
+  const handleBookAppointment = async () => {
+    if (!bookDate || !bookTime) { toast.error('Date et heure requises'); return }
+    if (!effectiveUserId) return
+    setBookSaving(true)
+
+    try {
+      // Determine assigned_to
+      const assignedTo = bookMemberId || (isTeamMember ? teamMember?.id : null) || null
+
+      // Compute end time for Google Calendar
+      const [h, m] = bookTime.split(':').map(Number)
+      const endMinutes = h * 60 + m + bookDuration
+      const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
+
+      let googleMeetLink: string | null = null
+
+      // Create Google Calendar event with Meet if connected and requested
+      if (isGoogleConnected && bookWithMeet) {
+        const title = bookTitle.trim() || 'Rendez-vous CloseOS'
+        const result = await createGoogleEvent({
+          title,
+          date: bookDate,
+          startTime: bookTime,
+          endTime,
+          description: bookNotes || '',
+          withGoogleMeet: true,
+        })
+        if (result.success && result.hangoutLink) {
+          googleMeetLink = result.hangoutLink
+        }
+      }
+
+      // Create appointment via API (uses service role, bypasses RLS)
+      const res = await fetch(`${API_URL}?action=appointments-create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: effectiveUserId,
+          title: bookTitle.trim() || null,
+          date: bookDate,
+          time: bookTime,
+          duration: bookDuration,
+          assigned_to: assignedTo,
+          notes: bookNotes || null,
+          google_meet_link: googleMeetLink,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || 'Erreur'); setBookSaving(false); return }
+
+      toast.success(googleMeetLink ? 'RDV créé avec Google Meet' : 'RDV créé')
+      setShowBookModal(false)
+      resetBookForm()
+      fetchAppointments()
+    } catch (err) {
+      console.error('Error booking appointment:', err)
+      toast.error('Erreur lors de la création')
+    } finally {
+      setBookSaving(false)
+    }
+  }
+
+  const resetBookForm = () => {
+    setBookTitle('')
+    setBookDate('')
+    setBookTime('')
+    setBookDuration(30)
+    setBookMemberId('')
+    setBookNotes('')
+    setBookWithMeet(true)
+  }
+
   // Team members only see their assigned appointments
   const visibleAppointments = isTeamMember
     ? appointments.filter(a => (a as any).assigned_to === teamMember?.id)
@@ -210,14 +301,22 @@ export function BusinessAppointments() {
           </div>
           <div>
             <h2 className="text-lg font-bold text-slate-900">{visibleAppointments.length} rendez-vous</h2>
-            <p className="text-xs text-slate-500">Tous vos rendez-vous pris via les campagnes</p>
+            <p className="text-xs text-slate-500">Tous vos rendez-vous</p>
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Team member filter (owner only) */}
-          {!isTeamMember && teamMembers.length > 0 && (
+          {/* Book RDV button */}
+          <button
+            onClick={() => setShowBookModal(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-500 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Booker un RDV
+          </button>
+
+          {/* Team member filter (owner/HoS) */}
+          {isOwnerOrHoS && teamMembers.length > 0 && (
             <div className="relative">
               <select
                 value={filterMember}
@@ -264,6 +363,146 @@ export function BusinessAppointments() {
           )}
         </div>
       </div>
+
+      {/* Book RDV Modal */}
+      {showBookModal && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => { setShowBookModal(false); resetBookForm() }} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <div className="pointer-events-auto w-full max-w-md rounded-2xl border border-amber-200 bg-white shadow-xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-amber-600" />
+                  Booker un rendez-vous
+                </h3>
+                <button onClick={() => { setShowBookModal(false); resetBookForm() }} className="p-1 text-slate-400 hover:text-slate-600">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Titre (optionnel)</label>
+                  <input
+                    type="text"
+                    value={bookTitle}
+                    onChange={e => setBookTitle(e.target.value)}
+                    placeholder="Ex: RDV Découverte, Follow-up..."
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Date *</label>
+                    <input
+                      type="date"
+                      value={bookDate}
+                      onChange={e => setBookDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Heure *</label>
+                    <input
+                      type="time"
+                      value={bookTime}
+                      onChange={e => setBookTime(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Durée</label>
+                  <select
+                    value={bookDuration}
+                    onChange={e => setBookDuration(Number(e.target.value))}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value={15}>15 min</option>
+                    <option value={30}>30 min</option>
+                    <option value={45}>45 min</option>
+                    <option value={60}>60 min</option>
+                    <option value={90}>90 min</option>
+                  </select>
+                </div>
+
+                {/* For whom — everyone can book for self, non-closers can book for others */}
+                {canBookForOthers && teamMembers.length > 0 ? (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Pour qui ?</label>
+                    <select
+                      value={bookMemberId}
+                      onChange={e => setBookMemberId(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none"
+                    >
+                      <option value="">Pour moi</option>
+                      {teamMembers.map(m => (
+                        <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Notes (optionnel)</label>
+                  <textarea
+                    value={bookNotes}
+                    onChange={e => setBookNotes(e.target.value)}
+                    rows={2}
+                    placeholder="Contexte, détails..."
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none resize-none"
+                  />
+                </div>
+
+                {/* Google Meet toggle */}
+                {isGoogleConnected && (
+                  <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={bookWithMeet}
+                      onChange={e => setBookWithMeet(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    <Video className="h-4 w-4 text-blue-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-800">Créer un Google Meet</p>
+                      <p className="text-xs text-slate-400">Un lien de visio sera généré automatiquement</p>
+                    </div>
+                  </label>
+                )}
+
+                {!isGoogleConnected && (
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
+                    <p className="text-xs text-slate-500">
+                      Connectez votre Google Calendar depuis l'Agenda pour générer des liens Google Meet.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4">
+                <button
+                  onClick={() => { setShowBookModal(false); resetBookForm() }}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleBookAppointment}
+                  disabled={bookSaving || !bookDate || !bookTime}
+                  className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50 transition-colors"
+                >
+                  {bookSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
+                  Confirmer
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Booking Links Section */}
       {showBookingSection && (
@@ -400,11 +639,18 @@ export function BusinessAppointments() {
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 py-16">
           <Calendar className="h-12 w-12 text-amber-300 mb-4" />
           <h3 className="text-lg font-semibold text-slate-700 mb-1">Aucun rendez-vous</h3>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 mb-4">
             {visibleAppointments.length === 0
-              ? (isTeamMember ? 'Aucun rendez-vous ne vous est assigné' : 'Les rendez-vous pris via vos campagnes apparaîtront ici')
+              ? (isTeamMember ? 'Aucun rendez-vous ne vous est assigné' : 'Vos rendez-vous apparaîtront ici')
               : 'Aucun rendez-vous ne correspond à vos filtres'}
           </p>
+          <button
+            onClick={() => setShowBookModal(true)}
+            className="flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-500 transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            Booker un RDV
+          </button>
         </div>
       )}
 
@@ -433,6 +679,10 @@ export function BusinessAppointments() {
                     <span className="text-xs text-slate-400">{appt.duration}min</span>
                   </div>
 
+                  {appt.title && (
+                    <p className="text-sm font-medium text-slate-700 mb-1">{appt.title}</p>
+                  )}
+
                   <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                     {appt.prospect && (
                       <>
@@ -452,18 +702,29 @@ export function BusinessAppointments() {
                         {appt.campaign.name}
                       </span>
                     )}
-                    {!isTeamMember && memberName && (
+                    {memberName && (
                       <span className="flex items-center gap-1 text-amber-600 font-medium">
                         <Users className="h-3.5 w-3.5" />
                         {memberName}
                       </span>
+                    )}
+                    {appt.google_meet_link && (
+                      <a
+                        href={appt.google_meet_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-blue-600 font-medium hover:text-blue-700"
+                      >
+                        <Video className="h-3.5 w-3.5" />
+                        Google Meet
+                      </a>
                     )}
                   </div>
                 </div>
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {!isTeamMember && appt.status === 'pending' && (
+                  {isOwnerOrHoS && appt.status === 'pending' && (
                     <>
                       <button
                         onClick={() => updateStatus(appt.id, 'confirmed')}
@@ -479,7 +740,7 @@ export function BusinessAppointments() {
                       </button>
                     </>
                   )}
-                  {!isTeamMember && appt.status === 'confirmed' && (
+                  {isOwnerOrHoS && appt.status === 'confirmed' && (
                     <button
                       onClick={() => updateStatus(appt.id, 'done')}
                       className="rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
@@ -492,10 +753,10 @@ export function BusinessAppointments() {
                       {appt.status === 'done' ? 'Terminé' : 'Annulé'}
                     </span>
                   )}
-                  {isTeamMember && appt.status === 'pending' && (
+                  {isTeamMember && !isOwnerOrHoS && appt.status === 'pending' && (
                     <span className="text-xs text-amber-500 italic">En attente</span>
                   )}
-                  {isTeamMember && appt.status === 'confirmed' && (
+                  {isTeamMember && !isOwnerOrHoS && appt.status === 'confirmed' && (
                     <span className="text-xs text-blue-500 italic">Confirmé</span>
                   )}
                 </div>

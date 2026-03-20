@@ -998,6 +998,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ appointments: data })
     }
 
+    if (action === 'appointments-create' && req.method === 'POST') {
+      const { user_id, title, date, time, duration, assigned_to, notes, google_meet_link } = req.body
+      if (!user_id || !date || !time) return res.status(400).json({ error: 'user_id, date, and time required' })
+
+      const insertPayload: Record<string, any> = {
+        user_id,
+        date,
+        time,
+        duration: duration || 30,
+        status: 'confirmed',
+        title: title || null,
+        notes: notes || null,
+        google_meet_link: google_meet_link || null,
+      }
+      if (assigned_to) insertPayload.assigned_to = assigned_to
+
+      const { data, error } = await supabase
+        .from('business_appointments')
+        .insert(insertPayload)
+        .select('*, prospect:business_prospects(id, contact, email, phone), campaign:business_campaigns(id, name)')
+        .single()
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ appointment: data })
+    }
+
     if (action === 'appointments-update' && req.method === 'PUT') {
       const { user_id, id, status, notes } = req.body
       if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
