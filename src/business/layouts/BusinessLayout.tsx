@@ -2,9 +2,11 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { BusinessSidebar } from '../components/BusinessSidebar'
 import { BusinessSettingsModal } from '../components/BusinessSettingsModal'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
-import { Menu } from 'lucide-react'
-import { useState } from 'react'
+import { Menu, Globe, X } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { supabase } from '../../lib/supabase'
+import { getBrowserTimezone, getTimezoneLabel } from '../../lib/timezone'
 
 const OWNER_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/dashboard': { title: 'Dashboard', subtitle: "Vue d'ensemble de votre business" },
@@ -44,7 +46,7 @@ const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 
 export function BusinessLayout() {
   const location = useLocation()
-  const { isTeamMember } = useBusinessAuth()
+  const { isTeamMember, teamMember, businessProfile, user, refreshProfile } = useBusinessAuth()
   const pageTitles = isTeamMember ? TEAM_PAGE_TITLES : OWNER_PAGE_TITLES
 
   // Handle dynamic routes like /business/appels/:id
@@ -53,6 +55,46 @@ export function BusinessLayout() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
+  // ─── Timezone detection ───
+  const browserTz = useMemo(() => getBrowserTimezone(), [])
+  const storedTz = isTeamMember ? teamMember?.timezone : businessProfile?.timezone
+  const [tzBannerVisible, setTzBannerVisible] = useState(false)
+  const [tzBannerDismissed, setTzBannerDismissed] = useState(false)
+
+  // Auto-save timezone on first login (no timezone stored yet)
+  // Show banner if timezone changed
+  useEffect(() => {
+    if (!user?.id || !browserTz) return
+    if (storedTz === undefined) return // still loading
+
+    if (!storedTz) {
+      // First time: silently save browser timezone
+      if (isTeamMember && teamMember?.id) {
+        supabase.from('business_team_members').update({ timezone: browserTz }).eq('id', teamMember.id).then(() => refreshProfile())
+      } else {
+        supabase.from('business_users').update({ timezone: browserTz }).eq('id', user.id).then(() => refreshProfile())
+      }
+    } else if (storedTz !== browserTz && !tzBannerDismissed) {
+      setTzBannerVisible(true)
+    }
+  }, [user?.id, storedTz, browserTz, isTeamMember, teamMember?.id])
+
+  const handleAcceptTzChange = async () => {
+    if (isTeamMember && teamMember?.id) {
+      await supabase.from('business_team_members').update({ timezone: browserTz }).eq('id', teamMember.id)
+    } else if (user?.id) {
+      await supabase.from('business_users').update({ timezone: browserTz }).eq('id', user.id)
+    }
+    await refreshProfile()
+    setTzBannerVisible(false)
+    setTzBannerDismissed(true)
+  }
+
+  const handleDismissTzBanner = () => {
+    setTzBannerVisible(false)
+    setTzBannerDismissed(true)
+  }
 
   return (
     <div className="flex h-screen bg-[#FDF6EE] overflow-hidden">
@@ -88,6 +130,32 @@ export function BusinessLayout() {
             </div>
           </div>
         </header>
+
+        {/* Timezone change banner */}
+        {tzBannerVisible && storedTz && (
+          <div className="border-b border-blue-200 bg-blue-50 px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Globe className="h-4 w-4 text-blue-600 shrink-0" />
+              <p className="text-sm text-blue-800">
+                Votre fuseau horaire semble avoir changé : <span className="font-semibold">{getTimezoneLabel(storedTz)}</span> → <span className="font-semibold">{getTimezoneLabel(browserTz)}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleAcceptTzChange}
+                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+              >
+                Mettre à jour
+              </button>
+              <button
+                onClick={handleDismissTzBanner}
+                className="rounded-lg p-1.5 text-blue-400 hover:bg-blue-100 hover:text-blue-600 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         <main className="flex-1 overflow-y-auto bg-[#FDF6EE] p-4 sm:p-8 min-h-0">
           <Outlet />

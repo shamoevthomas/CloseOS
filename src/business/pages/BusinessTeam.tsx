@@ -3,11 +3,12 @@ import {
   Plus, Users, User, Circle, Loader2, Trash2, ArrowLeft, Phone,
   Calendar, Clock, BarChart3, GitBranch, CalendarDays, Mail,
   AlertCircle, DollarSign, ShoppingCart, Target, UserX, Ban,
-  Save, CreditCard, History, LogIn, LogOut, Pencil, Check, X,
+  Save, CreditCard, History, LogIn, LogOut, Pencil, Check, X, Globe,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { getTimezoneLabel } from '../../lib/timezone'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { InviteMemberModal } from '../components/InviteMemberModal'
 import toast from 'react-hot-toast'
@@ -27,6 +28,7 @@ interface TeamMember {
   avatar_url: string | null
   date_of_birth: string | null
   pay_day?: number | null
+  timezone?: string | null
   _isOwner?: boolean
 }
 
@@ -486,6 +488,12 @@ export function BusinessTeam() {
                                 <Circle className={cn('h-2.5 w-2.5 fill-current', isReallyOnline(member) ? 'text-emerald-500' : 'text-slate-300')} />
                                 <span>{isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}</span>
                               </div>
+                              {member.timezone && (
+                                <div className="flex items-center gap-1.5">
+                                  <Globe className="h-3 w-3" />
+                                  <span>{getTimezoneLabel(member.timezone)}</span>
+                                </div>
+                              )}
                             </div>
                             <ContactInfo member={member} />
                             {memberAbsCount > 0 && (
