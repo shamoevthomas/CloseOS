@@ -308,20 +308,19 @@ export function BusinessAppointments() {
                   <option value={90}>90 min</option>
                 </select>
               </div>
-              {isOwnerOrHoS && teamMembers.length > 0 && (
+              {isOwnerOrHoS && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Utiliser le calendrier de</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Pour qui ?</label>
                   <select
                     value={newLinkMemberId}
                     onChange={e => setNewLinkMemberId(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
                   >
-                    <option value="">Aucun (gestion manuelle)</option>
+                    <option value="">Pour moi</option>
                     {teamMembers.map(m => (
                       <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                     ))}
                   </select>
-                  <p className="text-[10px] text-slate-400 mt-1">Les créneaux seront basés sur les disponibilités de ce membre.</p>
                 </div>
               )}
               <div className="flex justify-end gap-2">
@@ -360,7 +359,7 @@ export function BusinessAppointments() {
                     <p className="text-xs text-slate-400 truncate">
                       {bl.duration}min
                       {memberName && ` · ${memberName.first_name} ${memberName.last_name}`}
-                      {!bl.team_member_id && isOwnerOrHoS && ' · Gestion manuelle'}
+                      {!bl.team_member_id && isOwnerOrHoS && ' · Pour moi'}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0 ml-3">
