@@ -899,7 +899,7 @@ const FeaturesByRole = () => {
       <div className="flex justify-center mb-12">
         <div
           ref={tabContainerRef}
-          className="relative inline-flex rounded-2xl border border-stone-200/60 bg-white/60 backdrop-blur-md shadow-[0_0_9px_rgba(0,0,0,0.06),0_3px_12px_rgba(0,0,0,0.08)] p-1"
+          className="relative inline-flex rounded-2xl border border-stone-200/50 bg-stone-100/80 backdrop-blur-sm shadow-[0_0_9px_rgba(0,0,0,0.06),0_3px_12px_rgba(0,0,0,0.08)] p-1.5"
         >
           {rolesData.map((role) => (
             <button
@@ -907,7 +907,7 @@ const FeaturesByRole = () => {
               ref={(el) => { if (el) tabRefs.current.set(role.id, el); }}
               onClick={() => setActiveRole(role.id)}
               className="relative z-10 flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-bold transition-colors duration-300 cursor-pointer select-none"
-              style={{ color: activeRole === role.id ? '#ffffff' : '#78716c' }}
+              style={{ color: activeRole === role.id ? '#111111' : '#78716c' }}
             >
               {role.icon}
               {role.label}
@@ -916,7 +916,7 @@ const FeaturesByRole = () => {
 
           {/* Sliding liquid-glass bubble */}
           <motion.div
-            className="absolute z-0 top-1 bottom-1 rounded-xl bg-[#111111] shadow-[inset_0_1px_0px_rgba(255,255,255,0.15),0_0_12px_rgba(0,0,0,0.2),0_4px_12px_rgba(0,0,0,0.15)]"
+            className="absolute z-0 top-1.5 bottom-1.5 rounded-xl bg-white/70 backdrop-blur-lg shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.08),0_3px_8px_rgba(0,0,0,0.1)] border border-white/60"
             animate={{
               left: bubbleStyle.left,
               width: bubbleStyle.width,
@@ -929,8 +929,8 @@ const FeaturesByRole = () => {
             }}
           >
             {/* Glass gradient overlays */}
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/15 via-transparent to-transparent pointer-events-none" />
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-tl from-white/10 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/60 via-transparent to-transparent opacity-70 pointer-events-none" />
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-tl from-white/30 via-transparent to-transparent opacity-50 pointer-events-none" />
           </motion.div>
         </div>
       </div>
