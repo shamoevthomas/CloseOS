@@ -20,7 +20,20 @@ import {
   Loader2,
   ExternalLink,
   ChevronDown,
-  Menu
+  Menu,
+  Crown,
+  Target,
+  Crosshair,
+  Users,
+  Calendar,
+  BarChart3,
+  Headphones,
+  Receipt,
+  ArrowRight,
+  Zap,
+  Megaphone,
+  Settings,
+  GitMerge
 } from 'lucide-react';
 
 export const BusinessLanding: React.FC = () => {
@@ -29,6 +42,7 @@ export const BusinessLanding: React.FC = () => {
   const [isExiting, setIsExiting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [activeRole, setActiveRole] = useState<'owner' | 'closer' | 'setter' | 'setter-closer'>('owner');
 
   const handleNavigateToSales = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -227,6 +241,239 @@ export const BusinessLanding: React.FC = () => {
               <CRMKPI index={0} title="KPI CRM • Pipeline" value="452,000€" description="Valeur totale du pipeline en cours" />
               <CRMKPI index={1} title="KPI CRM • Performance" value="4,850€" description="Deal moyen encaissé" />
               <CRMKPI index={2} title="KPI CRM • Vélocité" value="12 Jours" description="Cycle de vente moyen (Lead to Close)" />
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Features by Role Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="px-6 md:px-20 py-32 bg-[#f4f2f1]"
+        >
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16 space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
+                <span className="text-sm font-semibold text-stone-800">Par Rôle</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight">Chaque rôle, ses fonctionnalités</h2>
+              <p className="text-stone-500 text-lg max-w-2xl mx-auto">Découvrez exactement ce que chaque membre de votre équipe peut faire dans CloseOS.</p>
+            </div>
+
+            {/* Role Tabs */}
+            <div className="flex flex-wrap justify-center gap-3 mb-12">
+              {([
+                { key: 'owner' as const, label: 'Owner / Admin', icon: <Crown className="size-4" /> },
+                { key: 'closer' as const, label: 'Closer', icon: <Target className="size-4" /> },
+                { key: 'setter' as const, label: 'Setter', icon: <Crosshair className="size-4" /> },
+                { key: 'setter-closer' as const, label: 'Setter-Closer', icon: <GitMerge className="size-4" /> },
+              ]).map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveRole(tab.key)}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
+                    activeRole === tab.key
+                      ? 'bg-[#111111] text-white shadow-lg'
+                      : 'bg-white text-stone-600 border border-stone-200 hover:border-stone-300 hover:shadow-sm'
+                  }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Role Content */}
+            <div className="space-y-8">
+              {/* Hero Banner */}
+              <motion.div
+                key={activeRole}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-[#111111] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#ff2f2f]/20 to-[#8a43e1]/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                <div className="relative z-10">
+                  <span className="text-stone-400 font-bold text-xs tracking-[0.25em] uppercase">
+                    {activeRole === 'owner' && 'CONTRÔLE TOTAL'}
+                    {activeRole === 'closer' && 'FERMER DES DEALS'}
+                    {activeRole === 'setter' && 'QUALIFIER & BOOKER'}
+                    {activeRole === 'setter-closer' && 'LE COMBO ULTIME'}
+                  </span>
+                  <h3 className="text-3xl md:text-4xl font-bold mt-2 mb-3 tracking-tight">
+                    {activeRole === 'owner' && 'Owner / Admin'}
+                    {activeRole === 'closer' && 'Closer'}
+                    {activeRole === 'setter' && 'Setter'}
+                    {activeRole === 'setter-closer' && 'Setter-Closer'}
+                  </h3>
+                  <p className="text-stone-400 text-lg max-w-2xl font-medium">
+                    {activeRole === 'owner' && "Pilotez l'ensemble de votre écosystème de vente. Gérez vos équipes, vos campagnes, votre CRM et vos KPIs depuis un centre de commandement unique."}
+                    {activeRole === 'closer' && "Concentrez-vous sur ce que vous faites de mieux : closer. Accédez à votre pipeline, vos appels et vos KPIs personnels en un clic."}
+                    {activeRole === 'setter' && "Qualifiez, bookez et transmettez les meilleurs leads à vos closers. Votre CRM et vos KPIs sont conçus pour maximiser votre taux de booking."}
+                    {activeRole === 'setter-closer' && "Le meilleur des deux mondes. Accédez à toutes les fonctionnalités Setter ET Closer dans une seule interface unifiée."}
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Feature Cards */}
+              <motion.div
+                key={`cards-${activeRole}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+              >
+                {activeRole === 'owner' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <RoleFeatureCard
+                      icon={<Layers className="size-6" />}
+                      title="CRM & Pipeline Global"
+                      items={['Vue globale de tous les prospects', 'Pipeline drag-and-drop par étapes', 'Filtres, tags et recherche avancée', 'Assignation setter/closer']}
+                    />
+                    <RoleFeatureCard
+                      icon={<Megaphone className="size-6" />}
+                      title="Campagnes de Capture"
+                      items={['Création de campagnes avec/sans RDV', 'Landing pages & formulaires intégrés', 'Configuration booking & assignation', 'Champs personnalisés par campagne']}
+                    />
+                    <RoleFeatureCard
+                      icon={<Headphones className="size-6" />}
+                      title="Appels & Cockpit"
+                      items={['Cockpit d\'appel intégré', 'Scripts de vente personnalisés', 'Notes post-appel automatiques', 'Historique complet des interactions']}
+                    />
+                    <RoleFeatureCard
+                      icon={<BarChart3 className="size-6" />}
+                      title="KPI & Rapports"
+                      items={['Dashboard macro temps réel', 'KPIs par closer / setter / équipe', 'Taux de closing, CA, no-show', 'Exports CSV/PDF automatiques']}
+                    />
+                    <RoleFeatureCard
+                      icon={<Users className="size-6" />}
+                      title="Équipe & Organisation"
+                      items={['Gestion des rôles & permissions', 'Onboarding automatisé des closers', 'Scripts & ressources de formation', 'Invitations par email']}
+                    />
+                    <RoleFeatureCard
+                      icon={<Calendar className="size-6" />}
+                      title="Agenda & RDV"
+                      items={['Agenda partagé de l\'équipe', 'Synchronisation Cal.com', 'Booking automatique par campagne', 'Gestion des disponibilités']}
+                    />
+                  </div>
+                )}
+
+                {activeRole === 'closer' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <RoleFeatureCard
+                        icon={<Layers className="size-6" />}
+                        title="Pipeline Personnel"
+                        items={['Vue de vos prospects assignés', 'Pipeline drag-and-drop personnel', 'Filtres et tags sur vos leads', 'Historique des interactions']}
+                      />
+                      <RoleFeatureCard
+                        icon={<Headphones className="size-6" />}
+                        title="Cockpit d'Appel"
+                        items={['Interface d\'appel dédiée', 'Scripts de closing personnalisés', 'Notes & qualification post-appel', 'Timer et suivi de durée']}
+                      />
+                      <RoleFeatureCard
+                        icon={<BarChart3 className="size-6" />}
+                        title="KPI Closer"
+                        items={['CA personnel généré', 'Taux de closing', 'Nombre d\'appels réalisés', 'Comparaison avec objectifs']}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <RoleFeatureCard
+                        icon={<Receipt className="size-6" />}
+                        title="Factures"
+                        items={['Génération de factures', 'Suivi des statuts de paiement', 'KPIs commission & CA', 'Historique complet']}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {activeRole === 'setter' && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <RoleFeatureCard
+                      icon={<Layers className="size-6" />}
+                      title="CRM & Pipeline Setter"
+                      items={['Prospects assignés en setting', 'Pipeline de qualification', 'Ajout & gestion de prospects', 'Tags et filtres personnalisés']}
+                    />
+                    <RoleFeatureCard
+                      icon={<CheckCircle className="size-6" />}
+                      title="Qualification Post-Appel"
+                      items={['Formulaire de qualification', 'Notes détaillées par prospect', 'Transmission au closer assigné', 'Suivi du booking']}
+                    />
+                    <RoleFeatureCard
+                      icon={<BarChart3 className="size-6" />}
+                      title="KPI Setter"
+                      items={['Nombre de leads qualifiés', 'Taux de booking', 'Appels réalisés', 'Performance vs objectifs']}
+                    />
+                  </div>
+                )}
+
+                {activeRole === 'setter-closer' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <RoleFeatureCard
+                      icon={<Zap className="size-6" />}
+                      title="Double Rôle"
+                      items={['Pipeline Setter + Pipeline Closer', 'Cockpit d\'appel complet', 'Qualification & Closing', 'Auto-assignation des deux rôles']}
+                    />
+                    <RoleFeatureCard
+                      icon={<BarChart3 className="size-6" />}
+                      title="Double KPI"
+                      items={['KPIs Setter (booking, qualification)', 'KPIs Closer (CA, taux de closing)', 'Vue unifiée des performances', 'Factures & commissions']}
+                    />
+                  </div>
+                )}
+              </motion.div>
+
+              {/* Bottom Bar */}
+              <motion.div
+                key={`bottom-${activeRole}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+              >
+                {activeRole === 'owner' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white rounded-2xl border border-stone-200 p-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center">
+                          <Shield className="size-4 text-stone-700" />
+                        </div>
+                        <span className="font-bold text-[#111111]">Admin</span>
+                      </div>
+                      <p className="text-stone-500 text-sm font-medium">Mêmes accès que l'Owner sauf la gestion de la facturation et des paramètres de l'organisation.</p>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-stone-200 p-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center">
+                          <Settings className="size-4 text-stone-700" />
+                        </div>
+                        <span className="font-bold text-[#111111]">Head of Sales</span>
+                      </div>
+                      <p className="text-stone-500 text-sm font-medium">Accès à la gestion d'équipe, aux KPIs globaux et au pipeline complet. Peut gérer les campagnes et l'assignation.</p>
+                    </div>
+                  </div>
+                )}
+
+                {(activeRole === 'closer' || activeRole === 'setter' || activeRole === 'setter-closer') && (
+                  <div className="bg-white rounded-2xl border border-stone-200 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center">
+                        <Users className="size-4 text-stone-700" />
+                      </div>
+                      <span className="font-bold text-[#111111]">Accès partagé</span>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {['Agenda personnel', 'Notifications', 'Onboarding & Formation', 'Profil & Paramètres'].map((feature) => (
+                        <span key={feature} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-sm font-medium text-stone-600">
+                          <ArrowRight className="size-3 text-stone-400" />
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
             </div>
           </div>
         </motion.section>
@@ -637,6 +884,23 @@ const InteractionItem = ({ icon, text, subtext, color, italic }: any) => (
       <div className={`text-sm font-medium text-stone-800 ${italic ? 'italic' : ''}`}>{text}</div>
       <div className="font-semibold text-[10px] text-stone-400 mt-1 uppercase tracking-wider">{subtext}</div>
     </div>
+  </div>
+);
+
+const RoleFeatureCard = ({ icon, title, items }: { icon: React.ReactNode; title: string; items: string[] }) => (
+  <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm hover:shadow-md transition-all duration-300">
+    <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-5 text-stone-800">
+      {icon}
+    </div>
+    <h4 className="font-bold text-lg text-[#111111] mb-4">{title}</h4>
+    <ul className="space-y-2.5">
+      {items.map((item, i) => (
+        <li key={i} className="flex items-start gap-2.5 text-sm text-stone-600 font-medium">
+          <ArrowRight className="size-3.5 text-stone-400 mt-0.5 flex-shrink-0" />
+          {item}
+        </li>
+      ))}
+    </ul>
   </div>
 );
 
