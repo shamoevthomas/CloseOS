@@ -7,6 +7,7 @@ import {
 import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
+import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -45,6 +46,7 @@ export function CloserCallDetails() {
   const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales'
   const { prospects, updateProspect } = useBusinessProspects()
+  const { createEvent: createGoogleEvent, isConnected: isGoogleConnected } = useBusinessGoogleCalendar()
 
   const [call, setCall] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -214,17 +216,34 @@ export function CloserCallDetails() {
       // Create follow-up appointment if needed
       if (selectedOutcome === 'followup' && followupDate && ownerUserId) {
         const followupDateTime = new Date(followupDate)
+        const dateStr = followupDateTime.toISOString().split('T')[0]
+        const timeStr = followupDateTime.toTimeString().slice(0, 5)
         await supabase.from('business_appointments').insert([{
           user_id: ownerUserId,
           team_member_id: teamMember?.id,
           title: `Follow up — ${call.contact_name}`,
-          date: followupDateTime.toISOString().split('T')[0],
-          time: followupDateTime.toTimeString().slice(0, 5),
+          date: dateStr,
+          time: timeStr,
           type: 'call',
           contact: call.contact_name,
           status: 'upcoming',
           description: `Follow up — Motif: ${followupReason === 'Autre' ? followupReasonOther : followupReason}`,
         }])
+
+        // Sync to Google Calendar
+        if (isGoogleConnected) {
+          const [h, m] = timeStr.split(':').map(Number)
+          const endMinutes = h * 60 + m + 30
+          const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
+          await createGoogleEvent({
+            title: `Follow up — ${call.contact_name}`,
+            date: dateStr,
+            startTime: timeStr,
+            endTime,
+            description: `Follow up — Motif: ${followupReason === 'Autre' ? followupReasonOther : followupReason}`,
+            withGoogleMeet: true,
+          })
+        }
       }
 
       toast.success('Sauvegardé')

@@ -8,6 +8,7 @@ import {
 import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
+import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -50,6 +51,7 @@ export function SetterCallDetails() {
   const location = useLocation()
   const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
   const { prospects, updateProspect } = useBusinessProspects()
+  const { createEvent: createGoogleEvent, isConnected: isGoogleConnected } = useBusinessGoogleCalendar()
 
   const [call, setCall] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -303,7 +305,8 @@ export function SetterCallDetails() {
 
       // Save notes to call history
       const finalNotes = notes ? `${notes}\n\n${technicalSummary}` : technicalSummary
-      await supabase.from('business_call_history').update({ notes: finalNotes }).eq('id', call.id)
+      const { error: callError } = await supabase.from('business_call_history').update({ notes: finalNotes }).eq('id', call.id)
+      if (callError) console.error('Erreur update call:', callError.message)
 
       // Update prospect if found
       if (prospect && selectedOutcome) {
@@ -333,7 +336,7 @@ export function SetterCallDetails() {
       // If booklater: create reminder (no closer assignment)
       if (selectedOutcome === 'booklater' && effectiveOwnerId) {
         const reminderDateTime = `${reminderDate}T${reminderTime}:00`
-        await supabase.from('business_reminders').insert([{
+        const { error: remErr } = await supabase.from('business_reminders').insert([{
           user_id: effectiveOwnerId,
           team_member_id: teamMember?.id,
           call_id: call.id,
@@ -342,12 +345,13 @@ export function SetterCallDetails() {
           reminder_date: reminderDateTime,
           is_done: false,
         }])
+        if (remErr) console.error('Erreur reminder:', remErr.message)
       }
 
-      // If qualified: create appointment and update round-robin
+      // If qualified: create appointment, sync Google Calendar, update round-robin
       if (selectedOutcome === 'qualified' && selectedCloser && selectedSlot && effectiveOwnerId) {
         // Create appointment assigned to the closer
-        await supabase.from('business_appointments').insert([{
+        const { error: apptError } = await supabase.from('business_appointments').insert([{
           user_id: effectiveOwnerId,
           assigned_to: selectedCloser.id,
           prospect_id: prospect?.id || null,
@@ -360,6 +364,22 @@ export function SetterCallDetails() {
           status: 'pending',
           notes: `Qualifié par ${teamMember?.first_name || 'Setter'}. ${notes || ''}`.trim(),
         }])
+        if (apptError) console.error('Erreur appointment:', apptError.message)
+
+        // Sync to Google Calendar if connected
+        if (isGoogleConnected) {
+          const [startH, startM] = selectedSlot.time.split(':').map(Number)
+          const endMinutes = startH * 60 + startM + 30
+          const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
+          await createGoogleEvent({
+            title: `Call — ${call.contact_name}`,
+            date: selectedSlot.date,
+            startTime: selectedSlot.time,
+            endTime,
+            description: `Prospect qualifié par ${teamMember?.first_name || 'Setter'}.\nCloser: ${selectedCloser.first_name} ${selectedCloser.last_name}\n${notes || ''}`.trim(),
+            withGoogleMeet: true,
+          })
+        }
 
         // Update round-robin state
         if (assignmentMode === 'suivant') {

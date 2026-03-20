@@ -26,6 +26,8 @@ interface BusinessGoogleCalendarContextType {
   logout: () => void
   isLoading: boolean
   refreshEvents: () => void
+  createEvent: (event: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean }) => Promise<{ success: boolean; hangoutLink?: string }>
+  getAccessToken: () => string | null
 }
 
 const BusinessGoogleCalendarContext = createContext<BusinessGoogleCalendarContextType | undefined>(undefined)
@@ -120,6 +122,52 @@ export function BusinessGoogleCalendarProvider({ children }: { children: ReactNo
     scope: 'https://www.googleapis.com/auth/calendar.events',
   })
 
+  const createEvent = async (eventData: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean }): Promise<{ success: boolean; hangoutLink?: string }> => {
+    if (!accessToken) return { success: false }
+    try {
+      const startDateTime = `${eventData.date}T${eventData.startTime}:00`
+      const endDateTime = `${eventData.date}T${eventData.endTime}:00`
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+      const body: any = {
+        summary: eventData.title,
+        description: eventData.description || '',
+        location: eventData.location || '',
+        start: { dateTime: startDateTime, timeZone: tz },
+        end: { dateTime: endDateTime, timeZone: tz },
+      }
+
+      if (eventData.withGoogleMeet) {
+        body.conferenceData = {
+          createRequest: {
+            requestId: `closeos-${Date.now()}`,
+            conferenceSolutionKey: { type: 'hangoutsMeet' },
+          },
+        }
+      }
+
+      const response = await axios.post(
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+        body,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          params: eventData.withGoogleMeet ? { conferenceDataVersion: 1 } : {},
+        }
+      )
+
+      const hangoutLink = response.data?.hangoutLink || response.data?.conferenceData?.entryPoints?.[0]?.uri
+      await fetchEvents(accessToken)
+      return { success: true, hangoutLink }
+    } catch (error: any) {
+      console.error('Erreur création événement Google:', error)
+      if (error.response?.status === 401 && userId) {
+        localStorage.removeItem(getStorageKey(userId))
+        setAccessToken(null)
+      }
+      return { success: false }
+    }
+  }
+
   const logout = () => {
     if (userId) localStorage.removeItem(getStorageKey(userId))
     setAccessToken(null)
@@ -141,6 +189,8 @@ export function BusinessGoogleCalendarProvider({ children }: { children: ReactNo
         logout,
         isLoading,
         refreshEvents: () => accessToken && fetchEvents(accessToken),
+        createEvent,
+        getAccessToken: () => accessToken,
       }}
     >
       {children}
