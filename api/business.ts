@@ -906,7 +906,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'campaigns-create' && req.method === 'POST') {
-      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url } = req.body
+      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -935,6 +935,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           custom_fields: custom_fields || [],
           slug, is_active: true,
           redirect_url: redirect_url || null,
+          landing_title: landing_title || null,
+          landing_subtitle: landing_subtitle || null,
+          landing_text: landing_text || null,
+          landing_video_url: landing_video_url || null,
+          email_required: email_required ?? true,
+          phone_required: phone_required ?? false,
+          formula_id: formula_id || null,
         })
         .select()
         .single()
