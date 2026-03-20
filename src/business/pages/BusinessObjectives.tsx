@@ -130,11 +130,16 @@ export function BusinessObjectives() {
   const fetchMembers = useCallback(async () => {
     if (!effectiveUserId) return
     try {
-      const { data } = await supabase
-        .from('business_team_members')
-        .select('id, first_name, last_name, role')
-        .eq('business_owner_id', effectiveUserId)
-      if (data) setMembers(data)
+      const [tmRes, ownerRes] = await Promise.all([
+        supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
+        supabase.from('business_users').select('id, full_name').eq('id', effectiveUserId).single(),
+      ])
+      const list = tmRes.data || []
+      if (ownerRes.data) {
+        const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
+        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
+      }
+      setMembers(list)
     } catch (err) {
       console.error('Error fetching members:', err)
     }

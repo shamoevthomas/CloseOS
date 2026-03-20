@@ -66,18 +66,22 @@ export function BusinessProspectView({
   const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
   const canAssign = !isTeamMember || isSetter
 
-  // Fetch team members for assignment (owner + setters)
+  // Fetch team members + owner for assignment
   useEffect(() => {
     if (!canAssign) return
     const ownerId = isTeamMember ? ownerUserId : user?.id
     if (!ownerId) return
-    supabase
-      .from('business_team_members')
-      .select('id, first_name, last_name, role')
-      .eq('business_owner_id', ownerId)
-      .then(({ data }) => {
-        if (data) setTeamMembers(data)
-      })
+    Promise.all([
+      supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', ownerId),
+      supabase.from('business_users').select('id, full_name, email').eq('id', ownerId).single(),
+    ]).then(([tmRes, ownerRes]) => {
+      const list = tmRes.data || []
+      if (ownerRes.data) {
+        const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
+        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
+      }
+      setTeamMembers(list)
+    })
   }, [user?.id, ownerUserId, isTeamMember, canAssign])
 
   const [local, setLocal] = useState<BusinessProspect>(prospect)
@@ -377,8 +381,8 @@ export function BusinessProspectView({
 
                   {/* Assignment: separate Closer and Setter dropdowns */}
                   {canAssign && teamMembers.length > 0 && (() => {
-                    const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer')
-                    const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer')
+                    const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales')
+                    const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales')
 
                     return (
                       <div className="space-y-3">

@@ -60,14 +60,20 @@ export function BusinessPipeline() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [formulas, setFormulas] = useState<Formula[]>([])
 
-  // Fetch team + formulas
+  // Fetch team + owner + formulas
   useEffect(() => {
     if (!effectiveUserId) return
-    supabase
-      .from('business_team_members')
-      .select('id, first_name, last_name, role')
-      .eq('business_owner_id', effectiveUserId)
-      .then(({ data }) => setTeamMembers(data || []))
+    Promise.all([
+      supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
+      supabase.from('business_users').select('id, full_name').eq('id', effectiveUserId).single(),
+    ]).then(([tmRes, ownerRes]) => {
+      const list = tmRes.data || []
+      if (ownerRes.data) {
+        const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
+        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
+      }
+      setTeamMembers(list)
+    })
     fetch(`/api/business?action=formulas-list&user_id=${effectiveUserId}`)
       .then(r => r.json())
       .then(data => setFormulas(data.formulas || []))

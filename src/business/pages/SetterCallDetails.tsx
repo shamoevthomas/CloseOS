@@ -96,15 +96,20 @@ export function SetterCallDetails() {
       })
   }, [id])
 
-  // Load closers
+  // Load closers + owner
   useEffect(() => {
     if (!effectiveOwnerId) return
-    supabase.from('business_team_members').select('id, first_name, last_name, email, role')
-      .eq('business_owner_id', effectiveOwnerId)
-      .then(({ data }) => {
-        const closerList = (data || []).filter((m: any) => m.role?.toLowerCase() === 'closer')
-        setClosers(closerList)
-      })
+    Promise.all([
+      supabase.from('business_team_members').select('id, first_name, last_name, email, role').eq('business_owner_id', effectiveOwnerId),
+      supabase.from('business_users').select('id, full_name, email').eq('id', effectiveOwnerId).single(),
+    ]).then(([tmRes, ownerRes]) => {
+      const closerList = (tmRes.data || []).filter((m: any) => m.role?.toLowerCase() === 'closer')
+      if (ownerRes.data) {
+        const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
+        closerList.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', email: ownerRes.data.email || '', role: 'Owner' })
+      }
+      setClosers(closerList)
+    })
   }, [effectiveOwnerId])
 
   // Find linked prospect

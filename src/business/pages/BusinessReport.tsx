@@ -115,14 +115,20 @@ export function BusinessReport() {
     if (!effectiveUserId) return
     setLoading(true)
     try {
-      const [membersRes, prospectsRes, campaignsRes, appointmentsRes, remindersRes] = await Promise.all([
+      const [membersRes, ownerRes, prospectsRes, campaignsRes, appointmentsRes, remindersRes] = await Promise.all([
         supabase.from('business_team_members').select('id, first_name, last_name, email, role, joined_at').eq('business_owner_id', effectiveUserId),
+        supabase.from('business_users').select('id, full_name, email, created_at').eq('id', effectiveUserId).single(),
         supabase.from('business_prospects').select('id, stage, value, created_at, campaign_id, payment_type, installments, assigned_to, contact').eq('user_id', effectiveUserId),
         supabase.from('business_campaigns').select('id, name, views, is_active, created_at').eq('user_id', effectiveUserId),
         supabase.from('business_appointments').select('id, status, date, campaign_id, prospect_id, created_at, assigned_to').eq('user_id', effectiveUserId),
         supabase.from('reminders').select('id, title, reminder_date, created_at, is_done, user_id, created_by_member_id').eq('user_id', effectiveUserId),
       ])
-      setMembers(membersRes.data || [])
+      const membersList = membersRes.data || []
+      if (ownerRes.data) {
+        const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
+        membersList.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', email: ownerRes.data.email || '', role: 'Owner', joined_at: ownerRes.data.created_at || '' })
+      }
+      setMembers(membersList)
       setProspects(prospectsRes.data || [])
       setCampaigns(campaignsRes.data || [])
       setAppointments(appointmentsRes.data || [])

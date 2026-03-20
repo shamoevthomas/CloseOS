@@ -72,9 +72,15 @@ export function OwnerFactures() {
     Promise.all([
       supabase.from('invoices').select('*').eq('user_id', effectiveUserId).order('created_at', { ascending: false }),
       supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
-    ]).then(([invRes, tmRes]) => {
+      supabase.from('business_users').select('id, full_name').eq('id', effectiveUserId).single(),
+    ]).then(([invRes, tmRes, ownerRes]) => {
+      const list = tmRes.data || []
+      if (ownerRes.data) {
+        const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
+        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
+      }
       setInvoices(invRes.data || [])
-      setTeamMembers(tmRes.data || [])
+      setTeamMembers(list)
       setLoading(false)
     })
   }, [effectiveUserId])

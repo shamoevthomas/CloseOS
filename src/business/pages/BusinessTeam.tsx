@@ -80,6 +80,7 @@ const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> 
   'Manager': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
   'Admin': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
   'Head of Sales': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  'Owner': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
 }
 
 const getRoleColor = (role: string) =>
@@ -142,12 +143,13 @@ function Avatar({ member, size = 'md' }: { member: TeamMember; size?: 'sm' | 'md
 }
 
 export function BusinessTeam() {
-  const { user, ownerUserId, isTeamMember, teamMember } = useBusinessAuth()
+  const { user, ownerUserId, isTeamMember, teamMember, businessProfile } = useBusinessAuth()
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales'
   const { prospects } = useBusinessProspects()
 
   const [members, setMembers] = useState<TeamMember[]>([])
+  const [ownerInfo, setOwnerInfo] = useState<{ full_name: string; email: string; avatar_url: string | null; created_at: string } | null>(null)
   const [absences, setAbsences] = useState<Absence[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -163,8 +165,9 @@ export function BusinessTeam() {
       const oneWeekAgo = new Date()
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
 
-      const [membersRes, absencesRes, slotsRes, apptsRes, logsRes] = await Promise.all([
+      const [membersRes, ownerRes, absencesRes, slotsRes, apptsRes, logsRes] = await Promise.all([
         supabase.from('business_team_members').select('*').eq('business_owner_id', effectiveUserId).order('joined_at', { ascending: true }),
+        supabase.from('business_users').select('full_name, email, avatar_url, created_at').eq('id', effectiveUserId).single(),
         supabase.from('business_absences').select('*').eq('business_owner_id', effectiveUserId),
         supabase.from('business_availability_slots').select('*').eq('business_owner_id', effectiveUserId).order('day_of_week').order('start_time'),
         supabase.from('business_appointments').select('id, date, time, duration, status, assigned_to, prospect_id, created_at').eq('user_id', effectiveUserId),
@@ -174,6 +177,7 @@ export function BusinessTeam() {
       ])
 
       setMembers(membersRes.data || [])
+      if (ownerRes.data) setOwnerInfo(ownerRes.data)
       setAbsences(absencesRes.data || [])
       setSlots(slotsRes.data || [])
       setAppointments(apptsRes.data || [])
@@ -269,7 +273,7 @@ export function BusinessTeam() {
           </div>
           <div>
             <h2 className="text-lg font-bold text-slate-900">
-              {members.length} membre{members.length > 1 ? 's' : ''} dans l'équipe
+              {members.length + 1} membre{members.length > 0 ? 's' : ''} dans l'équipe
             </h2>
             <p className="text-xs text-slate-500">Gérez votre équipe et consultez les fiches détaillées</p>
           </div>
@@ -285,26 +289,54 @@ export function BusinessTeam() {
         )}
       </div>
 
-      {members.length === 0 ? (
-        <div className="rounded-2xl border border-amber-200 bg-white p-12 text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center mb-4">
-            <Users className="h-8 w-8 text-amber-400" />
+      {/* Owner card */}
+      {ownerInfo && (() => {
+        const ownerColor = getRoleColor('Owner')
+        const nameParts = (ownerInfo.full_name || 'Owner').split(' ')
+        const ownerAsMember: TeamMember = {
+          id: effectiveUserId!,
+          business_owner_id: effectiveUserId!,
+          user_id: effectiveUserId!,
+          role: 'Owner',
+          first_name: nameParts[0] || 'Owner',
+          last_name: nameParts.slice(1).join(' ') || '',
+          email: ownerInfo.email || '',
+          is_online: true,
+          last_heartbeat_at: null,
+          joined_at: ownerInfo.created_at || new Date().toISOString(),
+          avatar_url: ownerInfo.avatar_url || null,
+          date_of_birth: null,
+        }
+        return (
+          <div className={cn("rounded-xl border bg-white", ownerColor.border)}>
+            <div className={cn("flex items-center justify-between px-4 py-3 border-b", ownerColor.border)}>
+              <div className="flex items-center gap-2">
+                <Users className={cn("h-4 w-4", ownerColor.text)} />
+                <span className={cn("text-sm font-bold", ownerColor.text)}>Owner</span>
+              </div>
+            </div>
+            <div className="p-3">
+              <div className="w-full rounded-lg border border-slate-100 bg-white p-3">
+                <div className="flex items-start gap-3">
+                  <Avatar member={ownerAsMember} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 truncate">
+                      {ownerInfo.full_name || 'Owner'}
+                    </p>
+                    <span className={cn('inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full', ownerColor.bg, ownerColor.text)}>
+                      Owner
+                    </span>
+                    <p className="mt-1.5 text-xs text-slate-500 truncate">{ownerInfo.email}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h3 className="text-lg font-bold text-slate-900 mb-2">Aucun membre</h3>
-          <p className="text-sm text-slate-500 mb-6">Invitez votre premier membre pour commencer.</p>
-          {isOwnerView && (
-            <button
-              onClick={() => setIsInviteModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-6 py-3 text-sm font-semibold text-white hover:bg-amber-500 transition-all"
-            >
-              <Plus className="h-4 w-4" />
-              Inviter un membre
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Object.entries(roleGroups).map(([role, roleMembers]) => {
+        )
+      })()}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Object.entries(roleGroups).map(([role, roleMembers]) => {
             const color = getRoleColor(role)
             return (
               <div key={role} className={cn("rounded-xl border bg-white", color.border)}>
@@ -383,7 +415,6 @@ export function BusinessTeam() {
             )
           })}
         </div>
-      )}
 
       {/* Global KPI summary — owner/HoS only */}
       {isOwnerView && members.length > 0 && (
