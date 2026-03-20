@@ -96,8 +96,9 @@ export const BusinessLanding: React.FC = () => {
           </div>
           
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
-            <a href="#features" className="hover:text-[#111111] transition-colors">Fonctionnalités</a>
+            <a href="#features" className="hover:text-[#111111] transition-colors">Management</a>
             <a href="#crm" className="hover:text-[#111111] transition-colors">CRM</a>
+            <a href="#roles" className="hover:text-[#111111] transition-colors">Rôles</a>
             <a href="#faq" className="hover:text-[#111111] transition-colors">FAQ</a>
           </div>
 
@@ -876,7 +877,7 @@ const FeaturesByRole = () => {
   }, [activeRole]);
 
   return (
-    <section className="px-6 md:px-20 py-24 max-w-7xl mx-auto">
+    <section id="roles" className="px-6 md:px-20 py-24 max-w-7xl mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 16, filter: 'blur(4px)' }}
         whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
