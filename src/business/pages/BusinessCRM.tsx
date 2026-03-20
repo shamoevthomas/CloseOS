@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   User,
   Search,
@@ -13,6 +13,8 @@ import {
   Phone,
   Building2,
   ChevronDown,
+  ArrowRightCircle,
+  Shuffle,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -39,7 +41,7 @@ export function BusinessCRM() {
     hubspotConnected, pipedriveConnected,
     nextSyncSeconds,
   } = useBusinessProspects()
-  const { businessSettings, user, isTeamMember, ownerUserId } = useBusinessAuth()
+  const { businessSettings, user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
   const isReadOnly = false
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
@@ -54,18 +56,68 @@ export function BusinessCRM() {
   const [newPhone, setNewPhone] = useState('')
   const [newCompany, setNewCompany] = useState('')
   const [newFormulaId, setNewFormulaId] = useState('')
+  const [newSetterId, setNewSetterId] = useState('')
+  const [newCloserId, setNewCloserId] = useState('')
   const [addLoading, setAddLoading] = useState(false)
   const [formulas, setFormulas] = useState<{ id: string; name: string; price: number }[]>([])
+  const [teamSetters, setTeamSetters] = useState<{ id: string; first_name: string; last_name: string; role: string }[]>([])
+  const [teamClosers, setTeamClosers] = useState<{ id: string; first_name: string; last_name: string; role: string }[]>([])
 
-  // Fetch formulas for creation modal
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
+
+  // Determine if current user auto-assigns
+  const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
+  const isCloser = isTeamMember && (teamMember?.role === 'Closer' || teamMember?.role === 'Setter-Closer')
+  const isSetterCloserSelf = isTeamMember && teamMember?.role === 'Setter-Closer' && teamMember?.setter_scope === 'self'
+  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
+  // Setters auto-assign themselves, everyone else must pick
+  const needsSetterPicker = !isSetter
+
+  // Fetch formulas + team members
   useEffect(() => {
     if (!effectiveUserId) return
+    // Formulas
     fetch(`/api/business?action=formulas-list&user_id=${effectiveUserId}`)
       .then(r => r.json())
       .then(data => { if (data.formulas) setFormulas(data.formulas) })
       .catch(() => {})
+    // Team members
+    import('../../lib/supabase').then(({ supabase }) => {
+      Promise.all([
+        supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
+        supabase.from('business_users').select('id, full_name, email').eq('id', effectiveUserId).single(),
+      ]).then(([tmRes, ownerRes]) => {
+        const all = tmRes.data || []
+        const ownerMember = ownerRes.data ? {
+          id: ownerRes.data.id,
+          first_name: (ownerRes.data.full_name || 'Owner').split(' ')[0] || 'Owner',
+          last_name: (ownerRes.data.full_name || '').split(' ').slice(1).join(' ') || '',
+          role: 'Owner',
+        } : null
+        const setters = all.filter((m: any) => m.role === 'Setter' || m.role === 'Setter-Closer')
+        if (ownerMember) setters.unshift(ownerMember)
+        setTeamSetters(setters)
+        const closers = all.filter((m: any) => m.role === 'Closer' || m.role === 'Setter-Closer')
+        if (ownerMember) closers.unshift(ownerMember)
+        setTeamClosers(closers)
+      })
+    })
   }, [effectiveUserId])
+
+  // Round-robin for setters: find next setter after the last assigned
+  const getNextSetter = useCallback(() => {
+    if (teamSetters.length === 0) return null
+    // Find the last assigned setter from existing prospects
+    const lastAssigned = prospects.find(p => p.assigned_setter)?.assigned_setter
+    if (!lastAssigned) return teamSetters[0]
+    const idx = teamSetters.findIndex(s => s.id === lastAssigned)
+    return teamSetters[(idx + 1) % teamSetters.length]
+  }, [teamSetters, prospects])
+
+  const getRandomSetter = useCallback(() => {
+    if (teamSetters.length === 0) return null
+    return teamSetters[Math.floor(Math.random() * teamSetters.length)]
+  }, [teamSetters])
 
   const filteredProspects = prospects.filter(p => {
     if (filterStage !== 'all' && p.stage !== filterStage) return false
@@ -89,6 +141,28 @@ export function BusinessCRM() {
 
   const handleAddProspect = async () => {
     if (!newContact) return
+    // Determine setter
+    let setterId: string | null = null
+    if (isSetter) {
+      // Setter or Setter-Closer auto-assigns self
+      setterId = teamMember?.id || null
+    } else {
+      setterId = newSetterId || null
+    }
+    if (!setterId) return // setter is required
+
+    // Determine closer
+    let closerId: string | null = null
+    if (isSetterCloserSelf) {
+      // Setter-Closer self scope: auto-assign self as closer too
+      closerId = teamMember?.id || null
+    } else if (isCloser && !isSetter) {
+      // Pure Closer: auto-assign self as closer
+      closerId = teamMember?.id || null
+    } else {
+      closerId = newCloserId || null
+    }
+
     setAddLoading(true)
     const selectedFormula = formulas.find(f => f.id === newFormulaId)
     try {
@@ -98,6 +172,8 @@ export function BusinessCRM() {
         phone: newPhone,
         company: newCompany,
         stage: 'prospect',
+        assigned_setter: setterId,
+        ...(closerId ? { assigned_to: closerId } : {}),
         ...(newFormulaId ? { formula_id: newFormulaId, value: selectedFormula?.price || 0 } : {}),
       } as any)
       setNewContact('')
@@ -105,6 +181,8 @@ export function BusinessCRM() {
       setNewPhone('')
       setNewCompany('')
       setNewFormulaId('')
+      setNewSetterId('')
+      setNewCloserId('')
       setIsAddModalOpen(false)
     } catch (err) {
       console.error(err)
@@ -374,7 +452,7 @@ export function BusinessCRM() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl border border-amber-200 bg-white p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
             <button
-              onClick={() => setIsAddModalOpen(false)}
+              onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-700"
             >
               <X className="h-5 w-5" />
@@ -440,16 +518,92 @@ export function BusinessCRM() {
                 </div>
               )}
 
+              {/* Setter assignment */}
+              {isSetter ? (
+                <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5">
+                  <p className="text-xs font-medium text-amber-700">
+                    Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
+                    {isSetterCloserSelf && <span className="ml-1">• Closer assigné automatiquement</span>}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Setter *</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={newSetterId}
+                      onChange={(e) => setNewSetterId(e.target.value)}
+                      className="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    >
+                      <option value="">Choisir un setter</option>
+                      {teamSetters.map(s => (
+                        <option key={s.id} value={s.id}>{s.first_name} {s.last_name} {s.role === 'Owner' ? '(Owner)' : `(${s.role})`}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = getNextSetter()
+                        if (next) setNewSetterId(next.id)
+                      }}
+                      className="flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-all whitespace-nowrap"
+                      title="Tournante (round-robin)"
+                    >
+                      <ArrowRightCircle className="h-3.5 w-3.5" />
+                      Tournante
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const rnd = getRandomSetter()
+                        if (rnd) setNewSetterId(rnd.id)
+                      }}
+                      className="flex items-center gap-1 rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-all whitespace-nowrap"
+                      title="Hasard (aléatoire)"
+                    >
+                      <Shuffle className="h-3.5 w-3.5" />
+                      Hasard
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Closer assignment (optional) — hidden for Setter-Closer self (auto-assigned) and pure Closer (auto-assigned) */}
+              {!isSetterCloserSelf && !(isCloser && !isSetter) && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Closer <span className="text-slate-400 font-normal">(facultatif)</span></label>
+                  <select
+                    value={newCloserId}
+                    onChange={(e) => setNewCloserId(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  >
+                    <option value="">Aucun closer</option>
+                    {teamClosers.map(c => (
+                      <option key={c.id} value={c.id}>{c.first_name} {c.last_name} {c.role === 'Owner' ? '(Owner)' : `(${c.role})`}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Pure Closer auto-assign message */}
+              {isCloser && !isSetter && (
+                <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-2.5">
+                  <p className="text-xs font-medium text-blue-700">
+                    Closer : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
+                  </p>
+                </div>
+              )}
+
               <div className="flex gap-3 mt-4">
                 <button
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
                   className="flex-1 rounded-xl border border-slate-200 py-2.5 font-medium text-slate-600 hover:bg-slate-50 transition-all"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleAddProspect}
-                  disabled={addLoading || !newContact}
+                  disabled={addLoading || !newContact || (needsSetterPicker && !newSetterId)}
                   className="flex-1 rounded-xl bg-amber-600 py-2.5 font-bold text-white hover:bg-amber-500 transition-all disabled:opacity-50"
                 >
                   {addLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Ajouter'}
