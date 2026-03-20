@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
+import { getBrowserTimezone } from '../../lib/timezone';
 
 const BusinessAuthContext = createContext<any>(null);
 
@@ -315,6 +316,13 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     await supabase.auth.signOut();
   }, [clearUserData, teamMember?.business_owner_id, setOnlineStatus, logConnectionEvent, stopPresence]);
 
+  // Resolved timezone: team member tz > owner profile tz > browser tz
+  const userTimezone = useMemo(() => {
+    if (isTeamMember && teamMember?.timezone) return teamMember.timezone
+    if (businessProfile?.timezone) return businessProfile.timezone
+    return getBrowserTimezone()
+  }, [isTeamMember, teamMember?.timezone, businessProfile?.timezone])
+
   return (
     <BusinessAuthContext.Provider value={{
       isAuthenticated: !!user,
@@ -332,6 +340,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       teamMember,
       isTeamMember,
       ownerUserId,
+      userTimezone,
       refreshProfile: async () => {
         if (user) {
           await initUser(user.id);

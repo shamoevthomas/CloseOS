@@ -1,17 +1,20 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
-  ChevronDown, User, Mail, Megaphone, Users, Link2, Copy, Plus, X, Save, Video,
+  ChevronDown, User, Mail, Megaphone, Users, Link2, Copy, Plus, X, Save, Video, Globe,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
+import { toUTC, fromUTC, getTimezoneLabel } from '../../lib/timezone'
 
 interface Appointment {
   id: string
   date: string
   time: string
+  datetime_utc?: string | null
+  timezone?: string | null
   duration: number
   status: 'pending' | 'confirmed' | 'cancelled' | 'done'
   notes: string | null
@@ -28,6 +31,7 @@ interface TeamMember {
   first_name: string
   last_name: string
   role: string
+  timezone?: string
 }
 
 interface BookingLink {
@@ -50,7 +54,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 const API_URL = '/api/business'
 
 export function BusinessAppointments() {
-  const { user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
+  const { user, isTeamMember, ownerUserId, teamMember, userTimezone } = useBusinessAuth()
   const { isConnected: isGoogleConnected, createEvent: createGoogleEvent } = useBusinessGoogleCalendar()
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -89,13 +93,13 @@ export function BusinessAppointments() {
   useEffect(() => {
     if (!effectiveUserId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
-      supabase.from('business_users').select('id, full_name').eq('id', effectiveUserId).single(),
+      supabase.from('business_team_members').select('id, first_name, last_name, role, timezone').eq('business_owner_id', effectiveUserId),
+      supabase.from('business_users').select('id, full_name, timezone').eq('id', effectiveUserId).single(),
     ]).then(([tmRes, ownerRes]) => {
       const list = tmRes.data || []
       if (ownerRes.data) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
-        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
+        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner', timezone: ownerRes.data.timezone || 'Europe/Paris' })
       }
       setTeamMembers(list)
     })
@@ -224,6 +228,9 @@ export function BusinessAppointments() {
         }
       }
 
+      // Convert local time to UTC for storage
+      const utcDate = toUTC(bookDate, bookTime, userTimezone)
+
       // Create appointment via API (uses service role, bypasses RLS)
       const res = await fetch(`${API_URL}?action=appointments-create`, {
         method: 'POST',
@@ -237,6 +244,8 @@ export function BusinessAppointments() {
           assigned_to: assignedTo,
           notes: bookNotes || null,
           google_meet_link: googleMeetLink,
+          datetime_utc: utcDate.toISOString(),
+          timezone: userTimezone,
         }),
       })
 
@@ -272,10 +281,20 @@ export function BusinessAppointments() {
 
   const filtered = visibleAppointments.filter(a => {
     if (filterStatus !== 'all' && a.status !== filterStatus) return false
-    if (filterDate && a.date !== filterDate) return false
+    const localDt = getLocalDateTime(a)
+    if (filterDate && localDt.date !== filterDate) return false
     if (!isTeamMember && filterMember !== 'all' && (a as any).assigned_to !== filterMember) return false
     return true
   })
+
+  /** Convert appointment to viewer's local date/time */
+  const getLocalDateTime = (appt: Appointment) => {
+    if (appt.datetime_utc) {
+      return fromUTC(appt.datetime_utc, userTimezone)
+    }
+    // Fallback for old appointments without datetime_utc
+    return { date: appt.date, time: appt.time?.slice(0, 5) || '00:00' }
+  }
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr + 'T00:00:00')
@@ -287,6 +306,25 @@ export function BusinessAppointments() {
     const m = teamMembers.find(t => t.id === assignedTo)
     return m ? `${m.first_name} ${m.last_name}` : null
   }
+
+  /** Get the assigned member's local time (if different timezone) */
+  const getMemberLocalTime = (appt: Appointment) => {
+    if (!appt.datetime_utc || !(appt as any).assigned_to) return null
+    const member = teamMembers.find(t => t.id === (appt as any).assigned_to)
+    if (!member?.timezone || member.timezone === userTimezone) return null
+    const memberLocal = fromUTC(appt.datetime_utc, member.timezone)
+    return { time: memberLocal.time, timezone: member.timezone, name: `${member.first_name} ${member.last_name}` }
+  }
+
+  /** When booking for someone else, compute their local time */
+  const bookTargetLocalTime = useMemo(() => {
+    if (!bookMemberId || !bookDate || !bookTime) return null
+    const member = teamMembers.find(m => m.id === bookMemberId)
+    if (!member?.timezone || member.timezone === userTimezone) return null
+    const utc = toUTC(bookDate, bookTime, userTimezone)
+    const memberLocal = fromUTC(utc, member.timezone)
+    return { time: memberLocal.time, date: memberLocal.date, timezone: member.timezone, name: `${member.first_name}` }
+  }, [bookMemberId, bookDate, bookTime, userTimezone, teamMembers])
 
   const hasActiveFilters = filterStatus !== 'all' || filterDate !== '' || filterMember !== 'all'
 
@@ -450,6 +488,14 @@ export function BusinessAppointments() {
                         <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                       ))}
                     </select>
+                    {bookTargetLocalTime && (
+                      <div className="mt-1.5 flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+                        <Globe className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                        <p className="text-xs text-blue-700">
+                          Il sera <span className="font-semibold">{bookTargetLocalTime.time}</span> chez {bookTargetLocalTime.name} ({getTimezoneLabel(bookTargetLocalTime.timezone)})
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : null}
 
@@ -666,13 +712,15 @@ export function BusinessAppointments() {
         {filtered.map((appt) => {
           const statusConf = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending
           const memberName = getMemberName((appt as any).assigned_to)
+          const localDt = getLocalDateTime(appt)
+          const memberTime = getMemberLocalTime(appt)
 
           return (
             <div key={appt.id} className="rounded-xl border border-amber-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between gap-4">
                 {/* Left: Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusConf.bg} ${statusConf.color}`}>
                       {appt.status === 'pending' && <Clock className="h-3 w-3" />}
                       {appt.status === 'confirmed' && <CheckCircle2 className="h-3 w-3" />}
@@ -681,8 +729,17 @@ export function BusinessAppointments() {
                       {statusConf.label}
                     </span>
                     <span className="text-sm font-semibold text-slate-900">
-                      {formatDate(appt.date)} à {appt.time?.slice(0, 5)}
+                      {formatDate(localDt.date)} à {localDt.time}
                     </span>
+                    {memberTime && (
+                      <span
+                        className="inline-flex items-center gap-1 text-xs text-slate-400 cursor-help"
+                        title={`Heure locale de ${memberTime.name} (${getTimezoneLabel(memberTime.timezone)})`}
+                      >
+                        <Globe className="h-3 w-3" />
+                        ({memberTime.time} chez {memberTime.name})
+                      </span>
+                    )}
                     <span className="text-xs text-slate-400">{appt.duration}min</span>
                   </div>
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone } from 'lucide-react'
+import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Globe } from 'lucide-react'
+import { toUTC, getTimezoneLabel } from '../lib/timezone'
 
 interface SlotData { date: string; time: string }
 interface BookingInfo {
@@ -57,6 +58,9 @@ export function PublicBooking() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
 
+  // Prospect timezone
+  const prospectTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
+
   // Submit
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
@@ -104,7 +108,11 @@ export function PublicBooking() {
       const res = await fetch(`${API_URL}?action=booking-submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, name, email, phone, date: selectedDate, time: selectedTime }),
+        body: JSON.stringify({
+          slug, name, email, phone, date: selectedDate, time: selectedTime,
+          datetime_utc: toUTC(selectedDate, selectedTime, prospectTimezone).toISOString(),
+          prospect_timezone: prospectTimezone,
+        }),
       })
       if (!res.ok) {
         const data = await res.json()
@@ -193,6 +201,10 @@ export function PublicBooking() {
               <span className="font-medium text-slate-800">
                 {selectedTime} - {endTime(selectedTime!, info.duration)} ({info.duration} min)
               </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Globe className="h-4 w-4 text-amber-600" />
+              <span className="text-slate-600">{getTimezoneLabel(prospectTimezone)}</span>
             </div>
           </div>
           {info.companyName && (

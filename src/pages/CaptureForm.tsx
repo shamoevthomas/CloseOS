@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight } from 'lucide-react'
+import { toUTC } from '../lib/timezone'
 
 interface CustomField {
   label: string
@@ -109,6 +110,7 @@ export function CaptureForm() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
 
   const [infoCollapsed, setInfoCollapsed] = useState(false)
+  const prospectTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
 
   useEffect(() => {
     const fetchCampaign = async () => {
@@ -161,8 +163,11 @@ export function CaptureForm() {
       const name = `${firstName} ${lastName}`.trim()
       const payload: any = { slug, name, email, phone, custom_data: customData }
       if (!isInscriptionMode && selectedDate && selectedTime) {
-        payload.date = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
+        const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
+        payload.date = dateStr
         payload.time = selectedTime
+        payload.datetime_utc = toUTC(dateStr, selectedTime, prospectTimezone).toISOString()
+        payload.prospect_timezone = prospectTimezone
       }
       const res = await fetch(`${API_URL}?action=capture-submit`, {
         method: 'POST',

@@ -1002,7 +1002,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'appointments-create' && req.method === 'POST') {
-      const { user_id, title, date, time, duration, assigned_to, notes, google_meet_link } = req.body
+      const { user_id, title, date, time, duration, assigned_to, notes, google_meet_link, datetime_utc, timezone } = req.body
       if (!user_id || !date || !time) return res.status(400).json({ error: 'user_id, date, and time required' })
 
       const insertPayload: Record<string, any> = {
@@ -1014,6 +1014,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         title: title || null,
         notes: notes || null,
         google_meet_link: google_meet_link || null,
+        datetime_utc: datetime_utc || null,
+        timezone: timezone || null,
       }
       if (assigned_to) insertPayload.assigned_to = assigned_to
 
@@ -1187,7 +1189,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ─── Native CloseOS booking: submit ───
     if (action === 'booking-submit' && req.method === 'POST') {
-      const { slug, name, email, phone, date, time } = req.body
+      const { slug, name, email, phone, date, time, prospect_timezone, datetime_utc } = req.body
       if (!slug || !name || !date || !time) return res.status(400).json({ error: 'slug, name, date, time required' })
 
       const { data: link, error: linkErr } = await supabase
@@ -1240,7 +1242,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (prospErr) return res.status(500).json({ error: prospErr.message })
 
-      // Create appointment
+      // Create appointment with timezone data
       const { data: appointment, error: apptErr } = await supabase
         .from('business_appointments')
         .insert({
@@ -1251,6 +1253,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           time,
           duration: link.duration || 30,
           status: 'pending',
+          datetime_utc: datetime_utc || null,
+          timezone: prospect_timezone || null,
         })
         .select()
         .single()
@@ -1262,7 +1266,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ─── Public capture endpoint (no auth) ───
     if (action === 'capture-submit' && req.method === 'POST') {
-      const { slug, name, email, phone, custom_data, date, time } = req.body
+      const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone } = req.body
       if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
 
       // Find campaign by slug
@@ -1312,6 +1316,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             time,
             duration: 30,
             status: 'pending',
+            datetime_utc: datetime_utc || null,
+            timezone: prospect_timezone || null,
           })
           .select()
           .single()

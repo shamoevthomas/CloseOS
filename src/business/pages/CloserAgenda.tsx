@@ -7,6 +7,7 @@ import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
+import { fromUTC } from '../../lib/timezone'
 
 /* ─── Types ───────────────────────────────────────── */
 
@@ -20,6 +21,8 @@ interface Appointment {
   assigned_to: string | null
   prospect: { id: number; contact: string; email: string; phone: string } | null
   campaign: { id: string; name: string } | null
+  datetime_utc?: string | null
+  timezone?: string | null
 }
 
 interface Reminder {
@@ -138,7 +141,7 @@ interface TeamMemberOption {
 }
 
 export function CloserAgenda() {
-  const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
+  const { user, teamMember, ownerUserId, isTeamMember, userTimezone } = useBusinessAuth()
   const { googleEvents, isConnected, login, isLoading: gLoading } = useBusinessGoogleCalendar()
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales'
@@ -233,18 +236,25 @@ export function CloserAgenda() {
     const key = formatDateKey(date)
     const events: CalendarEvent[] = []
 
-    // Appointments
+    // Appointments — convert to viewer's timezone if datetime_utc available
     for (const a of appointments) {
-      if (a.date === key && a.status !== 'cancelled') {
+      let apptDate = a.date
+      let apptTime = a.time ? a.time.slice(0, 5) : ''
+      if (a.datetime_utc) {
+        const local = fromUTC(a.datetime_utc, userTimezone)
+        apptDate = local.date
+        apptTime = local.time
+      }
+      if (apptDate === key && a.status !== 'cancelled') {
         events.push({
           id: a.id,
           title: a.prospect?.contact || 'Rendez-vous',
-          date: a.date,
-          time: a.time ? `${a.time.slice(0, 5)}` : '',
+          date: apptDate,
+          time: apptTime,
           type: 'appointment',
           color: 'bg-blue-100 text-blue-700',
           status: a.status,
-          data: a,
+          data: { ...a, _localDate: apptDate, _localTime: apptTime },
         })
       }
     }
@@ -289,7 +299,7 @@ export function CloserAgenda() {
     }
 
     return events
-  }, [appointments, reminders, googleEvents, isOwnerView, selectedMemberId])
+  }, [appointments, reminders, googleEvents, isOwnerView, selectedMemberId, userTimezone])
 
   const getAllDayGoogleEvents = useCallback((date: Date) => {
     return googleEvents.filter(e => {
