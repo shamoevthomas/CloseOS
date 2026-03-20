@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import {
   Plus, Megaphone, Code, Pencil, Trash2, X, Loader2,
-  ToggleLeft, ToggleRight, Link, Users, ChevronDown, Video
+  ToggleLeft, ToggleRight, Link, Users, ChevronDown, Video,
+  CalendarCheck, UserPlus, Monitor, Layers, MessageSquare, Clock, Copy, Eye
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -32,6 +33,8 @@ interface Campaign {
   phone_required: boolean
   redirect_url: string | null
   formula_id: string | null
+  capture_type: 'with_rdv' | 'without_rdv'
+  popup_delay: number
   created_at: string
   business_prospects: { count: number }[]
 }
@@ -80,6 +83,10 @@ export function BusinessCampaigns() {
   const [formPhoneRequired, setFormPhoneRequired] = useState(false)
   const [formCustomFields, setFormCustomFields] = useState<CustomField[]>([])
 
+  // Capture type & popup
+  const [formCaptureType, setFormCaptureType] = useState<'with_rdv' | 'without_rdv'>('with_rdv')
+  const [formPopupDelay, setFormPopupDelay] = useState(0)
+
   const fetchCampaigns = useCallback(async () => {
     if (!effectiveUserId) return
     try {
@@ -113,7 +120,7 @@ export function BusinessCampaigns() {
     setFormLandingTitle(''); setFormLandingSubtitle(''); setFormLandingText(''); setFormLandingVideoUrl('')
     setFormEmailRequired(true); setFormPhoneRequired(false)
     setFormCustomFields([]); setEditingCampaign(null); setModalTab('general')
-    setFormFormulaId(null)
+    setFormFormulaId(null); setFormCaptureType('with_rdv'); setFormPopupDelay(0)
   }
 
   const openCreate = () => { resetForm(); setIsModalOpen(true) }
@@ -130,6 +137,8 @@ export function BusinessCampaigns() {
     setFormEmailRequired(campaign.email_required ?? true); setFormPhoneRequired(campaign.phone_required ?? false)
     setFormCustomFields(campaign.custom_fields || [])
     setFormFormulaId(campaign.formula_id || null)
+    setFormCaptureType(campaign.capture_type || 'with_rdv')
+    setFormPopupDelay(campaign.popup_delay ?? 0)
     setModalTab('general'); setIsModalOpen(true)
   }
 
@@ -142,6 +151,8 @@ export function BusinessCampaigns() {
     email_required: formEmailRequired, phone_required: formPhoneRequired,
     formula_id: formFormulaId || null,
     redirect_url: formRedirectUrl || null,
+    capture_type: formCaptureType,
+    popup_delay: formPopupDelay,
   })
 
   const handleSave = async () => {
@@ -190,9 +201,41 @@ export function BusinessCampaigns() {
     } catch { toast.error('Erreur') }
   }
 
+  // Embed code modal
+  const [embedModalCampaign, setEmbedModalCampaign] = useState<Campaign | null>(null)
+
   const getCaptureUrl = (slug: string) => `${window.location.origin}/capture/${slug}`
   const getIframeCode = (slug: string) =>
-    `<iframe src="${getCaptureUrl(slug)}?embed=true" width="100%" height="800" frameborder="0"></iframe>`
+    `<iframe src="${getCaptureUrl(slug)}?embed=true" width="100%" height="800" frameborder="0" style="border:none;"></iframe>`
+
+  const getPopupCode = (campaign: Campaign) => {
+    const url = getCaptureUrl(campaign.slug)
+    const delay = campaign.popup_delay ?? 0
+    return `<!-- CloseOS Capture Popup -->
+<div id="closeos-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);justify-content:center;align-items:center;">
+  <div style="position:relative;width:90%;max-width:520px;max-height:90vh;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.25);">
+    <iframe src="${url}?embed=true" width="100%" height="700" frameborder="0" style="border:none;display:block;"></iframe>
+  </div>
+</div>
+<script>
+(function(){
+  var overlay = document.getElementById('closeos-overlay');
+  var filled = localStorage.getItem('closeos_filled_${campaign.slug}');
+  if (filled) return;
+  // Block scrolling
+  document.body.style.overflow = 'hidden';
+  ${delay > 0 ? `setTimeout(function(){ overlay.style.display='flex'; }, ${delay * 1000});` : `overlay.style.display='flex';`}
+  // Listen for form completion
+  window.addEventListener('message', function(e){
+    if(e.data === 'closeos-capture-done'){
+      overlay.style.display='none';
+      document.body.style.overflow='';
+      localStorage.setItem('closeos_filled_${campaign.slug}','1');
+    }
+  });
+})();
+</script>`
+  }
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text); toast.success(`${label} copié !`)
@@ -262,23 +305,28 @@ export function BusinessCampaigns() {
                   {campaign.is_active ? <ToggleRight className="h-6 w-6 text-amber-600" /> : <ToggleLeft className="h-6 w-6 text-slate-300" />}
                 </button>
               </div>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${campaign.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                   {campaign.is_active ? 'Active' : 'Inactive'}
                 </span>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${campaign.capture_type === 'without_rdv' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                  {campaign.capture_type === 'without_rdv' ? <><UserPlus className="h-3 w-3" /> Inscription</> : <><CalendarCheck className="h-3 w-3" /> RDV</>}
+                </span>
                 <span className="text-xs text-slate-400">{campaign.source}</span>
-                {campaign.landing_video_url && <Video className="h-3.5 w-3.5 text-slate-400" />}
               </div>
               <div className="flex items-center gap-4 mb-4 text-xs text-slate-500">
                 <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {leadCount} lead{leadCount !== 1 ? 's' : ''}</span>
                 {customFieldCount > 0 && <span>{customFieldCount} champ{customFieldCount !== 1 ? 's' : ''} custom</span>}
               </div>
               <div className="flex gap-2 mb-3">
-                <button onClick={() => copyToClipboard(getCaptureUrl(campaign.slug), 'Lien')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors">
-                  <Link className="h-3.5 w-3.5" /> Copier le lien
+                <button onClick={() => copyToClipboard(getCaptureUrl(campaign.slug), 'Lien')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors" title="Page entière">
+                  <Monitor className="h-3.5 w-3.5" /> Page
                 </button>
-                <button onClick={() => copyToClipboard(getIframeCode(campaign.slug), 'Code iframe')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors">
-                  <Code className="h-3.5 w-3.5" /> Iframe
+                <button onClick={() => copyToClipboard(getIframeCode(campaign.slug), 'Code iframe')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors" title="Iframe">
+                  <Layers className="h-3.5 w-3.5" /> Iframe
+                </button>
+                <button onClick={() => setEmbedModalCampaign(campaign)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors" title="Popup">
+                  <MessageSquare className="h-3.5 w-3.5" /> Popup
                 </button>
               </div>
               <div className="flex gap-2 border-t border-slate-100 pt-3">
@@ -338,6 +386,39 @@ export function BusinessCampaigns() {
                     <label className="block text-sm font-medium text-slate-700 mb-1">Nom de la campagne *</label>
                     <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Campagne Facebook Mars 2026" className={inputCls} />
                   </div>
+
+                  {/* Capture type switch */}
+                  <div className="rounded-xl border border-slate-200 p-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-3">Type de capture</label>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setFormCaptureType('with_rdv')}
+                        className={`flex-1 flex items-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                          formCaptureType === 'with_rdv'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        <CalendarCheck className="h-4 w-4" /> Avec RDV
+                      </button>
+                      <button
+                        onClick={() => setFormCaptureType('without_rdv')}
+                        className={`flex-1 flex items-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                          formCaptureType === 'without_rdv'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        <UserPlus className="h-4 w-4" /> Inscription seule
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">
+                      {formCaptureType === 'with_rdv'
+                        ? 'Le prospect pourra choisir un créneau de rendez-vous.'
+                        : 'Capture simple sans programmation de rendez-vous.'}
+                    </p>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Source</label>
                     <div className="relative">
@@ -398,6 +479,29 @@ export function BusinessCampaigns() {
                     <label className="block text-sm font-medium text-slate-700 mb-1">Lien de redirection post-capture</label>
                     <input type="url" value={formRedirectUrl} onChange={(e) => setFormRedirectUrl(e.target.value)} placeholder="https://www.example.com/merci" className={inputCls} />
                     <p className="text-xs text-slate-400 mt-1">Optionnel — Redirige le prospect vers cette URL après soumission du formulaire</p>
+                  </div>
+
+                  {/* Popup delay config */}
+                  <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-4">
+                    <label className="flex items-center gap-2 text-sm font-medium text-purple-700 mb-2">
+                      <Clock className="h-4 w-4" /> Configuration du Popup
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={formPopupDelay}
+                        onChange={(e) => setFormPopupDelay(Number(e.target.value))}
+                        className={selectCls}
+                      >
+                        <option value={0}>Apparaît instantanément</option>
+                        <option value={3}>Après 3 secondes</option>
+                        <option value={5}>Après 5 secondes</option>
+                        <option value={10}>Après 10 secondes</option>
+                        <option value={15}>Après 15 secondes</option>
+                        <option value={30}>Après 30 secondes</option>
+                        <option value={60}>Après 1 minute</option>
+                      </select>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">S'applique quand le format Popup est utilisé. Le site est bloqué tant que le formulaire n'est pas rempli.</p>
                   </div>
                 </div>
               )}
@@ -490,6 +594,75 @@ export function BusinessCampaigns() {
               <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50">
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {editingCampaign ? 'Enregistrer' : 'Créer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Popup Embed Code Modal */}
+      {embedModalCampaign && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 flex-shrink-0">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Code Popup — {embedModalCampaign.name}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Copiez ce code et collez-le juste avant la balise {'</body>'} de votre site</p>
+              </div>
+              <button onClick={() => setEmbedModalCampaign(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* How it works */}
+              <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
+                <h4 className="text-sm font-bold text-blue-700 mb-2 flex items-center gap-2">
+                  <Eye className="h-4 w-4" /> Comment ça marche
+                </h4>
+                <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
+                  <li>Le popup s'affiche {embedModalCampaign.popup_delay ? `après ${embedModalCampaign.popup_delay} secondes` : 'instantanément'} au chargement de la page</li>
+                  <li>Le site est bloqué (scroll désactivé, overlay sombre) tant que le formulaire n'est pas rempli</li>
+                  <li>Une fois le formulaire soumis, le popup disparaît et le visiteur peut naviguer normalement</li>
+                  <li>Le visiteur ne reverra plus le popup grâce au localStorage</li>
+                </ol>
+              </div>
+
+              {/* The code */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-slate-700">Code à intégrer</label>
+                  <button
+                    onClick={() => copyToClipboard(getPopupCode(embedModalCampaign), 'Code popup')}
+                    className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Copier le code
+                  </button>
+                </div>
+                <pre className="rounded-xl border border-slate-200 bg-slate-900 p-4 text-xs text-green-400 overflow-x-auto max-h-[300px] overflow-y-auto whitespace-pre-wrap break-all">
+                  {getPopupCode(embedModalCampaign)}
+                </pre>
+              </div>
+
+              {/* Other formats */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), 'Lien page entière')}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <Monitor className="h-4 w-4" /> Copier lien page
+                </button>
+                <button
+                  onClick={() => copyToClipboard(getIframeCode(embedModalCampaign.slug), 'Code iframe')}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <Layers className="h-4 w-4" /> Copier code iframe
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-slate-100 px-6 py-4 flex-shrink-0">
+              <button onClick={() => setEmbedModalCampaign(null)} className="rounded-xl bg-slate-100 px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors">
+                Fermer
               </button>
             </div>
           </div>

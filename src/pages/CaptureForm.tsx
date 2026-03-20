@@ -22,6 +22,7 @@ interface Campaign {
   email_required: boolean
   phone_required: boolean
   redirect_url: string | null
+  capture_type: 'with_rdv' | 'without_rdv'
 }
 
 const API_URL = '/api/business'
@@ -127,27 +128,39 @@ export function CaptureForm() {
   }, [firstName, email, phone, customData, campaign])
 
   useEffect(() => {
+    if (campaign?.capture_type === 'without_rdv') return // Don't auto-collapse in inscription mode
     if (isInfoComplete && !infoCollapsed) {
       const timer = setTimeout(() => setInfoCollapsed(true), 500)
       return () => clearTimeout(timer)
     }
     if (!isInfoComplete && infoCollapsed) setInfoCollapsed(false)
-  }, [isInfoComplete])
+  }, [isInfoComplete, campaign])
+
+  const isInscriptionMode = campaign?.capture_type === 'without_rdv'
 
   const handleSubmit = async () => {
-    if (!isInfoComplete || !selectedDate || !selectedTime) return
+    if (!isInfoComplete) return
+    if (!isInscriptionMode && (!selectedDate || !selectedTime)) return
     setSubmitting(true)
     try {
       const name = `${firstName} ${lastName}`.trim()
-      const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
+      const payload: any = { slug, name, email, phone, custom_data: customData }
+      if (!isInscriptionMode && selectedDate && selectedTime) {
+        payload.date = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
+        payload.time = selectedTime
+      }
       const res = await fetch(`${API_URL}?action=capture-submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, name, email, phone, custom_data: customData, date: dateStr, time: selectedTime }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (data.prospect) {
         setSubmitted(true)
+        // Notify parent window (for popup mode)
+        if (window.parent !== window) {
+          window.parent.postMessage('closeos-capture-done', '*')
+        }
         const rUrl = data.redirect_url || campaign?.redirect_url
         if (rUrl) {
           setRedirectUrl(rUrl)
@@ -190,8 +203,8 @@ export function CaptureForm() {
             </div>
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Merci !</h2>
-          <p className="text-slate-500 mb-3">Votre demande a bien été envoyée.</p>
-          {selectedDate && selectedTime && (
+          <p className="text-slate-500 mb-3">{isInscriptionMode ? 'Votre inscription a bien été enregistrée.' : 'Votre demande a bien été envoyée.'}</p>
+          {!isInscriptionMode && selectedDate && selectedTime && (
             <div className="rounded-xl bg-blue-50 border border-blue-100 p-4 mb-3">
               <p className="text-sm font-semibold text-blue-800">Rendez-vous confirmé</p>
               <p className="text-sm text-blue-700 mt-1">
@@ -279,15 +292,19 @@ export function CaptureForm() {
 
             {/* Form header */}
             <div className="mb-4">
-              <h2 className="text-lg font-bold text-slate-900">{campaign?.name || 'Réservez votre créneau'}</h2>
-              <p className="text-sm text-slate-500 mt-0.5">Remplissez vos informations puis choisissez un créneau.</p>
+              <h2 className="text-lg font-bold text-slate-900">{campaign?.name || (isInscriptionMode ? 'Inscrivez-vous' : 'Réservez votre créneau')}</h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                {isInscriptionMode ? 'Remplissez vos informations pour vous inscrire.' : 'Remplissez vos informations puis choisissez un créneau.'}
+              </p>
             </div>
 
             {/* Progress */}
-            <div className="flex items-center gap-2 mb-5">
-              <div className={`h-1 flex-1 rounded-full transition-all duration-500 bg-blue-600`} />
-              <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${selectedDate && selectedTime ? 'bg-blue-600' : 'bg-slate-200'}`} />
-            </div>
+            {!isInscriptionMode && (
+              <div className="flex items-center gap-2 mb-5">
+                <div className={`h-1 flex-1 rounded-full transition-all duration-500 bg-blue-600`} />
+                <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${selectedDate && selectedTime ? 'bg-blue-600' : 'bg-slate-200'}`} />
+              </div>
+            )}
 
             {/* INFO SECTION - collapsible */}
             <div className={`overflow-hidden transition-all duration-500 ease-in-out ${infoCollapsed ? 'max-h-14' : 'max-h-[600px]'}`}>
@@ -345,8 +362,26 @@ export function CaptureForm() {
               )}
             </div>
 
-            {/* CALENDAR SECTION */}
-            <div className="relative">
+            {/* INSCRIPTION MODE - Submit button */}
+            {isInscriptionMode && (
+              <div className="mt-4">
+                <button
+                  onClick={handleSubmit}
+                  disabled={!isInfoComplete || submitting}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><span>S'inscrire</span><ArrowRight className="h-4 w-4" /></>}
+                </button>
+                {!isEmbed && (
+                  <p className="text-center text-xs text-slate-400 mt-3">
+                    En vous inscrivant, vous acceptez nos conditions d'utilisation.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* CALENDAR SECTION - RDV mode only */}
+            {!isInscriptionMode && <div className="relative">
               {/* Overlay - semi transparent, NO blur */}
               {!isInfoComplete && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 cursor-not-allowed">
@@ -448,7 +483,7 @@ export function CaptureForm() {
                   </p>
                 )}
               </div>
-            </div>
+            </div>}
           </div>
         </div>
       </div>

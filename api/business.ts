@@ -906,7 +906,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'campaigns-create' && req.method === 'POST') {
-      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id } = req.body
+      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -942,6 +942,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           email_required: email_required ?? true,
           phone_required: phone_required ?? false,
           formula_id: formula_id || null,
+          capture_type: capture_type || 'with_rdv',
+          popup_delay: popup_delay ?? 0,
         })
         .select()
         .single()
@@ -1057,7 +1059,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ─── Public capture endpoint (no auth) ───
     if (action === 'capture-submit' && req.method === 'POST') {
       const { slug, name, email, phone, custom_data, date, time } = req.body
-      if (!slug || !name || !email) return res.status(400).json({ error: 'slug, name, and email required' })
+      if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
 
       // Find campaign by slug
       const { data: campaign, error: campErr } = await supabase
