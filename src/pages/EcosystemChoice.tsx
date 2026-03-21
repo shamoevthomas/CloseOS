@@ -18,7 +18,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
     <div className="min-h-screen font-sans flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden">
       {/* Split background — dark left, light right */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#020617] via-[#020617] to-[#f4f2f1]" style={{ background: 'linear-gradient(to right, #020617 0%, #020617 45%, #0a0e1f 50%, #f4f2f1 55%, #f4f2f1 100%)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #020617 0%, #020617 30%, #0a0e1f 40%, #3a3a3a 50%, #b5b0ab 58%, #f4f2f1 68%, #f4f2f1 100%)' }} />
       </div>
 
       {/* Content */}
