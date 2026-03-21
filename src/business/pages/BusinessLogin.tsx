@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase';
 
 export default function BusinessLogin() {
   const navigate = useNavigate();
-  const { login, user, loading: authLoading, businessProfile, isTeamMember } = useBusinessAuth();
+  const { login, user, loading: authLoading, businessProfile, isTeamMember, refreshProfile } = useBusinessAuth();
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -68,34 +68,9 @@ export default function BusinessLogin() {
         setError(result.error.message || "Email ou mot de passe incorrect");
         setLoading(false);
       } else {
-        // Check if user has a business profile, if not create one
-        // But DON'T create one if the user is a team member (closer/setter)
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-          // Check if team member first
-          const { data: teamMemberData } = await supabase
-            .from('business_team_members')
-            .select('id')
-            .eq('user_id', authUser.id)
-            .single();
-
-          if (!teamMemberData) {
-            // Not a team member — ensure business_users entry exists
-            const { data: existing } = await supabase
-              .from('business_users')
-              .select('id')
-              .eq('id', authUser.id)
-              .single();
-
-            if (!existing) {
-              await supabase.from('business_users').insert({
-                id: authUser.id,
-                full_name: authUser.user_metadata?.full_name || '',
-                email: authUser.email || '',
-              });
-            }
-          }
-        }
+        // initUser in auth context auto-creates business_users if needed
+        // Just wait for profile to be ready then navigate
+        await refreshProfile();
         navigate('/business/dashboard');
       }
     } catch (err) {

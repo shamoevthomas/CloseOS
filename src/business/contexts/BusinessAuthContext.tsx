@@ -63,7 +63,24 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       }
 
       // Not a team member — regular owner flow
-      const profile = (!profileRes.error && profileRes.data) ? profileRes.data : null;
+      let profile = (!profileRes.error && profileRes.data) ? profileRes.data : null;
+
+      // Auto-create business_users row if missing (Google OAuth, race condition, etc.)
+      if (!profile) {
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user) {
+          const { data: inserted } = await supabase
+            .from('business_users')
+            .upsert({
+              id: authData.user.id,
+              full_name: authData.user.user_metadata?.full_name || authData.user.user_metadata?.name || '',
+              email: authData.user.email || '',
+            }, { onConflict: 'id' })
+            .select()
+            .single();
+          if (inserted) profile = inserted;
+        }
+      }
 
       const { data: settings } = await supabase
         .from('business_settings')
