@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight } from 'lucide-react'
 import { toUTC } from '../lib/timezone'
@@ -144,14 +144,36 @@ export function CaptureForm() {
     return true
   }, [firstName, email, phone, customData, campaign])
 
+  // Re-expand form if user deletes required fields while collapsed
   useEffect(() => {
-    if (campaign?.capture_type === 'without_rdv') return // Don't auto-collapse in inscription mode
-    if (isInfoComplete && !infoCollapsed) {
-      const timer = setTimeout(() => setInfoCollapsed(true), 500)
-      return () => clearTimeout(timer)
-    }
     if (!isInfoComplete && infoCollapsed) setInfoCollapsed(false)
-  }, [isInfoComplete, campaign])
+  }, [isInfoComplete, infoCollapsed])
+
+  // Passive lead tracking: save partial prospect when email or phone is entered
+  const partialSavedRef = useRef(false)
+  const partialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const savePartialLead = useCallback(async () => {
+    if (!slug || partialSavedRef.current) return
+    if (!email.trim() && !phone.trim()) return
+    partialSavedRef.current = true
+    try {
+      const name = `${firstName} ${lastName}`.trim()
+      await fetch(`${API_URL}?action=capture-partial`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, name, email, phone, custom_data: customData }),
+      })
+    } catch { /* fire-and-forget */ }
+  }, [slug, firstName, lastName, email, phone, customData])
+
+  useEffect(() => {
+    if (submitted || partialSavedRef.current) return
+    if (!email.trim() && !phone.trim()) return
+    if (partialTimerRef.current) clearTimeout(partialTimerRef.current)
+    partialTimerRef.current = setTimeout(() => savePartialLead(), 3000)
+    return () => { if (partialTimerRef.current) clearTimeout(partialTimerRef.current) }
+  }, [email, phone, submitted, savePartialLead])
 
   const isInscriptionMode = campaign?.capture_type === 'without_rdv'
 
@@ -242,7 +264,7 @@ export function CaptureForm() {
     )
   }
 
-  const inputCls = "w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-1 transition-colors"
+  const inputCls = "w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-black placeholder:text-slate-400 focus:outline-none focus:ring-1 transition-colors"
   const videoEmbedUrl = campaign?.landing_video_url ? toEmbedUrl(campaign.landing_video_url) : null
 
   const customStyle: React.CSSProperties = hasCustomStyle ? {
@@ -334,8 +356,8 @@ export function CaptureForm() {
 
             {/* Form header */}
             <div className="mb-4">
-              <h2 className="text-lg font-bold text-slate-900">{campaign?.name || (isInscriptionMode ? 'Inscrivez-vous' : 'Réservez votre créneau')}</h2>
-              <p className="text-sm text-slate-500 mt-0.5">
+              <h2 className="text-lg font-bold text-black">{campaign?.name || (isInscriptionMode ? 'Inscrivez-vous' : 'Réservez votre créneau')}</h2>
+              <p className="text-sm text-black/60 mt-0.5">
                 {isInscriptionMode ? 'Remplissez vos informations pour vous inscrire.' : 'Remplissez vos informations puis choisissez un créneau.'}
               </p>
             </div>
@@ -368,28 +390,28 @@ export function CaptureForm() {
                 <div className="space-y-3 mb-5">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Prénom *</label>
+                      <label className="block text-sm font-semibold text-black mb-1">Prénom *</label>
                       <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jean" className={inputCls} style={inputStyle} />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Nom</label>
+                      <label className="block text-sm font-semibold text-black mb-1">Nom</label>
                       <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Dupont" className={inputCls} style={inputStyle} />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Email {campaign?.email_required ? '*' : ''}</label>
+                    <label className="block text-sm font-semibold text-black mb-1">Email {campaign?.email_required ? '*' : ''}</label>
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jean@example.com" className={inputCls} style={inputStyle} />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Téléphone {campaign?.phone_required ? '*' : ''}</label>
+                    <label className="block text-sm font-semibold text-black mb-1">Téléphone {campaign?.phone_required ? '*' : ''}</label>
                     <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+33 6 12 34 56 78" className={inputCls} style={inputStyle} />
                   </div>
 
                   {(campaign?.custom_fields || []).map((field, idx) => (
                     <div key={idx}>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">{field.label} {field.required ? '*' : ''}</label>
+                      <label className="block text-sm font-semibold text-black mb-1">{field.label} {field.required ? '*' : ''}</label>
                       {field.type === 'select' ? (
                         <select value={customData[field.label] || ''} onChange={(e) => setCustomData({ ...customData, [field.label]: e.target.value })} className={inputCls} style={inputStyle}>
                           <option value="">Sélectionner...</option>
@@ -400,6 +422,19 @@ export function CaptureForm() {
                       )}
                     </div>
                   ))}
+
+                  {/* Manual continue button for RDV mode */}
+                  {!isInscriptionMode && (
+                    <button
+                      onClick={() => setInfoCollapsed(true)}
+                      disabled={!isInfoComplete}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      style={btnStyle}
+                    >
+                      <span>Continuer</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               )}
             </div>

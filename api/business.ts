@@ -1290,7 +1290,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: campaign, error } = await supabase
         .from('business_campaigns')
-        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, redirect_url')
+        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, redirect_url, capture_type')
         .eq('slug', slug)
         .eq('is_active', true)
         .single()
@@ -1317,6 +1317,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from('business_campaigns')
         .update({ views: (campaign.views || 0) + 1 })
         .eq('id', campaign.id)
+
+      return res.status(200).json({ success: true })
+    }
+
+    // ─── Passive partial lead capture (no auth) ───
+    if (action === 'capture-partial' && req.method === 'POST') {
+      const { slug, name, email, phone, custom_data } = req.body
+      if (!slug) return res.status(400).json({ error: 'slug required' })
+      if (!email && !phone) return res.status(400).json({ error: 'email or phone required' })
+
+      const { data: campaign } = await supabase
+        .from('business_campaigns')
+        .select('id, user_id')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .single()
+
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
+
+      const nameParts = (name || '').trim().split(' ')
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ') || ''
+
+      // Check if prospect already exists with same email or phone for this campaign
+      let existing = null
+      if (email) {
+        const { data } = await supabase
+          .from('business_prospects')
+          .select('id')
+          .eq('user_id', campaign.user_id)
+          .eq('email', email)
+          .eq('campaign_id', campaign.id)
+          .single()
+        existing = data
+      }
+      if (!existing && phone) {
+        const { data } = await supabase
+          .from('business_prospects')
+          .select('id')
+          .eq('user_id', campaign.user_id)
+          .eq('phone', phone)
+          .eq('campaign_id', campaign.id)
+          .single()
+        existing = data
+      }
+
+      // Only create if not already exists (avoid duplicates)
+      if (!existing) {
+        await supabase
+          .from('business_prospects')
+          .insert({
+            user_id: campaign.user_id,
+            contact: name || '',
+            firstName,
+            lastName,
+            email: email || '',
+            phone: phone || '',
+            stage: 'partial',
+            campaign_id: campaign.id,
+            notes: custom_data ? JSON.stringify(custom_data) : null,
+          })
+      }
 
       return res.status(200).json({ success: true })
     }
@@ -1513,29 +1575,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (campErr || !campaign) return res.status(404).json({ error: 'Campaign not found or inactive' })
 
-      // Create prospect
+      // Create prospect (or upgrade partial lead)
       const nameParts = name.trim().split(' ')
       const firstName = nameParts[0] || ''
       const lastName = nameParts.slice(1).join(' ') || ''
 
-      const { data: prospect, error: prospErr } = await supabase
-        .from('business_prospects')
-        .insert({
-          user_id: campaign.user_id,
-          contact: name,
-          firstName,
-          lastName,
-          email,
-          phone: phone || '',
-          stage: 'prospect',
-          campaign_id: campaign.id,
-          formula_id: campaign.formula_id || null,
-          notes: custom_data ? JSON.stringify(custom_data) : null,
-        })
-        .select()
-        .single()
+      // Check for existing partial lead
+      let prospect = null
+      if (email) {
+        const { data } = await supabase
+          .from('business_prospects')
+          .select('*')
+          .eq('user_id', campaign.user_id)
+          .eq('email', email)
+          .eq('campaign_id', campaign.id)
+          .eq('stage', 'partial')
+          .single()
+        if (data) {
+          // Upgrade partial to full prospect
+          const { data: updated, error: upErr } = await supabase
+            .from('business_prospects')
+            .update({ contact: name, firstName, lastName, phone: phone || data.phone, stage: 'prospect', formula_id: campaign.formula_id || null, notes: custom_data ? JSON.stringify(custom_data) : null })
+            .eq('id', data.id)
+            .select()
+            .single()
+          if (upErr) return res.status(500).json({ error: upErr.message })
+          prospect = updated
+        }
+      }
 
-      if (prospErr) return res.status(500).json({ error: prospErr.message })
+      if (!prospect) {
+        const { data: inserted, error: prospErr } = await supabase
+          .from('business_prospects')
+          .insert({
+            user_id: campaign.user_id,
+            contact: name,
+            firstName,
+            lastName,
+            email,
+            phone: phone || '',
+            stage: 'prospect',
+            campaign_id: campaign.id,
+            formula_id: campaign.formula_id || null,
+            notes: custom_data ? JSON.stringify(custom_data) : null,
+          })
+          .select()
+          .single()
+
+        if (prospErr) return res.status(500).json({ error: prospErr.message })
+        prospect = inserted
+      }
 
       // Create appointment if date/time provided
       let appointment = null
