@@ -5,8 +5,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
+import { createHash, randomBytes } from 'crypto'
+
 const AIRTABLE_API = 'https://api.airtable.com/v0'
 const AIRTABLE_META = 'https://api.airtable.com/v0/meta'
+const AIRTABLE_AUTH_URL = 'https://airtable.com/oauth2/v1/authorize'
+const AIRTABLE_TOKEN_URL = 'https://airtable.com/oauth2/v1/token'
+const AIRTABLE_REDIRECT_URI = 'https://www.closeos.fr/api/webhooks?action=airtable-callback'
+const AIRTABLE_SCOPES = 'data.records:read data.records:write schema.bases:read'
+
+function getAirtableClientId() { return process.env.AIRTABLE_CLIENT_ID || '' }
+function getAirtableClientSecret() { return process.env.AIRTABLE_CLIENT_SECRET || '' }
 
 function getSupabase() {
   return createClient(
@@ -163,15 +172,184 @@ async function handleSyncBrevo(req: any, res: any) {
 }
 
 // ============================================================
-// AIRTABLE: List bases
+// AIRTABLE: OAuth helpers
+// ============================================================
+
+// PKCE helpers
+function generateCodeVerifier(): string {
+  return randomBytes(32).toString('base64url')
+}
+
+function generateCodeChallenge(verifier: string): string {
+  return createHash('sha256').update(verifier).digest('base64url')
+}
+
+// Get valid Airtable token (auto-refresh if expired)
+async function getValidAirtableToken(supabase: any, userId: string): Promise<string | null> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('airtable_access_token, airtable_refresh_token, airtable_token_expires_at')
+    .eq('id', userId)
+    .single()
+
+  if (!profile?.airtable_access_token) return null
+
+  const expiresAt = typeof profile.airtable_token_expires_at === 'number'
+    ? profile.airtable_token_expires_at
+    : parseInt(profile.airtable_token_expires_at || '0', 10)
+
+  // Token still valid (with 2-minute buffer)
+  if (expiresAt > 0 && Date.now() < (expiresAt - 120000)) {
+    return profile.airtable_access_token
+  }
+
+  if (!profile.airtable_refresh_token) return null
+
+  // Refresh the token
+  const basicAuth = Buffer.from(`${getAirtableClientId()}:${getAirtableClientSecret()}`).toString('base64')
+  const tokenRes = await fetch(AIRTABLE_TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${basicAuth}`,
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: profile.airtable_refresh_token,
+    }).toString(),
+  })
+
+  const tokenData = await tokenRes.json()
+  if (!tokenData.access_token) {
+    console.error('[Airtable] Token refresh failed:', tokenData)
+    return null
+  }
+
+  const newExpiresAt = Date.now() + (tokenData.expires_in || 3600) * 1000
+  await supabase.from('profiles').update({
+    airtable_access_token: tokenData.access_token,
+    airtable_refresh_token: tokenData.refresh_token || profile.airtable_refresh_token,
+    airtable_token_expires_at: newExpiresAt,
+  }).eq('id', userId)
+
+  return tokenData.access_token
+}
+
+// ============================================================
+// AIRTABLE: OAuth Authorize (redirect to Airtable)
+// ============================================================
+async function handleAirtableAuthorize(req: any, res: any) {
+  const userId = req.query.user_id as string
+  if (!userId) return res.status(400).json({ error: 'Missing user_id' })
+
+  const supabase = getSupabase()
+
+  // Generate PKCE
+  const codeVerifier = generateCodeVerifier()
+  const codeChallenge = generateCodeChallenge(codeVerifier)
+
+  // Store code_verifier for the callback
+  await supabase.from('profiles').update({ airtable_code_verifier: codeVerifier }).eq('id', userId)
+
+  const params = new URLSearchParams({
+    client_id: getAirtableClientId(),
+    redirect_uri: AIRTABLE_REDIRECT_URI,
+    response_type: 'code',
+    scope: AIRTABLE_SCOPES,
+    state: userId,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
+  })
+
+  return res.redirect(`${AIRTABLE_AUTH_URL}?${params.toString()}`)
+}
+
+// ============================================================
+// AIRTABLE: OAuth Callback (exchange code for tokens)
+// ============================================================
+async function handleAirtableCallback(req: any, res: any) {
+  const { code, state, error: oauthError } = req.query
+
+  if (oauthError) {
+    console.error('[Airtable] OAuth error:', oauthError)
+    return res.redirect('/offers?airtable_error=' + encodeURIComponent(oauthError as string))
+  }
+
+  if (!code || !state) return res.redirect('/offers?airtable_error=missing_params')
+
+  const userId = state as string
+  const supabase = getSupabase()
+
+  // Retrieve stored code_verifier
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('airtable_code_verifier')
+    .eq('id', userId)
+    .single()
+
+  if (!profile?.airtable_code_verifier) {
+    return res.redirect('/offers?airtable_error=missing_code_verifier')
+  }
+
+  try {
+    // Exchange code for tokens (Airtable requires Basic auth)
+    const basicAuth = Buffer.from(`${getAirtableClientId()}:${getAirtableClientSecret()}`).toString('base64')
+    const tokenRes = await fetch(AIRTABLE_TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${basicAuth}`,
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code as string,
+        redirect_uri: AIRTABLE_REDIRECT_URI,
+        code_verifier: profile.airtable_code_verifier,
+      }).toString(),
+    })
+
+    const tokenData = await tokenRes.json()
+    if (!tokenRes.ok || !tokenData.access_token) {
+      console.error('[Airtable] Token exchange failed:', tokenData)
+      return res.redirect('/offers?airtable_error=token_exchange_failed')
+    }
+
+    const expiresAt = Date.now() + (tokenData.expires_in || 3600) * 1000
+
+    const { error: updateError } = await supabase.from('profiles').update({
+      airtable_access_token: tokenData.access_token,
+      airtable_refresh_token: tokenData.refresh_token,
+      airtable_token_expires_at: expiresAt,
+      airtable_code_verifier: null, // Clean up
+    }).eq('id', userId)
+
+    if (updateError) {
+      console.error('[Airtable] DB update error:', updateError)
+      return res.redirect('/offers?airtable_error=db_update_failed')
+    }
+
+    return res.redirect('/offers?airtable_connected=true')
+  } catch (error: any) {
+    console.error('[Airtable Callback] Error:', error)
+    return res.redirect('/offers?airtable_error=' + encodeURIComponent(error.message))
+  }
+}
+
+// ============================================================
+// AIRTABLE: List bases (OAuth)
 // ============================================================
 async function handleAirtableBases(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
-  const { api_key } = req.body
-  if (!api_key) return res.status(400).json({ error: 'Missing api_key' })
+  const { user_id } = req.body
+  if (!user_id) return res.status(400).json({ error: 'Missing user_id' })
+
+  const supabase = getSupabase()
+  const token = await getValidAirtableToken(supabase, user_id)
+  if (!token) return res.status(401).json({ error: 'Not connected to Airtable' })
+
   try {
     const response = await fetch(`${AIRTABLE_META}/bases`, {
-      headers: { Authorization: `Bearer ${api_key}` },
+      headers: { Authorization: `Bearer ${token}` },
     })
     if (!response.ok) {
       const err = await response.text()
@@ -185,15 +363,20 @@ async function handleAirtableBases(req: any, res: any) {
 }
 
 // ============================================================
-// AIRTABLE: List tables for a base
+// AIRTABLE: List tables for a base (OAuth)
 // ============================================================
 async function handleAirtableTables(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
-  const { api_key, base_id } = req.body
-  if (!api_key || !base_id) return res.status(400).json({ error: 'Missing api_key or base_id' })
+  const { user_id, base_id } = req.body
+  if (!user_id || !base_id) return res.status(400).json({ error: 'Missing user_id or base_id' })
+
+  const supabase = getSupabase()
+  const token = await getValidAirtableToken(supabase, user_id)
+  if (!token) return res.status(401).json({ error: 'Not connected to Airtable' })
+
   try {
     const response = await fetch(`${AIRTABLE_META}/bases/${base_id}/tables`, {
-      headers: { Authorization: `Bearer ${api_key}` },
+      headers: { Authorization: `Bearer ${token}` },
     })
     if (!response.ok) {
       const err = await response.text()
@@ -207,17 +390,22 @@ async function handleAirtableTables(req: any, res: any) {
 }
 
 // ============================================================
-// AIRTABLE: List fields for a table
+// AIRTABLE: List fields for a table (OAuth)
 // ============================================================
 async function handleAirtableFields(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
-  const { api_key, base_id, table_id } = req.body
-  if (!api_key || !base_id || !table_id) {
-    return res.status(400).json({ error: 'Missing api_key, base_id or table_id' })
+  const { user_id, base_id, table_id } = req.body
+  if (!user_id || !base_id || !table_id) {
+    return res.status(400).json({ error: 'Missing user_id, base_id or table_id' })
   }
+
+  const supabase = getSupabase()
+  const token = await getValidAirtableToken(supabase, user_id)
+  if (!token) return res.status(401).json({ error: 'Not connected to Airtable' })
+
   try {
     const response = await fetch(`${AIRTABLE_META}/bases/${base_id}/tables`, {
-      headers: { Authorization: `Bearer ${api_key}` },
+      headers: { Authorization: `Bearer ${token}` },
     })
     if (!response.ok) {
       const err = await response.text()
@@ -233,7 +421,7 @@ async function handleAirtableFields(req: any, res: any) {
 }
 
 // ============================================================
-// AIRTABLE: Sync Airtable → CloseOS
+// AIRTABLE: Sync Airtable → CloseOS (OAuth)
 // ============================================================
 async function handleAirtableSync(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -241,10 +429,9 @@ async function handleAirtableSync(req: any, res: any) {
   if (!user_id) return res.status(400).json({ error: 'Missing user_id' })
 
   const supabase = getSupabase()
-  const { data: profile } = await supabase.from('profiles').select('airtable_api_key').eq('id', user_id).single()
-  if (!profile?.airtable_api_key) return res.status(400).json({ error: 'No Airtable API key configured' })
+  const accessToken = await getValidAirtableToken(supabase, user_id)
+  if (!accessToken) return res.status(401).json({ error: 'Not connected to Airtable' })
 
-  const apiKey = profile.airtable_api_key
   let offerQuery = supabase.from('offers').select('id, name, crm_provider, crm_mapping').eq('user_id', user_id).eq('crm_provider', 'airtable')
   if (offer_id) offerQuery = offerQuery.eq('id', offer_id)
   const { data: offers } = await offerQuery
@@ -266,7 +453,7 @@ async function handleAirtableSync(req: any, res: any) {
         const url = new URL(`${AIRTABLE_API}/${baseId}/${encodeURIComponent(tableId)}`)
         url.searchParams.set('pageSize', '100')
         if (offset) url.searchParams.set('offset', offset)
-        const response = await fetch(url.toString(), { headers: { Authorization: `Bearer ${apiKey}` } })
+        const response = await fetch(url.toString(), { headers: { Authorization: `Bearer ${accessToken}` } })
         if (!response.ok) { console.error('[Airtable] Fetch records error:', await response.text()); break }
         const data = await response.json()
         allRecords = allRecords.concat(data.records || [])
@@ -321,7 +508,7 @@ async function handleAirtableSync(req: any, res: any) {
 }
 
 // ============================================================
-// AIRTABLE: Push CloseOS → Airtable (stage change)
+// AIRTABLE: Push CloseOS → Airtable (stage change, OAuth)
 // ============================================================
 async function handleAirtablePush(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -330,8 +517,8 @@ async function handleAirtablePush(req: any, res: any) {
   if (!airtable_record_id) return res.status(200).json({ success: true, message: 'No airtable_record_id, skipping' })
 
   const supabase = getSupabase()
-  const { data: profile } = await supabase.from('profiles').select('airtable_api_key').eq('id', user_id).single()
-  if (!profile?.airtable_api_key) return res.status(200).json({ success: true, message: 'No Airtable API key configured' })
+  const accessToken = await getValidAirtableToken(supabase, user_id)
+  if (!accessToken) return res.status(200).json({ success: true, message: 'No Airtable token' })
 
   let offerQuery = supabase.from('offers').select('crm_mapping').eq('user_id', user_id).eq('crm_provider', 'airtable')
   if (offer_id) offerQuery = offerQuery.eq('id', offer_id)
@@ -347,7 +534,7 @@ async function handleAirtablePush(req: any, res: any) {
     const airtableStage = mapCloseosStageToAirtable(stage, mapping.airtableStageMapping)
     const response = await fetch(`${AIRTABLE_API}/${baseId}/${encodeURIComponent(tableId)}/${airtable_record_id}`, {
       method: 'PATCH',
-      headers: { Authorization: `Bearer ${profile.airtable_api_key}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields: { [stageField]: airtableStage } }),
     })
     if (!response.ok) {
@@ -415,6 +602,10 @@ export default async function handler(req: any, res: any) {
       return handleCrmWebhook(req, res);
     case 'sync-brevo':
       return handleSyncBrevo(req, res);
+    case 'airtable-authorize':
+      return handleAirtableAuthorize(req, res);
+    case 'airtable-callback':
+      return handleAirtableCallback(req, res);
     case 'airtable-bases':
       return handleAirtableBases(req, res);
     case 'airtable-tables':
@@ -428,7 +619,7 @@ export default async function handler(req: any, res: any) {
     default:
       return res.status(400).json({
         error: 'Missing or invalid action parameter',
-        valid_actions: ['crm-webhook', 'sync-brevo', 'airtable-bases', 'airtable-tables', 'airtable-fields', 'airtable-sync', 'airtable-push']
+        valid_actions: ['crm-webhook', 'sync-brevo', 'airtable-authorize', 'airtable-callback', 'airtable-bases', 'airtable-tables', 'airtable-fields', 'airtable-sync', 'airtable-push']
       });
   }
 }

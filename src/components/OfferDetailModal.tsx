@@ -101,10 +101,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const [systemeioCopiedUrl, setSystemeioCopiedUrl] = useState(false)
   const [systemeioShowKey, setSystemeioShowKey] = useState(false)
 
-  // États Airtable
-  const [airtableApiKey, setAirtableApiKey] = useState('')
-  const [airtableSaving, setAirtableSaving] = useState(false)
-  const [airtableShowKey, setAirtableShowKey] = useState(false)
+  // États Airtable (OAuth)
+  const [airtableConnected, setAirtableConnected] = useState(false)
   const [airtableBases, setAirtableBases] = useState<any[]>([])
   const [airtableTables, setAirtableTables] = useState<any[]>([])
   const [airtableFields, setAirtableFields] = useState<any[]>([])
@@ -494,30 +492,35 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     }
   }
 
-  // Load Airtable API key
+  // Check Airtable connection + listen for OAuth callback
   useEffect(() => {
-    if (editedOffer.crmProvider !== 'airtable' || !user) return
-    const load = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('airtable_api_key')
-        .eq('id', user.id)
-        .single()
-      setAirtableApiKey(data?.airtable_api_key || '')
+    if (!user) return
+    const checkAirtable = async () => {
+      const { data } = await supabase.from('profiles').select('airtable_access_token').eq('id', user.id).single()
+      setAirtableConnected(!!data?.airtable_access_token)
     }
-    load()
-  }, [editedOffer.crmProvider, user])
+    checkAirtable()
 
-  // Load Airtable bases when key is set
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('airtable_connected') === 'true') {
+      setAirtableConnected(true)
+      window.history.replaceState({}, '', window.location.pathname)
+    } else if (params.get('airtable_error')) {
+      alert('Erreur connexion Airtable: ' + params.get('airtable_error'))
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [user])
+
+  // Load Airtable bases when connected
   useEffect(() => {
-    if (editedOffer.crmProvider !== 'airtable' || !airtableApiKey) return
+    if (editedOffer.crmProvider !== 'airtable' || !airtableConnected || !user) return
     const load = async () => {
       setAirtableLoadingBases(true)
       try {
         const res = await fetch('/api/webhooks?action=airtable-bases', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: airtableApiKey }),
+          body: JSON.stringify({ user_id: user.id }),
         })
         if (res.ok) {
           const data = await res.json()
@@ -530,19 +533,19 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
       }
     }
     load()
-  }, [editedOffer.crmProvider, airtableApiKey])
+  }, [editedOffer.crmProvider, airtableConnected, user])
 
   // Load Airtable tables when base is selected
   useEffect(() => {
     const baseId = editedOffer.crmMapping?.airtableBaseId
-    if (editedOffer.crmProvider !== 'airtable' || !airtableApiKey || !baseId) return
+    if (editedOffer.crmProvider !== 'airtable' || !airtableConnected || !user || !baseId) return
     const load = async () => {
       setAirtableLoadingTables(true)
       try {
         const res = await fetch('/api/webhooks?action=airtable-tables', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: airtableApiKey, base_id: baseId }),
+          body: JSON.stringify({ user_id: user.id, base_id: baseId }),
         })
         if (res.ok) {
           const data = await res.json()
@@ -555,20 +558,20 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
       }
     }
     load()
-  }, [editedOffer.crmProvider, airtableApiKey, editedOffer.crmMapping?.airtableBaseId])
+  }, [editedOffer.crmProvider, airtableConnected, user, editedOffer.crmMapping?.airtableBaseId])
 
   // Load Airtable fields when table is selected
   useEffect(() => {
     const baseId = editedOffer.crmMapping?.airtableBaseId
     const tableId = editedOffer.crmMapping?.airtableTableId
-    if (editedOffer.crmProvider !== 'airtable' || !airtableApiKey || !baseId || !tableId) return
+    if (editedOffer.crmProvider !== 'airtable' || !airtableConnected || !user || !baseId || !tableId) return
     const load = async () => {
       setAirtableLoadingFields(true)
       try {
         const res = await fetch('/api/webhooks?action=airtable-fields', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: airtableApiKey, base_id: baseId, table_id: tableId }),
+          body: JSON.stringify({ user_id: user.id, base_id: baseId, table_id: tableId }),
         })
         if (res.ok) {
           const data = await res.json()
@@ -581,21 +584,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
       }
     }
     load()
-  }, [editedOffer.crmProvider, airtableApiKey, editedOffer.crmMapping?.airtableBaseId, editedOffer.crmMapping?.airtableTableId])
+  }, [editedOffer.crmProvider, airtableConnected, user, editedOffer.crmMapping?.airtableBaseId, editedOffer.crmMapping?.airtableTableId])
 
-  const handleSaveAirtableKey = async () => {
+  const handleConnectAirtable = () => {
     if (!user) return
-    setAirtableSaving(true)
-    try {
-      await supabase
-        .from('profiles')
-        .update({ airtable_api_key: airtableApiKey || null })
-        .eq('id', user.id)
-    } catch (err) {
-      console.error('Error saving Airtable key:', err)
-    } finally {
-      setAirtableSaving(false)
-    }
+    window.location.href = `/api/webhooks?action=airtable-authorize&user_id=${user.id}`
   }
 
   const handleSyncAirtable = async () => {
@@ -1922,42 +1915,23 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <h4 className="text-sm font-semibold text-cyan-100">Configuration Airtable</h4>
 
                     <div className="mt-3 space-y-3">
-                      {/* API Key / Personal Access Token */}
-                      <div>
-                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                          Personal Access Token
-                        </label>
-                        <p className="text-[11px] text-slate-400 mb-2">
-                          Créez un token sur <strong className="text-slate-300">airtable.com/create/tokens</strong> avec les scopes <strong className="text-slate-300">data.records:read</strong>, <strong className="text-slate-300">data.records:write</strong> et <strong className="text-slate-300">schema.bases:read</strong>
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-1">
-                            <input
-                              type={airtableShowKey ? 'text' : 'password'}
-                              value={airtableApiKey}
-                              onChange={(e) => setAirtableApiKey(e.target.value)}
-                              placeholder="pat..."
-                              className="w-full rounded border border-[#18BFFF]/10 bg-slate-950 p-2 pr-8 font-mono text-xs text-slate-400 placeholder:text-slate-600"
-                            />
-                            <button
-                              onClick={() => setAirtableShowKey(!airtableShowKey)}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                            >
-                              {airtableShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                            </button>
-                          </div>
-                          <button
-                            onClick={handleSaveAirtableKey}
-                            disabled={airtableSaving}
-                            className="rounded-lg bg-[#18BFFF] px-3 py-2 text-xs font-bold text-white hover:bg-[#10a8e6] transition-all disabled:opacity-50"
-                          >
-                            {airtableSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                          </button>
+                      {/* OAuth Connect Button */}
+                      {!airtableConnected ? (
+                        <button
+                          onClick={handleConnectAirtable}
+                          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#18BFFF] py-2.5 text-sm font-bold text-white hover:bg-[#10a8e6] transition-all shadow-lg"
+                        >
+                          <ExternalLink className="h-4 w-4" /> Connecter Airtable
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2">
+                          <Check className="h-4 w-4 text-emerald-400" />
+                          <span className="text-xs text-emerald-400 font-medium">Airtable connecté</span>
                         </div>
-                      </div>
+                      )}
 
                       {/* Base selector */}
-                      {airtableApiKey && (
+                      {airtableConnected && (
                         <div>
                           <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
                             Base Airtable

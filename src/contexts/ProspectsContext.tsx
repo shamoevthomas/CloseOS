@@ -138,14 +138,14 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('hubspot_access_token, pipedrive_access_token, ghl_access_token, airtable_api_key')
+        .select('hubspot_access_token, pipedrive_access_token, ghl_access_token, airtable_access_token')
         .eq('id', userId)
         .single()
 
       setHubspotConnected(!!profile?.hubspot_access_token)
       setPipedriveConnected(!!profile?.pipedrive_access_token)
       setGhlConnected(!!profile?.ghl_access_token)
-      setAirtableConnected(!!profile?.airtable_api_key)
+      setAirtableConnected(!!profile?.airtable_access_token)
 
       const { data: offers } = await supabase
         .from('offers')
