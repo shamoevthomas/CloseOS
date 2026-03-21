@@ -50,9 +50,13 @@
     container.innerHTML = `
       <style>
         #chatbot-widget-container { position: fixed; bottom: 24px; right: 24px; z-index: 999999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        #chatbot-widget-btn { width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: transform 0.2s; }
-        #chatbot-widget-btn:hover { transform: scale(1.05); }
+        #chatbot-widget-btn { width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: transform 0.2s; transform: translateY(100px); opacity: 0; }
+        #chatbot-widget-btn.cw-visible { transform: translateY(0); opacity: 1; transition: transform 0.6s cubic-bezier(0.16,1,0.3,1), opacity 0.6s ease; }
+        #chatbot-widget-btn.cw-visible:hover { transform: scale(1.05); }
         #chatbot-widget-btn svg { width: 28px; height: 28px; fill: white; }
+        #cw-tooltip { position: absolute; bottom: 70px; right: 0; background: #111; color: #fff; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 10px; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateY(8px); transition: opacity 0.4s ease, transform 0.4s ease; pointer-events: none; }
+        #cw-tooltip.cw-show { opacity: 1; transform: translateY(0); }
+        #cw-tooltip::after { content: ''; position: absolute; bottom: -6px; right: 22px; width: 12px; height: 12px; background: #111; transform: rotate(45deg); border-radius: 2px; }
         #chatbot-widget-panel { display: none; width: 380px; height: 520px; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.15); background: #fff; flex-direction: column; margin-bottom: 12px; }
         #chatbot-widget-panel.open { display: flex; }
         .cw-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; color: white; }
@@ -91,6 +95,7 @@
           <button id="cw-send" style="background:${bot.primary_color}"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
         </div>
       </div>
+      <div id="cw-tooltip">Une question ? N'hésite pas</div>
       <button id="chatbot-widget-btn" style="background:${bot.primary_color}">
         <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
       </button>
@@ -106,9 +111,22 @@
     let messages = [];
     let isLoading = false;
 
+    const tooltipEl = document.getElementById('cw-tooltip');
+
+    // Show button after 15s with slide-up animation
+    setTimeout(() => {
+      btnEl.classList.add('cw-visible');
+      // Show tooltip 0.6s after button appears, hide after 5s
+      setTimeout(() => {
+        tooltipEl.classList.add('cw-show');
+        setTimeout(() => { tooltipEl.classList.remove('cw-show'); }, 5000);
+      }, 600);
+    }, 15000);
+
     btnEl.addEventListener('click', () => {
       panelEl.classList.add('open');
       btnEl.style.display = 'none';
+      tooltipEl.style.display = 'none';
       inputEl.focus();
     });
 
