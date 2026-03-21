@@ -24,28 +24,24 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center w-full max-w-3xl">
         {/* Logo — big and rounded */}
-        <motion.div
+        <motion.img
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="w-24 h-24 rounded-3xl overflow-hidden bg-white shadow-2xl mb-10 flex items-center justify-center border border-white/20"
-        >
-          <img
-            src="/CloseOS Logo.png"
-            alt="CloseOS"
-            className="w-16 h-16 object-contain"
-          />
-        </motion.div>
+          src="/CloseOS Logo.png"
+          alt="CloseOS"
+          className="h-20 object-contain mb-10"
+        />
 
         {/* Badge */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 shadow-sm mb-6"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-6"
         >
-          <span className="text-sm font-medium text-white/90">
-            Bienvenue dans l'écosystème <span className="font-bold text-white">CloseOS</span>
+          <span className="text-sm font-medium text-stone-800">
+            Bienvenue dans l'écosystème <span className="font-bold text-[#111111]">CloseOS</span>
           </span>
         </motion.div>
 
@@ -54,7 +50,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15 }}
-          className="text-4xl md:text-5xl font-bold tracking-tight text-center mb-3 text-white"
+          className="text-4xl md:text-5xl font-bold tracking-tight text-center mb-3 text-[#111111]"
         >
           Quel est votre profil ?
         </motion.h1>
@@ -63,7 +59,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-white/50 text-lg font-medium mb-12"
+          className="text-stone-500 text-lg font-medium mb-12"
         >
           Choisissez l'outil fait pour vous
         </motion.p>
