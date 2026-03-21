@@ -1,8 +1,19 @@
 // api/webhooks.ts
-// Consolidated API handler merging webhook.ts and sync-brevo.ts
+// Consolidated API handler merging webhook.ts, sync-brevo.ts, and airtable
 // Routes based on req.query.action
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
+
+const AIRTABLE_API = 'https://api.airtable.com/v0'
+const AIRTABLE_META = 'https://api.airtable.com/v0/meta'
+
+function getSupabase() {
+  return createClient(
+    process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  )
+}
 
 // ============================================================
 // ACTION: crm-webhook (from webhook.ts)
@@ -152,6 +163,235 @@ async function handleSyncBrevo(req: any, res: any) {
 }
 
 // ============================================================
+// AIRTABLE: List bases
+// ============================================================
+async function handleAirtableBases(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  const { api_key } = req.body
+  if (!api_key) return res.status(400).json({ error: 'Missing api_key' })
+  try {
+    const response = await fetch(`${AIRTABLE_META}/bases`, {
+      headers: { Authorization: `Bearer ${api_key}` },
+    })
+    if (!response.ok) {
+      const err = await response.text()
+      return res.status(response.status).json({ error: 'Failed to fetch bases', details: err })
+    }
+    const data = await response.json()
+    return res.status(200).json({ bases: data.bases || [] })
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Failed to fetch bases', details: err.message })
+  }
+}
+
+// ============================================================
+// AIRTABLE: List tables for a base
+// ============================================================
+async function handleAirtableTables(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  const { api_key, base_id } = req.body
+  if (!api_key || !base_id) return res.status(400).json({ error: 'Missing api_key or base_id' })
+  try {
+    const response = await fetch(`${AIRTABLE_META}/bases/${base_id}/tables`, {
+      headers: { Authorization: `Bearer ${api_key}` },
+    })
+    if (!response.ok) {
+      const err = await response.text()
+      return res.status(response.status).json({ error: 'Failed to fetch tables', details: err })
+    }
+    const data = await response.json()
+    return res.status(200).json({ tables: data.tables || [] })
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Failed to fetch tables', details: err.message })
+  }
+}
+
+// ============================================================
+// AIRTABLE: List fields for a table
+// ============================================================
+async function handleAirtableFields(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  const { api_key, base_id, table_id } = req.body
+  if (!api_key || !base_id || !table_id) {
+    return res.status(400).json({ error: 'Missing api_key, base_id or table_id' })
+  }
+  try {
+    const response = await fetch(`${AIRTABLE_META}/bases/${base_id}/tables`, {
+      headers: { Authorization: `Bearer ${api_key}` },
+    })
+    if (!response.ok) {
+      const err = await response.text()
+      return res.status(response.status).json({ error: 'Failed to fetch fields', details: err })
+    }
+    const data = await response.json()
+    const table = (data.tables || []).find((t: any) => t.id === table_id || t.name === table_id)
+    if (!table) return res.status(404).json({ error: 'Table not found' })
+    return res.status(200).json({ fields: table.fields || [] })
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Failed to fetch fields', details: err.message })
+  }
+}
+
+// ============================================================
+// AIRTABLE: Sync Airtable → CloseOS
+// ============================================================
+async function handleAirtableSync(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  const { user_id, offer_id } = req.body
+  if (!user_id) return res.status(400).json({ error: 'Missing user_id' })
+
+  const supabase = getSupabase()
+  const { data: profile } = await supabase.from('profiles').select('airtable_api_key').eq('id', user_id).single()
+  if (!profile?.airtable_api_key) return res.status(400).json({ error: 'No Airtable API key configured' })
+
+  const apiKey = profile.airtable_api_key
+  let offerQuery = supabase.from('offers').select('id, name, crm_provider, crm_mapping').eq('user_id', user_id).eq('crm_provider', 'airtable')
+  if (offer_id) offerQuery = offerQuery.eq('id', offer_id)
+  const { data: offers } = await offerQuery
+  if (!offers || offers.length === 0) return res.status(400).json({ error: 'No Airtable offer found' })
+
+  let totalImported = 0, totalUpdated = 0
+
+  for (const offer of offers) {
+    const mapping = offer.crm_mapping || {}
+    const baseId = mapping.airtableBaseId
+    const tableId = mapping.airtableTableId || mapping.airtableTableName
+    const fieldMapping = mapping.airtableFieldMapping || {}
+    if (!baseId || !tableId) continue
+
+    try {
+      let allRecords: any[] = []
+      let offset: string | undefined
+      do {
+        const url = new URL(`${AIRTABLE_API}/${baseId}/${encodeURIComponent(tableId)}`)
+        url.searchParams.set('pageSize', '100')
+        if (offset) url.searchParams.set('offset', offset)
+        const response = await fetch(url.toString(), { headers: { Authorization: `Bearer ${apiKey}` } })
+        if (!response.ok) { console.error('[Airtable] Fetch records error:', await response.text()); break }
+        const data = await response.json()
+        allRecords = allRecords.concat(data.records || [])
+        offset = data.offset
+      } while (offset)
+
+      for (const record of allRecords) {
+        const fields = record.fields || {}
+        const firstName = getAirtableFieldValue(fields, fieldMapping.firstName) || ''
+        const lastName = getAirtableFieldValue(fields, fieldMapping.lastName) || ''
+        const email = getAirtableFieldValue(fields, fieldMapping.email) || ''
+        const phone = getAirtableFieldValue(fields, fieldMapping.phone) || ''
+        const company = getAirtableFieldValue(fields, fieldMapping.company) || ''
+        const stageRaw = getAirtableFieldValue(fields, fieldMapping.stage) || ''
+        const value = parseFloat(getAirtableFieldValue(fields, fieldMapping.value) || '0') || 0
+        if (!firstName && !lastName && !email) continue
+
+        const contactName = [firstName, lastName].filter(Boolean).join(' ') || email
+        const stage = mapAirtableStage(stageRaw)
+
+        const { data: existing } = await supabase.from('prospects').select('id, stage').eq('user_id', user_id).eq('airtable_record_id', record.id).maybeSingle()
+        if (existing) {
+          if (stage && existing.stage !== stage) {
+            await supabase.from('prospects').update({ contact: contactName, firstName, lastName, email, phone, company, stage, value: value || undefined }).eq('id', existing.id)
+            totalUpdated++
+          }
+          continue
+        }
+
+        if (email) {
+          const { data: byEmail } = await supabase.from('prospects').select('id').eq('user_id', user_id).eq('email', email).maybeSingle()
+          if (byEmail) {
+            await supabase.from('prospects').update({ airtable_record_id: record.id }).eq('id', byEmail.id)
+            totalUpdated++
+            continue
+          }
+        }
+
+        await supabase.from('prospects').insert({
+          user_id, contact: contactName, firstName, lastName, email, phone, company,
+          stage: stage || 'prospect', value: value || undefined,
+          offer: offer.name, offer_id: offer.id, airtable_record_id: record.id,
+          notes: 'Source: Airtable', status: 'new',
+        })
+        totalImported++
+      }
+    } catch (err: any) {
+      console.error('[Airtable] Sync error for offer', offer.id, ':', err)
+    }
+  }
+  return res.status(200).json({ imported: totalImported, updated: totalUpdated })
+}
+
+// ============================================================
+// AIRTABLE: Push CloseOS → Airtable (stage change)
+// ============================================================
+async function handleAirtablePush(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  const { user_id, stage, airtable_record_id, offer_id } = req.body
+  if (!user_id || !stage) return res.status(400).json({ error: 'Missing user_id or stage' })
+  if (!airtable_record_id) return res.status(200).json({ success: true, message: 'No airtable_record_id, skipping' })
+
+  const supabase = getSupabase()
+  const { data: profile } = await supabase.from('profiles').select('airtable_api_key').eq('id', user_id).single()
+  if (!profile?.airtable_api_key) return res.status(200).json({ success: true, message: 'No Airtable API key configured' })
+
+  let offerQuery = supabase.from('offers').select('crm_mapping').eq('user_id', user_id).eq('crm_provider', 'airtable')
+  if (offer_id) offerQuery = offerQuery.eq('id', offer_id)
+  const { data: offers } = await offerQuery.limit(1)
+  const mapping = offers?.[0]?.crm_mapping || {}
+  const baseId = mapping.airtableBaseId
+  const tableId = mapping.airtableTableId || mapping.airtableTableName
+  const fieldMapping = mapping.airtableFieldMapping || {}
+  const stageField = fieldMapping.stage
+  if (!baseId || !tableId || !stageField) return res.status(200).json({ success: true, message: 'Airtable config incomplete' })
+
+  try {
+    const airtableStage = mapCloseosStageToAirtable(stage, mapping.airtableStageMapping)
+    const response = await fetch(`${AIRTABLE_API}/${baseId}/${encodeURIComponent(tableId)}/${airtable_record_id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${profile.airtable_api_key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { [stageField]: airtableStage } }),
+    })
+    if (!response.ok) {
+      console.error('[Airtable] Push error:', await response.text())
+      return res.status(200).json({ success: false, message: 'Failed to update Airtable record' })
+    }
+    return res.status(200).json({ success: true })
+  } catch (err: any) {
+    console.error('[Airtable] Push error:', err)
+    return res.status(500).json({ error: 'Push failed', details: err.message })
+  }
+}
+
+// ─── AIRTABLE HELPERS ───
+function getAirtableFieldValue(fields: Record<string, any>, fieldName: string | undefined): string {
+  if (!fieldName) return ''
+  const val = fields[fieldName]
+  if (val === null || val === undefined) return ''
+  if (Array.isArray(val)) return val.join(', ')
+  return String(val)
+}
+
+function mapAirtableStage(raw: string): string {
+  if (!raw) return 'prospect'
+  const lower = raw.toLowerCase().trim()
+  if (['prospect', 'lead', 'new', 'nouveau', 'à contacter'].includes(lower)) return 'prospect'
+  if (['qualified', 'qualifié', 'rdv', 'rendez-vous', 'call booked', 'meeting'].includes(lower)) return 'qualified'
+  if (['won', 'gagné', 'gagne', 'closed won', 'client', 'vendu', 'sale'].includes(lower)) return 'won'
+  if (['follow up', 'followup', 'relance', 'à relancer', 'follow-up'].includes(lower)) return 'followup'
+  if (['no show', 'noshow', 'no-show', 'absent'].includes(lower)) return 'noshow'
+  if (['lost', 'perdu', 'closed lost', 'refusé', 'refused'].includes(lower)) return 'lost'
+  return 'prospect'
+}
+
+function mapCloseosStageToAirtable(stage: string, stageMapping?: Record<string, string>): string {
+  if (stageMapping && stageMapping[stage]) return stageMapping[stage]
+  const defaults: Record<string, string> = {
+    prospect: 'Prospect', qualified: 'Qualifié', won: 'Gagné',
+    followup: 'Follow Up', noshow: 'No Show', lost: 'Perdu',
+  }
+  return defaults[stage] || stage
+}
+
+// ============================================================
 // MAIN HANDLER - Routes based on req.query.action
 // ============================================================
 export default async function handler(req: any, res: any) {
@@ -173,14 +413,22 @@ export default async function handler(req: any, res: any) {
   switch (action) {
     case 'crm-webhook':
       return handleCrmWebhook(req, res);
-
     case 'sync-brevo':
       return handleSyncBrevo(req, res);
-
+    case 'airtable-bases':
+      return handleAirtableBases(req, res);
+    case 'airtable-tables':
+      return handleAirtableTables(req, res);
+    case 'airtable-fields':
+      return handleAirtableFields(req, res);
+    case 'airtable-sync':
+      return handleAirtableSync(req, res);
+    case 'airtable-push':
+      return handleAirtablePush(req, res);
     default:
       return res.status(400).json({
         error: 'Missing or invalid action parameter',
-        valid_actions: ['crm-webhook', 'sync-brevo']
+        valid_actions: ['crm-webhook', 'sync-brevo', 'airtable-bases', 'airtable-tables', 'airtable-fields', 'airtable-sync', 'airtable-push']
       });
   }
 }

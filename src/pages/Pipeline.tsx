@@ -70,9 +70,13 @@ export function Pipeline() {
     addProspect,
     deleteProspect,
     syncHubspot,
+    syncGhl,
     isSyncingHubspot,
+    isSyncingGhl,
     hubspotConnected,
+    ghlConnected,
     hasHubspotOffer,
+    hasGhlOffer,
     nextSyncSeconds
   } = useProspects()
   const { offers } = useOffers()
@@ -384,6 +388,27 @@ export function Pipeline() {
                   <span className="hidden lg:inline">{Math.floor(nextSyncSeconds / 60)}:{(nextSyncSeconds % 60).toString().padStart(2, '0')}</span>
                 )}
                 <span className="hidden sm:inline">{isSyncingHubspot ? "Synchro..." : "Synchro HubSpot"}</span>
+              </button>
+            )}
+
+            {/* GoHighLevel Sync Button */}
+            {ghlConnected && hasGhlOffer && (
+              <button
+                onClick={() => syncGhl()}
+                disabled={isSyncingGhl}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all",
+                  isSyncingGhl
+                    ? "bg-teal-500/10 border-teal-500/30 text-teal-400 opacity-70"
+                    : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-teal-500/30 hover:text-teal-400"
+                )}
+                title={`Prochaine synchro : ${Math.floor(nextSyncSeconds / 60)}:${(nextSyncSeconds % 60).toString().padStart(2, '0')}`}
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", isSyncingGhl && "animate-spin text-teal-400")} />
+                {!isSyncingGhl && (
+                  <span className="hidden lg:inline">{Math.floor(nextSyncSeconds / 60)}:{(nextSyncSeconds % 60).toString().padStart(2, '0')}</span>
+                )}
+                <span className="hidden sm:inline">{isSyncingGhl ? "Synchro..." : "Synchro GoHighLevel"}</span>
               </button>
             )}
 

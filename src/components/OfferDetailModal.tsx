@@ -514,7 +514,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     const load = async () => {
       setAirtableLoadingBases(true)
       try {
-        const res = await fetch('/api/airtable?action=bases', {
+        const res = await fetch('/api/webhooks?action=airtable-bases', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ api_key: airtableApiKey }),
@@ -539,7 +539,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     const load = async () => {
       setAirtableLoadingTables(true)
       try {
-        const res = await fetch('/api/airtable?action=tables', {
+        const res = await fetch('/api/webhooks?action=airtable-tables', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ api_key: airtableApiKey, base_id: baseId }),
@@ -565,7 +565,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     const load = async () => {
       setAirtableLoadingFields(true)
       try {
-        const res = await fetch('/api/airtable?action=fields', {
+        const res = await fetch('/api/webhooks?action=airtable-fields', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ api_key: airtableApiKey, base_id: baseId, table_id: tableId }),
@@ -603,7 +603,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     setIsSyncingAirtable(true)
     setAirtableSyncResult(null)
     try {
-      const res = await fetch('/api/airtable?action=sync', {
+      const res = await fetch('/api/webhooks?action=airtable-sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id, offer_id: offer.id }),

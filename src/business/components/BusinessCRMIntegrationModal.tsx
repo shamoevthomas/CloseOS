@@ -415,13 +415,13 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      value={`${baseUrl}/api/zapier-webhook`}
+                      value={`${baseUrl}/api/zapier-webhook?type=business`}
                       readOnly
                       className="flex-1 rounded-lg border border-orange-200 bg-white py-2 px-3 text-xs text-slate-700 font-mono"
                     />
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(`${baseUrl}/api/zapier-webhook`);
+                        navigator.clipboard.writeText(`${baseUrl}/api/zapier-webhook?type=business`);
                         setZapierCopiedUrl(true);
                         setTimeout(() => setZapierCopiedUrl(false), 2000);
                       }}

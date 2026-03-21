@@ -325,7 +325,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     if (!user || isSyncingAirtable) return
     setIsSyncingAirtable(true)
     try {
-      const res = await fetch('/api/airtable?action=sync', {
+      const res = await fetch('/api/webhooks?action=airtable-sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id, offer_id }),
@@ -371,7 +371,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
       if (!isAirtable) return
 
-      fetch('/api/airtable?action=push', {
+      fetch('/api/webhooks?action=airtable-push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
