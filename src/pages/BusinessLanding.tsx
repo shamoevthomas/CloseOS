@@ -107,7 +107,7 @@ export const BusinessLanding: React.FC = () => {
               onClick={() => setIsModalOpen(true)}
               className="hidden sm:flex items-center justify-center rounded-lg h-10 px-5 text-white text-sm font-semibold tracking-wide hover:opacity-90 transition-all bg-[#111111]"
             >
-              Rejoindre la liste d'attente
+              Liste d'attente
             </button>
             <button className="md:hidden p-2 text-stone-600">
               <Menu className="size-5" />
@@ -152,7 +152,7 @@ export const BusinessLanding: React.FC = () => {
                 onClick={() => setIsModalOpen(true)}
                 className="flex min-w-[200px] items-center justify-center rounded-xl h-14 px-8 text-white text-lg font-semibold shadow-lg hover:-translate-y-1 transition-all bg-[#111111]"
               >
-                S'inscrire pour le lancement
+                Rejoindre la liste d'attente — Tarifs early adopters le 4 avril
               </button>
             </div>
 
@@ -307,13 +307,13 @@ export const BusinessLanding: React.FC = () => {
         >
           <div className="max-w-3xl mx-auto space-y-10">
             <h2 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight text-[#111111]">Prêt à scaler votre écosystème de closing ?</h2>
-            <p className="text-stone-500 text-xl">Rejoignez la liste d'attente aujourd'hui et bénéficiez d'un accès prioritaire lors du lancement.</p>
+            <p className="text-stone-500 text-xl">Inscrivez-vous maintenant et débloquez un tarif early adopter imbattable, dévoilé le 4 avril.</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="w-full sm:w-auto flex min-w-[240px] items-center justify-center rounded-xl h-16 px-10 text-white text-lg font-semibold shadow-xl hover:-translate-y-1 transition-all bg-[#111111]"
               >
-                Être informé de l'ouverture
+                Rejoindre la liste d'attente — Tarifs le 4 avril
               </button>
             </div>
           </div>
@@ -1408,7 +1408,7 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             <>
               <h3 className="text-[#111111] text-3xl font-bold mb-3 tracking-tight">Rejoindre la liste d'attente</h3>
               <p className="text-stone-500 mb-8 font-medium">
-                Soyez parmi les premiers à piloter votre business avec le nouvel écosystème CloseOS.
+                Inscrivez-vous et recevez le <strong className="text-[#111111]">4 avril</strong> un tarif early adopter concurrentiel et imbattable, réservé uniquement aux inscrits — <strong className="text-[#111111]">verrouillé à vie</strong>.
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
