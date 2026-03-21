@@ -50,7 +50,8 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15 }}
-          className="text-4xl md:text-5xl font-bold tracking-tight text-center mb-3 text-[#111111]"
+          className="text-4xl md:text-5xl font-bold tracking-tight text-center mb-3 bg-gradient-to-r from-white via-white/80 to-[#111111] bg-clip-text text-transparent"
+          style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
         >
           Quel est votre profil ?
         </motion.h1>
@@ -59,7 +60,8 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-stone-500 text-lg font-medium mb-12"
+          className="text-lg font-medium mb-12 bg-gradient-to-r from-slate-400 via-stone-400 to-stone-500 bg-clip-text text-transparent"
+          style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
         >
           Choisissez l'outil fait pour vous
         </motion.p>
