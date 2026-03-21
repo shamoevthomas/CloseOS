@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, ArrowRight, ChevronDown } from 'lucide-react'
+import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight, ChevronDown } from 'lucide-react'
 import { toUTC } from '../lib/timezone'
 
 interface CustomField {
@@ -625,12 +625,17 @@ export function CaptureForm() {
 
             {/* CALENDAR SECTION - RDV mode only */}
             {!isInscriptionMode && <div className="relative">
-              {/* Blur overlay when form not complete */}
-              {!infoCollapsed && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 backdrop-blur-sm cursor-not-allowed" />
+              {/* Overlay - semi transparent, NO blur */}
+              {!isInfoComplete && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 cursor-not-allowed">
+                  <div className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 shadow-sm">
+                    <Lock className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm text-slate-500 font-medium">Remplissez d'abord vos informations</span>
+                  </div>
+                </div>
               )}
 
-              <div className={`transition-opacity duration-300 ${infoCollapsed ? 'opacity-100' : 'opacity-40 pointer-events-none select-none'}`}>
+              <div className={`transition-opacity duration-300 ${isInfoComplete ? 'opacity-100' : 'opacity-50'}`}>
                 <div className="flex items-center gap-2 mb-3">
                   <Calendar className="h-4 w-4 text-blue-600" />
                   <h3 className="text-sm font-bold text-slate-900">Choisissez un créneau</h3>
@@ -658,7 +663,7 @@ export function CaptureForm() {
                       if (!day) return <div key={`empty-${i}`} />
                       const past = isDatePast(day)
                       const weekend = isWeekend(day)
-                      const disabled = past || weekend || !infoCollapsed
+                      const disabled = past || weekend || !isInfoComplete
                       const selected = selectedDate && isSameDay(day, selectedDate)
                       const isToday = isSameDay(day, today)
 
@@ -709,7 +714,7 @@ export function CaptureForm() {
                 {/* Submit */}
                 <button
                   onClick={handleSubmit}
-                  disabled={!infoCollapsed || !selectedDate || !selectedTime || submitting}
+                  disabled={!isInfoComplete || !selectedDate || !selectedTime || submitting}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                   style={btnStyle}
                 >
