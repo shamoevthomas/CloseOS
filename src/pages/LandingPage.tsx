@@ -48,12 +48,14 @@ const INTEGRATIONS = [
 function IntegrationsBanner() {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const total = INTEGRATIONS.length;
 
   useEffect(() => {
     const interval = setInterval(() => {
       setIsAnimating(true);
-      // Animate right to left: start from last index, go down to 0
       let step = 0;
       const cascade = setInterval(() => {
         const idx = total - 1 - step;
@@ -61,7 +63,6 @@ function IntegrationsBanner() {
         step++;
         if (step >= total) {
           clearInterval(cascade);
-          // Keep last one lit briefly, then reset
           setTimeout(() => {
             setActiveIndex(-1);
             setIsAnimating(false);
@@ -72,26 +73,48 @@ function IntegrationsBanner() {
     return () => clearInterval(interval);
   }, [total]);
 
+  const handleMouseMove = (e: React.MouseEvent) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseLeaveContainer = () => {
+    setMousePos(null);
+  };
+
+  const getProximity = (index: number): number => {
+    if (!mousePos || !itemRefs.current[index]) return 0;
+    const rect = itemRefs.current[index]!.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dist = Math.sqrt((mousePos.x - centerX) ** 2 + (mousePos.y - centerY) ** 2);
+    const radius = 200;
+    return Math.max(0, 1 - dist / radius);
+  };
+
   return (
-    <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8">
+    <div
+      ref={containerRef}
+      className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeaveContainer}
+    >
       {INTEGRATIONS.map((item, i) => {
         const isActive = isAnimating && i >= activeIndex && activeIndex !== -1;
+        const proximity = getProximity(i);
+        const isLit = isActive || proximity > 0;
+        const intensity = isActive ? 1 : proximity;
         return (
           <div
             key={item.label}
-            className="flex items-center gap-2 font-bold text-xl sm:text-2xl transition-all duration-300 cursor-default"
+            ref={(el) => { itemRefs.current[i] = el; }}
+            className="flex items-center gap-2 font-bold text-xl sm:text-2xl transition-colors duration-200 cursor-default"
             style={{
-              color: isActive ? item.color : 'rgba(255,255,255,0.4)',
-              filter: isActive ? 'none' : 'grayscale(100%)',
-              opacity: isActive ? 1 : 0.6,
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = item.color; e.currentTarget.style.filter = 'none'; e.currentTarget.style.opacity = '1'; }}
-            onMouseLeave={(e) => {
-              if (!isActive) {
-                e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
-                e.currentTarget.style.filter = 'grayscale(100%)';
-                e.currentTarget.style.opacity = '0.6';
-              }
+              color: isLit
+                ? `color-mix(in srgb, ${item.color} ${Math.round(intensity * 100)}%, rgba(255,255,255,0.4))`
+                : 'rgba(255,255,255,0.4)',
+              filter: isLit ? `grayscale(${Math.round((1 - intensity) * 100)}%)` : 'grayscale(100%)',
+              opacity: isLit ? 0.6 + intensity * 0.4 : 0.6,
+              textShadow: intensity > 0.3 ? `0 0 ${Math.round(intensity * 20)}px ${item.color}40` : 'none',
             }}
           >
             {item.renderLabel ? item.renderLabel() : item.label}
