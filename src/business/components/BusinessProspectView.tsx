@@ -447,6 +447,16 @@ export function BusinessProspectView({
                     )
                   })()}
 
+                  {/* Campagne d'origine */}
+                  {campaign && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900 mb-2">Campagne d'origine</h3>
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                        <p className="text-sm font-medium text-slate-700">{campaign.name}</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Offre / Formule */}
                   <div>
                     <label className="mb-2 block text-xs font-medium text-slate-500">Offre / Formule</label>
@@ -481,16 +491,6 @@ export function BusinessProspectView({
                       </div>
                     )}
                   </div>
-
-                  {/* Linked Campaign */}
-                  {campaign && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900 mb-2">Campagne d'origine</h3>
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                        <p className="text-sm font-medium text-slate-700">{campaign.name}</p>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Capture custom data */}
                   {captureData && Object.keys(captureData).length > 0 && (
