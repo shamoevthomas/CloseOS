@@ -88,6 +88,27 @@ export function BusinessProspectView({
   const [local, setLocal] = useState<BusinessProspect>(prospect)
   const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'rappels'>('info')
 
+  // Next appointment
+  const [nextAppointment, setNextAppointment] = useState<{ date: string; time: string; status: string } | null>(null)
+  useEffect(() => {
+    const ownerId = isTeamMember ? ownerUserId : user?.id
+    if (!ownerId || !prospect.id) return
+    const today = new Date().toISOString().split('T')[0]
+    supabase
+      .from('business_appointments')
+      .select('date, time, status')
+      .eq('prospect_id', prospect.id)
+      .gte('date', today)
+      .in('status', ['pending', 'confirmed'])
+      .order('date', { ascending: true })
+      .order('time', { ascending: true })
+      .limit(1)
+      .single()
+      .then(({ data }) => {
+        setNextAppointment(data || null)
+      })
+  }, [prospect.id, user?.id, ownerUserId, isTeamMember])
+
   // Client edit
   const [editingClient, setEditingClient] = useState(false)
   const [editedContact, setEditedContact] = useState(prospect.contact)
@@ -555,6 +576,19 @@ export function BusinessProspectView({
                             </p>
                           </div>
                         </div>
+                        {nextAppointment && (
+                          <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                            <Calendar className="h-4 w-4 text-amber-600" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs text-amber-600">Prochain rendez-vous</p>
+                              <p className="text-sm font-medium text-amber-800">
+                                {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString('fr-FR', {
+                                  weekday: 'short', day: 'numeric', month: 'long'
+                                })} à {nextAppointment.time?.slice(0, 5)}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

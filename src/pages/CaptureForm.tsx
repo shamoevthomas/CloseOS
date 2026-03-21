@@ -223,6 +223,12 @@ export function CaptureForm() {
   const [infoCollapsed, setInfoCollapsed] = useState(false)
   const prospectTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
 
+  // Real availability slots from API
+  const [realSlots, setRealSlots] = useState<{ date: string; time: string; member_ids: string[] }[]>([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
+  const [freeMode, setFreeMode] = useState(true)
+  const [distribution, setDistribution] = useState<string>('round_robin')
+
   useEffect(() => {
     const fetchCampaign = async () => {
       try {
@@ -244,6 +250,37 @@ export function CaptureForm() {
     }
     fetchCampaign()
   }, [slug])
+
+  // Fetch real availability slots
+  useEffect(() => {
+    if (!campaign || campaign.capture_type === 'without_rdv') return
+    setSlotsLoading(true)
+    fetch(`${API_URL}?action=capture-slots&slug=${slug}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.freeMode) {
+          setFreeMode(true)
+        } else {
+          setFreeMode(false)
+          setRealSlots(data.slots || [])
+          setDistribution(data.distribution || 'round_robin')
+        }
+      })
+      .catch(() => setFreeMode(true))
+      .finally(() => setSlotsLoading(false))
+  }, [campaign, slug])
+
+  // Available dates and time slots based on real availability
+  const availableDates = useMemo(() => {
+    if (freeMode) return null // null = all dates available
+    return new Set(realSlots.map(s => s.date))
+  }, [realSlots, freeMode])
+
+  const availableTimesForDate = useMemo(() => {
+    if (!selectedDate || freeMode) return null // null = all times available
+    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
+    return realSlots.filter(s => s.date === dateStr)
+  }, [selectedDate, realSlots, freeMode])
 
   const isInfoComplete = useMemo(() => {
     if (!firstName.trim()) return false
@@ -308,6 +345,23 @@ export function CaptureForm() {
         payload.time = selectedTime
         payload.datetime_utc = toUTC(dateStr, selectedTime, prospectTimezone).toISOString()
         payload.prospect_timezone = prospectTimezone
+
+        // Assign to a team member based on availability
+        if (!freeMode) {
+          const slotMatch = realSlots.find(s => s.date === dateStr && s.time === selectedTime)
+          if (slotMatch && slotMatch.member_ids.length > 0) {
+            if (slotMatch.member_ids.length === 1) {
+              payload.assigned_member_id = slotMatch.member_ids[0]
+            } else if (distribution === 'random') {
+              payload.assigned_member_id = slotMatch.member_ids[Math.floor(Math.random() * slotMatch.member_ids.length)]
+            } else {
+              // round_robin: pick based on time hash for deterministic distribution
+              const hash = dateStr.replace(/-/g, '') + selectedTime.replace(/:/g, '')
+              const idx = parseInt(hash, 10) % slotMatch.member_ids.length
+              payload.assigned_member_id = slotMatch.member_ids[isNaN(idx) ? 0 : idx]
+            }
+          }
+        }
       }
       const res = await fetch(`${API_URL}?action=capture-submit`, {
         method: 'POST',
@@ -662,8 +716,10 @@ export function CaptureForm() {
                     {calendarDays.map((day, i) => {
                       if (!day) return <div key={`empty-${i}`} />
                       const past = isDatePast(day)
-                      const weekend = isWeekend(day)
-                      const disabled = past || weekend || !isInfoComplete
+                      const weekend = freeMode ? isWeekend(day) : false
+                      const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
+                      const noAvailability = !freeMode && availableDates && !availableDates.has(dayStr)
+                      const disabled = past || weekend || noAvailability || !isInfoComplete
                       const selected = selectedDate && isSameDay(day, selectedDate)
                       const isToday = isSameDay(day, today)
 
@@ -675,7 +731,7 @@ export function CaptureForm() {
                           className={`py-1.5 rounded text-sm font-medium transition-all ${
                             selected
                               ? 'bg-blue-600 text-white'
-                              : isToday
+                              : isToday && !disabled
                                 ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
                                 : disabled
                                   ? 'text-slate-300 cursor-not-allowed'
@@ -694,7 +750,7 @@ export function CaptureForm() {
                   <div className="mb-4">
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Créneaux disponibles</p>
                     <div className="grid grid-cols-4 gap-1.5">
-                      {TIME_SLOTS.map(slot => (
+                      {(freeMode ? TIME_SLOTS : (availableTimesForDate || []).map(s => s.time)).map(slot => (
                         <button
                           key={slot}
                           onClick={() => setSelectedTime(slot)}
@@ -708,6 +764,16 @@ export function CaptureForm() {
                         </button>
                       ))}
                     </div>
+                    {!freeMode && availableTimesForDate && availableTimesForDate.length === 0 && (
+                      <p className="text-xs text-slate-400 mt-2">Aucun créneau disponible ce jour. Essayez une autre date.</p>
+                    )}
+                  </div>
+                )}
+
+                {slotsLoading && (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                    <span className="text-sm text-slate-500 ml-2">Chargement des disponibilités...</span>
                   </div>
                 )}
 

@@ -1290,7 +1290,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: campaign, error } = await supabase
         .from('business_campaigns')
-        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, redirect_url, capture_type')
+        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, redirect_url, capture_type, booking_duration, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, user_id')
         .eq('slug', slug)
         .eq('is_active', true)
         .single()
@@ -1319,6 +1319,132 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .eq('id', campaign.id)
 
       return res.status(200).json({ success: true })
+    }
+
+    // ─── Capture slots: real availability for campaign (no auth) ───
+    if (action === 'capture-slots' && req.method === 'GET') {
+      const slug = req.query.slug as string
+      if (!slug) return res.status(400).json({ error: 'slug required' })
+
+      const { data: campaign } = await supabase
+        .from('business_campaigns')
+        .select('id, user_id, booking_duration, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, capture_type')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .single()
+
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
+      if (campaign.capture_type === 'without_rdv') return res.status(200).json({ slots: [], freeMode: false })
+
+      const duration = campaign.booking_duration || 30
+      const targetRole = campaign.booking_with === 'setter' ? 'Setter' : 'Closer'
+
+      // Determine which team members to check
+      let memberIds: string[] = []
+      if (campaign.booking_assign_mode === 'specific' && Array.isArray(campaign.booking_assigned_members) && campaign.booking_assigned_members.length > 0) {
+        memberIds = campaign.booking_assigned_members
+      } else if (campaign.booking_assign_mode === 'multiple' && Array.isArray(campaign.booking_assigned_members) && campaign.booking_assigned_members.length > 0) {
+        memberIds = campaign.booking_assigned_members
+      } else {
+        // all_role: fetch all team members with matching role
+        const { data: members } = await supabase
+          .from('business_team_members')
+          .select('id, role')
+          .eq('business_owner_id', campaign.user_id)
+          .in('role', targetRole === 'Closer' ? ['Closer', 'Setter-Closer'] : ['Setter', 'Setter-Closer'])
+        memberIds = (members || []).map((m: any) => m.id)
+      }
+
+      if (memberIds.length === 0) {
+        // No members configured — return free mode (all slots available)
+        return res.status(200).json({ slots: [], freeMode: true })
+      }
+
+      const today = new Date().toISOString().split('T')[0]
+      const now = new Date()
+
+      // Fetch availability, absences, and appointments for ALL members in parallel
+      const [slotsRes, absencesRes, appointmentsRes] = await Promise.all([
+        supabase.from('business_availability_slots').select('*').in('team_member_id', memberIds),
+        supabase.from('business_absences').select('start_date, end_date, team_member_id').in('team_member_id', memberIds).gte('end_date', today),
+        supabase.from('business_appointments').select('date, time, duration, assigned_to').in('assigned_to', memberIds).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed']),
+      ])
+
+      const allSlots = slotsRes.data || []
+      const allAbsences = absencesRes.data || []
+      const allAppointments = appointmentsRes.data || []
+
+      // Build available slots per member, then merge
+      const availableSlots: { date: string; time: string; member_ids: string[] }[] = []
+
+      for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
+        const dateObj = new Date(now)
+        dateObj.setDate(dateObj.getDate() + dayOffset)
+        const jsDay = dateObj.getDay()
+        const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1
+        const dateStr = dateObj.toISOString().split('T')[0]
+
+        // For each time slot, track which members are available
+        const timeToMembers: Record<string, string[]> = {}
+
+        for (const memberId of memberIds) {
+          // Check absence
+          const isAbsent = allAbsences.some((a: any) => a.team_member_id === memberId && dateStr >= a.start_date && dateStr <= a.end_date)
+          if (isAbsent) continue
+
+          const memberSlots = allSlots.filter((s: any) => s.team_member_id === memberId && s.day_of_week === dayOfWeek)
+          if (memberSlots.length === 0) continue
+
+          const memberAppts = allAppointments.filter((a: any) => a.assigned_to === memberId && a.date === dateStr)
+
+          for (const slot of memberSlots) {
+            const [startH, startM] = (slot as any).start_time.split(':').map(Number)
+            const [endH, endM] = (slot as any).end_time.split(':').map(Number)
+            const startMinutes = startH * 60 + startM
+            const endMinutes = endH * 60 + endM
+
+            for (let mins = startMinutes; mins + duration <= endMinutes; mins += duration) {
+              const h = Math.floor(mins / 60)
+              const m = mins % 60
+              const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+
+              // Skip past times for today
+              if (dayOffset === 0) {
+                const slotTime = new Date(dateObj)
+                slotTime.setHours(h, m, 0, 0)
+                if (slotTime <= now) continue
+              }
+
+              // Check conflicts
+              const hasConflict = memberAppts.some((appt: any) => {
+                const [aH, aM] = appt.time.split(':').map(Number)
+                const apptStart = aH * 60 + aM
+                const apptEnd = apptStart + (appt.duration || 30)
+                return mins < apptEnd && (mins + duration) > apptStart
+              })
+              if (hasConflict) continue
+
+              if (!timeToMembers[timeStr]) timeToMembers[timeStr] = []
+              timeToMembers[timeStr].push(memberId)
+            }
+          }
+        }
+
+        // Add all available time slots for this date
+        for (const [time, members] of Object.entries(timeToMembers)) {
+          availableSlots.push({ date: dateStr, time, member_ids: members })
+        }
+      }
+
+      // Sort by date then time
+      availableSlots.sort((a, b) => a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date))
+
+      return res.status(200).json({
+        slots: availableSlots,
+        freeMode: false,
+        distribution: campaign.booking_distribution || 'round_robin',
+        duration,
+      })
     }
 
     // ─── Passive partial lead capture (no auth) ───
@@ -1562,7 +1688,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ─── Public capture endpoint (no auth) ───
     if (action === 'capture-submit' && req.method === 'POST') {
-      const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone } = req.body
+      const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, assigned_member_id } = req.body
       if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
 
       // Find campaign by slug
@@ -1637,10 +1763,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             prospect_id: prospect.id,
             date,
             time,
-            duration: 30,
+            duration: campaign.booking_duration || 30,
             status: 'pending',
             datetime_utc: datetime_utc || null,
             timezone: prospect_timezone || null,
+            assigned_to: assigned_member_id || null,
           })
           .select()
           .single()

@@ -279,14 +279,6 @@ export function BusinessAppointments() {
     ? appointments.filter(a => (a as any).assigned_to === teamMember?.id)
     : appointments
 
-  const filtered = visibleAppointments.filter(a => {
-    if (filterStatus !== 'all' && a.status !== filterStatus) return false
-    const localDt = getLocalDateTime(a)
-    if (filterDate && localDt.date !== filterDate) return false
-    if (!isTeamMember && filterMember !== 'all' && (a as any).assigned_to !== filterMember) return false
-    return true
-  })
-
   /** Convert appointment to viewer's local date/time */
   const getLocalDateTime = (appt: Appointment) => {
     if (appt.datetime_utc) {
@@ -295,6 +287,14 @@ export function BusinessAppointments() {
     // Fallback for old appointments without datetime_utc
     return { date: appt.date, time: appt.time?.slice(0, 5) || '00:00' }
   }
+
+  const filtered = visibleAppointments.filter(a => {
+    if (filterStatus !== 'all' && a.status !== filterStatus) return false
+    const localDt = getLocalDateTime(a)
+    if (filterDate && localDt.date !== filterDate) return false
+    if (!isTeamMember && filterMember !== 'all' && (a as any).assigned_to !== filterMember) return false
+    return true
+  })
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr + 'T00:00:00')
