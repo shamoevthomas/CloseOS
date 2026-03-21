@@ -623,9 +623,14 @@ export function CaptureForm() {
               </div>
             )}
 
-            {/* CALENDAR SECTION - RDV mode only, shown after user clicks Continuer */}
-            {!isInscriptionMode && infoCollapsed && <div>
-              <div>
+            {/* CALENDAR SECTION - RDV mode only */}
+            {!isInscriptionMode && <div className="relative">
+              {/* Blur overlay when form not complete */}
+              {!infoCollapsed && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 backdrop-blur-sm cursor-not-allowed" />
+              )}
+
+              <div className={`transition-opacity duration-300 ${infoCollapsed ? 'opacity-100' : 'opacity-40 pointer-events-none select-none'}`}>
                 <div className="flex items-center gap-2 mb-3">
                   <Calendar className="h-4 w-4 text-blue-600" />
                   <h3 className="text-sm font-bold text-slate-900">Choisissez un créneau</h3>
@@ -653,7 +658,7 @@ export function CaptureForm() {
                       if (!day) return <div key={`empty-${i}`} />
                       const past = isDatePast(day)
                       const weekend = isWeekend(day)
-                      const disabled = past || weekend
+                      const disabled = past || weekend || !infoCollapsed
                       const selected = selectedDate && isSameDay(day, selectedDate)
                       const isToday = isSameDay(day, today)
 
@@ -704,7 +709,7 @@ export function CaptureForm() {
                 {/* Submit */}
                 <button
                   onClick={handleSubmit}
-                  disabled={!selectedDate || !selectedTime || submitting}
+                  disabled={!infoCollapsed || !selectedDate || !selectedTime || submitting}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                   style={btnStyle}
                 >
