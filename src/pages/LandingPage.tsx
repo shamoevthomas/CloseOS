@@ -49,11 +49,13 @@ function IntegrationsBanner() {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isAnimating, setIsAnimating] = useState(false);
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const total = INTEGRATIONS.length;
 
   useEffect(() => {
+    if (isHovering) return;
     const interval = setInterval(() => {
       setIsAnimating(true);
       let step = 0;
@@ -71,14 +73,21 @@ function IntegrationsBanner() {
       }, 120);
     }, 3000);
     return () => clearInterval(interval);
-  }, [total]);
+  }, [total, isHovering]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     setMousePos({ x: e.clientX, y: e.clientY });
   };
 
+  const handleMouseEnterContainer = () => {
+    setIsHovering(true);
+    setIsAnimating(false);
+    setActiveIndex(-1);
+  };
+
   const handleMouseLeaveContainer = () => {
     setMousePos(null);
+    setIsHovering(false);
   };
 
   const getProximity = (index: number): number => {
@@ -96,6 +105,7 @@ function IntegrationsBanner() {
       ref={containerRef}
       className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8"
       onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnterContainer}
       onMouseLeave={handleMouseLeaveContainer}
     >
       {INTEGRATIONS.map((item, i) => {
