@@ -50,8 +50,8 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15 }}
-          className="text-4xl md:text-5xl font-bold tracking-tight text-center mb-3 bg-gradient-to-r from-white via-white/80 to-[#111111] bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]"
-          style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+          className="text-4xl md:text-5xl font-bold tracking-tight text-center mb-3 bg-gradient-to-r from-white via-white to-[#111111] bg-clip-text text-transparent"
+          style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundSize: '100%', backgroundPosition: 'left', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))' }}
         >
           Quel est votre profil ?
         </motion.h1>
@@ -73,7 +73,9 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
             initial={{ opacity: 0, y: 24, filter: 'blur(4px)' }}
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-slate-700/50 p-8 flex flex-col items-center text-center hover:border-slate-600 hover:shadow-[0_20px_60px_rgba(0,0,0,0.5)] hover:scale-105 transition-all duration-300 cursor-pointer"
+            whileHover={{ scale: 1.08 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-slate-700/50 p-8 flex flex-col items-center text-center hover:border-slate-600 hover:shadow-[0_25px_80px_rgba(0,0,0,0.6)] transition-shadow duration-300 cursor-pointer"
           >
             <img
               src="/logo Sales.png"
@@ -97,7 +99,9 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
             initial={{ opacity: 0, y: 24, filter: 'blur(4px)' }}
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="bg-white rounded-3xl border border-stone-200 shadow-sm p-8 flex flex-col items-center text-center hover:shadow-[0_20px_60px_rgba(0,0,0,0.15)] hover:scale-105 transition-all duration-300 relative cursor-pointer"
+            whileHover={{ scale: 1.08 }}
+            transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="bg-white rounded-3xl border border-stone-200 shadow-sm p-8 flex flex-col items-center text-center hover:shadow-[0_25px_80px_rgba(0,0,0,0.2)] transition-shadow duration-300 relative cursor-pointer"
           >
             {/* Badge Nouveau */}
             <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#111111] text-white text-xs font-bold">
