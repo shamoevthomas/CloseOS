@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight } from 'lucide-react'
+import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, ArrowRight, ChevronDown } from 'lucide-react'
 import { toUTC } from '../lib/timezone'
 
 interface CustomField {
@@ -70,6 +70,101 @@ const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
 const DAYS_FR = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 const TIME_SLOTS = generateTimeSlots()
 
+const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
+
+const COUNTRY_CODES = [
+  { code: '+33', flag: '🇫🇷', name: 'France' },
+  { code: '+32', flag: '🇧🇪', name: 'Belgique' },
+  { code: '+41', flag: '🇨🇭', name: 'Suisse' },
+  { code: '+352', flag: '🇱🇺', name: 'Luxembourg' },
+  { code: '+377', flag: '🇲🇨', name: 'Monaco' },
+  { code: '+1', flag: '🇺🇸', name: 'États-Unis' },
+  { code: '+1', flag: '🇨🇦', name: 'Canada' },
+  { code: '+44', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { code: '+49', flag: '🇩🇪', name: 'Allemagne' },
+  { code: '+34', flag: '🇪🇸', name: 'Espagne' },
+  { code: '+39', flag: '🇮🇹', name: 'Italie' },
+  { code: '+351', flag: '🇵🇹', name: 'Portugal' },
+  { code: '+31', flag: '🇳🇱', name: 'Pays-Bas' },
+  { code: '+212', flag: '🇲🇦', name: 'Maroc' },
+  { code: '+216', flag: '🇹🇳', name: 'Tunisie' },
+  { code: '+213', flag: '🇩🇿', name: 'Algérie' },
+  { code: '+225', flag: '🇨🇮', name: 'Côte d\'Ivoire' },
+  { code: '+221', flag: '🇸🇳', name: 'Sénégal' },
+  { code: '+237', flag: '🇨🇲', name: 'Cameroun' },
+  { code: '+243', flag: '🇨🇩', name: 'RD Congo' },
+  { code: '+261', flag: '🇲🇬', name: 'Madagascar' },
+  { code: '+242', flag: '🇨🇬', name: 'Congo' },
+  { code: '+228', flag: '🇹🇬', name: 'Togo' },
+  { code: '+229', flag: '🇧🇯', name: 'Bénin' },
+  { code: '+226', flag: '🇧🇫', name: 'Burkina Faso' },
+  { code: '+223', flag: '🇲🇱', name: 'Mali' },
+  { code: '+224', flag: '🇬🇳', name: 'Guinée' },
+  { code: '+222', flag: '🇲🇷', name: 'Mauritanie' },
+  { code: '+235', flag: '🇹🇩', name: 'Tchad' },
+  { code: '+241', flag: '🇬🇦', name: 'Gabon' },
+  { code: '+250', flag: '🇷🇼', name: 'Rwanda' },
+  { code: '+257', flag: '🇧🇮', name: 'Burundi' },
+  { code: '+262', flag: '🇷🇪', name: 'La Réunion' },
+  { code: '+596', flag: '🇲🇶', name: 'Martinique' },
+  { code: '+590', flag: '🇬🇵', name: 'Guadeloupe' },
+  { code: '+594', flag: '🇬🇫', name: 'Guyane' },
+  { code: '+687', flag: '🇳🇨', name: 'Nouvelle-Calédonie' },
+  { code: '+689', flag: '🇵🇫', name: 'Polynésie française' },
+  { code: '+55', flag: '🇧🇷', name: 'Brésil' },
+  { code: '+52', flag: '🇲🇽', name: 'Mexique' },
+  { code: '+81', flag: '🇯🇵', name: 'Japon' },
+  { code: '+86', flag: '🇨🇳', name: 'Chine' },
+  { code: '+91', flag: '🇮🇳', name: 'Inde' },
+  { code: '+971', flag: '🇦🇪', name: 'Émirats arabes unis' },
+  { code: '+966', flag: '🇸🇦', name: 'Arabie saoudite' },
+  { code: '+90', flag: '🇹🇷', name: 'Turquie' },
+  { code: '+7', flag: '🇷🇺', name: 'Russie' },
+  { code: '+48', flag: '🇵🇱', name: 'Pologne' },
+  { code: '+46', flag: '🇸🇪', name: 'Suède' },
+  { code: '+47', flag: '🇳🇴', name: 'Norvège' },
+  { code: '+45', flag: '🇩🇰', name: 'Danemark' },
+  { code: '+358', flag: '🇫🇮', name: 'Finlande' },
+  { code: '+43', flag: '🇦🇹', name: 'Autriche' },
+  { code: '+30', flag: '🇬🇷', name: 'Grèce' },
+  { code: '+353', flag: '🇮🇪', name: 'Irlande' },
+  { code: '+420', flag: '🇨🇿', name: 'Tchéquie' },
+  { code: '+40', flag: '🇷🇴', name: 'Roumanie' },
+  { code: '+36', flag: '🇭🇺', name: 'Hongrie' },
+  { code: '+380', flag: '🇺🇦', name: 'Ukraine' },
+  { code: '+972', flag: '🇮🇱', name: 'Israël' },
+  { code: '+20', flag: '🇪🇬', name: 'Égypte' },
+  { code: '+27', flag: '🇿🇦', name: 'Afrique du Sud' },
+  { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
+  { code: '+254', flag: '🇰🇪', name: 'Kenya' },
+  { code: '+255', flag: '🇹🇿', name: 'Tanzanie' },
+  { code: '+233', flag: '🇬🇭', name: 'Ghana' },
+  { code: '+251', flag: '🇪🇹', name: 'Éthiopie' },
+  { code: '+256', flag: '🇺🇬', name: 'Ouganda' },
+  { code: '+61', flag: '🇦🇺', name: 'Australie' },
+  { code: '+64', flag: '🇳🇿', name: 'Nouvelle-Zélande' },
+  { code: '+82', flag: '🇰🇷', name: 'Corée du Sud' },
+  { code: '+65', flag: '🇸🇬', name: 'Singapour' },
+  { code: '+60', flag: '🇲🇾', name: 'Malaisie' },
+  { code: '+66', flag: '🇹🇭', name: 'Thaïlande' },
+  { code: '+84', flag: '🇻🇳', name: 'Vietnam' },
+  { code: '+62', flag: '🇮🇩', name: 'Indonésie' },
+  { code: '+63', flag: '🇵🇭', name: 'Philippines' },
+  { code: '+92', flag: '🇵🇰', name: 'Pakistan' },
+  { code: '+880', flag: '🇧🇩', name: 'Bangladesh' },
+  { code: '+94', flag: '🇱🇰', name: 'Sri Lanka' },
+  { code: '+57', flag: '🇨🇴', name: 'Colombie' },
+  { code: '+56', flag: '🇨🇱', name: 'Chili' },
+  { code: '+54', flag: '🇦🇷', name: 'Argentine' },
+  { code: '+58', flag: '🇻🇪', name: 'Venezuela' },
+  { code: '+51', flag: '🇵🇪', name: 'Pérou' },
+  { code: '+593', flag: '🇪🇨', name: 'Équateur' },
+  { code: '+502', flag: '🇬🇹', name: 'Guatemala' },
+  { code: '+53', flag: '🇨🇺', name: 'Cuba' },
+  { code: '+509', flag: '🇭🇹', name: 'Haïti' },
+  { code: '+1', flag: '🇩🇴', name: 'République dominicaine' },
+]
+
 export function CaptureForm() {
   const { slug } = useParams<{ slug: string }>()
   const [searchParams] = useSearchParams()
@@ -101,7 +196,23 @@ export function CaptureForm() {
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [countryCode, setCountryCode] = useState('+33')
+  const [showCountryPicker, setShowCountryPicker] = useState(false)
+  const [countrySearch, setCountrySearch] = useState('')
+  const countryPickerRef = useRef<HTMLDivElement>(null)
   const [customData, setCustomData] = useState<Record<string, string>>({})
+
+  // Close country picker on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (countryPickerRef.current && !countryPickerRef.current.contains(e.target as Node)) {
+        setShowCountryPicker(false)
+        setCountrySearch('')
+      }
+    }
+    if (showCountryPicker) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [showCountryPicker])
 
   const today = new Date()
   const [calMonth, setCalMonth] = useState(today.getMonth())
@@ -136,13 +247,19 @@ export function CaptureForm() {
 
   const isInfoComplete = useMemo(() => {
     if (!firstName.trim()) return false
-    if (campaign?.email_required && !email.trim()) return false
+    if (campaign?.email_required) {
+      if (!email.trim() || !isValidEmail(email.trim())) return false
+    } else if (email.trim() && !isValidEmail(email.trim())) {
+      return false // If email is optional but entered, still validate format
+    }
     if (campaign?.phone_required && !phone.trim()) return false
     for (const field of (campaign?.custom_fields || [])) {
       if (field.required && !customData[field.label]?.trim()) return false
     }
     return true
   }, [firstName, email, phone, customData, campaign])
+
+  const fullPhone = phone.trim() ? `${countryCode} ${phone.trim()}` : ''
 
   // Re-expand form if user deletes required fields while collapsed
   useEffect(() => {
@@ -159,13 +276,14 @@ export function CaptureForm() {
     partialSavedRef.current = true
     try {
       const name = `${firstName} ${lastName}`.trim()
+      const pPhone = phone.trim() ? `${countryCode} ${phone.trim()}` : ''
       await fetch(`${API_URL}?action=capture-partial`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, name, email, phone, custom_data: customData }),
+        body: JSON.stringify({ slug, name, email, phone: pPhone, custom_data: customData }),
       })
     } catch { /* fire-and-forget */ }
-  }, [slug, firstName, lastName, email, phone, customData])
+  }, [slug, firstName, lastName, email, phone, countryCode, customData])
 
   useEffect(() => {
     if (submitted || partialSavedRef.current) return
@@ -183,7 +301,7 @@ export function CaptureForm() {
     setSubmitting(true)
     try {
       const name = `${firstName} ${lastName}`.trim()
-      const payload: any = { slug, name, email, phone, custom_data: customData }
+      const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData }
       if (!isInscriptionMode && selectedDate && selectedTime) {
         const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
         payload.date = dateStr
@@ -406,7 +524,54 @@ export function CaptureForm() {
 
                   <div>
                     <label className="block text-sm font-semibold text-black mb-1">Téléphone {campaign?.phone_required ? '*' : ''}</label>
-                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+33 6 12 34 56 78" className={inputCls} style={inputStyle} />
+                    <div className="relative flex gap-0" ref={countryPickerRef}>
+                      <button
+                        type="button"
+                        onClick={() => { setShowCountryPicker(!showCountryPicker); setCountrySearch('') }}
+                        className="flex items-center gap-1 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 px-2.5 py-2.5 text-sm hover:bg-slate-100 transition-colors flex-shrink-0"
+                        style={hasCustomStyle ? { borderRadius: `${borderRadius} 0 0 ${borderRadius}`, borderColor: `${primaryColor}33` } : {}}
+                      >
+                        <span className="text-base">{COUNTRY_CODES.find(c => c.code === countryCode)?.flag || '🌍'}</span>
+                        <span className="text-xs text-black font-medium">{countryCode}</span>
+                        <ChevronDown className="h-3 w-3 text-slate-400" />
+                      </button>
+                      {showCountryPicker && (
+                        <div className="absolute top-full left-0 z-50 mt-1 w-64 max-h-60 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                          <div className="sticky top-0 bg-white border-b border-slate-100 p-2">
+                            <input
+                              type="text"
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              placeholder="Rechercher un pays..."
+                              className="w-full rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm text-black placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              autoFocus
+                            />
+                          </div>
+                          {COUNTRY_CODES
+                            .filter(c => !countrySearch || c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch))
+                            .map((c, i) => (
+                            <button
+                              key={`${c.code}-${c.name}-${i}`}
+                              type="button"
+                              onClick={() => { setCountryCode(c.code); setShowCountryPicker(false); setCountrySearch('') }}
+                              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-blue-50 transition-colors ${countryCode === c.code ? 'bg-blue-50 text-blue-700' : 'text-black'}`}
+                            >
+                              <span className="text-base">{c.flag}</span>
+                              <span className="flex-1 truncate">{c.name}</span>
+                              <span className="text-xs text-slate-400 font-medium">{c.code}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="6 12 34 56 78"
+                        className={`flex-1 rounded-r-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-black placeholder:text-slate-400 focus:outline-none focus:ring-1 transition-colors`}
+                        style={hasCustomStyle ? { borderRadius: `0 ${borderRadius} ${borderRadius} 0`, color: textColor, borderColor: `${primaryColor}33` } : {}}
+                      />
+                    </div>
                   </div>
 
                   {(campaign?.custom_fields || []).map((field, idx) => (
@@ -458,19 +623,9 @@ export function CaptureForm() {
               </div>
             )}
 
-            {/* CALENDAR SECTION - RDV mode only */}
-            {!isInscriptionMode && <div className="relative">
-              {/* Overlay - semi transparent, NO blur */}
-              {!isInfoComplete && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 cursor-not-allowed">
-                  <div className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 shadow-sm">
-                    <Lock className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm text-slate-500 font-medium">Remplissez d'abord vos informations</span>
-                  </div>
-                </div>
-              )}
-
-              <div className={`transition-opacity duration-300 ${isInfoComplete ? 'opacity-100' : 'opacity-50'}`}>
+            {/* CALENDAR SECTION - RDV mode only, shown after user clicks Continuer */}
+            {!isInscriptionMode && infoCollapsed && <div>
+              <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Calendar className="h-4 w-4 text-blue-600" />
                   <h3 className="text-sm font-bold text-slate-900">Choisissez un créneau</h3>
@@ -481,10 +636,10 @@ export function CaptureForm() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-slate-800">{MONTHS_FR[calMonth]} {calYear}</span>
                     <div className="flex gap-1">
-                      <button onClick={prevMonth} className="p-1 hover:bg-slate-100 rounded transition-colors" disabled={!isInfoComplete}>
+                      <button onClick={prevMonth} className="p-1 hover:bg-slate-100 rounded transition-colors">
                         <ChevronLeft className="h-4 w-4 text-slate-600" />
                       </button>
-                      <button onClick={nextMonth} className="p-1 hover:bg-slate-100 rounded transition-colors" disabled={!isInfoComplete}>
+                      <button onClick={nextMonth} className="p-1 hover:bg-slate-100 rounded transition-colors">
                         <ChevronRight className="h-4 w-4 text-slate-600" />
                       </button>
                     </div>
@@ -498,7 +653,7 @@ export function CaptureForm() {
                       if (!day) return <div key={`empty-${i}`} />
                       const past = isDatePast(day)
                       const weekend = isWeekend(day)
-                      const disabled = past || weekend || !isInfoComplete
+                      const disabled = past || weekend
                       const selected = selectedDate && isSameDay(day, selectedDate)
                       const isToday = isSameDay(day, today)
 
@@ -549,7 +704,7 @@ export function CaptureForm() {
                 {/* Submit */}
                 <button
                   onClick={handleSubmit}
-                  disabled={!isInfoComplete || !selectedDate || !selectedTime || submitting}
+                  disabled={!selectedDate || !selectedTime || submitting}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                   style={btnStyle}
                 >
