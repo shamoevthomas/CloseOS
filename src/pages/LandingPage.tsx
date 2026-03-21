@@ -363,6 +363,10 @@ export function LandingPage() {
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Cal.com</div>
             <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#E4573D]">GoHighLevel</span></div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#FFBF00]">Airtable</span></div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#00B4D8]">Systeme.io</span></div>
+            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#FF4A00]">Zapier</span></div>
           </div>
         </div>
       </motion.section >
