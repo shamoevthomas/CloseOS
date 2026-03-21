@@ -30,6 +30,8 @@ export interface BusinessProspect {
   assigned_setter?: string
   stage_changed_by?: string
   hubspot_contact_id?: string
+  systemeio_contact_id?: string
+  airtable_record_id?: string
   call_notes?: {
     id: string
     date: string
@@ -47,10 +49,13 @@ interface BusinessProspectsContextType {
   // CRM
   syncHubspot: () => Promise<{ imported: number; updated: number } | null>
   syncPipedrive: () => Promise<{ imported: number; updated: number } | null>
+  syncAirtable: () => Promise<{ imported: number; updated: number } | null>
   isSyncingHubspot: boolean
   isSyncingPipedrive: boolean
+  isSyncingAirtable: boolean
   hubspotConnected: boolean
   pipedriveConnected: boolean
+  airtableConnected: boolean
   nextSyncSeconds: number
 }
 
@@ -70,8 +75,10 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   // CRM states
   const [isSyncingHubspot, setIsSyncingHubspot] = useState(false)
   const [isSyncingPipedrive, setIsSyncingPipedrive] = useState(false)
+  const [isSyncingAirtable, setIsSyncingAirtable] = useState(false)
   const [hubspotConnected, setHubspotConnected] = useState(false)
   const [pipedriveConnected, setPipedriveConnected] = useState(false)
+  const [airtableConnected, setAirtableConnected] = useState(false)
   const [nextSyncSeconds, setNextSyncSeconds] = useState(SYNC_INTERVAL_SECONDS)
 
   const crmProvider = businessSettings?.crm_provider || 'closeos'
@@ -101,12 +108,13 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('hubspot_access_token, pipedrive_access_token')
+        .select('hubspot_access_token, pipedrive_access_token, airtable_access_token')
         .eq('id', userId)
         .single()
 
       setHubspotConnected(!!profile?.hubspot_access_token)
       setPipedriveConnected(!!profile?.pipedrive_access_token)
+      setAirtableConnected(!!profile?.airtable_access_token)
     } catch (err) {
       console.error('Error checking CRM status:', err)
     }
@@ -122,6 +130,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       setLoading(false)
       setHubspotConnected(false)
       setPipedriveConnected(false)
+      setAirtableConnected(false)
     }
   }, [userId, authLoading, loadProspects, checkCrmStatus])
 
@@ -134,6 +143,10 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     }
     if (params.get('pipedrive_connected') === 'true') {
       setPipedriveConnected(true)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+    if (params.get('airtable_connected') === 'true') {
+      setAirtableConnected(true)
       window.history.replaceState({}, '', window.location.pathname)
     }
   }, [])
@@ -262,6 +275,51 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     }
   }
 
+  const syncAirtable = async () => {
+    if (!user || isSyncingAirtable) return null
+    setIsSyncingAirtable(true)
+    try {
+      const res = await fetch('/api/business-crm-sync?action=airtable-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        await loadProspects(false)
+        return data
+      } else {
+        const data = await res.json()
+        console.error('Erreur sync Airtable:', data.error)
+        return null
+      }
+    } catch (error) {
+      console.error('Erreur sync Airtable:', error)
+      return null
+    } finally {
+      setIsSyncingAirtable(false)
+    }
+  }
+
+  // Push to Airtable when stage changes
+  const pushToAirtableIfNeeded = async (prospect: any, previousStage?: string) => {
+    if (!user || crmProvider !== 'airtable' || !airtableConnected) return
+    if (!prospect.airtable_record_id) return
+    try {
+      fetch('/api/business-crm-sync?action=airtable-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          stage: prospect.stage,
+          airtable_record_id: prospect.airtable_record_id,
+        }),
+      }).catch(err => console.error('[Airtable] Push error:', err))
+    } catch (err) {
+      console.error('[Airtable] Push check error:', err)
+    }
+  }
+
   // Push to HubSpot when stage changes
   const pushToHubspotIfNeeded = async (prospect: any) => {
     if (!user || crmProvider !== 'hubspot' || !hubspotConnected) return
@@ -292,6 +350,26 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     }
   }
 
+  // Push to Systeme.io when stage changes (via tags)
+  const pushToSystemeioIfNeeded = async (prospect: any, previousStage?: string) => {
+    if (!user || crmProvider !== 'systemeio') return
+    try {
+      fetch('/api/systemeio?action=push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          prospect_id: prospect.id,
+          stage: prospect.stage,
+          previous_stage: previousStage,
+          systemeio_contact_id: prospect.systemeio_contact_id,
+        }),
+      }).catch(err => console.error('[Systeme.io] Push error:', err))
+    } catch (err) {
+      console.error('[Systeme.io] Push check error:', err)
+    }
+  }
+
   const addProspect = async (prospect: Omit<BusinessProspect, 'id' | 'user_id'>) => {
     if (!user) return
 
@@ -310,6 +388,8 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
         return [data[0], ...prev]
       })
       pushToHubspotIfNeeded(data[0])
+      pushToSystemeioIfNeeded(data[0])
+      pushToAirtableIfNeeded(data[0])
     }
   }
 
@@ -337,7 +417,10 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     }
 
     if (updates.stage && data?.[0]) {
+      const prevStage = previousProspects.find(p => p.id === id)?.stage
       pushToHubspotIfNeeded(data[0])
+      pushToSystemeioIfNeeded(data[0], prevStage)
+      pushToAirtableIfNeeded(data[0], prevStage)
     }
   }
 
@@ -359,9 +442,9 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   return (
     <BusinessProspectsContext.Provider value={{
       prospects, addProspect, updateProspect, deleteProspect, loading,
-      syncHubspot, syncPipedrive,
-      isSyncingHubspot, isSyncingPipedrive,
-      hubspotConnected, pipedriveConnected,
+      syncHubspot, syncPipedrive, syncAirtable,
+      isSyncingHubspot, isSyncingPipedrive, isSyncingAirtable,
+      hubspotConnected, pipedriveConnected, airtableConnected,
       nextSyncSeconds,
     }}>
       {children}

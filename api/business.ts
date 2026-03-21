@@ -5,6 +5,172 @@ import crypto from 'crypto'
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
+// ─── Airtable helpers ───
+
+const AIRTABLE_API = 'https://api.airtable.com/v0'
+const AIRTABLE_META = 'https://api.airtable.com/v0/meta'
+const AIRTABLE_TOKEN_URL = 'https://airtable.com/oauth2/v1/token'
+
+async function getValidAirtableToken(supabase: any, userId: string): Promise<string | null> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('airtable_access_token, airtable_refresh_token, airtable_token_expires_at')
+    .eq('id', userId)
+    .single()
+
+  if (!profile?.airtable_access_token) return null
+
+  const expiresAt = typeof profile.airtable_token_expires_at === 'number'
+    ? profile.airtable_token_expires_at
+    : parseInt(profile.airtable_token_expires_at || '0', 10)
+
+  if (expiresAt > 0 && Date.now() < (expiresAt - 120000)) {
+    return profile.airtable_access_token
+  }
+
+  if (!profile.airtable_refresh_token) return null
+
+  const basicAuth = Buffer.from(`${process.env.AIRTABLE_CLIENT_ID || ''}:${process.env.AIRTABLE_CLIENT_SECRET || ''}`).toString('base64')
+  const tokenRes = await fetch(AIRTABLE_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: `Basic ${basicAuth}` },
+    body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: profile.airtable_refresh_token }).toString(),
+  })
+  const tokenData = await tokenRes.json()
+  if (!tokenData.access_token) return null
+
+  await supabase.from('profiles').update({
+    airtable_access_token: tokenData.access_token,
+    airtable_refresh_token: tokenData.refresh_token || profile.airtable_refresh_token,
+    airtable_token_expires_at: Date.now() + (tokenData.expires_in || 3600) * 1000,
+  }).eq('id', userId)
+
+  return tokenData.access_token
+}
+
+function getAirtableFieldValue(fields: Record<string, any>, fieldName: string | undefined): string {
+  if (!fieldName) return ''
+  const val = fields[fieldName]
+  if (val === null || val === undefined) return ''
+  if (Array.isArray(val)) return val.join(', ')
+  return String(val)
+}
+
+function mapAirtableStageToCloseos(raw: string): string {
+  if (!raw) return 'prospect'
+  const lower = raw.toLowerCase().trim()
+  if (['prospect', 'lead', 'new', 'nouveau', 'à contacter'].includes(lower)) return 'prospect'
+  if (['qualified', 'qualifié', 'rdv', 'rendez-vous', 'call booked', 'meeting'].includes(lower)) return 'qualified'
+  if (['won', 'gagné', 'gagne', 'closed won', 'client', 'vendu', 'sale'].includes(lower)) return 'won'
+  if (['follow up', 'followup', 'relance', 'à relancer', 'follow-up'].includes(lower)) return 'followup'
+  if (['no show', 'noshow', 'no-show', 'absent'].includes(lower)) return 'noshow'
+  if (['lost', 'perdu', 'closed lost', 'refusé', 'refused'].includes(lower)) return 'lost'
+  return 'prospect'
+}
+
+function mapCloseosStageToAirtable(stage: string, stageMapping?: Record<string, string>): string {
+  if (stageMapping && stageMapping[stage]) return stageMapping[stage]
+  const defaults: Record<string, string> = {
+    prospect: 'Prospect', qualified: 'Qualifié', won: 'Gagné',
+    followup: 'Follow Up', noshow: 'No Show', lost: 'Perdu',
+  }
+  return defaults[stage] || stage
+}
+
+async function syncAirtableBusiness(supabase: any, userId: string) {
+  const accessToken = await getValidAirtableToken(supabase, userId)
+  if (!accessToken) throw new Error('Airtable not connected')
+
+  const { data: settings } = await supabase.from('business_settings').select('airtable_config').eq('user_id', userId).single()
+  const config = settings?.airtable_config || {}
+  const { baseId, tableId, fieldMapping } = config
+  if (!baseId || !tableId || !fieldMapping) throw new Error('Airtable config incomplete')
+
+  let allRecords: any[] = []
+  let offset: string | undefined
+  do {
+    const url = new URL(`${AIRTABLE_API}/${baseId}/${encodeURIComponent(tableId)}`)
+    url.searchParams.set('pageSize', '100')
+    if (offset) url.searchParams.set('offset', offset)
+    const response = await fetch(url.toString(), { headers: { Authorization: `Bearer ${accessToken}` } })
+    if (!response.ok) { console.error('[Airtable Business] Fetch error:', await response.text()); break }
+    const data = await response.json()
+    allRecords = allRecords.concat(data.records || [])
+    offset = data.offset
+  } while (offset)
+
+  let imported = 0, updated = 0
+
+  for (const record of allRecords) {
+    const fields = record.fields || {}
+    const firstName = getAirtableFieldValue(fields, fieldMapping.firstName) || ''
+    const lastName = getAirtableFieldValue(fields, fieldMapping.lastName) || ''
+    const email = getAirtableFieldValue(fields, fieldMapping.email) || ''
+    const phone = getAirtableFieldValue(fields, fieldMapping.phone) || ''
+    const company = getAirtableFieldValue(fields, fieldMapping.company) || ''
+    const stageRaw = getAirtableFieldValue(fields, fieldMapping.stage) || ''
+    const value = parseFloat(getAirtableFieldValue(fields, fieldMapping.value) || '0') || 0
+    if (!firstName && !lastName && !email) continue
+
+    const contactName = [firstName, lastName].filter(Boolean).join(' ') || email
+    const stage = mapAirtableStageToCloseos(stageRaw)
+
+    const { data: existing } = await supabase.from('business_prospects').select('id, stage').eq('user_id', userId).eq('airtable_record_id', record.id).maybeSingle()
+    if (existing) {
+      if (stage && existing.stage !== stage) {
+        await supabase.from('business_prospects').update({ contact: contactName, firstName, lastName, email, phone, company, stage, value: value || undefined }).eq('id', existing.id)
+        updated++
+      }
+      continue
+    }
+
+    if (email) {
+      const { data: byEmail } = await supabase.from('business_prospects').select('id').eq('user_id', userId).eq('email', email).maybeSingle()
+      if (byEmail) {
+        await supabase.from('business_prospects').update({ airtable_record_id: record.id }).eq('id', byEmail.id)
+        updated++
+        continue
+      }
+    }
+
+    await supabase.from('business_prospects').insert({
+      user_id: userId, contact: contactName, firstName, lastName, email, phone, company,
+      stage: stage || 'prospect', value: value || undefined,
+      airtable_record_id: record.id, notes: 'Source: Airtable', status: 'new',
+    })
+    imported++
+  }
+
+  return { imported, updated }
+}
+
+async function pushToAirtableBusiness(supabase: any, userId: string, prospectData: any) {
+  const { stage, airtable_record_id } = prospectData
+  if (!airtable_record_id) return { success: true, message: 'No airtable_record_id' }
+
+  const accessToken = await getValidAirtableToken(supabase, userId)
+  if (!accessToken) return { success: true, message: 'No Airtable token' }
+
+  const { data: settings } = await supabase.from('business_settings').select('airtable_config').eq('user_id', userId).single()
+  const config = settings?.airtable_config || {}
+  const { baseId, tableId, fieldMapping, stageMapping } = config
+  const stageField = fieldMapping?.stage
+  if (!baseId || !tableId || !stageField) return { success: true, message: 'Airtable config incomplete' }
+
+  const airtableStage = mapCloseosStageToAirtable(stage, stageMapping)
+  const response = await fetch(`${AIRTABLE_API}/${baseId}/${encodeURIComponent(tableId)}/${airtable_record_id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: { [stageField]: airtableStage } }),
+  })
+
+  if (!response.ok) {
+    console.error('[Airtable Business] Push error:', await response.text())
+    return { success: false }
+  }
+  return { success: true }
+}
+
 // ─── HubSpot helpers ───
 
 async function getValidHubspotToken(supabase: any, userId: string) {
@@ -631,6 +797,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await supabase.from('pipedrive_stage_mapping').insert(rows)
       }
       return res.status(200).json({ success: true })
+    }
+
+    // ─── Airtable actions ───
+    if (req.method === 'POST' && action === 'airtable-sync') {
+      const { user_id } = req.body
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+      try {
+        const result = await syncAirtableBusiness(supabase, user_id)
+        return res.status(200).json(result)
+      } catch (err: any) {
+        return res.status(500).json({ error: err.message })
+      }
+    }
+
+    if (req.method === 'POST' && action === 'airtable-push') {
+      const { user_id, ...prospectData } = req.body
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+      try {
+        const result = await pushToAirtableBusiness(supabase, user_id, prospectData)
+        return res.status(200).json(result)
+      } catch (err: any) {
+        return res.status(500).json({ error: err.message })
+      }
+    }
+
+    if (req.method === 'POST' && action === 'airtable-bases') {
+      const { user_id } = req.body
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+      const accessToken = await getValidAirtableToken(supabase, user_id)
+      if (!accessToken) return res.status(401).json({ error: 'Airtable not connected' })
+      const response = await fetch(`${AIRTABLE_META}/bases`, { headers: { Authorization: `Bearer ${accessToken}` } })
+      if (!response.ok) return res.status(500).json({ error: 'Failed to fetch bases' })
+      const data = await response.json()
+      return res.status(200).json({ bases: (data.bases || []).map((b: any) => ({ id: b.id, name: b.name })) })
+    }
+
+    if (req.method === 'POST' && action === 'airtable-tables') {
+      const { user_id, base_id } = req.body
+      if (!user_id || !base_id) return res.status(400).json({ error: 'user_id and base_id required' })
+      const accessToken = await getValidAirtableToken(supabase, user_id)
+      if (!accessToken) return res.status(401).json({ error: 'Airtable not connected' })
+      const response = await fetch(`${AIRTABLE_META}/bases/${base_id}/tables`, { headers: { Authorization: `Bearer ${accessToken}` } })
+      if (!response.ok) return res.status(500).json({ error: 'Failed to fetch tables' })
+      const data = await response.json()
+      return res.status(200).json({ tables: (data.tables || []).map((t: any) => ({ id: t.id, name: t.name })) })
+    }
+
+    if (req.method === 'POST' && action === 'airtable-fields') {
+      const { user_id, base_id, table_id } = req.body
+      if (!user_id || !base_id || !table_id) return res.status(400).json({ error: 'user_id, base_id, table_id required' })
+      const accessToken = await getValidAirtableToken(supabase, user_id)
+      if (!accessToken) return res.status(401).json({ error: 'Airtable not connected' })
+      const response = await fetch(`${AIRTABLE_META}/bases/${base_id}/tables`, { headers: { Authorization: `Bearer ${accessToken}` } })
+      if (!response.ok) return res.status(500).json({ error: 'Failed to fetch fields' })
+      const data = await response.json()
+      const table = (data.tables || []).find((t: any) => t.id === table_id || t.name === table_id)
+      if (!table) return res.status(404).json({ error: 'Table not found' })
+      return res.status(200).json({ fields: (table.fields || []).map((f: any) => ({ id: f.id, name: f.name, type: f.type })) })
     }
 
     // ─── Formula actions ───
