@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Check, ExternalLink, Loader2, RefreshCw, Link as LinkIcon, Copy, Info, ChevronDown } from 'lucide-react';
+import { X, Check, ExternalLink, Loader2, RefreshCw, Link as LinkIcon, Copy, Info, ChevronDown, Key, Trash2, Zap, Eye, EyeOff } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext';
 import { supabase } from '../../lib/supabase';
@@ -9,6 +9,7 @@ const CRM_OPTIONS = [
   { id: 'iclosed', name: 'iClosed', description: 'Connectez via Webhook', color: 'bg-purple-500', textColor: 'text-purple-700', bgColor: 'bg-purple-50', borderColor: 'border-purple-300' },
   { id: 'hubspot', name: 'HubSpot', description: 'Synchronisez avec HubSpot CRM', color: 'bg-orange-500', textColor: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-orange-300' },
   { id: 'pipedrive', name: 'Pipedrive', description: 'Connectez votre pipeline Pipedrive', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-300' },
+  { id: 'zapier', name: 'Zapier', description: 'Importez des prospects via Zapier (webhook)', color: 'bg-[#FF4A00]', textColor: 'text-[#FF4A00]', bgColor: 'bg-orange-50', borderColor: 'border-orange-300' },
 ];
 
 const CLOSEOS_STAGES = [
@@ -41,6 +42,14 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
   const [pipedriveStages, setPipedriveStages] = useState<any[]>([]);
   const [pipedriveMappings, setPipedriveMappings] = useState<Record<string, number>>({});
   const [loadingPipelines, setLoadingPipelines] = useState(false);
+
+  // Zapier
+  const [zapierApiKey, setZapierApiKey] = useState<string | null>(null);
+  const [zapierKeyId, setZapierKeyId] = useState<string | null>(null);
+  const [zapierLoading, setZapierLoading] = useState(false);
+  const [zapierCopiedUrl, setZapierCopiedUrl] = useState(false);
+  const [zapierCopiedKey, setZapierCopiedKey] = useState(false);
+  const [zapierShowKey, setZapierShowKey] = useState(false);
 
   useEffect(() => {
     if (businessSettings?.crm_provider) {
@@ -85,6 +94,70 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
     };
     load();
   }, [selected, user, isOpen]);
+
+  // Load existing Zapier API key
+  useEffect(() => {
+    if (selected !== 'zapier' || !user || !isOpen) return;
+    const load = async () => {
+      const ownerUserId = user.id;
+      const { data } = await supabase
+        .from('business_webhook_keys')
+        .select('id, api_key')
+        .eq('user_id', ownerUserId)
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+      if (data) {
+        setZapierApiKey(data.api_key);
+        setZapierKeyId(data.id);
+      } else {
+        setZapierApiKey(null);
+        setZapierKeyId(null);
+      }
+    };
+    load();
+  }, [selected, user, isOpen]);
+
+  const handleGenerateZapierKey = async () => {
+    if (!user) return;
+    setZapierLoading(true);
+    try {
+      // Generate a secure random key
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const newKey = 'zk_' + Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+
+      const { data, error } = await supabase
+        .from('business_webhook_keys')
+        .insert({ user_id: user.id, api_key: newKey, name: 'Zapier' })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setZapierApiKey(newKey);
+      setZapierKeyId(data.id);
+      setZapierShowKey(true);
+    } catch (err) {
+      console.error('Error generating Zapier key:', err);
+    } finally {
+      setZapierLoading(false);
+    }
+  };
+
+  const handleDeleteZapierKey = async () => {
+    if (!zapierKeyId || !window.confirm('Supprimer cette clé API ? Les Zaps connectés ne fonctionneront plus.')) return;
+    setZapierLoading(true);
+    try {
+      await supabase.from('business_webhook_keys').delete().eq('id', zapierKeyId);
+      setZapierApiKey(null);
+      setZapierKeyId(null);
+      setZapierShowKey(false);
+    } catch (err) {
+      console.error('Error deleting Zapier key:', err);
+    } finally {
+      setZapierLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -288,6 +361,122 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
 
                 <p className="text-[10px] text-orange-600/70">
                   La synchronisation auto se fait toutes les 2 minutes. Les changements de stage sont poussés vers HubSpot.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── Zapier Config ─── */}
+        {selected === 'zapier' && (
+          <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 mb-4">
+            <h4 className="text-sm font-semibold text-[#FF4A00] mb-3 flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Configuration Zapier
+            </h4>
+
+            {!zapierApiKey ? (
+              <div>
+                <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                  Générez une clé API pour connecter Zapier à CloseOS. Les prospects créés via Zapier seront visibles par toute votre équipe.
+                </p>
+                <button
+                  onClick={handleGenerateZapierKey}
+                  disabled={zapierLoading}
+                  className="w-full flex justify-center items-center gap-2 rounded-xl bg-[#FF4A00] py-3 text-sm font-bold text-white hover:bg-[#e04300] transition-all disabled:opacity-50"
+                >
+                  {zapierLoading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Génération...</>
+                  ) : (
+                    <><Key className="h-4 w-4" /> Générer une clé API</>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Connected status */}
+                <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-2">
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-emerald-600" />
+                    <span className="text-sm font-semibold text-emerald-700">Clé API active</span>
+                  </div>
+                  <button
+                    onClick={handleDeleteZapierKey}
+                    disabled={zapierLoading}
+                    className="text-xs text-slate-500 hover:text-red-500 underline flex items-center gap-1"
+                  >
+                    <Trash2 className="h-3 w-3" /> Supprimer
+                  </button>
+                </div>
+
+                {/* Webhook URL */}
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">URL du Webhook</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={`${baseUrl}/api/zapier-webhook`}
+                      readOnly
+                      className="flex-1 rounded-lg border border-orange-200 bg-white py-2 px-3 text-xs text-slate-700 font-mono"
+                    />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${baseUrl}/api/zapier-webhook`);
+                        setZapierCopiedUrl(true);
+                        setTimeout(() => setZapierCopiedUrl(false), 2000);
+                      }}
+                      className="rounded-lg bg-[#FF4A00] p-2 text-white hover:bg-[#e04300] transition-colors"
+                    >
+                      {zapierCopiedUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* API Key */}
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Clé API (Bearer Token)</label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={zapierShowKey ? 'text' : 'password'}
+                        value={zapierApiKey}
+                        readOnly
+                        className="w-full rounded-lg border border-orange-200 bg-white py-2 px-3 pr-9 text-xs text-slate-700 font-mono"
+                      />
+                      <button
+                        onClick={() => setZapierShowKey(!zapierShowKey)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {zapierShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(zapierApiKey!);
+                        setZapierCopiedKey(true);
+                        setTimeout(() => setZapierCopiedKey(false), 2000);
+                      }}
+                      className="rounded-lg bg-[#FF4A00] p-2 text-white hover:bg-[#e04300] transition-colors"
+                    >
+                      {zapierCopiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Instructions */}
+                <div className="rounded-lg border border-orange-200 bg-white p-3">
+                  <h5 className="mb-2 text-xs font-bold text-slate-800">Configuration dans Zapier :</h5>
+                  <ol className="text-[11px] text-slate-600 space-y-1.5 list-decimal list-inside">
+                    <li>Créez un nouveau Zap avec votre source (Facebook Ads, Typeform...)</li>
+                    <li>Action : <strong>Webhooks by Zapier</strong> → <strong>POST</strong></li>
+                    <li>URL : collez l'URL ci-dessus</li>
+                    <li>Headers : <code className="bg-slate-100 px-1 rounded text-[10px]">Authorization: Bearer votre_clé</code></li>
+                    <li>Body (JSON) : mappez vos champs → <code className="bg-slate-100 px-1 rounded text-[10px]">firstName, lastName, email, phone, company, source</code></li>
+                  </ol>
+                </div>
+
+                <p className="text-[10px] text-orange-600/70">
+                  Les prospects importés via Zapier sont visibles par le propriétaire et tous les membres de l'équipe.
                 </p>
               </div>
             )}
