@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState, useCallback } from 'react'
 
 // Imports des Contextes
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -58,6 +58,7 @@ import { RemindersPage } from './pages/RemindersPage'
 import { TrialExpiredModal } from './pages/TrialExpired'
 import { FounderOnlyGuard } from './components/FounderOnlyGuard'
 import { BusinessLanding } from './pages/BusinessLanding'
+import { EcosystemChoice } from './pages/EcosystemChoice'
 
 // Business Module Imports
 import { BusinessAuthProvider, useBusinessAuth } from './business/contexts/BusinessAuthContext'
@@ -153,16 +154,61 @@ function FacturesRouter() {
 // Page d'accueil intelligente : landing immédiate si non connecté, loading si session détectée
 function SmartHome() {
   const { user, loading } = useAuth()
+  const navigate = useNavigate()
+  const [product, setProduct] = useState<'sales' | 'business' | 'choice' | 'loading'>('loading')
 
+  useEffect(() => {
+    // 1. Check query params
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('sales')) {
+      localStorage.setItem('closeos_product', 'sales')
+      window.history.replaceState({}, '', '/')
+      setProduct('sales')
+      return
+    }
+    if (params.has('business')) {
+      localStorage.setItem('closeos_product', 'business')
+      navigate('/business', { replace: true })
+      return
+    }
+
+    // 2. Check localStorage
+    const saved = localStorage.getItem('closeos_product')
+    if (saved === 'sales') { setProduct('sales'); return }
+    if (saved === 'business') { navigate('/business', { replace: true }); return }
+
+    // 3. No preference → show choice
+    setProduct('choice')
+  }, [navigate])
+
+  // Logged-in users go straight to dashboard
   if (!loading && user) return <Navigate to="/dashboard" replace />
-  if (!loading && !user) return <LandingPage />
 
-  // Pendant le chargement : si une session Supabase existe en cache → loading screen
-  // Sinon → landing page directement (visiteur non connecté)
-  const hasCachedSession = Object.keys(localStorage).some(
-    k => k.startsWith('sb-') && k.endsWith('-auth-token')
-  )
-  if (hasCachedSession) return <LoadingScreen />
+  // While auth loads, check for cached session
+  if (loading) {
+    const hasCachedSession = Object.keys(localStorage).some(
+      k => k.startsWith('sb-') && k.endsWith('-auth-token')
+    )
+    if (hasCachedSession) return <LoadingScreen />
+  }
+
+  if (product === 'loading') return null
+
+  if (product === 'choice') {
+    return (
+      <EcosystemChoice
+        onChooseSales={() => {
+          localStorage.setItem('closeos_product', 'sales')
+          setProduct('sales')
+        }}
+        onChooseBusiness={() => {
+          localStorage.setItem('closeos_product', 'business')
+          navigate('/business')
+        }}
+      />
+    )
+  }
+
   return <LandingPage />
 }
 
@@ -310,6 +356,7 @@ function AuthenticatedApp() {
         <Route path="/cgv" element={<CGV />} />
         <Route path="/confidentialite" element={<PrivacyPolicy />} />
 
+        <Route path="/landing" element={<LandingPage />} />
         <Route
           path="/"
           element={<SmartHome />}
