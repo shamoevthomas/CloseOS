@@ -32,6 +32,10 @@ export interface Prospect {
   installments?: number
   probability?: number
   hubspot_contact_id?: string
+  ghl_contact_id?: string
+  ghl_opportunity_id?: string
+  systemeio_contact_id?: string
+  airtable_record_id?: string
   call_notes?: {
     id: string
     date: string
@@ -48,12 +52,20 @@ interface ProspectsContextType {
   loading: boolean
   syncHubspot: (offer_id?: number) => Promise<void>
   syncPipedrive: (offer_id?: number) => Promise<void>
+  syncGhl: (offer_id?: number) => Promise<void>
+  syncAirtable: (offer_id?: number) => Promise<void>
   isSyncingHubspot: boolean
   isSyncingPipedrive: boolean
+  isSyncingGhl: boolean
+  isSyncingAirtable: boolean
   hubspotConnected: boolean
   pipedriveConnected: boolean
+  ghlConnected: boolean
+  airtableConnected: boolean
   hasHubspotOffer: boolean
   hasPipedriveOffer: boolean
+  hasGhlOffer: boolean
+  hasAirtableOffer: boolean
   nextSyncSeconds: number
 }
 
@@ -71,10 +83,16 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   // CRM states
   const [isSyncingHubspot, setIsSyncingHubspot] = useState(false)
   const [isSyncingPipedrive, setIsSyncingPipedrive] = useState(false)
+  const [isSyncingGhl, setIsSyncingGhl] = useState(false)
+  const [isSyncingAirtable, setIsSyncingAirtable] = useState(false)
   const [hubspotConnected, setHubspotConnected] = useState(false)
   const [pipedriveConnected, setPipedriveConnected] = useState(false)
+  const [ghlConnected, setGhlConnected] = useState(false)
+  const [airtableConnected, setAirtableConnected] = useState(false)
   const [hasHubspotOffer, setHasHubspotOffer] = useState(false)
   const [hasPipedriveOffer, setHasPipedriveOffer] = useState(false)
+  const [hasGhlOffer, setHasGhlOffer] = useState(false)
+  const [hasAirtableOffer, setHasAirtableOffer] = useState(false)
   const [nextSyncSeconds, setNextSyncSeconds] = useState(SYNC_INTERVAL_SECONDS)
 
   const loadProspects = useCallback(async (showLoading = true) => {
@@ -106,8 +124,12 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       setHubspotConnected(false)
       setPipedriveConnected(false)
+      setGhlConnected(false)
+      setAirtableConnected(false)
       setHasHubspotOffer(false)
       setHasPipedriveOffer(false)
+      setHasGhlOffer(false)
+      setHasAirtableOffer(false)
     }
   }, [userId, authLoading, loadProspects])
 
@@ -116,12 +138,14 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('hubspot_access_token, pipedrive_access_token')
+        .select('hubspot_access_token, pipedrive_access_token, ghl_access_token, airtable_api_key')
         .eq('id', userId)
         .single()
 
       setHubspotConnected(!!profile?.hubspot_access_token)
       setPipedriveConnected(!!profile?.pipedrive_access_token)
+      setGhlConnected(!!profile?.ghl_access_token)
+      setAirtableConnected(!!profile?.airtable_api_key)
 
       const { data: offers } = await supabase
         .from('offers')
@@ -130,6 +154,8 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
       setHasHubspotOffer(!!offers?.some(o => o.crm_provider === 'hubspot'))
       setHasPipedriveOffer(!!offers?.some(o => o.crm_provider === 'pipedrive'))
+      setHasGhlOffer(!!offers?.some(o => o.crm_provider === 'gohighlevel'))
+      setHasAirtableOffer(!!offers?.some(o => o.crm_provider === 'airtable'))
     } catch (error) {
       console.error('Erreur check status CRM:', error)
     }
@@ -207,6 +233,25 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(timer)
   }, [userId, authLoading, hubspotConnected, hasHubspotOffer])
 
+  // GHL Auto-Sync Timer
+  useEffect(() => {
+    if (authLoading || !userId || !ghlConnected || !hasGhlOffer) return
+    // Share the same countdown as HubSpot — only one CRM auto-syncs
+    if (hubspotConnected && hasHubspotOffer) return
+
+    const timer = setInterval(() => {
+      setNextSyncSeconds(prev => {
+        if (prev <= 1) {
+          syncGhl()
+          return SYNC_INTERVAL_SECONDS
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [userId, authLoading, ghlConnected, hasGhlOffer, hubspotConnected, hasHubspotOffer])
+
   const syncHubspot = async (offer_id?: number) => {
     if (!user || isSyncingHubspot) return
     setIsSyncingHubspot(true)
@@ -250,6 +295,160 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       console.error('Erreur sync Pipedrive:', error)
     } finally {
       setIsSyncingPipedrive(false)
+    }
+  }
+
+  const syncGhl = async (offer_id?: number) => {
+    if (!user || isSyncingGhl) return
+    setIsSyncingGhl(true)
+    try {
+      const res = await fetch('/api/ghll?action=sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, offer_id }),
+      })
+      if (res.ok) {
+        setNextSyncSeconds(SYNC_INTERVAL_SECONDS)
+        await loadProspects(false)
+      } else {
+        const data = await res.json()
+        console.error('Erreur sync GHL:', data.error)
+      }
+    } catch (error) {
+      console.error('Erreur sync GHL:', error)
+    } finally {
+      setIsSyncingGhl(false)
+    }
+  }
+
+  const syncAirtable = async (offer_id?: number) => {
+    if (!user || isSyncingAirtable) return
+    setIsSyncingAirtable(true)
+    try {
+      const res = await fetch('/api/airtable?action=sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, offer_id }),
+      })
+      if (res.ok) {
+        await loadProspects(false)
+      } else {
+        const data = await res.json()
+        console.error('Erreur sync Airtable:', data.error)
+      }
+    } catch (error) {
+      console.error('Erreur sync Airtable:', error)
+    } finally {
+      setIsSyncingAirtable(false)
+    }
+  }
+
+  const pushToAirtableIfNeeded = async (prospect: any) => {
+    if (!user) return
+    try {
+      let isAirtable = false
+      if (prospect.offer_id) {
+        const { data: offerData } = await supabase
+          .from('offers')
+          .select('crm_provider')
+          .eq('id', prospect.offer_id)
+          .single()
+        isAirtable = offerData?.crm_provider === 'airtable'
+      }
+
+      if (!isAirtable && prospect.offer) {
+        const offerName = prospect.offer.split(' - ')[0]?.trim()
+        if (offerName) {
+          const { data: offerData } = await supabase
+            .from('offers')
+            .select('crm_provider')
+            .eq('user_id', user.id)
+            .ilike('name', offerName)
+            .maybeSingle()
+          isAirtable = offerData?.crm_provider === 'airtable'
+        }
+      }
+
+      if (!isAirtable) return
+
+      fetch('/api/airtable?action=push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          prospect_id: prospect.id,
+          stage: prospect.stage,
+          airtable_record_id: prospect.airtable_record_id,
+          offer_id: prospect.offer_id,
+        }),
+      }).catch(err => console.error('[Airtable] Push error:', err))
+    } catch (err) {
+      console.error('[Airtable] Push check error:', err)
+    }
+  }
+
+  const pushToGhlIfNeeded = async (prospect: any) => {
+    if (!user) return
+    try {
+      let isGhl = false
+      if (prospect.offer_id) {
+        const { data: offerData } = await supabase
+          .from('offers')
+          .select('crm_provider')
+          .eq('id', prospect.offer_id)
+          .single()
+        isGhl = offerData?.crm_provider === 'gohighlevel'
+      }
+
+      if (!isGhl && prospect.offer) {
+        const offerName = prospect.offer.split(' - ')[0]?.trim()
+        if (offerName) {
+          const { data: offerData } = await supabase
+            .from('offers')
+            .select('crm_provider')
+            .eq('user_id', user.id)
+            .ilike('name', offerName)
+            .maybeSingle()
+          isGhl = offerData?.crm_provider === 'gohighlevel'
+        }
+      }
+
+      if (!isGhl && !prospect.offer_id && !prospect.offer) {
+        const { data: offers } = await supabase
+          .from('offers')
+          .select('crm_provider')
+          .eq('user_id', user.id)
+          .eq('crm_provider', 'gohighlevel')
+          .limit(1)
+        isGhl = !!(offers && offers.length > 0)
+      }
+
+      if (!isGhl) return
+
+      fetch('/api/ghll?action=push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          prospect_id: prospect.id,
+          firstName: prospect.firstName || prospect.first_name || prospect.contact?.split(' ')[0],
+          lastName: prospect.lastName || prospect.last_name || prospect.contact?.split(' ').slice(1).join(' '),
+          email: prospect.email,
+          phone: prospect.phone,
+          company: prospect.company,
+          stage: prospect.stage,
+          ghl_contact_id: prospect.ghl_contact_id,
+          ghl_opportunity_id: prospect.ghl_opportunity_id,
+        }),
+      }).then(res => res.json()).then(data => {
+        if (data.ghl_contact_id && !prospect.ghl_contact_id) {
+          setProspects(prev => prev.map(p =>
+            p.id === prospect.id ? { ...p, ghl_contact_id: data.ghl_contact_id, ghl_opportunity_id: data.ghl_opportunity_id } : p
+          ))
+        }
+      }).catch(err => console.error('[GHL] Push error:', err))
+    } catch (err) {
+      console.error('[GHL] Push check error:', err)
     }
   }
 
@@ -350,6 +549,50 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const pushToSystemeioIfNeeded = async (prospect: any, previousStage?: string) => {
+    if (!user) return
+    try {
+      let isSystemeio = false
+      if (prospect.offer_id) {
+        const { data: offerData } = await supabase
+          .from('offers')
+          .select('crm_provider')
+          .eq('id', prospect.offer_id)
+          .single()
+        isSystemeio = offerData?.crm_provider === 'systemeio'
+      }
+
+      if (!isSystemeio && prospect.offer) {
+        const offerName = prospect.offer.split(' - ')[0]?.trim()
+        if (offerName) {
+          const { data: offerData } = await supabase
+            .from('offers')
+            .select('crm_provider')
+            .eq('user_id', user.id)
+            .ilike('name', offerName)
+            .maybeSingle()
+          isSystemeio = offerData?.crm_provider === 'systemeio'
+        }
+      }
+
+      if (!isSystemeio) return
+
+      fetch('/api/systemeio?action=push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          prospect_id: prospect.id,
+          stage: prospect.stage,
+          previous_stage: previousStage,
+          systemeio_contact_id: prospect.systemeio_contact_id,
+        }),
+      }).catch(err => console.error('[Systeme.io] Push error:', err))
+    } catch (err) {
+      console.error('[Systeme.io] Push check error:', err)
+    }
+  }
+
   const addProspect = async (prospect: Omit<Prospect, 'id' | 'user_id'>) => {
     if (!user) return
 
@@ -369,6 +612,9 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       })
       pushToHubspotIfNeeded(data[0])
       pushToPipedriveIfNeeded(data[0])
+      pushToGhlIfNeeded(data[0])
+      pushToSystemeioIfNeeded(data[0])
+      pushToAirtableIfNeeded(data[0])
     }
   }
 
@@ -392,8 +638,12 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     }
 
     if (updates.stage && data?.[0]) {
+      const prevStage = previousProspects.find(p => p.id === id)?.stage
       pushToHubspotIfNeeded(data[0], true)
       pushToPipedriveIfNeeded(data[0])
+      pushToGhlIfNeeded(data[0])
+      pushToSystemeioIfNeeded(data[0], prevStage)
+      pushToAirtableIfNeeded(data[0])
     }
   }
 
@@ -415,10 +665,10 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   return (
     <ProspectsContext.Provider value={{
       prospects, addProspect, updateProspect, deleteProspect, loading,
-      syncHubspot, syncPipedrive,
-      isSyncingHubspot, isSyncingPipedrive,
-      hubspotConnected, pipedriveConnected,
-      hasHubspotOffer, hasPipedriveOffer,
+      syncHubspot, syncPipedrive, syncGhl, syncAirtable,
+      isSyncingHubspot, isSyncingPipedrive, isSyncingGhl, isSyncingAirtable,
+      hubspotConnected, pipedriveConnected, ghlConnected, airtableConnected,
+      hasHubspotOffer, hasPipedriveOffer, hasGhlOffer, hasAirtableOffer,
       nextSyncSeconds
     }}>
       {children}

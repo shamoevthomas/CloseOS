@@ -30,7 +30,11 @@ export interface CrmMapping {
   won?: string
   lost?: string
   noshow?: string
-  [key: string]: string | undefined
+  airtableBaseId?: string
+  airtableTableId?: string
+  airtableFieldMapping?: Record<string, string>
+  airtableStageMapping?: Record<string, string>
+  [key: string]: string | Record<string, string> | undefined
 }
 
 export interface Offer {
@@ -59,7 +63,7 @@ export interface Offer {
   billingPhone?: string
   hasFixedFee?: boolean
   fixedFeeAmount?: string
-  crmProvider?: 'iclosed' | 'hubspot' | 'pipedrive' | 'other'
+  crmProvider?: 'iclosed' | 'hubspot' | 'pipedrive' | 'gohighlevel' | 'systemeio' | 'airtable' | 'other'
   crmApiKey?: string
   crmMapping?: CrmMapping
   defaultFormulaId?: string
