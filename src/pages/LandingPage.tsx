@@ -31,6 +31,77 @@ import {
   ChevronDown,
 } from 'lucide-react'
 
+const INTEGRATIONS = [
+  { label: 'GoHighLevel', color: '#E4573D' },
+  { label: 'Airtable', color: '#FFBF00' },
+  { label: 'Systeme.io', color: '#00B4D8' },
+  { label: 'iClosed', color: '#ffffff' },
+  { label: 'Hubspot', color: '#FF7A59' },
+  { label: 'Pipedrive', color: '#00AB44' },
+  { label: 'Google Calendar', color: '#4285F4', renderLabel: () => <><span className="text-[#4285F4]">Google</span>{' '}Calendar</> },
+  { label: 'Twilio', color: '#F22F46' },
+  { label: 'Cal.com', color: '#ffffff' },
+  { label: 'Stripe', color: '#635BFF' },
+  { label: 'Zapier', color: '#FF4A00' },
+];
+
+function IntegrationsBanner() {
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const total = INTEGRATIONS.length;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAnimating(true);
+      // Animate right to left: start from last index, go down to 0
+      let step = 0;
+      const cascade = setInterval(() => {
+        const idx = total - 1 - step;
+        setActiveIndex(idx);
+        step++;
+        if (step >= total) {
+          clearInterval(cascade);
+          // Keep last one lit briefly, then reset
+          setTimeout(() => {
+            setActiveIndex(-1);
+            setIsAnimating(false);
+          }, 400);
+        }
+      }, 120);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [total]);
+
+  return (
+    <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8">
+      {INTEGRATIONS.map((item, i) => {
+        const isActive = isAnimating && i >= activeIndex && activeIndex !== -1;
+        return (
+          <div
+            key={item.label}
+            className="flex items-center gap-2 font-bold text-xl sm:text-2xl transition-all duration-300 cursor-default"
+            style={{
+              color: isActive ? item.color : 'rgba(255,255,255,0.4)',
+              filter: isActive ? 'none' : 'grayscale(100%)',
+              opacity: isActive ? 1 : 0.6,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = item.color; e.currentTarget.style.filter = 'none'; e.currentTarget.style.opacity = '1'; }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+                e.currentTarget.style.filter = 'grayscale(100%)';
+                e.currentTarget.style.opacity = '0.6';
+              }
+            }}
+          >
+            {item.renderLabel ? item.renderLabel() : item.label}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function FAQItem({ question, children }: { question: string, children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -355,19 +426,7 @@ export function LandingPage() {
           <p className="text-xs font-bold text-slate-500 mb-8 uppercase tracking-widest">
             Synchronisation native avec vos outils préférés
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-700">
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">iClosed</div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Hubspot</div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Pipedrive</div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#4285F4]">Google</span> Calendar</div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#F22F46]">Twilio</span></div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white">Cal.com</div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#635BFF]">Stripe</span></div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#E4573D]">GoHighLevel</span></div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#FFBF00]">Airtable</span></div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#00B4D8]">Systeme.io</span></div>
-            <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-white"><span className="text-[#FF4A00]">Zapier</span></div>
-          </div>
+          <IntegrationsBanner />
         </div>
       </motion.section >
 
