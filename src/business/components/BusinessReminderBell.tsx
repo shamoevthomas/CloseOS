@@ -86,35 +86,35 @@ export function BusinessReminderBell() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'relative flex items-center justify-center rounded-lg p-2 transition-all',
+          'relative flex items-center justify-center rounded-full p-2 transition-all',
           count > 0
-            ? 'text-amber-600 hover:bg-amber-50'
-            : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+            ? 'text-stone-900 hover:bg-stone-100'
+            : 'text-stone-500 hover:bg-stone-100 hover:text-stone-700'
         )}
       >
         <Bell className={cn('h-5 w-5', count > 0 && 'animate-[wiggle_1s_ease-in-out_infinite]')} />
         {count > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white min-w-[18px] h-[18px] px-1">
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white min-w-[18px] h-[18px] px-1">
             {count > 9 ? '9+' : count}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl border border-amber-200 bg-white shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center justify-between border-b border-amber-100 px-4 py-3">
+        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl bg-white/95 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
             <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4 text-amber-600" />
-              <h3 className="text-sm font-bold text-slate-900">Rappels du jour</h3>
+              <Bell className="h-4 w-4 text-stone-500" />
+              <h3 className="text-sm font-['Manrope'] font-extrabold tracking-tight text-stone-900">Rappels du jour</h3>
               {count > 0 && (
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-500 border border-red-100">
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 border border-emerald-100">
                   {count}
                 </span>
               )}
             </div>
             <button
               onClick={() => { setIsOpen(false); navigate('/business/rappels') }}
-              className="text-xs font-medium text-amber-600 hover:text-amber-700 transition-colors"
+              className="text-xs font-semibold text-stone-900 hover:text-stone-700 transition-colors"
             >
               Tout voir
             </button>
@@ -123,38 +123,38 @@ export function BusinessReminderBell() {
           <div className="max-h-80 overflow-y-auto">
             {visibleReminders.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <Bell className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-sm text-slate-400">Aucun rappel pour aujourd'hui</p>
+                <Bell className="h-8 w-8 text-stone-300 mx-auto mb-2" />
+                <p className="text-sm text-stone-400">Aucun rappel pour aujourd'hui</p>
               </div>
             ) : (
-              <div className="divide-y divide-amber-50">
+              <div className="divide-y divide-stone-100">
                 {visibleReminders.map((reminder) => {
                   const overdue = isOverdue(reminder.reminder_date)
                   return (
                     <div
                       key={reminder.id}
                       className={cn(
-                        'px-4 py-3 transition-colors hover:bg-amber-50/50',
-                        overdue && 'bg-red-50/50'
+                        'px-4 py-3 transition-colors hover:bg-stone-50/60',
+                        overdue && 'bg-red-50/40'
                       )}
                     >
                       <div className="flex items-start gap-3">
                         <div className={cn(
-                          'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
-                          overdue ? 'bg-red-100' : 'bg-amber-100'
+                          'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                          overdue ? 'bg-red-50 border border-red-100' : 'bg-stone-100 border border-stone-200/40'
                         )}>
-                          <Clock className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-amber-600')} />
+                          <Clock className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-stone-500')} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-slate-900 truncate">{reminder.title}</p>
+                          <p className="text-sm font-semibold text-stone-900 truncate">{reminder.title}</p>
                           {reminder.description && (
-                            <p className="text-xs text-slate-400 mt-0.5 truncate">{reminder.description}</p>
+                            <p className="text-xs text-stone-400 mt-0.5 truncate">{reminder.description}</p>
                           )}
                           <p className={cn(
                             'text-[10px] font-medium mt-1',
-                            overdue ? 'text-red-500' : 'text-slate-400'
+                            overdue ? 'text-red-500' : 'text-stone-400'
                           )}>
-                            {overdue ? 'En retard — ' : ''}
+                            {overdue ? 'En retard \u2014 ' : ''}
                             {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
                               hour: '2-digit',
                               minute: '2-digit',
@@ -164,14 +164,14 @@ export function BusinessReminderBell() {
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => handleMarkDone(reminder.id)}
-                            className="rounded-md p-1.5 text-emerald-500 hover:bg-emerald-50 transition-all"
+                            className="rounded-full p-1.5 text-emerald-500 hover:bg-emerald-50 transition-all"
                             title="Marquer comme fait"
                           >
                             <Check className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleDismiss(reminder.id)}
-                            className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
+                            className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-all"
                             title="Masquer"
                           >
                             <X className="h-3.5 w-3.5" />
