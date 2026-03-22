@@ -82,10 +82,10 @@ const isReallyOnline = (member: TeamMember) => {
 }
 
 /* ─── Design tokens ─── */
-const GLASS_PANEL = 'bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/20'
-const WHITE_CARD = 'bg-white rounded-2xl border border-stone-100 shadow-sm'
-const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 font-bold'
-const SECTION_TITLE = 'font-business-display font-extrabold text-lg text-stone-900 flex items-center gap-2'
+const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700'
+const WHITE_CARD = 'bg-white dark:bg-neutral-800 rounded-2xl border border-stone-100 dark:border-neutral-700 shadow-sm'
+const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold'
+const SECTION_TITLE = 'font-business-display font-extrabold text-lg text-stone-900 dark:text-white flex items-center gap-2'
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; surface: string }> = {
   'Closer': { bg: 'bg-[#6ffbbe]/20', text: 'text-[#005236]', surface: 'bg-blue-50/20' },
@@ -189,11 +189,11 @@ function ContactInfo({ member }: { member: TeamMember }) {
 
   return (
     <div className="mt-3 pt-3 space-y-1.5" onClick={e => e.stopPropagation()}>
-      <div className="flex items-center gap-2 text-xs text-stone-500">
+      <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-neutral-400">
         <Mail className="h-3 w-3 shrink-0" strokeWidth={1.5} />
         <span className="truncate">{member.email}</span>
       </div>
-      <div className="flex items-center gap-2 text-xs text-stone-500">
+      <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-neutral-400">
         <Phone className="h-3 w-3 shrink-0" strokeWidth={1.5} />
         {editing ? (
           <div className="flex items-center gap-1 flex-1">
@@ -344,7 +344,7 @@ export function BusinessTeam() {
         <header className="flex items-center justify-between">
           <button
             onClick={() => setSelectedMemberId(null)}
-            className="group flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors"
+            className="group flex items-center gap-2 text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors"
           >
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" strokeWidth={1.5} />
             <span className="font-business-display font-bold text-sm tracking-tight">Retour à l'équipe</span>
@@ -404,10 +404,10 @@ export function BusinessTeam() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-business-display text-3xl font-extrabold tracking-tight text-stone-900">
+          <h2 className="font-business-display text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
             {members.length + 1} membre{members.length > 0 ? 's' : ''}
           </h2>
-          <p className="text-sm text-stone-400 mt-1">Gérez votre équipe et consultez les fiches détaillées</p>
+          <p className="text-sm text-stone-400 dark:text-neutral-500 mt-1">Gérez votre équipe et consultez les fiches détaillées</p>
         </div>
         {isOwnerView && (
           <button
@@ -445,21 +445,21 @@ export function BusinessTeam() {
           <div className={cn(GLASS_PANEL, 'rounded-2xl overflow-hidden')}>
             <div className="px-6 pt-5 pb-2 flex items-center gap-2.5">
               <Users className={cn('h-4 w-4', ownerColor.text)} strokeWidth={1.5} />
-              <span className="font-business-display text-sm font-extrabold tracking-tight text-stone-900">Owner</span>
+              <span className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">Owner</span>
             </div>
             <div className="px-6 pb-6">
-              <div className="rounded-xl bg-stone-50/60 p-4">
+              <div className="rounded-xl bg-stone-50/60 dark:bg-neutral-800/60 p-4">
                 <div className="flex items-start gap-4">
                   <Avatar member={ownerAsMember} size="md" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 truncate">
+                    <p className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
                       {ownerInfo.full_name || 'Owner'}
                     </p>
                     <span className={cn('inline-block mt-1.5 text-xs font-bold uppercase tracking-widest px-3 py-0.5 rounded-full', ownerColor.bg, ownerColor.text)}>
                       Owner
                     </span>
                     {ownerInfo.timezone && (
-                      <div className="flex items-center gap-2 mt-2 text-xs text-stone-400">
+                      <div className="flex items-center gap-2 mt-2 text-xs text-stone-400 dark:text-neutral-500">
                         <Globe className="h-3 w-3" strokeWidth={1.5} />
                         <span>{getTimezoneLabel(ownerInfo.timezone)}</span>
                       </div>
@@ -477,11 +477,11 @@ export function BusinessTeam() {
         {Object.entries(roleGroups).map(([role, roleMembers]) => {
             const color = getRoleColor(role)
             return (
-              <div key={role} className="rounded-2xl bg-stone-50/50 p-5">
+              <div key={role} className="rounded-2xl bg-stone-50/50 dark:bg-neutral-800/50 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2.5">
                     <Users className={cn('h-4 w-4', color.text)} strokeWidth={1.5} />
-                    <span className="font-business-display text-sm font-extrabold tracking-tight text-stone-900">{role}</span>
+                    <span className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">{role}</span>
                   </div>
                   <span className={cn('text-xs font-bold px-2.5 py-0.5 rounded-full', color.bg, color.text)}>
                     {roleMembers.length}
@@ -500,7 +500,7 @@ export function BusinessTeam() {
                       <button
                         key={member.id}
                         onClick={() => setSelectedMemberId(member.id)}
-                        className="w-full rounded-xl bg-white/90 p-5 text-left hover:bg-white hover:shadow-[0_20px_40px_rgba(27,28,27,0.06)] transition-all duration-300"
+                        className="w-full rounded-xl bg-white/90 dark:bg-neutral-800/90 p-5 text-left hover:bg-white dark:hover:bg-neutral-700 hover:shadow-[0_20px_40px_rgba(27,28,27,0.06)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)] transition-all duration-300"
                       >
                         <div className="flex items-start gap-4">
                           <div className="relative">
@@ -513,10 +513,10 @@ export function BusinessTeam() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 truncate">
+                            <p className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
                               {member.first_name} {member.last_name}
                             </p>
-                            <div className="mt-2.5 space-y-1.5 text-xs text-stone-500">
+                            <div className="mt-2.5 space-y-1.5 text-xs text-stone-500 dark:text-neutral-400">
                               <div className="flex items-center gap-2">
                                 <CalendarDays className="h-3 w-3" strokeWidth={1.5} />
                                 <span>{formatAnciennete(member.joined_at)}</span>
@@ -608,23 +608,23 @@ function BookingLinksSection({ memberId }: { memberId: string }) {
         </div>
       ) : links.length === 0 ? (
         <div className="text-center py-8">
-          <Link2 className="h-6 w-6 text-stone-200 mx-auto mb-2" strokeWidth={1.5} />
-          <p className="text-sm text-stone-400">Aucun lien de booking</p>
+          <Link2 className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
+          <p className="text-sm text-stone-400 dark:text-neutral-500">Aucun lien de booking</p>
         </div>
       ) : (
         <div className="space-y-4">
           {links.map(bl => {
             const bookingUrl = bl.slug ? `${window.location.origin}/book/${bl.slug}` : bl.link
             return (
-              <div key={bl.id} className="flex items-center justify-between group p-3 rounded-xl hover:bg-stone-50 transition-colors">
+              <div key={bl.id} className="flex items-center justify-between group p-3 rounded-xl hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-bold text-stone-900 truncate">{bl.label}</h4>
-                  <p className="text-xs text-stone-500 mt-0.5">{bl.duration} min</p>
+                  <h4 className="text-sm font-bold text-stone-900 dark:text-white truncate">{bl.label}</h4>
+                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">{bl.duration} min</p>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
                   <button
                     onClick={() => handleCopy(bookingUrl)}
-                    className="p-2 rounded-full hover:bg-stone-200 transition-all text-stone-500"
+                    className="p-2 rounded-full hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all text-stone-500 dark:text-neutral-400"
                     title="Copier le lien"
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -633,7 +633,7 @@ function BookingLinksSection({ memberId }: { memberId: string }) {
                     href={bookingUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 rounded-full hover:bg-stone-200 transition-all text-stone-500"
+                    className="p-2 rounded-full hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all text-stone-500 dark:text-neutral-400"
                     title="Ouvrir"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -720,15 +720,15 @@ function IndividualView({
           <Avatar member={member} size="xl" />
           <div
             className={cn(
-              'absolute bottom-1 right-1 w-6 h-6 rounded-full border-4 border-white',
-              isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300'
+              'absolute bottom-1 right-1 w-6 h-6 rounded-full border-4 border-white dark:border-neutral-900',
+              isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600'
             )}
             title={isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}
           />
         </div>
         <div className="flex-1 text-center md:text-left">
           <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-            <h2 className="text-4xl font-business-display font-extrabold tracking-tight text-stone-900">
+            <h2 className="text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">
               {member.first_name} {member.last_name}
             </h2>
             <span className={cn('inline-flex px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest self-center md:self-auto', color.bg, color.text)}>
@@ -738,21 +738,21 @@ function IndividualView({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="space-y-1">
               <p className={LABEL_STYLE}>Email</p>
-              <p className="text-sm font-semibold text-stone-900">{member.email}</p>
+              <p className="text-sm font-semibold text-stone-900 dark:text-white">{member.email}</p>
             </div>
             <div className="space-y-1">
               <p className={LABEL_STYLE}>WhatsApp</p>
               {member.phone ? (
-                <a href={`https://wa.me/${cleanPhone}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-stone-900 hover:text-[#006c49] transition-colors">
+                <a href={`https://wa.me/${cleanPhone}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] transition-colors">
                   {member.phone}
                 </a>
               ) : (
-                <p className="text-sm text-stone-300 italic">Non renseigné</p>
+                <p className="text-sm text-stone-300 dark:text-neutral-600 italic">Non renseigné</p>
               )}
             </div>
             <div className="space-y-1">
               <p className={LABEL_STYLE}>Anniversaire</p>
-              <p className="text-sm font-semibold text-stone-900">
+              <p className="text-sm font-semibold text-stone-900 dark:text-white">
                 {member.date_of_birth
                   ? `${formatDate(member.date_of_birth)} (${calculateAge(member.date_of_birth)} ans)`
                   : 'Non renseigné'}
@@ -760,7 +760,7 @@ function IndividualView({
             </div>
             <div className="space-y-1">
               <p className={LABEL_STYLE}>Arrivée</p>
-              <p className="text-sm font-semibold text-stone-900">
+              <p className="text-sm font-semibold text-stone-900 dark:text-white">
                 {formatDate(member.joined_at)}
               </p>
             </div>
@@ -773,7 +773,7 @@ function IndividualView({
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className={cn(WHITE_CARD, 'p-5')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>Prospects</p>
-            <p className="text-2xl font-business-display font-extrabold text-stone-900">{memberProspects.length}</p>
+            <p className="text-2xl font-business-display font-extrabold text-stone-900 dark:text-white">{memberProspects.length}</p>
           </div>
           <div className={cn(WHITE_CARD, 'p-5')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>Ventes</p>
@@ -781,11 +781,11 @@ function IndividualView({
           </div>
           <div className={cn(WHITE_CARD, 'p-5')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>CA Généré</p>
-            <p className="text-2xl font-business-display font-extrabold text-stone-900">{formatCurrency(revenue)}</p>
+            <p className="text-2xl font-business-display font-extrabold text-stone-900 dark:text-white">{formatCurrency(revenue)}</p>
           </div>
           <div className={cn(WHITE_CARD, 'p-5')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>Conversion</p>
-            <p className="text-2xl font-business-display font-extrabold text-stone-900">{convRate.toFixed(1)}%</p>
+            <p className="text-2xl font-business-display font-extrabold text-stone-900 dark:text-white">{convRate.toFixed(1)}%</p>
           </div>
           <div className={cn(WHITE_CARD, 'p-5')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>No Show</p>
@@ -818,7 +818,7 @@ function IndividualView({
                       setEditRole(e.target.value)
                       if (e.target.value === 'Setter-Closer') setEditSetterScope(member.setter_scope || 'all')
                     }}
-                    className="w-full bg-stone-50 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 transition-all"
+                    className="w-full bg-stone-50 dark:bg-neutral-800 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 transition-all"
                   >
                     <option value="Closer">Closer</option>
                     <option value="Setter">Setter</option>
@@ -831,14 +831,14 @@ function IndividualView({
                 {editRole === 'Setter-Closer' && (
                   <div>
                     <label className={cn(LABEL_STYLE, 'block mb-2')}>Scope de visibilité</label>
-                    <div className="flex p-1 bg-stone-100 rounded-full">
+                    <div className="flex p-1 bg-stone-100 dark:bg-neutral-800 rounded-full">
                       <button
                         onClick={() => setEditSetterScope('self')}
                         className={cn(
                           'flex-1 py-2 text-xs font-bold rounded-full transition-all',
                           editSetterScope === 'self'
-                            ? 'bg-white shadow-sm text-stone-900'
-                            : 'text-stone-500 hover:text-stone-900'
+                            ? 'bg-white dark:bg-neutral-700 shadow-sm text-stone-900 dark:text-white'
+                            : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
                         )}
                       >
                         Lui-même
@@ -848,8 +848,8 @@ function IndividualView({
                         className={cn(
                           'flex-1 py-2 text-xs font-bold rounded-full transition-all',
                           editSetterScope === 'all'
-                            ? 'bg-white shadow-sm text-stone-900'
-                            : 'text-stone-500 hover:text-stone-900'
+                            ? 'bg-white dark:bg-neutral-700 shadow-sm text-stone-900 dark:text-white'
+                            : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
                         )}
                       >
                         Équipe
@@ -866,7 +866,7 @@ function IndividualView({
                       setSavingRole(false)
                     }}
                     disabled={savingRole}
-                    className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
                   >
                     {savingRole ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" strokeWidth={1.5} />}
                     Enregistrer
@@ -874,7 +874,7 @@ function IndividualView({
                 )}
 
                 {editRole === 'Setter-Closer' && (
-                  <p className="text-xs text-stone-400">
+                  <p className="text-xs text-stone-400 dark:text-neutral-500">
                     {editSetterScope === 'self'
                       ? 'Ce membre set uniquement pour ses propres rendez-vous.'
                       : 'Ce membre set pour tous les closers de l\'équipe.'}
@@ -891,12 +891,12 @@ function IndividualView({
                 <CreditCard className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
                 Date de paiement
               </h3>
-              <p className="text-xs text-stone-500 mb-4">Jour du mois pour le versement des commissions.</p>
+              <p className="text-xs text-stone-500 dark:text-neutral-400 mb-4">Jour du mois pour le versement des commissions.</p>
               <div className="flex items-center gap-3">
                 <select
                   value={payDay}
                   onChange={e => setPayDay(Number(e.target.value))}
-                  className="flex-1 bg-stone-50 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 transition-all"
+                  className="flex-1 bg-stone-50 dark:bg-neutral-800 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 transition-all"
                 >
                   {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
                     <option key={d} value={d}>Le {d} du mois</option>
@@ -906,14 +906,14 @@ function IndividualView({
                   <button
                     onClick={handleSavePayDay}
                     disabled={savingPayDay}
-                    className="flex items-center gap-1.5 rounded-full bg-stone-900 px-4 py-3 text-xs font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
+                    className="flex items-center gap-1.5 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-4 py-3 text-xs font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
                   >
                     {savingPayDay ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" strokeWidth={1.5} />}
                   </button>
                 )}
               </div>
               {member.pay_day && (
-                <p className="text-xs text-stone-400 mt-3">
+                <p className="text-xs text-stone-400 dark:text-neutral-500 mt-3">
                   Prochain paiement le {member.pay_day} {new Date().getDate() >= member.pay_day
                     ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
                     : new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
@@ -932,8 +932,8 @@ function IndividualView({
               </h3>
               {connectionLogs.length === 0 ? (
                 <div className="text-center py-6">
-                  <History className="h-6 w-6 text-stone-200 mx-auto mb-2" strokeWidth={1.5} />
-                  <p className="text-sm text-stone-400">Aucun historique</p>
+                  <History className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
+                  <p className="text-sm text-stone-400 dark:text-neutral-500">Aucun historique</p>
                 </div>
               ) : (
                 <div className="space-y-0 max-h-72 overflow-y-auto">
@@ -942,14 +942,14 @@ function IndividualView({
                     const isConnect = log.event_type === 'connect'
                     const isLast = idx === connectionLogs.length - 1
                     return (
-                      <div key={log.id} className={cn('flex items-center justify-between py-3', !isLast && 'border-b border-stone-100')}>
+                      <div key={log.id} className={cn('flex items-center justify-between py-3', !isLast && 'border-b border-stone-100 dark:border-neutral-800')}>
                         <div>
-                          <p className="text-sm font-bold text-stone-900">
+                          <p className="text-sm font-bold text-stone-900 dark:text-white">
                             {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
                           </p>
-                          <p className="text-[10px] text-stone-500">{isConnect ? 'Log In' : 'Log Out'}</p>
+                          <p className="text-[10px] text-stone-500 dark:text-neutral-400">{isConnect ? 'Log In' : 'Log Out'}</p>
                         </div>
-                        <p className="text-sm font-medium text-stone-600">
+                        <p className="text-sm font-medium text-stone-600 dark:text-neutral-300">
                           {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -977,11 +977,11 @@ function IndividualView({
                   return (
                     <div key={stage.id} className={cn(
                       'flex flex-col items-center p-4 rounded-xl',
-                      isHighlight ? 'bg-[#6cf8bb]/15' : 'bg-stone-50',
-                      stage.id === 'lost' && 'border-2 border-dashed border-stone-200'
+                      isHighlight ? 'bg-[#6cf8bb]/15' : 'bg-stone-50 dark:bg-neutral-800',
+                      stage.id === 'lost' && 'border-2 border-dashed border-stone-200 dark:border-neutral-700'
                     )}>
                       <span className={cn('text-xs font-bold mb-1', isHighlight ? 'text-[#006c49]' : 'text-stone-400')}>{stage.name}</span>
-                      <span className={cn('text-xl font-business-display font-extrabold', isHighlight ? 'text-[#006c49]' : count > 0 ? 'text-stone-900' : 'text-stone-300')}>{count}</span>
+                      <span className={cn('text-xl font-business-display font-extrabold', isHighlight ? 'text-[#006c49]' : count > 0 ? 'text-stone-900 dark:text-white' : 'text-stone-300 dark:text-neutral-600')}>{count}</span>
                     </div>
                   )
                 })}
@@ -999,8 +999,8 @@ function IndividualView({
               </h3>
               {slots.length === 0 ? (
                 <div className="text-center py-6">
-                  <AlertCircle className="h-6 w-6 text-stone-200 mx-auto mb-2" strokeWidth={1.5} />
-                  <p className="text-sm text-stone-400">Aucun créneau configuré</p>
+                  <AlertCircle className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
+                  <p className="text-sm text-stone-400 dark:text-neutral-500">Aucun créneau configuré</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1008,13 +1008,13 @@ function IndividualView({
                     const daySlots = slots.filter(s => s.day_of_week === idx)
                     return (
                       <div key={idx} className="flex items-center justify-between text-sm">
-                        <span className="text-stone-500 font-medium">{day}</span>
+                        <span className="text-stone-500 dark:text-neutral-400 font-medium">{day}</span>
                         {daySlots.length > 0 ? (
-                          <span className="font-bold text-stone-900">
+                          <span className="font-bold text-stone-900 dark:text-white">
                             {daySlots.map(s => `${s.start_time?.slice(0, 5)} — ${s.end_time?.slice(0, 5)}`).join(', ')}
                           </span>
                         ) : (
-                          <span className="text-stone-300 italic">Indisponible</span>
+                          <span className="text-stone-300 dark:text-neutral-600 italic">Indisponible</span>
                         )}
                       </div>
                     )
@@ -1031,17 +1031,17 @@ function IndividualView({
               </h3>
               {absences.length === 0 ? (
                 <div className="text-center py-6">
-                  <AlertCircle className="h-6 w-6 text-stone-200 mx-auto mb-2" strokeWidth={1.5} />
-                  <p className="text-sm text-stone-400">Aucune absence</p>
+                  <AlertCircle className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
+                  <p className="text-sm text-stone-400 dark:text-neutral-500">Aucune absence</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {absences.map(absence => (
-                    <div key={absence.id} className="flex items-center gap-3 p-2 bg-stone-50 rounded-xl">
+                    <div key={absence.id} className="flex items-center gap-3 p-2 bg-stone-50 dark:bg-neutral-800 rounded-xl">
                       <div className="w-2 h-2 rounded-full bg-[#ffb95f] shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-stone-900 truncate">{absence.reason || absence.type || 'Absence'}</p>
-                        <p className="text-[10px] text-stone-500">
+                        <p className="text-xs font-bold text-stone-900 dark:text-white truncate">{absence.reason || absence.type || 'Absence'}</p>
+                        <p className="text-[10px] text-stone-500 dark:text-neutral-400">
                           {formatDate(absence.start_date)} — {formatDate(absence.end_date)}
                         </p>
                       </div>
@@ -1063,32 +1063,32 @@ function IndividualView({
             </h3>
             {upcomingAppts.length === 0 ? (
               <div className="text-center py-8">
-                <CalendarDays className="h-6 w-6 text-stone-200 mx-auto mb-2" strokeWidth={1.5} />
-                <p className="text-sm text-stone-400">Aucun rendez-vous à venir</p>
+                <CalendarDays className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
+                <p className="text-sm text-stone-400 dark:text-neutral-500">Aucun rendez-vous à venir</p>
               </div>
             ) : (
               <div className="overflow-hidden">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-stone-100">
+                    <tr className="border-b border-stone-100 dark:border-neutral-800">
                       <th className={cn(LABEL_STYLE, 'pb-4')}>Prospect</th>
                       <th className={cn(LABEL_STYLE, 'pb-4')}>Date</th>
                       <th className={cn(LABEL_STYLE, 'pb-4 text-right')}>Statut</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-stone-50">
+                  <tbody className="divide-y divide-stone-50 dark:divide-neutral-800">
                     {upcomingAppts.map(appt => {
                       const prospect = prospects.find(p => p.id === appt.prospect_id)
                       const prospectName = prospect ? (prospect.contact || prospect.company || `Prospect #${prospect.id}`) : `RDV`
                       const initials = prospectName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
                       return (
-                        <tr key={appt.id} className="group hover:bg-stone-50 transition-colors">
+                        <tr key={appt.id} className="group hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
                           <td className="py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center text-xs font-bold text-stone-500 shrink-0">
+                              <div className="w-8 h-8 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-xs font-bold text-stone-500 dark:text-neutral-300 shrink-0">
                                 {initials}
                               </div>
-                              <span className="text-sm font-bold text-stone-900 truncate">{prospectName}</span>
+                              <span className="text-sm font-bold text-stone-900 dark:text-white truncate">{prospectName}</span>
                             </div>
                           </td>
                           <td className="py-4">
@@ -1098,18 +1098,18 @@ function IndividualView({
                               const memberLocal = showMemberTz ? fromUTC(appt.datetime_utc!, memberTz) : null
                               return (
                                 <>
-                                  <p className="text-sm font-semibold text-stone-900">
+                                  <p className="text-sm font-semibold text-stone-900 dark:text-white">
                                     {new Date(localDt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
                                     {`, ${localDt.time}`}
                                   </p>
                                   {memberLocal && (
-                                    <p className="text-xs text-stone-400">({memberLocal.time} chez {member.first_name})</p>
+                                    <p className="text-xs text-stone-400 dark:text-neutral-500">({memberLocal.time} chez {member.first_name})</p>
                                   )}
                                 </>
                               )
                             })()}
                             {prospect && (
-                              <p className="text-xs text-stone-400">{prospect.company || prospect.contact || ''}</p>
+                              <p className="text-xs text-stone-400 dark:text-neutral-500">{prospect.company || prospect.contact || ''}</p>
                             )}
                           </td>
                           <td className="py-4 text-right">

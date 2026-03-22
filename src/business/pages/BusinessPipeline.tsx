@@ -277,21 +277,21 @@ export function BusinessPipeline() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Rechercher..."
-            className="w-full rounded-full border-none bg-stone-100 py-2.5 pl-10 pr-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+            className="w-full rounded-full border-none bg-stone-100 dark:bg-neutral-800 py-2.5 pl-10 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
         </div>
 
         {/* View toggle */}
-        <div className="flex rounded-full bg-stone-100 p-1">
+        <div className="flex rounded-full bg-stone-100 dark:bg-neutral-800 p-1">
           <button
             onClick={() => setViewMode('kanban')}
-            className={cn('p-2 rounded-full transition-all', viewMode === 'kanban' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400 hover:text-stone-900')}
+            className={cn('p-2 rounded-full transition-all', viewMode === 'kanban' ? 'bg-white dark:bg-neutral-700 text-stone-900 dark:text-white shadow-sm' : 'text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white')}
           >
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button
             onClick={() => setViewMode('table')}
-            className={cn('p-2 rounded-full transition-all', viewMode === 'table' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400 hover:text-stone-900')}
+            className={cn('p-2 rounded-full transition-all', viewMode === 'table' ? 'bg-white dark:bg-neutral-700 text-stone-900 dark:text-white shadow-sm' : 'text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white')}
           >
             <List className="h-4 w-4" />
           </button>
@@ -303,8 +303,8 @@ export function BusinessPipeline() {
           className={cn(
             'flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all border',
             hasActiveFilters
-              ? 'bg-stone-100 border-stone-300 text-stone-700'
-              : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+              ? 'bg-stone-100 dark:bg-neutral-800 border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200'
+              : 'bg-white dark:bg-neutral-900 border-stone-200 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800'
           )}
         >
           <Filter className="h-4 w-4" />
@@ -330,11 +330,11 @@ export function BusinessPipeline() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="mb-4 rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)] p-4 space-y-4">
+        <div className="mb-4 rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-extrabold text-stone-900">Filtres</h3>
+            <h3 className="text-sm font-extrabold text-stone-900 dark:text-white">Filtres</h3>
             {hasActiveFilters && (
-              <button onClick={clearFilters} className="text-xs text-stone-600 hover:text-stone-900 font-medium">
+              <button onClick={clearFilters} className="text-xs text-stone-600 dark:text-neutral-300 hover:text-stone-900 dark:hover:text-white font-medium">
                 Réinitialiser tout
               </button>
             )}
@@ -355,7 +355,7 @@ export function BusinessPipeline() {
                       'px-2.5 py-1 text-xs font-medium rounded-lg transition-all',
                       selectedPeriod === p.days
                         ? 'bg-stone-900 text-white rounded-full'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-full'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 rounded-full'
                     )}
                   >
                     {p.label}
@@ -376,13 +376,13 @@ export function BusinessPipeline() {
                       'px-2.5 py-1 text-xs font-medium rounded-lg transition-all',
                       selectedMembers.includes(m.id)
                         ? 'bg-stone-900 text-white rounded-full'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-full'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 rounded-full'
                     )}
                   >
                     {m.first_name} {m.last_name}
                   </button>
                 ))}
-                {teamMembers.length === 0 && <span className="text-xs text-stone-400">Aucun membre</span>}
+                {teamMembers.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun membre</span>}
               </div>
             </div>
 
@@ -398,7 +398,7 @@ export function BusinessPipeline() {
                       'px-2.5 py-1 text-xs font-medium rounded-lg transition-all flex items-center gap-1',
                       selectedStages.includes(s.id)
                         ? 'bg-stone-900 text-white rounded-full'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-full'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 rounded-full'
                     )}
                   >
                     <span className={cn('h-1.5 w-1.5 rounded-full', s.color)} />
@@ -413,7 +413,7 @@ export function BusinessPipeline() {
                       'px-2.5 py-1 text-xs font-medium rounded-lg transition-all flex items-center gap-1',
                       selectedStages.includes(`custom_${cs.id}`)
                         ? 'bg-stone-900 text-white rounded-full'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-full'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 rounded-full'
                     )}
                   >
                     <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cs.color }} />
@@ -435,13 +435,13 @@ export function BusinessPipeline() {
                       'px-2.5 py-1 text-xs font-medium rounded-lg transition-all',
                       selectedOffers.includes(f.id)
                         ? 'bg-stone-900 text-white rounded-full'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-full'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 rounded-full'
                     )}
                   >
                     {f.name}
                   </button>
                 ))}
-                {formulas.length === 0 && <span className="text-xs text-stone-400">Aucune formule</span>}
+                {formulas.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucune formule</span>}
               </div>
             </div>
 
@@ -459,7 +459,7 @@ export function BusinessPipeline() {
                       'px-2.5 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
                       selectedTags.includes(t.id)
                         ? 'text-white'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
                     )}
                     style={selectedTags.includes(t.id) ? { backgroundColor: t.color } : {}}
                   >
@@ -467,7 +467,7 @@ export function BusinessPipeline() {
                     {t.name}
                   </button>
                 ))}
-                {tags.length === 0 && <span className="text-xs text-stone-400">Aucun tag</span>}
+                {tags.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun tag</span>}
               </div>
             </div>
           </div>
@@ -475,7 +475,7 @@ export function BusinessPipeline() {
       )}
 
       {/* Stats bar */}
-      <div className="mb-3 flex items-center gap-4 text-xs text-stone-500 flex-wrap">
+      <div className="mb-3 flex items-center gap-4 text-xs text-stone-500 dark:text-neutral-400 flex-wrap">
         <span className="font-medium text-stone-700">{filtered.length} prospect{filtered.length !== 1 ? 's' : ''}</span>
         {STAGES.map(s => {
           const count = filtered.filter(p => p.stage === s.id).length
@@ -506,7 +506,7 @@ export function BusinessPipeline() {
             {/* FLUX ACTIF */}
             <section>
               <div className="flex items-baseline space-x-3 mb-6">
-                <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900">Flux Actif</h2>
+                <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Flux Actif</h2>
                 <div className="h-1 w-1 rounded-full bg-stone-300" />
                 <span className={LABEL_STYLE}>Opérations Prioritaires</span>
               </div>
@@ -521,7 +521,7 @@ export function BusinessPipeline() {
                           <div className={cn("h-3 w-3 rounded-full", stage.color)} />
                           <span className="text-sm font-extrabold tracking-tight text-stone-900">{stage.name}</span>
                         </div>
-                        <span className="bg-stone-100 text-[10px] font-bold rounded-full px-2 py-0.5">
+                        <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5">
                           {stageDeals.length}
                         </span>
                       </div>
@@ -532,7 +532,7 @@ export function BusinessPipeline() {
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                             className={cn(
-                              "flex-1 bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto",
+                              "flex-1 bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto",
                               snapshot.isDraggingOver && "bg-stone-50/50"
                             )}
                           >
@@ -546,18 +546,18 @@ export function BusinessPipeline() {
                                       {...provided.dragHandleProps}
                                       onClick={() => setSelectedProspect(deal)}
                                       className={cn(
-                                        "group bg-white p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] hover:shadow-xl border border-transparent hover:border-stone-200/20 transition-all cursor-pointer",
+                                        "group bg-white dark:bg-neutral-800 p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl border border-transparent hover:border-stone-200/20 dark:hover:border-neutral-600/20 transition-all cursor-pointer",
                                         snapshot.isDragging && "shadow-2xl ring-2 ring-stone-300 rotate-1 scale-105 z-[9999]"
                                       )}
                                     >
                                       <div className="flex items-start justify-between mb-1">
                                         <div className="flex items-center gap-2">
-                                          <div className="h-7 w-7 rounded-full bg-stone-100 flex items-center justify-center">
+                                          <div className="h-7 w-7 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center">
                                             <User className="h-3.5 w-3.5 text-stone-500" />
                                           </div>
                                           <div>
-                                            <p className="text-sm font-extrabold text-stone-900 leading-tight">{getDisplayName(deal)}</p>
-                                            {deal.company && <p className="text-xs text-stone-500">{deal.company}</p>}
+                                            <p className="text-sm font-extrabold text-stone-900 dark:text-white leading-tight">{getDisplayName(deal)}</p>
+                                            {deal.company && <p className="text-xs text-stone-500 dark:text-neutral-400">{deal.company}</p>}
                                           </div>
                                         </div>
                                         <button
@@ -584,7 +584,7 @@ export function BusinessPipeline() {
                                         <p className="text-xs font-extrabold text-emerald-600 mt-1">{deal.value.toLocaleString()} €</p>
                                       )}
                                       {deal.email && (
-                                        <p className="text-xs text-stone-400 truncate mt-1">{deal.email}</p>
+                                        <p className="text-xs text-stone-400 dark:text-neutral-500 truncate mt-1">{deal.email}</p>
                                       )}
                                     </div>
                                   )
@@ -605,7 +605,7 @@ export function BusinessPipeline() {
             {/* FLUX INACTIF */}
             <section className="opacity-60 hover:opacity-100 transition-opacity">
               <div className="flex items-baseline space-x-3 mb-6">
-                <h2 className="font-business-display text-xl font-extrabold tracking-tight text-stone-600">Flux Inactif</h2>
+                <h2 className="font-business-display text-xl font-extrabold tracking-tight text-stone-600 dark:text-neutral-300">Flux Inactif</h2>
                 <div className="h-1 w-1 rounded-full bg-stone-300" />
                 <span className={LABEL_STYLE}>Archives & Rejets</span>
               </div>
@@ -620,7 +620,7 @@ export function BusinessPipeline() {
                           <div className={cn("h-2.5 w-2.5 rounded-full", stage.id === 'lost' ? 'bg-[#ba1a1a]/40' : 'bg-stone-300')} />
                           <span className="text-xs font-bold uppercase tracking-wider text-stone-500">{stage.name}</span>
                         </div>
-                        <span className="bg-stone-100 text-[10px] font-bold rounded-full px-2 py-0.5 text-stone-500">
+                        <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5 text-stone-500">
                           {stageDeals.length}
                         </span>
                       </div>
@@ -631,7 +631,7 @@ export function BusinessPipeline() {
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                             className={cn(
-                              "flex-1 rounded-xl border border-stone-200/50 bg-stone-50/50 p-3 flex flex-col gap-2 overflow-y-auto",
+                              "flex-1 rounded-xl border border-stone-200/50 dark:border-neutral-700/50 bg-stone-50/50 dark:bg-neutral-800/50 p-3 flex flex-col gap-2 overflow-y-auto",
                               snapshot.isDraggingOver && "bg-stone-100/50"
                             )}
                           >
@@ -645,7 +645,7 @@ export function BusinessPipeline() {
                                       {...provided.dragHandleProps}
                                       onClick={() => setSelectedProspect(deal)}
                                       className={cn(
-                                        "group bg-white rounded-xl border border-stone-200/50 p-3 cursor-pointer hover:bg-stone-50 transition-colors",
+                                        "group bg-white dark:bg-neutral-800 rounded-xl border border-stone-200/50 dark:border-neutral-700/50 p-3 cursor-pointer hover:bg-stone-50 dark:hover:bg-neutral-700 transition-colors",
                                         snapshot.isDragging && "shadow-2xl ring-1 ring-stone-300 z-[9999]"
                                       )}
                                     >
@@ -659,7 +659,7 @@ export function BusinessPipeline() {
                                         </button>
                                       </div>
                                       {deal.value && (
-                                        <p className="text-xs text-stone-400 mt-0.5">{deal.value.toLocaleString()} €</p>
+                                        <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">{deal.value.toLocaleString()} €</p>
                                       )}
                                     </div>
                                   )
@@ -669,7 +669,7 @@ export function BusinessPipeline() {
                             ))}
                             {stageDeals.length === 0 && (
                               <div className="flex items-center justify-center h-20">
-                                <span className="text-xs text-stone-400">{stageDeals.length} éléments</span>
+                                <span className="text-xs text-stone-400 dark:text-neutral-500">{stageDeals.length} éléments</span>
                               </div>
                             )}
                             {provided.placeholder}
@@ -686,7 +686,7 @@ export function BusinessPipeline() {
             {customStages.length > 0 && (
               <section>
                 <div className="flex items-baseline space-x-3 mb-6">
-                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900">Statuts Personnalisés</h2>
+                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Statuts Personnalisés</h2>
                   <div className="h-1 w-1 rounded-full bg-stone-300" />
                   <span className={LABEL_STYLE}>Créés par votre équipe</span>
                 </div>
@@ -703,7 +703,7 @@ export function BusinessPipeline() {
                             <span className="text-sm font-extrabold tracking-tight text-stone-900">{cs.name}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className="bg-stone-100 text-[10px] font-bold rounded-full px-2 py-0.5">
+                            <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5">
                               {stageDeals.length}
                             </span>
                             {canManage && (
@@ -723,7 +723,7 @@ export function BusinessPipeline() {
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                               className={cn(
-                                "flex-1 bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto",
+                                "flex-1 bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto",
                                 snapshot.isDraggingOver && "bg-stone-50/50"
                               )}
                               style={{ borderTop: `3px solid ${cs.color}` }}
@@ -738,18 +738,18 @@ export function BusinessPipeline() {
                                         {...provided.dragHandleProps}
                                         onClick={() => setSelectedProspect(deal)}
                                         className={cn(
-                                          "group bg-white p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] hover:shadow-xl border border-transparent hover:border-stone-200/20 transition-all cursor-pointer",
+                                          "group bg-white dark:bg-neutral-800 p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl border border-transparent hover:border-stone-200/20 dark:hover:border-neutral-600/20 transition-all cursor-pointer",
                                           snapshot.isDragging && "shadow-2xl ring-2 ring-stone-300 rotate-1 scale-105 z-[9999]"
                                         )}
                                       >
                                         <div className="flex items-start justify-between mb-1">
                                           <div className="flex items-center gap-2">
-                                            <div className="h-7 w-7 rounded-full bg-stone-100 flex items-center justify-center">
+                                            <div className="h-7 w-7 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center">
                                               <User className="h-3.5 w-3.5 text-stone-500" />
                                             </div>
                                             <div>
-                                              <p className="text-sm font-extrabold text-stone-900 leading-tight">{getDisplayName(deal)}</p>
-                                              {deal.company && <p className="text-xs text-stone-500">{deal.company}</p>}
+                                              <p className="text-sm font-extrabold text-stone-900 dark:text-white leading-tight">{getDisplayName(deal)}</p>
+                                              {deal.company && <p className="text-xs text-stone-500 dark:text-neutral-400">{deal.company}</p>}
                                             </div>
                                           </div>
                                           <button
@@ -776,7 +776,7 @@ export function BusinessPipeline() {
                                           <p className="text-xs font-extrabold text-emerald-600 mt-1">{deal.value.toLocaleString()} €</p>
                                         )}
                                         {deal.email && (
-                                          <p className="text-xs text-stone-400 truncate mt-1">{deal.email}</p>
+                                          <p className="text-xs text-stone-400 dark:text-neutral-500 truncate mt-1">{deal.email}</p>
                                         )}
                                       </div>
                                     )
@@ -786,7 +786,7 @@ export function BusinessPipeline() {
                               ))}
                               {stageDeals.length === 0 && (
                                 <div className="flex items-center justify-center h-20">
-                                  <span className="text-xs text-stone-400 italic">Aucun prospect</span>
+                                  <span className="text-xs text-stone-400 dark:text-neutral-500 italic">Aucun prospect</span>
                                 </div>
                               )}
                               {provided.placeholder}
@@ -805,9 +805,9 @@ export function BusinessPipeline() {
 
       {/* Table View */}
       {viewMode === 'table' && (
-        <div className="flex-1 overflow-auto rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+        <div className="flex-1 overflow-auto rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
           <table className="w-full min-w-[900px]">
-            <thead className="sticky top-0 z-10 bg-stone-50/50 border-b border-stone-100">
+            <thead className="sticky top-0 z-10 bg-stone-50/50 dark:bg-neutral-800/50 border-b border-stone-100 dark:border-neutral-700">
               <tr>
                 <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Contact</th>
                 <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Entreprise</th>
@@ -819,7 +819,7 @@ export function BusinessPipeline() {
                 <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100">
+            <tbody className="divide-y divide-stone-100 dark:divide-neutral-700">
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-12 text-sm text-stone-400">
@@ -834,21 +834,21 @@ export function BusinessPipeline() {
                     <tr
                       key={deal.id}
                       onClick={() => setSelectedProspect(deal)}
-                      className="cursor-pointer hover:bg-stone-50/30 transition-colors"
+                      className="cursor-pointer hover:bg-stone-50/30 dark:hover:bg-neutral-800/30 transition-colors"
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-full bg-stone-100 flex items-center justify-center flex-shrink-0">
+                          <div className="h-8 w-8 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
                             <User className="h-4 w-4 text-stone-500" />
                           </div>
                           <div>
-                            <span className="text-sm font-extrabold text-stone-900">{getDisplayName(deal)}</span>
-                            {deal.email && <p className="text-xs text-stone-400 truncate max-w-[180px]">{deal.email}</p>}
+                            <span className="text-sm font-extrabold text-stone-900 dark:text-white">{getDisplayName(deal)}</span>
+                            {deal.email && <p className="text-xs text-stone-400 dark:text-neutral-500 truncate max-w-[180px]">{deal.email}</p>}
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm text-stone-600">{deal.company || '—'}</span>
+                        <span className="text-sm text-stone-600 dark:text-neutral-300">{deal.company || '—'}</span>
                       </td>
                       <td className="px-4 py-3">
                         {stage ? (
@@ -883,25 +883,25 @@ export function BusinessPipeline() {
                       </td>
                       <td className="px-4 py-3">
                         {assignedMember ? (
-                          <span className="text-sm text-stone-600">{assignedMember.first_name} {assignedMember.last_name}</span>
+                          <span className="text-sm text-stone-600 dark:text-neutral-300">{assignedMember.first_name} {assignedMember.last_name}</span>
                         ) : (
-                          <span className="text-sm text-stone-300">—</span>
+                          <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {deal.value ? (
                           <span className="text-sm font-extrabold text-emerald-600">{deal.value.toLocaleString()} €</span>
                         ) : (
-                          <span className="text-sm text-stone-300">—</span>
+                          <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         {deal.created_at ? (
-                          <span className="text-xs text-stone-500">
+                          <span className="text-xs text-stone-500 dark:text-neutral-400">
                             {new Date(deal.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                           </span>
                         ) : (
-                          <span className="text-sm text-stone-300">—</span>
+                          <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -940,9 +940,9 @@ export function BusinessPipeline() {
       {/* Create Custom Stage Modal */}
       {showCreateStage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowCreateStage(false)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-business-display text-lg font-extrabold text-stone-900">Nouveau statut</h3>
+              <h3 className="font-business-display text-lg font-extrabold text-stone-900 dark:text-white">Nouveau statut</h3>
               <button onClick={() => setShowCreateStage(false)} className="p-1 text-stone-400 hover:text-stone-600">
                 <X className="h-5 w-5" />
               </button>
@@ -959,29 +959,29 @@ export function BusinessPipeline() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-stone-500 mb-1.5">Titre</label>
+                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">Titre</label>
                 <input
                   type="text"
                   value={newStageName}
                   onChange={e => setNewStageName(e.target.value)}
                   placeholder="Ex: Négociation"
-                  className="w-full rounded-xl bg-[#f5f3f2] border-none px-4 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                  className="w-full rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-500 mb-1.5">Description</label>
+                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">Description</label>
                 <input
                   type="text"
                   value={newStageDescription}
                   onChange={e => setNewStageDescription(e.target.value)}
                   placeholder="Optionnel"
-                  className="w-full rounded-xl bg-[#f5f3f2] border-none px-4 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                  className="w-full rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-500 mb-1.5">Couleur</label>
+                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">Couleur</label>
                 <div className="flex flex-wrap gap-2">
                   {STAGE_COLORS.map(c => (
                     <button
@@ -999,7 +999,7 @@ export function BusinessPipeline() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-500 mb-1.5">Rôles concernés</label>
+                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">Rôles concernés</label>
                 <div className="flex gap-2">
                   {ROLE_OPTIONS.map(r => (
                     <button
@@ -1013,7 +1013,7 @@ export function BusinessPipeline() {
                         'px-3 py-1.5 text-xs font-bold rounded-full transition-all',
                         newStageRoles.includes(r.value)
                           ? 'bg-stone-900 text-white'
-                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                          : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
                       )}
                     >
                       {r.label}
@@ -1026,7 +1026,7 @@ export function BusinessPipeline() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowCreateStage(false)}
-                className="px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:text-stone-900 dark:hover:text-white transition-colors"
               >
                 Annuler
               </button>

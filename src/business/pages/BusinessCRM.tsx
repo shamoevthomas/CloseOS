@@ -848,21 +848,21 @@ export function BusinessCRM() {
 
               {/* Setter assignment */}
               {isPureSetter ? (
-                <div className="rounded-xl bg-stone-100 border border-stone-200 px-4 py-2.5">
-                  <p className="text-xs font-medium text-stone-700">
+                <div className="rounded-xl bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 px-4 py-2.5">
+                  <p className="text-xs font-medium text-stone-700 dark:text-neutral-200">
                     Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
                   </p>
                 </div>
               ) : isSetterCloser ? (
-                <div className="rounded-xl bg-stone-100 border border-stone-200 px-4 py-2.5">
-                  <p className="text-xs font-medium text-stone-700">
+                <div className="rounded-xl bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 px-4 py-2.5">
+                  <p className="text-xs font-medium text-stone-700 dark:text-neutral-200">
                     Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
                     <span className="ml-1">• Closer assigné automatiquement</span>
                   </p>
                 </div>
               ) : isPureCloser ? (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Setter <span className="text-stone-400 font-normal">(facultatif)</span></label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Setter <span className="text-stone-400 dark:text-neutral-500 font-normal">(facultatif)</span></label>
                   <div className="flex gap-2">
                     <select
                       value={newSetterId}
@@ -880,7 +880,7 @@ export function BusinessCRM() {
                         const next = getNextSetter()
                         if (next) setNewSetterId(next.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-stone-200 bg-stone-100 px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-200 transition-all whitespace-nowrap"
+                      className="flex items-center gap-1 rounded-xl border border-stone-200 dark:border-neutral-700 bg-stone-100 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
                       title="Tournante (round-robin)"
                     >
                       <ArrowRightCircle className="h-3.5 w-3.5" />
@@ -892,7 +892,7 @@ export function BusinessCRM() {
                         const rnd = getRandomSetter()
                         if (rnd) setNewSetterId(rnd.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-600 hover:bg-stone-100 transition-all whitespace-nowrap"
+                      className="flex items-center gap-1 rounded-xl border border-stone-300 dark:border-neutral-600 bg-stone-50 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
                       title="Hasard (aléatoire)"
                     >
                       <Shuffle className="h-3.5 w-3.5" />
@@ -920,7 +920,7 @@ export function BusinessCRM() {
                         const next = getNextSetter()
                         if (next) setNewSetterId(next.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-stone-200 bg-stone-100 px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-200 transition-all whitespace-nowrap"
+                      className="flex items-center gap-1 rounded-xl border border-stone-200 dark:border-neutral-700 bg-stone-100 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
                       title="Tournante (round-robin)"
                     >
                       <ArrowRightCircle className="h-3.5 w-3.5" />
@@ -932,7 +932,7 @@ export function BusinessCRM() {
                         const rnd = getRandomSetter()
                         if (rnd) setNewSetterId(rnd.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-600 hover:bg-stone-100 transition-all whitespace-nowrap"
+                      className="flex items-center gap-1 rounded-xl border border-stone-300 dark:border-neutral-600 bg-stone-50 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
                       title="Hasard (aléatoire)"
                     >
                       <Shuffle className="h-3.5 w-3.5" />
@@ -951,7 +951,7 @@ export function BusinessCRM() {
                 </div>
               ) : needsCloserPicker && (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Closer <span className="text-stone-400 font-normal">(facultatif)</span></label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Closer <span className="text-stone-400 dark:text-neutral-500 font-normal">(facultatif)</span></label>
                   <select
                     value={newCloserId}
                     onChange={(e) => setNewCloserId(e.target.value)}
@@ -968,7 +968,7 @@ export function BusinessCRM() {
               <div className="flex gap-3 mt-4">
                 <button
                   onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
-                  className="flex-1 rounded-full bg-stone-100 border-none py-2.5 font-medium text-stone-600 hover:bg-stone-200 transition-all"
+                  className="flex-1 rounded-full bg-stone-100 dark:bg-neutral-800 border-none py-2.5 font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all"
                 >
                   Annuler
                 </button>
@@ -1036,10 +1036,10 @@ export function BusinessCRM() {
             {/* Existing tags */}
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {tags.length === 0 ? (
-                <p className="text-sm text-stone-400 text-center py-4">Aucun tag créé</p>
+                <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-4">Aucun tag créé</p>
               ) : (
                 tags.map(tag => (
-                  <div key={tag.id} className="flex items-center justify-between rounded-xl bg-stone-50 px-4 py-2.5">
+                  <div key={tag.id} className="flex items-center justify-between rounded-xl bg-stone-50 dark:bg-neutral-800 px-4 py-2.5">
                     <div className="flex items-center gap-2">
                       <span className="h-3 w-3 rounded-full" style={{ backgroundColor: tag.color }} />
                       <span className="text-sm font-semibold text-stone-900 dark:text-white">{tag.name}</span>

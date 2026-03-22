@@ -414,9 +414,9 @@ export function BusinessCampaigns() {
     setFormCustomFields(formCustomFields.filter((_, i) => i !== index))
   }
 
-  const inputCls = "w-full bg-transparent border-b border-[#c4c7c7]/30 py-2.5 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:border-[#006c49] focus:ring-0 outline-none transition-all font-['Inter']"
-  const selectCls = "w-full appearance-none bg-[#f5f3f2] rounded-xl border-0 px-4 py-2.5 pr-10 text-sm text-[#1b1c1b] font-medium focus:ring-1 focus:ring-[#006c49]/20 focus:outline-none"
-  const smallInputCls = "bg-transparent border-b border-[#c4c7c7]/20 px-1 py-2 text-xs text-[#1b1c1b] placeholder:text-[#444748]/40 focus:border-[#006c49] focus:ring-0 outline-none"
+  const inputCls = "w-full bg-transparent border-b border-[#c4c7c7]/30 dark:border-neutral-700 py-2.5 text-sm text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/40 dark:placeholder:text-neutral-500 focus:border-[#006c49] focus:ring-0 outline-none transition-all font-['Inter']"
+  const selectCls = "w-full appearance-none bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl border-0 px-4 py-2.5 pr-10 text-sm text-[#1b1c1b] dark:text-white font-medium focus:ring-1 focus:ring-[#006c49]/20 focus:outline-none"
+  const smallInputCls = "bg-transparent border-b border-[#c4c7c7]/20 dark:border-neutral-700 px-1 py-2 text-xs text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/40 dark:placeholder:text-neutral-500 focus:border-[#006c49] focus:ring-0 outline-none"
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-[#444748] animate-spin" /></div>
@@ -427,8 +427,8 @@ export function BusinessCampaigns() {
       {/* Header */}
       <header className="flex justify-between items-end">
         <div>
-          <h2 className="text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b]">Campagnes</h2>
-          <p className="text-[#444748] mt-2 max-w-md">Gérez vos tunnels de conversion et pages de capture depuis un tableau de bord centralisé.</p>
+          <h2 className="text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Campagnes</h2>
+          <p className="text-[#444748] dark:text-neutral-400 mt-2 max-w-md">Gérez vos tunnels de conversion et pages de capture depuis un tableau de bord centralisé.</p>
         </div>
         <button onClick={openCreate} className="bg-[#000000] text-white px-8 py-4 rounded-full font-['Manrope'] font-bold flex items-center gap-3 hover:bg-[#1b1c1b] transition-all active:scale-95" style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
           <Plus className="h-4 w-4" /> Nouvelle campagne
@@ -438,11 +438,11 @@ export function BusinessCampaigns() {
       {/* Empty state */}
       {campaigns.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-24 h-24 bg-[#efedec] rounded-full flex items-center justify-center mb-6">
+          <div className="w-24 h-24 bg-[#efedec] dark:bg-neutral-800 rounded-full flex items-center justify-center mb-6">
             <Megaphone className="h-10 w-10 text-[#444748]/30" />
           </div>
-          <h3 className="text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] mb-2">Aucune campagne</h3>
-          <p className="text-[#444748] max-w-xs mb-6">Créez votre première campagne pour capturer des leads</p>
+          <h3 className="text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white mb-2">Aucune campagne</h3>
+          <p className="text-[#444748] dark:text-neutral-400 max-w-xs mb-6">Créez votre première campagne pour capturer des leads</p>
           <button onClick={openCreate} className="bg-[#000000] text-white px-8 py-3 rounded-full font-['Manrope'] font-bold active:scale-95 transition-all">
             Créer une campagne
           </button>
@@ -454,15 +454,15 @@ export function BusinessCampaigns() {
         {campaigns.map((campaign) => {
           const leadCount = campaign.business_prospects?.[0]?.count || 0
           return (
-            <div key={campaign.id} className="rounded-xl p-8 group hover:shadow-[0_30px_60px_rgba(0,0,0,0.06)] transition-all duration-500" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+            <div key={campaign.id} className="rounded-xl p-8 group hover:shadow-[0_30px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_30px_60px_rgba(0,0,0,0.3)] transition-all duration-500 dark:bg-white/5 dark:border dark:border-neutral-700" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
               <div className="flex justify-between items-start mb-6">
                 <div className="flex gap-4 items-center">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${campaign.capture_type === 'without_rdv' ? 'bg-[#ffb95f]/10 text-[#b87500]' : 'bg-[#006c49]/10 text-[#006c49]'}`}>
                     {campaign.capture_type === 'without_rdv' ? <UserPlus className="h-6 w-6" /> : <CalendarCheck className="h-6 w-6" />}
                   </div>
                   <div>
-                    <h3 className="text-xl font-['Manrope'] font-extrabold text-[#1b1c1b]">{campaign.name}</h3>
-                    <p className="text-sm text-[#444748]">Source: {campaign.source}</p>
+                    <h3 className="text-xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white">{campaign.name}</h3>
+                    <p className="text-sm text-[#444748] dark:text-neutral-400">Source: {campaign.source}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -470,27 +470,27 @@ export function BusinessCampaigns() {
                     {campaign.is_active ? 'Active' : 'Inactive'}
                   </span>
                   <button onClick={() => toggleActive(campaign)} className="relative">
-                    <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${campaign.is_active ? 'bg-[#006c49]/20' : 'bg-[#eae8e7]'}`}>
+                    <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${campaign.is_active ? 'bg-[#006c49]/20' : 'bg-[#eae8e7] dark:bg-neutral-700'}`}>
                       <div className={`w-3 h-3 rounded-full absolute transition-all ${campaign.is_active ? 'bg-[#006c49] right-1' : 'bg-[#747878] left-1'}`} />
                     </div>
                   </button>
                 </div>
               </div>
-              {campaign.description && <p className="text-[#444748] mb-6 line-clamp-2">{campaign.description}</p>}
+              {campaign.description && <p className="text-[#444748] dark:text-neutral-400 mb-6 line-clamp-2">{campaign.description}</p>}
               <div className="flex gap-3 mb-6">
-                <div className="bg-[#eae8e7] px-4 py-2 rounded-full flex items-center gap-2">
+                <div className="bg-[#eae8e7] dark:bg-neutral-800 px-4 py-2 rounded-full flex items-center gap-2">
                   {campaign.capture_type === 'without_rdv' ? <UserPlus className="h-3.5 w-3.5 text-[#444748]" /> : <CalendarCheck className="h-3.5 w-3.5 text-[#444748]" />}
-                  <span className="text-xs font-bold text-[#444748]">Capture: {campaign.capture_type === 'without_rdv' ? 'Inscription' : 'RDV'}</span>
+                  <span className="text-xs font-bold text-[#444748] dark:text-neutral-300">Capture: {campaign.capture_type === 'without_rdv' ? 'Inscription' : 'RDV'}</span>
                 </div>
-                <div className="bg-[#f5f3f2] px-4 py-2 rounded-full flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#1b1c1b]">{leadCount} Lead{leadCount !== 1 ? 's' : ''}</span>
+                <div className="bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2 rounded-full flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#1b1c1b] dark:text-white">{leadCount} Lead{leadCount !== 1 ? 's' : ''}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 pt-6 border-t border-[#c4c7c7]/10">
+              <div className="flex items-center gap-2 pt-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700/30">
                 <button onClick={() => openEmbedModal(campaign, 'page')} className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#1b1c1b] transition-colors">Page</button>
-                <button onClick={() => openEmbedModal(campaign, 'iframe')} className="flex-1 bg-[#f5f3f2] text-[#1b1c1b] py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#eae8e7] transition-colors">Iframe</button>
+                <button onClick={() => openEmbedModal(campaign, 'iframe')} className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 text-[#1b1c1b] dark:text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors">Iframe</button>
                 <button onClick={() => openEmbedModal(campaign, 'popup')} className="flex-1 bg-[#006c49]/10 text-[#006c49] py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#006c49]/20 transition-colors" style={{ border: '1px solid rgba(0,108,73,0.2)' }}>Popup</button>
-                <button onClick={() => openEdit(campaign)} className="p-3 text-[#444748] hover:text-[#1b1c1b] hover:bg-[#f5f3f2] rounded-xl transition-colors" title="Modifier">
+                <button onClick={() => openEdit(campaign)} className="p-3 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-xl transition-colors" title="Modifier">
                   <Pencil className="h-4 w-4" />
                 </button>
                 <button onClick={() => deleteCampaign(campaign)} className="p-3 text-[#444748] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 rounded-xl transition-colors" title="Supprimer">
@@ -505,19 +505,19 @@ export function BusinessCampaigns() {
       {/* Modal Create/Edit - Tabbed */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white rounded-xl overflow-hidden" style={{ boxShadow: '0 40px 100px rgba(0,0,0,0.08)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 rounded-xl overflow-hidden" style={{ boxShadow: '0 40px 100px rgba(0,0,0,0.08)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
             {/* Modal header */}
             <div className="flex items-center justify-between px-8 py-5 flex-shrink-0">
-              <h3 className="text-xl font-['Manrope'] font-extrabold text-[#1b1c1b]">
+              <h3 className="text-xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white">
                 {editingCampaign ? 'Configuration de Campagne' : 'Nouvelle Campagne'}
               </h3>
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] hover:bg-[#f5f3f2] transition-colors">
+              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex bg-[#f5f3f2] px-8 pt-5 gap-8 border-b border-[#c4c7c7]/10 flex-shrink-0 overflow-x-auto">
+            <div className="flex bg-[#f5f3f2] dark:bg-neutral-800 px-8 pt-5 gap-8 border-b border-[#c4c7c7]/10 dark:border-neutral-700 flex-shrink-0 overflow-x-auto">
               {([
                 { key: 'general' as const, label: 'Général' },
                 { key: 'landing' as const, label: 'Page de capture' },
@@ -529,8 +529,8 @@ export function BusinessCampaigns() {
                   onClick={() => setModalTab(tab.key)}
                   className={`pb-4 text-sm font-['Manrope'] font-bold transition-colors whitespace-nowrap ${
                     modalTab === tab.key
-                      ? 'border-b-2 border-[#000000] text-[#000000]'
-                      : 'text-[#444748] hover:text-[#1b1c1b]'
+                      ? 'border-b-2 border-[#000000] dark:border-white text-[#000000] dark:text-white'
+                      : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
                   }`}
                 >
                   {tab.label}
@@ -544,24 +544,24 @@ export function BusinessCampaigns() {
               {modalTab === 'general' && (
                 <div className="space-y-8">
                   <div className="space-y-6">
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878]">Identification</label>
-                    <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nom de la campagne" className="w-full bg-transparent border-0 border-b border-[#c4c7c7]/30 focus:ring-0 focus:border-[#006c49] transition-all text-xl font-['Manrope'] font-bold py-3 px-0 text-[#1b1c1b] placeholder:text-[#444748]/30" />
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">Identification</label>
+                    <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nom de la campagne" className="w-full bg-transparent border-0 border-b border-[#c4c7c7]/30 dark:border-neutral-700 focus:ring-0 focus:border-[#006c49] transition-all text-xl font-['Manrope'] font-bold py-3 px-0 text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/30 dark:placeholder:text-neutral-500" />
                   </div>
 
                   {/* Capture type switch */}
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878]">Type de Capture</label>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">Type de Capture</label>
                     <div className="grid grid-cols-2 gap-4">
                       <button
                         onClick={() => setFormCaptureType('with_rdv')}
                         className={`p-6 rounded-xl flex flex-col items-center text-center cursor-pointer transition-all ${
                           formCaptureType === 'with_rdv'
                             ? 'border-2 border-[#006c49] bg-[#006c49]/5'
-                            : 'border border-[#c4c7c7]/30 hover:border-[#747878]'
+                            : 'border border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#747878] dark:hover:border-neutral-500'
                         }`}
                       >
                         <CalendarCheck className={`h-7 w-7 mb-3 ${formCaptureType === 'with_rdv' ? 'text-[#006c49]' : 'text-[#747878]'}`} />
-                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b]">Rendez-vous</h4>
+                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b] dark:text-white">Rendez-vous</h4>
                         <p className="text-[10px] text-[#444748] mt-1">Planification directe</p>
                       </button>
                       <button
@@ -569,18 +569,18 @@ export function BusinessCampaigns() {
                         className={`p-6 rounded-xl flex flex-col items-center text-center cursor-pointer transition-all ${
                           formCaptureType === 'without_rdv'
                             ? 'border-2 border-[#006c49] bg-[#006c49]/5'
-                            : 'border border-[#c4c7c7]/30 hover:border-[#747878]'
+                            : 'border border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#747878] dark:hover:border-neutral-500'
                         }`}
                       >
                         <UserPlus className={`h-7 w-7 mb-3 ${formCaptureType === 'without_rdv' ? 'text-[#006c49]' : 'text-[#747878]'}`} />
-                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b]">Inscription</h4>
+                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b] dark:text-white">Inscription</h4>
                         <p className="text-[10px] text-[#444748] mt-1">Formulaire classique</p>
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] mb-2">Source</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Source</label>
                     <div className="relative">
                       <select value={formSource} onChange={(e) => {
                         if (e.target.value === '__new__') {
@@ -596,11 +596,11 @@ export function BusinessCampaigns() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] mb-2">Description interne</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Description interne</label>
                     <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={2} placeholder="Note interne..." className={`${inputCls} resize-none`} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] mb-2">Paramètres UTM</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Paramètres UTM</label>
                     <div className="grid grid-cols-3 gap-2">
                       <input type="text" value={formUtmSource} onChange={(e) => setFormUtmSource(e.target.value)} placeholder="utm_source" className={smallInputCls} />
                       <input type="text" value={formUtmMedium} onChange={(e) => setFormUtmMedium(e.target.value)} placeholder="utm_medium" className={smallInputCls} />
@@ -608,7 +608,7 @@ export function BusinessCampaigns() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] mb-2">Formule associée</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Formule associée</label>
                     <div className="relative">
                       <select value={formFormulaId || ''} onChange={(e) => setFormFormulaId(e.target.value || null)} className={selectCls}>
                         <option value="">Aucune formule</option>
@@ -616,13 +616,13 @@ export function BusinessCampaigns() {
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
                     </div>
-                    <p className="text-xs text-[#444748]/60 mt-1">Les prospects capturés via cette campagne seront associés à cette formule</p>
+                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">Les prospects capturés via cette campagne seront associés à cette formule</p>
                   </div>
 
                   {/* RDV with Closer or Setter switch (only with_rdv) */}
                   {formCaptureType === 'with_rdv' && (
-                    <div className="rounded-xl bg-[#f5f3f2]/50 p-5 border border-[#c4c7c7]/10">
-                      <label className="block text-xs font-bold text-[#444748] mb-3">Rendez-vous avec</label>
+                    <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                      <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">Rendez-vous avec</label>
                       <div className="flex gap-3">
                         <button
                           type="button"
@@ -630,7 +630,7 @@ export function BusinessCampaigns() {
                           className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
                             formBookingWith === 'closer'
                               ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                              : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
+                              : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                           }`}
                         >
                           <UserCheck className="h-4 w-4" /> Closer
@@ -641,7 +641,7 @@ export function BusinessCampaigns() {
                           className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
                             formBookingWith === 'setter'
                               ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                              : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
+                              : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                           }`}
                         >
                           <UserCheck className="h-4 w-4" /> Setter
@@ -652,15 +652,15 @@ export function BusinessCampaigns() {
 
                   {/* Info banner for without_rdv */}
                   {formCaptureType === 'without_rdv' && (
-                    <div className="rounded-xl bg-[#f5f3f2]/50 p-5 border border-[#c4c7c7]/10">
-                      <p className="text-sm font-bold text-[#1b1c1b]">Campagne sans rendez-vous</p>
-                      <p className="text-xs text-[#444748]/60 mt-1">Les leads capturés seront assignés à un Setter pour le traitement.</p>
+                    <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                      <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Campagne sans rendez-vous</p>
+                      <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">Les leads capturés seront assignés à un Setter pour le traitement.</p>
                     </div>
                   )}
 
                   {/* Assignment mode */}
-                  <div className="rounded-xl bg-[#f5f3f2]/50 p-5 border border-[#c4c7c7]/10">
-                    <label className="block text-xs font-bold text-[#444748] mb-3">
+                  <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">
                       Mode d'assignation des {formCaptureType === 'without_rdv' ? 'Setters' : (formBookingWith === 'closer' ? 'Closers' : 'Setters')}
                     </label>
                     <div className="flex gap-2 flex-wrap">
@@ -670,7 +670,7 @@ export function BusinessCampaigns() {
                         className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
                           formBookingAssignMode === 'specific'
                             ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                            : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
+                            : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                         }`}
                       >
                         <UserCheck className="h-3.5 w-3.5" /> Un membre précis
@@ -681,7 +681,7 @@ export function BusinessCampaigns() {
                         className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
                           formBookingAssignMode === 'all_role'
                             ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                            : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
+                            : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                         }`}
                       >
                         <UsersRound className="h-3.5 w-3.5" /> Tout le rôle
@@ -692,7 +692,7 @@ export function BusinessCampaigns() {
                         className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
                           formBookingAssignMode === 'multiple'
                             ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                            : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
+                            : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                         }`}
                       >
                         <Users className="h-3.5 w-3.5" /> Plusieurs membres
@@ -727,15 +727,15 @@ export function BusinessCampaigns() {
                     {/* Multiple members selector */}
                     {formBookingAssignMode === 'multiple' && (
                       <div className="mt-3 space-y-2">
-                        <p className="text-xs text-[#444748]/60">Sélectionnez les membres à inclure :</p>
-                        <div className="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-[#c4c7c7]/20 bg-white p-2">
+                        <p className="text-xs text-[#444748]/60 dark:text-neutral-500">Sélectionnez les membres à inclure :</p>
+                        <div className="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-2">
                           {teamMembers
                             .filter(m => {
                               if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
                               return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'
                             })
                             .map(m => (
-                              <label key={m.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-[#f5f3f2] cursor-pointer">
+                              <label key={m.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={formBookingAssignedMembers.includes(m.id)}
@@ -748,8 +748,8 @@ export function BusinessCampaigns() {
                                   }}
                                   className="rounded border-[#c4c7c7]/30 text-[#1b1c1b] focus:ring-[#1b1c1b]"
                                 />
-                                <span className="text-sm text-[#1b1c1b]">{m.first_name} {m.last_name}</span>
-                                <span className="text-[10px] font-bold text-[#747878] bg-[#f5f3f2] px-1.5 py-0.5 rounded">{m.role}</span>
+                                <span className="text-sm text-[#1b1c1b] dark:text-white">{m.first_name} {m.last_name}</span>
+                                <span className="text-[10px] font-bold text-[#747878] dark:text-neutral-400 bg-[#f5f3f2] dark:bg-neutral-700 px-1.5 py-0.5 rounded">{m.role}</span>
                               </label>
                             ))}
                         </div>
@@ -758,8 +758,8 @@ export function BusinessCampaigns() {
 
                     {/* Distribution mode (for all_role and multiple) */}
                     {(formBookingAssignMode === 'all_role' || formBookingAssignMode === 'multiple') && (
-                      <div className="mt-4 pt-3 border-t border-[#c4c7c7]/15">
-                        <label className="block text-xs font-bold text-[#444748] mb-2">Distribution des rendez-vous</label>
+                      <div className="mt-4 pt-3 border-t border-[#c4c7c7]/15 dark:border-neutral-700">
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Distribution des rendez-vous</label>
                         <div className="flex gap-3">
                           <button
                             type="button"
@@ -767,7 +767,7 @@ export function BusinessCampaigns() {
                             className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
                               formBookingDistribution === 'round_robin'
                                 ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                                : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
+                                : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                             }`}
                           >
                             <ArrowRightCircle className="h-4 w-4" /> Tournante
@@ -778,13 +778,13 @@ export function BusinessCampaigns() {
                             className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
                               formBookingDistribution === 'random'
                                 ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                                : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
+                                : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                             }`}
                           >
                             <Shuffle className="h-4 w-4" /> Hasard
                           </button>
                         </div>
-                        <p className="text-xs text-[#444748]/60 mt-2">
+                        <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-2">
                           {formBookingDistribution === 'round_robin'
                             ? 'Les rendez-vous sont distribués à tour de rôle entre les membres.'
                             : 'Les rendez-vous sont assignés aléatoirement.'}
@@ -798,33 +798,33 @@ export function BusinessCampaigns() {
               {/* Landing page tab */}
               {modalTab === 'landing' && (
                 <div className="space-y-4">
-                  <p className="text-xs text-[#444748]/60 mb-2">Configurez le contenu affiché à gauche de la page de capture (côté marketing)</p>
+                  <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mb-2">Configurez le contenu affiché à gauche de la page de capture (côté marketing)</p>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] mb-2">Titre principal</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Titre principal</label>
                     <input type="text" value={formLandingTitle} onChange={(e) => setFormLandingTitle(e.target.value)} placeholder="Ex: Transformez chaque lead en client." className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] mb-2">Sous-titre</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Sous-titre</label>
                     <input type="text" value={formLandingSubtitle} onChange={(e) => setFormLandingSubtitle(e.target.value)} placeholder="Ex: THE SALES OPERATING SYSTEM" className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] mb-2">Texte descriptif</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Texte descriptif</label>
                     <textarea value={formLandingText} onChange={(e) => setFormLandingText(e.target.value)} rows={3} placeholder="Décrivez votre offre, votre proposition de valeur..." className={`${inputCls} resize-none`} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] mb-2">URL Vidéo (YouTube, Loom...)</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">URL Vidéo (YouTube, Loom...)</label>
                     <input type="url" value={formLandingVideoUrl} onChange={(e) => setFormLandingVideoUrl(e.target.value)} placeholder="https://www.youtube.com/embed/..." className={inputCls} />
-                    <p className="text-xs text-[#444748]/60 mt-1">Utilisez l'URL d'intégration (embed). Ex: https://www.youtube.com/embed/VIDEO_ID</p>
+                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">Utilisez l'URL d'intégration (embed). Ex: https://www.youtube.com/embed/VIDEO_ID</p>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] mb-2">Lien de redirection post-capture</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Lien de redirection post-capture</label>
                     <input type="url" value={formRedirectUrl} onChange={(e) => setFormRedirectUrl(e.target.value)} placeholder="https://www.example.com/merci" className={inputCls} />
-                    <p className="text-xs text-[#444748]/60 mt-1">Optionnel — Redirige le prospect vers cette URL après soumission du formulaire</p>
+                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">Optionnel — Redirige le prospect vers cette URL après soumission du formulaire</p>
                   </div>
 
                   {/* Popup delay config */}
-                  <div className="rounded-xl bg-[#f5f3f2]/50 p-5 border border-[#c4c7c7]/10">
-                    <label className="flex items-center gap-2 text-sm font-bold text-[#1b1c1b] mb-2">
+                  <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                    <label className="flex items-center gap-2 text-sm font-bold text-[#1b1c1b] dark:text-white mb-2">
                       <Clock className="h-4 w-4" /> Configuration du Popup
                     </label>
                     <div className="flex items-center gap-3">
@@ -842,7 +842,7 @@ export function BusinessCampaigns() {
                         <option value={60}>Après 1 minute</option>
                       </select>
                     </div>
-                    <p className="text-xs text-[#444748]/60 mt-2">S'applique quand le format Popup est utilisé. Le site est bloqué tant que le formulaire n'est pas rempli.</p>
+                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-2">S'applique quand le format Popup est utilisé. Le site est bloqué tant que le formulaire n'est pas rempli.</p>
                   </div>
                 </div>
               )}
@@ -852,19 +852,19 @@ export function BusinessCampaigns() {
                 <div className="space-y-5">
                   {/* Required fields config */}
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] mb-3">Champs obligatoires du formulaire</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">Champs obligatoires du formulaire</label>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 px-4 py-3">
+                      <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
                         <div>
-                          <p className="text-sm font-bold text-[#1b1c1b]">Nom</p>
-                          <p className="text-xs text-[#747878]">Toujours requis</p>
+                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Nom</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">Toujours requis</p>
                         </div>
-                        <span className="text-[10px] font-bold text-[#747878] bg-[#f5f3f2] px-2 py-1 rounded-lg">Obligatoire</span>
+                        <span className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 bg-[#f5f3f2] dark:bg-neutral-800 px-2 py-1 rounded-lg">Obligatoire</span>
                       </div>
-                      <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 px-4 py-3">
+                      <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
                         <div>
-                          <p className="text-sm font-bold text-[#1b1c1b]">Email</p>
-                          <p className="text-xs text-[#747878]">Adresse email du lead</p>
+                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Email</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">Adresse email du lead</p>
                         </div>
                         <button
                           onClick={() => setFormEmailRequired(!formEmailRequired)}
@@ -876,10 +876,10 @@ export function BusinessCampaigns() {
                           }
                         </button>
                       </div>
-                      <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 px-4 py-3">
+                      <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
                         <div>
-                          <p className="text-sm font-bold text-[#1b1c1b]">Téléphone</p>
-                          <p className="text-xs text-[#747878]">Numéro de téléphone du lead</p>
+                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Téléphone</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">Numéro de téléphone du lead</p>
                         </div>
                         <button
                           onClick={() => setFormPhoneRequired(!formPhoneRequired)}
@@ -897,13 +897,13 @@ export function BusinessCampaigns() {
                   {/* Custom Fields */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-bold text-[#1b1c1b]">Champs personnalisés</label>
-                      <button onClick={addCustomField} className="flex items-center gap-1 text-xs font-bold text-[#1b1c1b] hover:text-[#444748]">
+                      <label className="text-sm font-bold text-[#1b1c1b] dark:text-white">Champs personnalisés</label>
+                      <button onClick={addCustomField} className="flex items-center gap-1 text-xs font-bold text-[#1b1c1b] dark:text-white hover:text-[#444748] dark:hover:text-neutral-300">
                         <Plus className="h-3.5 w-3.5" /> Ajouter un champ
                       </button>
                     </div>
                     {formCustomFields.length === 0 && (
-                      <p className="text-xs text-[#747878] italic">Aucun champ personnalisé. Cliquez sur "Ajouter un champ" pour en créer.</p>
+                      <p className="text-xs text-[#747878] dark:text-neutral-500 italic">Aucun champ personnalisé. Cliquez sur "Ajouter un champ" pour en créer.</p>
                     )}
                     {formCustomFields.map((field, idx) => (
                       <div key={idx} className="flex items-center gap-2 mb-2">
@@ -915,7 +915,7 @@ export function BusinessCampaigns() {
                           <option value="number">Numéro</option>
                           <option value="select">Sélection</option>
                         </select>
-                        <label className="flex items-center gap-1 text-xs text-[#444748] whitespace-nowrap">
+                        <label className="flex items-center gap-1 text-xs text-[#444748] dark:text-neutral-400 whitespace-nowrap">
                           <input type="checkbox" checked={field.required} onChange={(e) => updateCustomField(idx, { required: e.target.checked })} className="rounded border-[#c4c7c7]/30 text-[#1b1c1b] focus:ring-[#1b1c1b]" />
                           Requis
                         </label>
@@ -934,7 +934,7 @@ export function BusinessCampaigns() {
                     <>
                       {/* Duration */}
                       <div>
-                        <label className="block text-xs font-bold text-[#444748] mb-2">Durée du rendez-vous</label>
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Durée du rendez-vous</label>
                         <div className="flex gap-2 flex-wrap">
                           {BOOKING_DURATIONS.map(d => (
                             <button
@@ -944,7 +944,7 @@ export function BusinessCampaigns() {
                               className={`rounded-xl border px-4 py-2 text-sm font-bold transition-all ${
                                 formBookingDuration === d.value
                                   ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                                  : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
+                                  : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                               }`}
                             >
                               {d.label}
@@ -955,7 +955,7 @@ export function BusinessCampaigns() {
 
                       {/* Title */}
                       <div>
-                        <label className="block text-xs font-bold text-[#444748] mb-2">Titre du rendez-vous</label>
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Titre du rendez-vous</label>
                         <input
                           type="text"
                           value={formBookingTitle}
@@ -974,7 +974,7 @@ export function BusinessCampaigns() {
                               key={v.var}
                               type="button"
                               onClick={() => setFormBookingTitle(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + v.var)}
-                              className="rounded-lg bg-[#f5f3f2] px-2 py-1 text-[10px] font-mono text-[#444748] hover:bg-[#eae8e7] transition-colors"
+                              className="rounded-lg bg-[#f5f3f2] dark:bg-neutral-800 px-2 py-1 text-[10px] font-mono text-[#444748] dark:text-neutral-400 hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors"
                               title={v.label}
                             >
                               {v.var}
@@ -985,7 +985,7 @@ export function BusinessCampaigns() {
 
                       {/* Description */}
                       <div>
-                        <label className="block text-xs font-bold text-[#444748] mb-2">Description du rendez-vous</label>
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Description du rendez-vous</label>
                         <textarea
                           value={formBookingDescription}
                           onChange={(e) => setFormBookingDescription(e.target.value)}
@@ -1006,7 +1006,7 @@ export function BusinessCampaigns() {
                               key={v.var}
                               type="button"
                               onClick={() => setFormBookingDescription(prev => prev + (prev && !prev.endsWith('\n') && !prev.endsWith(' ') ? ' ' : '') + v.var)}
-                              className="rounded-lg bg-[#f5f3f2] px-2 py-1 text-[10px] font-mono text-[#444748] hover:bg-[#eae8e7] transition-colors"
+                              className="rounded-lg bg-[#f5f3f2] dark:bg-neutral-800 px-2 py-1 text-[10px] font-mono text-[#444748] dark:text-neutral-400 hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors"
                               title={v.label}
                             >
                               {v.var}
@@ -1021,8 +1021,8 @@ export function BusinessCampaigns() {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-3 bg-[#f5f3f2] px-6 py-4 flex-shrink-0 rounded-b-2xl">
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-full border border-[#c4c7c7]/30 px-5 py-2.5 text-sm font-bold text-[#444748] hover:bg-white transition-colors">
+            <div className="flex justify-end gap-3 bg-[#f5f3f2] dark:bg-neutral-800 px-6 py-4 flex-shrink-0 rounded-b-2xl">
+              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700 px-5 py-2.5 text-sm font-bold text-[#444748] dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800 transition-colors">
                 Annuler
               </button>
               <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-full bg-[#1b1c1b] px-5 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
@@ -1036,20 +1036,20 @@ export function BusinessCampaigns() {
       {/* Embed Code Modal (Iframe & Popup) */}
       {embedModalCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.08)]" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.08)' }}>
+          <div className="w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.08)]" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.08)' }}>
             {/* Header */}
             <div className="flex items-center justify-between px-8 py-5 flex-shrink-0">
               <div className="flex items-center gap-5">
                 <div>
-                  <h3 className="text-xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>{embedModalCampaign.name}</h3>
-                  <p className="text-xs text-[#444748] mt-0.5">{embedModalFormat === 'page' ? 'Personnalisez et partagez votre page de capture' : 'Intégrez le formulaire sur votre site'}</p>
+                  <h3 className="text-xl font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{embedModalCampaign.name}</h3>
+                  <p className="text-xs text-[#444748] dark:text-neutral-400 mt-0.5">{embedModalFormat === 'page' ? 'Personnalisez et partagez votre page de capture' : 'Intégrez le formulaire sur votre site'}</p>
                 </div>
                 {/* Format toggle */}
-                <div className="flex rounded-full bg-[#f5f3f2] p-1 ml-4">
+                <div className="flex rounded-full bg-[#f5f3f2] dark:bg-neutral-800 p-1 ml-4">
                   <button
                     onClick={() => setEmbedModalFormat('page')}
                     className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
-                      embedModalFormat === 'page' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] hover:text-[#1b1c1b]'
+                      embedModalFormat === 'page' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
                     }`}
                   >
                     <Monitor className="h-3.5 w-3.5" /> Page
@@ -1057,7 +1057,7 @@ export function BusinessCampaigns() {
                   <button
                     onClick={() => setEmbedModalFormat('iframe')}
                     className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
-                      embedModalFormat === 'iframe' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] hover:text-[#1b1c1b]'
+                      embedModalFormat === 'iframe' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
                     }`}
                   >
                     <Layers className="h-3.5 w-3.5" /> Iframe
@@ -1065,14 +1065,14 @@ export function BusinessCampaigns() {
                   <button
                     onClick={() => setEmbedModalFormat('popup')}
                     className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
-                      embedModalFormat === 'popup' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] hover:text-[#1b1c1b]'
+                      embedModalFormat === 'popup' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
                     }`}
                   >
                     <MessageSquare className="h-3.5 w-3.5" /> Popup
                   </button>
                 </div>
               </div>
-              <button onClick={() => setEmbedModalCampaign(null)} className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] hover:bg-[#f5f3f2] transition-colors">
+              <button onClick={() => setEmbedModalCampaign(null)} className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1083,7 +1083,7 @@ export function BusinessCampaigns() {
                 <button
                   onClick={() => setEmbedTab('code')}
                   className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-full transition-all ${
-                    embedTab === 'code' ? 'bg-[#1b1c1b] text-white' : 'text-[#444748] hover:bg-[#f5f3f2]'
+                    embedTab === 'code' ? 'bg-[#1b1c1b] text-white' : 'text-[#444748] dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800'
                   }`}
                 >
                   <Code className="h-4 w-4" /> Code & Tuto
@@ -1091,7 +1091,7 @@ export function BusinessCampaigns() {
                 <button
                   onClick={() => setEmbedTab('style')}
                   className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-full transition-all ${
-                    embedTab === 'style' ? 'bg-[#1b1c1b] text-white' : 'text-[#444748] hover:bg-[#f5f3f2]'
+                    embedTab === 'style' ? 'bg-[#1b1c1b] text-white' : 'text-[#444748] dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800'
                   }`}
                 >
                   <Paintbrush className="h-4 w-4" /> Personnaliser
@@ -1107,9 +1107,9 @@ export function BusinessCampaigns() {
                 <div className="p-8 space-y-6">
                   {/* Link + Copy */}
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2.5 block ml-1">Lien de la page de capture</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2.5 block ml-1">Lien de la page de capture</label>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 flex items-center rounded-full bg-[#f5f3f2] px-5 py-3 text-sm text-[#444748] font-mono truncate">
+                      <div className="flex-1 flex items-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3 text-sm text-[#444748] dark:text-neutral-300 font-mono truncate">
                         {getCaptureUrl(embedModalCampaign.slug)}
                       </div>
                       <button
@@ -1122,7 +1122,7 @@ export function BusinessCampaigns() {
                         href={getCaptureUrl(embedModalCampaign.slug)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 rounded-full bg-[#f5f3f2] px-5 py-3 text-sm font-bold text-[#1b1c1b] hover:bg-[#eae8e7] transition-colors flex-shrink-0"
+                        className="flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors flex-shrink-0"
                       >
                         <ExternalLink className="h-4 w-4" /> Ouvrir
                       </a>
@@ -1130,22 +1130,22 @@ export function BusinessCampaigns() {
                   </div>
 
                   {/* Style customization for page */}
-                  <div className="flex rounded-2xl overflow-hidden min-h-[450px] bg-[#f5f3f2]">
+                  <div className="flex rounded-2xl overflow-hidden min-h-[450px] bg-[#f5f3f2] dark:bg-neutral-800">
                     {/* Left: Controls */}
-                    <div className="w-[260px] flex-shrink-0 p-6 space-y-5 overflow-y-auto bg-white rounded-2xl m-1">
-                      <h4 className="text-sm font-extrabold text-[#1b1c1b] flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    <div className="w-[260px] flex-shrink-0 p-6 space-y-5 overflow-y-auto bg-white dark:bg-neutral-900 rounded-2xl m-1">
+                      <h4 className="text-sm font-extrabold text-[#1b1c1b] dark:text-white flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
                         <Palette className="h-4 w-4 text-[#006c49]" /> Personnaliser
                       </h4>
 
                       {/* Font */}
                       <div>
-                        <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2">
+                        <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2">
                           <Type className="h-3.5 w-3.5" /> Police
                         </label>
                         <select
                           value={styleFont}
                           onChange={(e) => setStyleFont(e.target.value)}
-                          className="w-full rounded-full bg-[#f5f3f2] px-4 py-2.5 text-xs text-[#1b1c1b] font-medium focus:ring-1 focus:ring-[#006c49] focus:outline-none appearance-none cursor-pointer"
+                          className="w-full rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-xs text-[#1b1c1b] dark:text-white font-medium focus:ring-1 focus:ring-[#006c49] focus:outline-none appearance-none cursor-pointer"
                         >
                           {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                         </select>
@@ -1153,36 +1153,36 @@ export function BusinessCampaigns() {
 
                       {/* Primary color */}
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Couleur principale</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Couleur principale</label>
                         <div className="flex items-center gap-2">
                           <input type="color" value={stylePrimaryColor} onChange={(e) => setStylePrimaryColor(e.target.value)} className="h-8 w-8 rounded-full border-0 cursor-pointer" />
-                          <input type="text" value={stylePrimaryColor} onChange={(e) => setStylePrimaryColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
+                          <input type="text" value={stylePrimaryColor} onChange={(e) => setStylePrimaryColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-3 py-1.5 text-xs text-[#1b1c1b] dark:text-white font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
                         </div>
                       </div>
 
                       {/* Background color */}
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Fond</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Fond</label>
                         <div className="flex items-center gap-2">
                           <input type="color" value={styleBgColor} onChange={(e) => setStyleBgColor(e.target.value)} className="h-8 w-8 rounded-full border-0 cursor-pointer" />
-                          <input type="text" value={styleBgColor} onChange={(e) => setStyleBgColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
+                          <input type="text" value={styleBgColor} onChange={(e) => setStyleBgColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-3 py-1.5 text-xs text-[#1b1c1b] dark:text-white font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
                         </div>
                       </div>
 
                       {/* Text color */}
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Texte</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Texte</label>
                         <div className="flex items-center gap-2">
                           <input type="color" value={styleTextColor} onChange={(e) => setStyleTextColor(e.target.value)} className="h-8 w-8 rounded-full border-0 cursor-pointer" />
-                          <input type="text" value={styleTextColor} onChange={(e) => setStyleTextColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
+                          <input type="text" value={styleTextColor} onChange={(e) => setStyleTextColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-3 py-1.5 text-xs text-[#1b1c1b] dark:text-white font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
                         </div>
                       </div>
 
                       {/* Border radius */}
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Arrondi — {styleRadius}px</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Arrondi — {styleRadius}px</label>
                         <input type="range" min={0} max={24} value={styleRadius} onChange={(e) => setStyleRadius(Number(e.target.value))} className="w-full accent-[#006c49]" />
-                        <div className="flex justify-between text-[10px] text-[#444748]/40 font-bold">
+                        <div className="flex justify-between text-[10px] text-[#444748]/40 dark:text-neutral-600 font-bold">
                           <span>Carré</span><span>Arrondi</span>
                         </div>
                       </div>
@@ -1233,12 +1233,12 @@ export function BusinessCampaigns() {
               {embedModalFormat !== 'page' && embedTab === 'code' && (
                 <div className="p-8 space-y-6">
                   {/* Tutorial */}
-                  <div className="rounded-2xl bg-[#f5f3f2] p-6">
-                    <h4 className="text-sm font-extrabold text-[#1b1c1b] mb-3 flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 p-6">
+                    <h4 className="text-sm font-extrabold text-[#1b1c1b] dark:text-white mb-3 flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
                       <Eye className="h-4 w-4 text-[#006c49]" /> Comment ça marche
                     </h4>
                     {embedModalFormat === 'popup' ? (
-                      <ol className="text-xs text-[#444748] space-y-2.5">
+                      <ol className="text-xs text-[#444748] dark:text-neutral-400 space-y-2.5">
                         {[
                           `Le popup s'affiche ${embedModalCampaign.popup_delay ? `après ${embedModalCampaign.popup_delay} secondes` : 'instantanément'} au chargement de la page`,
                           'Le site est bloqué (scroll désactivé, overlay sombre) tant que le formulaire n\'est pas rempli',
@@ -1256,7 +1256,7 @@ export function BusinessCampaigns() {
                         </li>
                       </ol>
                     ) : (
-                      <ol className="text-xs text-[#444748] space-y-2.5">
+                      <ol className="text-xs text-[#444748] dark:text-neutral-400 space-y-2.5">
                         {[
                           'Copiez le code iframe ci-dessous',
                           'Collez-le dans le HTML de votre page, à l\'endroit où vous souhaitez afficher le formulaire',
@@ -1275,7 +1275,7 @@ export function BusinessCampaigns() {
                   {/* Code block */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60">Code à intégrer</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500">Code à intégrer</label>
                       <button
                         onClick={() => copyToClipboard(embedModalFormat === 'popup' ? getPopupCode : getIframeCode, `Code ${embedModalFormat}`)}
                         className="flex items-center gap-1.5 rounded-full bg-[#1b1c1b] px-4 py-2 text-xs font-bold text-white hover:scale-105 active:scale-95 transition-all"
@@ -1292,7 +1292,7 @@ export function BusinessCampaigns() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), 'Lien page entière')}
-                      className="flex-1 flex items-center justify-center gap-2 rounded-full bg-[#f5f3f2] px-5 py-3 text-sm font-bold text-[#1b1c1b] hover:bg-[#eae8e7] transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors"
                     >
                       <Monitor className="h-4 w-4" /> Copier lien page entière
                     </button>
@@ -1303,20 +1303,20 @@ export function BusinessCampaigns() {
               {embedModalFormat !== 'page' && embedTab === 'style' && (
                 <div className="flex min-h-[500px]">
                   {/* Left: Controls */}
-                  <div className="w-[280px] flex-shrink-0 p-6 space-y-5 overflow-y-auto bg-white">
-                    <h4 className="text-sm font-extrabold text-[#1b1c1b] flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  <div className="w-[280px] flex-shrink-0 p-6 space-y-5 overflow-y-auto bg-white dark:bg-neutral-900">
+                    <h4 className="text-sm font-extrabold text-[#1b1c1b] dark:text-white flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
                       <Palette className="h-4 w-4 text-[#006c49]" /> Style
                     </h4>
 
                     {/* Font */}
                     <div>
-                      <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2">
+                      <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2">
                         <Type className="h-3.5 w-3.5" /> Police
                       </label>
                       <select
                         value={styleFont}
                         onChange={(e) => setStyleFont(e.target.value)}
-                        className="w-full rounded-full bg-[#f5f3f2] px-4 py-2.5 text-xs text-[#1b1c1b] font-medium focus:ring-1 focus:ring-[#006c49] focus:outline-none appearance-none cursor-pointer"
+                        className="w-full rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-xs text-[#1b1c1b] dark:text-white font-medium focus:ring-1 focus:ring-[#006c49] focus:outline-none appearance-none cursor-pointer"
                       >
                         {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                       </select>
@@ -1324,7 +1324,7 @@ export function BusinessCampaigns() {
 
                     {/* Primary color */}
                     <div>
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Couleur principale</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Couleur principale</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -1336,14 +1336,14 @@ export function BusinessCampaigns() {
                           type="text"
                           value={stylePrimaryColor}
                           onChange={(e) => setStylePrimaryColor(e.target.value)}
-                          className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none"
+                          className="flex-1 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-3 py-1.5 text-xs text-[#1b1c1b] dark:text-white font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none"
                         />
                       </div>
                     </div>
 
                     {/* Background color */}
                     <div>
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Fond</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Fond</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -1355,14 +1355,14 @@ export function BusinessCampaigns() {
                           type="text"
                           value={styleBgColor}
                           onChange={(e) => setStyleBgColor(e.target.value)}
-                          className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none"
+                          className="flex-1 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-3 py-1.5 text-xs text-[#1b1c1b] dark:text-white font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none"
                         />
                       </div>
                     </div>
 
                     {/* Text color */}
                     <div>
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Texte</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Texte</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -1374,14 +1374,14 @@ export function BusinessCampaigns() {
                           type="text"
                           value={styleTextColor}
                           onChange={(e) => setStyleTextColor(e.target.value)}
-                          className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none"
+                          className="flex-1 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-3 py-1.5 text-xs text-[#1b1c1b] dark:text-white font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none"
                         />
                       </div>
                     </div>
 
                     {/* Border radius */}
                     <div>
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Arrondi des coins — {styleRadius}px</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Arrondi des coins — {styleRadius}px</label>
                       <input
                         type="range"
                         min={0}
@@ -1390,7 +1390,7 @@ export function BusinessCampaigns() {
                         onChange={(e) => setStyleRadius(Number(e.target.value))}
                         className="w-full accent-[#006c49]"
                       />
-                      <div className="flex justify-between text-[10px] text-[#444748]/40 font-bold">
+                      <div className="flex justify-between text-[10px] text-[#444748]/40 dark:text-neutral-600 font-bold">
                         <span>Carré</span><span>Arrondi</span>
                       </div>
                     </div>
@@ -1405,7 +1405,7 @@ export function BusinessCampaigns() {
                   </div>
 
                   {/* Right: Live preview */}
-                  <div className="flex-1 bg-[#f5f3f2] p-5 flex flex-col">
+                  <div className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 p-5 flex flex-col">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/40 mb-3 flex items-center gap-1.5">
                       <Eye className="h-3.5 w-3.5" /> Aperçu en temps réel
                     </p>
@@ -1422,7 +1422,7 @@ export function BusinessCampaigns() {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end bg-[#f5f3f2] px-8 py-4 flex-shrink-0 rounded-b-2xl">
+            <div className="flex justify-end bg-[#f5f3f2] dark:bg-neutral-800 px-8 py-4 flex-shrink-0 rounded-b-2xl">
               <button onClick={() => setEmbedModalCampaign(null)} className="rounded-full bg-[#1b1c1b] px-6 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all">
                 Fermer
               </button>
@@ -1433,21 +1433,21 @@ export function BusinessCampaigns() {
       {/* Mini-modal Nouvelle source */}
       {isNewSourceModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-            <h3 className="text-lg font-extrabold text-[#1b1c1b] mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>Nouvelle source</h3>
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+            <h3 className="text-lg font-extrabold text-[#1b1c1b] dark:text-white mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>Nouvelle source</h3>
             <input
               type="text"
               value={newSourceName}
               onChange={(e) => setNewSourceName(e.target.value)}
               placeholder="Nom de la source"
-              className="w-full bg-transparent border-b border-[#c4c7c7]/30 px-0 py-2.5 text-[#1b1c1b] focus:border-[#006c49] focus:outline-none mb-4 transition-colors"
+              className="w-full bg-transparent border-b border-[#c4c7c7]/30 dark:border-neutral-700 px-0 py-2.5 text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:outline-none mb-4 transition-colors"
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleCreateSource()}
             />
             <div className="flex gap-3">
               <button
                 onClick={() => { setIsNewSourceModalOpen(false); setNewSourceName('') }}
-                className="flex-1 border border-[#c4c7c7]/30 hover:bg-[#f5f3f2] text-[#444748] font-bold py-2.5 rounded-full transition-colors"
+                className="flex-1 border border-[#c4c7c7]/30 dark:border-neutral-700 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 text-[#444748] dark:text-neutral-300 font-bold py-2.5 rounded-full transition-colors"
               >
                 Annuler
               </button>
