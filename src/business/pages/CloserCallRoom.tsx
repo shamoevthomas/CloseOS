@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Monitor, PhoneOff, ChevronDown, ExternalLink, FileText,
   Briefcase, BookOpen, ScrollText, Tag, User, Clock,
+  Bold, List, Share2, Mic, Zap, Settings, Download,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -73,7 +74,6 @@ export function CloserCallRoom() {
     let mounted = true
 
     async function loadData() {
-      // Load scripts
       const { data: scriptsData } = await supabase
         .from('business_user_scripts')
         .select('*')
@@ -90,7 +90,6 @@ export function CloserCallRoom() {
         setCurrentScriptContent('Aucun script trouvé.')
       }
 
-      // Load offers from org
       try {
         const res = await fetch(`/api/business?action=offers-list&user_id=${ownerUserId}`)
         const data = await res.json()
@@ -102,7 +101,6 @@ export function CloserCallRoom() {
           setSelectedOfferId(activeOffers[0].id)
         }
       } catch {
-        // fallback: try supabase directly
         const { data: offersData } = await supabase
           .from('offers')
           .select('*')
@@ -143,9 +141,10 @@ export function CloserCallRoom() {
   }, [isRecording])
 
   const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60).toString().padStart(2, '0')
+    const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0')
+    const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0')
     const secs = (seconds % 60).toString().padStart(2, '0')
-    return `${mins}:${secs}`
+    return `${hrs}:${mins}:${secs}`
   }
 
   const startRecording = async () => {
@@ -197,7 +196,6 @@ export function CloserCallRoom() {
         }).eq('id', finalCallId)
       } catch (e) { console.error('Erreur sauvegarde durée', e) }
     } else {
-      // Create a call record if none exists
       const { data, error } = await supabase.from('business_call_history').insert({
         team_member_id: teamMember?.id || null,
         business_owner_id: ownerUserId || user?.id,
@@ -222,22 +220,23 @@ export function CloserCallRoom() {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-[#FDF6EE] text-slate-900 flex-col font-sans overflow-hidden relative">
-      {/* Header */}
-      <div className="h-16 shrink-0 border-b border-amber-200 bg-white px-6 flex items-center justify-between shadow-sm z-50">
-        <div className="flex items-center gap-4">
-          <div className="bg-amber-100 text-amber-700 p-2 rounded-lg">
-            <Monitor className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg">{contactName}</h1>
-            <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-              <div className="flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="font-medium text-emerald-600">En ligne</span>
-              </div>
-              <span className="text-slate-400">|</span>
-              <span className="font-mono text-slate-700 font-medium tracking-wide">{formatDuration(callDuration)}</span>
+    <div className="flex h-screen w-screen bg-[#fbf9f8] text-stone-900 flex-col overflow-hidden relative" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      {/* ─── TopAppBar ─── */}
+      <header className="h-[72px] shrink-0 bg-white/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] px-8 flex items-center justify-between z-50 border-b border-stone-200/10">
+        <div className="flex items-center gap-6">
+          <span className="font-extrabold text-xl tracking-tighter text-stone-900">Closer Call Room</span>
+          <div className="h-8 w-px bg-stone-200/30" />
+          <div className="flex flex-col">
+            <span className="text-sm font-extrabold tracking-tight text-stone-900">{contactName}</span>
+            <div className="flex items-center gap-2">
+              {isRecording && (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Recording</span>
+                  <span className="text-[10px] font-bold text-stone-500">•</span>
+                </>
+              )}
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">{formatDuration(callDuration)}</span>
             </div>
           </div>
         </div>
@@ -245,103 +244,87 @@ export function CloserCallRoom() {
         <div className="flex items-center gap-3">
           {prospect && (
             <button onClick={() => setShowProspectView(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-purple-200 bg-purple-50 hover:bg-purple-100 text-sm font-medium text-purple-700">
-              <User className="h-4 w-4" /> Fiche Prospect
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-stone-200/30 text-sm font-semibold hover:bg-stone-50 transition-all">
+              <ExternalLink className="h-4 w-4" /> Fiche Prospect
             </button>
           )}
-          <button onClick={() => window.open('https://meet.google.com', '_blank')}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-sm font-medium">
-            <ExternalLink className="h-4 w-4" /> Meet
-          </button>
           <button onClick={isRecording ? stopRecording : startRecording}
-            className={cn("flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold",
-              isRecording ? 'bg-red-50 text-red-600 border border-red-200 animate-pulse' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200')}>
-            {isRecording ? <><div className="h-3 w-3 rounded-full bg-red-500"></div>{formatDuration(recordingSeconds)}</> : <><div className="h-3 w-3 rounded-full bg-slate-400"></div>Enregistrer</>}
+            className={cn("flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all",
+              isRecording ? 'bg-red-50 text-red-600 border border-red-200' : 'border border-stone-200/30 text-stone-600 hover:bg-stone-50')}>
+            {isRecording ? <><div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />{formatDuration(recordingSeconds)}</> : <><div className="h-2.5 w-2.5 rounded-full bg-stone-400" />Enregistrer</>}
+          </button>
+          <button onClick={handleLeave}
+            className="px-7 py-2.5 rounded-full bg-red-500 text-white text-sm font-bold shadow-lg shadow-red-500/20 hover:scale-95 active:scale-90 transition-transform">
+            Fin d'appel
           </button>
           <button onClick={() => setIsPanelOpen(!isPanelOpen)}
-            className={cn("flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium",
-              isPanelOpen ? 'bg-amber-600 border-amber-600 text-white' : 'border-slate-200 hover:bg-slate-50')}>
-            <FileText className="h-4 w-4" /> Panneau
-          </button>
-          <div className="h-8 w-px bg-slate-200 mx-2"></div>
-          <button onClick={handleLeave}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-bold shadow-sm">
-            <PhoneOff className="h-4 w-4" /> Fin
+            className="p-2.5 rounded-full hover:bg-stone-100 transition-all">
+            <Settings className="h-5 w-5 text-stone-500" />
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Main */}
+      {/* ─── Main Cockpit ─── */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel (Script + Offer) */}
-        <div className={cn("transition-all duration-300 border-r border-amber-200 bg-white flex flex-col", isPanelOpen ? 'w-5/12' : 'w-0 overflow-hidden opacity-0')}>
 
-          {/* Top half: Script */}
-          <div className="h-1/2 flex flex-col border-b border-amber-200">
-            <div className="p-3 border-b border-amber-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-amber-600" />
-                <span className="text-xs font-bold text-amber-700 tracking-wider">SCRIPT</span>
-              </div>
+        {/* ─── Left Panel (Script + Offer) ─── */}
+        <section className={cn("transition-all duration-500 flex flex-col border-r border-stone-200/10 bg-stone-50/30", isPanelOpen ? 'w-[40%]' : 'w-0 overflow-hidden opacity-0')}>
+
+          {/* Upper: Script */}
+          <div className="h-1/2 flex flex-col p-7 space-y-5 overflow-hidden">
+            <div className="flex items-center justify-between">
+              <h2 className="font-extrabold text-2xl tracking-tight text-stone-900">Script</h2>
               <div className="relative">
                 <select value={selectedScriptId} onChange={(e) => setSelectedScriptId(e.target.value)}
-                  className="appearance-none bg-amber-50 border border-amber-200 text-sm rounded-md px-3 py-1.5 pr-8 focus:outline-none focus:border-amber-500 cursor-pointer min-w-[150px]">
+                  className="appearance-none bg-white border-none rounded-full px-5 py-2 pr-10 text-xs font-bold shadow-sm focus:ring-2 focus:ring-emerald-600/20 cursor-pointer">
                   {scripts.map(s => <option key={s.id} value={s.id}>{s.title || 'Sans titre'}</option>)}
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="prose prose-sm max-w-none text-slate-600 whitespace-pre-wrap leading-relaxed">{currentScriptContent}</div>
+            <div className="flex-1 bg-white rounded-2xl p-7 overflow-y-auto no-scrollbar shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-stone-200/10">
+              <div className="space-y-7 max-w-prose">
+                <div className="prose prose-sm max-w-none text-stone-800 whitespace-pre-wrap leading-relaxed font-medium">{currentScriptContent}</div>
+              </div>
             </div>
           </div>
 
-          {/* Bottom half: Offer & Resources */}
-          <div className="h-1/2 flex flex-col bg-amber-50/30">
-            <div className="p-3 border-b border-amber-100 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-purple-600" />
-                  <span className="text-xs font-bold text-purple-700 tracking-wider">OFFRE & RESSOURCES</span>
-                </div>
-                <div className="relative">
+          {/* Lower: Offer & Resources */}
+          <div className="h-1/2 flex flex-col p-7 pt-0 space-y-5 overflow-hidden">
+            <div className="flex items-center gap-5 border-b border-stone-200/10">
+              <button onClick={() => setActiveOfferTab('formulas')}
+                className={cn("pb-3 text-sm font-bold border-b-2 transition-all", activeOfferTab === 'formulas' ? 'border-stone-900 text-stone-900' : 'border-transparent text-stone-400 hover:text-stone-600')}>
+                Formules
+              </button>
+              <button onClick={() => setActiveOfferTab('notes')}
+                className={cn("pb-3 text-sm font-semibold transition-all", activeOfferTab === 'notes' ? 'border-b-2 border-stone-900 text-stone-900' : 'text-stone-400 hover:text-stone-600')}>
+                Closing Notes
+              </button>
+              <button onClick={() => setActiveOfferTab('resources')}
+                className={cn("pb-3 text-sm font-semibold transition-all", activeOfferTab === 'resources' ? 'border-b-2 border-stone-900 text-stone-900' : 'text-stone-400 hover:text-stone-600')}>
+                Ressources
+              </button>
+
+              {/* Offer selector */}
+              {offers.length > 1 && (
+                <div className="relative ml-auto">
                   <select value={selectedOfferId} onChange={(e) => setSelectedOfferId(e.target.value)}
-                    className="appearance-none bg-purple-50 border border-purple-200 text-sm rounded-md px-3 py-1.5 pr-8 focus:outline-none focus:border-purple-500 cursor-pointer min-w-[150px]">
+                    className="appearance-none bg-white border-none rounded-full px-4 py-1.5 pr-8 text-xs font-bold shadow-sm focus:ring-2 focus:ring-emerald-600/20 cursor-pointer">
                     {offers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
                   </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-stone-400 pointer-events-none" />
                 </div>
-              </div>
-
-              {/* Offer tabs */}
-              <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-                <button onClick={() => setActiveOfferTab('notes')}
-                  className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
-                    activeOfferTab === 'notes' ? "bg-purple-600 text-white shadow" : "text-slate-500 hover:text-slate-700 hover:bg-white")}>
-                  <ScrollText className="h-3 w-3" /> Notes Closing
-                </button>
-                <button onClick={() => setActiveOfferTab('formulas')}
-                  className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
-                    activeOfferTab === 'formulas' ? "bg-purple-600 text-white shadow" : "text-slate-500 hover:text-slate-700 hover:bg-white")}>
-                  <Tag className="h-3 w-3" /> Formules
-                </button>
-                <button onClick={() => setActiveOfferTab('resources')}
-                  className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
-                    activeOfferTab === 'resources' ? "bg-purple-600 text-white shadow" : "text-slate-500 hover:text-slate-700 hover:bg-white")}>
-                  <BookOpen className="h-3 w-3" /> Ressources
-                </button>
-              </div>
+              )}
             </div>
 
-            {/* Offer content */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto no-scrollbar space-y-3">
               {!currentOffer ? (
-                <p className="text-sm text-slate-400 text-center mt-10">Sélectionnez une offre pour voir les détails.</p>
+                <p className="text-sm text-stone-400 text-center mt-10">Sélectionnez une offre pour voir les détails.</p>
               ) : (
                 <>
                   {activeOfferTab === 'notes' && (
                     <div className="prose prose-sm max-w-none">
-                      <p className="text-slate-600 whitespace-pre-wrap">{currentOffer.notes || "Aucune note de closing."}</p>
+                      <p className="text-stone-600 whitespace-pre-wrap leading-relaxed">{currentOffer.notes || "Aucune note de closing."}</p>
                     </div>
                   )}
 
@@ -349,17 +332,25 @@ export function CloserCallRoom() {
                     <div className="space-y-3">
                       {currentOffer.formulas && Array.isArray(currentOffer.formulas) && currentOffer.formulas.length > 0 ? (
                         currentOffer.formulas.map((formula: any, idx: number) => (
-                          <div key={idx} className="p-3 rounded-lg border border-slate-200 bg-white flex justify-between items-center">
-                            <div>
-                              <p className="font-semibold text-slate-900 text-sm">{formula.name}</p>
-                              {formula.description && <p className="text-xs text-slate-500 mt-0.5">{formula.description}</p>}
+                          <div key={idx} className="bg-white p-5 rounded-2xl border border-stone-200/10 hover:border-emerald-200/50 transition-all cursor-pointer">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-extrabold text-sm text-stone-900 mb-1">{formula.name}</h4>
+                                {formula.description && <p className="text-xs text-stone-500">{formula.description}</p>}
+                              </div>
+                              <span className="text-sm font-black text-emerald-700">{formula.price}€</span>
                             </div>
-                            <span className="text-emerald-600 font-bold text-sm">{formula.price}€</span>
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-slate-400">Aucune formule configurée.</p>
+                        <p className="text-sm text-stone-400">Aucune formule configurée.</p>
                       )}
+
+                      {/* Generate PDF button */}
+                      <div className="flex items-center justify-between p-4 bg-stone-900 text-white rounded-2xl mt-3 cursor-pointer hover:scale-[1.02] transition-transform">
+                        <span className="text-[10px] font-bold tracking-[0.15em] uppercase">Générer PDF Proposition</span>
+                        <Download className="h-4 w-4" />
+                      </div>
                     </div>
                   )}
 
@@ -369,14 +360,14 @@ export function CloserCallRoom() {
                         currentOffer.resources.map((res: any, idx: number) => (
                           <li key={idx}>
                             <a href={res.url} target="_blank" rel="noopener noreferrer"
-                              className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-white hover:bg-purple-50 hover:border-purple-200 transition-all group">
-                              <ExternalLink className="h-3.5 w-3.5 text-purple-500 group-hover:text-purple-700" />
-                              <span className="text-sm text-slate-600 group-hover:text-purple-700 group-hover:underline decoration-purple-500 underline-offset-4">{res.title || res.url}</span>
+                              className="flex items-center gap-2 p-4 rounded-2xl border border-stone-200/10 bg-white hover:border-emerald-200/50 transition-all group">
+                              <ExternalLink className="h-3.5 w-3.5 text-emerald-600 group-hover:text-emerald-700" />
+                              <span className="text-sm text-stone-600 group-hover:text-emerald-700 font-medium">{res.title || res.url}</span>
                             </a>
                           </li>
                         ))
                       ) : (
-                        <p className="text-sm text-slate-400">Aucune ressource disponible.</p>
+                        <p className="text-sm text-stone-400">Aucune ressource disponible.</p>
                       )}
                     </ul>
                   )}
@@ -384,60 +375,88 @@ export function CloserCallRoom() {
               )}
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Notes Panel */}
-        <div className="flex-1 flex flex-col bg-amber-50/30 border-l border-amber-200">
-          <div className="p-4 border-b border-amber-100 flex justify-between items-center">
-            <h3 className="font-bold text-slate-500 text-sm tracking-wider flex items-center gap-2">
-              <FileText className="h-4 w-4" /> PRISE DE NOTES
-            </h3>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              <span className="text-xs text-slate-400">Sauvegarde auto</span>
+        {/* ─── Right Panel (Notes) ─── */}
+        <section className="flex-1 flex flex-col p-7 bg-white relative">
+          {/* Notepad Header */}
+          <div className="flex items-center justify-between mb-7">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-stone-900">Prise de notes</h3>
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-tight">Sauvegarde auto</span>
+                </div>
+              </div>
+              {/* Previous note tabs */}
+              <div className="flex items-center gap-2">
+                {previousNotes.length > 0 && (
+                  <>
+                    <button
+                      onClick={() => setSelectedPreviousNote('')}
+                      className={cn(
+                        'px-4 py-1.5 rounded-full text-[10px] font-bold transition-all',
+                        !selectedPreviousNote ? 'bg-stone-200 text-stone-900' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                      )}
+                    >
+                      Notes actuelles
+                    </button>
+                    {previousNotes.map((n: any) => (
+                      <button
+                        key={n.id}
+                        onClick={() => setSelectedPreviousNote(n.id)}
+                        className={cn(
+                          'px-4 py-1.5 rounded-full text-[10px] font-bold transition-all',
+                          selectedPreviousNote === n.id ? 'bg-stone-200 text-stone-900' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                        )}
+                      >
+                        {new Date(n.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button className="p-2 rounded-full hover:bg-stone-100 transition-all"><Bold className="h-4 w-4 text-stone-500" /></button>
+              <button className="p-2 rounded-full hover:bg-stone-100 transition-all"><List className="h-4 w-4 text-stone-500" /></button>
+              <button className="p-2 rounded-full hover:bg-stone-100 transition-all ml-1"><Share2 className="h-4 w-4 text-stone-500" /></button>
             </div>
           </div>
 
-          {/* Previous notes tabs */}
-          {previousNotes.length > 0 && (
-            <div className="px-4 pt-3 pb-2 border-b border-amber-100 flex gap-2 flex-wrap">
-              <button
-                onClick={() => setSelectedPreviousNote('')}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                  !selectedPreviousNote ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                )}
-              >
-                Notes actuelles
-              </button>
-              {previousNotes.map((n: any) => (
-                <button
-                  key={n.id}
-                  onClick={() => setSelectedPreviousNote(n.id)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5',
-                    selectedPreviousNote === n.id ? 'bg-purple-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                  )}
-                >
-                  <Clock className="h-3 w-3" />
-                  {new Date(n.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Editor */}
+          <div className="flex-1 flex flex-col relative">
+            {selectedPreviousNote ? (
+              <div className="flex-1 overflow-y-auto text-lg leading-relaxed text-stone-600 whitespace-pre-wrap font-medium">
+                {previousNotes.find((n: any) => n.id === selectedPreviousNote)?.content || 'Aucune note'}
+              </div>
+            ) : (
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
+                placeholder="Prise de notes..."
+                className="flex-1 w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed font-medium placeholder:text-stone-300/40 resize-none p-0 focus:outline-none"
+                autoFocus />
+            )}
 
-          {selectedPreviousNote ? (
-            <div className="flex-1 overflow-y-auto p-8 text-slate-600 text-lg leading-relaxed whitespace-pre-wrap">
-              {previousNotes.find((n: any) => n.id === selectedPreviousNote)?.content || 'Aucune note'}
+            {/* Floating action bar */}
+            <div className="absolute bottom-4 right-0 glass-card p-2 rounded-2xl border border-stone-200/20 shadow-xl flex items-center gap-2" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(16px)' }}>
+              <button className="flex items-center gap-2 px-5 py-3 bg-stone-900 text-white rounded-xl text-sm font-bold hover:bg-stone-800 transition-all">
+                <Zap className="h-4 w-4" style={{ fill: 'currentColor' }} />
+                AI Summary
+              </button>
+              <div className="h-8 w-px bg-stone-200/30 mx-1" />
+              <button className="p-3 text-stone-500 hover:text-stone-900 transition-all">
+                <Mic className="h-5 w-5" />
+              </button>
             </div>
-          ) : (
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
-              placeholder="Commencez à écrire vos notes ici... (Situation actuelle, Douleurs, Objectifs, Budget...)"
-              className="flex-1 w-full bg-transparent p-8 text-slate-800 placeholder-slate-300 resize-none focus:outline-none text-lg leading-relaxed"
-              autoFocus />
-          )}
-        </div>
+          </div>
+        </section>
       </div>
+
+      {/* Visual accents */}
+      <div className="fixed top-0 right-0 -z-10 w-1/2 h-full bg-gradient-to-l from-stone-100/50 to-transparent pointer-events-none" />
+      <div className="fixed -bottom-24 -left-24 w-96 h-96 bg-emerald-700/5 blur-[120px] rounded-full -z-10" />
+      <div className="fixed top-1/4 left-1/4 w-64 h-64 bg-amber-400/10 blur-[100px] rounded-full -z-10" />
 
       {/* Prospect View Modal */}
       {showProspectView && prospect && (
