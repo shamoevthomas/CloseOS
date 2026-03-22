@@ -4,7 +4,7 @@ import {
   Plus, Megaphone, Code, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, Link, Users, ChevronDown, Video,
   CalendarCheck, UserPlus, Monitor, Layers, MessageSquare, Clock, Copy, Eye,
-  Paintbrush, Type, Palette, ArrowRightCircle, Shuffle, UserCheck, UsersRound
+  Paintbrush, Type, Palette, ArrowRightCircle, Shuffle, UserCheck, UsersRound, ExternalLink
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -275,7 +275,7 @@ export function BusinessCampaigns() {
 
   // Embed code modal
   const [embedModalCampaign, setEmbedModalCampaign] = useState<Campaign | null>(null)
-  const [embedModalFormat, setEmbedModalFormat] = useState<'iframe' | 'popup'>('iframe')
+  const [embedModalFormat, setEmbedModalFormat] = useState<'page' | 'iframe' | 'popup'>('page')
   const [embedTab, setEmbedTab] = useState<'code' | 'style'>('code')
 
   // Style customization
@@ -295,7 +295,7 @@ export function BusinessCampaigns() {
     { label: 'Playfair Display', value: 'Playfair Display, serif' },
   ]
 
-  const openEmbedModal = (campaign: Campaign, format: 'iframe' | 'popup') => {
+  const openEmbedModal = (campaign: Campaign, format: 'page' | 'iframe' | 'popup') => {
     setEmbedModalCampaign(campaign)
     setEmbedModalFormat(format)
     setEmbedTab('code')
@@ -437,7 +437,7 @@ export function BusinessCampaigns() {
                 {customFieldCount > 0 && <span>{customFieldCount} champ{customFieldCount !== 1 ? 's' : ''} custom</span>}
               </div>
               <div className="flex gap-2 mb-3">
-                <button onClick={() => copyToClipboard(getCaptureUrl(campaign.slug), 'Lien')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors" title="Page entière">
+                <button onClick={() => openEmbedModal(campaign, 'page')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors" title="Page entière">
                   <Monitor className="h-3.5 w-3.5" /> Page
                 </button>
                 <button onClick={() => openEmbedModal(campaign, 'iframe')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors" title="Iframe">
@@ -569,6 +569,180 @@ export function BusinessCampaigns() {
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                     </div>
                     <p className="text-xs text-slate-400 mt-1">Les prospects capturés via cette campagne seront associés à cette formule</p>
+                  </div>
+
+                  {/* RDV with Closer or Setter switch (only with_rdv) */}
+                  {formCaptureType === 'with_rdv' && (
+                    <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
+                      <label className="block text-sm font-medium text-slate-700 mb-3">Rendez-vous avec</label>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => { setFormBookingWith('closer'); setFormBookingAssignedMembers([]) }}
+                          className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                            formBookingWith === 'closer'
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                          }`}
+                        >
+                          <UserCheck className="h-4 w-4" /> Closer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setFormBookingWith('setter'); setFormBookingAssignedMembers([]) }}
+                          className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                            formBookingWith === 'setter'
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                          }`}
+                        >
+                          <UserCheck className="h-4 w-4" /> Setter
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Info banner for without_rdv */}
+                  {formCaptureType === 'without_rdv' && (
+                    <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-4">
+                      <p className="text-sm font-medium text-purple-700">Campagne sans rendez-vous</p>
+                      <p className="text-xs text-purple-600 mt-1">Les leads capturés seront assignés à un Setter pour le traitement.</p>
+                    </div>
+                  )}
+
+                  {/* Assignment mode */}
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-3">
+                      Mode d'assignation des {formCaptureType === 'without_rdv' ? 'Setters' : (formBookingWith === 'closer' ? 'Closers' : 'Setters')}
+                    </label>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => { setFormBookingAssignMode('specific'); setFormBookingAssignedMembers([]) }}
+                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                          formBookingAssignMode === 'specific'
+                            ? 'border-amber-500 bg-amber-50 text-amber-700'
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        <UserCheck className="h-3.5 w-3.5" /> Un membre précis
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setFormBookingAssignMode('all_role'); setFormBookingAssignedMembers([]) }}
+                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                          formBookingAssignMode === 'all_role'
+                            ? 'border-amber-500 bg-amber-50 text-amber-700'
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        <UsersRound className="h-3.5 w-3.5" /> Tout le rôle
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setFormBookingAssignMode('multiple'); setFormBookingAssignedMembers([]) }}
+                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                          formBookingAssignMode === 'multiple'
+                            ? 'border-amber-500 bg-amber-50 text-amber-700'
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        <Users className="h-3.5 w-3.5" /> Plusieurs membres
+                      </button>
+                    </div>
+
+                    {/* Specific member selector */}
+                    {formBookingAssignMode === 'specific' && (
+                      <div className="mt-3">
+                        <div className="relative">
+                          <select
+                            value={formBookingAssignedMembers[0] || ''}
+                            onChange={(e) => setFormBookingAssignedMembers(e.target.value ? [e.target.value] : [])}
+                            className={selectCls}
+                          >
+                            <option value="">Choisir un membre</option>
+                            {teamMembers
+                              .filter(m => {
+                                const assignRole = formCaptureType === 'without_rdv' ? 'setter' : formBookingWith
+                                if (assignRole === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
+                                return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'
+                              })
+                              .map(m => (
+                                <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
+                              ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Multiple members selector */}
+                    {formBookingAssignMode === 'multiple' && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs text-slate-500">Sélectionnez les membres à inclure :</p>
+                        <div className="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-slate-200 bg-white p-2">
+                          {teamMembers
+                            .filter(m => {
+                              if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
+                              return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'
+                            })
+                            .map(m => (
+                              <label key={m.id} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-50 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formBookingAssignedMembers.includes(m.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setFormBookingAssignedMembers(prev => [...prev, m.id])
+                                    } else {
+                                      setFormBookingAssignedMembers(prev => prev.filter(id => id !== m.id))
+                                    }
+                                  }}
+                                  className="rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                                />
+                                <span className="text-sm text-slate-700">{m.first_name} {m.last_name}</span>
+                                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{m.role}</span>
+                              </label>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Distribution mode (for all_role and multiple) */}
+                    {(formBookingAssignMode === 'all_role' || formBookingAssignMode === 'multiple') && (
+                      <div className="mt-4 pt-3 border-t border-amber-200">
+                        <label className="block text-xs font-medium text-slate-600 mb-2">Distribution des rendez-vous</label>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setFormBookingDistribution('round_robin')}
+                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                              formBookingDistribution === 'round_robin'
+                                ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            }`}
+                          >
+                            <ArrowRightCircle className="h-4 w-4" /> Tournante
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormBookingDistribution('random')}
+                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                              formBookingDistribution === 'random'
+                                ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            }`}
+                          >
+                            <Shuffle className="h-4 w-4" /> Hasard
+                          </button>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-2">
+                          {formBookingDistribution === 'round_robin'
+                            ? 'Les rendez-vous sont distribués à tour de rôle entre les membres.'
+                            : 'Les rendez-vous sont assignés aléatoirement.'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -792,180 +966,8 @@ export function BusinessCampaigns() {
                           ))}
                         </div>
                       </div>
-
-                      {/* RDV with Closer or Setter switch */}
-                      <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
-                        <label className="block text-sm font-medium text-slate-700 mb-3">Rendez-vous avec</label>
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={() => { setFormBookingWith('closer'); setFormBookingAssignedMembers([]) }}
-                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
-                              formBookingWith === 'closer'
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                            }`}
-                          >
-                            <UserCheck className="h-4 w-4" /> Closer
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { setFormBookingWith('setter'); setFormBookingAssignedMembers([]) }}
-                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
-                              formBookingWith === 'setter'
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                            }`}
-                          >
-                            <UserCheck className="h-4 w-4" /> Setter
-                          </button>
-                        </div>
-                      </div>
                     </>
                   )}
-
-                  {/* Info banner for without_rdv */}
-                  {formCaptureType === 'without_rdv' && (
-                    <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-4">
-                      <p className="text-sm font-medium text-purple-700">Campagne sans rendez-vous</p>
-                      <p className="text-xs text-purple-600 mt-1">Les leads capturés seront assignés à un Setter pour le traitement.</p>
-                    </div>
-                  )}
-
-                  {/* Assignment mode — always visible */}
-                  <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-3">
-                      Mode d'assignation des {formCaptureType === 'without_rdv' ? 'Setters' : (formBookingWith === 'closer' ? 'Closers' : 'Setters')}
-                    </label>
-                    <div className="flex gap-2 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => { setFormBookingAssignMode('specific'); setFormBookingAssignedMembers([]) }}
-                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
-                          formBookingAssignMode === 'specific'
-                            ? 'border-amber-500 bg-amber-50 text-amber-700'
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                        }`}
-                      >
-                        <UserCheck className="h-3.5 w-3.5" /> Un membre précis
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setFormBookingAssignMode('all_role'); setFormBookingAssignedMembers([]) }}
-                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
-                          formBookingAssignMode === 'all_role'
-                            ? 'border-amber-500 bg-amber-50 text-amber-700'
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                        }`}
-                      >
-                        <UsersRound className="h-3.5 w-3.5" /> Tout le rôle
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setFormBookingAssignMode('multiple'); setFormBookingAssignedMembers([]) }}
-                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
-                          formBookingAssignMode === 'multiple'
-                            ? 'border-amber-500 bg-amber-50 text-amber-700'
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                        }`}
-                      >
-                        <Users className="h-3.5 w-3.5" /> Plusieurs membres
-                      </button>
-                    </div>
-
-                    {/* Specific member selector */}
-                    {formBookingAssignMode === 'specific' && (
-                      <div className="mt-3">
-                        <div className="relative">
-                          <select
-                            value={formBookingAssignedMembers[0] || ''}
-                            onChange={(e) => setFormBookingAssignedMembers(e.target.value ? [e.target.value] : [])}
-                            className={selectCls}
-                          >
-                            <option value="">Choisir un membre</option>
-                            {teamMembers
-                              .filter(m => {
-                                const assignRole = formCaptureType === 'without_rdv' ? 'setter' : formBookingWith
-                                if (assignRole === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
-                                return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'
-                              })
-                              .map(m => (
-                                <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
-                              ))}
-                          </select>
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Multiple members selector */}
-                    {formBookingAssignMode === 'multiple' && (
-                      <div className="mt-3 space-y-2">
-                        <p className="text-xs text-slate-500">Sélectionnez les membres à inclure :</p>
-                        <div className="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-slate-200 bg-white p-2">
-                          {teamMembers
-                            .filter(m => {
-                              if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
-                              return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'
-                            })
-                            .map(m => (
-                              <label key={m.id} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-50 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={formBookingAssignedMembers.includes(m.id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setFormBookingAssignedMembers(prev => [...prev, m.id])
-                                    } else {
-                                      setFormBookingAssignedMembers(prev => prev.filter(id => id !== m.id))
-                                    }
-                                  }}
-                                  className="rounded border-slate-300 text-amber-600 focus:ring-amber-500"
-                                />
-                                <span className="text-sm text-slate-700">{m.first_name} {m.last_name}</span>
-                                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{m.role}</span>
-                              </label>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Distribution mode (for all_role and multiple) */}
-                    {(formBookingAssignMode === 'all_role' || formBookingAssignMode === 'multiple') && (
-                      <div className="mt-4 pt-3 border-t border-amber-200">
-                        <label className="block text-xs font-medium text-slate-600 mb-2">Distribution des rendez-vous</label>
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setFormBookingDistribution('round_robin')}
-                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
-                              formBookingDistribution === 'round_robin'
-                                ? 'border-amber-500 bg-amber-50 text-amber-700'
-                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                            }`}
-                          >
-                            <ArrowRightCircle className="h-4 w-4" /> Tournante
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormBookingDistribution('random')}
-                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
-                              formBookingDistribution === 'random'
-                                ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                            }`}
-                          >
-                            <Shuffle className="h-4 w-4" /> Hasard
-                          </button>
-                        </div>
-                        <p className="text-xs text-slate-400 mt-2">
-                          {formBookingDistribution === 'round_robin'
-                            ? 'Les rendez-vous sont distribués à tour de rôle entre les membres.'
-                            : 'Les rendez-vous sont assignés aléatoirement.'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
             </div>
@@ -992,10 +994,18 @@ export function BusinessCampaigns() {
               <div className="flex items-center gap-4">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">{embedModalCampaign.name}</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Intégrez le formulaire sur votre site</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{embedModalFormat === 'page' ? 'Personnalisez et partagez votre page de capture' : 'Intégrez le formulaire sur votre site'}</p>
                 </div>
                 {/* Format toggle */}
                 <div className="flex rounded-lg border border-slate-200 overflow-hidden ml-4">
+                  <button
+                    onClick={() => setEmbedModalFormat('page')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                      embedModalFormat === 'page' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Monitor className="h-3.5 w-3.5" /> Page
+                  </button>
                   <button
                     onClick={() => setEmbedModalFormat('iframe')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -1019,29 +1029,160 @@ export function BusinessCampaigns() {
               </button>
             </div>
 
-            {/* Tabs */}
-            <div className="flex border-b border-slate-100 px-6 flex-shrink-0">
-              <button
-                onClick={() => setEmbedTab('code')}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  embedTab === 'code' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <Code className="h-4 w-4" /> Code & Tuto
-              </button>
-              <button
-                onClick={() => setEmbedTab('style')}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  embedTab === 'style' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <Paintbrush className="h-4 w-4" /> Personnaliser
-              </button>
-            </div>
+            {/* Tabs - hidden for page format */}
+            {embedModalFormat !== 'page' && (
+              <div className="flex border-b border-slate-100 px-6 flex-shrink-0">
+                <button
+                  onClick={() => setEmbedTab('code')}
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    embedTab === 'code' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <Code className="h-4 w-4" /> Code & Tuto
+                </button>
+                <button
+                  onClick={() => setEmbedTab('style')}
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    embedTab === 'style' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <Paintbrush className="h-4 w-4" /> Personnaliser
+                </button>
+              </div>
+            )}
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
-              {embedTab === 'code' && (
+
+              {/* PAGE FORMAT */}
+              {embedModalFormat === 'page' && (
+                <div className="p-6 space-y-5">
+                  {/* Link + Copy */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-2 block">Lien de la page de capture</label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 flex items-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 font-mono truncate">
+                        {getCaptureUrl(embedModalCampaign.slug)}
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), 'Lien')}
+                        className="flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-3 text-sm font-medium text-white hover:bg-amber-700 transition-colors flex-shrink-0"
+                      >
+                        <Copy className="h-4 w-4" /> Copier
+                      </button>
+                      <a
+                        href={getCaptureUrl(embedModalCampaign.slug)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors flex-shrink-0"
+                      >
+                        <ExternalLink className="h-4 w-4" /> Ouvrir
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Style customization for page */}
+                  <div className="flex divide-x divide-slate-200 rounded-xl border border-slate-200 overflow-hidden min-h-[450px]">
+                    {/* Left: Controls */}
+                    <div className="w-[260px] flex-shrink-0 p-5 space-y-5 overflow-y-auto bg-white">
+                      <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <Palette className="h-4 w-4 text-amber-600" /> Personnaliser
+                      </h4>
+
+                      {/* Font */}
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 mb-1.5">
+                          <Type className="h-3.5 w-3.5" /> Police
+                        </label>
+                        <select
+                          value={styleFont}
+                          onChange={(e) => setStyleFont(e.target.value)}
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
+                        >
+                          {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Primary color */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Couleur principale</label>
+                        <div className="flex items-center gap-2">
+                          <input type="color" value={stylePrimaryColor} onChange={(e) => setStylePrimaryColor(e.target.value)} className="h-8 w-8 rounded border border-slate-200 cursor-pointer" />
+                          <input type="text" value={stylePrimaryColor} onChange={(e) => setStylePrimaryColor(e.target.value)} className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none" />
+                        </div>
+                      </div>
+
+                      {/* Background color */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Fond</label>
+                        <div className="flex items-center gap-2">
+                          <input type="color" value={styleBgColor} onChange={(e) => setStyleBgColor(e.target.value)} className="h-8 w-8 rounded border border-slate-200 cursor-pointer" />
+                          <input type="text" value={styleBgColor} onChange={(e) => setStyleBgColor(e.target.value)} className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none" />
+                        </div>
+                      </div>
+
+                      {/* Text color */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Texte</label>
+                        <div className="flex items-center gap-2">
+                          <input type="color" value={styleTextColor} onChange={(e) => setStyleTextColor(e.target.value)} className="h-8 w-8 rounded border border-slate-200 cursor-pointer" />
+                          <input type="text" value={styleTextColor} onChange={(e) => setStyleTextColor(e.target.value)} className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none" />
+                        </div>
+                      </div>
+
+                      {/* Border radius */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Arrondi — {styleRadius}px</label>
+                        <input type="range" min={0} max={24} value={styleRadius} onChange={(e) => setStyleRadius(Number(e.target.value))} className="w-full accent-amber-600" />
+                        <div className="flex justify-between text-[10px] text-slate-400">
+                          <span>Carré</span><span>Arrondi</span>
+                        </div>
+                      </div>
+
+                      {/* Styled link copy */}
+                      <button
+                        onClick={() => {
+                          const params = new URLSearchParams()
+                          if (stylePrimaryColor !== '#2563eb') params.set('pc', stylePrimaryColor.replace('#', ''))
+                          if (styleBgColor !== '#ffffff') params.set('bg', styleBgColor.replace('#', ''))
+                          if (styleTextColor !== '#0f172a') params.set('tc', styleTextColor.replace('#', ''))
+                          if (styleRadius !== 12) params.set('br', String(styleRadius))
+                          if (styleFont !== 'Inter, system-ui, sans-serif') params.set('font', styleFont.split(',')[0].trim())
+                          const url = params.toString() ? `${getCaptureUrl(embedModalCampaign.slug)}?${params.toString()}` : getCaptureUrl(embedModalCampaign.slug)
+                          copyToClipboard(url, 'Lien personnalisé')
+                        }}
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
+                      >
+                        <Copy className="h-4 w-4" /> Copier le lien personnalisé
+                      </button>
+                    </div>
+
+                    {/* Right: Preview */}
+                    <div className="flex-1 bg-slate-100 p-5 flex flex-col">
+                      <p className="text-xs font-medium text-slate-500 mb-3 flex items-center gap-1.5">
+                        <Eye className="h-3.5 w-3.5" /> Aperçu en temps réel
+                      </p>
+                      <div className="flex-1 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+                        <iframe
+                          src={(() => {
+                            const params = new URLSearchParams()
+                            if (stylePrimaryColor !== '#2563eb') params.set('pc', stylePrimaryColor.replace('#', ''))
+                            if (styleBgColor !== '#ffffff') params.set('bg', styleBgColor.replace('#', ''))
+                            if (styleTextColor !== '#0f172a') params.set('tc', styleTextColor.replace('#', ''))
+                            if (styleRadius !== 12) params.set('br', String(styleRadius))
+                            if (styleFont !== 'Inter, system-ui, sans-serif') params.set('font', styleFont.split(',')[0].trim())
+                            return params.toString() ? `${getCaptureUrl(embedModalCampaign.slug)}?${params.toString()}` : getCaptureUrl(embedModalCampaign.slug)
+                          })()}
+                          className="w-full h-full min-h-[450px]"
+                          style={{ border: 'none' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {embedModalFormat !== 'page' && embedTab === 'code' && (
                 <div className="p-6 space-y-5">
                   {/* Tutorial */}
                   <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
@@ -1094,7 +1235,7 @@ export function BusinessCampaigns() {
                 </div>
               )}
 
-              {embedTab === 'style' && (
+              {embedModalFormat !== 'page' && embedTab === 'style' && (
                 <div className="flex divide-x divide-slate-200 min-h-[500px]">
                   {/* Left: Controls */}
                   <div className="w-[280px] flex-shrink-0 p-5 space-y-5 overflow-y-auto">
