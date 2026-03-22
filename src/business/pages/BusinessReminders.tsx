@@ -45,6 +45,20 @@ function sortReminders(reminders: Reminder[]): Reminder[] {
   })
 }
 
+function formatReminderDate(dateStr: string): { date: string; time: string; isOverdue: boolean } {
+  const d = new Date(dateStr)
+  const now = new Date()
+  const diffMs = d.getTime() - now.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  const isOverdue = diffMs < 0 && !isNaN(d.getTime())
+
+  if (diffDays === 0 && d.getDate() === now.getDate()) return { date: "Aujourd'hui", time, isOverdue }
+  if (diffDays === 1 || (diffDays === 0 && d.getDate() === now.getDate() + 1)) return { date: 'Demain', time, isOverdue }
+  if (diffDays === -1 || (diffDays === 0 && d.getDate() === now.getDate() - 1)) return { date: 'Hier', time, isOverdue }
+  return { date: d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), time, isOverdue }
+}
+
 export function BusinessReminders() {
   const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
   const { prospects } = useBusinessProspects()
@@ -58,7 +72,6 @@ export function BusinessReminders() {
   const [filterDate, setFilterDate] = useState<string>('')
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
 
-  // Fetch team members for filter & assignment
   useEffect(() => {
     if (!effectiveUserId) return
     supabase
@@ -74,10 +87,8 @@ export function BusinessReminders() {
     const fetchReminders = async () => {
       setLoading(true)
       try {
-        // Owner sees all reminders they created; team member sees reminders assigned to them + their own
         let query = supabase.from('reminders').select('*').order('reminder_date', { ascending: true })
         if (isTeamMember && teamMember?.id) {
-          // Team member: see reminders assigned to them OR created by them
           query = query.or(`assigned_to.eq.${teamMember.id},user_id.eq.${user.id}`)
         } else {
           query = query.eq('user_id', user.id)
@@ -154,15 +165,20 @@ export function BusinessReminders() {
     return m ? `${m.first_name} ${m.last_name}` : null
   }
 
-  const statusConfig: Record<ReminderStatus, { label: string; badge: string; icon: typeof Clock }> = {
-    upcoming: { label: 'À venir', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: Clock },
-    overdue: { label: 'Passé', badge: 'bg-red-100 text-red-700 border-red-200', icon: AlertTriangle },
-    done: { label: 'Fait', badge: 'bg-slate-100 text-slate-500 border-slate-200', icon: CheckCircle2 },
+  const getMemberInitials = (memberId?: string): string => {
+    if (!memberId) return 'M'
+    const m = teamMembers.find(t => t.id === memberId || t.user_id === memberId)
+    return m ? `${m.first_name[0]}${m.last_name[0]}` : 'M'
+  }
+
+  const statusConfig: Record<ReminderStatus, { label: string; cls: string }> = {
+    upcoming: { label: 'Upcoming', cls: 'bg-[#006c49]/10 text-[#006c49] border-[#006c49]/20' },
+    overdue: { label: 'Passé', cls: 'bg-red-500/10 text-red-600 border-red-500/20' },
+    done: { label: 'Fait', cls: 'bg-stone-200/50 text-stone-500 border-stone-300/30' },
   }
 
   const sorted = sortReminders(reminders)
 
-  // Apply filters
   const filteredReminders = sorted.filter(r => {
     if (canAssign && filterMember !== 'all') {
       if (r.assigned_to !== filterMember && r.created_by_member_id !== filterMember) return false
@@ -178,173 +194,283 @@ export function BusinessReminders() {
   const hasActiveFilters = filterMember !== 'all' || filterDate !== ''
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-amber-600" /></div>
+    return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-stone-400" /></div>
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-            <Bell className="h-5 w-5 text-amber-700" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Rappels</h2>
-            <p className="text-xs text-slate-500">
-              {reminders.length} rappel{reminders.length !== 1 ? 's' : ''}
-              {overdueCount > 0 && <span className="ml-2 text-red-500 font-semibold">({overdueCount} en retard)</span>}
-            </p>
-          </div>
+    <div className="space-y-10">
+
+      {/* ─── Page Header ─── */}
+      <div className="flex items-center gap-6">
+        <div className="w-16 h-16 bg-amber-300 rounded-2xl flex items-center justify-center shadow-lg shrink-0">
+          <Bell className="h-7 w-7 text-amber-900" strokeWidth={1.5} />
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Team member filter */}
-          {canAssign && teamMembers.length > 0 && (
-            <div className="relative">
-              <select
-                value={filterMember}
-                onChange={(e) => setFilterMember(e.target.value)}
-                className="appearance-none rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-2 text-xs font-medium text-slate-600 focus:border-amber-500 focus:outline-none"
-              >
-                <option value="all">Tous les membres</option>
-                {teamMembers.map(m => (
-                  <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
-                ))}
-              </select>
-              <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-            </div>
-          )}
-          <input
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 focus:border-amber-500 focus:outline-none"
-          />
-          {hasActiveFilters && (
-            <button
-              onClick={() => { setFilterMember('all'); setFilterDate('') }}
-              className="text-xs text-amber-600 hover:text-amber-700 font-medium"
-            >
-              Réinitialiser
-            </button>
-          )}
-          <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors">
-            <Plus className="h-4 w-4" /> Nouveau rappel
-          </button>
+        <div>
+          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-stone-900 leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Rappels
+          </h1>
+          <div className="flex gap-4 mt-2.5 font-medium">
+            <span className="text-stone-500">{reminders.length} rappel{reminders.length !== 1 ? 's' : ''} au total</span>
+            {overdueCount > 0 && (
+              <span className="text-red-600 font-bold underline underline-offset-4 decoration-2">{overdueCount} en retard</span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Overdue alert */}
+      {/* ─── Overdue Alert ─── */}
       {overdueCount > 0 && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-center gap-3">
-          <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
-          <p className="text-sm text-red-600">
-            <span className="font-bold">{overdueCount} rappel{overdueCount > 1 ? 's' : ''}</span> non traité{overdueCount > 1 ? 's' : ''} — pensez à les marquer comme faits ou à les supprimer.
-          </p>
+        <div
+          className="rounded-2xl px-8 py-5 flex items-center justify-between"
+          style={{
+            background: 'linear-gradient(135deg, #ffdad6 0%, #ffb95f 100%)',
+            boxShadow: '0 20px 40px rgba(27,28,27,0.04)',
+          }}
+        >
+          <div className="flex items-center gap-4">
+            <AlertTriangle className="h-5 w-5 text-red-800 shrink-0" strokeWidth={1.5} />
+            <p className="font-bold text-red-900 text-sm">
+              Attention : Vous avez des rappels critiques qui n'ont pas été traités depuis plus de 24h.
+            </p>
+          </div>
+          <button className="px-6 py-2.5 bg-red-800 text-white rounded-full text-xs font-bold hover:bg-red-900 transition-colors shrink-0 ml-4">
+            Voir les urgences
+          </button>
         </div>
       )}
 
-      {/* Table */}
+      {/* ─── Filter Toolbar ─── */}
+      <div
+        className="rounded-full px-8 py-4 flex items-center justify-between"
+        style={{
+          background: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '0.5px solid rgba(196, 199, 199, 0.2)',
+          boxShadow: '0 20px 40px rgba(27,28,27,0.04)',
+        }}
+      >
+        <div className="flex items-center gap-6 flex-1">
+          {canAssign && teamMembers.length > 0 && (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center overflow-hidden">
+                  <Users className="h-4 w-4 text-stone-600" strokeWidth={1.5} />
+                </div>
+                <div className="relative">
+                  <select
+                    value={filterMember}
+                    onChange={(e) => setFilterMember(e.target.value)}
+                    className="appearance-none bg-transparent border-none focus:ring-0 font-semibold text-stone-900 pr-6 text-sm cursor-pointer"
+                  >
+                    <option value="all">Équipe : Tous</option>
+                    {teamMembers.map(m => (
+                      <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
+                </div>
+              </div>
+              <div className="h-6 w-px bg-stone-300/30" />
+            </>
+          )}
+          <div className="flex items-center gap-3 text-stone-500">
+            <Calendar className="h-4 w-4" strokeWidth={1.5} />
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="bg-transparent border-none focus:ring-0 font-semibold text-stone-900 text-sm p-0"
+            />
+          </div>
+          {hasActiveFilters && (
+            <>
+              <div className="h-6 w-px bg-stone-300/30" />
+              <button
+                onClick={() => { setFilterMember('all'); setFilterDate('') }}
+                className="text-xs text-stone-500 hover:text-stone-900 font-semibold transition-colors"
+              >
+                Réinitialiser
+              </button>
+            </>
+          )}
+        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="bg-stone-900 text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 hover:bg-stone-800 transition-all active:scale-95 text-sm"
+        >
+          <Plus className="h-4 w-4" strokeWidth={2.5} />
+          Nouveau rappel
+        </button>
+      </div>
+
+      {/* ─── Data Table ─── */}
       {filteredReminders.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 p-12 text-center">
-          <Bell className="h-12 w-12 text-amber-300 mx-auto mb-4" />
-          <p className="text-slate-600 font-medium">Aucun rappel programmé</p>
-          <p className="text-sm text-slate-400 mt-1">Cliquez sur "Nouveau rappel" pour en créer un.</p>
+        <div className="flex flex-col items-center justify-center py-32 text-center">
+          <div className="w-32 h-32 bg-stone-100 rounded-full flex items-center justify-center mb-8">
+            <Bell className="h-14 w-14 text-stone-300" strokeWidth={1} />
+          </div>
+          <h3 className="text-2xl font-extrabold text-stone-900 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>Tout est à jour</h3>
+          <p className="text-stone-500 max-w-xs">Vous n'avez aucun rappel prévu pour le moment. Détendez-vous ou créez-en un nouveau.</p>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="mt-8 px-8 py-3 bg-stone-900 text-white rounded-full font-bold hover:bg-stone-800 transition-all active:scale-95"
+          >
+            Ajouter un rappel
+          </button>
         </div>
       ) : (
-        <div className="rounded-xl border border-amber-200 bg-white overflow-hidden">
-          {/* Desktop header */}
-          <div className="hidden md:grid grid-cols-12 gap-4 border-b border-amber-100 bg-amber-50/50 px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">
-            <div className="col-span-3">Titre</div>
-            <div className="col-span-2">Description</div>
-            <div className="col-span-2">Date & heure</div>
-            <div className="col-span-1">Assigné</div>
-            <div className="col-span-1">Lié à</div>
-            <div className="col-span-1">Statut</div>
-            <div className="col-span-2 text-right">Actions</div>
+        <div
+          className="bg-white rounded-2xl overflow-hidden"
+          style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}
+        >
+          {/* Table header — desktop */}
+          <div className="hidden md:grid grid-cols-12 gap-4 bg-stone-50 px-8 py-5">
+            {['Titre', 'Description', 'Date & heure', 'Assigné', 'Lié à', 'Statut'].map((h, i) => (
+              <div key={h} className={cn(
+                'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500',
+                i === 0 ? 'col-span-3' : i === 1 ? 'col-span-2' : i === 2 ? 'col-span-2' : 'col-span-1'
+              )}>
+                {h}
+              </div>
+            ))}
+            <div className="col-span-2 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 text-right">Actions</div>
           </div>
 
-          <div className="divide-y divide-amber-100">
+          <div>
             {filteredReminders.map(reminder => {
               const status = getStatus(reminder)
               const config = statusConfig[status]
-              const StatusIcon = config.icon
               const prospectName = getProspectName(reminder.prospect_id)
               const isLoading = actionLoading === reminder.id
+              const { date: fmtDate, time: fmtTime, isOverdue } = formatReminderDate(reminder.reminder_date)
 
               return (
-                <div key={reminder.id} className={cn('px-6 py-4 transition-colors hover:bg-amber-50/50', status === 'overdue' && 'bg-red-50/50')}>
-                  {/* Desktop */}
-                  <div className="hidden md:grid grid-cols-12 gap-4 items-center">
+                <div
+                  key={reminder.id}
+                  className={cn(
+                    'group transition-all duration-300',
+                    status === 'done' && 'opacity-50'
+                  )}
+                >
+                  {/* Desktop row */}
+                  <div className="hidden md:grid grid-cols-12 gap-4 items-center px-8 py-6 hover:bg-stone-50/40 transition-all duration-300">
                     <div className="col-span-3">
-                      <p className={cn('text-sm font-semibold', status === 'done' ? 'text-slate-400 line-through' : 'text-slate-900')}>{reminder.title}</p>
+                      <p className={cn(
+                        'font-bold text-sm',
+                        status === 'done' ? 'text-stone-400' : 'text-stone-900'
+                      )}>
+                        {reminder.title}
+                      </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-slate-500 truncate">{reminder.description || '—'}</p>
+                      <p className="text-sm text-stone-500 truncate max-w-[200px]">{reminder.description || '—'}</p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-slate-700">{new Date(reminder.reminder_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                      <p className="text-xs text-slate-400">{new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className={cn('text-sm font-medium', isOverdue && status !== 'done' ? 'text-red-600' : 'text-stone-700')}>
+                        {fmtDate},
+                      </p>
+                      <p className={cn('text-sm font-medium', isOverdue && status !== 'done' ? 'text-red-600' : 'text-stone-700')}>
+                        {fmtTime}
+                      </p>
                     </div>
                     <div className="col-span-1">
                       {reminder.assigned_to ? (
-                        <span className="text-xs text-indigo-700 bg-indigo-50 rounded-full px-2 py-0.5 font-medium truncate block">
-                          {getMemberName(reminder.assigned_to) || '—'}
-                        </span>
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-stone-100 rounded-full">
+                          <div className="w-5 h-5 rounded-full bg-stone-300 flex items-center justify-center text-[9px] font-bold text-stone-700">
+                            {getMemberInitials(reminder.assigned_to)}
+                          </div>
+                          <span className="text-xs font-bold text-stone-700 truncate max-w-[60px]">
+                            {getMemberName(reminder.assigned_to)?.split(' ')[0] || '—'}
+                          </span>
+                        </div>
                       ) : (
-                        <span className="text-xs text-slate-400">—</span>
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-stone-100 rounded-full">
+                          <div className="w-5 h-5 rounded-full bg-stone-300" />
+                          <span className="text-xs font-bold text-stone-500">Moi</span>
+                        </div>
                       )}
                     </div>
                     <div className="col-span-1">
                       {prospectName ? (
-                        <span className="text-xs text-amber-700 flex items-center gap-1 truncate"><User className="h-3 w-3 shrink-0" />{prospectName}</span>
+                        <div className="flex items-center gap-1.5 text-stone-500 text-sm">
+                          <User className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+                          <span className="truncate">{prospectName}</span>
+                        </div>
                       ) : (
-                        <span className="text-xs text-slate-400">—</span>
+                        <span className="text-stone-300 text-sm">—</span>
                       )}
                     </div>
                     <div className="col-span-1">
-                      <span className={cn('inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold', config.badge)}>
-                        <StatusIcon className="h-3 w-3" />{config.label}
+                      <span className={cn(
+                        'px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] border inline-block',
+                        config.cls
+                      )}>
+                        {config.label}
                       </span>
                     </div>
-                    <div className="col-span-2 flex items-center justify-end gap-2">
+                    <div className="col-span-2 flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       {status !== 'done' && (
-                        <button onClick={() => handleMarkDone(reminder.id)} disabled={isLoading} className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-all disabled:opacity-50">
-                          <Check className="h-3.5 w-3.5" /> Fait
+                        <button
+                          onClick={() => handleMarkDone(reminder.id)}
+                          disabled={isLoading}
+                          className="p-2 text-[#006c49] hover:bg-[#006c49]/10 rounded-full transition-colors disabled:opacity-50"
+                        >
+                          <CheckCircle2 className="h-5 w-5" strokeWidth={1.5} />
                         </button>
                       )}
-                      <button onClick={() => handleDelete(reminder.id)} disabled={isLoading} className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition-all disabled:opacity-50">
-                        <Trash2 className="h-3.5 w-3.5" />
+                      <button
+                        onClick={() => handleDelete(reminder.id)}
+                        disabled={isLoading}
+                        className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 className="h-5 w-5" strokeWidth={1.5} />
                       </button>
                     </div>
                   </div>
 
-                  {/* Mobile */}
-                  <div className="md:hidden space-y-3">
+                  {/* Mobile row */}
+                  <div className="md:hidden px-6 py-5 space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className={cn('text-sm font-semibold', status === 'done' ? 'text-slate-400 line-through' : 'text-slate-900')}>{reminder.title}</p>
-                        {reminder.description && <p className="text-xs text-slate-400 mt-1 truncate">{reminder.description}</p>}
+                        <p className={cn('text-sm font-bold', status === 'done' ? 'text-stone-400' : 'text-stone-900')}>{reminder.title}</p>
+                        {reminder.description && <p className="text-xs text-stone-400 mt-1 truncate">{reminder.description}</p>}
                       </div>
-                      <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold shrink-0', config.badge)}>
-                        <StatusIcon className="h-2.5 w-2.5" />{config.label}
+                      <span className={cn(
+                        'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.1em] border shrink-0',
+                        config.cls
+                      )}>
+                        {config.label}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="text-xs text-slate-400">
-                        {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                        {reminder.assigned_to && <span className="ml-2 text-indigo-600">| {getMemberName(reminder.assigned_to)}</span>}
-                        {prospectName && <span className="ml-2 text-amber-700">| {prospectName}</span>}
+                      <div className="text-xs text-stone-400 flex items-center gap-2">
+                        <span className={cn(isOverdue && status !== 'done' && 'text-red-600 font-medium')}>
+                          {fmtDate}, {fmtTime}
+                        </span>
+                        {reminder.assigned_to && (
+                          <span className="text-stone-500">| {getMemberName(reminder.assigned_to)}</span>
+                        )}
+                        {prospectName && (
+                          <span className="text-stone-500">| {prospectName}</span>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         {status !== 'done' && (
-                          <button onClick={() => handleMarkDone(reminder.id)} disabled={isLoading} className="rounded-lg border border-emerald-200 bg-emerald-50 p-1.5 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50">
-                            <Check className="h-3.5 w-3.5" />
+                          <button
+                            onClick={() => handleMarkDone(reminder.id)}
+                            disabled={isLoading}
+                            className="p-2 text-[#006c49] hover:bg-[#006c49]/10 rounded-full transition-colors disabled:opacity-50"
+                          >
+                            <CheckCircle2 className="h-4 w-4" strokeWidth={1.5} />
                           </button>
                         )}
-                        <button onClick={() => handleDelete(reminder.id)} disabled={isLoading} className="rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 hover:bg-red-100 disabled:opacity-50">
-                          <Trash2 className="h-3.5 w-3.5" />
+                        <button
+                          onClick={() => handleDelete(reminder.id)}
+                          disabled={isLoading}
+                          className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                         </button>
                       </div>
                     </div>
@@ -416,78 +542,103 @@ function CreateReminderModal({
     } finally { setSubmitting(false) }
   }
 
-  const inputCls = "w-full rounded-lg border border-amber-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+  const inputCls = 'w-full rounded-xl bg-stone-50 border-0 px-4 py-3 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20 transition-all'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-amber-200 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-amber-100 px-6 py-4">
-          <h2 className="text-lg font-bold text-slate-900">Nouveau rappel</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-slate-700">
-            <X className="h-5 w-5" />
-          </button>
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="relative w-full max-w-md bg-white rounded-3xl overflow-hidden"
+        style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}
+      >
+        {/* Modal header */}
+        <div className="px-8 pt-8 pb-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Nouveau rappel
+            </h2>
+            <button onClick={onClose} className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full transition-colors">
+              <X className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+          </div>
+          <p className="text-sm text-stone-500 mt-1">Planifiez une tâche ou un suivi</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-5">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-500">Titre *</label>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Titre *</label>
             <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Rappeler le prospect" className={inputCls} autoFocus required />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-500">Description</label>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Description</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Détails optionnels..." rows={2} className={`${inputCls} resize-none`} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-500">Date *</label>
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Date *</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} required />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-500">Heure *</label>
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Heure *</label>
               <input type="time" value={time} onChange={e => setTime(e.target.value)} className={inputCls} required />
             </div>
           </div>
 
-          {/* Assign to team member */}
           {teamMembers.length > 0 && (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-500">Assigner à un membre</label>
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Assigner à</label>
               <div className="relative">
                 <select
                   value={assignedTo}
                   onChange={e => setAssignedTo(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-amber-200 bg-white pl-8 pr-8 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  className="w-full appearance-none rounded-xl bg-stone-50 border-0 pl-10 pr-8 py-3 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20"
                 >
                   <option value="">— Moi-même —</option>
                   {teamMembers.map(m => (
                     <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                   ))}
                 </select>
-                <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
               </div>
             </div>
           )}
 
-          {/* Link type */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-500">Lier à</label>
-            <div className="flex rounded-lg bg-amber-50 p-1 border border-amber-200">
-              <button type="button" onClick={() => { setLinkType('none'); setSelectedProspectId(null) }} className={cn('flex-1 rounded-md py-1.5 text-xs font-medium transition-all', linkType === 'none' ? 'bg-white text-slate-900 shadow' : 'text-slate-500 hover:text-slate-700')}>Aucun</button>
-              <button type="button" onClick={() => setLinkType('prospect')} className={cn('flex-1 rounded-md py-1.5 text-xs font-medium transition-all', linkType === 'prospect' ? 'bg-amber-600 text-white shadow' : 'text-slate-500 hover:text-slate-700')}>Un prospect</button>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Lier à</label>
+            <div className="bg-stone-100 p-1 rounded-xl flex text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => { setLinkType('none'); setSelectedProspectId(null) }}
+                className={cn('flex-1 py-2 rounded-lg transition-all', linkType === 'none' ? 'bg-white shadow-sm text-stone-900' : 'text-stone-500')}
+              >
+                Aucun
+              </button>
+              <button
+                type="button"
+                onClick={() => setLinkType('prospect')}
+                className={cn('flex-1 py-2 rounded-lg transition-all', linkType === 'prospect' ? 'bg-white shadow-sm text-stone-900' : 'text-stone-500')}
+              >
+                Un prospect
+              </button>
             </div>
           </div>
 
           {linkType === 'prospect' && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input type="text" value={prospectSearch} onChange={e => setProspectSearch(e.target.value)} placeholder="Rechercher un prospect..." className="w-full rounded-lg border border-amber-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-amber-500 focus:outline-none" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                <input
+                  type="text"
+                  value={prospectSearch}
+                  onChange={e => setProspectSearch(e.target.value)}
+                  placeholder="Rechercher un prospect..."
+                  className="w-full rounded-xl bg-stone-50 border-0 pl-10 pr-4 py-3 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20"
+                />
               </div>
-              <div className="max-h-36 overflow-y-auto rounded-lg border border-amber-200 bg-amber-50/50 divide-y divide-amber-100">
+              <div className="max-h-36 overflow-y-auto rounded-xl bg-stone-50">
                 {filteredProspects.length === 0 ? (
-                  <p className="px-3 py-2 text-xs text-slate-400">Aucun prospect trouvé</p>
+                  <p className="px-4 py-3 text-xs text-stone-400">Aucun prospect trouvé</p>
                 ) : (
                   filteredProspects.map(p => (
                     <button
@@ -495,19 +646,21 @@ function CreateReminderModal({
                       type="button"
                       onClick={() => setSelectedProspectId(p.id)}
                       className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
-                        selectedProspectId === p.id ? 'bg-amber-100 text-amber-800' : 'text-slate-700 hover:bg-amber-50'
+                        'w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all',
+                        selectedProspectId === p.id ? 'bg-[#006c49]/10 text-[#006c49] font-semibold' : 'text-stone-700 hover:bg-stone-100'
                       )}
                     >
-                      <User className="h-3.5 w-3.5 shrink-0" />
+                      <User className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
                       <span className="truncate">{p.contact || p.company || 'Prospect'}</span>
-                      {p.company && p.contact && <span className="text-xs text-slate-400 truncate ml-auto">{p.company}</span>}
+                      {p.company && p.contact && <span className="text-xs text-stone-400 truncate ml-auto">{p.company}</span>}
                     </button>
                   ))
                 )}
               </div>
               {selectedProspectId && (
-                <p className="text-xs text-amber-700">Lié à : {prospects.find(p => p.id === selectedProspectId)?.contact || 'Prospect'}</p>
+                <p className="text-xs text-[#006c49] font-medium">
+                  Lié à : {prospects.find(p => p.id === selectedProspectId)?.contact || 'Prospect'}
+                </p>
               )}
             </div>
           )}
@@ -515,7 +668,7 @@ function CreateReminderModal({
           <button
             type="submit"
             disabled={!title.trim() || !date || !time || submitting || (linkType === 'prospect' && !selectedProspectId)}
-            className="w-full rounded-lg bg-amber-600 py-3 text-sm font-bold text-white hover:bg-amber-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3.5 bg-stone-900 text-white rounded-full font-bold text-sm hover:bg-stone-800 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Créer le rappel'}
           </button>
