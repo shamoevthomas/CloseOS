@@ -70,7 +70,41 @@ const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
 const DAYS_FR = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 const TIME_SLOTS = generateTimeSlots()
 
-const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
+const isValidEmail = (e: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(e)
+
+// Phone formatting per country code
+const PHONE_FORMATS: Record<string, { maxDigits: number; groups: number[] }> = {
+  '+33': { maxDigits: 9, groups: [1, 2, 2, 2, 2] },     // France: 6 12 34 56 78
+  '+32': { maxDigits: 9, groups: [3, 2, 2, 2] },          // Belgique: 456 12 34 56
+  '+41': { maxDigits: 9, groups: [2, 3, 2, 2] },          // Suisse: 79 123 45 67
+  '+352': { maxDigits: 9, groups: [3, 3, 3] },             // Luxembourg
+  '+377': { maxDigits: 8, groups: [2, 2, 2, 2] },          // Monaco
+  '+1': { maxDigits: 10, groups: [3, 3, 4] },              // US/CA: 555 123 4567
+  '+44': { maxDigits: 10, groups: [4, 3, 3] },             // UK: 7911 123 456
+  '+49': { maxDigits: 11, groups: [3, 4, 4] },             // Allemagne
+  '+34': { maxDigits: 9, groups: [3, 3, 3] },              // Espagne: 612 345 678
+  '+39': { maxDigits: 10, groups: [3, 3, 4] },             // Italie
+  '+351': { maxDigits: 9, groups: [3, 3, 3] },             // Portugal
+  '+31': { maxDigits: 9, groups: [1, 2, 2, 2, 2] },       // Pays-Bas
+  '+212': { maxDigits: 9, groups: [3, 3, 3] },             // Maroc
+  '+216': { maxDigits: 8, groups: [2, 3, 3] },             // Tunisie
+  '+213': { maxDigits: 9, groups: [3, 3, 3] },             // Algérie
+}
+
+function formatPhoneByCountry(raw: string, code: string): string {
+  const digits = raw.replace(/\D/g, '')
+  const fmt = PHONE_FORMATS[code]
+  if (!fmt) return digits.slice(0, 15)
+  const limited = digits.slice(0, fmt.maxDigits)
+  const parts: string[] = []
+  let idx = 0
+  for (const g of fmt.groups) {
+    if (idx >= limited.length) break
+    parts.push(limited.slice(idx, idx + g))
+    idx += g
+  }
+  return parts.join(' ')
+}
 
 const COUNTRY_CODES = [
   { code: '+33', flag: '🇫🇷', name: 'France' },
@@ -543,7 +577,7 @@ export function CaptureForm() {
             )}
 
             {/* INFO SECTION - collapsible */}
-            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${infoCollapsed ? 'max-h-14' : 'max-h-[600px]'}`}>
+            <div className={`transition-all duration-500 ease-in-out ${infoCollapsed ? 'max-h-14 overflow-hidden' : 'max-h-[600px]'}`}>
               {infoCollapsed && (
                 <button
                   onClick={() => setInfoCollapsed(false)}
@@ -573,12 +607,15 @@ export function CaptureForm() {
 
                   <div>
                     <label className="block text-sm font-semibold text-black mb-1">Email {campaign?.email_required ? '*' : ''}</label>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jean@example.com" className={inputCls} style={inputStyle} />
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jean@example.com" className={`${inputCls} ${email.trim() && !isValidEmail(email.trim()) ? 'border-red-300 focus:ring-red-400' : 'focus:ring-blue-500'}`} style={inputStyle} />
+                    {email.trim() && !isValidEmail(email.trim()) && (
+                      <p className="text-xs text-red-500 mt-1">Veuillez entrer une adresse email valide</p>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-black mb-1">Téléphone {campaign?.phone_required ? '*' : ''}</label>
-                    <div className="relative flex gap-0" ref={countryPickerRef}>
+                    <div className="relative flex gap-0 z-20" ref={countryPickerRef}>
                       <button
                         type="button"
                         onClick={() => { setShowCountryPicker(!showCountryPicker); setCountrySearch('') }}
@@ -607,7 +644,7 @@ export function CaptureForm() {
                             <button
                               key={`${c.code}-${c.name}-${i}`}
                               type="button"
-                              onClick={() => { setCountryCode(c.code); setShowCountryPicker(false); setCountrySearch('') }}
+                              onClick={() => { setCountryCode(c.code); setPhone(''); setShowCountryPicker(false); setCountrySearch('') }}
                               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-blue-50 transition-colors ${countryCode === c.code ? 'bg-blue-50 text-blue-700' : 'text-black'}`}
                             >
                               <span className="text-base">{c.flag}</span>
@@ -620,8 +657,8 @@ export function CaptureForm() {
                       <input
                         type="tel"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="6 12 34 56 78"
+                        onChange={(e) => setPhone(formatPhoneByCountry(e.target.value, countryCode))}
+                        placeholder={PHONE_FORMATS[countryCode] ? PHONE_FORMATS[countryCode].groups.map(g => '0'.repeat(g)).join(' ') : '6 12 34 56 78'}
                         className={`flex-1 rounded-r-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-black placeholder:text-slate-400 focus:outline-none focus:ring-1 transition-colors`}
                         style={hasCustomStyle ? { borderRadius: `0 ${borderRadius} ${borderRadius} 0`, color: textColor, borderColor: `${primaryColor}33` } : {}}
                       />
