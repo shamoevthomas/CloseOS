@@ -245,14 +245,7 @@ export function BusinessReminders() {
 
       {/* ─── Filter Toolbar ─── */}
       <div
-        className="rounded-full px-8 py-4 flex items-center justify-between"
-        style={{
-          background: 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          border: '0.5px solid rgba(196, 199, 199, 0.2)',
-          boxShadow: '0 20px 40px rgba(27,28,27,0.04)',
-        }}
+        className="rounded-full px-8 py-4 flex items-center justify-between bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-neutral-800 shadow-sm"
       >
         <div className="flex items-center gap-6 flex-1">
           {canAssign && teamMembers.length > 0 && (
@@ -265,7 +258,7 @@ export function BusinessReminders() {
                   <select
                     value={filterMember}
                     onChange={(e) => setFilterMember(e.target.value)}
-                    className="appearance-none bg-transparent border-none focus:ring-0 font-semibold text-stone-900 dark:text-white pr-6 text-sm cursor-pointer"
+                    className="appearance-none bg-transparent dark:bg-neutral-900 border-none focus:ring-0 font-semibold text-stone-900 dark:text-white pr-6 text-sm cursor-pointer"
                   >
                     <option value="all">Équipe : Tous</option>
                     {teamMembers.map(m => (
@@ -301,7 +294,7 @@ export function BusinessReminders() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-stone-900 text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 hover:bg-stone-800 transition-all active:scale-95 text-sm"
+          className="bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all active:scale-95 text-sm"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
           Nouveau rappel
@@ -318,7 +311,7 @@ export function BusinessReminders() {
           <p className="text-stone-500 dark:text-neutral-400 max-w-xs">Vous n'avez aucun rappel prévu pour le moment. Détendez-vous ou créez-en un nouveau.</p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="mt-8 px-8 py-3 bg-stone-900 text-white rounded-full font-bold hover:bg-stone-800 transition-all active:scale-95"
+            className="mt-8 px-8 py-3 bg-stone-900 dark:bg-white dark:text-stone-900 text-white rounded-full font-bold hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all active:scale-95"
           >
             Ajouter un rappel
           </button>
@@ -338,7 +331,7 @@ export function BusinessReminders() {
                 {h}
               </div>
             ))}
-            <div className="col-span-2 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 text-right">Actions</div>
+            <div className="col-span-2 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 text-right">Actions</div>
           </div>
 
           <div>
@@ -809,7 +802,7 @@ function CreateReminderModal({
           <button
             type="submit"
             disabled={!title.trim() || !date || !time || submitting || (linkType === 'prospect' && !selectedProspectId)}
-            className="w-full py-3.5 bg-stone-900 text-white rounded-full font-bold text-sm hover:bg-stone-800 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-3.5 bg-stone-900 dark:bg-white dark:text-stone-900 text-white rounded-full font-bold text-sm hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Créer le rappel'}
           </button>

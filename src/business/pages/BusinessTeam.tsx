@@ -88,26 +88,26 @@ const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 dark:t
 const SECTION_TITLE = 'font-business-display font-extrabold text-lg text-stone-900 dark:text-white flex items-center gap-2'
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; surface: string }> = {
-  'Closer': { bg: 'bg-[#6ffbbe]/20', text: 'text-[#005236]', surface: 'bg-blue-50/20' },
-  'Setter': { bg: 'bg-purple-50/80', text: 'text-purple-700', surface: 'bg-purple-50/20' },
-  'Setter-Closer': { bg: 'bg-indigo-50/80', text: 'text-indigo-700', surface: 'bg-indigo-50/20' },
-  'Admin': { bg: 'bg-red-50/80', text: 'text-red-700', surface: 'bg-red-50/20' },
-  'Head of Sales': { bg: 'bg-emerald-50/80', text: 'text-emerald-700', surface: 'bg-emerald-50/20' },
-  'Owner': { bg: 'bg-amber-50/80', text: 'text-amber-700', surface: 'bg-amber-50/20' },
+  'Closer': { bg: 'bg-[#6ffbbe]/20 dark:bg-[#6ffbbe]/10', text: 'text-[#005236] dark:text-[#6ffbbe]', surface: 'bg-blue-50/20' },
+  'Setter': { bg: 'bg-purple-50/80 dark:bg-purple-500/10', text: 'text-purple-700 dark:text-purple-300', surface: 'bg-purple-50/20' },
+  'Setter-Closer': { bg: 'bg-indigo-50/80 dark:bg-indigo-500/10', text: 'text-indigo-700 dark:text-indigo-300', surface: 'bg-indigo-50/20' },
+  'Admin': { bg: 'bg-red-50/80 dark:bg-red-500/10', text: 'text-red-700 dark:text-red-300', surface: 'bg-red-50/20' },
+  'Head of Sales': { bg: 'bg-emerald-50/80 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-300', surface: 'bg-emerald-50/20' },
+  'Owner': { bg: 'bg-amber-50/80 dark:bg-amber-500/10', text: 'text-amber-700 dark:text-amber-300', surface: 'bg-amber-50/20' },
 }
 
 const getRoleColor = (role: string) =>
-  ROLE_COLORS[role] || { bg: 'bg-slate-50/80', text: 'text-slate-700', surface: 'bg-slate-50/20' }
+  ROLE_COLORS[role] || { bg: 'bg-slate-50/80 dark:bg-neutral-700/50', text: 'text-slate-700 dark:text-neutral-200', surface: 'bg-slate-50/20' }
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 
 const PIPELINE_STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50/60' },
-  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700', bgLight: 'bg-purple-50/60' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-700', bgLight: 'bg-orange-50/60' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-[#006c49]', bgLight: 'bg-[#6cf8bb]/15' },
-  { id: 'noshow', name: 'No Show', color: 'bg-slate-500', textColor: 'text-slate-700', bgLight: 'bg-slate-50/60' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50/60' },
+  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgLight: 'bg-blue-50/60' },
+  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700 dark:text-purple-400', bgLight: 'bg-purple-50/60' },
+  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-700 dark:text-orange-400', bgLight: 'bg-orange-50/60' },
+  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-[#006c49] dark:text-[#6ffbbe]', bgLight: 'bg-[#6cf8bb]/15' },
+  { id: 'noshow', name: 'No Show', color: 'bg-slate-500', textColor: 'text-slate-700 dark:text-neutral-300', bgLight: 'bg-slate-50/60' },
+  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700 dark:text-red-400', bgLight: 'bg-red-50/60' },
 ]
 
 function calculateAge(dob: string): number {
@@ -143,11 +143,11 @@ function Avatar({ member, size = 'md' }: { member: TeamMember; size?: 'sm' | 'md
   const sizeClasses = { sm: 'h-9 w-9', md: 'h-12 w-12', lg: 'h-20 w-20', xl: 'h-32 w-32' }
   const textClasses = { sm: 'text-xs', md: 'text-sm', lg: 'text-xl', xl: 'text-3xl' }
   return (
-    <div className={cn(sizeClasses[size], 'rounded-full bg-stone-100 flex items-center justify-center overflow-hidden shrink-0', size === 'xl' ? 'border-4 border-white shadow-xl' : 'ring-2 ring-white/80')}>
+    <div className={cn(sizeClasses[size], 'rounded-full bg-stone-100 dark:bg-neutral-700 flex items-center justify-center overflow-hidden shrink-0', size === 'xl' ? 'border-4 border-white dark:border-neutral-900 shadow-xl' : 'ring-2 ring-white/80 dark:ring-neutral-800/80')}>
       {member.avatar_url ? (
         <img src={member.avatar_url} alt={`${member.first_name} ${member.last_name}`} className="h-full w-full object-cover" />
       ) : (
-        <span className={cn(textClasses[size], 'font-extrabold text-stone-400 font-business-display')}>
+        <span className={cn(textClasses[size], 'font-extrabold text-stone-400 dark:text-neutral-400 font-business-display')}>
           {member.first_name[0]}{member.last_name[0]}
         </span>
       )}
@@ -201,13 +201,13 @@ function ContactInfo({ member }: { member: TeamMember }) {
               value={phone}
               onChange={e => setPhone(e.target.value)}
               placeholder="+33612345678"
-              className="flex-1 min-w-0 rounded-full bg-stone-50 border-none px-3 py-1 text-xs text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 focus:outline-none transition-all"
+              className="flex-1 min-w-0 rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1 text-xs text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 focus:outline-none transition-all"
               onClick={e => e.stopPropagation()}
             />
             <button onClick={handleSave} disabled={saving} className="text-[#006c49] hover:text-[#005236]">
               <Check className="h-3.5 w-3.5" strokeWidth={1.5} />
             </button>
-            <button onClick={e => { e.stopPropagation(); setEditing(false); setPhone(member.phone || '') }} className="text-stone-300 hover:text-stone-600">
+            <button onClick={e => { e.stopPropagation(); setEditing(false); setPhone(member.phone || '') }} className="text-stone-300 dark:text-neutral-600 hover:text-stone-600 dark:hover:text-neutral-300">
               <X className="h-3.5 w-3.5" strokeWidth={1.5} />
             </button>
           </div>
@@ -224,10 +224,10 @@ function ContactInfo({ member }: { member: TeamMember }) {
                 {member.phone}
               </a>
             ) : (
-              <span className="text-stone-300 italic">Non renseigné</span>
+              <span className="text-stone-300 dark:text-neutral-600 italic">Non renseigné</span>
             )}
             {isOwnCard && (
-              <button onClick={e => { e.stopPropagation(); setEditing(true) }} className="text-stone-300 hover:text-stone-600 ml-auto shrink-0">
+              <button onClick={e => { e.stopPropagation(); setEditing(true) }} className="text-stone-300 dark:text-neutral-600 hover:text-stone-600 dark:hover:text-neutral-300 ml-auto shrink-0">
                 <Pencil className="h-3 w-3" strokeWidth={1.5} />
               </button>
             )}
@@ -507,8 +507,8 @@ export function BusinessTeam() {
                             <Avatar member={member} size="md" />
                             <div
                               className={cn(
-                                'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white',
-                                isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300'
+                                'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-neutral-800',
+                                isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600'
                               )}
                             />
                           </div>
@@ -534,7 +534,7 @@ export function BusinessTeam() {
                                 <span>{memberSlotsCount} créneau{memberSlotsCount !== 1 ? 'x' : ''}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <div className={cn('h-2 w-2 rounded-full', isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300')} />
+                                <div className={cn('h-2 w-2 rounded-full', isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600')} />
                                 <span>{isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}</span>
                               </div>
                               {member.timezone && (
@@ -980,8 +980,8 @@ function IndividualView({
                       isHighlight ? 'bg-[#6cf8bb]/15' : 'bg-stone-50 dark:bg-neutral-800',
                       stage.id === 'lost' && 'border-2 border-dashed border-stone-200 dark:border-neutral-700'
                     )}>
-                      <span className={cn('text-xs font-bold mb-1', isHighlight ? 'text-[#006c49]' : 'text-stone-400')}>{stage.name}</span>
-                      <span className={cn('text-xl font-business-display font-extrabold', isHighlight ? 'text-[#006c49]' : count > 0 ? 'text-stone-900 dark:text-white' : 'text-stone-300 dark:text-neutral-600')}>{count}</span>
+                      <span className={cn('text-xs font-bold mb-1', isHighlight ? 'text-[#006c49] dark:text-[#6ffbbe]' : 'text-stone-400 dark:text-neutral-500')}>{stage.name}</span>
+                      <span className={cn('text-xl font-business-display font-extrabold', isHighlight ? 'text-[#006c49] dark:text-[#6ffbbe]' : count > 0 ? 'text-stone-900 dark:text-white' : 'text-stone-300 dark:text-neutral-600')}>{count}</span>
                     </div>
                   )
                 })}
@@ -1115,9 +1115,9 @@ function IndividualView({
                           <td className="py-4 text-right">
                             <span className={cn(
                               'text-xs font-bold px-3 py-1 rounded-full',
-                              appt.status === 'confirmed' ? 'bg-blue-50 text-blue-700' :
-                              appt.status === 'done' ? 'bg-[#6ffbbe]/20 text-[#005236]' :
-                              'bg-[#ffddb8]/40 text-[#653e00]'
+                              appt.status === 'confirmed' ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300' :
+                              appt.status === 'done' ? 'bg-[#6ffbbe]/20 dark:bg-[#6ffbbe]/10 text-[#005236] dark:text-[#6ffbbe]' :
+                              'bg-[#ffddb8]/40 dark:bg-amber-500/10 text-[#653e00] dark:text-amber-300'
                             )}>
                               {appt.status === 'confirmed' ? 'Confirmé' : appt.status === 'done' ? 'Terminé' : 'En attente'}
                             </span>

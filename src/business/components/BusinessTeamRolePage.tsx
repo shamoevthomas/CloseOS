@@ -95,24 +95,24 @@ const WHITE_CARD = 'bg-white dark:bg-neutral-800 rounded-2xl border border-stone
 const SECTION_TITLE = "font-['Manrope'] font-extrabold text-lg text-stone-900 dark:text-white flex items-center gap-2"
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  'Closer': { bg: 'bg-[#6ffbbe]/20', text: 'text-[#005236]', border: 'border-[#6ffbbe]/40' },
-  'Setter': { bg: 'bg-purple-50/80', text: 'text-purple-700', border: 'border-purple-200' },
-  'Setter-Closer': { bg: 'bg-indigo-50/80', text: 'text-indigo-700', border: 'border-indigo-200' },
-  'Admin': { bg: 'bg-red-50/80', text: 'text-red-700', border: 'border-red-200' },
+  'Closer': { bg: 'bg-[#6ffbbe]/20 dark:bg-[#6ffbbe]/10', text: 'text-[#005236] dark:text-[#6ffbbe]', border: 'border-[#6ffbbe]/40' },
+  'Setter': { bg: 'bg-purple-50/80 dark:bg-purple-500/10', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-200 dark:border-purple-700' },
+  'Setter-Closer': { bg: 'bg-indigo-50/80 dark:bg-indigo-500/10', text: 'text-indigo-700 dark:text-indigo-300', border: 'border-indigo-200 dark:border-indigo-700' },
+  'Admin': { bg: 'bg-red-50/80 dark:bg-red-500/10', text: 'text-red-700 dark:text-red-300', border: 'border-red-200 dark:border-red-700' },
 }
 
 const getRoleColor = (role: string) =>
-  ROLE_COLORS[role] || { bg: 'bg-stone-50/80', text: 'text-stone-700', border: 'border-stone-200' }
+  ROLE_COLORS[role] || { bg: 'bg-stone-50/80 dark:bg-neutral-700/50', text: 'text-stone-700 dark:text-neutral-200', border: 'border-stone-200 dark:border-neutral-700' }
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 
 const PIPELINE_STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50/60' },
-  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700', bgLight: 'bg-purple-50/60' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-700', bgLight: 'bg-orange-50/60' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-[#006c49]', bgLight: 'bg-[#6cf8bb]/15' },
-  { id: 'noshow', name: 'No Show', color: 'bg-stone-500', textColor: 'text-stone-700', bgLight: 'bg-stone-50/60' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50/60' },
+  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgLight: 'bg-blue-50/60' },
+  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700 dark:text-purple-400', bgLight: 'bg-purple-50/60' },
+  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-700 dark:text-orange-400', bgLight: 'bg-orange-50/60' },
+  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-[#006c49] dark:text-[#6ffbbe]', bgLight: 'bg-[#6cf8bb]/15' },
+  { id: 'noshow', name: 'No Show', color: 'bg-stone-500', textColor: 'text-stone-700 dark:text-neutral-300', bgLight: 'bg-stone-50/60' },
+  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700 dark:text-red-400', bgLight: 'bg-red-50/60' },
 ]
 
 function calculateAge(dob: string): number {
@@ -261,8 +261,8 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
             className={cn(
               "flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm font-['Manrope'] font-semibold border-b-2 transition-colors",
               activeTab === member.id
-                ? 'border-stone-900 text-stone-900'
-                : 'border-transparent text-stone-400 hover:text-stone-600 hover:border-stone-300'
+                ? 'border-stone-900 dark:border-white text-stone-900 dark:text-white'
+                : 'border-transparent text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 hover:border-stone-300 dark:hover:border-neutral-600'
             )}
           >
             <div className="relative">
@@ -422,7 +422,7 @@ function GlobalView({
       {/* Global KPI summary */}
       <div className={cn('rounded-xl p-5', GLASS_PANEL)}>
         <h3 className={SECTION_TITLE}>
-          <BarChart3 className="h-4 w-4 text-stone-900" /> Résumé global
+          <BarChart3 className="h-4 w-4 text-stone-900 dark:text-white" /> Résumé global
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
           {(() => {
@@ -536,17 +536,17 @@ function IndividualView({
             </span>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-stone-600 dark:text-neutral-300">
               <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-stone-400" />
+                <Mail className="h-4 w-4 text-stone-400 dark:text-neutral-500" />
                 {member.email}
               </div>
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-stone-400" />
+                <Calendar className="h-4 w-4 text-stone-400 dark:text-neutral-500" />
                 {member.date_of_birth
                   ? `${formatDate(member.date_of_birth)} (${calculateAge(member.date_of_birth)} ans)`
                   : 'Date de naissance non renseignée'}
               </div>
               <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-stone-400" />
+                <CalendarDays className="h-4 w-4 text-stone-400 dark:text-neutral-500" />
                 Arrivée le {formatDate(member.joined_at)} ({formatAnciennete(member.joined_at)})
               </div>
               <div className="flex items-center gap-2">
@@ -560,8 +560,8 @@ function IndividualView({
 
       {/* Connection History (1 week) */}
       <div className={cn('rounded-xl', GLASS_PANEL)}>
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
-          <History className="h-4 w-4 text-stone-900" />
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30 dark:border-neutral-800">
+          <History className="h-4 w-4 text-stone-900 dark:text-white" />
           <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Historique de connexion</h4>
           <span className="text-xs text-stone-400 dark:text-neutral-500 ml-auto">7 derniers jours</span>
         </div>
@@ -580,7 +580,7 @@ function IndividualView({
                   <div key={log.id} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-white/60 dark:hover:bg-white/5">
                     <div className={cn(
                       'flex h-7 w-7 items-center justify-center rounded-lg shrink-0',
-                      isConnect ? 'bg-emerald-50' : 'bg-red-50'
+                      isConnect ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-red-50 dark:bg-red-500/10'
                     )}>
                       {isConnect
                         ? <LogIn className="h-3.5 w-3.5 text-emerald-600" />
@@ -588,11 +588,11 @@ function IndividualView({
                       }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={cn('text-sm font-medium', isConnect ? 'text-emerald-700' : 'text-red-600')}>
+                      <p className={cn('text-sm font-medium', isConnect ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                         {isConnect ? 'Connexion' : 'Déconnexion'}
                       </p>
                     </div>
-                    <span className="text-xs text-stone-400 shrink-0">
+                    <span className="text-xs text-stone-400 dark:text-neutral-500 shrink-0">
                       {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -607,7 +607,7 @@ function IndividualView({
       <div className={cn('rounded-xl p-5', GLASS_PANEL)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-stone-900" />
+            <CreditCard className="h-4 w-4 text-stone-900 dark:text-white" />
             <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Date de paiement mensuel</h4>
           </div>
           <div className="flex items-center gap-2">
@@ -635,7 +635,7 @@ function IndividualView({
           </div>
         </div>
         {member.pay_day && (
-          <p className="text-xs text-stone-400 mt-2">
+          <p className="text-xs text-stone-400 dark:text-neutral-500 mt-2">
             Prochain paiement le {member.pay_day} {new Date().getDate() >= member.pay_day
               ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
               : new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
@@ -646,8 +646,8 @@ function IndividualView({
 
       {/* KPIs */}
       <div className={cn('rounded-xl', GLASS_PANEL)}>
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
-          <BarChart3 className="h-4 w-4 text-stone-900" />
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30 dark:border-neutral-800">
+          <BarChart3 className="h-4 w-4 text-stone-900 dark:text-white" />
           <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">KPIs</h4>
         </div>
         <div className="p-5">
@@ -664,8 +664,8 @@ function IndividualView({
 
       {/* Pipeline */}
       <div className={cn('rounded-xl', GLASS_PANEL)}>
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
-          <GitBranch className="h-4 w-4 text-stone-900" />
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30 dark:border-neutral-800">
+          <GitBranch className="h-4 w-4 text-stone-900 dark:text-white" />
           <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Pipeline</h4>
           <span className="text-xs text-stone-400 dark:text-neutral-500 ml-auto">{memberProspects.length} prospect{memberProspects.length !== 1 ? 's' : ''} total</span>
         </div>
@@ -679,7 +679,7 @@ function IndividualView({
                     <span className={cn('h-2 w-2 rounded-full', stage.color)} />
                     <span className="text-xs text-stone-500 dark:text-neutral-400">{stage.name}</span>
                   </div>
-                  <p className={cn('text-lg font-bold', count > 0 ? stage.textColor : 'text-stone-300')}>{count}</p>
+                  <p className={cn('text-lg font-bold', count > 0 ? stage.textColor : 'text-stone-300 dark:text-neutral-600')}>{count}</p>
                 </div>
               )
             })}
@@ -689,8 +689,8 @@ function IndividualView({
 
       {/* Disponibilité */}
       <div className={cn('rounded-xl', GLASS_PANEL)}>
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
-          <Clock className="h-4 w-4 text-stone-900" />
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30 dark:border-neutral-800">
+          <Clock className="h-4 w-4 text-stone-900 dark:text-white" />
           <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Disponibilité</h4>
           <span className="text-xs text-stone-400 dark:text-neutral-500 ml-auto">{slots.length} créneau{slots.length !== 1 ? 'x' : ''}</span>
         </div>
@@ -699,7 +699,7 @@ function IndividualView({
             <div className="text-center py-4">
               <AlertCircle className="h-6 w-6 text-stone-300 mx-auto mb-2" />
               <p className="text-sm text-stone-500 dark:text-neutral-400">Aucun créneau configuré</p>
-              <p className="text-xs text-stone-400 mt-1">Le membre n'a pas encore renseigné ses disponibilités</p>
+              <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">Le membre n'a pas encore renseigné ses disponibilités</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -726,11 +726,11 @@ function IndividualView({
 
       {/* Absences */}
       <div className={cn('rounded-xl', GLASS_PANEL)}>
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
-          <Calendar className="h-4 w-4 text-stone-400" />
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30 dark:border-neutral-800">
+          <Calendar className="h-4 w-4 text-stone-400 dark:text-neutral-500" />
           <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Absences</h4>
           {absences.length > 0 && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-stone-100 text-stone-700">
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-stone-100 dark:bg-neutral-800 text-stone-700 dark:text-neutral-200">
               {absences.length}
             </span>
           )}
@@ -750,7 +750,7 @@ function IndividualView({
                       {formatDate(absence.start_date)} → {formatDate(absence.end_date)}
                     </p>
                     {absence.reason && (
-                      <p className="text-xs text-stone-400 mt-0.5">{absence.reason}</p>
+                      <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">{absence.reason}</p>
                     )}
                   </div>
                 </div>
@@ -762,8 +762,8 @@ function IndividualView({
 
       {/* Upcoming appointments */}
       <div className={cn('rounded-xl', GLASS_PANEL)}>
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
-          <CalendarDays className="h-4 w-4 text-stone-900" />
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30 dark:border-neutral-800">
+          <CalendarDays className="h-4 w-4 text-stone-900 dark:text-white" />
           <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Rendez-vous à venir</h4>
           <span className="text-xs text-stone-400 dark:text-neutral-500 ml-auto">{upcomingAppts.length} RDV</span>
         </div>
@@ -785,16 +785,16 @@ function IndividualView({
                         {appt.time && ` à ${appt.time.slice(0, 5)}`}
                       </p>
                       {prospect && (
-                        <p className="text-xs text-stone-500 mt-0.5">
+                        <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">
                           {prospect.contact || prospect.company || `Prospect #${prospect.id}`}
                         </p>
                       )}
                     </div>
                     <span className={cn(
                       'text-xs font-medium px-2 py-0.5 rounded-full',
-                      appt.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
-                      appt.status === 'done' ? 'bg-emerald-100 text-emerald-700' :
-                      'bg-stone-100 text-stone-700'
+                      appt.status === 'confirmed' ? 'bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300' :
+                      appt.status === 'done' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' :
+                      'bg-stone-100 dark:bg-neutral-800 text-stone-700 dark:text-neutral-200'
                     )}>
                       {appt.status === 'confirmed' ? 'Confirmé' : appt.status === 'done' ? 'Terminé' : 'En attente'}
                     </span>
@@ -815,11 +815,11 @@ function KpiMini({ icon: Icon, label, value, color, isText }: {
   icon: any; label: string; value: number | string; color: string; isText?: boolean
 }) {
   const colorMap: Record<string, { bg: string; text: string }> = {
-    blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
-    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
-    purple: { bg: 'bg-purple-50', text: 'text-purple-600' },
-    rose: { bg: 'bg-rose-50', text: 'text-rose-600' },
-    stone: { bg: 'bg-stone-100', text: 'text-stone-600' },
+    blue: { bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400' },
+    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
+    purple: { bg: 'bg-purple-50 dark:bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400' },
+    rose: { bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400' },
+    stone: { bg: 'bg-stone-100 dark:bg-neutral-800', text: 'text-stone-600 dark:text-neutral-300' },
   }
   const c = colorMap[color] || colorMap.stone
   return (
