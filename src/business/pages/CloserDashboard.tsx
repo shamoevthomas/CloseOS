@@ -87,11 +87,19 @@ export function CloserDashboard() {
   // Upcoming appointments
   const now = new Date()
   const upcomingAppts = useMemo(() => {
+    const todayLocal = fromUTC(now, userTimezone).date
     return appointments
-      .filter(a => new Date(a.date) >= now && a.status !== 'cancelled')
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .filter(a => {
+        const localDate = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone).date : a.date
+        return localDate >= todayLocal && a.status !== 'cancelled'
+      })
+      .sort((a, b) => {
+        const aKey = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone).date : a.date
+        const bKey = b.datetime_utc ? fromUTC(b.datetime_utc, userTimezone).date : b.date
+        return aKey.localeCompare(bKey)
+      })
       .slice(0, 5)
-  }, [appointments])
+  }, [appointments, userTimezone])
 
   // Reminder actions
   const handleMarkDone = async (id: number) => {
@@ -217,12 +225,14 @@ export function CloserDashboard() {
             </div>
           ) : (
             <div className="space-y-4">
-              {upcomingAppts.map((a, i) => (
+              {upcomingAppts.map((a, i) => {
+                const localDt = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone) : { date: a.date, time: a.time?.slice(0, 5) || '00:00' }
+                return (
                 <div key={a.id} onClick={() => navigate('/business/agenda')} className={`bg-white dark:bg-neutral-800 p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
                   <div className="flex items-center gap-6">
                     <div className="text-center min-w-[60px]">
-                      <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-tighter">{formatApptDate(a.date)}</p>
-                      <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">{a.time?.slice(0, 5)}</p>
+                      <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-tighter">{formatApptDate(localDt.date)}</p>
+                      <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">{localDt.time}</p>
                     </div>
                     <div className="h-10 w-px bg-[#c4c7c7]/20 dark:bg-neutral-700" />
                     <div>
@@ -231,7 +241,7 @@ export function CloserDashboard() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )})
             </div>
           )}
         </div>
@@ -274,7 +284,13 @@ export function CloserDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm text-[#1b1c1b] dark:text-white">{r.title}</p>
                       <p className={`text-xs font-semibold ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748]'}`}>
-                        {overdue ? `Retard : ${Math.max(1, Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24)))}j` : `Échéance : ${rDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                        {(() => {
+                          const rLocal = fromUTC(r.reminder_date, userTimezone)
+                          const localDate = new Date(rLocal.date + 'T00:00:00')
+                          return overdue
+                            ? `Retard : ${Math.max(1, Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24)))}j`
+                            : `Échéance : ${localDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} ${rLocal.time}`
+                        })()}
                       </p>
                     </div>
                     {!isLoading && (

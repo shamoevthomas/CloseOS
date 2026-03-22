@@ -9,6 +9,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
 import { CloserDashboard } from './CloserDashboard'
 import { supabase } from '../../lib/supabase'
+import { fromUTC } from '../../lib/timezone'
 
 // ─── Types ───
 
@@ -103,7 +104,7 @@ const glassCard = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-ne
 // ─── Component ───
 
 export function BusinessDashboard() {
-  const { user, isTeamMember, teamMember, ownerUserId, businessProfile } = useBusinessAuth()
+  const { user, isTeamMember, teamMember, ownerUserId, businessProfile, userTimezone } = useBusinessAuth()
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
   const isAdmin = isTeamMember && teamMember?.role === 'Admin'
 
@@ -365,7 +366,7 @@ export function BusinessDashboard() {
               <Target className="h-3.5 w-3.5 text-neutral-600" />
             </div>
             {objectiveProgress !== null && (
-              <span className="text-[10px] font-bold text-neutral-600">{objectiveProgress.toFixed(0)}%</span>
+              <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-300">{objectiveProgress.toFixed(0)}%</span>
             )}
           </div>
           <div className="mt-2">
@@ -380,7 +381,7 @@ export function BusinessDashboard() {
                 </p>
               </>
             ) : (
-              <p className="text-xs text-neutral-400 mt-1">Aucun objectif</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">Aucun objectif</p>
             )}
           </div>
         </Link>
@@ -436,12 +437,12 @@ export function BusinessDashboard() {
               <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Campagnes actives</h3>
               <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-0.5">Performance en temps réel des flux actifs.</p>
             </div>
-            <Link to="/business/campagnes" className="text-sm font-bold text-neutral-900 border-b-2 border-neutral-900 pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <Link to="/business/campagnes" className="text-sm font-bold text-neutral-900 dark:text-white border-b-2 border-neutral-900 dark:border-white pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Voir Tout
             </Link>
           </div>
           {activeCampaigns.length === 0 ? (
-            <p className="text-sm text-neutral-400 text-center py-8">Aucune campagne</p>
+            <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">Aucune campagne</p>
           ) : (
             <div className="space-y-4">
               {activeCampaigns.map((c, idx) => {
@@ -482,7 +483,7 @@ export function BusinessDashboard() {
             <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-0.5">Progression mensuelle vers les objectifs.</p>
           </div>
           {objectivesWithProgress.length === 0 ? (
-            <p className="text-sm text-neutral-400 text-center py-8 flex-1 flex items-center justify-center">Aucun objectif défini</p>
+            <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8 flex-1 flex items-center justify-center">Aucun objectif défini</p>
           ) : (
             <div className="flex-1 space-y-8">
               {objectivesWithProgress.map(obj => (
@@ -528,12 +529,12 @@ export function BusinessDashboard() {
         <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-6 px-1">
             <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Équipe</h3>
-            <Link to="/business/team" className="px-5 py-2.5 bg-neutral-100 hover:bg-neutral-200 rounded-full text-xs font-bold text-neutral-900 transition-colors uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <Link to="/business/team" className="px-5 py-2.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-full text-xs font-bold text-neutral-900 dark:text-white transition-colors uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Voir l'équipe
             </Link>
           </div>
           {members.length === 0 ? (
-            <p className="text-sm text-neutral-400 text-center py-8">Aucun membre</p>
+            <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">Aucun membre</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -584,7 +585,7 @@ export function BusinessDashboard() {
                             return com > 0 ? (
                               <span className="text-sm font-bold text-emerald-600">{com.toLocaleString()} €</span>
                             ) : (
-                              <span className="text-xs text-neutral-300">—</span>
+                              <span className="text-xs text-neutral-300 dark:text-neutral-600">—</span>
                             )
                           })()}
                         </td>
@@ -608,12 +609,14 @@ export function BusinessDashboard() {
             )}
           </div>
           {reminders.length === 0 ? (
-            <p className="text-sm text-neutral-400 text-center py-8 flex-1 flex items-center justify-center">Aucun rappel en attente</p>
+            <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8 flex-1 flex items-center justify-center">Aucun rappel en attente</p>
           ) : (
             <div className="space-y-3 flex-1 overflow-y-auto">
               {reminders.map(r => {
                 const rDate = new Date(r.reminder_date)
                 const isOverdue = rDate < now
+                const rLocal = fromUTC(r.reminder_date, userTimezone)
+                const rLocalDate = new Date(rLocal.date + 'T00:00:00')
                 return (
                   <div
                     key={r.id}
@@ -627,11 +630,11 @@ export function BusinessDashboard() {
                       </span>
                     </div>
                     {r.description && (
-                      <p className="text-xs text-neutral-500 mb-2 line-clamp-2">{r.description}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2 line-clamp-2">{r.description}</p>
                     )}
-                    <div className="flex items-center gap-1 text-[10px] font-bold text-neutral-400">
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 dark:text-neutral-500">
                       <Clock className="h-3 w-3" />
-                      {rDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}, {rDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      {rLocalDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}, {rLocal.time}
                     </div>
                   </div>
                 )
@@ -651,13 +654,13 @@ export function BusinessDashboard() {
       {selectedReminder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setSelectedReminder(null)} />
-          <div className="relative w-full max-w-md bg-white rounded-3xl overflow-hidden" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}>
+          <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}>
             <div className="px-8 pt-8 pb-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-extrabold text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   Détail du rappel
                 </h2>
-                <button onClick={() => setSelectedReminder(null)} className="p-2 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-full transition-colors">
+                <button onClick={() => setSelectedReminder(null)} className="p-2 text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -675,30 +678,36 @@ export function BusinessDashboard() {
 
               {/* Title */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 mb-1">Titre</label>
-                <p className="text-lg font-extrabold text-neutral-900">{selectedReminder.title}</p>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400 mb-1">Titre</label>
+                <p className="text-lg font-extrabold text-neutral-900 dark:text-white">{selectedReminder.title}</p>
               </div>
 
               {/* Description */}
               {selectedReminder.description && (
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 mb-1">Description</label>
-                  <p className="text-sm text-neutral-700 leading-relaxed">{selectedReminder.description}</p>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400 mb-1">Description</label>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-200 leading-relaxed">{selectedReminder.description}</p>
                 </div>
               )}
 
               {/* Date & Time */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 mb-1">Date & Heure</label>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-neutral-400" />
-                  <p className={`text-sm font-medium ${new Date(selectedReminder.reminder_date) < now ? 'text-red-600' : 'text-neutral-900'}`}>
-                    {new Date(selectedReminder.reminder_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                    {' à '}
-                    {new Date(selectedReminder.reminder_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-              </div>
+              {(() => {
+                const srLocal = fromUTC(selectedReminder.reminder_date, userTimezone)
+                const srLocalDate = new Date(srLocal.date + 'T00:00:00')
+                return (
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400 mb-1">Date & Heure</label>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-neutral-400" />
+                      <p className={`text-sm font-medium ${new Date(selectedReminder.reminder_date) < now ? 'text-red-600' : 'text-neutral-900'}`}>
+                        {srLocalDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        {' à '}
+                        {srLocal.time}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* Actions */}
               <div className="flex gap-3 pt-2">
@@ -711,7 +720,7 @@ export function BusinessDashboard() {
                 </button>
                 <button
                   onClick={() => { handleDeleteReminder(selectedReminder.id); setSelectedReminder(null) }}
-                  className="flex-1 py-3 bg-neutral-100 text-red-600 rounded-full font-bold text-sm hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-neutral-100 dark:bg-neutral-800 text-red-600 rounded-full font-bold text-sm hover:bg-red-50 transition-all flex items-center justify-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
                   Supprimer
