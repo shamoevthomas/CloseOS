@@ -62,10 +62,11 @@ export function BusinessProspectView({
   const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
   const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string; setter_scope?: string }[]>([])
 
-  // Setters with role Setter or Setter-Closer can assign closers (unless setter_scope is 'self')
+  // Who can assign: Owner, Head of Sales, Admin, and Setters (unless setter_scope is 'self')
   const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
   const isSetterCloserSelf = isTeamMember && teamMember?.role === 'Setter-Closer' && teamMember?.setter_scope === 'self'
-  const canAssign = !isTeamMember || (isSetter && !isSetterCloserSelf)
+  const isHosOrAdmin = isTeamMember && (teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin')
+  const canAssign = !isTeamMember || isHosOrAdmin || (isSetter && !isSetterCloserSelf)
 
   // Fetch team members + owner for assignment
   useEffect(() => {
@@ -172,15 +173,16 @@ export function BusinessProspectView({
 
   // Fetch linked campaign
   useEffect(() => {
-    if (!user?.id || !(prospect as any).campaign_id) { setCampaign(null); return }
-    fetch(`${API_URL}?action=campaigns-list&user_id=${user.id}`)
+    const effectiveId = isTeamMember ? ownerUserId : user?.id
+    if (!effectiveId || !(prospect as any).campaign_id) { setCampaign(null); return }
+    fetch(`${API_URL}?action=campaigns-list&user_id=${effectiveId}`)
       .then(r => r.json())
       .then(data => {
         const c = (data.campaigns || []).find((c: Campaign) => c.id === (prospect as any).campaign_id)
         setCampaign(c || null)
       })
       .catch(() => setCampaign(null))
-  }, [user?.id, (prospect as any).campaign_id])
+  }, [user?.id, ownerUserId, isTeamMember, (prospect as any).campaign_id])
 
   // Fetch reminders
   useEffect(() => {
@@ -435,8 +437,8 @@ export function BusinessProspectView({
                           </div>
                         )}
 
-                        {/* Assign Setter (owner only — setters don't assign other setters) */}
-                        {!isTeamMember && setters.length > 0 && (
+                        {/* Assign Setter (owner, HOS, Admin) */}
+                        {(!isTeamMember || isHosOrAdmin) && setters.length > 0 && (
                           <div>
                             <label className="mb-2 block text-xs font-medium text-slate-500">Assigner un Setter</label>
                             <select
