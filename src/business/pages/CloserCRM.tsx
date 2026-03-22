@@ -250,7 +250,7 @@ export function CloserCRM() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-stone-900" />
       </div>
     )
   }
@@ -261,8 +261,9 @@ export function CloserCRM() {
       <div className="mb-6 shrink-0">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">CRM</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-xs font-bold tracking-widest uppercase text-stone-500 mb-1">GESTION DES PROSPECTS</p>
+            <h1 className="text-4xl font-extrabold tracking-tight text-stone-900">CRM</h1>
+            <p className="text-sm text-stone-500 mt-1">
               {filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}
               {hasActiveFilters && ' (filtré)'}
             </p>
@@ -271,20 +272,20 @@ export function CloserCRM() {
           <div className="flex items-center gap-3">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
               <input
                 type="text"
                 placeholder="Rechercher..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-400 w-64"
+                className="pl-10 pr-4 py-2 text-sm rounded-full border-none bg-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/20 w-64"
               />
             </div>
 
             {/* New prospect button */}
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-amber-600 text-white hover:bg-amber-500 font-medium shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 text-sm rounded-full bg-stone-900 text-white hover:opacity-90 shadow-lg shadow-stone-900/10 font-extrabold tracking-tight"
             >
               <UserPlus className="h-4 w-4" />
               Nouveau prospect
@@ -294,16 +295,16 @@ export function CloserCRM() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 text-sm rounded-lg border transition-colors',
+                'flex items-center gap-2 px-4 py-2 text-sm rounded-full border transition-colors',
                 showFilters || hasActiveFilters
-                  ? 'bg-amber-50 border-amber-300 text-amber-700'
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  ? 'bg-stone-100 border-stone-300 text-stone-700'
+                  : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
               )}
             >
               <Filter className="h-4 w-4" />
               Filtres
               {hasActiveFilters && (
-                <span className="bg-amber-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="bg-stone-900 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {[filterStage, filterAssigned, filterOffer, filterDateFrom, filterDateTo].filter(Boolean).length}
                 </span>
               )}
@@ -313,29 +314,29 @@ export function CloserCRM() {
 
         {/* Filter bar */}
         {showFilters && (
-          <div className="mt-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
+          <div className="mt-4 p-4 bg-white rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
             <div className="flex flex-wrap gap-4 items-end">
               {/* Date range */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-gray-500">Période</label>
+                <label className="text-xs font-medium text-stone-500">Période</label>
                 <div className="flex items-center gap-2">
                   <div className="relative">
-                    <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                    <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
                     <input
                       type="date"
                       value={filterDateFrom}
                       onChange={e => setFilterDateFrom(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                      className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20"
                     />
                   </div>
-                  <span className="text-gray-400 text-sm">-</span>
+                  <span className="text-stone-400 text-sm">-</span>
                   <div className="relative">
-                    <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                    <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
                     <input
                       type="date"
                       value={filterDateTo}
                       onChange={e => setFilterDateTo(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                      className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20"
                     />
                   </div>
                 </div>
@@ -343,12 +344,12 @@ export function CloserCRM() {
 
               {/* Assigned */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-gray-500">Assigné à</label>
+                <label className="text-xs font-medium text-stone-500">Assigné à</label>
                 <div className="relative">
                   <select
                     value={filterAssigned}
                     onChange={e => setFilterAssigned(e.target.value)}
-                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 min-w-[160px]"
+                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[160px]"
                   >
                     <option value="">Tous</option>
                     {teamMembers.map(m => (
@@ -357,43 +358,43 @@ export function CloserCRM() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
                 </div>
               </div>
 
               {/* Stage */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-gray-500">Statut</label>
+                <label className="text-xs font-medium text-stone-500">Statut</label>
                 <div className="relative">
                   <select
                     value={filterStage}
                     onChange={e => setFilterStage(e.target.value)}
-                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 min-w-[140px]"
+                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[140px]"
                   >
                     <option value="">Tous</option>
                     {ALL_STAGES.map(s => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
                 </div>
               </div>
 
               {/* Offer */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-gray-500">Offre</label>
+                <label className="text-xs font-medium text-stone-500">Offre</label>
                 <div className="relative">
                   <select
                     value={filterOffer}
                     onChange={e => setFilterOffer(e.target.value)}
-                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 min-w-[160px]"
+                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[160px]"
                   >
                     <option value="">Toutes</option>
                     {formulas.map(f => (
                       <option key={f.id} value={f.id}>{f.name}</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
                 </div>
               </div>
 
@@ -413,25 +414,25 @@ export function CloserCRM() {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="flex-1 overflow-auto rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Contact</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Entreprise</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Email</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Téléphone</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Statut</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Assigné à</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">Offre</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-600">Valeur</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">Date</th>
+            <tr className="bg-stone-50/50 border-b border-stone-100">
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest">Contact</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden md:table-cell">Entreprise</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden lg:table-cell">Email</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden lg:table-cell">Téléphone</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest">Statut</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden md:table-cell">Assigné à</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden xl:table-cell">Offre</th>
+              <th className="text-right px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest">Valeur</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden xl:table-cell">Date</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-stone-100">
             {filteredProspects.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-16 text-center text-gray-400">
+                <td colSpan={9} className="px-4 py-16 text-center text-stone-400">
                   {searchQuery || hasActiveFilters
                     ? 'Aucun prospect ne correspond aux filtres.'
                     : 'Aucun prospect pour le moment.'}
@@ -444,41 +445,41 @@ export function CloserCRM() {
                   <tr
                     key={p.id}
                     onClick={() => setSelectedProspect(p)}
-                    className="hover:bg-amber-50/40 cursor-pointer transition-colors"
+                    className="hover:bg-stone-50/30 cursor-pointer transition-colors"
                   >
                     {/* Contact */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                          <User className="h-4 w-4 text-gray-400" />
+                        <div className="h-8 w-8 rounded-full bg-stone-100 flex items-center justify-center shrink-0">
+                          <User className="h-4 w-4 text-stone-400" />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{getDisplayName(p)}</p>
-                          <p className="text-xs text-gray-400 md:hidden truncate">{p.company || ''}</p>
+                          <p className="font-bold text-stone-900 truncate">{getDisplayName(p)}</p>
+                          <p className="text-xs text-stone-400 md:hidden truncate">{p.company || ''}</p>
                         </div>
                       </div>
                     </td>
 
                     {/* Entreprise */}
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <div className="flex items-center gap-1.5 text-gray-600">
-                        <Building2 className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-1.5 text-stone-600">
+                        <Building2 className="h-3.5 w-3.5 text-stone-400 shrink-0" />
                         <span className="truncate max-w-[140px]">{p.company || '-'}</span>
                       </div>
                     </td>
 
                     {/* Email */}
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <div className="flex items-center gap-1.5 text-gray-600">
-                        <Mail className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-1.5 text-stone-600">
+                        <Mail className="h-3.5 w-3.5 text-stone-400 shrink-0" />
                         <span className="truncate max-w-[180px]">{p.email || '-'}</span>
                       </div>
                     </td>
 
                     {/* Téléphone */}
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <div className="flex items-center gap-1.5 text-gray-600">
-                        <Phone className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-1.5 text-stone-600">
+                        <Phone className="h-3.5 w-3.5 text-stone-400 shrink-0" />
                         <span className="truncate">{p.phone || '-'}</span>
                       </div>
                     </td>
@@ -499,14 +500,14 @@ export function CloserCRM() {
 
                     {/* Assigné à */}
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <span className="text-gray-600 truncate block max-w-[120px]">
+                      <span className="text-stone-600 truncate block max-w-[120px]">
                         {getTeamMemberName(p.assigned_to)}
                       </span>
                     </td>
 
                     {/* Offre */}
                     <td className="px-4 py-3 hidden xl:table-cell">
-                      <span className="text-gray-600 truncate block max-w-[140px]">
+                      <span className="text-stone-600 truncate block max-w-[140px]">
                         {getFormulaName(p)}
                       </span>
                     </td>
@@ -515,7 +516,7 @@ export function CloserCRM() {
                     <td className="px-4 py-3 text-right">
                       <span className={cn(
                         'font-medium',
-                        p.value ? 'text-gray-900' : 'text-gray-400'
+                        p.value ? 'text-stone-900 font-bold' : 'text-stone-400'
                       )}>
                         {p.value ? formatCurrency(p.value) : '-'}
                       </span>
@@ -523,7 +524,7 @@ export function CloserCRM() {
 
                     {/* Date */}
                     <td className="px-4 py-3 hidden xl:table-cell">
-                      <span className="text-gray-500 text-xs">
+                      <span className="text-stone-500 text-xs">
                         {p.created_at
                           ? new Date(p.created_at).toLocaleDateString('fr-FR', {
                               day: '2-digit',
@@ -555,61 +556,61 @@ export function CloserCRM() {
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-2xl bg-white border border-slate-200 shadow-2xl p-6">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.12)] p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900">Nouveau Prospect</h2>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="h-6 w-6" /></button>
+              <h2 className="text-xl font-extrabold text-stone-900">Nouveau Prospect</h2>
+              <button onClick={() => setIsCreateModalOpen(false)} className="text-stone-400 hover:text-stone-600"><X className="h-6 w-6" /></button>
             </div>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Prénom *</label>
+                  <label className="block text-sm font-semibold text-stone-900 mb-1.5">Prénom *</label>
                   <input type="text" value={newProspectForm.firstName}
                     onChange={e => setNewProspectForm({ ...newProspectForm, firstName: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-stone-100 border-none rounded-xl p-2.5 text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                     placeholder="Jean" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Nom *</label>
+                  <label className="block text-sm font-semibold text-stone-900 mb-1.5">Nom *</label>
                   <input type="text" value={newProspectForm.lastName}
                     onChange={e => setNewProspectForm({ ...newProspectForm, lastName: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-stone-100 border-none rounded-xl p-2.5 text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                     placeholder="Dupont" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                <label className="block text-sm font-semibold text-stone-900 mb-1.5">Email</label>
                 <input type="email" value={newProspectForm.email}
                   onChange={e => setNewProspectForm({ ...newProspectForm, email: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-stone-100 border-none rounded-xl p-2.5 text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   placeholder="jean@entreprise.com" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Téléphone</label>
+                <label className="block text-sm font-semibold text-stone-900 mb-1.5">Téléphone</label>
                 <input type="text" value={newProspectForm.phone}
                   onChange={e => setNewProspectForm({ ...newProspectForm, phone: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-stone-100 border-none rounded-xl p-2.5 text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   placeholder="+33 6 ..." />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Entreprise</label>
+                <label className="block text-sm font-semibold text-stone-900 mb-1.5">Entreprise</label>
                 <input type="text" value={newProspectForm.company}
                   onChange={e => setNewProspectForm({ ...newProspectForm, company: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-stone-100 border-none rounded-xl p-2.5 text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   placeholder="Nom de l'entreprise" />
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-1.5">
+                <label className="flex items-center gap-2 text-sm font-semibold text-stone-900 mb-1.5">
                   <Tag className="h-3 w-3" /> Offre / Formule
                 </label>
                 <select value={newProspectForm.formulaId}
                   onChange={e => setNewProspectForm({ ...newProspectForm, formulaId: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none">
+                  className="w-full bg-stone-100 border-none rounded-xl p-2.5 text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none">
                   <option value="">Aucune</option>
                   {formulas.map(f => (
                     <option key={f.id} value={f.id}>{f.name} - {formatCurrency(f.price)}</option>
@@ -618,7 +619,7 @@ export function CloserCRM() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Source</label>
+                <label className="block text-sm font-semibold text-stone-900 mb-1.5">Source</label>
                 <select value={newProspectForm.source}
                   onChange={e => {
                     if (e.target.value === '__new__') {
@@ -627,7 +628,7 @@ export function CloserCRM() {
                       setNewProspectForm({ ...newProspectForm, source: e.target.value })
                     }
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none">
+                  className="w-full bg-stone-100 border-none rounded-xl p-2.5 text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none">
                   {allSources.map(s => <option key={s} value={s}>{s}</option>)}
                   <option value="__new__">+ Nouvelle source</option>
                 </select>
@@ -635,12 +636,12 @@ export function CloserCRM() {
 
               <div className="flex gap-3 pt-4">
                 <button onClick={() => setIsCreateModalOpen(false)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-lg transition-colors">
+                  className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium py-2.5 rounded-full transition-colors">
                   Annuler
                 </button>
                 <button onClick={handleCreateProspect}
                   disabled={(!newProspectForm.firstName && !newProspectForm.lastName) || isCreating}
-                  className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50">
+                  className="flex-1 bg-stone-900 hover:opacity-90 text-white font-extrabold py-2.5 rounded-full transition-colors disabled:opacity-50">
                   {isCreating ? 'Création...' : 'Créer le prospect'}
                 </button>
               </div>
@@ -653,27 +654,27 @@ export function CloserCRM() {
       {isNewSourceModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">Nouvelle source</h3>
+            <h3 className="text-lg font-semibold text-stone-900 mb-4">Nouvelle source</h3>
             <input
               type="text"
               value={newSourceName}
               onChange={(e) => setNewSourceName(e.target.value)}
               placeholder="Nom de la source"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:border-amber-500 focus:outline-none mb-4"
+              className="w-full bg-stone-100 border-none rounded-xl px-4 py-2.5 text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none mb-4"
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleCreateSource()}
             />
             <div className="flex gap-3">
               <button
                 onClick={() => { setIsNewSourceModalOpen(false); setNewSourceName('') }}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-xl transition-colors"
+                className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium py-2.5 rounded-full transition-colors"
               >
                 Annuler
               </button>
               <button
                 onClick={handleCreateSource}
                 disabled={!newSourceName.trim() || savingSource}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-medium py-2.5 rounded-xl transition-colors"
+                className="flex-1 bg-stone-900 hover:opacity-90 disabled:opacity-50 text-white font-medium py-2.5 rounded-full transition-colors"
               >
                 {savingSource ? 'Création...' : 'Créer'}
               </button>
