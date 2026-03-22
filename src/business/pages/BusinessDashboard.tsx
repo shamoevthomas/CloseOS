@@ -185,7 +185,8 @@ export function BusinessDashboard() {
   const closingRate = totalDecided > 0 ? (wonProspects.length / totalDecided) * 100 : 0
   const noshowEligible = prospects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
   const noshowRate = noshowEligible.length > 0 ? (noshowProspects.length / noshowEligible.length) * 100 : 0
-  const totalAppts = appointments.length
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+  const totalAppts = appointments.filter(a => a.date >= todayStart).length
 
   const revenueObjective = useMemo(() => objectives.find(o => o.metric === 'revenue'), [objectives])
   const objectiveProgress = revenueObjective

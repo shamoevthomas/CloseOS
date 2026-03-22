@@ -72,6 +72,7 @@ export function BusinessAppointments() {
   const showBookingSection = isSetter || isOwnerOrHoS || isCloserOnly
   const canBookForOthers = !isCloserOnly && !isSetterCloserSelf // closers and setter-closer(self) can't book for others
   const [bookingLinks, setBookingLinks] = useState<BookingLink[]>([])
+  const [filterBookingMember, setFilterBookingMember] = useState<string>('all')
   const [showCreateLink, setShowCreateLink] = useState(false)
   const [newLinkLabel, setNewLinkLabel] = useState('')
   const [newLinkDuration, setNewLinkDuration] = useState(30)
@@ -766,6 +767,23 @@ export function BusinessAppointments() {
               </button>
             </div>
 
+            {/* Member filter for booking links */}
+            {isOwnerOrHoS && teamMembers.length > 0 && (
+              <div className="mb-6">
+                <select
+                  value={filterBookingMember}
+                  onChange={(e) => setFilterBookingMember(e.target.value)}
+                  className="w-full bg-stone-50/50 border-none rounded-full px-4 py-2.5 text-sm font-medium text-[#1b1c1b] focus:ring-2 ring-[#006c49]/20 appearance-none"
+                >
+                  <option value="all">Tous les membres</option>
+                  <option value="owner">Mes liens (Owner)</option>
+                  {teamMembers.filter(m => !m._isOwner).map(m => (
+                    <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Create link form */}
             {showCreateLink && (
               <div className="rounded-xl bg-[#f5f3f2] p-5 mb-6 space-y-4">
@@ -828,13 +846,19 @@ export function BusinessAppointments() {
             )}
 
             {/* Existing links */}
-            {bookingLinks.length === 0 && !showCreateLink ? (
+            {(() => {
+              const filteredLinks = filterBookingMember === 'all'
+                ? bookingLinks
+                : filterBookingMember === 'owner'
+                  ? bookingLinks.filter(bl => !bl.team_member_id)
+                  : bookingLinks.filter(bl => bl.team_member_id === filterBookingMember)
+              return filteredLinks.length === 0 && !showCreateLink ? (
               <p className="text-sm text-[#444748]/50 text-center py-6">
                 Aucun lien de booking.
               </p>
             ) : (
               <div className="flex flex-col gap-6">
-                {bookingLinks.map(bl => {
+                {filteredLinks.map(bl => {
                   const bookingUrl = bl.slug ? `${window.location.origin}/book/${bl.slug}` : bl.link
                   const memberName = bl.team_member_id ? teamMembers.find(m => m.id === bl.team_member_id) : null
                   return (
@@ -876,7 +900,8 @@ export function BusinessAppointments() {
                   )
                 })}
               </div>
-            )}
+            )
+            })()}
           </div>
         )}
       </div>

@@ -29,6 +29,7 @@ export interface BusinessProspect {
   assigned_to?: string
   assigned_setter?: string
   stage_changed_by?: string
+  previous_stage?: string
   hubspot_contact_id?: string
   systemeio_contact_id?: string
   airtable_record_id?: string
@@ -396,10 +397,14 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   const updateProspect = async (id: number, updates: Partial<BusinessProspect>) => {
     const previousProspects = prospects
 
-    // Track who changed the stage
+    // Track who changed the stage + save previous stage
     if (updates.stage) {
       const changedBy = isTeamMember ? (teamMember?.id || user?.id) : 'owner'
       updates.stage_changed_by = changedBy
+      const currentStage = prospects.find(p => p.id === id)?.stage
+      if (currentStage && currentStage !== updates.stage) {
+        ;(updates as any).previous_stage = currentStage
+      }
     }
 
     // Optimistic update

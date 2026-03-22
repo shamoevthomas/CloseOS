@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
+import { BusinessProspectView } from '../components/BusinessProspectView'
 import toast from 'react-hot-toast'
 
 interface Reminder {
@@ -68,6 +69,8 @@ export function BusinessReminders() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null)
+  const [viewProspect, setViewProspect] = useState<number | null>(null)
   const [filterMember, setFilterMember] = useState<string>('all')
   const [filterDate, setFilterDate] = useState<string>('')
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -354,7 +357,7 @@ export function BusinessReminders() {
                   )}
                 >
                   {/* Desktop row */}
-                  <div className="hidden md:grid grid-cols-12 gap-4 items-center px-8 py-6 hover:bg-stone-50/40 transition-all duration-300">
+                  <div onClick={() => setSelectedReminder(reminder)} className="hidden md:grid grid-cols-12 gap-4 items-center px-8 py-6 hover:bg-stone-50/40 transition-all duration-300 cursor-pointer">
                     <div className="col-span-3">
                       <p className={cn(
                         'font-bold text-sm',
@@ -412,7 +415,7 @@ export function BusinessReminders() {
                     <div className="col-span-2 flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       {status !== 'done' && (
                         <button
-                          onClick={() => handleMarkDone(reminder.id)}
+                          onClick={(e) => { e.stopPropagation(); handleMarkDone(reminder.id) }}
                           disabled={isLoading}
                           className="p-2 text-[#006c49] hover:bg-[#006c49]/10 rounded-full transition-colors disabled:opacity-50"
                         >
@@ -420,7 +423,7 @@ export function BusinessReminders() {
                         </button>
                       )}
                       <button
-                        onClick={() => handleDelete(reminder.id)}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(reminder.id) }}
                         disabled={isLoading}
                         className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors disabled:opacity-50"
                       >
@@ -430,7 +433,7 @@ export function BusinessReminders() {
                   </div>
 
                   {/* Mobile row */}
-                  <div className="md:hidden px-6 py-5 space-y-3">
+                  <div onClick={() => setSelectedReminder(reminder)} className="md:hidden px-6 py-5 space-y-3 cursor-pointer">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className={cn('text-sm font-bold', status === 'done' ? 'text-stone-400' : 'text-stone-900')}>{reminder.title}</p>
@@ -458,7 +461,7 @@ export function BusinessReminders() {
                       <div className="flex items-center gap-1.5">
                         {status !== 'done' && (
                           <button
-                            onClick={() => handleMarkDone(reminder.id)}
+                            onClick={(e) => { e.stopPropagation(); handleMarkDone(reminder.id) }}
                             disabled={isLoading}
                             className="p-2 text-[#006c49] hover:bg-[#006c49]/10 rounded-full transition-colors disabled:opacity-50"
                           >
@@ -466,7 +469,7 @@ export function BusinessReminders() {
                           </button>
                         )}
                         <button
-                          onClick={() => handleDelete(reminder.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(reminder.id) }}
                           disabled={isLoading}
                           className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors disabled:opacity-50"
                         >
@@ -481,6 +484,134 @@ export function BusinessReminders() {
           </div>
         </div>
       )}
+
+      {/* Detail Modal */}
+      {selectedReminder && !viewProspect && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setSelectedReminder(null)} />
+          <div className="relative w-full max-w-md bg-white rounded-3xl overflow-hidden" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}>
+            <div className="px-8 pt-8 pb-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  Détail du rappel
+                </h2>
+                <button onClick={() => setSelectedReminder(null)} className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full transition-colors">
+                  <X className="h-5 w-5" strokeWidth={1.5} />
+                </button>
+              </div>
+            </div>
+            <div className="px-8 pb-8 space-y-5">
+              {/* Status badge */}
+              {(() => {
+                const status = getStatus(selectedReminder)
+                const config = statusConfig[status]
+                return (
+                  <span className={cn('px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] border inline-block', config.cls)}>
+                    {config.label}
+                  </span>
+                )
+              })()}
+
+              {/* Title */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 mb-1">Titre</label>
+                <p className="text-lg font-extrabold text-stone-900">{selectedReminder.title}</p>
+              </div>
+
+              {/* Description */}
+              {selectedReminder.description && (
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 mb-1">Description</label>
+                  <p className="text-sm text-stone-700 leading-relaxed">{selectedReminder.description}</p>
+                </div>
+              )}
+
+              {/* Date & Time */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 mb-1">Date & Heure</label>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                  <p className={cn('text-sm font-medium', getStatus(selectedReminder) === 'overdue' ? 'text-red-600' : 'text-stone-900')}>
+                    {new Date(selectedReminder.reminder_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {' à '}
+                    {new Date(selectedReminder.reminder_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Assigned to */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 mb-1">Assigné à</label>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center text-[10px] font-bold text-stone-600">
+                    {getMemberInitials(selectedReminder.assigned_to || undefined)}
+                  </div>
+                  <p className="text-sm font-medium text-stone-900">
+                    {selectedReminder.assigned_to ? (getMemberName(selectedReminder.assigned_to) || 'Membre') : 'Moi-même'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Linked prospect */}
+              {selectedReminder.prospect_id && (
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 mb-1">Prospect lié</label>
+                  <button
+                    onClick={() => { setViewProspect(selectedReminder.prospect_id) }}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-stone-50 hover:bg-stone-100 rounded-xl transition-colors w-full text-left"
+                  >
+                    <User className="h-4 w-4 text-stone-500" strokeWidth={1.5} />
+                    <span className="text-sm font-semibold text-stone-900">{getProspectName(selectedReminder.prospect_id) || 'Prospect'}</span>
+                    <span className="ml-auto text-xs text-stone-400">Voir la fiche →</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Created at */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 mb-1">Créé le</label>
+                <p className="text-sm text-stone-500">
+                  {new Date(selectedReminder.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                {getStatus(selectedReminder) !== 'done' && (
+                  <button
+                    onClick={() => { handleMarkDone(selectedReminder.id); setSelectedReminder(null) }}
+                    className="flex-1 py-3 bg-[#006c49] text-white rounded-full font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 className="h-4 w-4" strokeWidth={1.5} />
+                    Marquer comme fait
+                  </button>
+                )}
+                <button
+                  onClick={() => { handleDelete(selectedReminder.id); setSelectedReminder(null) }}
+                  className="flex-1 py-3 bg-stone-100 text-red-600 rounded-full font-bold text-sm hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prospect View */}
+      {viewProspect && (() => {
+        const prospect = prospects.find(p => p.id === viewProspect)
+        if (!prospect) return null
+        return (
+          <BusinessProspectView
+            prospect={prospect}
+            onClose={() => { setViewProspect(null); setSelectedReminder(null) }}
+            onUpdate={(_id: number, _updates: any) => {}}
+            onDelete={(_id: number) => {}}
+          />
+        )
+      })()}
 
       {/* Create Modal */}
       {showCreateModal && (

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
   User, ChevronDown, Search, LayoutGrid, List,
@@ -20,6 +21,13 @@ const STAGES = [
   { id: 'noshow', name: 'No Show', color: 'bg-slate-500', textColor: 'text-slate-700', bgLight: 'bg-slate-50', borderColor: 'border-slate-200' },
   { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50', borderColor: 'border-red-200' },
 ]
+
+const ACTIVE_STAGE_IDS = ['prospect', 'qualified', 'won', 'followup']
+const INACTIVE_STAGE_IDS = ['unqualified', 'noanswer', 'noshow', 'lost']
+const ACTIVE_STAGES = STAGES.filter(s => ACTIVE_STAGE_IDS.includes(s.id))
+const INACTIVE_STAGES = STAGES.filter(s => INACTIVE_STAGE_IDS.includes(s.id))
+
+const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 font-bold'
 
 const PERIOD_OPTIONS = [
   { label: 'Tout', days: 0 },
@@ -323,81 +331,172 @@ export function BusinessPipeline() {
       {/* Kanban View */}
       {viewMode === 'kanban' && (
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex-1 overflow-x-auto">
-            <div className="flex gap-4 min-w-max pb-4" style={{ minHeight: '400px' }}>
-              {STAGES.map((stage) => {
-                const stageDeals = filtered.filter(d => d.stage === stage.id)
+          <div className="flex-1 overflow-y-auto space-y-12 pr-2 custom-scrollbar">
+            {/* FLUX ACTIF */}
+            <section>
+              <div className="flex items-baseline space-x-3 mb-6">
+                <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900">Flux Actif</h2>
+                <div className="h-1 w-1 rounded-full bg-stone-300" />
+                <span className={LABEL_STYLE}>Opérations Prioritaires</span>
+              </div>
+              <div className="grid grid-cols-4 gap-4" style={{ minHeight: '400px' }}>
+                {ACTIVE_STAGES.map((stage) => {
+                  const stageDeals = filtered.filter(d => d.stage === stage.id)
 
-                return (
-                  <div key={stage.id} className="w-80 flex flex-col gap-4">
-                    <div className="flex items-center justify-between px-2">
-                      <div className="flex items-center gap-2">
-                        <div className={cn("h-3 w-3 rounded-full", stage.color)} />
-                        <span className="text-sm font-extrabold tracking-tight text-stone-900">{stage.name}</span>
-                      </div>
-                      <span className="bg-stone-100 text-[10px] font-bold rounded px-2 py-0.5">
-                        {stageDeals.length}
-                      </span>
-                    </div>
-
-                    <Droppable droppableId={stage.id}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className={cn(
-                            "flex-1 bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto",
-                            snapshot.isDraggingOver && "bg-stone-50/50"
-                          )}
-                        >
-                          {stageDeals.map((deal, index) => (
-                            <Draggable key={deal.id} draggableId={String(deal.id)} index={index}>
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  onClick={() => setSelectedProspect(deal)}
-                                  className={cn(
-                                    "group bg-white p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] hover:shadow-xl border border-transparent hover:border-stone-200/20 transition-all cursor-pointer",
-                                    snapshot.isDragging && "shadow-2xl ring-2 ring-stone-300 rotate-1 scale-105"
-                                  )}
-                                >
-                                  <div className="flex items-start justify-between mb-1">
-                                    <div className="flex items-center gap-2">
-                                      <div className="h-7 w-7 rounded-full bg-stone-100 flex items-center justify-center">
-                                        <User className="h-3.5 w-3.5 text-stone-500" />
-                                      </div>
-                                      <div>
-                                        <p className="text-sm font-extrabold text-stone-900 leading-tight">{getDisplayName(deal)}</p>
-                                        {deal.company && <p className="text-xs text-stone-500">{deal.company}</p>}
-                                      </div>
-                                    </div>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
-                                      className="p-1 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-colors"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                  {deal.value && (
-                                    <p className="text-xs font-extrabold text-emerald-600 mt-1">{deal.value.toLocaleString()} €</p>
-                                  )}
-                                  {deal.email && (
-                                    <p className="text-xs text-stone-400 truncate mt-1">{deal.email}</p>
-                                  )}
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
+                  return (
+                    <div key={stage.id} className="flex flex-col gap-4">
+                      <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center gap-2">
+                          <div className={cn("h-3 w-3 rounded-full", stage.color)} />
+                          <span className="text-sm font-extrabold tracking-tight text-stone-900">{stage.name}</span>
                         </div>
-                      )}
-                    </Droppable>
-                  </div>
-                )
-              })}
-            </div>
+                        <span className="bg-stone-100 text-[10px] font-bold rounded-full px-2 py-0.5">
+                          {stageDeals.length}
+                        </span>
+                      </div>
+
+                      <Droppable droppableId={stage.id}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            className={cn(
+                              "flex-1 bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto",
+                              snapshot.isDraggingOver && "bg-stone-50/50"
+                            )}
+                          >
+                            {stageDeals.map((deal, index) => (
+                              <Draggable key={deal.id} draggableId={String(deal.id)} index={index}>
+                                {(provided, snapshot) => {
+                                  const child = (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      onClick={() => setSelectedProspect(deal)}
+                                      className={cn(
+                                        "group bg-white p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] hover:shadow-xl border border-transparent hover:border-stone-200/20 transition-all cursor-pointer",
+                                        snapshot.isDragging && "shadow-2xl ring-2 ring-stone-300 rotate-1 scale-105 z-[9999]"
+                                      )}
+                                    >
+                                      <div className="flex items-start justify-between mb-1">
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-7 w-7 rounded-full bg-stone-100 flex items-center justify-center">
+                                            <User className="h-3.5 w-3.5 text-stone-500" />
+                                          </div>
+                                          <div>
+                                            <p className="text-sm font-extrabold text-stone-900 leading-tight">{getDisplayName(deal)}</p>
+                                            {deal.company && <p className="text-xs text-stone-500">{deal.company}</p>}
+                                          </div>
+                                        </div>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
+                                          className="p-1 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-colors"
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                      {deal.value && (
+                                        <p className="text-xs font-extrabold text-emerald-600 mt-1">{deal.value.toLocaleString()} €</p>
+                                      )}
+                                      {deal.email && (
+                                        <p className="text-xs text-stone-400 truncate mt-1">{deal.email}</p>
+                                      )}
+                                    </div>
+                                  )
+                                  return snapshot.isDragging ? createPortal(child, document.body) : child
+                                }}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+
+            {/* FLUX INACTIF */}
+            <section className="opacity-60 hover:opacity-100 transition-opacity">
+              <div className="flex items-baseline space-x-3 mb-6">
+                <h2 className="font-business-display text-xl font-extrabold tracking-tight text-stone-600">Flux Inactif</h2>
+                <div className="h-1 w-1 rounded-full bg-stone-300" />
+                <span className={LABEL_STYLE}>Archives & Rejets</span>
+              </div>
+              <div className="grid grid-cols-4 gap-4" style={{ minHeight: '150px' }}>
+                {INACTIVE_STAGES.map((stage) => {
+                  const stageDeals = filtered.filter(d => d.stage === stage.id)
+
+                  return (
+                    <div key={stage.id} className="flex flex-col gap-4">
+                      <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center gap-2">
+                          <div className={cn("h-2.5 w-2.5 rounded-full", stage.id === 'lost' ? 'bg-[#ba1a1a]/40' : 'bg-stone-300')} />
+                          <span className="text-xs font-bold uppercase tracking-wider text-stone-500">{stage.name}</span>
+                        </div>
+                        <span className="bg-stone-100 text-[10px] font-bold rounded-full px-2 py-0.5 text-stone-500">
+                          {stageDeals.length}
+                        </span>
+                      </div>
+
+                      <Droppable droppableId={stage.id}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            className={cn(
+                              "flex-1 rounded-xl border border-stone-200/50 bg-stone-50/50 p-3 flex flex-col gap-2 overflow-y-auto",
+                              snapshot.isDraggingOver && "bg-stone-100/50"
+                            )}
+                          >
+                            {stageDeals.map((deal, index) => (
+                              <Draggable key={deal.id} draggableId={String(deal.id)} index={index}>
+                                {(provided, snapshot) => {
+                                  const child = (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      onClick={() => setSelectedProspect(deal)}
+                                      className={cn(
+                                        "group bg-white rounded-xl border border-stone-200/50 p-3 cursor-pointer hover:bg-stone-50 transition-colors",
+                                        snapshot.isDragging && "shadow-2xl ring-1 ring-stone-300 z-[9999]"
+                                      )}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <p className="text-sm font-medium text-stone-600">{getDisplayName(deal)}</p>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
+                                          className="p-1 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-colors"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                      {deal.value && (
+                                        <p className="text-xs text-stone-400 mt-0.5">{deal.value.toLocaleString()} €</p>
+                                      )}
+                                    </div>
+                                  )
+                                  return snapshot.isDragging ? createPortal(child, document.body) : child
+                                }}
+                              </Draggable>
+                            ))}
+                            {stageDeals.length === 0 && (
+                              <div className="flex items-center justify-center h-20">
+                                <span className="text-xs text-stone-400">{stageDeals.length} éléments</span>
+                              </div>
+                            )}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
           </div>
         </DragDropContext>
       )}

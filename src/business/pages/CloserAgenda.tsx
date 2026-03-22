@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   ChevronLeft, ChevronRight, Calendar, Clock, User, Bell, X, Loader2,
-  Video, Phone, MapPin, ExternalLink, RefreshCw, Plus, ChevronDown,
+  Video, Phone, MapPin, ExternalLink, RefreshCw, Plus, ChevronDown, FileText, Megaphone,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
@@ -859,127 +859,143 @@ export function CloserAgenda() {
 
       {/* Event detail modal */}
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setSelectedEvent(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4" onClick={() => setSelectedEvent(null)}>
           <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className={cn(
-              'px-6 py-5 flex items-center justify-between',
-              selectedEvent.type === 'appointment' ? 'bg-blue-50' : selectedEvent.type === 'google' ? 'bg-stone-50' : 'bg-orange-50'
-            )}>
-              <div className="flex items-center gap-2">
-                {selectedEvent.type === 'appointment' && <User className="h-5 w-5 text-blue-600" />}
-                {selectedEvent.type === 'reminder' && <Bell className="h-5 w-5 text-orange-600" />}
-                {selectedEvent.type === 'google' && <Calendar className="h-5 w-5 text-neutral-600" />}
-                <h3 className="text-base font-extrabold text-neutral-900" style={{ fontFamily: "'Manrope', sans-serif" }}>
-                  {selectedEvent.type === 'appointment' ? 'Rendez-vous' : selectedEvent.type === 'google' ? 'Google Agenda' : 'Rappel'}
-                </h3>
+            {/* Header: icon + title + status + close */}
+            <div className="px-7 pt-7 pb-2">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center shrink-0">
+                  {selectedEvent.type === 'appointment' && <Calendar className="h-5 w-5 text-neutral-600" />}
+                  {selectedEvent.type === 'reminder' && <Bell className="h-5 w-5 text-neutral-600" />}
+                  {selectedEvent.type === 'google' && <Calendar className="h-5 w-5 text-neutral-600" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-black text-neutral-900 leading-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
+                    {selectedEvent.title}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {selectedEvent.type === 'appointment' && selectedEvent.data?.status && (
+                      <span className={cn('text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full', STATUS_COLORS[selectedEvent.data.status])}>
+                        {STATUS_LABELS[selectedEvent.data.status]}
+                      </span>
+                    )}
+                    {selectedEvent.type === 'appointment' && selectedEvent.data?.campaign && (
+                      <span className="text-xs text-neutral-400 flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-neutral-400" />
+                        {selectedEvent.data.campaign.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button onClick={() => setSelectedEvent(null)} className="p-1.5 rounded-full hover:bg-neutral-100 transition-colors shrink-0 mt-1">
+                  <X className="w-4 h-4 text-neutral-400" />
+                </button>
               </div>
-              <button onClick={() => setSelectedEvent(null)} className="p-2 rounded-full hover:bg-white/60 transition-colors">
-                <X className="w-4 h-4 text-stone-500" />
-              </button>
             </div>
-            <div className="px-6 py-5 space-y-4">
-              <div>
-                <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Titre</p>
-                <p className="text-sm font-bold text-neutral-900">{selectedEvent.title}</p>
-              </div>
-              <div className="flex gap-6">
+
+            {/* Content rows with icons */}
+            <div className="px-7 py-5 space-y-5">
+              {/* Date & Time row */}
+              <div className="flex items-start gap-4">
+                <Clock className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Date</p>
-                  <p className="text-sm text-neutral-700">
+                  <p className="text-sm font-bold text-neutral-900 capitalize">
                     {new Date(selectedEvent.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                   </p>
+                  {selectedEvent.time && (
+                    <p className="text-sm text-neutral-500 mt-0.5">
+                      {selectedEvent.time}
+                      {selectedEvent.type === 'appointment' && selectedEvent.data?.duration > 0 && (
+                        <> ({selectedEvent.data.duration >= 60 ? `${Math.floor(selectedEvent.data.duration / 60)}h${selectedEvent.data.duration % 60 > 0 ? ` ${selectedEvent.data.duration % 60}min` : ''}` : `${selectedEvent.data.duration}min`})</>
+                      )}
+                    </p>
+                  )}
                 </div>
-                {selectedEvent.time && (
-                  <div>
-                    <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Heure</p>
-                    <p className="text-sm text-neutral-700 flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-neutral-400" />{selectedEvent.time}</p>
-                  </div>
-                )}
               </div>
 
+              {/* Appointment-specific rows */}
               {selectedEvent.type === 'appointment' && selectedEvent.data && (() => {
                 const a = selectedEvent.data as Appointment
                 return (
                   <>
-                    {a.status && (
-                      <div>
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Statut</p>
-                        <span className={cn('inline-block text-xs font-medium px-2.5 py-1 rounded-full', STATUS_COLORS[a.status])}>{STATUS_LABELS[a.status]}</span>
-                      </div>
-                    )}
+                    {/* Prospect row */}
                     {a.prospect && (
-                      <div>
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Prospect</p>
-                        <p className="text-sm text-neutral-700">{a.prospect.contact}</p>
-                        {a.prospect.email && <p className="text-xs text-neutral-500">{a.prospect.email}</p>}
-                        {a.prospect.phone && <p className="text-xs text-neutral-500">{a.prospect.phone}</p>}
+                      <div className="flex items-start gap-4">
+                        <User className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-bold text-neutral-900">{a.prospect.contact}</p>
+                          {(a.prospect.email || a.prospect.phone) && (
+                            <p className="text-sm text-neutral-500 mt-0.5">
+                              {a.prospect.email}{a.prospect.email && a.prospect.phone && ' · '}{a.prospect.phone}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
+
+                    {/* Campaign row */}
                     {a.campaign && (
-                      <div>
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Campagne</p>
-                        <p className="text-sm text-neutral-700">{a.campaign.name}</p>
+                      <div className="flex items-start gap-4">
+                        <Megaphone className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-bold text-neutral-900">{a.campaign.name}</p>
+                        </div>
                       </div>
                     )}
-                    {a.duration > 0 && (
-                      <div>
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Durée</p>
-                        <p className="text-sm text-neutral-700">{a.duration} min</p>
-                      </div>
-                    )}
+
+                    {/* Notes row */}
                     {a.notes && (
-                      <div>
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Notes</p>
-                        <p className="text-sm text-neutral-600 whitespace-pre-wrap">{a.notes}</p>
+                      <div className="flex items-start gap-4">
+                        <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
+                        <div className="flex-1 bg-neutral-100 rounded-2xl p-4">
+                          <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
+                          <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">{a.notes}</p>
+                        </div>
                       </div>
                     )}
                   </>
                 )
               })()}
 
+              {/* Google event rows */}
               {selectedEvent.type === 'google' && (
                 <>
                   {selectedEvent.location && (
-                    <div>
-                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Lieu</p>
-                      <p className="text-sm text-neutral-700 flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-neutral-400" />{selectedEvent.location}</p>
+                    <div className="flex items-start gap-4">
+                      <MapPin className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
+                      <p className="text-sm text-neutral-700">{selectedEvent.location}</p>
                     </div>
                   )}
                   {selectedEvent.description && (
-                    <div>
-                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Description</p>
-                      <p className="text-sm text-neutral-600 whitespace-pre-wrap">{selectedEvent.description}</p>
+                    <div className="flex items-start gap-4">
+                      <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
+                      <div className="flex-1 bg-neutral-100 rounded-2xl p-4">
+                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
+                        <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">{selectedEvent.description}</p>
+                      </div>
                     </div>
-                  )}
-                  {selectedEvent.hangoutLink && (
-                    <a
-                      href={selectedEvent.hangoutLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-3 text-sm font-bold text-white hover:bg-neutral-800 transition-colors shadow-lg"
-                    >
-                      <Video className="h-4 w-4" />
-                      Rejoindre Google Meet
-                      <ExternalLink className="h-3.5 w-3.5 ml-auto" />
-                    </a>
                   )}
                 </>
               )}
 
+              {/* Reminder rows */}
               {selectedEvent.type === 'reminder' && selectedEvent.data && (() => {
                 const r = selectedEvent.data as Reminder
                 return (
                   <>
                     {r.description && (
-                      <div>
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Description</p>
-                        <p className="text-sm text-neutral-600 whitespace-pre-wrap">{r.description}</p>
+                      <div className="flex items-start gap-4">
+                        <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
+                        <div className="flex-1 bg-neutral-100 rounded-2xl p-4">
+                          <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
+                          <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">{r.description}</p>
+                        </div>
                       </div>
                     )}
-                    <div>
-                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Statut</p>
+                    <div className="flex items-center gap-4">
+                      <Bell className="h-5 w-5 text-neutral-400 shrink-0" />
                       <span className={cn(
-                        'inline-block text-xs font-medium px-2.5 py-1 rounded-full',
+                        'text-xs font-bold px-3 py-1.5 rounded-full',
                         r.is_done ? 'bg-green-100 text-green-700' : new Date(r.reminder_date) < new Date() ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
                       )}>
                         {r.is_done ? 'Terminé' : new Date(r.reminder_date) < new Date() ? 'En retard' : 'À venir'}
@@ -989,6 +1005,24 @@ export function CloserAgenda() {
                 )
               })()}
             </div>
+
+            {/* Footer: Google Meet button */}
+            {(selectedEvent.hangoutLink || (selectedEvent.type === 'appointment' && selectedEvent.data)) && (
+              <div className="px-7 pb-7 pt-2 flex items-center gap-3">
+                {selectedEvent.hangoutLink && (
+                  <a
+                    href={selectedEvent.hangoutLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white hover:bg-neutral-800 transition-colors shadow-lg"
+                  >
+                    <Video className="h-4 w-4" />
+                    Rejoindre Google Meet
+                    <ExternalLink className="h-3.5 w-3.5 ml-auto" />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

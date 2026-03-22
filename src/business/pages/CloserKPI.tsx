@@ -148,9 +148,13 @@ export function CloserKPI() {
     const noShow = src.filter((p: any) => p.stage === 'noshow')
     const lost = src.filter((p: any) => p.stage === 'lost')
     const revenue = won.reduce((sum: number, p: any) => sum + (p.value || 0), 0)
-    const closedTotal = won.length + lost.length + noShow.length
+    // Conversion: no-shows count only if they came from follow-up
+    const noshowFromFollowup = noShow.filter((p: any) => p.previous_stage === 'followup')
+    const closedTotal = won.length + lost.length + noshowFromFollowup.length
     const conversionRate = closedTotal > 0 ? (won.length / closedTotal) * 100 : 0
-    const noShowRate = closedTotal > 0 ? (noShow.length / closedTotal) * 100 : 0
+    // No-show rate: denominator = all qualified prospects who had an appointment (excludes prospect, unqualified, noanswer)
+    const qualifiedWithRdv = src.filter((p: any) => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+    const noShowRate = qualifiedWithRdv.length > 0 ? (noShow.length / qualifiedWithRdv.length) * 100 : 0
     return { won, noShow, lost, revenue, closedTotal, conversionRate, noShowRate }
   }
 

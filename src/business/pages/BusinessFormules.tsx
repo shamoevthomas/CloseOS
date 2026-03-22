@@ -126,7 +126,11 @@ export function BusinessFormules() {
     setFormDescription(formula.description || '')
     setFormResources(formula.resources || [])
     setRoleRates({}); setMemberRates({}); setExpandedRoles({})
-    if (canSeeCommissions) await loadFormulaCommissions(formula.id)
+    try {
+      if (canSeeCommissions) await loadFormulaCommissions(formula.id)
+    } catch (err) {
+      console.error('Error loading commissions:', err)
+    }
     setIsModalOpen(true)
   }
 

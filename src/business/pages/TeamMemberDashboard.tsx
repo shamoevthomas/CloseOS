@@ -109,9 +109,12 @@ export function TeamMemberDashboard() {
   const lostProspects = useMemo(() => prospects.filter(p => p.stage === 'lost'), [prospects])
 
   const totalRevenue = useMemo(() => wonProspects.reduce((s, p) => s + (Number(p.value) || 0), 0), [wonProspects])
-  const totalDecided = wonProspects.length + lostProspects.length + noshowProspects.length
+  // No-shows only count if they came from follow-up stage
+  const noshowFromFollowup = noshowProspects.filter(p => p.previous_stage === 'followup')
+  const totalDecided = wonProspects.length + lostProspects.length + noshowFromFollowup.length
   const closingRate = totalDecided > 0 ? (wonProspects.length / totalDecided) * 100 : 0
-  const noshowRate = prospects.length > 0 ? (noshowProspects.length / prospects.length) * 100 : 0
+  const noshowEligible = prospects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const noshowRate = noshowEligible.length > 0 ? (noshowProspects.length / noshowEligible.length) * 100 : 0
   const totalAppts = appointments.length
 
   // My objectives

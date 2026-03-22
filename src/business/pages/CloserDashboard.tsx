@@ -76,9 +76,12 @@ export function CloserDashboard() {
   const lostProspects = useMemo(() => myProspects.filter(p => p.stage === 'lost'), [myProspects])
 
   const totalRevenue = useMemo(() => wonProspects.reduce((s, p) => s + (Number(p.value) || 0), 0), [wonProspects])
-  const totalDecided = wonProspects.length + lostProspects.length + noShowProspects.length
+  // No-shows only count if they came from follow-up stage
+  const noshowFromFollowup = noShowProspects.filter(p => p.previous_stage === 'followup')
+  const totalDecided = wonProspects.length + lostProspects.length + noshowFromFollowup.length
   const closingRate = totalDecided > 0 ? (wonProspects.length / totalDecided) * 100 : 0
-  const noshowRate = myProspects.length > 0 ? (noShowProspects.length / myProspects.length) * 100 : 0
+  const noshowEligible = myProspects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const noshowRate = noshowEligible.length > 0 ? (noShowProspects.length / noshowEligible.length) * 100 : 0
 
   // Upcoming appointments
   const now = new Date()

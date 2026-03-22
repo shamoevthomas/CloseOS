@@ -112,13 +112,16 @@ function computeKpis(prospects: any[]) {
   const lost = prospects.filter(p => p.stage === 'lost')
   const noshow = prospects.filter(p => p.stage === 'noshow')
   const active = prospects.filter(p => ['prospect', 'qualified', 'followup'].includes(p.stage))
-  const totalDecided = won.length + lost.length + noshow.length
+  // No-shows only count if they came from follow-up stage
+  const noshowFromFollowup = noshow.filter(p => p.previous_stage === 'followup')
+  const totalDecided = won.length + lost.length + noshowFromFollowup.length
 
   const caGenere = won.reduce((sum, p) => sum + (p.value || 0), 0)
   const ventesTotales = won.length
   const tauxConversion = totalDecided > 0 ? (won.length / totalDecided) * 100 : 0
   const prospectsActifs = active.length
-  const tauxNoShow = prospects.length > 0 ? (noshow.length / prospects.length) * 100 : 0
+  const noshowEligible = prospects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const tauxNoShow = noshowEligible.length > 0 ? (noshow.length / noshowEligible.length) * 100 : 0
   const dealsPerdu = lost.length
 
   return {

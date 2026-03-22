@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
   User, ChevronDown, Search, Loader2, Building2,
@@ -162,45 +163,48 @@ export function CloserPipeline() {
 
                               return (
                                 <Draggable key={deal.id} draggableId={String(deal.id)} index={index}>
-                                  {(provided, snapshot) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      onClick={() => setSelectedProspect(deal)}
-                                      className={cn(
-                                        GLASS_CARD,
-                                        'rounded-xl p-5 border-l-4 group cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all shadow-[0_20px_40px_rgba(27,28,27,0.04)]',
-                                        stage.border,
-                                        snapshot.isDragging && 'rotate-2 scale-105 z-50 shadow-2xl'
-                                      )}
-                                      style={provided.draggableProps.style}
-                                    >
-                                      <div className="flex justify-between items-start mb-4">
-                                        <div className="flex items-center space-x-2">
-                                          <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center">
-                                            {isB2B
-                                              ? <Building2 className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
-                                              : <User className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
-                                            }
+                                  {(provided, snapshot) => {
+                                    const child = (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        onClick={() => setSelectedProspect(deal)}
+                                        className={cn(
+                                          GLASS_CARD,
+                                          'rounded-xl p-5 border-l-4 group cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all shadow-[0_20px_40px_rgba(27,28,27,0.04)]',
+                                          stage.border,
+                                          snapshot.isDragging && 'rotate-2 scale-105 z-[9999] shadow-2xl'
+                                        )}
+                                        style={provided.draggableProps.style}
+                                      >
+                                        <div className="flex justify-between items-start mb-4">
+                                          <div className="flex items-center space-x-2">
+                                            <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center">
+                                              {isB2B
+                                                ? <Building2 className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                                                : <User className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                                              }
+                                            </div>
+                                            <span className="font-bold text-sm tracking-tight text-stone-900 truncate max-w-[140px]">
+                                              {mainTitle || 'Sans nom'}
+                                            </span>
                                           </div>
-                                          <span className="font-bold text-sm tracking-tight text-stone-900 truncate max-w-[140px]">
-                                            {mainTitle || 'Sans nom'}
-                                          </span>
+                                        </div>
+
+                                        {subTitle && (
+                                          <p className="text-xs text-stone-500 mb-2 truncate">{subTitle}</p>
+                                        )}
+
+                                        <div className="flex justify-between items-end">
+                                          <p className="text-lg font-black text-stone-900">
+                                            {(deal.value || 0).toLocaleString()} €
+                                          </p>
                                         </div>
                                       </div>
-
-                                      {subTitle && (
-                                        <p className="text-xs text-stone-500 mb-2 truncate">{subTitle}</p>
-                                      )}
-
-                                      <div className="flex justify-between items-end">
-                                        <p className="text-lg font-black text-stone-900">
-                                          {(deal.value || 0).toLocaleString()} €
-                                        </p>
-                                      </div>
-                                    </div>
-                                  )}
+                                    )
+                                    return snapshot.isDragging ? createPortal(child, document.body) : child
+                                  }}
                                 </Draggable>
                               )
                             })}
@@ -258,21 +262,27 @@ export function CloserPipeline() {
                             >
                               {stageDeals.map((deal, index) => (
                                 <Draggable key={deal.id} draggableId={String(deal.id)} index={index}>
-                                  {(provided) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      onClick={() => setSelectedProspect(deal)}
-                                      className="cursor-pointer rounded-xl border border-stone-200/50 bg-stone-50/50 p-3 hover:bg-white transition-colors"
-                                      style={provided.draggableProps.style}
-                                    >
-                                      <p className="text-sm text-stone-600 font-medium">{getDisplayName(deal)}</p>
-                                      {deal.value ? (
-                                        <p className="text-xs text-stone-400 mt-1">{deal.value.toLocaleString()} €</p>
-                                      ) : null}
-                                    </div>
-                                  )}
+                                  {(provided, snapshot) => {
+                                    const child = (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        onClick={() => setSelectedProspect(deal)}
+                                        className={cn(
+                                          "cursor-pointer rounded-xl border border-stone-200/50 bg-stone-50/50 p-3 hover:bg-white transition-colors",
+                                          snapshot.isDragging && "shadow-2xl z-[9999] bg-white"
+                                        )}
+                                        style={provided.draggableProps.style}
+                                      >
+                                        <p className="text-sm text-stone-600 font-medium">{getDisplayName(deal)}</p>
+                                        {deal.value ? (
+                                          <p className="text-xs text-stone-400 mt-1">{deal.value.toLocaleString()} €</p>
+                                        ) : null}
+                                      </div>
+                                    )
+                                    return snapshot.isDragging ? createPortal(child, document.body) : child
+                                  }}
                                 </Draggable>
                               ))}
                               {provided.placeholder}

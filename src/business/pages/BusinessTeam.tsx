@@ -4,6 +4,7 @@ import {
   Calendar, Clock, BarChart3, GitBranch, CalendarDays, Mail,
   AlertCircle, DollarSign, ShoppingCart, Target, UserX, Ban,
   Save, CreditCard, History, LogIn, LogOut, Pencil, Check, X, Globe,
+  Link2, Copy, ExternalLink,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
@@ -544,47 +545,6 @@ export function BusinessTeam() {
           })}
         </div>
 
-      {/* Global KPI summary */}
-      {isOwnerView && members.length > 0 && (
-        <div className={cn(WHITE_CARD, 'p-8')}>
-          <h3 className={cn(SECTION_TITLE, 'mb-6')}>
-            <BarChart3 className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-            Résumé global
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {(() => {
-              const allAssigned = prospects.filter(p => members.some(m => m.id === p.assigned_to))
-              const allWon = allAssigned.filter(p => p.stage === 'won')
-              const allLost = allAssigned.filter(p => p.stage === 'lost')
-              const allNoshow = allAssigned.filter(p => p.stage === 'noshow')
-              const totalCA = allWon.reduce((s: number, p: any) => s + (p.value || 0), 0)
-              const decided = allWon.length + allLost.length + allNoshow.length
-              const convRate = decided > 0 ? (allWon.length / decided) * 100 : 0
-
-              return (
-                <>
-                  <div className="rounded-xl bg-stone-50 p-5 text-center">
-                    <p className={LABEL_STYLE}>Prospects assignés</p>
-                    <p className="text-2xl font-business-display font-extrabold text-stone-900 mt-1">{allAssigned.length}</p>
-                  </div>
-                  <div className="rounded-xl bg-stone-50 p-5 text-center">
-                    <p className={LABEL_STYLE}>Ventes</p>
-                    <p className="text-2xl font-business-display font-extrabold text-[#006c49] mt-1">{allWon.length}</p>
-                  </div>
-                  <div className="rounded-xl bg-stone-50 p-5 text-center">
-                    <p className={LABEL_STYLE}>CA généré</p>
-                    <p className="text-2xl font-business-display font-extrabold text-stone-900 mt-1">{formatCurrency(totalCA)}</p>
-                  </div>
-                  <div className="rounded-xl bg-stone-50 p-5 text-center">
-                    <p className={LABEL_STYLE}>Conversion</p>
-                    <p className="text-2xl font-business-display font-extrabold text-stone-900 mt-1">{convRate.toFixed(1)}%</p>
-                  </div>
-                </>
-              )
-            })()}
-          </div>
-        </div>
-      )}
 
       {isOwnerView && (
         <InviteMemberModal
@@ -597,6 +557,80 @@ export function BusinessTeam() {
 }
 
 /* ─── Individual View (Detail Page) ─── */
+
+function BookingLinksSection({ memberId }: { memberId: string }) {
+  const [links, setLinks] = useState<{ id: string; label: string; duration: number; link: string; slug?: string; created_at: string }[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    supabase
+      .from('business_booking_links')
+      .select('id, label, duration, link, slug, created_at')
+      .eq('team_member_id', memberId)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setLinks(data || [])
+        setLoading(false)
+      })
+  }, [memberId])
+
+  const handleCopy = (url: string) => {
+    navigator.clipboard.writeText(url)
+    toast.success('Lien copié')
+  }
+
+  return (
+    <div className={cn(WHITE_CARD, 'p-8')}>
+      <h3 className={cn(SECTION_TITLE, 'mb-8')}>
+        <Link2 className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
+        Liens de Booking
+      </h3>
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-stone-400" />
+        </div>
+      ) : links.length === 0 ? (
+        <div className="text-center py-8">
+          <Link2 className="h-6 w-6 text-stone-200 mx-auto mb-2" strokeWidth={1.5} />
+          <p className="text-sm text-stone-400">Aucun lien de booking</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {links.map(bl => {
+            const bookingUrl = bl.slug ? `${window.location.origin}/book/${bl.slug}` : bl.link
+            return (
+              <div key={bl.id} className="flex items-center justify-between group p-3 rounded-xl hover:bg-stone-50 transition-colors">
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-bold text-stone-900 truncate">{bl.label}</h4>
+                  <p className="text-xs text-stone-500 mt-0.5">{bl.duration} min</p>
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                  <button
+                    onClick={() => handleCopy(bookingUrl)}
+                    className="p-2 rounded-full hover:bg-stone-200 transition-all text-stone-500"
+                    title="Copier le lien"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                  <a
+                    href={bookingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-full hover:bg-stone-200 transition-all text-stone-500"
+                    title="Ouvrir"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function IndividualView({
   member,
@@ -634,7 +668,8 @@ function IndividualView({
   const revenue = won.reduce((s: number, p: any) => s + (p.value || 0), 0)
   const decided = won.length + lost.length + noshow.length
   const convRate = decided > 0 ? (won.length / decided) * 100 : 0
-  const noshowRate = decided > 0 ? (noshow.length / decided) * 100 : 0
+  const noshowEligible = memberProspects.filter((p: any) => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const noshowRate = noshowEligible.length > 0 ? (noshow.length / noshowEligible.length) * 100 : 0
 
   const upcomingAppts = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10)
@@ -991,6 +1026,9 @@ function IndividualView({
               )}
             </div>
           </div>
+
+          {/* Booking Links */}
+          <BookingLinksSection memberId={member.id} />
 
           {/* Upcoming Appointments (table format) */}
           <div className={cn(WHITE_CARD, 'p-8')}>

@@ -179,9 +179,12 @@ export function BusinessReport() {
 
   const totalCA = wonLeads.reduce((s, p) => s + (Number(p.value) || 0), 0)
   const avgDeal = wonLeads.length > 0 ? totalCA / wonLeads.length : 0
-  const totalDecided = wonLeads.length + lostLeads.length + noshowLeads.length
+  // No-shows only count if they came from follow-up stage
+  const noshowFromFollowup = noshowLeads.filter(p => p.previous_stage === 'followup')
+  const totalDecided = wonLeads.length + lostLeads.length + noshowFromFollowup.length
   const closingRate = totalDecided > 0 ? (wonLeads.length / totalDecided) * 100 : 0
-  const noshowRate = totalLeads > 0 ? (noshowLeads.length / totalLeads) * 100 : 0
+  const noshowEligible = filteredProspects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage)).length
+  const noshowRate = noshowEligible > 0 ? (noshowLeads.length / noshowEligible) * 100 : 0
   const lostRate = totalDecided > 0 ? (lostLeads.length / totalDecided) * 100 : 0
 
   // Appointments stats
