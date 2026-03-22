@@ -482,13 +482,13 @@ export function BusinessCampaigns() {
                 {customFieldCount > 0 && <span>{customFieldCount} champ{customFieldCount !== 1 ? 's' : ''} custom</span>}
               </div>
               <div className="flex gap-2 mb-3">
-                <button onClick={() => openEmbedModal(campaign, 'page')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors" title="Page entière">
+                <button onClick={() => openEmbedModal(campaign, 'page')} className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-[#1b1c1b] px-2.5 py-1.5 text-xs font-bold text-white hover:scale-105 active:scale-95 transition-all" title="Page entière">
                   <Monitor className="h-3.5 w-3.5" /> Page
                 </button>
-                <button onClick={() => openEmbedModal(campaign, 'iframe')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors" title="Iframe">
+                <button onClick={() => openEmbedModal(campaign, 'iframe')} className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-[#f5f3f2] px-2.5 py-1.5 text-xs font-bold text-[#1b1c1b] hover:bg-[#eae8e7] transition-colors" title="Iframe">
                   <Layers className="h-3.5 w-3.5" /> Iframe
                 </button>
-                <button onClick={() => openEmbedModal(campaign, 'popup')} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors" title="Popup">
+                <button onClick={() => openEmbedModal(campaign, 'popup')} className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-[#006c49]/10 px-2.5 py-1.5 text-xs font-bold text-[#006c49] hover:bg-[#006c49]/20 transition-colors" title="Popup">
                   <MessageSquare className="h-3.5 w-3.5" /> Popup
                 </button>
               </div>
@@ -1039,63 +1039,63 @@ export function BusinessCampaigns() {
       )}
       {/* Embed Code Modal (Iframe & Popup) */}
       {embedModalCampaign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl bg-white shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.08)]" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.08)' }}>
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 flex-shrink-0">
-              <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between px-8 py-5 flex-shrink-0">
+              <div className="flex items-center gap-5">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">{embedModalCampaign.name}</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{embedModalFormat === 'page' ? 'Personnalisez et partagez votre page de capture' : 'Intégrez le formulaire sur votre site'}</p>
+                  <h3 className="text-xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>{embedModalCampaign.name}</h3>
+                  <p className="text-xs text-[#444748] mt-0.5">{embedModalFormat === 'page' ? 'Personnalisez et partagez votre page de capture' : 'Intégrez le formulaire sur votre site'}</p>
                 </div>
                 {/* Format toggle */}
-                <div className="flex rounded-lg border border-slate-200 overflow-hidden ml-4">
+                <div className="flex rounded-full bg-[#f5f3f2] p-1 ml-4">
                   <button
                     onClick={() => setEmbedModalFormat('page')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-                      embedModalFormat === 'page' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
+                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                      embedModalFormat === 'page' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] hover:text-[#1b1c1b]'
                     }`}
                   >
                     <Monitor className="h-3.5 w-3.5" /> Page
                   </button>
                   <button
                     onClick={() => setEmbedModalFormat('iframe')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-                      embedModalFormat === 'iframe' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
+                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                      embedModalFormat === 'iframe' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] hover:text-[#1b1c1b]'
                     }`}
                   >
                     <Layers className="h-3.5 w-3.5" /> Iframe
                   </button>
                   <button
                     onClick={() => setEmbedModalFormat('popup')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-                      embedModalFormat === 'popup' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
+                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                      embedModalFormat === 'popup' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] hover:text-[#1b1c1b]'
                     }`}
                   >
                     <MessageSquare className="h-3.5 w-3.5" /> Popup
                   </button>
                 </div>
               </div>
-              <button onClick={() => setEmbedModalCampaign(null)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setEmbedModalCampaign(null)} className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] hover:bg-[#f5f3f2] transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Tabs - hidden for page format */}
             {embedModalFormat !== 'page' && (
-              <div className="flex border-b border-slate-100 px-6 flex-shrink-0">
+              <div className="flex px-8 flex-shrink-0 gap-1">
                 <button
                   onClick={() => setEmbedTab('code')}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                    embedTab === 'code' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-full transition-all ${
+                    embedTab === 'code' ? 'bg-[#1b1c1b] text-white' : 'text-[#444748] hover:bg-[#f5f3f2]'
                   }`}
                 >
                   <Code className="h-4 w-4" /> Code & Tuto
                 </button>
                 <button
                   onClick={() => setEmbedTab('style')}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                    embedTab === 'style' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-full transition-all ${
+                    embedTab === 'style' ? 'bg-[#1b1c1b] text-white' : 'text-[#444748] hover:bg-[#f5f3f2]'
                   }`}
                 >
                   <Paintbrush className="h-4 w-4" /> Personnaliser
@@ -1108,17 +1108,17 @@ export function BusinessCampaigns() {
 
               {/* PAGE FORMAT */}
               {embedModalFormat === 'page' && (
-                <div className="p-6 space-y-5">
+                <div className="p-8 space-y-6">
                   {/* Link + Copy */}
                   <div>
-                    <label className="text-sm font-medium text-slate-700 mb-2 block">Lien de la page de capture</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2.5 block ml-1">Lien de la page de capture</label>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 flex items-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 font-mono truncate">
+                      <div className="flex-1 flex items-center rounded-full bg-[#f5f3f2] px-5 py-3 text-sm text-[#444748] font-mono truncate">
                         {getCaptureUrl(embedModalCampaign.slug)}
                       </div>
                       <button
                         onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), 'Lien')}
-                        className="flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-3 text-sm font-medium text-white hover:bg-amber-700 transition-colors flex-shrink-0"
+                        className="flex items-center gap-1.5 rounded-full bg-[#1b1c1b] px-5 py-3 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all flex-shrink-0"
                       >
                         <Copy className="h-4 w-4" /> Copier
                       </button>
@@ -1126,7 +1126,7 @@ export function BusinessCampaigns() {
                         href={getCaptureUrl(embedModalCampaign.slug)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors flex-shrink-0"
+                        className="flex items-center gap-1.5 rounded-full bg-[#f5f3f2] px-5 py-3 text-sm font-bold text-[#1b1c1b] hover:bg-[#eae8e7] transition-colors flex-shrink-0"
                       >
                         <ExternalLink className="h-4 w-4" /> Ouvrir
                       </a>
@@ -1134,22 +1134,22 @@ export function BusinessCampaigns() {
                   </div>
 
                   {/* Style customization for page */}
-                  <div className="flex divide-x divide-slate-200 rounded-xl border border-slate-200 overflow-hidden min-h-[450px]">
+                  <div className="flex rounded-2xl overflow-hidden min-h-[450px] bg-[#f5f3f2]">
                     {/* Left: Controls */}
-                    <div className="w-[260px] flex-shrink-0 p-5 space-y-5 overflow-y-auto bg-white">
-                      <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <Palette className="h-4 w-4 text-amber-600" /> Personnaliser
+                    <div className="w-[260px] flex-shrink-0 p-6 space-y-5 overflow-y-auto bg-white rounded-2xl m-1">
+                      <h4 className="text-sm font-extrabold text-[#1b1c1b] flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                        <Palette className="h-4 w-4 text-[#006c49]" /> Personnaliser
                       </h4>
 
                       {/* Font */}
                       <div>
-                        <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 mb-1.5">
+                        <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2">
                           <Type className="h-3.5 w-3.5" /> Police
                         </label>
                         <select
                           value={styleFont}
                           onChange={(e) => setStyleFont(e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
+                          className="w-full rounded-full bg-[#f5f3f2] px-4 py-2.5 text-xs text-[#1b1c1b] font-medium focus:ring-1 focus:ring-[#006c49] focus:outline-none appearance-none cursor-pointer"
                         >
                           {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                         </select>
@@ -1157,36 +1157,36 @@ export function BusinessCampaigns() {
 
                       {/* Primary color */}
                       <div>
-                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Couleur principale</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Couleur principale</label>
                         <div className="flex items-center gap-2">
-                          <input type="color" value={stylePrimaryColor} onChange={(e) => setStylePrimaryColor(e.target.value)} className="h-8 w-8 rounded border border-slate-200 cursor-pointer" />
-                          <input type="text" value={stylePrimaryColor} onChange={(e) => setStylePrimaryColor(e.target.value)} className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none" />
+                          <input type="color" value={stylePrimaryColor} onChange={(e) => setStylePrimaryColor(e.target.value)} className="h-8 w-8 rounded-full border-0 cursor-pointer" />
+                          <input type="text" value={stylePrimaryColor} onChange={(e) => setStylePrimaryColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
                         </div>
                       </div>
 
                       {/* Background color */}
                       <div>
-                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Fond</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Fond</label>
                         <div className="flex items-center gap-2">
-                          <input type="color" value={styleBgColor} onChange={(e) => setStyleBgColor(e.target.value)} className="h-8 w-8 rounded border border-slate-200 cursor-pointer" />
-                          <input type="text" value={styleBgColor} onChange={(e) => setStyleBgColor(e.target.value)} className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none" />
+                          <input type="color" value={styleBgColor} onChange={(e) => setStyleBgColor(e.target.value)} className="h-8 w-8 rounded-full border-0 cursor-pointer" />
+                          <input type="text" value={styleBgColor} onChange={(e) => setStyleBgColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
                         </div>
                       </div>
 
                       {/* Text color */}
                       <div>
-                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Texte</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Texte</label>
                         <div className="flex items-center gap-2">
-                          <input type="color" value={styleTextColor} onChange={(e) => setStyleTextColor(e.target.value)} className="h-8 w-8 rounded border border-slate-200 cursor-pointer" />
-                          <input type="text" value={styleTextColor} onChange={(e) => setStyleTextColor(e.target.value)} className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none" />
+                          <input type="color" value={styleTextColor} onChange={(e) => setStyleTextColor(e.target.value)} className="h-8 w-8 rounded-full border-0 cursor-pointer" />
+                          <input type="text" value={styleTextColor} onChange={(e) => setStyleTextColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
                         </div>
                       </div>
 
                       {/* Border radius */}
                       <div>
-                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Arrondi — {styleRadius}px</label>
-                        <input type="range" min={0} max={24} value={styleRadius} onChange={(e) => setStyleRadius(Number(e.target.value))} className="w-full accent-amber-600" />
-                        <div className="flex justify-between text-[10px] text-slate-400">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Arrondi — {styleRadius}px</label>
+                        <input type="range" min={0} max={24} value={styleRadius} onChange={(e) => setStyleRadius(Number(e.target.value))} className="w-full accent-[#006c49]" />
+                        <div className="flex justify-between text-[10px] text-[#444748]/40 font-bold">
                           <span>Carré</span><span>Arrondi</span>
                         </div>
                       </div>
@@ -1203,18 +1203,18 @@ export function BusinessCampaigns() {
                           const url = params.toString() ? `${getCaptureUrl(embedModalCampaign.slug)}?${params.toString()}` : getCaptureUrl(embedModalCampaign.slug)
                           copyToClipboard(url, 'Lien personnalisé')
                         }}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
+                        className="w-full flex items-center justify-center gap-2 rounded-full bg-[#1b1c1b] px-4 py-3 text-sm font-bold text-white hover:scale-[1.02] active:scale-95 transition-all"
                       >
                         <Copy className="h-4 w-4" /> Copier le lien personnalisé
                       </button>
                     </div>
 
                     {/* Right: Preview */}
-                    <div className="flex-1 bg-slate-100 p-5 flex flex-col">
-                      <p className="text-xs font-medium text-slate-500 mb-3 flex items-center gap-1.5">
+                    <div className="flex-1 p-5 flex flex-col">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/40 mb-3 flex items-center gap-1.5">
                         <Eye className="h-3.5 w-3.5" /> Aperçu en temps réel
                       </p>
-                      <div className="flex-1 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+                      <div className="flex-1 rounded-2xl overflow-hidden shadow-[0_20px_40px_rgba(27,28,27,0.04)] bg-white">
                         <iframe
                           src={(() => {
                             const params = new URLSearchParams()
@@ -1235,42 +1235,59 @@ export function BusinessCampaigns() {
               )}
 
               {embedModalFormat !== 'page' && embedTab === 'code' && (
-                <div className="p-6 space-y-5">
+                <div className="p-8 space-y-6">
                   {/* Tutorial */}
-                  <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
-                    <h4 className="text-sm font-bold text-blue-700 mb-2 flex items-center gap-2">
-                      <Eye className="h-4 w-4" /> Comment ça marche
+                  <div className="rounded-2xl bg-[#f5f3f2] p-6">
+                    <h4 className="text-sm font-extrabold text-[#1b1c1b] mb-3 flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                      <Eye className="h-4 w-4 text-[#006c49]" /> Comment ça marche
                     </h4>
                     {embedModalFormat === 'popup' ? (
-                      <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
-                        <li>Le popup s'affiche {embedModalCampaign.popup_delay ? `après ${embedModalCampaign.popup_delay} secondes` : 'instantanément'} au chargement de la page</li>
-                        <li>Le site est bloqué (scroll désactivé, overlay sombre) tant que le formulaire n'est pas rempli</li>
-                        <li>Une fois le formulaire soumis, le popup disparaît et le visiteur peut naviguer normalement</li>
-                        <li>Le visiteur ne reverra plus le popup grâce au localStorage</li>
-                        <li>Collez le code juste avant la balise <code className="bg-blue-100 px-1 rounded">{'</body>'}</code> de votre site</li>
+                      <ol className="text-xs text-[#444748] space-y-2.5">
+                        {[
+                          `Le popup s'affiche ${embedModalCampaign.popup_delay ? `après ${embedModalCampaign.popup_delay} secondes` : 'instantanément'} au chargement de la page`,
+                          'Le site est bloqué (scroll désactivé, overlay sombre) tant que le formulaire n\'est pas rempli',
+                          'Une fois le formulaire soumis, le popup disparaît et le visiteur peut naviguer normalement',
+                          'Le visiteur ne reverra plus le popup grâce au localStorage',
+                        ].map((step, i) => (
+                          <li key={i} className="flex items-start gap-3">
+                            <span className="w-6 h-6 rounded-full bg-[#1b1c1b] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
+                        <li className="flex items-start gap-3">
+                          <span className="w-6 h-6 rounded-full bg-[#1b1c1b] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">5</span>
+                          <span>Collez le code juste avant la balise <code className="bg-white px-1.5 py-0.5 rounded-full text-[#006c49] font-mono text-[10px]">{'</body>'}</code> de votre site</span>
+                        </li>
                       </ol>
                     ) : (
-                      <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
-                        <li>Copiez le code iframe ci-dessous</li>
-                        <li>Collez-le dans le HTML de votre page, à l'endroit où vous souhaitez afficher le formulaire</li>
-                        <li>Ajustez la hauteur (<code className="bg-blue-100 px-1 rounded">height</code>) si nécessaire</li>
-                        <li>Le formulaire s'adapte automatiquement à la largeur du conteneur</li>
+                      <ol className="text-xs text-[#444748] space-y-2.5">
+                        {[
+                          'Copiez le code iframe ci-dessous',
+                          'Collez-le dans le HTML de votre page, à l\'endroit où vous souhaitez afficher le formulaire',
+                          'Ajustez la hauteur (height) si nécessaire',
+                          'Le formulaire s\'adapte automatiquement à la largeur du conteneur',
+                        ].map((step, i) => (
+                          <li key={i} className="flex items-start gap-3">
+                            <span className="w-6 h-6 rounded-full bg-[#1b1c1b] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
                       </ol>
                     )}
                   </div>
 
                   {/* Code block */}
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium text-slate-700">Code à intégrer</label>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60">Code à intégrer</label>
                       <button
                         onClick={() => copyToClipboard(embedModalFormat === 'popup' ? getPopupCode : getIframeCode, `Code ${embedModalFormat}`)}
-                        className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
+                        className="flex items-center gap-1.5 rounded-full bg-[#1b1c1b] px-4 py-2 text-xs font-bold text-white hover:scale-105 active:scale-95 transition-all"
                       >
                         <Copy className="h-3.5 w-3.5" /> Copier le code
                       </button>
                     </div>
-                    <pre className="rounded-xl border border-slate-200 bg-slate-900 p-4 text-xs text-green-400 overflow-x-auto max-h-[250px] overflow-y-auto whitespace-pre-wrap break-all font-mono">
+                    <pre className="rounded-2xl bg-[#1b1c1b] p-5 text-xs text-[#006c49] overflow-x-auto max-h-[250px] overflow-y-auto whitespace-pre-wrap break-all font-mono">
                       {embedModalFormat === 'popup' ? getPopupCode : getIframeCode}
                     </pre>
                   </div>
@@ -1279,7 +1296,7 @@ export function BusinessCampaigns() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), 'Lien page entière')}
-                      className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 rounded-full bg-[#f5f3f2] px-5 py-3 text-sm font-bold text-[#1b1c1b] hover:bg-[#eae8e7] transition-colors"
                     >
                       <Monitor className="h-4 w-4" /> Copier lien page entière
                     </button>
@@ -1288,22 +1305,22 @@ export function BusinessCampaigns() {
               )}
 
               {embedModalFormat !== 'page' && embedTab === 'style' && (
-                <div className="flex divide-x divide-slate-200 min-h-[500px]">
+                <div className="flex min-h-[500px]">
                   {/* Left: Controls */}
-                  <div className="w-[280px] flex-shrink-0 p-5 space-y-5 overflow-y-auto">
-                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <Palette className="h-4 w-4 text-amber-600" /> Style
+                  <div className="w-[280px] flex-shrink-0 p-6 space-y-5 overflow-y-auto bg-white">
+                    <h4 className="text-sm font-extrabold text-[#1b1c1b] flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                      <Palette className="h-4 w-4 text-[#006c49]" /> Style
                     </h4>
 
                     {/* Font */}
                     <div>
-                      <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 mb-1.5">
+                      <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2">
                         <Type className="h-3.5 w-3.5" /> Police
                       </label>
                       <select
                         value={styleFont}
                         onChange={(e) => setStyleFont(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
+                        className="w-full rounded-full bg-[#f5f3f2] px-4 py-2.5 text-xs text-[#1b1c1b] font-medium focus:ring-1 focus:ring-[#006c49] focus:outline-none appearance-none cursor-pointer"
                       >
                         {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                       </select>
@@ -1311,73 +1328,73 @@ export function BusinessCampaigns() {
 
                     {/* Primary color */}
                     <div>
-                      <label className="text-xs font-medium text-slate-600 mb-1.5 block">Couleur principale</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Couleur principale</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
                           value={stylePrimaryColor}
                           onChange={(e) => setStylePrimaryColor(e.target.value)}
-                          className="h-8 w-8 rounded border border-slate-200 cursor-pointer"
+                          className="h-8 w-8 rounded-full border-0 cursor-pointer"
                         />
                         <input
                           type="text"
                           value={stylePrimaryColor}
                           onChange={(e) => setStylePrimaryColor(e.target.value)}
-                          className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none"
+                          className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none"
                         />
                       </div>
                     </div>
 
                     {/* Background color */}
                     <div>
-                      <label className="text-xs font-medium text-slate-600 mb-1.5 block">Fond</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Fond</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
                           value={styleBgColor}
                           onChange={(e) => setStyleBgColor(e.target.value)}
-                          className="h-8 w-8 rounded border border-slate-200 cursor-pointer"
+                          className="h-8 w-8 rounded-full border-0 cursor-pointer"
                         />
                         <input
                           type="text"
                           value={styleBgColor}
                           onChange={(e) => setStyleBgColor(e.target.value)}
-                          className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none"
+                          className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none"
                         />
                       </div>
                     </div>
 
                     {/* Text color */}
                     <div>
-                      <label className="text-xs font-medium text-slate-600 mb-1.5 block">Texte</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Texte</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
                           value={styleTextColor}
                           onChange={(e) => setStyleTextColor(e.target.value)}
-                          className="h-8 w-8 rounded border border-slate-200 cursor-pointer"
+                          className="h-8 w-8 rounded-full border-0 cursor-pointer"
                         />
                         <input
                           type="text"
                           value={styleTextColor}
                           onChange={(e) => setStyleTextColor(e.target.value)}
-                          className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-amber-500 focus:outline-none"
+                          className="flex-1 rounded-full bg-[#f5f3f2] px-3 py-1.5 text-xs text-[#1b1c1b] font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none"
                         />
                       </div>
                     </div>
 
                     {/* Border radius */}
                     <div>
-                      <label className="text-xs font-medium text-slate-600 mb-1.5 block">Arrondi des coins — {styleRadius}px</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-2 block">Arrondi des coins — {styleRadius}px</label>
                       <input
                         type="range"
                         min={0}
                         max={24}
                         value={styleRadius}
                         onChange={(e) => setStyleRadius(Number(e.target.value))}
-                        className="w-full accent-amber-600"
+                        className="w-full accent-[#006c49]"
                       />
-                      <div className="flex justify-between text-[10px] text-slate-400">
+                      <div className="flex justify-between text-[10px] text-[#444748]/40 font-bold">
                         <span>Carré</span><span>Arrondi</span>
                       </div>
                     </div>
@@ -1385,18 +1402,18 @@ export function BusinessCampaigns() {
                     {/* Copy button */}
                     <button
                       onClick={() => copyToClipboard(embedModalFormat === 'popup' ? getPopupCode : getIframeCode, `Code ${embedModalFormat}`)}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
+                      className="w-full flex items-center justify-center gap-2 rounded-full bg-[#1b1c1b] px-4 py-3 text-sm font-bold text-white hover:scale-[1.02] active:scale-95 transition-all"
                     >
                       <Copy className="h-4 w-4" /> Copier le code
                     </button>
                   </div>
 
                   {/* Right: Live preview */}
-                  <div className="flex-1 bg-slate-100 p-5 flex flex-col">
-                    <p className="text-xs font-medium text-slate-500 mb-3 flex items-center gap-1.5">
+                  <div className="flex-1 bg-[#f5f3f2] p-5 flex flex-col">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/40 mb-3 flex items-center gap-1.5">
                       <Eye className="h-3.5 w-3.5" /> Aperçu en temps réel
                     </p>
-                    <div className="flex-1 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+                    <div className="flex-1 rounded-2xl overflow-hidden shadow-[0_20px_40px_rgba(27,28,27,0.04)] bg-white">
                       <iframe
                         src={getStyledIframeUrl(embedModalCampaign.slug)}
                         className="w-full h-full min-h-[450px]"
@@ -1409,8 +1426,8 @@ export function BusinessCampaigns() {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end border-t border-slate-100 px-6 py-3 flex-shrink-0">
-              <button onClick={() => setEmbedModalCampaign(null)} className="rounded-xl bg-slate-100 px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors">
+            <div className="flex justify-end bg-[#f5f3f2] px-8 py-4 flex-shrink-0 rounded-b-2xl">
+              <button onClick={() => setEmbedModalCampaign(null)} className="rounded-full bg-[#1b1c1b] px-6 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all">
                 Fermer
               </button>
             </div>

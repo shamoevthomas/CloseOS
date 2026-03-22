@@ -61,31 +61,31 @@ export function EmailCapturePopup({ closerName, shareLinkId }: EmailCapturePopup
 
   return (
     <div className="fixed bottom-20 right-4 z-50 w-80 animate-in slide-in-from-bottom-5 duration-500">
-      <div className="rounded-2xl border border-slate-700/50 bg-slate-900/95 p-5 shadow-2xl backdrop-blur-md">
+      <div className="rounded-2xl bg-white p-6 shadow-[0_20px_40px_rgba(27,28,27,0.12)] relative" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.12)' }}>
         {/* Close button */}
         <button
           onClick={handleDismiss}
-          className="absolute top-3 right-3 p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors"
+          className="absolute top-4 right-4 p-1 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] hover:bg-[#f5f3f2] transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
 
         {submitted ? (
           <div className="py-2 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
-              <Mail className="h-6 w-6 text-emerald-400" />
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#006c49]/10">
+              <Mail className="h-6 w-6 text-[#006c49]" />
             </div>
-            <p className="text-sm font-semibold text-white">Merci !</p>
-            <p className="text-xs text-slate-400 mt-1">Vous recevrez les mises a jour</p>
+            <p className="text-sm font-bold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Merci !</p>
+            <p className="text-xs text-[#444748] mt-1">Vous recevrez les mises à jour</p>
           </div>
         ) : (
           <>
-            <div className="mb-4 pr-6">
-              <p className="text-sm font-semibold text-white">
+            <div className="mb-5 pr-6">
+              <p className="text-sm font-bold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 Suivez les performances de {closerName || 'ce closer'}
               </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Recevez les mises a jour par email
+              <p className="text-xs text-[#444748] mt-1.5">
+                Recevez les mises à jour par email
               </p>
             </div>
 
@@ -96,12 +96,12 @@ export function EmailCapturePopup({ closerName, shareLinkId }: EmailCapturePopup
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="votre@email.com"
                 required
-                className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                className="flex-1 bg-transparent border-b-2 border-[#c4c7c7]/30 py-2.5 text-sm text-[#1b1c1b] placeholder-[#444748]/40 focus:border-[#006c49] focus:ring-0 outline-none font-medium"
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center rounded-full bg-[#1b1c1b] px-4 py-2.5 text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -109,7 +109,7 @@ export function EmailCapturePopup({ closerName, shareLinkId }: EmailCapturePopup
 
             <button
               onClick={handleDismiss}
-              className="mt-3 w-full text-center text-xs text-slate-500 hover:text-slate-400 transition-colors"
+              className="mt-4 w-full text-center text-[10px] font-bold uppercase tracking-widest text-[#444748]/40 hover:text-[#444748] transition-colors"
             >
               Non merci
             </button>
