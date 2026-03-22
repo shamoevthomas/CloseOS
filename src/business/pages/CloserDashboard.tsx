@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Loader2, DollarSign, TrendingUp, CalendarDays, Target, UserX,
-  Bell, Clock, User, Check, AlertTriangle, Zap,
+  Loader2, DollarSign, TrendingUp, CalendarDays, UserX,
+  Bell, Clock, Check, AlertTriangle, FileDown,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
+import { BusinessReminderBell } from '../components/BusinessReminderBell'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
@@ -34,13 +35,7 @@ const formatCurrency = (v: number) =>
 
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
-const ROLE_BADGE: Record<string, string> = {
-  Closer: 'bg-[#6ffbbe] text-[#002113] dark:bg-emerald-700 dark:text-white',
-  Setter: 'bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700 dark:text-white',
-  'Setter-Closer': 'bg-[#e5e2e1] text-[#1c1b1b] dark:bg-neutral-700 dark:text-white',
-  Admin: 'bg-[#ffdad6] text-[#93000a] dark:bg-red-800 dark:text-white',
-  'Head of Sales': 'bg-[#6ffbbe] text-[#002113] dark:bg-emerald-700 dark:text-white',
-}
+const glassCard = "bg-white/60 backdrop-blur-xl border border-neutral-900/5 shadow-[0_20px_40px_rgba(27,28,27,0.04)]"
 
 export function CloserDashboard() {
   const { user, teamMember, ownerUserId, businessSettings, userTimezone } = useBusinessAuth()
@@ -77,7 +72,6 @@ export function CloserDashboard() {
   const lostProspects = useMemo(() => myProspects.filter(p => p.stage === 'lost'), [myProspects])
 
   const totalRevenue = useMemo(() => wonProspects.reduce((s, p) => s + (Number(p.value) || 0), 0), [wonProspects])
-  // No-shows only count if they came from follow-up stage
   const noshowFromFollowup = noShowProspects.filter(p => p.previous_stage === 'followup')
   const totalDecided = wonProspects.length + lostProspects.length + noshowFromFollowup.length
   const closingRate = totalDecided > 0 ? (wonProspects.length / totalDecided) * 100 : 0
@@ -116,7 +110,6 @@ export function CloserDashboard() {
   const isOverdue = (dateStr: string) => new Date(dateStr) < now
 
   const firstName = teamMember?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'Membre'
-  const companyName = businessSettings?.company_name || 'Organisation'
   const kpiLink = teamMember?.role === 'Setter' ? '/business/setter-kpi' : '/business/closer-kpi'
 
   const formatApptDate = (dateStr: string) => {
@@ -131,113 +124,130 @@ export function CloserDashboard() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-[#444748] animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-neutral-400 animate-spin" /></div>
   }
 
   return (
-    <div className="max-w-[1200px] mx-auto space-y-10 pb-12">
-      {/* Header */}
-      <header className="flex justify-between items-end">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b] dark:text-white">Bonjour {firstName}</h1>
-            <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748] dark:bg-neutral-700 dark:text-neutral-300'}`}>
-              {teamMember?.role}
-            </span>
-          </div>
-          <p className="text-[#444748] dark:text-neutral-300 font-medium text-lg">{companyName}</p>
+    <div className="space-y-10">
+
+      {/* ─── Header ─── */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="space-y-1">
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Bonjour, {firstName}.
+          </h2>
+          <p className="text-neutral-500 text-lg">Voici l'état de votre activité aujourd'hui.</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">Dernière Sync</p>
-            <p className="font-bold text-[#1b1c1b] dark:text-white">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</p>
+          <div className="hidden sm:flex">
+            <BusinessReminderBell />
           </div>
-          <div className="w-14 h-14 rounded-full border-2 border-[#eae8e7] dark:border-neutral-700 p-1">
-            <div className="w-full h-full rounded-full bg-[#efedec] dark:bg-neutral-800 flex items-center justify-center">
-              <User className="h-6 w-6 text-[#747878]" />
-            </div>
-          </div>
+          <Link
+            to={kpiLink}
+            className="bg-neutral-900 text-white px-8 py-3 rounded-full font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+            style={{ fontFamily: 'Manrope, sans-serif' }}
+          >
+            <FileDown className="h-4 w-4" />
+            Voir mes KPIs
+          </Link>
         </div>
       </header>
 
-      {/* KPI Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* ─── KPI Row ─── */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-6">
+
         {/* Revenue */}
-        <Link to={kpiLink} className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-full bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
-              <DollarSign className="h-5 w-5" />
+        <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+          <div className="flex justify-between items-start mb-3">
+            <div className="p-2 rounded-lg bg-emerald-50">
+              <DollarSign className="h-4 w-4 text-emerald-600" />
             </div>
           </div>
-          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Revenue</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{formatCurrency(totalRevenue)}</p>
+          <div>
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Revenue</p>
+            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
+          </div>
         </Link>
 
         {/* Closing Rate */}
-        <Link to={kpiLink} className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-full bg-[#ffb95f]/20 flex items-center justify-center text-[#b87500]">
-              <TrendingUp className="h-5 w-5" />
-            </div>
+        <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+          <div className="p-2 rounded-lg bg-stone-100 w-fit">
+            <TrendingUp className="h-4 w-4 text-neutral-600" />
           </div>
-          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Closing Rate</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{formatPct(closingRate)}</p>
-          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">{wonProspects.length} signés / {totalDecided} présentés</p>
+          <div className="mt-3">
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Closing</p>
+            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
+            <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{wonProspects.length} signés / {totalDecided} décidés</p>
+          </div>
         </Link>
 
         {/* Appointments */}
-        <Link to="/business/rendez-vous" className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-full bg-[#000000]/5 dark:bg-white/10 flex items-center justify-center text-[#000000] dark:text-white">
-              <CalendarDays className="h-5 w-5" />
-            </div>
+        <Link to="/business/rendez-vous" className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+          <div className="p-2 rounded-lg bg-stone-100 w-fit">
+            <CalendarDays className="h-4 w-4 text-neutral-600" />
           </div>
-          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Rendez-vous</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{appointments.length}</p>
-          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">Ce mois-ci</p>
+          <div className="mt-3">
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Rendez-vous</p>
+            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingAppts.length}</p>
+            <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">À venir</p>
+          </div>
         </Link>
 
         {/* No-Show Rate */}
-        <Link to={kpiLink} className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-full bg-[#ba1a1a]/10 flex items-center justify-center text-[#ba1a1a]">
-              <UserX className="h-5 w-5" />
+        <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+          <div className="flex justify-between items-start">
+            <div className="p-2 rounded-lg bg-amber-50">
+              <UserX className="h-4 w-4 text-amber-600" />
             </div>
+            {noshowRate > 5 && (
+              <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">!</span>
+            )}
           </div>
-          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">No-Show Rate</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{formatPct(noshowRate)}</p>
-          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">{noShowProspects.length} absences sur {myProspects.length}</p>
+          <div className="mt-3">
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">No-Show</p>
+            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
+          </div>
         </Link>
-      </section>
+      </div>
 
-      {/* Two Column: Rappels + Prochains RDV */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      {/* ─── Two Column: RDV + Rappels ─── */}
+      <div className="grid grid-cols-12 gap-6">
+
         {/* Prochains rendez-vous */}
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Prochains rendez-vous</h2>
-            <Link to="/business/rendez-vous" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">Voir tout</Link>
+        <div className={`col-span-12 lg:col-span-7 ${glassCard} rounded-2xl p-8`}>
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Prochains rendez-vous</h3>
+              <p className="text-neutral-400 text-sm mt-0.5">Vos prochaines consultations planifiées.</p>
+            </div>
+            <Link to="/business/rendez-vous" className="text-sm font-bold text-neutral-900 border-b-2 border-neutral-900 pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Voir tout
+            </Link>
           </div>
           {upcomingAppts.length === 0 ? (
             <div className="text-center py-12">
-              <CalendarDays className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
-              <p className="text-sm text-[#444748] dark:text-neutral-400">Aucun rendez-vous à venir</p>
+              <CalendarDays className="h-8 w-8 text-neutral-300 mx-auto mb-3" />
+              <p className="text-sm text-neutral-400">Aucun rendez-vous à venir</p>
             </div>
           ) : (
             <div className="space-y-4">
               {upcomingAppts.map((a, i) => {
                 const localDt = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone) : { date: a.date, time: a.time?.slice(0, 5) || '00:00' }
                 return (
-                  <div key={a.id} onClick={() => navigate('/business/agenda')} className={`bg-white dark:bg-neutral-800 p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
-                    <div className="flex items-center gap-6">
-                      <div className="text-center min-w-[60px]">
-                        <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-tighter">{formatApptDate(localDt.date)}</p>
-                        <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">{localDt.time}</p>
+                  <div
+                    key={a.id}
+                    onClick={() => navigate('/business/agenda')}
+                    className={`flex items-center justify-between p-5 bg-neutral-50/80 rounded-2xl group hover:bg-white transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`}
+                  >
+                    <div className="flex items-center gap-5">
+                      <div className="text-center min-w-[55px]">
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{formatApptDate(localDt.date)}</p>
+                        <p className="text-xl font-extrabold text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{localDt.time}</p>
                       </div>
-                      <div className="h-10 w-px bg-[#c4c7c7]/20 dark:bg-neutral-700" />
+                      <div className="h-10 w-px bg-neutral-200" />
                       <div>
-                        <p className="font-bold text-lg leading-tight text-[#1b1c1b] dark:text-white">{a.prospect?.contact || 'Rendez-vous'}</p>
-                        <p className="text-sm text-[#444748] dark:text-neutral-400">{a.campaign?.name || `${a.duration}min`}</p>
+                        <p className="font-bold text-neutral-900">{a.prospect?.contact || 'Rendez-vous'}</p>
+                        <p className="text-sm text-neutral-400">{a.campaign?.name || `${a.duration}min`}</p>
                       </div>
                     </div>
                   </div>
@@ -247,69 +257,84 @@ export function CloserDashboard() {
           )}
         </div>
 
-        {/* Mes Rappels */}
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Mes Rappels</h2>
-              <Link to="/business/rappels" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">Voir tout</Link>
-            </div>
-            {reminders.filter(r => isOverdue(r.reminder_date)).length > 0 && (
-              <span className="bg-[#ba1a1a]/10 text-[#ba1a1a] px-2 py-0.5 rounded text-[10px] font-bold">
-                {reminders.filter(r => isOverdue(r.reminder_date)).length} RETARDS
+        {/* Rappels & Tâches */}
+        <div className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-8 flex flex-col`}>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Rappels</h3>
+            {reminders.length > 0 && (
+              <span className="w-6 h-6 bg-neutral-900 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
+                {reminders.length}
               </span>
             )}
           </div>
           {reminders.length === 0 ? (
-            <div className="text-center py-12">
-              <Bell className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
-              <p className="text-sm text-[#444748] dark:text-neutral-400">Aucun rappel en attente</p>
-            </div>
+            <p className="text-sm text-neutral-400 text-center py-8 flex-1 flex items-center justify-center">Aucun rappel en attente</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1 overflow-y-auto">
               {reminders.map(r => {
                 const overdue = isOverdue(r.reminder_date)
                 const rDate = new Date(r.reminder_date)
                 const isLoading = actionLoading === r.id
                 return (
-                  <div key={r.id} className={`bg-white dark:bg-neutral-800 p-5 rounded-xl border-l-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b] dark:border-l-neutral-400'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }} onClick={() => navigate('/business/rappels')}>
-                    <div className="w-6 h-6 rounded-full border-2 border-[#c4c7c7]/30 flex items-center justify-center shrink-0 cursor-pointer group hover:border-[#006c49]" onClick={(e) => { e.stopPropagation(); handleMarkDone(r.id) }}>
-                      {isLoading ? (
-                        <Loader2 className="h-3 w-3 animate-spin text-[#444748]" />
-                      ) : overdue ? (
-                        <div className="w-2 h-2 rounded-full bg-[#ba1a1a] group-hover:bg-[#006c49] transition-colors" />
-                      ) : (
-                        <div className="w-2 h-2 rounded-full bg-transparent group-hover:bg-[#006c49] transition-colors" />
+                  <div
+                    key={r.id}
+                    className={`p-4 rounded-2xl cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-4 border-red-500 bg-red-50/50' : 'border-l-4 border-neutral-300 bg-neutral-50 hover:bg-white'}`}
+                    onClick={() => navigate('/business/rappels')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-6 h-6 rounded-full border-2 border-neutral-300 flex items-center justify-center shrink-0 cursor-pointer group hover:border-emerald-600"
+                        onClick={(e) => { e.stopPropagation(); handleMarkDone(r.id) }}
+                      >
+                        {isLoading ? (
+                          <Loader2 className="h-3 w-3 animate-spin text-neutral-400" />
+                        ) : overdue ? (
+                          <div className="w-2 h-2 rounded-full bg-red-500 group-hover:bg-emerald-600 transition-colors" />
+                        ) : (
+                          <div className="w-2 h-2 rounded-full bg-transparent group-hover:bg-emerald-600 transition-colors" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-1">
+                          <h4 className="text-sm font-bold text-neutral-900">{r.title}</h4>
+                          <span className={`text-[10px] font-black uppercase ${overdue ? 'text-red-500' : 'text-neutral-400'}`}>
+                            {overdue ? 'EN RETARD' : 'À VENIR'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-neutral-400">
+                          <Clock className="h-3 w-3" />
+                          {(() => {
+                            const rLocal = fromUTC(r.reminder_date, userTimezone)
+                            const localDate = new Date(rLocal.date + 'T00:00:00')
+                            return overdue
+                              ? `Retard : ${Math.max(1, Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24)))}j`
+                              : `${localDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} ${rLocal.time}`
+                          })()}
+                        </div>
+                      </div>
+                      {!isLoading && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMarkDone(r.id) }}
+                          className="shrink-0 p-2 rounded-full text-emerald-600 hover:bg-emerald-50 transition-colors"
+                          title="Marquer comme fait"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-[#1b1c1b] dark:text-white">{r.title}</p>
-                      <p className={`text-xs font-semibold ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748] dark:text-neutral-400'}`}>
-                        {(() => {
-                          const rLocal = fromUTC(r.reminder_date, userTimezone)
-                          const localDate = new Date(rLocal.date + 'T00:00:00')
-                          return overdue
-                            ? `Retard : ${Math.max(1, Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24)))}j`
-                            : `Échéance : ${localDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} ${rLocal.time}`
-                        })()}
-                      </p>
-                    </div>
-                    {!isLoading && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleMarkDone(r.id) }}
-                        className="shrink-0 p-2 rounded-full text-[#006c49] hover:bg-[#006c49]/10 transition-colors"
-                        title="Marquer comme fait"
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                    )}
                   </div>
                 )
               })}
             </div>
           )}
+          <Link
+            to="/business/rappels"
+            className="mt-4 w-full py-3 border-2 border-dashed border-neutral-200 rounded-2xl text-neutral-400 text-sm font-bold hover:border-neutral-900 hover:text-neutral-900 transition-all text-center block"
+          >
+            + Créer un rappel
+          </Link>
         </div>
-      </section>
+      </div>
     </div>
   )
 }

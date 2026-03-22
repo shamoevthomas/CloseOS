@@ -174,7 +174,7 @@ export function CloserDisponibilite() {
       <div className="grid grid-cols-12 gap-8">
         {/* ─── Left: Weekly Slots ─── */}
         <section className="col-span-12 xl:col-span-8 space-y-6">
-          <h3 className="font-business-display font-extrabold text-2xl tracking-tight flex items-center gap-3">
+          <h3 className="font-business-display font-extrabold text-2xl tracking-tight flex items-center gap-3 text-stone-900">
             Créneaux hebdomadaires
           </h3>
 
@@ -357,7 +357,7 @@ export function CloserDisponibilite() {
           {/* Absences Card */}
           <div className={cn(GLASS_PANEL, 'rounded-2xl p-8 shadow-lg relative overflow-hidden')}>
             <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
-            <h3 className="font-business-display font-extrabold text-2xl mb-6 relative z-10">Absences</h3>
+            <h3 className="font-business-display font-extrabold text-2xl mb-6 relative z-10 text-stone-900">Absences</h3>
 
             <div className="space-y-4 mb-6 relative z-10">
               {absences.length === 0 ? (
