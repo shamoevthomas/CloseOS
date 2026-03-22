@@ -45,6 +45,7 @@ export function CloserAppels() {
   // Meet modal
   const [isMeetModalOpen, setIsMeetModalOpen] = useState(false)
   const [meetLinkInput, setMeetLinkInput] = useState('')
+  const [isQuickCall, setIsQuickCall] = useState(false)
 
   // Scripts
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false)
@@ -133,8 +134,34 @@ export function CloserAppels() {
   const prepareCall = (prospectId: number | null) => {
     setSelectedProspectId(prospectId)
     setIsNewCallModalOpen(false)
+    setIsQuickCall(false)
     setIsMeetModalOpen(true)
     setMeetLinkInput('')
+  }
+
+  const handleQuickCall = () => {
+    setSelectedProspectId(null)
+    setIsQuickCall(true)
+    setIsMeetModalOpen(true)
+    setMeetLinkInput('')
+  }
+
+  const startQuickCockpit = async () => {
+    if (!effectiveOwnerId) return
+    const { data: newCall } = await supabase.from('business_call_history').insert([{
+      team_member_id: teamMember?.id || null,
+      business_owner_id: effectiveOwnerId,
+      contact_id: 0,
+      contact_name: 'Call Rapide',
+      contact_type: 'internal',
+      date: new Date().toISOString(),
+      duration: 'En cours...',
+      is_ai: false,
+      answered: true,
+    }]).select().single()
+    const callDbId = newCall?.id || Date.now()
+    setIsMeetModalOpen(false)
+    navigate(`/business/cockpit?id=${callDbId}&name=${encodeURIComponent('Call Rapide')}`)
   }
 
   const startCockpit = async () => {
@@ -204,6 +231,9 @@ export function CloserAppels() {
           <button onClick={() => setIsScriptModalOpen(true)} className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-100">
             <FileText className="h-4 w-4" /> Script
           </button>
+          <button onClick={handleQuickCall} className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 transition-all">
+            <Video className="h-4 w-4" /> Call Rapide
+          </button>
           <button onClick={() => setIsNewCallModalOpen(true)} className="flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-amber-500">
             <Phone className="h-4 w-4" /> Nouvel Appel
           </button>
@@ -241,7 +271,7 @@ export function CloserAppels() {
                   </p>
                 </div>
               </div>
-              <button onClick={() => navigate(`/business/appels/${call.id}`)}
+              <button onClick={() => navigate(`/business/appels/${call.id}?readonly=1`)}
                 className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
                 <Eye className="h-4 w-4" /> Détails
               </button>
@@ -305,7 +335,7 @@ export function CloserAppels() {
                   <input type="text" value={meetLinkInput} onChange={(e) => setMeetLinkInput(e.target.value)} placeholder="Lien Meet (optionnel)"
                     className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-sm focus:border-amber-500 focus:outline-none" />
                 </div>
-                <button onClick={startCockpit}
+                <button onClick={isQuickCall ? startQuickCockpit : startCockpit}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-amber-500">
                   <Video className="h-4 w-4" /> Lancer le Cockpit
                 </button>

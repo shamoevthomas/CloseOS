@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, CheckCircle2, XCircle, Clock, FileText, Calendar,
   LayoutList, PenTool, Bell, Loader2, Save, Shuffle, ArrowRightCircle,
@@ -49,6 +49,8 @@ export function SetterCallDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const isReadonly = searchParams.get('readonly') === '1'
   const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
   const { prospects, updateProspect } = useBusinessProspects()
   const { createEvent: createGoogleEvent, isConnected: isGoogleConnected } = useBusinessGoogleCalendar()
@@ -121,6 +123,18 @@ export function SetterCallDetails() {
           return p.contact === call.contact_name || fullName === call.contact_name
         })
       : null
+
+  // Readonly: pre-fill outcome from prospect stage
+  useEffect(() => {
+    if (!isReadonly || !prospect) return
+    const stage = (prospect as any).stage
+    const reverseMap: Record<string, string> = {
+      qualified: 'qualified', unqualified: 'unqualified', noanswer: 'noanswer',
+    }
+    if (stage && reverseMap[stage]) setSelectedOutcome(reverseMap[stage])
+    // booklater maps to qualified stage, detect from notes
+    if (stage === 'qualified' && call?.notes?.includes('booker plus tard')) setSelectedOutcome('booklater')
+  }, [isReadonly, prospect, call])
 
   // Round-robin: get next closer
   const getNextCloser = useCallback(async () => {
@@ -462,15 +476,23 @@ export function SetterCallDetails() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {/* Readonly banner */}
+      {isReadonly && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
+          <p className="text-sm font-medium text-blue-700">Mode consultation — Cet appel a déjà été qualifié</p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <button onClick={() => navigate('/business/appels')} className="mb-4 flex items-center gap-2 text-slate-400 hover:text-amber-700 transition-colors">
           <ArrowLeft className="h-5 w-5" /> Retour
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Qualification Setter</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{isReadonly ? 'Détails de l\'appel' : 'Qualification Setter'}</h1>
           <p className="mt-1 text-slate-500">
-            Qualifiez votre appel avec <span className="font-semibold text-slate-900">{call.contact_name}</span>
+            {isReadonly ? 'Appel avec' : 'Qualifiez votre appel avec'} <span className="font-semibold text-slate-900">{call.contact_name}</span>
           </p>
           <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-1">
             <Clock className="h-3 w-3" />
@@ -528,7 +550,9 @@ export function SetterCallDetails() {
                   return (
                     <button
                       key={outcome.id}
+                      disabled={isReadonly}
                       onClick={() => {
+                        if (isReadonly) return
                         setSelectedOutcome(outcome.id)
                         if (outcome.id !== 'qualified') {
                           setSelectedCloser(null)
@@ -723,9 +747,10 @@ export function SetterCallDetails() {
             </label>
             <textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => !isReadonly && setNotes(e.target.value)}
+              readOnly={isReadonly}
               placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
-              className="flex-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-800 placeholder-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 resize-none leading-relaxed"
+              className={cn("flex-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-800 placeholder-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 resize-none leading-relaxed", isReadonly && "cursor-default")}
             />
             <p className="mt-3 text-xs text-slate-400 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" />
@@ -788,20 +813,30 @@ export function SetterCallDetails() {
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-200 mt-6">
-          <button onClick={() => navigate('/business/appels')}
-            className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
-            Annuler
-          </button>
-          <button onClick={handleSave} disabled={!isFormValid() || saving}
-            className={cn('flex items-center gap-2 rounded-xl px-8 py-2.5 text-sm font-bold text-white transition-all',
-              isFormValid() && !saving
-                ? 'bg-amber-600 hover:bg-amber-500 shadow-sm'
-                : 'bg-slate-300 cursor-not-allowed'
-            )}>
-            <Save className="h-4 w-4" /> {saving ? 'Enregistrement...' : 'Tout Enregistrer'}
-          </button>
-        </div>
+        {!isReadonly && (
+          <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-200 mt-6">
+            <button onClick={() => navigate('/business/appels')}
+              className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
+              Annuler
+            </button>
+            <button onClick={handleSave} disabled={!isFormValid() || saving}
+              className={cn('flex items-center gap-2 rounded-xl px-8 py-2.5 text-sm font-bold text-white transition-all',
+                isFormValid() && !saving
+                  ? 'bg-amber-600 hover:bg-amber-500 shadow-sm'
+                  : 'bg-slate-300 cursor-not-allowed'
+              )}>
+              <Save className="h-4 w-4" /> {saving ? 'Enregistrement...' : 'Tout Enregistrer'}
+            </button>
+          </div>
+        )}
+        {isReadonly && (
+          <div className="flex justify-center pt-4 border-t border-slate-200 mt-6">
+            <button onClick={() => navigate('/business/appels')}
+              className="rounded-xl bg-amber-600 px-8 py-2.5 text-sm font-bold text-white hover:bg-amber-500 transition-all">
+              Retour aux appels
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

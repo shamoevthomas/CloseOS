@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign,
-  Calendar, Award, LayoutList, PenTool, Bell, Loader2, Save,
+  Calendar, Award, LayoutList, PenTool, Bell, Loader2, Save, Eye,
   User, Shuffle, ArrowRightCircle, CalendarCheck, AlertCircle,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -71,6 +71,8 @@ export function CloserCallDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const isReadonly = searchParams.get('readonly') === '1'
   const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const isSetterCloser = isTeamMember && teamMember?.role === 'Setter-Closer'
@@ -182,13 +184,35 @@ export function CloserCallDetails() {
     ? formulas.find(f => String(f.id) === String(prospect.offer_id) || String(f.id) === String(prospect.formula_id))
     : null
 
+  // Readonly: pre-fill outcome from prospect stage
+  useEffect(() => {
+    if (!isReadonly || !prospect) return
+    const reverseStageMap: Record<string, string> = {
+      won: 'won', lost: 'lost', qualified: 'followup', noshow: 'noshow',
+      unqualified: 'unqualified', noanswer: 'noanswer',
+    }
+    const stage = (prospect as any).stage
+    if (stage && reverseStageMap[stage]) {
+      setSelectedOutcome(reverseStageMap[stage])
+    }
+    const val = (prospect as any).value
+    if (val && val > 0) setAmount(val)
+    const pt = (prospect as any).payment_type
+    if (pt === 'installments') {
+      setPaymentType('installments')
+      const inst = (prospect as any).installments
+      if (inst) setInstallmentsCount(inst)
+    }
+  }, [isReadonly, prospect])
+
   // Auto-fill amount from formula when Won
   useEffect(() => {
+    if (isReadonly) return
     if (selectedOutcome === 'won' && prospectFormula && amount === 0) {
       const price = prospectFormula.price
       if (price > 0) setAmount(price)
     }
-  }, [selectedOutcome, prospectFormula, amount])
+  }, [selectedOutcome, prospectFormula, amount, isReadonly])
 
   // Commission calc
   const commissionRate = 10
@@ -549,7 +573,9 @@ export function CloserCallDetails() {
     return (
       <button
         key={outcome.id}
+        disabled={isReadonly}
         onClick={() => {
+          if (isReadonly) return
           setSelectedOutcome(outcome.id)
           // Reset closer assignment when switching outcomes
           if (outcome.id !== 'qualified') {
@@ -591,7 +617,15 @@ export function CloserCallDetails() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className={cn("max-w-3xl mx-auto space-y-6", isReadonly && "pointer-events-auto")}>
+      {/* Readonly banner */}
+      {isReadonly && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 flex items-center gap-3">
+          <Eye className="h-5 w-5 text-blue-600 shrink-0" />
+          <p className="text-sm font-medium text-blue-700">Mode consultation — Cet appel a déjà été qualifié</p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <button onClick={() => navigate('/business/appels')} className="mb-4 flex items-center gap-2 text-slate-400 hover:text-amber-700 transition-colors">
@@ -599,10 +633,10 @@ export function CloserCallDetails() {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            {isSetterCloser ? 'Résumé d\'appel' : 'Résumé de Vente'}
+            {isReadonly ? 'Détails de l\'appel' : isSetterCloser ? 'Résumé d\'appel' : 'Résumé de Vente'}
           </h1>
           <p className="mt-1 text-slate-500">
-            Qualifiez votre appel avec <span className="font-semibold text-slate-900">{call.contact_name}</span>
+            {isReadonly ? 'Appel avec' : 'Qualifiez votre appel avec'} <span className="font-semibold text-slate-900">{call.contact_name}</span>
           </p>
           <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-1">
             <Clock className="h-3 w-3" />
@@ -941,9 +975,10 @@ export function CloserCallDetails() {
             </label>
             <textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => !isReadonly && setNotes(e.target.value)}
+              readOnly={isReadonly}
               placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
-              className="flex-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-800 placeholder-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 resize-none leading-relaxed"
+              className={cn("flex-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-800 placeholder-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 resize-none leading-relaxed", isReadonly && "cursor-default")}
             />
             <p className="mt-3 text-xs text-slate-400 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" />
@@ -1002,20 +1037,30 @@ export function CloserCallDetails() {
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-200 mt-6">
-          <button onClick={() => navigate('/business/appels')}
-            className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
-            Annuler
-          </button>
-          <button onClick={handleSave} disabled={!isFormValid() || saving}
-            className={cn('flex items-center gap-2 rounded-xl px-8 py-2.5 text-sm font-bold text-white transition-all',
-              isFormValid() && !saving
-                ? 'bg-amber-600 hover:bg-amber-500 shadow-sm'
-                : 'bg-slate-300 cursor-not-allowed'
-            )}>
-            <Save className="h-4 w-4" /> {saving ? 'Enregistrement...' : 'Tout Enregistrer'}
-          </button>
-        </div>
+        {!isReadonly && (
+          <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-200 mt-6">
+            <button onClick={() => navigate('/business/appels')}
+              className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
+              Annuler
+            </button>
+            <button onClick={handleSave} disabled={!isFormValid() || saving}
+              className={cn('flex items-center gap-2 rounded-xl px-8 py-2.5 text-sm font-bold text-white transition-all',
+                isFormValid() && !saving
+                  ? 'bg-amber-600 hover:bg-amber-500 shadow-sm'
+                  : 'bg-slate-300 cursor-not-allowed'
+              )}>
+              <Save className="h-4 w-4" /> {saving ? 'Enregistrement...' : 'Tout Enregistrer'}
+            </button>
+          </div>
+        )}
+        {isReadonly && (
+          <div className="flex justify-center pt-4 border-t border-slate-200 mt-6">
+            <button onClick={() => navigate('/business/appels')}
+              className="rounded-xl bg-amber-600 px-8 py-2.5 text-sm font-bold text-white hover:bg-amber-500 transition-all">
+              Retour aux appels
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
