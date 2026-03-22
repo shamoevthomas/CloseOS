@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Loader2, DollarSign, TrendingUp, CalendarDays, Target, UserX,
   Bell, Clock, User, Check, AlertTriangle, Zap,
@@ -44,6 +44,7 @@ const ROLE_BADGE: Record<string, string> = {
 export function CloserDashboard() {
   const { user, teamMember, ownerUserId, businessSettings } = useBusinessAuth()
   const { prospects } = useBusinessProspects()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
@@ -104,6 +105,7 @@ export function CloserDashboard() {
 
   const firstName = teamMember?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'Membre'
   const companyName = businessSettings?.company_name || 'Organisation'
+  const kpiLink = teamMember?.role === 'Setter' ? '/business/setter-kpi' : '/business/closer-kpi'
 
   const formatApptDate = (dateStr: string) => {
     const d = new Date(dateStr + 'T00:00:00')
@@ -149,7 +151,7 @@ export function CloserDashboard() {
       {/* KPI Grid */}
       <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Revenue */}
-        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to={kpiLink} className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
               <DollarSign className="h-5 w-5" />
@@ -157,10 +159,10 @@ export function CloserDashboard() {
           </div>
           <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Revenue</h3>
           <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatCurrency(totalRevenue)}</p>
-        </div>
+        </Link>
 
         {/* Closing Rate */}
-        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to={kpiLink} className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#ffb95f]/20 flex items-center justify-center text-[#b87500]">
               <TrendingUp className="h-5 w-5" />
@@ -169,10 +171,10 @@ export function CloserDashboard() {
           <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Closing Rate</h3>
           <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatPct(closingRate)}</p>
           <p className="text-[#444748] text-[11px] mt-1 font-medium italic">{wonProspects.length} signés / {totalDecided} présentés</p>
-        </div>
+        </Link>
 
         {/* Appointments */}
-        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to="/business/rendez-vous" className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#000000]/5 flex items-center justify-center text-[#000000]">
               <CalendarDays className="h-5 w-5" />
@@ -181,10 +183,10 @@ export function CloserDashboard() {
           <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Rendez-vous</h3>
           <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{appointments.length}</p>
           <p className="text-[#444748] text-[11px] mt-1 font-medium italic">Ce mois-ci</p>
-        </div>
+        </Link>
 
         {/* No-Show Rate */}
-        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to={kpiLink} className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#ba1a1a]/10 flex items-center justify-center text-[#ba1a1a]">
               <UserX className="h-5 w-5" />
@@ -193,7 +195,7 @@ export function CloserDashboard() {
           <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">No-Show Rate</h3>
           <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatPct(noshowRate)}</p>
           <p className="text-[#444748] text-[11px] mt-1 font-medium italic">{noShowProspects.length} absences sur {myProspects.length}</p>
-        </div>
+        </Link>
       </section>
 
       {/* Two Column: Rappels + Prochains RDV */}
@@ -212,7 +214,7 @@ export function CloserDashboard() {
           ) : (
             <div className="space-y-4">
               {upcomingAppts.map((a, i) => (
-                <div key={a.id} className={`bg-white p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
+                <div key={a.id} onClick={() => navigate('/business/agenda')} className={`bg-white p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
                   <div className="flex items-center gap-6">
                     <div className="text-center min-w-[60px]">
                       <p className="text-[10px] font-bold text-[#444748] uppercase tracking-tighter">{formatApptDate(a.date)}</p>
@@ -233,7 +235,10 @@ export function CloserDashboard() {
         {/* Mes Rappels */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Mes Rappels</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Mes Rappels</h2>
+              <Link to="/business/rappels" className="text-[10px] font-bold text-[#000000] uppercase tracking-widest hover:underline">Voir tout</Link>
+            </div>
             {reminders.filter(r => isOverdue(r.reminder_date)).length > 0 && (
               <span className="bg-[#ba1a1a]/10 text-[#ba1a1a] px-2 py-0.5 rounded text-[10px] font-bold">
                 {reminders.filter(r => isOverdue(r.reminder_date)).length} RETARDS
@@ -252,8 +257,8 @@ export function CloserDashboard() {
                 const rDate = new Date(r.reminder_date)
                 const isLoading = actionLoading === r.id
                 return (
-                  <div key={r.id} className={`bg-white p-5 rounded-xl border-l-4 flex items-center gap-4 ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b]'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }}>
-                    <div className="w-6 h-6 rounded-full border-2 border-[#c4c7c7]/30 flex items-center justify-center shrink-0 cursor-pointer group hover:border-[#006c49]" onClick={() => handleMarkDone(r.id)}>
+                  <div key={r.id} className={`bg-white p-5 rounded-xl border-l-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b]'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }} onClick={() => navigate('/business/rappels')}>
+                    <div className="w-6 h-6 rounded-full border-2 border-[#c4c7c7]/30 flex items-center justify-center shrink-0 cursor-pointer group hover:border-[#006c49]" onClick={(e) => { e.stopPropagation(); handleMarkDone(r.id) }}>
                       {isLoading ? (
                         <Loader2 className="h-3 w-3 animate-spin text-[#444748]" />
                       ) : overdue ? (
@@ -270,7 +275,7 @@ export function CloserDashboard() {
                     </div>
                     {!isLoading && (
                       <button
-                        onClick={() => handleMarkDone(r.id)}
+                        onClick={(e) => { e.stopPropagation(); handleMarkDone(r.id) }}
                         className="shrink-0 p-2 rounded-full text-[#006c49] hover:bg-[#006c49]/10 transition-colors"
                         title="Marquer comme fait"
                       >
