@@ -45,6 +45,12 @@ body.hide-cookieyes #cookieyes {
 }
 
 @layer utilities {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
     height: 4px;

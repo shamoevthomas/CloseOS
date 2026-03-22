@@ -3,7 +3,7 @@ import {
   FileText, Download, Loader2, CalendarDays, Users, Megaphone,
   TrendingUp, DollarSign, UserCheck, UserX, Target, Activity,
   ShoppingCart, Eye, Clock, ChevronDown, LogIn, LogOut as LogOutIcon,
-  Phone, Bell, GitBranch, Calendar,
+  Phone, Bell, GitBranch, Calendar, ChevronRight, ArrowRight,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -73,7 +73,16 @@ const formatDate = (d: string) =>
 
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
-const COLORS = ['#d97706', '#2563eb', '#7c3aed', '#059669', '#e11d48', '#0891b2', '#ea580c', '#4f46e5']
+const STAGE_COLORS: Record<string, string> = {
+  prospect: '#006c49',
+  qualified: '#ffb95f',
+  unqualified: '#c4c7c7',
+  followup: '#1b1c1b',
+  won: '#006c49',
+  lost: '#ba1a1a',
+  noanswer: '#747878',
+  noshow: '#444748',
+}
 
 const PERIODS = [
   { label: "Aujourd'hui", days: 1 },
@@ -87,11 +96,12 @@ const PERIODS = [
 ]
 
 const ROLE_COLORS: Record<string, string> = {
-  Closer: 'bg-blue-100 text-blue-700',
-  Setter: 'bg-purple-100 text-purple-700',
-  'Setter-Closer': 'bg-indigo-100 text-indigo-700',
-  Manager: 'bg-amber-100 text-amber-700',
-  Admin: 'bg-red-100 text-red-700',
+  Closer: 'bg-amber-50 text-amber-800',
+  Setter: 'bg-stone-100 text-stone-600',
+  'Setter-Closer': 'bg-emerald-50 text-emerald-800',
+  Manager: 'bg-amber-50 text-amber-800',
+  Admin: 'bg-red-50 text-red-700',
+  Owner: 'bg-amber-50 text-amber-800',
 }
 
 // ─── Component ───
@@ -208,14 +218,14 @@ export function BusinessReport() {
   // ─── Stage distribution for pie ───
   const stageData = useMemo(() => {
     const stages = [
-      { id: 'prospect', name: 'Prospect', color: '#3b82f6' },
-      { id: 'qualified', name: 'Qualifié', color: '#7c3aed' },
-      { id: 'unqualified', name: 'Non-Qualifié', color: '#eab308' },
-      { id: 'followup', name: 'Follow Up', color: '#f59e0b' },
-      { id: 'won', name: 'Gagné', color: '#059669' },
-      { id: 'lost', name: 'Perdu', color: '#ef4444' },
-      { id: 'noanswer', name: 'Pas de Réponse', color: '#06b6d4' },
-      { id: 'noshow', name: 'No Show', color: '#64748b' },
+      { id: 'prospect', name: 'Nouveau Lead', color: '#006c49' },
+      { id: 'qualified', name: 'Qualifié', color: '#ffb95f' },
+      { id: 'unqualified', name: 'Non-Qualifié', color: '#c4c7c7' },
+      { id: 'followup', name: 'Follow Up', color: '#1b1c1b' },
+      { id: 'won', name: 'Gagné', color: '#006c49' },
+      { id: 'lost', name: 'Perdu', color: '#ba1a1a' },
+      { id: 'noanswer', name: 'Pas de Réponse', color: '#747878' },
+      { id: 'noshow', name: 'No Show', color: '#444748' },
     ]
     return stages.map(s => ({
       name: s.name,
@@ -235,12 +245,14 @@ export function BusinessReport() {
       })),
     [campaignStats])
 
+  // Max CA for horizontal bars
+  const maxCA = useMemo(() => Math.max(...campaignStats.map(c => c.ca), 1), [campaignStats])
+
   // ─── PDF Export ───
   const handleExportPDF = async () => {
     if (!pdfRef.current) return
     setExporting(true)
     try {
-      // Wait for render
       await new Promise(r => setTimeout(r, 300))
       const opt = {
         margin: [8, 8, 8, 8],
@@ -276,7 +288,6 @@ export function BusinessReport() {
 
     const events: ActivityEvent[] = []
 
-    // Prospects created today
     filteredProspects.forEach(p => {
       if (!p.created_at) return
       const d = new Date(p.created_at)
@@ -289,12 +300,11 @@ export function BusinessReport() {
           detail: (p as any).contact || `Prospect #${p.id}`,
           timestamp: d,
           icon: Users,
-          color: 'text-blue-600 bg-blue-50',
+          color: 'text-emerald-700 bg-emerald-50',
         })
       }
     })
 
-    // Stage changes (won/lost/noshow today)
     filteredProspects.forEach(p => {
       if (!p.created_at) return
       if (['won', 'lost', 'noshow'].includes(p.stage)) {
@@ -306,9 +316,9 @@ export function BusinessReport() {
             noshow: 'a marqué un no-show',
           }
           const colorMap: Record<string, string> = {
-            won: 'text-emerald-600 bg-emerald-50',
-            lost: 'text-red-600 bg-red-50',
-            noshow: 'text-slate-600 bg-slate-50',
+            won: 'text-emerald-700 bg-emerald-50',
+            lost: 'text-red-700 bg-red-50',
+            noshow: 'text-stone-600 bg-stone-100',
           }
           events.push({
             id: `stage-${p.id}-${p.stage}`,
@@ -318,13 +328,12 @@ export function BusinessReport() {
             detail: (p as any).contact || `Prospect #${p.id}`,
             timestamp: d,
             icon: GitBranch,
-            color: colorMap[p.stage] || 'text-slate-600 bg-slate-50',
+            color: colorMap[p.stage] || 'text-stone-600 bg-stone-100',
           })
         }
       }
     })
 
-    // Appointments created today
     filteredAppointments.forEach(a => {
       if (!a.created_at) return
       const d = new Date(a.created_at)
@@ -337,12 +346,11 @@ export function BusinessReport() {
           detail: `Le ${a.date}`,
           timestamp: d,
           icon: Calendar,
-          color: 'text-purple-600 bg-purple-50',
+          color: 'text-amber-700 bg-amber-50',
         })
       }
     })
 
-    // Reminders created today
     reminders.forEach(r => {
       if (!r.created_at) return
       const d = new Date(r.created_at)
@@ -355,15 +363,13 @@ export function BusinessReport() {
           detail: r.title,
           timestamp: d,
           icon: Bell,
-          color: 'text-amber-600 bg-amber-50',
+          color: 'text-amber-700 bg-amber-50',
         })
       }
     })
 
-    // Sort by time descending (most recent first)
     events.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
 
-    // Apply member filter
     if (activityFilterMember !== 'all') {
       return events.filter(e => e.member_id === activityFilterMember)
     }
@@ -371,30 +377,45 @@ export function BusinessReport() {
     return events
   }, [periodDays, filteredProspects, filteredAppointments, reminders, members, activityFilterMember])
 
+  // ─── Conic gradient for donut chart ───
+  const conicGradient = useMemo(() => {
+    if (stageData.length === 0) return 'conic-gradient(#e4e2e1 0% 100%)'
+    const total = stageData.reduce((s, d) => s + d.value, 0)
+    let cumulative = 0
+    const segments = stageData.map(d => {
+      const start = cumulative
+      cumulative += (d.value / total) * 100
+      return `${d.color} ${start}% ${cumulative}%`
+    })
+    return `conic-gradient(${segments.join(', ')})`
+  }, [stageData])
+
+  // Bar colors for CA chart
+  const BAR_COLORS = ['#006c49', '#1b1c1b', '#ffb95f', '#747878', '#c4c7c7']
+
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-amber-600 animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-stone-400 animate-spin" /></div>
   }
 
   return (
-    <div className="space-y-6">
-      {/* ─── Header with period selector + export ─── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-            <FileText className="h-5 w-5 text-amber-700" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Rapport</h2>
-            <p className="text-xs text-slate-500">Période : {periodLabel}</p>
-          </div>
+    <div style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      {/* ─── Header ─── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 mb-1">Business Report</h1>
+          <p className="text-stone-500 text-sm">Visualisez la performance globale de vos campagnes et de votre équipe commerciale en temps réel.</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex rounded-lg bg-amber-50 p-0.5 border border-amber-200">
+          <div className="flex gap-1 items-baseline">
             {PERIODS.map(p => (
               <button
                 key={p.days}
                 onClick={() => setPeriodDays(p.days)}
-                className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-all ${periodDays === p.days ? 'bg-amber-600 text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 text-xs font-bold tracking-tight transition-all rounded-lg ${
+                  periodDays === p.days
+                    ? 'text-stone-900 border-b-2 border-emerald-600'
+                    : 'text-stone-400 hover:text-stone-600'
+                }`}
               >
                 {p.label}
               </button>
@@ -403,41 +424,104 @@ export function BusinessReport() {
           <button
             onClick={handleExportPDF}
             disabled={exporting}
-            className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2 text-sm font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-all active:scale-95"
           >
             {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Exporter PDF
+            Export PDF
           </button>
         </div>
       </div>
 
-      {/* ─── Global KPI cards ─── */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <KpiCard icon={DollarSign} label="CA Généré" value={formatCurrency(totalCA)} color="emerald" />
-        <KpiCard icon={ShoppingCart} label="Ventes" value={String(wonLeads.length)} sub={`Panier moyen : ${formatCurrency(avgDeal)}`} color="emerald" />
-        <KpiCard icon={Target} label="Taux de Closing" value={formatPct(closingRate)} sub={`${wonLeads.length} gagné / ${totalDecided} décidé`} color="amber" />
-        <KpiCard icon={Activity} label="Commission estimée" value={formatCurrency(totalCommission)} sub={`${COMMISSION_RATE}% sur ${formatCurrency(totalCA)}`} color="purple" />
-      </div>
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <KpiCard icon={Users} label="Total Leads" value={String(totalLeads)} sub={`${activeLeads.length} actifs`} color="blue" />
-        <KpiCard icon={UserCheck} label="Show Up" value={formatPct(showUpRate)} sub={`${doneAppts} / ${totalAppts} RDV`} color="cyan" />
-        <KpiCard icon={UserX} label="No Show" value={formatPct(noshowRate)} sub={`${noshowLeads.length} leads`} color="rose" />
-        <KpiCard icon={TrendingUp} label="Taux de perte" value={formatPct(lostRate)} sub={`${lostLeads.length} perdu${lostLeads.length > 1 ? 's' : ''}`} color="slate" />
-      </div>
+      {/* ─── KPI Bento Grid ─── */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+        {/* CA Généré */}
+        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between group hover:shadow-lg transition-all duration-300">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-emerald-50 rounded-2xl">
+              <DollarSign className="h-5 w-5 text-emerald-700" />
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">CA Généré</p>
+            <p className="text-3xl font-extrabold text-stone-900">{formatCurrency(totalCA)}</p>
+          </div>
+        </div>
+
+        {/* Ventes */}
+        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-stone-100 rounded-2xl">
+              <ShoppingCart className="h-5 w-5 text-stone-700" />
+            </div>
+            <span className="text-stone-500 font-bold text-[10px] bg-stone-100 px-2.5 py-1 rounded-full">{formatCurrency(avgDeal)} moy.</span>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Ventes</p>
+            <p className="text-3xl font-extrabold text-stone-900">{wonLeads.length}</p>
+          </div>
+        </div>
+
+        {/* Taux de Closing */}
+        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300 border-l-4 border-amber-400">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-amber-50 rounded-2xl">
+              <Target className="h-5 w-5 text-amber-700" />
+            </div>
+            <span className="text-amber-700 font-bold text-[10px] bg-amber-50 px-2.5 py-1 rounded-full">
+              {closingRate >= 25 ? 'High' : closingRate >= 15 ? 'Normal' : 'Low'}
+            </span>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Taux de Closing</p>
+            <p className="text-3xl font-extrabold text-stone-900">{formatPct(closingRate)}</p>
+          </div>
+        </div>
+
+        {/* Commission estimée */}
+        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-emerald-50 rounded-2xl">
+              <Activity className="h-5 w-5 text-emerald-700" />
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Commission estimée</p>
+            <p className="text-3xl font-extrabold text-stone-900">{formatCurrency(totalCommission)}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Secondary KPIs row */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
+        <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Total Leads</p>
+          <p className="text-2xl font-extrabold text-stone-900">{totalLeads}</p>
+        </div>
+        <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Show Up</p>
+          <p className="text-2xl font-extrabold text-stone-900">{doneAppts}</p>
+        </div>
+        <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">No Show</p>
+          <p className="text-2xl font-extrabold text-red-600">{noshowLeads.length}</p>
+        </div>
+        <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Taux de perte</p>
+          <p className="text-2xl font-extrabold text-stone-900">{formatPct(lostRate)}</p>
+        </div>
+      </section>
 
       {/* ─── Activity Feed (Today only) ─── */}
       {periodDays === 1 && (
-        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-[#493627] flex items-center gap-2">
-              <Activity className="h-4 w-4" /> Fil d'activité — Aujourd'hui
-            </h3>
+        <section className="glass-card rounded-2xl p-7 mb-14">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-lg font-extrabold text-stone-900">Fil d'activité — Aujourd'hui</h3>
             {members.length > 0 && (
               <div className="relative">
                 <select
                   value={activityFilterMember}
                   onChange={(e) => setActivityFilterMember(e.target.value)}
-                  className="appearance-none rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-1.5 text-xs font-medium text-slate-600 focus:border-amber-500 focus:outline-none"
+                  className="appearance-none rounded-full border border-stone-200 bg-white pl-8 pr-9 py-2 text-xs font-semibold text-stone-600 focus:border-emerald-500 focus:outline-none"
                 >
                   <option value="all">Tous les membres</option>
                   <option value="owner">Moi (Owner)</option>
@@ -445,34 +529,34 @@ export function BusinessReport() {
                     <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
                   ))}
                 </select>
-                <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
             )}
           </div>
 
           {todayActivities.length === 0 ? (
-            <div className="text-center py-8">
-              <Activity className="h-10 w-10 text-slate-200 mx-auto mb-2" />
-              <p className="text-sm text-slate-400">Aucune activité aujourd'hui</p>
+            <div className="text-center py-10">
+              <Activity className="h-10 w-10 text-stone-200 mx-auto mb-2" />
+              <p className="text-sm text-stone-400">Aucune activité aujourd'hui</p>
             </div>
           ) : (
             <div className="space-y-1 max-h-[400px] overflow-y-auto">
               {todayActivities.map(event => {
                 const EventIcon = event.icon
                 return (
-                  <div key={event.id} className="flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-amber-50/50 transition-colors">
-                    <div className={`flex h-7 w-7 items-center justify-center rounded-lg shrink-0 ${event.color}`}>
-                      <EventIcon className="h-3.5 w-3.5" />
+                  <div key={event.id} className="flex items-start gap-3 py-3 px-3 rounded-xl hover:bg-stone-50 transition-colors">
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-xl shrink-0 ${event.color}`}>
+                      <EventIcon className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-800">
-                        <span className="font-semibold">{event.member_name}</span>{' '}
-                        <span className="text-slate-500">{event.action}</span>
+                      <p className="text-sm text-stone-800">
+                        <span className="font-bold">{event.member_name}</span>{' '}
+                        <span className="text-stone-500">{event.action}</span>
                       </p>
-                      <p className="text-xs text-slate-400 truncate">{event.detail}</p>
+                      <p className="text-xs text-stone-400 truncate">{event.detail}</p>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-medium shrink-0 mt-0.5">
+                    <span className="text-[10px] text-stone-400 font-semibold shrink-0 mt-0.5">
                       {event.timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -480,200 +564,253 @@ export function BusinessReport() {
               })}
             </div>
           )}
-        </div>
+        </section>
       )}
 
-      {/* ─── Charts row ─── */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Pie: stage distribution */}
-        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-          <h3 className="text-sm font-semibold text-[#493627] mb-4">Répartition des leads par étape</h3>
-          <div className="h-64">
-            {stageData.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-sm text-slate-400">Aucune donnée</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={stageData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={2} dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}>
-                    {stageData.map((s, i) => <Cell key={i} fill={s.color} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+      {/* ─── Charts Section ─── */}
+      <section className="grid grid-cols-1 lg:grid-cols-5 gap-7 mb-14">
+        {/* Donut chart: Répartition des leads */}
+        <div className="lg:col-span-2 glass-card p-7 rounded-2xl">
+          <h3 className="text-lg font-extrabold text-stone-900 mb-7">Répartition des leads par étape</h3>
+          {stageData.length === 0 ? (
+            <div className="flex items-center justify-center h-64 text-sm text-stone-400">Aucune donnée</div>
+          ) : (
+            <>
+              <div className="relative w-56 h-56 mx-auto mb-7">
+                <div className="w-full h-full rounded-full" style={{ background: conicGradient }} />
+                <div className="absolute inset-8 bg-white rounded-full flex items-center justify-center shadow-inner">
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-stone-900">{totalLeads}</p>
+                    <p className="text-[10px] text-stone-400 font-bold uppercase tracking-[0.15em]">Leads</p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {stageData.map(s => (
+                  <div key={s.name} className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
+                      <span className="text-sm font-medium text-stone-700">{s.name}</span>
+                    </div>
+                    <span className="font-bold text-stone-900">{totalLeads > 0 ? Math.round((s.value / totalLeads) * 100) : 0}%</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Bar: CA per campaign */}
-        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-          <h3 className="text-sm font-semibold text-[#493627] mb-4">CA par campagne</h3>
-          <div className="h-64">
-            {caBarData.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-sm text-slate-400">Aucune donnée</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={caBarData} margin={{ bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#493627' }} angle={-15} textAnchor="end" height={50} />
-                  <YAxis tick={{ fontSize: 11, fill: '#493627' }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(v: number, _: any, e: any) => [formatCurrency(v), e.payload.fullName]} contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }} />
-                  <Bar dataKey="ca" fill="#d97706" radius={[6, 6, 0, 0]} barSize={36} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+        {/* Horizontal bars: CA par campagne */}
+        <div className="lg:col-span-3 glass-card p-7 rounded-2xl">
+          <h3 className="text-lg font-extrabold text-stone-900 mb-7">CA par campagne</h3>
+          {campaignStats.filter(c => c.ca > 0).length === 0 ? (
+            <div className="flex items-center justify-center h-64 text-sm text-stone-400">Aucune donnée</div>
+          ) : (
+            <div className="space-y-5">
+              {campaignStats.filter(c => c.ca > 0).map((c, i) => (
+                <div key={c.id}>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="font-bold text-stone-900">{c.name}</span>
+                    <span className="font-bold" style={{ color: BAR_COLORS[i % BAR_COLORS.length] }}>{formatCurrency(c.ca)}</span>
+                  </div>
+                  <div className="w-full bg-stone-100 h-3 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${(c.ca / maxCA) * 100}%`, backgroundColor: BAR_COLORS[i % BAR_COLORS.length] }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      </section>
 
       {/* ─── Campaign Performance Table ─── */}
-      <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-        <h3 className="text-sm font-semibold text-[#493627] mb-4 flex items-center gap-2">
-          <Megaphone className="h-4 w-4" /> Performance des Campagnes
-        </h3>
+      <section className="glass-card rounded-2xl overflow-hidden mb-14">
+        <div className="p-7 border-b border-stone-100">
+          <h3 className="text-lg font-extrabold text-stone-900">Performance des Campagnes</h3>
+        </div>
         {campaignStats.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6">Aucune campagne</p>
+          <p className="text-sm text-stone-400 text-center py-10">Aucune campagne</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-amber-100 text-xs font-bold uppercase tracking-wider text-slate-500">
-                  <th className="text-left py-2 pr-3">Campagne</th>
-                  <th className="text-center py-2 px-2">Statut</th>
-                  <th className="text-center py-2 px-2">Créée le</th>
-                  <th className="text-center py-2 px-2"><Eye className="h-3 w-3 inline" /> Vues</th>
-                  <th className="text-center py-2 px-2">Inscrits</th>
-                  <th className="text-center py-2 px-2">Conv.</th>
-                  <th className="text-center py-2 px-2">Gagnés</th>
-                  <th className="text-right py-2 px-2">CA</th>
-                  <th className="text-right py-2 pl-2">Commission</th>
+                <tr className="bg-stone-50/50">
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">Campagne</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">Statut</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">Date</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">Vues</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">Conv.</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">CA</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 text-right">Commission</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-amber-50">
+              <tbody className="divide-y divide-stone-50">
                 {campaignStats.map(c => (
-                  <tr key={c.id} className="hover:bg-amber-50/50 transition-colors">
-                    <td className="py-2.5 pr-3 font-medium text-slate-900 max-w-[200px] truncate">{c.name}</td>
-                    <td className="py-2.5 px-2 text-center">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${c.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                        {c.is_active ? 'Active' : 'Inactive'}
+                  <tr key={c.id} className="hover:bg-stone-50/30 transition-colors">
+                    <td className="px-7 py-5 font-bold text-stone-900">{c.name}</td>
+                    <td className="px-7 py-5">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${c.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>
+                        {c.is_active ? 'Active' : 'Paused'}
                       </span>
                     </td>
-                    <td className="py-2.5 px-2 text-center text-slate-500 text-xs">{formatDate(c.created_at)}</td>
-                    <td className="py-2.5 px-2 text-center font-medium text-blue-600">{c.views}</td>
-                    <td className="py-2.5 px-2 text-center font-medium text-purple-600">{c.inscriptions}</td>
-                    <td className="py-2.5 px-2 text-center font-medium text-amber-600">{formatPct(c.conversionRate)}</td>
-                    <td className="py-2.5 px-2 text-center font-medium text-emerald-600">{c.wonCount}</td>
-                    <td className="py-2.5 px-2 text-right font-bold text-slate-900">{formatCurrency(c.ca)}</td>
-                    <td className="py-2.5 pl-2 text-right font-medium text-purple-600">{formatCurrency(c.commission)}</td>
+                    <td className="px-7 py-5 text-sm text-stone-500">{formatDate(c.created_at)}</td>
+                    <td className="px-7 py-5 text-sm text-stone-700">{c.views.toLocaleString('fr-FR')}</td>
+                    <td className="px-7 py-5 text-sm font-bold text-stone-700">{formatPct(c.conversionRate)}</td>
+                    <td className="px-7 py-5 font-extrabold text-stone-900">{formatCurrency(c.ca)}</td>
+                    <td className="px-7 py-5 text-right font-medium text-emerald-700">{formatCurrency(c.commission)}</td>
                   </tr>
                 ))}
                 {/* Totals row */}
-                <tr className="border-t-2 border-amber-200 font-bold">
-                  <td className="py-2.5 pr-3 text-slate-900">Total</td>
+                <tr className="border-t-2 border-stone-200 font-bold bg-stone-50/30">
+                  <td className="px-7 py-5 text-stone-900">Total</td>
                   <td></td>
                   <td></td>
-                  <td className="py-2.5 px-2 text-center text-blue-700">{campaignStats.reduce((s, c) => s + c.views, 0)}</td>
-                  <td className="py-2.5 px-2 text-center text-purple-700">{campaignStats.reduce((s, c) => s + c.inscriptions, 0)}</td>
+                  <td className="px-7 py-5 text-sm text-stone-700">{campaignStats.reduce((s, c) => s + c.views, 0).toLocaleString('fr-FR')}</td>
                   <td></td>
-                  <td className="py-2.5 px-2 text-center text-emerald-700">{campaignStats.reduce((s, c) => s + c.wonCount, 0)}</td>
-                  <td className="py-2.5 px-2 text-right text-slate-900">{formatCurrency(totalCA)}</td>
-                  <td className="py-2.5 pl-2 text-right text-purple-700">{formatCurrency(totalCommission)}</td>
+                  <td className="px-7 py-5 font-extrabold text-stone-900">{formatCurrency(totalCA)}</td>
+                  <td className="px-7 py-5 text-right font-medium text-emerald-700">{formatCurrency(totalCommission)}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* ─── Team Performance Table ─── */}
-      <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-        <h3 className="text-sm font-semibold text-[#493627] mb-4 flex items-center gap-2">
-          <Users className="h-4 w-4" /> Performance de l'Équipe
-        </h3>
-        {members.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6">Aucun membre dans l'équipe</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-amber-100 text-xs font-bold uppercase tracking-wider text-slate-500">
-                  <th className="text-left py-2 pr-3">Membre</th>
-                  <th className="text-center py-2 px-2">Rôle</th>
-                  <th className="text-center py-2 px-2">Depuis</th>
-                  <th className="text-center py-2 px-2">Ancienneté</th>
-                  <th className="text-center py-2 px-2">Email</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-amber-50">
-                {members.map(m => {
-                  const joinDate = new Date(m.joined_at)
-                  const now = new Date()
-                  const diffDays = Math.floor((now.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24))
-                  const anciennete = diffDays < 30 ? `${diffDays}j` : diffDays < 365 ? `${Math.floor(diffDays / 30)} mois` : `${(diffDays / 365).toFixed(1)} an${diffDays >= 730 ? 's' : ''}`
-                  return (
-                    <tr key={m.id} className="hover:bg-amber-50/50 transition-colors">
-                      <td className="py-2.5 pr-3">
-                        <p className="font-medium text-slate-900">{m.first_name} {m.last_name}</p>
-                      </td>
-                      <td className="py-2.5 px-2 text-center">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${ROLE_COLORS[m.role] || 'bg-slate-100 text-slate-600'}`}>
-                          {m.role}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-2 text-center text-xs text-slate-500">{formatDate(m.joined_at)}</td>
-                      <td className="py-2.5 px-2 text-center text-xs text-slate-600 font-medium">{anciennete}</td>
-                      <td className="py-2.5 px-2 text-center text-xs text-slate-400">{m.email}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+      {/* ─── Team + Financial Summary ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-7 mb-14">
+        {/* Team Performance */}
+        <div className="lg:col-span-2 glass-card rounded-2xl overflow-hidden">
+          <div className="p-7 border-b border-stone-100">
+            <h3 className="text-lg font-extrabold text-stone-900">Performance de l'Équipe</h3>
           </div>
-        )}
-      </div>
-
-      {/* ─── Detailed Breakdown Cards ─── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Pipeline Détaillé</h4>
-          <div className="space-y-2">
-            <StatLine label="Prospect" value={filteredProspects.filter(p => p.stage === 'prospect').length} color="blue" />
-            <StatLine label="Qualifié" value={qualifiedLeads.length} color="purple" />
-            <StatLine label="Follow Up" value={followupLeads.length} color="amber" />
-            <StatLine label="Gagné" value={wonLeads.length} color="emerald" />
-            <StatLine label="Perdu" value={lostLeads.length} color="red" />
-            <StatLine label="No Show" value={noshowLeads.length} color="slate" />
-          </div>
+          {members.length === 0 ? (
+            <p className="text-sm text-stone-400 text-center py-10">Aucun membre dans l'équipe</p>
+          ) : (
+            <div className="divide-y divide-stone-50">
+              {members.map(m => {
+                const memberWins = filteredProspects.filter(p => p.stage === 'won' && (p as any).assigned_to === m.id).length
+                return (
+                  <div key={m.id} className="flex items-center justify-between px-7 py-4 hover:bg-stone-50/30 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-stone-200 flex items-center justify-center text-sm font-bold text-stone-600">
+                        {m.first_name[0]}{m.last_name?.[0] || ''}
+                      </div>
+                      <div>
+                        <p className="font-bold text-stone-900">{m.first_name} {m.last_name}</p>
+                        <p className="text-[10px] text-stone-400">{m.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-5">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded ${ROLE_COLORS[m.role] || 'bg-stone-100 text-stone-500'}`}>
+                        {m.role}
+                      </span>
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] text-stone-400">Wins</span>
+                        <span className="font-bold text-stone-900">{memberWins}</span>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-stone-300" />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
-        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Rendez-vous</h4>
+
+        {/* Financial Summary Card (gradient) */}
+        <div className="rounded-2xl p-7 text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #ffb95f 0%, #006c49 100%)' }}>
+          <div className="relative z-10 flex flex-col h-full">
+            <h3 className="text-lg font-extrabold mb-7">Résumé Financier</h3>
+            <div className="space-y-5 flex-grow">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">Taux de Closing</p>
+                <p className="text-4xl font-black">{formatPct(closingRate)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">Panier Moyen</p>
+                <p className="text-2xl font-bold">{formatCurrency(avgDeal)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">Show Up Rate</p>
+                <p className="text-2xl font-bold">{formatPct(showUpRate)}</p>
+              </div>
+            </div>
+          </div>
+          {/* Glass sphere effect */}
+          <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+        </div>
+      </div>
+
+      {/* ─── Bottom Cards ─── */}
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-7 mb-14">
+        {/* Rendez-vous */}
+        <div className="glass-card p-7 rounded-2xl">
+          <div className="flex items-center gap-4 mb-5">
+            <div className="w-11 h-11 bg-stone-100 rounded-full flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-stone-700" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-lg text-stone-900">Rendez-vous</h4>
+              <p className="text-sm text-stone-400">{totalAppts} total · {doneAppts} terminé{doneAppts !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
           <div className="space-y-2">
-            <StatLine label="Total RDV" value={totalAppts} color="blue" />
+            <StatLine label="Total RDV" value={totalAppts} color="stone" />
             <StatLine label="Terminés" value={doneAppts} color="emerald" />
             <StatLine label="En attente" value={filteredAppointments.filter(a => a.status === 'pending').length} color="amber" />
-            <StatLine label="Confirmés" value={filteredAppointments.filter(a => a.status === 'confirmed').length} color="blue" />
+            <StatLine label="Confirmés" value={filteredAppointments.filter(a => a.status === 'confirmed').length} color="stone" />
             <StatLine label="Annulés" value={cancelledAppts} color="red" />
             <StatLine label="Taux Show Up" value={formatPct(showUpRate)} color="emerald" isText />
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Résumé Financier</h4>
-          <div className="space-y-2">
-            <StatLine label="CA Total" value={formatCurrency(totalCA)} color="emerald" isText />
-            <StatLine label="Panier Moyen" value={formatCurrency(avgDeal)} color="blue" isText />
-            <StatLine label="Commission ({COMMISSION_RATE}%)" value={formatCurrency(totalCommission)} color="purple" isText />
-            <StatLine label="Ventes Comptant" value={wonLeads.filter(p => !p.payment_type || p.payment_type === 'cash' || p.payment_type === 'comptant' || p.payment_type === 'once').length} color="amber" />
-            <StatLine label="Ventes en X fois" value={wonLeads.filter(p => p.payment_type === 'installments').length} color="cyan" />
-            <StatLine label="Taux Closing" value={formatPct(closingRate)} color="emerald" isText />
+
+        {/* Pipeline Détaillé */}
+        <div className="glass-card p-7 rounded-2xl border-t-4 border-stone-900">
+          <div className="flex items-center gap-4 mb-5">
+            <div className="w-11 h-11 bg-stone-900 rounded-full flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-lg text-stone-900">Pipeline Détaillé</h4>
+              <p className="text-sm text-stone-400">Valeur totale : {formatCurrency(totalCA)}</p>
+            </div>
+          </div>
+          {/* Pipeline bar */}
+          <div className="w-full bg-stone-100 h-2 rounded-full mb-5 overflow-hidden">
+            <div className="flex h-full">
+              {stageData.map((s, i) => {
+                const pct = totalLeads > 0 ? (s.value / totalLeads) * 100 : 0
+                return (
+                  <div
+                    key={s.name}
+                    className={`h-full ${i === 0 ? 'rounded-l-full' : ''} ${i === stageData.length - 1 ? 'rounded-r-full' : ''}`}
+                    style={{ width: `${pct}%`, backgroundColor: s.color }}
+                  />
+                )
+              })}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-black text-stone-900">{filteredProspects.filter(p => p.stage === 'prospect').length}</p>
+              <p className="text-[10px] text-stone-400 font-bold uppercase tracking-[0.15em]">Prospects</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-black text-stone-900">{wonLeads.length}</p>
+              <p className="text-[10px] text-stone-400 font-bold uppercase tracking-[0.15em]">Gagnés</p>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* ─── Hidden PDF content ─── */}
       <div style={{ position: 'fixed', top: 0, left: 0, width: '900px', zIndex: -1, opacity: 0, pointerEvents: 'none' }}>
         <div ref={pdfRef} style={{ fontFamily: 'Inter, Helvetica, Arial, sans-serif', background: '#ffffff', padding: '32px', width: '900px', color: '#1e293b' }}>
           {/* PDF Header */}
-          <div style={{ background: 'linear-gradient(135deg, #d97706, #b45309)', borderRadius: '16px', padding: '24px 32px', marginBottom: '24px', color: '#fff' }}>
+          <div style={{ background: 'linear-gradient(135deg, #ffb95f, #006c49)', borderRadius: '16px', padding: '24px 32px', marginBottom: '24px', color: '#fff' }}>
             <div style={{ fontSize: '22px', fontWeight: 'bold' }}>CloseOS Business — Rapport</div>
             <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>Période : {periodLabel} · Généré le {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
           </div>
@@ -692,12 +829,12 @@ export function BusinessReport() {
 
           {/* PDF Pipeline */}
           <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#493627' }}>Répartition Pipeline</div>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>Répartition Pipeline</div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e5d5c3' }}>
+                <tr style={{ borderBottom: '2px solid #e4e2e1' }}>
                   {['Prospect', 'Qualifié', 'Follow Up', 'Gagné', 'Perdu', 'No Show'].map(s => (
-                    <th key={s} style={{ textAlign: 'center', padding: '6px', fontWeight: 'bold', color: '#64748b' }}>{s}</th>
+                    <th key={s} style={{ textAlign: 'center', padding: '6px', fontWeight: 'bold', color: '#747878' }}>{s}</th>
                   ))}
                 </tr>
               </thead>
@@ -715,18 +852,18 @@ export function BusinessReport() {
 
           {/* PDF Campaign table */}
           <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#493627' }}>Performance Campagnes</div>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>Performance Campagnes</div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e5d5c3' }}>
+                <tr style={{ borderBottom: '2px solid #e4e2e1' }}>
                   {['Campagne', 'Statut', 'Vues', 'Inscrits', 'Conv.', 'Gagnés', 'CA', 'Commission'].map(h => (
-                    <th key={h} style={{ textAlign: h === 'Campagne' ? 'left' : 'center', padding: '5px 4px', fontWeight: 'bold', color: '#64748b' }}>{h}</th>
+                    <th key={h} style={{ textAlign: h === 'Campagne' ? 'left' : 'center', padding: '5px 4px', fontWeight: 'bold', color: '#747878' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {campaignStats.map(c => (
-                  <tr key={c.id} style={{ borderBottom: '1px solid #f1ece6' }}>
+                  <tr key={c.id} style={{ borderBottom: '1px solid #efedec' }}>
                     <td style={{ padding: '5px 4px', fontWeight: 500 }}>{c.name}</td>
                     <td style={{ padding: '5px 4px', textAlign: 'center' }}>{c.is_active ? 'Active' : 'Inactive'}</td>
                     <td style={{ padding: '5px 4px', textAlign: 'center' }}>{c.views}</td>
@@ -737,7 +874,7 @@ export function BusinessReport() {
                     <td style={{ padding: '5px 4px', textAlign: 'right' }}>{formatCurrency(c.commission)}</td>
                   </tr>
                 ))}
-                <tr style={{ borderTop: '2px solid #d97706' }}>
+                <tr style={{ borderTop: '2px solid #006c49' }}>
                   <td style={{ padding: '5px 4px', fontWeight: 'bold' }}>Total</td>
                   <td></td>
                   <td style={{ padding: '5px 4px', textAlign: 'center', fontWeight: 'bold' }}>{campaignStats.reduce((s, c) => s + c.views, 0)}</td>
@@ -754,21 +891,21 @@ export function BusinessReport() {
           {/* PDF Team */}
           {members.length > 0 && (
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#493627' }}>Équipe ({members.length} membres)</div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>Équipe ({members.length} membres)</div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #e5d5c3' }}>
+                  <tr style={{ borderBottom: '2px solid #e4e2e1' }}>
                     {['Membre', 'Rôle', 'Email', 'Depuis'].map(h => (
-                      <th key={h} style={{ textAlign: h === 'Membre' ? 'left' : 'center', padding: '5px 4px', fontWeight: 'bold', color: '#64748b' }}>{h}</th>
+                      <th key={h} style={{ textAlign: h === 'Membre' ? 'left' : 'center', padding: '5px 4px', fontWeight: 'bold', color: '#747878' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {members.map(m => (
-                    <tr key={m.id} style={{ borderBottom: '1px solid #f1ece6' }}>
+                    <tr key={m.id} style={{ borderBottom: '1px solid #efedec' }}>
                       <td style={{ padding: '5px 4px', fontWeight: 500 }}>{m.first_name} {m.last_name}</td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>{m.role}</td>
-                      <td style={{ padding: '5px 4px', textAlign: 'center', color: '#64748b' }}>{m.email}</td>
+                      <td style={{ padding: '5px 4px', textAlign: 'center', color: '#747878' }}>{m.email}</td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>{formatDate(m.joined_at)}</td>
                     </tr>
                   ))}
@@ -779,7 +916,7 @@ export function BusinessReport() {
 
           {/* PDF Appointments */}
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#493627' }}>Rendez-vous</div>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>Rendez-vous</div>
             <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
               <span>Total : <b>{totalAppts}</b></span>
               <span>Terminés : <b>{doneAppts}</b></span>
@@ -789,7 +926,7 @@ export function BusinessReport() {
           </div>
 
           {/* PDF Footer */}
-          <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #e5d5c3', fontSize: '10px', color: '#94a3b8', textAlign: 'center' }}>
+          <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #e4e2e1', fontSize: '10px', color: '#747878', textAlign: 'center' }}>
             CloseOS Business · Rapport généré automatiquement · {new Date().toLocaleDateString('fr-FR')}
           </div>
         </div>
@@ -800,43 +937,16 @@ export function BusinessReport() {
 
 // ─── Sub-components ───
 
-function KpiCard({ icon: Icon, label, value, sub, color }: {
-  icon: any; label: string; value: string; sub?: string; color: string
-}) {
-  const colorMap: Record<string, { bg: string; icon: string }> = {
-    emerald: { bg: 'bg-emerald-50', icon: 'text-emerald-600' },
-    blue: { bg: 'bg-blue-50', icon: 'text-blue-600' },
-    purple: { bg: 'bg-purple-50', icon: 'text-purple-600' },
-    amber: { bg: 'bg-amber-50', icon: 'text-amber-600' },
-    cyan: { bg: 'bg-cyan-50', icon: 'text-cyan-600' },
-    rose: { bg: 'bg-rose-50', icon: 'text-rose-600' },
-    slate: { bg: 'bg-slate-50', icon: 'text-slate-600' },
-  }
-  const c = colorMap[color] || colorMap.slate
-  return (
-    <div className="bg-white rounded-xl border border-[#493627]/10 p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-center gap-2.5 mb-2">
-        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${c.bg}`}>
-          <Icon className={`h-4 w-4 ${c.icon}`} />
-        </div>
-        <p className="text-xs font-medium text-slate-500">{label}</p>
-      </div>
-      <p className="text-xl font-bold text-slate-900">{value}</p>
-      {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
-    </div>
-  )
-}
-
 function StatLine({ label, value, color, isText }: { label: string; value: number | string; color: string; isText?: boolean }) {
   const colorMap: Record<string, string> = {
-    blue: 'text-blue-600', purple: 'text-purple-600', amber: 'text-amber-600',
-    emerald: 'text-emerald-600', red: 'text-red-600', slate: 'text-slate-500', cyan: 'text-cyan-600',
+    stone: 'text-stone-700', emerald: 'text-emerald-700', amber: 'text-amber-700',
+    red: 'text-red-600', slate: 'text-stone-500',
   }
   return (
-    <div className="flex items-center justify-between py-1">
-      <span className="text-xs text-slate-500">{label}</span>
-      <span className={`text-sm font-bold ${colorMap[color] || 'text-slate-900'}`}>
-        {isText ? value : value}
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-sm font-medium text-stone-500">{label}</span>
+      <span className={`text-sm font-bold ${colorMap[color] || 'text-stone-900'}`}>
+        {value}
       </span>
     </div>
   )
@@ -844,9 +954,9 @@ function StatLine({ label, value, color, isText }: { label: string; value: numbe
 
 function PdfKpi({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ flex: '1 1 0', minWidth: '90px', background: '#fef3c7', borderRadius: '10px', padding: '10px 14px', textAlign: 'center' }}>
-      <div style={{ fontSize: '10px', color: '#92400e', fontWeight: 600, marginBottom: '2px' }}>{label}</div>
-      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b' }}>{value}</div>
+    <div style={{ flex: '1 1 0', minWidth: '90px', background: '#f5f3f2', borderRadius: '10px', padding: '10px 14px', textAlign: 'center' }}>
+      <div style={{ fontSize: '10px', color: '#747878', fontWeight: 600, marginBottom: '2px' }}>{label}</div>
+      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1b1c1b' }}>{value}</div>
     </div>
   )
 }
