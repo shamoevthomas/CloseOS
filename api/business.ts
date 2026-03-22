@@ -955,14 +955,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'objectives-create' && req.method === 'POST') {
-      const { user_id, label, metric, target_value, period, assigned_to, deadline } = req.body
+      const { user_id, label, metric, target_value, period, assigned_to, deadline, description, scope, assigned_to_role, assigned_to_members } = req.body
       if (!user_id || !label || !metric || target_value == null) {
         return res.status(400).json({ error: 'user_id, label, metric, and target_value required' })
       }
 
-      const insertPayload: Record<string, any> = { user_id, label, metric, target_value, period: period || 'monthly' }
+      const insertPayload: Record<string, any> = { user_id, label, metric, target_value, period: period || 'monthly', scope: scope || 'individual' }
       if (assigned_to) insertPayload.assigned_to = assigned_to
       if (deadline) insertPayload.deadline = deadline
+      if (description) insertPayload.description = description
+      if (assigned_to_role) insertPayload.assigned_to_role = assigned_to_role
+      if (assigned_to_members) insertPayload.assigned_to_members = assigned_to_members
 
       const { data, error } = await supabase
         .from('business_objectives')
@@ -1104,6 +1107,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const wonLeads = campProspects.filter((p: any) => p.stage === 'won')
         const wonCount = wonLeads.length
         const totalCA = wonLeads.reduce((sum: number, p: any) => sum + (Number(p.value) || 0), 0)
+        const noanswerCount = campProspects.filter((p: any) => p.stage === 'noanswer').length
+        const noshowCount = campProspects.filter((p: any) => p.stage === 'noshow').length
+        const unqualifiedCount = campProspects.filter((p: any) => p.stage === 'unqualified').length
         return {
           id: c.id,
           name: c.name,
@@ -1112,12 +1118,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           totalLeads,
           wonCount,
           totalCA,
+          noanswerCount,
+          noshowCount,
+          unqualifiedCount,
           conversionRate: c.views > 0 ? ((totalLeads / c.views) * 100) : 0,
           wonRate: totalLeads > 0 ? ((wonCount / totalLeads) * 100) : 0,
         }
       })
 
       return res.status(200).json({ stats })
+    }
+
+    // ─── Custom sources ───
+    if (action === 'sources-list' && req.method === 'GET') {
+      const user_id = req.query.user_id as string
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+
+      const { data, error } = await supabase
+        .from('business_custom_sources')
+        .select('id, name')
+        .eq('user_id', user_id)
+        .order('name')
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ sources: data || [] })
+    }
+
+    if (action === 'sources-create' && req.method === 'POST') {
+      const { user_id, name } = req.body
+      if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
+
+      const { data, error } = await supabase
+        .from('business_custom_sources')
+        .insert({ user_id, name: name.trim() })
+        .select('id, name')
+        .single()
+
+      if (error) {
+        if (error.code === '23505') return res.status(409).json({ error: 'Cette source existe déjà' })
+        return res.status(500).json({ error: error.message })
+      }
+      return res.status(201).json({ source: data })
     }
 
     // ─── Campaign actions ───

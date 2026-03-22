@@ -16,6 +16,9 @@ interface CampaignStat {
   totalLeads: number
   wonCount: number
   totalCA: number
+  noanswerCount: number
+  noshowCount: number
+  unqualifiedCount: number
   conversionRate: number
   wonRate: number
 }
@@ -33,6 +36,7 @@ export function BusinessAcquisition() {
   const [stats, setStats] = useState<CampaignStat[]>([])
   const [loading, setLoading] = useState(true)
   const [pieView, setPieView] = useState<'views' | 'conversion'>('views')
+  const [countAsUneducated, setCountAsUneducated] = useState(false)
 
   const fetchStats = useCallback(async () => {
     if (!effectiveUserId) return
@@ -87,6 +91,34 @@ export function BusinessAcquisition() {
       ca: c.totalCA,
     }))
     .sort((a, b) => b.ca - a.ca)
+
+  // ─── Taux d'implication: campaigns with lowest % of noanswer+noshow ───
+  const implicationData = stats
+    .filter(c => c.totalLeads > 0)
+    .map(c => {
+      const badCount = c.noanswerCount + c.noshowCount
+      const implicationRate = ((1 - badCount / c.totalLeads) * 100)
+      return {
+        name: c.name.length > 15 ? c.name.slice(0, 15) + '…' : c.name,
+        fullName: c.name,
+        rate: parseFloat(implicationRate.toFixed(1)),
+      }
+    })
+    .sort((a, b) => b.rate - a.rate)
+
+  // ─── Taux d'éducation: campaigns with lowest % of unqualified (+ optionally noanswer/noshow) ───
+  const educationData = stats
+    .filter(c => c.totalLeads > 0)
+    .map(c => {
+      const badCount = c.unqualifiedCount + (countAsUneducated ? c.noanswerCount + c.noshowCount : 0)
+      const educationRate = ((1 - badCount / c.totalLeads) * 100)
+      return {
+        name: c.name.length > 15 ? c.name.slice(0, 15) + '…' : c.name,
+        fullName: c.name,
+        rate: parseFloat(educationRate.toFixed(1)),
+      }
+    })
+    .sort((a, b) => b.rate - a.rate)
 
   return (
     <div className="space-y-6">
@@ -260,6 +292,70 @@ export function BusinessAcquisition() {
                 <Bar dataKey="ca" fill="#d97706" radius={[6, 6, 0, 0]} barSize={40} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Implication + Éducation charts row ─── */}
+      {stats.length > 0 && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Taux d'implication */}
+          <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
+            <h3 className="text-sm font-semibold text-[#493627] mb-1">Taux d'implication (%)</h3>
+            <p className="text-xs text-slate-400 mb-4">Campagnes avec le moins de "Pas de réponse" et "No Show"</p>
+            <div className="h-64">
+              {implicationData.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-sm text-slate-400">Aucune donnée</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={implicationData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: '#493627' }} unit="%" domain={[0, 100]} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#493627' }} width={110} />
+                    <Tooltip
+                      formatter={(value: number, _: any, entry: any) => [`${value}%`, entry.payload.fullName]}
+                      contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }}
+                    />
+                    <Bar dataKey="rate" fill="#2563eb" radius={[0, 6, 6, 0]} barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Taux d'éducation */}
+          <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-sm font-semibold text-[#493627]">Taux d'éducation (%)</h3>
+            </div>
+            <p className="text-xs text-slate-400 mb-3">Campagnes avec le moins de "Non qualifié"</p>
+            <label className="flex items-center gap-2 mb-4 cursor-pointer select-none">
+              <button
+                onClick={() => setCountAsUneducated(!countAsUneducated)}
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${countAsUneducated ? 'bg-amber-600' : 'bg-slate-200'}`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${countAsUneducated ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+              </button>
+              <span className="text-xs text-slate-500">Compter les "Pas de réponse" et "No Show" comme non éduqués</span>
+            </label>
+            <div className="h-56">
+              {educationData.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-sm text-slate-400">Aucune donnée</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={educationData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: '#493627' }} unit="%" domain={[0, 100]} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#493627' }} width={110} />
+                    <Tooltip
+                      formatter={(value: number, _: any, entry: any) => [`${value}%`, entry.payload.fullName]}
+                      contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }}
+                    />
+                    <Bar dataKey="rate" fill="#7c3aed" radius={[0, 6, 6, 0]} barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
         </div>
       )}
