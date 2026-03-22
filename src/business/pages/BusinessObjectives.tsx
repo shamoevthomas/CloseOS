@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import {
-  Plus, Target, Pencil, Trash2, X, Loader2, ChevronDown, CalendarDays, User, Users, Building2
+  Plus, Target, Pencil, Trash2, X, Loader2, ChevronDown, CalendarDays, User, Users, Building2, ArrowRight, TrendingUp, Clock, Eye
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -90,6 +90,7 @@ export function BusinessObjectives() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null)
   const [saving, setSaving] = useState(false)
+  const [detailObjective, setDetailObjective] = useState<Objective | null>(null)
 
   // Appointments for metric calculation
   const [appointments, setAppointments] = useState<any[]>([])
@@ -253,48 +254,34 @@ export function BusinessObjectives() {
     } catch { toast.error('Erreur') }
   }
 
-  // Calculate current value for a given metric and period
+  // Calculate current value for a given metric — uses ALL data (no date cutoff)
   const calculateCurrentValue = useMemo(() => {
-    return (metric: string, period: string): number | null => {
-      const days = PERIOD_DAYS[period] || 30
-      const cutoff = new Date()
-      cutoff.setDate(cutoff.getDate() - days)
-
-      const filteredProspects = prospects.filter(p => {
-        const createdAt = p.created_at ? new Date(p.created_at) : null
-        return createdAt && createdAt >= cutoff
-      })
-
-      const filteredAppointments = appointments.filter(a => {
-        const createdAt = a.created_at ? new Date(a.created_at) : null
-        return createdAt && createdAt >= cutoff
-      })
-
+    return (metric: string, _period: string): number | null => {
       switch (metric) {
         case 'revenue': {
-          return filteredProspects
+          return prospects
             .filter(p => p.stage === 'won')
             .reduce((sum, p) => sum + (Number(p.value) || 0), 0)
         }
         case 'sales_count': {
-          return filteredProspects.filter(p => p.stage === 'won').length
+          return prospects.filter(p => p.stage === 'won').length
         }
         case 'conversion_rate': {
-          const closed = filteredProspects.filter(p => ['won', 'lost', 'noshow'].includes(p.stage))
+          const closed = prospects.filter(p => ['won', 'lost', 'noshow'].includes(p.stage))
           if (closed.length === 0) return 0
           const won = closed.filter(p => p.stage === 'won').length
           return Math.round((won / closed.length) * 100 * 10) / 10
         }
         case 'leads': {
-          return filteredProspects.length
+          return prospects.length
         }
         case 'appointments': {
-          return filteredAppointments.length
+          return appointments.length
         }
         case 'noshow_rate': {
-          if (filteredAppointments.length === 0) return 0
-          const noshow = filteredAppointments.filter((a: any) => a.status === 'noshow').length
-          return Math.round((noshow / filteredAppointments.length) * 100 * 10) / 10
+          if (appointments.length === 0) return 0
+          const noshow = appointments.filter((a: any) => a.status === 'noshow').length
+          return Math.round((noshow / appointments.length) * 100 * 10) / 10
         }
         case 'custom':
           return null
@@ -418,7 +405,8 @@ export function BusinessObjectives() {
             return (
               <div
                 key={obj.id}
-                className={`bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border hover:shadow-2xl transition-all group relative overflow-hidden ${
+                onClick={() => setDetailObjective(obj)}
+                className={`bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border hover:shadow-2xl transition-all group relative overflow-hidden cursor-pointer ${
                   isComplete ? 'border-[#c4c7c7]/10' : 'border-[#c4c7c7]/10'
                 }`}
               >
@@ -453,10 +441,10 @@ export function BusinessObjectives() {
                   </div>
                   {!isTeamMember && !isComplete && (
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(obj)} className="p-1.5 hover:bg-[#eae8e7] rounded-full transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); openEdit(obj) }} className="p-1.5 hover:bg-[#eae8e7] rounded-full transition-colors">
                         <Pencil className="h-4 w-4 text-[#444748]" />
                       </button>
-                      <button onClick={() => deleteObjective(obj)} className="p-1.5 hover:bg-[#ffdad6] hover:text-[#ba1a1a] rounded-full transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); deleteObjective(obj) }} className="p-1.5 hover:bg-[#ffdad6] hover:text-[#ba1a1a] rounded-full transition-colors">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -564,6 +552,192 @@ export function BusinessObjectives() {
           )}
         </div>
       )}
+
+      {/* Detail Modal */}
+      {detailObjective && (() => {
+        const obj = detailObjective
+        const currentValue = calculateCurrentValue(obj.metric, obj.period)
+        const progress = currentValue !== null && obj.target_value > 0
+          ? Math.min(Math.round((currentValue / obj.target_value) * 100), 100)
+          : null
+        const isComplete = progress !== null && progress >= 100
+        const overdue = isOverdue(obj.deadline)
+        const deadlineStr = formatDeadline(obj.deadline)
+        const metricBadge = METRIC_BADGE[obj.metric] || METRIC_BADGE.custom
+        const remaining = currentValue !== null ? Math.max(0, obj.target_value - currentValue) : null
+
+        // Assigned members list
+        const assignedIds = obj.assigned_to_members || (obj.assigned_to ? [obj.assigned_to] : [])
+        const assignedMembers = assignedIds.map(id => {
+          const m = members.find(m => m.id === id)
+          return m ? { ...m, name: `${m.first_name} ${m.last_name}` } : null
+        }).filter(Boolean) as (TeamMember & { name: string })[]
+
+        return (
+          <>
+            <div className="fixed inset-0 z-50 bg-[#1b1c1b]/40 backdrop-blur-md" onClick={() => setDetailObjective(null)} />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
+              <div className="pointer-events-auto w-full max-w-2xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.08)' }} onClick={e => e.stopPropagation()}>
+
+                {/* Header */}
+                <div className="px-8 py-6 flex justify-between items-start flex-shrink-0">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${metricBadge.bg} ${metricBadge.text}`}>
+                        {getMetricLabel(obj.metric)}
+                      </span>
+                      <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#eae8e7] text-[#444748]">
+                        {PERIOD_LABELS[obj.period] || obj.period}
+                      </span>
+                      {obj.scope === 'global_org' && (
+                        <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#ffddb8] text-[#653e00]">Organisation</span>
+                      )}
+                      {obj.scope === 'global_role' && obj.assigned_to_role && (
+                        <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#d0ebff] text-[#004a7c]">{obj.assigned_to_role}</span>
+                      )}
+                      {isComplete && (
+                        <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#006c49]/10 text-[#006c49]">Terminé</span>
+                      )}
+                      {overdue && !isComplete && (
+                        <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#ffdad6] text-[#ba1a1a]">En retard</span>
+                      )}
+                    </div>
+                    <h2 className="text-2xl font-extrabold tracking-tight text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>{obj.label}</h2>
+                    {obj.metric === 'custom' && obj.description && (
+                      <p className="text-sm text-[#444748] mt-2">{obj.description}</p>
+                    )}
+                  </div>
+                  <button onClick={() => setDetailObjective(null)} className="p-2 hover:bg-[#eae8e7] rounded-full transition-colors ml-4 flex-shrink-0">
+                    <X className="h-5 w-5 text-[#444748]" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-6">
+
+                  {/* Big progress */}
+                  <div className="rounded-2xl bg-[#f5f3f2] p-6 space-y-4">
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-1">Progression</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className={`text-4xl font-extrabold ${getProgressTextColor(progress)}`} style={{ fontFamily: 'Manrope, sans-serif' }}>
+                            {progress !== null ? `${progress}%` : '—'}
+                          </span>
+                          {isComplete && (
+                            <svg className="w-7 h-7 text-[#006c49]" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-1">Valeur actuelle</p>
+                        <p className="text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                          {formatValue(obj.metric, currentValue)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="w-full h-3 bg-white rounded-full overflow-hidden">
+                      {progress !== null && (
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${getProgressColor(progress)}`}
+                          style={{ width: `${progress}%` }}
+                        />
+                      )}
+                    </div>
+                    <div className="flex justify-between text-xs text-[#444748]">
+                      <span>0</span>
+                      <span className="font-bold">Cible: {formatValue(obj.metric, obj.target_value)}</span>
+                    </div>
+                  </div>
+
+                  {/* Stats grid */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="rounded-2xl bg-[#f5f3f2] p-4 text-center">
+                      <TrendingUp className="h-5 w-5 text-[#006c49] mx-auto mb-2" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-1">Atteint</p>
+                      <p className="text-lg font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatValue(obj.metric, currentValue)}</p>
+                    </div>
+                    <div className="rounded-2xl bg-[#f5f3f2] p-4 text-center">
+                      <Target className="h-5 w-5 text-[#ffb95f] mx-auto mb-2" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-1">Restant</p>
+                      <p className="text-lg font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                        {remaining !== null ? formatValue(obj.metric, remaining) : '—'}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-[#f5f3f2] p-4 text-center">
+                      <Clock className="h-5 w-5 text-[#444748] mx-auto mb-2" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-1">Échéance</p>
+                      <p className={`text-sm font-extrabold ${overdue ? 'text-[#ba1a1a]' : 'text-[#1b1c1b]'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>
+                        {deadlineStr || 'Non définie'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Assigned members */}
+                  {(assignedMembers.length > 0 || obj.scope === 'global_org' || obj.scope === 'global_role') && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-3">
+                        {obj.scope === 'global_org' ? 'Toute l\'organisation' : obj.scope === 'global_role' ? `Rôle: ${obj.assigned_to_role}` : 'Assigné à'}
+                      </p>
+                      {assignedMembers.length > 0 && (
+                        <div className="space-y-2">
+                          {assignedMembers.map(m => (
+                            <div key={m.id} className="flex items-center gap-3 rounded-full bg-[#f5f3f2] px-4 py-2.5">
+                              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-xs font-bold text-[#1b1c1b] shadow-sm">
+                                {m.first_name[0]}{m.last_name?.[0] || ''}
+                              </div>
+                              <span className="text-sm font-bold text-[#1b1c1b]">{m.name}</span>
+                              <span className={`ml-auto inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${ROLE_COLORS[m.role] || 'bg-[#eae8e7] text-[#444748]'}`}>
+                                {m.role}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Info */}
+                  <div className="flex items-center gap-3 text-xs text-[#444748]/60">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Créé le {new Date(obj.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </div>
+                </div>
+
+                {/* Footer actions */}
+                {!isTeamMember && (
+                  <div className="px-8 py-5 bg-[#f5f3f2] flex items-center justify-between flex-shrink-0">
+                    <button
+                      onClick={() => { setDetailObjective(null); deleteObjective(obj) }}
+                      className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-[#ba1a1a] hover:bg-[#ffdad6] rounded-full transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" /> Supprimer
+                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setDetailObjective(null)}
+                        className="px-6 py-2.5 font-bold text-sm text-[#444748] hover:text-[#1b1c1b] transition-colors"
+                        style={{ fontFamily: 'Manrope, sans-serif' }}
+                      >
+                        Fermer
+                      </button>
+                      <button
+                        onClick={() => { setDetailObjective(null); openEdit(obj) }}
+                        className="px-8 py-2.5 bg-[#1b1c1b] text-white rounded-full font-bold text-sm shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                        style={{ fontFamily: 'Manrope, sans-serif' }}
+                      >
+                        <Pencil className="h-4 w-4" /> Modifier
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )
+      })()}
 
       {/* Modal Create/Edit */}
       {isModalOpen && (
