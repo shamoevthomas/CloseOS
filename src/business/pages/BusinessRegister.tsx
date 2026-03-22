@@ -47,7 +47,7 @@ export default function BusinessRegister() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-stone-50 px-4 overflow-hidden">
+    <div className="relative flex min-h-screen items-center justify-center bg-stone-50 dark:bg-neutral-900 px-4 overflow-hidden">
       {/* Ambient background blobs */}
       <div className="absolute top-[-10%] left-[20%] w-[600px] h-[600px] bg-emerald-200/20 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] bg-stone-300/20 blur-[120px] rounded-full pointer-events-none" />
@@ -56,10 +56,10 @@ export default function BusinessRegister() {
         {/* Brand header */}
         <div className="mb-10 flex items-center justify-center gap-3">
           <Link to="/business" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-stone-900">
-              <span className="text-lg font-black text-white font-['Manrope']">C</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-stone-900 dark:bg-white">
+              <span className="text-lg font-black text-white dark:text-black font-['Manrope']">C</span>
             </div>
-            <span className="text-xl font-extrabold text-stone-900 font-['Manrope'] tracking-tight">CloseOS Business</span>
+            <span className="text-xl font-extrabold text-stone-900 dark:text-white font-['Manrope'] tracking-tight">CloseOS Business</span>
           </Link>
         </div>
 

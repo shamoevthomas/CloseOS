@@ -366,7 +366,7 @@ export function BusinessCRM() {
   return (
     <div className="h-full flex flex-col">
       {/* CRM Integration Banner */}
-      <div className="mb-4 flex items-center justify-between rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)] px-6 py-5">
+      <div className="mb-4 flex items-center justify-between rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] px-6 py-5">
         <div className="flex items-center gap-3">
           <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
             crmProvider === 'hubspot' ? 'bg-orange-500' :
@@ -377,14 +377,14 @@ export function BusinessCRM() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-stone-900">CRM : {crmLabel}</p>
+              <p className="text-sm font-semibold text-stone-900 dark:text-white">CRM : {crmLabel}</p>
               {((crmProvider === 'hubspot' && hubspotConnected) || (crmProvider === 'pipedrive' && pipedriveConnected)) && (
                 <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
                   <Check className="h-2.5 w-2.5" /> Connecté
                 </span>
               )}
             </div>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-stone-500 dark:text-neutral-400">
               {crmProvider === 'hubspot' && hubspotConnected
                 ? `Auto-sync dans ${Math.floor(nextSyncSeconds / 60)}:${String(nextSyncSeconds % 60).padStart(2, '0')}`
                 : 'Votre pipeline de prospection'
@@ -434,7 +434,7 @@ export function BusinessCRM() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Rechercher un prospect..."
-            className="w-full rounded-full border-none bg-stone-100 py-2.5 pl-10 pr-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+            className="w-full rounded-full border-none bg-stone-100 dark:bg-neutral-800 py-2.5 pl-10 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
         </div>
 
@@ -444,8 +444,8 @@ export function BusinessCRM() {
           className={cn(
             'flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all border',
             hasActiveFilters
-              ? 'bg-stone-100 border-stone-300 text-stone-700'
-              : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+              ? 'bg-stone-100 dark:bg-neutral-800 border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200'
+              : 'bg-white dark:bg-neutral-900 border-stone-200 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800'
           )}
         >
           <Filter className="h-4 w-4" />
@@ -460,7 +460,7 @@ export function BusinessCRM() {
         {!isReadOnly && (
           <button
             onClick={() => setIsTagModalOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-all"
+            className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
           >
             <Tag className="h-4 w-4" />
             <span className="hidden sm:inline">Tags</span>
@@ -480,11 +480,11 @@ export function BusinessCRM() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="mb-4 rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)] p-4 space-y-4">
+        <div className="mb-4 rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-extrabold text-stone-900">Filtres</h3>
+            <h3 className="text-sm font-extrabold text-stone-900 dark:text-white">Filtres</h3>
             {hasActiveFilters && (
-              <button onClick={clearFilters} className="text-xs text-stone-600 hover:text-stone-900 font-medium">
+              <button onClick={clearFilters} className="text-xs text-stone-600 dark:text-neutral-300 hover:text-stone-900 dark:hover:text-white font-medium">
                 Réinitialiser tout
               </button>
             )}
@@ -493,7 +493,7 @@ export function BusinessCRM() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Period */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 mb-2">
+              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">
                 <Calendar className="h-3 w-3 inline mr-1" />Période
               </label>
               <div className="flex flex-wrap gap-1">
@@ -505,7 +505,7 @@ export function BusinessCRM() {
                       'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
                       selectedPeriod === p.days
                         ? 'bg-stone-900 text-white'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
                     )}
                   >
                     {p.label}
@@ -516,7 +516,7 @@ export function BusinessCRM() {
 
             {/* Members */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 mb-2">Closer / Setter</label>
+              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">Closer / Setter</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {allTeamMembers.map(m => (
                   <button
@@ -526,19 +526,19 @@ export function BusinessCRM() {
                       'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
                       selectedMembers.includes(m.id)
                         ? 'bg-stone-900 text-white'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
                     )}
                   >
                     {m.first_name} {m.last_name}
                   </button>
                 ))}
-                {allTeamMembers.length === 0 && <span className="text-xs text-stone-400">Aucun membre</span>}
+                {allTeamMembers.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun membre</span>}
               </div>
             </div>
 
             {/* Stages */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 mb-2">Statut</label>
+              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">Statut</label>
               <div className="flex flex-wrap gap-1">
                 {ALL_STAGES.map(s => (
                   <button
@@ -548,7 +548,7 @@ export function BusinessCRM() {
                       'px-2.5 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
                       selectedStages.includes(s.id)
                         ? 'bg-stone-900 text-white'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
                     )}
                   >
                     <span className={cn('h-1.5 w-1.5 rounded-full', s.color)} />
@@ -560,7 +560,7 @@ export function BusinessCRM() {
 
             {/* Offers */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 mb-2">Offre / Formule</label>
+              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">Offre / Formule</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {formulas.map(f => (
                   <button
@@ -570,19 +570,19 @@ export function BusinessCRM() {
                       'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
                       selectedOffers.includes(f.id)
                         ? 'bg-stone-900 text-white'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
                     )}
                   >
                     {f.name}
                   </button>
                 ))}
-                {formulas.length === 0 && <span className="text-xs text-stone-400">Aucune formule</span>}
+                {formulas.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucune formule</span>}
               </div>
             </div>
 
             {/* Tags */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 mb-2">
+              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">
                 <Tag className="h-3 w-3 inline mr-1" />Tags
               </label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
@@ -594,7 +594,7 @@ export function BusinessCRM() {
                       'px-2.5 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
                       selectedTags.includes(t.id)
                         ? 'text-white'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
                     )}
                     style={selectedTags.includes(t.id) ? { backgroundColor: t.color } : {}}
                   >
@@ -602,7 +602,7 @@ export function BusinessCRM() {
                     {t.name}
                   </button>
                 ))}
-                {tags.length === 0 && <span className="text-xs text-stone-400">Aucun tag</span>}
+                {tags.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun tag</span>}
               </div>
             </div>
           </div>
@@ -610,8 +610,8 @@ export function BusinessCRM() {
       )}
 
       {/* Stats */}
-      <div className="mb-3 flex items-center gap-4 text-xs text-stone-500">
-        <span className="font-medium text-stone-700">{filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}</span>
+      <div className="mb-3 flex items-center gap-4 text-xs text-stone-500 dark:text-neutral-400">
+        <span className="font-medium text-stone-700 dark:text-neutral-200">{filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}</span>
         {ALL_STAGES.map(s => {
           const count = filteredProspects.filter(p => p.stage === s.id).length
           if (!count) return null
@@ -625,27 +625,27 @@ export function BusinessCRM() {
       </div>
 
       {/* Table View */}
-      <div className="flex-1 overflow-auto rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+      <div className="flex-1 overflow-auto rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
         <table className="w-full min-w-[800px]">
-          <thead className="sticky top-0 z-10 bg-stone-50/50 border-b border-stone-100">
+          <thead className="sticky top-0 z-10 bg-stone-50/50 dark:bg-neutral-800/50 border-b border-stone-100 dark:border-neutral-700">
             <tr>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Contact</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Entreprise</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Email</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Téléphone</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Étape</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Tags</th>
-              <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Valeur</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Date</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Contact</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Entreprise</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Email</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Téléphone</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Étape</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Tags</th>
+              <th className="text-right text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Valeur</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Date</th>
               {!isReadOnly && (
-                <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Actions</th>
+                <th className="text-right text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Actions</th>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-stone-100">
+          <tbody className="divide-y divide-stone-100 dark:divide-neutral-700">
             {filteredProspects.length === 0 ? (
               <tr>
-                <td colSpan={isReadOnly ? 8 : 9} className="text-center py-12 text-sm text-stone-400">
+                <td colSpan={isReadOnly ? 8 : 9} className="text-center py-12 text-sm text-stone-400 dark:text-neutral-500">
                   Aucun prospect trouvé
                 </td>
               </tr>
@@ -656,44 +656,44 @@ export function BusinessCRM() {
                   <tr
                     key={deal.id}
                     onClick={() => setSelectedProspect(deal)}
-                    className="cursor-pointer hover:bg-stone-50/30 transition-colors"
+                    className="cursor-pointer hover:bg-stone-50/30 dark:hover:bg-neutral-800/30 transition-colors"
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-full bg-stone-100 flex items-center justify-center flex-shrink-0">
+                        <div className="h-8 w-8 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
                           <User className="h-4 w-4 text-stone-500" />
                         </div>
-                        <span className="text-sm font-semibold text-stone-900">{getDisplayName(deal)}</span>
+                        <span className="text-sm font-semibold text-stone-900 dark:text-white">{getDisplayName(deal)}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       {deal.company ? (
                         <div className="flex items-center gap-1.5">
                           <Building2 className="h-3.5 w-3.5 text-stone-400 flex-shrink-0" />
-                          <span className="text-sm text-stone-600">{deal.company}</span>
+                          <span className="text-sm text-stone-600 dark:text-neutral-300">{deal.company}</span>
                         </div>
                       ) : (
-                        <span className="text-sm text-stone-300">—</span>
+                        <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {deal.email ? (
                         <div className="flex items-center gap-1.5">
                           <Mail className="h-3.5 w-3.5 text-stone-400 flex-shrink-0" />
-                          <span className="text-sm text-stone-600 truncate max-w-[200px]">{deal.email}</span>
+                          <span className="text-sm text-stone-600 dark:text-neutral-300 truncate max-w-[200px]">{deal.email}</span>
                         </div>
                       ) : (
-                        <span className="text-sm text-stone-300">—</span>
+                        <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {deal.phone ? (
                         <div className="flex items-center gap-1.5">
                           <Phone className="h-3.5 w-3.5 text-stone-400 flex-shrink-0" />
-                          <span className="text-sm text-stone-600">{deal.phone}</span>
+                          <span className="text-sm text-stone-600 dark:text-neutral-300">{deal.phone}</span>
                         </div>
                       ) : (
-                        <span className="text-sm text-stone-300">—</span>
+                        <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -703,7 +703,7 @@ export function BusinessCRM() {
                           {stage.name}
                         </span>
                       ) : (
-                        <span className="text-sm text-stone-300">—</span>
+                        <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -723,16 +723,16 @@ export function BusinessCRM() {
                       {deal.value ? (
                         <span className="text-sm font-bold text-emerald-600">{deal.value.toLocaleString()} €</span>
                       ) : (
-                        <span className="text-sm text-stone-300">—</span>
+                        <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {deal.created_at ? (
-                        <span className="text-xs text-stone-500">
+                        <span className="text-xs text-stone-500 dark:text-neutral-400">
                           {new Date(deal.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                         </span>
                       ) : (
-                        <span className="text-sm text-stone-300">—</span>
+                        <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
                       )}
                     </td>
                     {!isReadOnly && (
@@ -778,65 +778,65 @@ export function BusinessCRM() {
       {/* Add Prospect Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
             <button
               onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
-              className="absolute top-4 right-4 text-stone-400 hover:text-stone-600"
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-600 dark:text-neutral-500 dark:hover:text-neutral-300"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <h2 className="text-xl font-extrabold text-stone-900 mb-4">Nouveau prospect</h2>
+            <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-4">Nouveau prospect</h2>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-semibold text-stone-900 mb-1">Nom du contact *</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Nom du contact *</label>
                 <input
                   type="text"
                   value={newContact}
                   onChange={(e) => setNewContact(e.target.value)}
-                  className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                  className="w-full rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   placeholder="Jean Dupont"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-stone-900 mb-1">Email</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Email</label>
                 <input
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                  className="w-full rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   placeholder="jean@email.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-stone-900 mb-1">Téléphone</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Téléphone</label>
                 <input
                   type="tel"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
-                  className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                  className="w-full rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   placeholder="+33 6 12 34 56 78"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-stone-900 mb-1">Entreprise</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Entreprise</label>
                 <input
                   type="text"
                   value={newCompany}
                   onChange={(e) => setNewCompany(e.target.value)}
-                  className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                  className="w-full rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   placeholder="Acme Corp"
                 />
               </div>
               {formulas.length > 0 && (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 mb-1">Offre / Formule</label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Offre / Formule</label>
                   <select
                     value={newFormulaId}
                     onChange={(e) => setNewFormulaId(e.target.value)}
-                    className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                    className="w-full rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   >
                     <option value="">Aucune offre</option>
                     {formulas.map(f => (
@@ -862,12 +862,12 @@ export function BusinessCRM() {
                 </div>
               ) : isPureCloser ? (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 mb-1">Setter <span className="text-stone-400 font-normal">(facultatif)</span></label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Setter <span className="text-stone-400 font-normal">(facultatif)</span></label>
                   <div className="flex gap-2">
                     <select
                       value={newSetterId}
                       onChange={(e) => setNewSetterId(e.target.value)}
-                      className="flex-1 rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                      className="flex-1 rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                     >
                       <option value="">Aucun setter</option>
                       {teamSetters.map(s => (
@@ -902,12 +902,12 @@ export function BusinessCRM() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 mb-1">Setter *</label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Setter *</label>
                   <div className="flex gap-2">
                     <select
                       value={newSetterId}
                       onChange={(e) => setNewSetterId(e.target.value)}
-                      className="flex-1 rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                      className="flex-1 rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                     >
                       <option value="">Choisir un setter</option>
                       {teamSetters.map(s => (
@@ -951,11 +951,11 @@ export function BusinessCRM() {
                 </div>
               ) : needsCloserPicker && (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 mb-1">Closer <span className="text-stone-400 font-normal">(facultatif)</span></label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Closer <span className="text-stone-400 font-normal">(facultatif)</span></label>
                   <select
                     value={newCloserId}
                     onChange={(e) => setNewCloserId(e.target.value)}
-                    className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                    className="w-full rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   >
                     <option value="">Aucun closer</option>
                     {teamClosers.map(c => (
@@ -988,16 +988,16 @@ export function BusinessCRM() {
       {/* Tag Management Modal */}
       {isTagModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
             <button
               onClick={() => setIsTagModalOpen(false)}
-              className="absolute top-4 right-4 text-stone-400 hover:text-stone-600"
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-600 dark:text-neutral-500 dark:hover:text-neutral-300"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <h2 className="text-xl font-extrabold text-stone-900 mb-1">Gérer les tags</h2>
-            <p className="text-sm text-stone-500 mb-5">Créez et gérez vos tags pour organiser vos prospects.</p>
+            <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-1">Gérer les tags</h2>
+            <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">Créez et gérez vos tags pour organiser vos prospects.</p>
 
             {/* Create new tag */}
             <div className="flex gap-2 mb-5">
@@ -1007,7 +1007,7 @@ export function BusinessCRM() {
                 onChange={(e) => setNewTagName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
                 placeholder="Nom du tag..."
-                className="flex-1 rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                className="flex-1 rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
               />
               <button
                 onClick={handleCreateTag}
@@ -1042,7 +1042,7 @@ export function BusinessCRM() {
                   <div key={tag.id} className="flex items-center justify-between rounded-xl bg-stone-50 px-4 py-2.5">
                     <div className="flex items-center gap-2">
                       <span className="h-3 w-3 rounded-full" style={{ backgroundColor: tag.color }} />
-                      <span className="text-sm font-semibold text-stone-900">{tag.name}</span>
+                      <span className="text-sm font-semibold text-stone-900 dark:text-white">{tag.name}</span>
                     </div>
                     <button
                       onClick={() => handleDeleteTag(tag.id)}

@@ -324,7 +324,7 @@ export function CloserCallRoom() {
                 <>
                   {activeOfferTab === 'notes' && (
                     <div className="prose prose-sm max-w-none">
-                      <p className="text-stone-600 whitespace-pre-wrap leading-relaxed">{currentOffer.notes || "Aucune note de closing."}</p>
+                      <p className="text-stone-600 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">{currentOffer.notes || "Aucune note de closing."}</p>
                     </div>
                   )}
 
@@ -332,18 +332,18 @@ export function CloserCallRoom() {
                     <div className="space-y-3">
                       {currentOffer.formulas && Array.isArray(currentOffer.formulas) && currentOffer.formulas.length > 0 ? (
                         currentOffer.formulas.map((formula: any, idx: number) => (
-                          <div key={idx} className="bg-white p-5 rounded-2xl border border-stone-200/10 hover:border-emerald-200/50 transition-all cursor-pointer">
+                          <div key={idx} className="bg-white dark:bg-neutral-800 p-5 rounded-2xl border border-stone-200/10 dark:border-neutral-700 hover:border-emerald-200/50 transition-all cursor-pointer">
                             <div className="flex justify-between items-start">
                               <div>
-                                <h4 className="font-extrabold text-sm text-stone-900 mb-1">{formula.name}</h4>
-                                {formula.description && <p className="text-xs text-stone-500">{formula.description}</p>}
+                                <h4 className="font-extrabold text-sm text-stone-900 dark:text-white mb-1">{formula.name}</h4>
+                                {formula.description && <p className="text-xs text-stone-500 dark:text-neutral-400">{formula.description}</p>}
                               </div>
                               <span className="text-sm font-black text-emerald-700">{formula.price}€</span>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-stone-400">Aucune formule configurée.</p>
+                        <p className="text-sm text-stone-400 dark:text-neutral-500">Aucune formule configurée.</p>
                       )}
 
                       {/* Generate PDF button */}
@@ -360,14 +360,14 @@ export function CloserCallRoom() {
                         currentOffer.resources.map((res: any, idx: number) => (
                           <li key={idx}>
                             <a href={res.url} target="_blank" rel="noopener noreferrer"
-                              className="flex items-center gap-2 p-4 rounded-2xl border border-stone-200/10 bg-white hover:border-emerald-200/50 transition-all group">
+                              className="flex items-center gap-2 p-4 rounded-2xl border border-stone-200/10 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:border-emerald-200/50 transition-all group">
                               <ExternalLink className="h-3.5 w-3.5 text-emerald-600 group-hover:text-emerald-700" />
-                              <span className="text-sm text-stone-600 group-hover:text-emerald-700 font-medium">{res.title || res.url}</span>
+                              <span className="text-sm text-stone-600 dark:text-neutral-300 group-hover:text-emerald-700 font-medium">{res.title || res.url}</span>
                             </a>
                           </li>
                         ))
                       ) : (
-                        <p className="text-sm text-stone-400">Aucune ressource disponible.</p>
+                        <p className="text-sm text-stone-400 dark:text-neutral-500">Aucune ressource disponible.</p>
                       )}
                     </ul>
                   )}
@@ -378,12 +378,12 @@ export function CloserCallRoom() {
         </section>
 
         {/* ─── Right Panel (Notes) ─── */}
-        <section className="flex-1 flex flex-col p-7 bg-white relative">
+        <section className="flex-1 flex flex-col p-7 bg-white dark:bg-neutral-900 relative">
           {/* Notepad Header */}
           <div className="flex items-center justify-between mb-7">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-stone-900">Prise de notes</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-stone-900 dark:text-white">Prise de notes</h3>
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
                   <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-tight">Sauvegarde auto</span>
@@ -397,7 +397,7 @@ export function CloserCallRoom() {
                       onClick={() => setSelectedPreviousNote('')}
                       className={cn(
                         'px-4 py-1.5 rounded-full text-[10px] font-bold transition-all',
-                        !selectedPreviousNote ? 'bg-stone-200 text-stone-900' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                        !selectedPreviousNote ? 'bg-stone-200 dark:bg-neutral-700 text-stone-900 dark:text-white' : 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 hover:bg-stone-200 dark:hover:bg-neutral-700'
                       )}
                     >
                       Notes actuelles
@@ -408,7 +408,7 @@ export function CloserCallRoom() {
                         onClick={() => setSelectedPreviousNote(n.id)}
                         className={cn(
                           'px-4 py-1.5 rounded-full text-[10px] font-bold transition-all',
-                          selectedPreviousNote === n.id ? 'bg-stone-200 text-stone-900' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                          selectedPreviousNote === n.id ? 'bg-stone-200 dark:bg-neutral-700 text-stone-900 dark:text-white' : 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 hover:bg-stone-200 dark:hover:bg-neutral-700'
                         )}
                       >
                         {new Date(n.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
@@ -419,32 +419,32 @@ export function CloserCallRoom() {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button className="p-2 rounded-full hover:bg-stone-100 transition-all"><Bold className="h-4 w-4 text-stone-500" /></button>
-              <button className="p-2 rounded-full hover:bg-stone-100 transition-all"><List className="h-4 w-4 text-stone-500" /></button>
-              <button className="p-2 rounded-full hover:bg-stone-100 transition-all ml-1"><Share2 className="h-4 w-4 text-stone-500" /></button>
+              <button className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-800 transition-all"><Bold className="h-4 w-4 text-stone-500" /></button>
+              <button className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-800 transition-all"><List className="h-4 w-4 text-stone-500" /></button>
+              <button className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-800 transition-all ml-1"><Share2 className="h-4 w-4 text-stone-500" /></button>
             </div>
           </div>
 
           {/* Editor */}
           <div className="flex-1 flex flex-col relative">
             {selectedPreviousNote ? (
-              <div className="flex-1 overflow-y-auto text-lg leading-relaxed text-stone-600 whitespace-pre-wrap font-medium">
+              <div className="flex-1 overflow-y-auto text-lg leading-relaxed text-stone-600 dark:text-neutral-300 whitespace-pre-wrap font-medium">
                 {previousNotes.find((n: any) => n.id === selectedPreviousNote)?.content || 'Aucune note'}
               </div>
             ) : (
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
                 placeholder="Prise de notes..."
-                className="flex-1 w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed font-medium placeholder:text-stone-300/40 resize-none p-0 focus:outline-none"
+                className="flex-1 w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed font-medium placeholder:text-stone-300/40 dark:placeholder:text-neutral-600/40 resize-none p-0 focus:outline-none dark:text-white"
                 autoFocus />
             )}
 
             {/* Floating action bar */}
-            <div className="absolute bottom-4 right-0 glass-card p-2 rounded-2xl border border-stone-200/20 shadow-xl flex items-center gap-2" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(16px)' }}>
+            <div className="absolute bottom-4 right-0 glass-card p-2 rounded-2xl border border-stone-200/20 dark:border-neutral-700 shadow-xl flex items-center gap-2" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(16px)' }}>
               <button className="flex items-center gap-2 px-5 py-3 bg-stone-900 text-white rounded-xl text-sm font-bold hover:bg-stone-800 transition-all">
                 <Zap className="h-4 w-4" style={{ fill: 'currentColor' }} />
                 AI Summary
               </button>
-              <div className="h-8 w-px bg-stone-200/30 mx-1" />
+              <div className="h-8 w-px bg-stone-200/30 dark:bg-neutral-700 mx-1" />
               <button className="p-3 text-stone-500 hover:text-stone-900 transition-all">
                 <Mic className="h-5 w-5" />
               </button>

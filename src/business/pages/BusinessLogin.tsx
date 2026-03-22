@@ -96,7 +96,7 @@ export default function BusinessLogin() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-[#f5f3f0]" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-[#f5f3f0] dark:bg-neutral-900" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
       {/* Ambient background blobs */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-emerald-400/10 blur-[120px]" />
@@ -105,23 +105,23 @@ export default function BusinessLogin() {
       </div>
 
       {/* Glass morphism card */}
-      <div className="w-full max-w-md mx-4 bg-white/70 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 p-10">
+      <div className="w-full max-w-md mx-4 bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 p-10">
         {/* Brand header */}
         <div className="flex items-center justify-center gap-2.5 mb-10">
-          <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center">
-            <span className="text-white text-xs font-extrabold">C</span>
+          <div className="w-8 h-8 bg-stone-900 dark:bg-white rounded-lg flex items-center justify-center">
+            <span className="text-white dark:text-black text-xs font-extrabold">C</span>
           </div>
-          <span className="font-extrabold text-stone-900 text-lg tracking-tight" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+          <span className="font-extrabold text-stone-900 dark:text-white text-lg tracking-tight" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
             CloseOS Business
           </span>
         </div>
 
         {/* Headline */}
         <div className="text-center mb-9">
-          <h1 className="text-4xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+          <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
             Se connecter
           </h1>
-          <p className="text-stone-500 mt-3 text-sm">
+          <p className="text-stone-500 dark:text-neutral-400 mt-3 text-sm">
             Gérez vos campagnes et actifs avec CloseOS Business.
           </p>
         </div>
@@ -138,7 +138,7 @@ export default function BusinessLogin() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email */}
           <div className="space-y-2">
-            <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 ml-1" htmlFor="login-email">
+            <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1" htmlFor="login-email">
               Adresse Email
             </label>
             <div className="relative group">
@@ -148,7 +148,7 @@ export default function BusinessLogin() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-stone-100/50 border-none rounded-full py-4 pl-12 pr-4 text-sm text-stone-900 focus:ring-2 focus:ring-emerald-600/20 transition-all placeholder:text-stone-400 outline-none"
+                className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-4 pl-12 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 transition-all placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none"
                 placeholder="nom@entreprise.com"
                 required
               />
@@ -158,7 +158,7 @@ export default function BusinessLogin() {
           {/* Password */}
           <div className="space-y-2">
             <div className="flex justify-between items-center ml-1">
-              <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500" htmlFor="login-password">
+              <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400" htmlFor="login-password">
                 Mot de passe
               </label>
               <button type="button" onClick={() => setIsResetModalOpen(true)} className="text-xs font-semibold text-emerald-700 hover:underline transition-colors">
@@ -172,7 +172,7 @@ export default function BusinessLogin() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-stone-100/50 border-none rounded-full py-4 pl-12 pr-4 text-sm text-stone-900 focus:ring-2 focus:ring-emerald-600/20 transition-all placeholder:text-stone-400 outline-none"
+                className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-4 pl-12 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 transition-all placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none"
                 placeholder="••••••••"
                 required
               />
@@ -183,7 +183,7 @@ export default function BusinessLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-stone-900 text-white font-bold py-5 rounded-full shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-5 rounded-full shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'Se connecter'}
           </button>
@@ -192,10 +192,10 @@ export default function BusinessLogin() {
         {/* Divider */}
         <div className="relative my-8">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-stone-200/40" />
+            <span className="w-full border-t border-stone-200/40 dark:border-neutral-700" />
           </div>
           <div className="relative flex justify-center">
-            <span className="px-4 bg-white/70 text-[0.65rem] font-semibold tracking-widest uppercase text-stone-400">
+            <span className="px-4 bg-white/70 dark:bg-transparent text-[0.65rem] font-semibold tracking-widest uppercase text-stone-400 dark:text-neutral-500">
               Ou continuer avec
             </span>
           </div>
@@ -205,7 +205,7 @@ export default function BusinessLogin() {
         <button
           onClick={handleGoogleLogin}
           disabled={googleLoading}
-          className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white border border-stone-200/20 rounded-full hover:bg-stone-50 active:scale-95 transition-all duration-200 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white dark:bg-neutral-800 border border-stone-200/20 dark:border-neutral-700 rounded-full hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all duration-200 disabled:opacity-50"
         >
           {googleLoading ? (
             <Loader2 className="h-5 w-5 animate-spin text-stone-500" />
@@ -217,14 +217,14 @@ export default function BusinessLogin() {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
           )}
-          <span className="text-sm font-semibold text-stone-700">Continuer avec Google</span>
+          <span className="text-sm font-semibold text-stone-700 dark:text-neutral-200">Continuer avec Google</span>
         </button>
 
         {/* Bottom link */}
-        <div className="mt-9 pt-7 border-t border-stone-200/20 text-center">
-          <p className="text-sm text-stone-500">
+        <div className="mt-9 pt-7 border-t border-stone-200/20 dark:border-neutral-800 text-center">
+          <p className="text-sm text-stone-500 dark:text-neutral-400">
             Vous n'avez pas de compte ?{' '}
-            <Link to="/business/register" className="font-bold text-stone-900 ml-1 hover:underline transition-all">
+            <Link to="/business/register" className="font-bold text-stone-900 dark:text-white ml-1 hover:underline transition-all">
               Cr&eacute;er un compte
             </Link>
           </p>
@@ -233,7 +233,7 @@ export default function BusinessLogin() {
 
       {/* Bottom footer */}
       <div className="mt-8 flex flex-col items-center gap-3 pb-8">
-        <div className="flex gap-6 text-xs font-medium text-stone-400">
+        <div className="flex gap-6 text-xs font-medium text-stone-400 dark:text-neutral-500">
           <a className="hover:text-emerald-700 transition-colors" href="#">Aide</a>
           <a className="hover:text-emerald-700 transition-colors" href="#">Confidentialit&eacute;</a>
           <a className="hover:text-emerald-700 transition-colors" href="#">CGV</a>
@@ -247,15 +247,15 @@ export default function BusinessLogin() {
       {isResetModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-stone-900/20 backdrop-blur-md" onClick={() => { setIsResetModalOpen(false); setResetMessage(null); setResetEmail(''); }} />
-          <div className="relative w-full max-w-sm bg-white/70 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 p-8">
+          <div className="relative w-full max-w-sm bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 p-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-stone-100/80 rounded-full flex items-center justify-center mx-auto mb-6">
-                <KeyRound className="h-7 w-7 text-stone-900" />
+              <div className="w-16 h-16 bg-stone-100/80 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                <KeyRound className="h-7 w-7 text-stone-900 dark:text-white" />
               </div>
-              <h3 className="text-2xl font-extrabold tracking-tight text-stone-900 mb-2" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+              <h3 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
                 R&eacute;initialisation
               </h3>
-              <p className="text-sm text-stone-500 mb-7">
+              <p className="text-sm text-stone-500 dark:text-neutral-400 mb-7">
                 Entrez votre email pour recevoir un lien de r&eacute;cup&eacute;ration.
               </p>
 
@@ -275,7 +275,7 @@ export default function BusinessLogin() {
 
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div>
-                  <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 ml-1 mb-2 text-left" htmlFor="reset-email">
+                  <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1 mb-2 text-left" htmlFor="reset-email">
                     Email
                   </label>
                   <input
@@ -283,7 +283,7 @@ export default function BusinessLogin() {
                     type="email"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    className="w-full bg-stone-100/50 border-none rounded-full py-4 px-5 text-sm text-stone-900 focus:ring-2 focus:ring-emerald-600/20 outline-none placeholder:text-stone-400"
+                    className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-4 px-5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 outline-none placeholder:text-stone-400"
                     placeholder="Votre email"
                     required
                   />
@@ -291,14 +291,14 @@ export default function BusinessLogin() {
                 <button
                   type="submit"
                   disabled={resetLoading || !resetEmail}
-                  className="w-full bg-stone-900 text-white font-bold py-5 rounded-full shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-5 rounded-full shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {resetLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'Envoyer le lien'}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setIsResetModalOpen(false); setResetMessage(null); setResetEmail(''); }}
-                  className="text-xs font-bold text-stone-500 hover:text-stone-900 transition-colors mt-2"
+                  className="text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors mt-2"
                 >
                   Retour
                 </button>

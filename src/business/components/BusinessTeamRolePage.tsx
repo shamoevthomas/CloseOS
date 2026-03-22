@@ -90,9 +90,9 @@ interface ConnectionLog {
 }
 
 /* ─── Design tokens ─── */
-const GLASS_PANEL = 'bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm'
-const WHITE_CARD = 'bg-white rounded-2xl border border-stone-100 shadow-sm'
-const SECTION_TITLE = "font-['Manrope'] font-extrabold text-lg text-stone-900 flex items-center gap-2"
+const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-neutral-800 shadow-sm'
+const WHITE_CARD = 'bg-white dark:bg-neutral-800 rounded-2xl border border-stone-100 dark:border-neutral-800 shadow-sm'
+const SECTION_TITLE = "font-['Manrope'] font-extrabold text-lg text-stone-900 dark:text-white flex items-center gap-2"
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   'Closer': { bg: 'bg-[#6ffbbe]/20', text: 'text-[#005236]', border: 'border-[#6ffbbe]/40' },
@@ -241,14 +241,14 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-stone-200 pb-0">
+      <div className="flex items-center gap-1 overflow-x-auto border-b border-stone-200 dark:border-neutral-800 pb-0">
         <button
           onClick={() => setActiveTab('global')}
           className={cn(
             "flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm font-['Manrope'] font-semibold border-b-2 transition-colors",
             activeTab === 'global'
-              ? 'border-stone-900 text-stone-900'
-              : 'border-transparent text-stone-400 hover:text-stone-600 hover:border-stone-300'
+              ? 'border-stone-900 dark:border-white text-stone-900 dark:text-white'
+              : 'border-transparent text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 hover:border-stone-300 dark:hover:border-neutral-600'
           )}
         >
           <PageIcon className="h-4 w-4" />
@@ -266,8 +266,8 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
             )}
           >
             <div className="relative">
-              <div className="h-5 w-5 rounded-full bg-stone-200 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-stone-700">
+              <div className="h-5 w-5 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-stone-700 dark:text-neutral-200">
                   {member.first_name[0]}{member.last_name[0]}
                 </span>
               </div>
@@ -284,7 +284,7 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
       </div>
 
       {/* Title */}
-      <h2 className="font-['Manrope'] text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900">
+      <h2 className="font-['Manrope'] text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">
         {activeTab === 'global'
           ? `${members.length} ${pageLabel.toLowerCase()}${members.length > 1 ? 's' : ''}`
           : `${activeMember?.first_name} ${activeMember?.last_name}`
@@ -334,11 +334,11 @@ function GlobalView({
   if (members.length === 0) {
     return (
       <div className={cn('rounded-2xl p-12 text-center', GLASS_PANEL)}>
-        <div className="mx-auto w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center mb-4">
-          <User className="h-8 w-8 text-stone-400" />
+        <div className="mx-auto w-16 h-16 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
+          <User className="h-8 w-8 text-stone-400 dark:text-neutral-500" />
         </div>
-        <h3 className="text-lg font-['Manrope'] font-bold text-stone-900 mb-2">Aucun membre trouvé</h3>
-        <p className="text-sm text-stone-500">
+        <h3 className="text-lg font-['Manrope'] font-bold text-stone-900 dark:text-white mb-2">Aucun membre trouvé</h3>
+        <p className="text-sm text-stone-500 dark:text-neutral-400">
           Aucun membre avec ce rôle dans votre équipe. Invitez des membres depuis la page Équipe.
         </p>
       </div>
@@ -360,12 +360,12 @@ function GlobalView({
             <button
               key={member.id}
               onClick={() => onSelectMember(member.id)}
-              className="rounded-xl bg-white/90 p-5 text-left hover:bg-white hover:shadow-[0_20px_40px_rgba(27,28,27,0.06)] border border-stone-100 transition-all duration-300"
+              className="rounded-xl bg-white/90 dark:bg-neutral-800/90 p-5 text-left hover:bg-white dark:hover:bg-neutral-800 hover:shadow-[0_20px_40px_rgba(27,28,27,0.06)] border border-stone-100 dark:border-neutral-800 transition-all duration-300"
             >
               <div className="flex items-start gap-3">
                 <div className="relative">
-                  <div className="h-11 w-11 rounded-full bg-stone-200 flex items-center justify-center">
-                    <span className="text-sm font-bold text-stone-700">
+                  <div className="h-11 w-11 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center">
+                    <span className="text-sm font-bold text-stone-700 dark:text-neutral-200">
                       {member.first_name[0]}{member.last_name[0]}
                     </span>
                   </div>
@@ -377,7 +377,7 @@ function GlobalView({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-stone-900 truncate">
+                  <p className="text-sm font-semibold text-stone-900 dark:text-white truncate">
                     {member.first_name} {member.last_name}
                   </p>
                   <span className={cn('inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full', color.bg, color.text)}>
@@ -386,7 +386,7 @@ function GlobalView({
                 </div>
               </div>
 
-              <div className="mt-3 space-y-1.5 text-xs text-stone-500">
+              <div className="mt-3 space-y-1.5 text-xs text-stone-500 dark:text-neutral-400">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="h-3 w-3" />
                   <span>Dans l'équipe depuis {formatAnciennete(member.joined_at)}</span>
@@ -410,7 +410,7 @@ function GlobalView({
               </div>
 
               {memberAbsences.length > 0 && (
-                <div className="mt-3 pt-2 border-t border-stone-100 text-xs text-stone-600 font-medium">
+                <div className="mt-3 pt-2 border-t border-stone-100 dark:border-neutral-800 text-xs text-stone-600 dark:text-neutral-300 font-medium">
                   {memberAbsences.length} absence{memberAbsences.length > 1 ? 's' : ''} enregistrée{memberAbsences.length > 1 ? 's' : ''}
                 </div>
               )}
@@ -436,21 +436,21 @@ function GlobalView({
 
             return (
               <>
-                <div className="rounded-xl bg-white p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
-                  <p className="text-lg font-bold text-stone-900">{allAssigned.length}</p>
-                  <p className="text-xs text-stone-500 mt-1">Prospects assignés</p>
+                <div className="rounded-xl bg-white dark:bg-neutral-800 p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                  <p className="text-lg font-bold text-stone-900 dark:text-white">{allAssigned.length}</p>
+                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">Prospects assignés</p>
                 </div>
-                <div className="rounded-xl bg-white p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                <div className="rounded-xl bg-white dark:bg-neutral-800 p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   <p className="text-lg font-bold text-emerald-600">{allWon.length}</p>
-                  <p className="text-xs text-stone-500 mt-1">Ventes</p>
+                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">Ventes</p>
                 </div>
-                <div className="rounded-xl bg-white p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                <div className="rounded-xl bg-white dark:bg-neutral-800 p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   <p className="text-lg font-bold text-emerald-600">{formatCurrency(totalCA)}</p>
-                  <p className="text-xs text-stone-500 mt-1">CA généré</p>
+                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">CA généré</p>
                 </div>
-                <div className="rounded-xl bg-white p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                <div className="rounded-xl bg-white dark:bg-neutral-800 p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   <p className="text-lg font-bold text-purple-600">{convRate.toFixed(1)}%</p>
-                  <p className="text-xs text-stone-500 mt-1">Taux de conversion</p>
+                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">Taux de conversion</p>
                 </div>
               </>
             )
@@ -515,8 +515,8 @@ function IndividualView({
       <div className={cn('rounded-xl p-6', GLASS_PANEL)}>
         <div className="flex items-start gap-4">
           <div className="relative">
-            <div className="h-16 w-16 rounded-full bg-stone-200 flex items-center justify-center ring-2 ring-white/80">
-              <span className="text-xl font-bold text-stone-700">
+            <div className="h-16 w-16 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center ring-2 ring-white/80">
+              <span className="text-xl font-bold text-stone-700 dark:text-neutral-200">
                 {member.first_name[0]}{member.last_name[0]}
               </span>
             </div>
@@ -528,13 +528,13 @@ function IndividualView({
             />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-['Manrope'] font-bold text-stone-900">
+            <h3 className="text-lg font-['Manrope'] font-bold text-stone-900 dark:text-white">
               {member.first_name} {member.last_name}
             </h3>
             <span className={cn('inline-block mt-1 text-xs font-medium px-2.5 py-1 rounded-full', color.bg, color.text)}>
               {member.role}
             </span>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-stone-600">
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-stone-600 dark:text-neutral-300">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-stone-400" />
                 {member.email}
@@ -562,8 +562,8 @@ function IndividualView({
       <div className={cn('rounded-xl', GLASS_PANEL)}>
         <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
           <History className="h-4 w-4 text-stone-900" />
-          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900">Historique de connexion</h4>
-          <span className="text-xs text-stone-400 ml-auto">7 derniers jours</span>
+          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Historique de connexion</h4>
+          <span className="text-xs text-stone-400 dark:text-neutral-500 ml-auto">7 derniers jours</span>
         </div>
         <div className="p-5">
           {connectionLogs.length === 0 ? (
@@ -608,20 +608,20 @@ function IndividualView({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-stone-900" />
-            <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900">Date de paiement mensuel</h4>
+            <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Date de paiement mensuel</h4>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-stone-500">Le</span>
+            <span className="text-xs text-stone-500 dark:text-neutral-400">Le</span>
             <select
               value={payDay}
               onChange={e => setPayDay(Number(e.target.value))}
-              className="rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-sm font-medium text-stone-700 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+              className="rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1.5 text-sm font-medium text-stone-700 dark:text-neutral-200 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
             >
               {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
-            <span className="text-xs text-stone-500">de chaque mois</span>
+            <span className="text-xs text-stone-500 dark:text-neutral-400">de chaque mois</span>
             {payDay !== (member.pay_day || 1) && (
               <button
                 onClick={handleSavePayDay}
@@ -648,7 +648,7 @@ function IndividualView({
       <div className={cn('rounded-xl', GLASS_PANEL)}>
         <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
           <BarChart3 className="h-4 w-4 text-stone-900" />
-          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900">KPIs</h4>
+          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">KPIs</h4>
         </div>
         <div className="p-5">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -666,15 +666,15 @@ function IndividualView({
       <div className={cn('rounded-xl', GLASS_PANEL)}>
         <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
           <GitBranch className="h-4 w-4 text-stone-900" />
-          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900">Pipeline</h4>
-          <span className="text-xs text-stone-400 ml-auto">{memberProspects.length} prospect{memberProspects.length !== 1 ? 's' : ''} total</span>
+          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Pipeline</h4>
+          <span className="text-xs text-stone-400 dark:text-neutral-500 ml-auto">{memberProspects.length} prospect{memberProspects.length !== 1 ? 's' : ''} total</span>
         </div>
         <div className="p-5">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
             {PIPELINE_STAGES.map(stage => {
               const count = memberProspects.filter(p => p.stage === stage.id).length
               return (
-                <div key={stage.id} className="rounded-xl bg-white p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                <div key={stage.id} className="rounded-xl bg-white dark:bg-neutral-800 p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   <div className="flex items-center justify-center gap-1.5 mb-1">
                     <span className={cn('h-2 w-2 rounded-full', stage.color)} />
                     <span className="text-xs text-stone-500">{stage.name}</span>
@@ -691,8 +691,8 @@ function IndividualView({
       <div className={cn('rounded-xl', GLASS_PANEL)}>
         <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
           <Clock className="h-4 w-4 text-stone-900" />
-          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900">Disponibilité</h4>
-          <span className="text-xs text-stone-400 ml-auto">{slots.length} créneau{slots.length !== 1 ? 'x' : ''}</span>
+          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Disponibilité</h4>
+          <span className="text-xs text-stone-400 dark:text-neutral-500 ml-auto">{slots.length} créneau{slots.length !== 1 ? 'x' : ''}</span>
         </div>
         <div className="p-5">
           {slots.length === 0 ? (
@@ -728,7 +728,7 @@ function IndividualView({
       <div className={cn('rounded-xl', GLASS_PANEL)}>
         <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
           <Calendar className="h-4 w-4 text-stone-400" />
-          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900">Absences</h4>
+          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Absences</h4>
           {absences.length > 0 && (
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-stone-100 text-stone-700">
               {absences.length}
@@ -764,8 +764,8 @@ function IndividualView({
       <div className={cn('rounded-xl', GLASS_PANEL)}>
         <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30">
           <CalendarDays className="h-4 w-4 text-stone-900" />
-          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900">Rendez-vous à venir</h4>
-          <span className="text-xs text-stone-400 ml-auto">{upcomingAppts.length} RDV</span>
+          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Rendez-vous à venir</h4>
+          <span className="text-xs text-stone-400 dark:text-neutral-500 ml-auto">{upcomingAppts.length} RDV</span>
         </div>
         <div className="p-5">
           {upcomingAppts.length === 0 ? (
@@ -823,7 +823,7 @@ function KpiMini({ icon: Icon, label, value, color, isText }: {
   }
   const c = colorMap[color] || colorMap.stone
   return (
-    <div className="rounded-xl bg-white p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+    <div className="rounded-xl bg-white dark:bg-neutral-800 p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
       <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg mx-auto mb-1.5', c.bg)}>
         <Icon className={cn('h-3.5 w-3.5', c.text)} />
       </div>

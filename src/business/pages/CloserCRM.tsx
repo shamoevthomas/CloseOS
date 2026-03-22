@@ -261,9 +261,9 @@ export function CloserCRM() {
       <div className="mb-6 shrink-0">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-bold tracking-widest uppercase text-stone-500 mb-1">GESTION DES PROSPECTS</p>
-            <h1 className="text-4xl font-extrabold tracking-tight text-stone-900">CRM</h1>
-            <p className="text-sm text-stone-500 mt-1">
+            <p className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">GESTION DES PROSPECTS</p>
+            <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">CRM</h1>
+            <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1">
               {filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}
               {hasActiveFilters && ' (filtré)'}
             </p>
@@ -278,7 +278,7 @@ export function CloserCRM() {
                 placeholder="Rechercher..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 text-sm rounded-full border-none bg-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/20 w-64"
+                className="pl-10 pr-4 py-2 text-sm rounded-full border-none bg-stone-100 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/20 w-64"
               />
             </div>
 
@@ -297,8 +297,8 @@ export function CloserCRM() {
               className={cn(
                 'flex items-center gap-2 px-4 py-2 text-sm rounded-full border transition-colors',
                 showFilters || hasActiveFilters
-                  ? 'bg-stone-100 border-stone-300 text-stone-700'
-                  : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+                  ? 'bg-stone-100 dark:bg-neutral-800 border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200'
+                  : 'bg-white dark:bg-neutral-800 border-stone-200 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-700'
               )}
             >
               <Filter className="h-4 w-4" />
@@ -314,11 +314,11 @@ export function CloserCRM() {
 
         {/* Filter bar */}
         {showFilters && (
-          <div className="mt-4 p-4 bg-white rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+          <div className="mt-4 p-4 bg-white dark:bg-neutral-800 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
             <div className="flex flex-wrap gap-4 items-end">
               {/* Date range */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-stone-500">Période</label>
+                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">Période</label>
                 <div className="flex items-center gap-2">
                   <div className="relative">
                     <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
@@ -326,7 +326,7 @@ export function CloserCRM() {
                       type="date"
                       value={filterDateFrom}
                       onChange={e => setFilterDateFrom(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20"
+                      className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900/20"
                     />
                   </div>
                   <span className="text-stone-400 text-sm">-</span>
@@ -336,7 +336,7 @@ export function CloserCRM() {
                       type="date"
                       value={filterDateTo}
                       onChange={e => setFilterDateTo(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20"
+                      className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900/20"
                     />
                   </div>
                 </div>
@@ -344,12 +344,12 @@ export function CloserCRM() {
 
               {/* Assigned */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-stone-500">Assigné à</label>
+                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">Assigné à</label>
                 <div className="relative">
                   <select
                     value={filterAssigned}
                     onChange={e => setFilterAssigned(e.target.value)}
-                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[160px]"
+                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[160px]"
                   >
                     <option value="">Tous</option>
                     {teamMembers.map(m => (
@@ -364,12 +364,12 @@ export function CloserCRM() {
 
               {/* Stage */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-stone-500">Statut</label>
+                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">Statut</label>
                 <div className="relative">
                   <select
                     value={filterStage}
                     onChange={e => setFilterStage(e.target.value)}
-                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[140px]"
+                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[140px]"
                   >
                     <option value="">Tous</option>
                     {ALL_STAGES.map(s => (
@@ -382,12 +382,12 @@ export function CloserCRM() {
 
               {/* Offer */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-stone-500">Offre</label>
+                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">Offre</label>
                 <div className="relative">
                   <select
                     value={filterOffer}
                     onChange={e => setFilterOffer(e.target.value)}
-                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[160px]"
+                    className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[160px]"
                   >
                     <option value="">Toutes</option>
                     {formulas.map(f => (
@@ -414,25 +414,25 @@ export function CloserCRM() {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+      <div className="flex-1 overflow-auto rounded-2xl bg-white dark:bg-neutral-800 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
-            <tr className="bg-stone-50/50 border-b border-stone-100">
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest">Contact</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden md:table-cell">Entreprise</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden lg:table-cell">Email</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden lg:table-cell">Téléphone</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest">Statut</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden md:table-cell">Assigné à</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden xl:table-cell">Offre</th>
-              <th className="text-right px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest">Valeur</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest hidden xl:table-cell">Date</th>
+            <tr className="bg-stone-50/50 dark:bg-neutral-900/50 border-b border-stone-100 dark:border-neutral-700">
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Contact</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden md:table-cell">Entreprise</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden lg:table-cell">Email</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden lg:table-cell">Téléphone</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Statut</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden md:table-cell">Assigné à</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden xl:table-cell">Offre</th>
+              <th className="text-right px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Valeur</th>
+              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden xl:table-cell">Date</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-stone-100">
+          <tbody className="divide-y divide-stone-100 dark:divide-neutral-700">
             {filteredProspects.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-16 text-center text-stone-400">
+                <td colSpan={9} className="px-4 py-16 text-center text-stone-400 dark:text-neutral-500">
                   {searchQuery || hasActiveFilters
                     ? 'Aucun prospect ne correspond aux filtres.'
                     : 'Aucun prospect pour le moment.'}

@@ -500,8 +500,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
     (selected === 'calendly' && !!calendlyApiKey) ||
     selected === 'closeos';
 
-  const selectCls = "w-full bg-white border border-[#c4c7c7]/30 rounded-xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006c49]/20 focus:border-[#006c49] text-[#1b1c1b]";
-  const inputCls = "w-full bg-[#f5f3f2] border-none rounded-xl py-3 px-4 text-sm font-mono text-[#444748] focus:ring-2 focus:ring-[#006c49]/20";
+  const selectCls = "w-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/30 dark:border-neutral-700 rounded-xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006c49]/20 focus:border-[#006c49] text-[#1b1c1b] dark:text-white";
+  const inputCls = "w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl py-3 px-4 text-sm font-mono text-[#444748] dark:text-neutral-300 focus:ring-2 focus:ring-[#006c49]/20";
 
   return (
     <div className="fixed inset-0 z-50 bg-[#1b1c1b]/20 backdrop-blur-sm flex items-center justify-center p-4">
@@ -509,10 +509,10 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
         {/* Modal Header */}
         <div className="px-8 py-8 border-b border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-between items-start flex-shrink-0">
           <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Intégration CRM</h1>
-            <p className="text-[#444748] mt-2 text-sm">Choisissez et configurez votre CRM pour synchroniser vos données.</p>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Intégration CRM</h1>
+            <p className="text-[#444748] dark:text-neutral-300 mt-2 text-sm">Choisissez et configurez votre CRM pour synchroniser vos données.</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-[#eae8e7] rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 rounded-full transition-colors">
             <X className="h-5 w-5 text-[#444748]" />
           </button>
         </div>
@@ -520,7 +520,7 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
         {/* Modal Content (Split Layout) */}
         <div className="flex flex-1 overflow-hidden">
           {/* Left Sidebar — CRM Selection */}
-          <div className="w-72 bg-[#f5f3f2] border-r border-[#c4c7c7]/10 overflow-y-auto p-4 space-y-2 flex-shrink-0">
+          <div className="w-72 bg-[#f5f3f2] dark:bg-neutral-900 border-r border-[#c4c7c7]/10 dark:border-neutral-700 overflow-y-auto p-4 space-y-2 flex-shrink-0">
             <label className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#444748]/50 block">Available Integrations</label>
             {CRM_OPTIONS.map((crm) => {
               const isActive = selected === crm.id;
@@ -535,14 +535,14 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                   onClick={() => { setSelected(crm.id); setSyncResult(null); }}
                   className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-all ${
                     isActive
-                      ? 'bg-[#e4e2e1] shadow-inner ring-1 ring-[#1b1c1b]/10'
-                      : 'hover:bg-[#eae8e7]'
+                      ? 'bg-[#e4e2e1] dark:bg-neutral-800 shadow-inner ring-1 ring-[#1b1c1b]/10 dark:ring-neutral-700'
+                      : 'hover:bg-[#eae8e7] dark:hover:bg-neutral-800'
                   }`}
                 >
                   <div className={`w-10 h-10 rounded-xl ${crm.iconBg} ${crm.iconText} flex items-center justify-center shrink-0`}>
                     <span className="font-bold text-sm">{crm.name[0]}</span>
                   </div>
-                  <span className={`font-bold text-sm ${isActive ? 'text-[#1b1c1b]' : 'text-[#444748]'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{crm.name}</span>
+                  <span className={`font-bold text-sm ${isActive ? 'text-[#1b1c1b] dark:text-white' : 'text-[#444748] dark:text-neutral-400'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{crm.name}</span>
                   {isCrmConnected && <div className="ml-auto w-2 h-2 rounded-full bg-[#006c49]" />}
                 </button>
               );
@@ -550,7 +550,7 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
           </div>
 
           {/* Right Configuration Area */}
-          <div className="flex-1 overflow-y-auto p-10 bg-white">
+          <div className="flex-1 overflow-y-auto p-10 bg-white dark:bg-neutral-900">
             {selectedCrm && (
               <section className="max-w-2xl">
                 {/* CRM Header */}
@@ -559,7 +559,7 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                     <span className="font-extrabold text-2xl">{selectedCrm.name[0]}</span>
                   </div>
                   <div>
-                    <h3 className="text-2xl md:text-3xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>{selectedCrm.name}</h3>
+                    <h3 className="text-2xl md:text-3xl font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{selectedCrm.name}</h3>
                     {isConnected && (
                       <p className="text-[#006c49] font-semibold text-sm flex items-center gap-1.5 mt-1">
                         <Check className="h-4 w-4" />
@@ -572,18 +572,18 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                 <div className="space-y-8">
                   {/* ─── CloseOS ─── */}
                   {selected === 'closeos' && (
-                    <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                      <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>CRM Intégré</h4>
-                      <p className="text-[#444748] text-sm">Le CRM natif CloseOS est activé par défaut. Aucune configuration nécessaire.</p>
+                    <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                      <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>CRM Intégré</h4>
+                      <p className="text-[#444748] dark:text-neutral-300 text-sm">Le CRM natif CloseOS est activé par défaut. Aucune configuration nécessaire.</p>
                     </div>
                   )}
 
                   {/* ─── iClosed Config ─── */}
                   {selected === 'iclosed' && (
                     <div className="space-y-6">
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook URL</h4>
-                        <p className="text-[#444748] text-sm mb-4">Collez cette URL dans <strong>iClosed → Paramètres → Développeur → Webhooks</strong></p>
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook URL</h4>
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4">Collez cette URL dans <strong>iClosed → Paramètres → Développeur → Webhooks</strong></p>
                         <div className="flex gap-2">
                           <input type="text" value={webhookUrl} readOnly className={inputCls} />
                           <button onClick={handleCopyWebhook} className="p-3 rounded-xl bg-[#1b1c1b] text-white hover:bg-[#1b1c1b]/80 transition-colors shrink-0">
@@ -598,18 +598,18 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                   {selected === 'hubspot' && (
                     <div className="space-y-6">
                       {!hubspotConnected ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
-                          <p className="text-[#444748] text-sm mb-6">Connectez votre compte HubSpot pour synchroniser automatiquement vos contacts.</p>
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Connectez votre compte HubSpot pour synchroniser automatiquement vos contacts.</p>
                           <button onClick={handleConnectHubspot} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors">
                             <LinkIcon className="h-4 w-4" /> Connecter HubSpot
                           </button>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
-                            <p className="text-[#444748] text-sm mb-6">La synchronisation auto se fait toutes les 2 minutes.</p>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
+                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">La synchronisation auto se fait toutes les 2 minutes.</p>
                             <div className="flex gap-4 flex-wrap">
                               <button onClick={handleSyncHubspot} disabled={isSyncingHubspot} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                                 {isSyncingHubspot ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -634,18 +634,18 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                   {selected === 'pipedrive' && (
                     <div className="space-y-6">
                       {!pipedriveConnected ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
-                          <p className="text-[#444748] text-sm mb-6">Connectez votre compte Pipedrive pour synchroniser vos deals.</p>
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Connectez votre compte Pipedrive pour synchroniser vos deals.</p>
                           <button onClick={handleConnectPipedrive} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors">
                             <LinkIcon className="h-4 w-4" /> Connecter Pipedrive
                           </button>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
-                            <p className="text-[#444748] text-sm mb-6">Les changements de stage sont poussés automatiquement.</p>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
+                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Les changements de stage sont poussés automatiquement.</p>
                             <div className="flex gap-4 flex-wrap">
                               <button onClick={handleSyncPipedrive} disabled={isSyncingPipedrive} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                                 {isSyncingPipedrive ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -662,8 +662,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                             </div>
                           )}
                           {/* Stage mapping */}
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 border border-[#c4c7c7]/10">
-                            <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Stage Mapping (Pipedrive)</h4>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                            <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Stage Mapping (Pipedrive)</h4>
                             {loadingPipelines ? (
                               <div className="flex items-center gap-2 text-sm text-[#444748]"><Loader2 className="h-4 w-4 animate-spin" /> Chargement...</div>
                             ) : (
@@ -698,8 +698,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                   {/* ─── Systeme.io Config ─── */}
                   {selected === 'systemeio' && (
                     <div className="space-y-6">
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                        <h4 className="font-bold text-lg mb-4 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API</h4>
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API</h4>
                         <div className="space-y-5">
                           <div className="space-y-2">
                             <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Clé API Systeme.io</label>
@@ -733,8 +733,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                         </div>
                       </div>
                       {/* Instructions */}
-                      <div className="border-t border-[#c4c7c7]/10 pt-6">
-                        <h5 className="font-bold text-sm mb-4 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Instructions d'intégration</h5>
+                      <div className="border-t border-[#c4c7c7]/10 dark:border-neutral-700 pt-6">
+                        <h5 className="font-bold text-sm mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Instructions d'intégration</h5>
                         <ul className="space-y-4">
                           {[
                             'Allez dans Systeme.io → Paramètres → Clés API publiques et copiez votre clé.',
@@ -755,9 +755,9 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                   {selected === 'zapier' && (
                     <div className="space-y-6">
                       {!zapierApiKey ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
-                          <p className="text-[#444748] text-sm mb-6">Générez une clé API pour connecter Zapier à CloseOS.</p>
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Générez une clé API pour connecter Zapier à CloseOS.</p>
                           <button onClick={handleGenerateZapierKey} disabled={zapierLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                             {zapierLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
                             Générer une clé API
@@ -765,8 +765,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
                             <div className="space-y-5">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL</label>
@@ -807,9 +807,9 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                   {selected === 'calendly' && (
                     <div className="space-y-6">
                       {!calendlyApiKey ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
-                          <p className="text-[#444748] text-sm mb-6">Quand quelqu'un book un call, le prospect et le rendez-vous seront créés automatiquement.</p>
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Quand quelqu'un book un call, le prospect et le rendez-vous seront créés automatiquement.</p>
                           <button onClick={handleGenerateCalendlyKey} disabled={calendlyLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                             {calendlyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
                             Générer une clé API
@@ -817,8 +817,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
                             <div className="space-y-5">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL</label>
@@ -846,8 +846,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                             </div>
                           </div>
                           {/* Instructions */}
-                          <div className="border-t border-[#c4c7c7]/10 pt-6">
-                            <h5 className="font-bold text-sm mb-4 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Instructions d'intégration</h5>
+                          <div className="border-t border-[#c4c7c7]/10 dark:border-neutral-700 pt-6">
+                            <h5 className="font-bold text-sm mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Instructions d'intégration</h5>
                             <ul className="space-y-4">
                               {[
                                 'Allez dans Calendly → Integrations → Webhooks (ou Developer).',
@@ -880,17 +880,17 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                   {selected === 'airtable' && (
                     <div className="space-y-6">
                       {!airtableConnected ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
-                          <p className="text-[#444748] text-sm mb-6">Connectez votre compte Airtable pour synchroniser vos enregistrements comme prospects.</p>
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Connectez votre compte Airtable pour synchroniser vos enregistrements comme prospects.</p>
                           <button onClick={handleConnectAirtable} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors">
                             <LinkIcon className="h-4 w-4" /> Connecter Airtable
                           </button>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
-                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
                             <div className="flex gap-4 flex-wrap mt-4">
                               <button onClick={handleSyncAirtable} disabled={isSyncingAirtable || !airtableBaseId || !airtableTableId} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                                 {isSyncingAirtable ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -907,8 +907,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                             </div>
                           )}
                           {/* Base + Table selectors */}
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 border border-[#c4c7c7]/10">
-                            <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Configuration Airtable</h4>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                            <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Configuration Airtable</h4>
                             <div className="grid grid-cols-2 gap-6">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Base</label>
@@ -938,8 +938,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                           </div>
                           {/* Field mapping */}
                           {airtableTableId && airtableFields.length > 0 && (
-                            <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 border border-[#c4c7c7]/10">
-                              <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des champs</h4>
+                            <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                              <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des champs</h4>
                               {airtableLoadingFields ? (
                                 <div className="flex items-center gap-2 text-xs text-[#444748]"><Loader2 className="h-3 w-3 animate-spin" /> Chargement...</div>
                               ) : (
@@ -961,8 +961,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                           )}
                           {/* Stage mapping */}
                           {airtableFieldMapping.stage && (
-                            <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 border border-[#c4c7c7]/10">
-                              <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des étapes</h4>
+                            <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                              <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des étapes</h4>
                               <div className="grid grid-cols-2 gap-6">
                                 {CLOSEOS_STAGES.map(stage => (
                                   <div key={stage.id} className="space-y-2">
@@ -996,8 +996,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* Modal Footer */}
-        <div className="px-8 py-6 bg-[#f5f3f2] border-t border-[#c4c7c7]/10 flex justify-end gap-4 flex-shrink-0">
-          <button onClick={onClose} className="px-10 py-3 rounded-full font-bold text-sm text-[#444748] hover:bg-[#eae8e7] transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <div className="px-8 py-6 bg-[#f5f3f2] dark:bg-neutral-900 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-end gap-4 flex-shrink-0">
+          <button onClick={onClose} className="px-10 py-3 rounded-full font-bold text-sm text-[#444748] dark:text-neutral-300 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Fermer
           </button>
           <button onClick={handleSave} disabled={saving} className="px-10 py-3 rounded-full font-bold text-sm bg-[#1b1c1b] text-white shadow-xl shadow-black/10 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50" style={{ fontFamily: 'Manrope, sans-serif' }}>

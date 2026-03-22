@@ -707,32 +707,32 @@ function CreateReminderModal({
 
         <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-5">
           <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Titre *</label>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Titre *</label>
             <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Rappeler le prospect" className={inputCls} autoFocus required />
           </div>
           <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Description</label>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Description</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Détails optionnels..." rows={2} className={`${inputCls} resize-none`} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Date *</label>
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Date *</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} required />
             </div>
             <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Heure *</label>
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Heure *</label>
               <input type="time" value={time} onChange={e => setTime(e.target.value)} className={inputCls} required />
             </div>
           </div>
 
           {teamMembers.length > 0 && (
             <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Assigner à</label>
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Assigner à</label>
               <div className="relative">
                 <select
                   value={assignedTo}
                   onChange={e => setAssignedTo(e.target.value)}
-                  className="w-full appearance-none rounded-xl bg-stone-50 border-0 pl-10 pr-8 py-3 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20"
+                  className="w-full appearance-none rounded-xl bg-stone-50 dark:bg-neutral-800 border-0 pl-10 pr-8 py-3 text-sm text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#006c49]/20"
                 >
                   <option value="">— Moi-même —</option>
                   {teamMembers.map(m => (
@@ -746,19 +746,19 @@ function CreateReminderModal({
           )}
 
           <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Lier à</label>
-            <div className="bg-stone-100 p-1 rounded-xl flex text-xs font-bold">
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Lier à</label>
+            <div className="bg-stone-100 dark:bg-neutral-800 p-1 rounded-xl flex text-xs font-bold">
               <button
                 type="button"
                 onClick={() => { setLinkType('none'); setSelectedProspectId(null) }}
-                className={cn('flex-1 py-2 rounded-lg transition-all', linkType === 'none' ? 'bg-white shadow-sm text-stone-900' : 'text-stone-500')}
+                className={cn('flex-1 py-2 rounded-lg transition-all', linkType === 'none' ? 'bg-white dark:bg-neutral-700 shadow-sm text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400')}
               >
                 Aucun
               </button>
               <button
                 type="button"
                 onClick={() => setLinkType('prospect')}
-                className={cn('flex-1 py-2 rounded-lg transition-all', linkType === 'prospect' ? 'bg-white shadow-sm text-stone-900' : 'text-stone-500')}
+                className={cn('flex-1 py-2 rounded-lg transition-all', linkType === 'prospect' ? 'bg-white dark:bg-neutral-700 shadow-sm text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400')}
               >
                 Un prospect
               </button>
@@ -774,12 +774,12 @@ function CreateReminderModal({
                   value={prospectSearch}
                   onChange={e => setProspectSearch(e.target.value)}
                   placeholder="Rechercher un prospect..."
-                  className="w-full rounded-xl bg-stone-50 border-0 pl-10 pr-4 py-3 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20"
+                  className="w-full rounded-xl bg-stone-50 dark:bg-neutral-800 border-0 pl-10 pr-4 py-3 text-sm text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20"
                 />
               </div>
-              <div className="max-h-36 overflow-y-auto rounded-xl bg-stone-50">
+              <div className="max-h-36 overflow-y-auto rounded-xl bg-stone-50 dark:bg-neutral-800">
                 {filteredProspects.length === 0 ? (
-                  <p className="px-4 py-3 text-xs text-stone-400">Aucun prospect trouvé</p>
+                  <p className="px-4 py-3 text-xs text-stone-400 dark:text-neutral-500">Aucun prospect trouvé</p>
                 ) : (
                   filteredProspects.map(p => (
                     <button
@@ -788,7 +788,7 @@ function CreateReminderModal({
                       onClick={() => setSelectedProspectId(p.id)}
                       className={cn(
                         'w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all',
-                        selectedProspectId === p.id ? 'bg-[#006c49]/10 text-[#006c49] font-semibold' : 'text-stone-700 hover:bg-stone-100'
+                        selectedProspectId === p.id ? 'bg-[#006c49]/10 text-[#006c49] font-semibold' : 'text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-neutral-700'
                       )}
                     >
                       <User className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />

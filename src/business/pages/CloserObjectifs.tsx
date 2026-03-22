@@ -305,7 +305,7 @@ export function CloserObjectifs() {
     return (
       <div
         key={obj.id}
-        className="bg-white rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 hover:shadow-xl transition-all group relative overflow-hidden"
+        className="bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 dark:border-neutral-700/30 hover:shadow-xl transition-all group relative overflow-hidden"
       >
         {/* Verified icon for completed */}
         {isComplete && (
@@ -332,19 +332,19 @@ export function CloserObjectifs() {
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-extrabold mb-4 text-stone-900 truncate group-hover:text-emerald-700 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <h3 className="text-lg font-extrabold mb-4 text-stone-900 dark:text-white truncate group-hover:text-emerald-700 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
           {obj.label}
         </h3>
 
         {/* Progress */}
         <div className="space-y-3 mb-4">
           <div className="flex justify-between items-end">
-            <span className="text-sm font-extrabold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <span className="text-sm font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {formatValue(obj.metric, currentValue)}
             </span>
-            <span className="text-sm text-stone-400 font-normal">/ {formatValue(obj.metric, obj.target_value)}</span>
+            <span className="text-sm text-stone-400 dark:text-neutral-500 font-normal">/ {formatValue(obj.metric, obj.target_value)}</span>
           </div>
-          <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-stone-100 dark:bg-neutral-800 rounded-full overflow-hidden">
             {progress !== null && (
               <div
                 className={cn('h-full rounded-full transition-all duration-500',
@@ -355,7 +355,7 @@ export function CloserObjectifs() {
             )}
           </div>
           {progress !== null && (
-            <p className={cn('text-xs font-semibold', progress >= 100 ? 'text-emerald-600' : 'text-stone-400')}>
+            <p className={cn('text-xs font-semibold', progress >= 100 ? 'text-emerald-600' : 'text-stone-400 dark:text-neutral-500')}>
               {progress}% atteint
             </p>
           )}
@@ -363,10 +363,10 @@ export function CloserObjectifs() {
 
         {/* Deadline footer */}
         {deadlineStr && (
-          <div className="pt-3 border-t border-stone-100">
+          <div className="pt-3 border-t border-stone-100 dark:border-neutral-800">
             <div className="flex items-center gap-2">
               <CalendarDays className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-stone-400')} />
-              <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-stone-500')}>
+              <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-stone-500 dark:text-neutral-400')}>
                 {overdue ? 'En retard (' + deadlineStr + ')' : 'Échéance : ' + deadlineStr}
               </span>
             </div>
@@ -389,7 +389,7 @@ export function CloserObjectifs() {
     return (
       <div
         key={obj.id}
-        className="bg-white rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 hover:shadow-xl transition-all group relative overflow-hidden"
+        className="bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 dark:border-neutral-700/30 hover:shadow-xl transition-all group relative overflow-hidden"
       >
         {/* Completed badge */}
         {isComplete && (
@@ -424,23 +424,23 @@ export function CloserObjectifs() {
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-extrabold mb-2 text-stone-900 truncate group-hover:text-emerald-700 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <h3 className="text-lg font-extrabold mb-2 text-stone-900 dark:text-white truncate group-hover:text-emerald-700 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
           {obj.label}
         </h3>
 
         {obj.metric === 'custom' && obj.description && (
-          <p className="text-xs text-stone-500 mb-4 line-clamp-2">{obj.description}</p>
+          <p className="text-xs text-stone-500 dark:text-neutral-400 mb-4 line-clamp-2">{obj.description}</p>
         )}
 
         {/* Progress */}
         <div className="space-y-3 mb-4">
           <div className="flex justify-between items-end">
-            <span className="text-sm font-extrabold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <span className="text-sm font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {formatValue(obj.metric, currentValue)}
             </span>
-            <span className="text-sm text-stone-400 font-normal">/ {formatValue(obj.metric, obj.target_value)}</span>
+            <span className="text-sm text-stone-400 dark:text-neutral-500 font-normal">/ {formatValue(obj.metric, obj.target_value)}</span>
           </div>
-          <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-stone-100 dark:bg-neutral-800 rounded-full overflow-hidden">
             {progress !== null && (
               <div
                 className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-emerald-500 to-emerald-600"
@@ -449,7 +449,7 @@ export function CloserObjectifs() {
             )}
           </div>
           {progress !== null && (
-            <p className={cn('text-xs font-semibold', progress >= 100 ? 'text-emerald-600' : 'text-stone-400')}>
+            <p className={cn('text-xs font-semibold', progress >= 100 ? 'text-emerald-600' : 'text-stone-400 dark:text-neutral-500')}>
               {progress}% atteint
             </p>
           )}
@@ -459,15 +459,15 @@ export function CloserObjectifs() {
         {deadlineStr && (
           <div className="flex items-center gap-2 mb-4">
             <CalendarDays className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-stone-400')} />
-            <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-stone-500')}>
+            <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-stone-500 dark:text-neutral-400')}>
               {overdue ? 'En retard (' + deadlineStr + ')' : 'Échéance : ' + deadlineStr}
             </span>
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 border-t border-stone-100 pt-3">
-          <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-stone-500 hover:bg-stone-50 hover:text-stone-900 transition-colors">
+        <div className="flex gap-2 border-t border-stone-100 dark:border-neutral-800 pt-3">
+          <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-neutral-800 hover:text-stone-900 dark:hover:text-white transition-colors">
             <Pencil className="h-3.5 w-3.5" /> Modifier
           </button>
           <button onClick={() => deletePersonalObjective(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
@@ -487,10 +487,10 @@ export function CloserObjectifs() {
       {/* Hero Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Mes Objectifs
           </h1>
-          <p className="text-stone-500 max-w-lg">Suivez vos objectifs et votre progression</p>
+          <p className="text-stone-500 dark:text-neutral-400 max-w-lg">Suivez vos objectifs et votre progression</p>
         </div>
         {activeTab === 'personal' && (
           <button
@@ -504,7 +504,7 @@ export function CloserObjectifs() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-6 border-b border-stone-200">
+      <div className="flex gap-6 border-b border-stone-200 dark:border-neutral-800">
         {tabs.map(tab => {
           const Icon = tab.icon
           return (
@@ -514,8 +514,8 @@ export function CloserObjectifs() {
               className={cn(
                 "flex items-center gap-2 px-1 pb-3 text-sm transition-all relative",
                 activeTab === tab.id
-                  ? "text-stone-900 font-semibold border-b-2 border-stone-900"
-                  : "text-stone-400 font-medium hover:text-stone-600"
+                  ? "text-stone-900 dark:text-white font-semibold border-b-2 border-stone-900 dark:border-white"
+                  : "text-stone-400 dark:text-neutral-500 font-medium hover:text-stone-600 dark:hover:text-neutral-300"
               )}
               style={{ fontFamily: 'Manrope, sans-serif' }}
             >
@@ -523,7 +523,7 @@ export function CloserObjectifs() {
               {tab.label}
               <span className={cn(
                 "text-xs rounded-full px-1.5 py-0.5 font-semibold",
-                activeTab === tab.id ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-400"
+                activeTab === tab.id ? "bg-stone-900 dark:bg-white text-white dark:text-neutral-900" : "bg-stone-100 dark:bg-neutral-800 text-stone-400 dark:text-neutral-500"
               )}>
                 {tab.count}
               </span>
@@ -535,18 +535,18 @@ export function CloserObjectifs() {
       {/* Content */}
       {currentObjectives.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-40 h-40 bg-stone-50 rounded-full flex items-center justify-center mb-8 relative">
-            <Target className="h-16 w-16 text-stone-300" />
-            <div className="absolute -bottom-2 -right-2 w-14 h-14 bg-white rounded-2xl shadow-xl flex items-center justify-center">
+          <div className="w-40 h-40 bg-stone-50 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-8 relative">
+            <Target className="h-16 w-16 text-stone-300 dark:text-neutral-600" />
+            <div className="absolute -bottom-2 -right-2 w-14 h-14 bg-white dark:bg-neutral-800 rounded-2xl shadow-xl flex items-center justify-center">
               <Target className="h-6 w-6 text-emerald-600" />
             </div>
           </div>
-          <h2 className="text-2xl font-extrabold mb-3 text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h2 className="text-2xl font-extrabold mb-3 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {activeTab === 'org' && "Aucun objectif d'organisation"}
             {activeTab === 'assigned' && "Aucun objectif assigné"}
             {activeTab === 'personal' && "Aucun objectif personnel"}
           </h2>
-          <p className="text-stone-500 max-w-sm mx-auto mb-8">
+          <p className="text-stone-500 dark:text-neutral-400 max-w-sm mx-auto mb-8">
             {activeTab === 'org' && "Votre manager n'a pas encore défini d'objectif pour l'organisation."}
             {activeTab === 'assigned' && "Aucun objectif ne vous a encore été assigné par votre manager."}
             {activeTab === 'personal' && "Créez vos propres objectifs pour suivre votre progression."}
@@ -575,27 +575,27 @@ export function CloserObjectifs() {
         <>
           <div className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-md" onClick={() => { setIsModalOpen(false); resetForm() }} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-            <div className="pointer-events-auto w-full max-w-lg max-h-[90vh] flex flex-col bg-white/70 backdrop-blur-2xl rounded-2xl shadow-2xl ring-1 ring-white/40 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="pointer-events-auto w-full max-w-lg max-h-[90vh] flex flex-col bg-white/70 dark:bg-neutral-900/90 backdrop-blur-2xl rounded-2xl shadow-2xl ring-1 ring-white/40 dark:ring-neutral-700 overflow-hidden" onClick={e => e.stopPropagation()}>
               {/* Modal header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 flex-shrink-0">
-                <h3 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 dark:border-neutral-800 flex-shrink-0">
+                <h3 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {editingObj ? "Modifier l'objectif" : 'Nouvel objectif personnel'}
                 </h3>
-                <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
-                  <X className="h-5 w-5 text-stone-400" />
+                <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-stone-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
+                  <X className="h-5 w-5 text-stone-400 dark:text-neutral-500" />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-5">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Nom de l'objectif *</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Nom de l'objectif *</label>
                   <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)}
                     placeholder="Ex: 5 ventes cette semaine"
-                    className="w-full rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+                    className="w-full rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Métrique</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Métrique</label>
                   <div className="relative">
                     <select value={formMetric} onChange={(e) => setFormMetric(e.target.value)}
                       className="w-full appearance-none rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 pr-10 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900">
@@ -607,27 +607,27 @@ export function CloserObjectifs() {
 
                 {formMetric === 'custom' && (
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Description</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Description</label>
                     <textarea
                       value={formDescription}
                       onChange={(e) => setFormDescription(e.target.value)}
                       placeholder="Décrivez votre métrique personnalisée..."
                       rows={3}
-                      className="w-full rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 resize-none"
+                      className="w-full rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 resize-none"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Valeur cible</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Valeur cible</label>
                   <input type="number" min="0" step="any" value={formTargetValue}
                     onChange={(e) => setFormTargetValue(e.target.value)}
                     placeholder="Ex: 5"
-                    className="w-full rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+                    className="w-full rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Période</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Période</label>
                   <div className="relative">
                     <select value={formPeriod} onChange={(e) => setFormPeriod(e.target.value)}
                       className="w-full appearance-none rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 pr-10 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900">
@@ -638,13 +638,13 @@ export function CloserObjectifs() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Date limite</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Date limite</label>
                   <input type="date" value={formDeadline} onChange={(e) => setFormDeadline(e.target.value)}
-                    className="w-full rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+                    className="w-full rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
                 </div>
 
                 {/* Visibility toggle */}
-                <div className="rounded-xl border border-stone-200 bg-stone-50/50 p-4">
+                <div className="rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {formVisibleToOwner ? (
@@ -657,10 +657,10 @@ export function CloserObjectifs() {
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-semibold text-stone-900">
+                        <p className="text-sm font-semibold text-stone-900 dark:text-white">
                           {formVisibleToOwner ? 'Visible par le manager' : 'Objectif privé'}
                         </p>
-                        <p className="text-xs text-stone-500">
+                        <p className="text-xs text-stone-500 dark:text-neutral-400">
                           {formVisibleToOwner
                             ? 'Votre manager pourra voir cet objectif'
                             : 'Seul vous pouvez voir cet objectif'}
@@ -684,9 +684,9 @@ export function CloserObjectifs() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 border-t border-stone-100 px-6 py-4 flex-shrink-0">
+              <div className="flex justify-end gap-3 border-t border-stone-100 dark:border-neutral-800 px-6 py-4 flex-shrink-0">
                 <button onClick={() => { setIsModalOpen(false); resetForm() }}
-                  className="rounded-xl border border-stone-200 px-5 py-2.5 text-sm font-semibold text-stone-500 hover:bg-stone-50 transition-colors">
+                  className="rounded-xl border border-stone-200 dark:border-neutral-800 px-5 py-2.5 text-sm font-semibold text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
                   Annuler
                 </button>
                 <button onClick={handleSave} disabled={saving}

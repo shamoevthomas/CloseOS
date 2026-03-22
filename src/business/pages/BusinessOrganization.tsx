@@ -418,7 +418,7 @@ function TeamMemberOrganizationView() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-10 mb-10 border-b border-[#c4c7c7]/10">
+      <div className="flex gap-10 mb-10 border-b border-[#c4c7c7]/10 dark:border-neutral-800">
         {allTabs.map(tab => (
           <button
             key={tab.key}
@@ -438,7 +438,7 @@ function TeamMemberOrganizationView() {
       {activeTab === 'organisation' && (
         <div className="space-y-8 animate-in fade-in duration-300">
           {/* Header card */}
-          <div className="bg-white rounded-xl p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+          <div className="bg-white dark:bg-neutral-800 rounded-xl p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
             <div className="flex flex-col sm:flex-row gap-6">
               <div className="w-28 h-28 rounded-full overflow-hidden shrink-0" style={{ background: 'linear-gradient(135deg, #fbf9f8 0%, #f5f3f2 100%)', border: '2px dashed rgba(196,199,199,0.3)' }}>
                 {settings.logo_url ? (
@@ -450,7 +450,7 @@ function TeamMemberOrganizationView() {
                 )}
               </div>
               <div className="flex-1 space-y-3">
-                <h2 className="text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b]">{settings.company_name || 'Organisation'}</h2>
+                <h2 className="text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white">{settings.company_name || 'Organisation'}</h2>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-[#444748]">
                   {settings.website && (
                     <a href={settings.website.startsWith('http') ? settings.website : `https://${settings.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[#006c49] hover:underline transition-colors">
@@ -474,32 +474,32 @@ function TeamMemberOrganizationView() {
           </div>
 
           {/* Details */}
-          <div className="bg-white rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-            <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b]">Informations</h3>
+          <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+            <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">Informations</h3>
 
             {settings.description && (
               <div>
                 <p className={stoneLabelClass}>Description</p>
-                <p className="text-sm text-[#444748] leading-relaxed whitespace-pre-wrap">{settings.description}</p>
+                <p className="text-sm text-[#444748] dark:text-neutral-400 leading-relaxed whitespace-pre-wrap">{settings.description}</p>
               </div>
             )}
 
             <div className="grid sm:grid-cols-2 gap-4">
               {settings.org_email && (
-                <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] px-4 py-3">
+                <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
                   <Mail className="h-4 w-4 text-[#747878] shrink-0" />
                   <div>
                     <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Email</p>
-                    <p className="text-sm font-medium text-[#1b1c1b]">{settings.org_email}</p>
+                    <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.org_email}</p>
                   </div>
                 </div>
               )}
               {settings.org_phone && (
-                <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] px-4 py-3">
+                <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
                   <Phone className="h-4 w-4 text-[#747878] shrink-0" />
                   <div>
                     <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Téléphone</p>
-                    <p className="text-sm font-medium text-[#1b1c1b]">{settings.org_phone}</p>
+                    <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.org_phone}</p>
                   </div>
                 </div>
               )}
@@ -526,14 +526,14 @@ function TeamMemberOrganizationView() {
       {activeTab === 'onboarding' && (
         <div className="space-y-8 animate-in fade-in duration-300">
           {/* General onboarding */}
-          <div className="bg-white rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+          <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
                 <Rocket className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b]">Onboarding général</h3>
-                <p className="text-xs text-[#444748]">Parcours d'intégration de votre organisation</p>
+                <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">Onboarding général</h3>
+                <p className="text-xs text-[#444748] dark:text-neutral-400">Parcours d'intégration de votre organisation</p>
               </div>
             </div>
 
@@ -542,14 +542,14 @@ function TeamMemberOrganizationView() {
 
           {/* Role-specific onboarding */}
           {roleSections.length > 0 && (
-            <div className="bg-white rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+            <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-lg bg-[#ffddb8]/30 flex items-center justify-center text-[#b87500]">
                   <Rocket className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b]">Onboarding {memberRole}</h3>
-                  <p className="text-xs text-[#444748]">Parcours spécifique à votre rôle</p>
+                  <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">Onboarding {memberRole}</h3>
+                  <p className="text-xs text-[#444748] dark:text-neutral-400">Parcours spécifique à votre rôle</p>
                 </div>
               </div>
 
@@ -585,13 +585,13 @@ function TeamMemberOrganizationView() {
       {/* Custom tabs (read-only) */}
       {activeCustomTab && (
         <div className="space-y-8 animate-in fade-in duration-300">
-          <div className="bg-white rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+          <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-[#e5e2e1]/50 flex items-center justify-center text-[#474646]">
                 <LayoutGrid className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b]">{activeCustomTab.name}</h3>
+                <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">{activeCustomTab.name}</h3>
               </div>
             </div>
 
@@ -832,7 +832,7 @@ export function BusinessOrganization() {
       </div>
 
       {/* ─── Tabs ─── */}
-      <div className="flex gap-10 mb-10 border-b border-[#c4c7c7]/10 overflow-x-auto">
+      <div className="flex gap-10 mb-10 border-b border-[#c4c7c7]/10 dark:border-neutral-800 overflow-x-auto">
         {/* Fixed tabs */}
         {[
           { key: 'organisation', label: 'ORGANISATION' },
@@ -862,7 +862,7 @@ export function BusinessOrganization() {
                 onChange={(e) => setRenamingValue(e.target.value)}
                 onBlur={commitRename}
                 onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setRenamingTabId(null) }}
-                className="px-3 py-2 rounded-lg text-sm font-['Manrope'] font-bold bg-[#f5f3f2] border border-[#c4c7c7]/30 outline-none text-[#1b1c1b] w-36"
+                className="px-3 py-2 rounded-lg text-sm font-['Manrope'] font-bold bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/30 dark:border-neutral-700 outline-none text-[#1b1c1b] dark:text-white w-36"
               />
             ) : (
               <button
@@ -910,8 +910,9 @@ export function BusinessOrganization() {
           <div className="grid grid-cols-12 gap-10">
             {/* Branding Card */}
             <div className="col-span-12 lg:col-span-4">
-              <div className="bg-white rounded-xl p-8 h-full" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-                <h2 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] mb-8">Brand Identity</h2>
+              <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 h-full" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+                <h2 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white mb-8">Brand Identity</h2>
+
                 <div className="flex flex-col items-center gap-6">
                   <div className="relative group cursor-pointer" onClick={handleLogoClick}>
                     <input type="file" ref={fileInputRef} onChange={onFileChange} className="hidden" accept="image/jpeg,image/png,image/webp" disabled={uploading} />
@@ -927,8 +928,8 @@ export function BusinessOrganization() {
                     </button>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-[#1b1c1b] mb-1">Logo de l'entreprise</p>
-                    <p className="text-xs text-[#444748]">SVG, PNG, ou JPG. Max 5Mo.</p>
+                    <p className="text-sm font-semibold text-[#1b1c1b] dark:text-white mb-1">Logo de l'entreprise</p>
+                    <p className="text-xs text-[#444748] dark:text-neutral-400">SVG, PNG, ou JPG. Max 5Mo.</p>
                   </div>
                 </div>
               </div>
@@ -936,7 +937,7 @@ export function BusinessOrganization() {
 
             {/* Form Card */}
             <div className="col-span-12 lg:col-span-8">
-              <div className="bg-white rounded-xl p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+              <div className="bg-white dark:bg-neutral-800 rounded-xl p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-8">
                   <div className="col-span-2">
                     <label className={stoneLabelClass}>Nom de l'entreprise</label>
@@ -944,7 +945,7 @@ export function BusinessOrganization() {
                       type="text"
                       value={formData.company_name}
                       onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                      className="w-full bg-transparent border-b border-[#c4c7c7]/30 py-2 focus:border-[#006c49] focus:ring-0 outline-none transition-all font-['Manrope'] font-bold text-lg text-[#1b1c1b]"
+                      className="w-full bg-transparent border-b border-[#c4c7c7]/30 dark:border-neutral-700 py-2 focus:border-[#006c49] focus:ring-0 outline-none transition-all font-['Manrope'] font-bold text-lg text-[#1b1c1b] dark:text-white"
                       placeholder="Votre entreprise"
                     />
                   </div>
@@ -953,7 +954,7 @@ export function BusinessOrganization() {
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full bg-transparent border-b border-[#c4c7c7]/30 py-2 focus:border-[#006c49] focus:ring-0 outline-none transition-all font-['Inter'] text-sm leading-relaxed resize-none h-20 text-[#1b1c1b]"
+                      className="w-full bg-transparent border-b border-[#c4c7c7]/30 dark:border-neutral-700 py-2 focus:border-[#006c49] focus:ring-0 outline-none transition-all font-['Inter'] text-sm leading-relaxed resize-none h-20 text-[#1b1c1b] dark:text-white"
                       placeholder="Ce que fait votre entreprise..."
                     />
                   </div>
@@ -979,14 +980,14 @@ export function BusinessOrganization() {
 
             {/* Facturation */}
             <div className="col-span-12">
-              <div className="bg-white rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+              <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-lg bg-[#ffddb8]/30 flex items-center justify-center text-[#b87500]">
                     <Receipt className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b]">Facturation</h3>
-                    <p className="text-xs text-[#444748]">Informations pour vos factures et documents officiels</p>
+                    <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">Facturation</h3>
+                    <p className="text-xs text-[#444748] dark:text-neutral-400">Informations pour vos factures et documents officiels</p>
                   </div>
                 </div>
 
@@ -1046,7 +1047,7 @@ export function BusinessOrganization() {
                     className={`flex items-center justify-between p-4 rounded-xl transition-all ${
                       selectedOnboardingRole === role
                         ? 'bg-[#000000] text-white shadow-lg'
-                        : 'bg-white text-[#1b1c1b] hover:bg-[#f5f3f2]'
+                        : 'bg-white dark:bg-neutral-800 text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700'
                     }`}
                     style={selectedOnboardingRole !== role ? { border: '0.5px solid rgba(196,199,199,0.2)' } : undefined}
                   >
@@ -1097,14 +1098,14 @@ export function BusinessOrganization() {
       {/* ═══════════════════ CUSTOM TABS ═══════════════════ */}
       {activeCustomTab && (
         <div className="animate-in fade-in duration-300">
-          <div className="bg-white rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+          <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-[#e5e2e1]/50 flex items-center justify-center text-[#474646]">
                 <LayoutGrid className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b]">{activeCustomTab.name}</h3>
-                <p className="text-xs text-[#444748]">Onglet personnalisé &mdash; double-cliquez sur le nom pour le renommer</p>
+                <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">{activeCustomTab.name}</h3>
+                <p className="text-xs text-[#444748] dark:text-neutral-400">Onglet personnalisé &mdash; double-cliquez sur le nom pour le renommer</p>
               </div>
             </div>
 
