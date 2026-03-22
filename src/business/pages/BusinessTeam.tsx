@@ -10,7 +10,7 @@ import {
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
-import { getTimezoneLabel } from '../../lib/timezone'
+import { fromUTC, getTimezoneLabel } from '../../lib/timezone'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { InviteMemberModal } from '../components/InviteMemberModal'
 import toast from 'react-hot-toast'
@@ -64,6 +64,7 @@ interface Appointment {
   assigned_to: string
   prospect_id: number | null
   created_at: string
+  datetime_utc?: string | null
 }
 
 interface ConnectionLog {
@@ -238,7 +239,7 @@ function ContactInfo({ member }: { member: TeamMember }) {
 }
 
 export function BusinessTeam() {
-  const { user, ownerUserId, isTeamMember, teamMember, businessProfile } = useBusinessAuth()
+  const { user, ownerUserId, isTeamMember, teamMember, businessProfile, userTimezone } = useBusinessAuth()
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const { prospects } = useBusinessProspects()
@@ -266,7 +267,7 @@ export function BusinessTeam() {
         supabase.from('business_users').select('full_name, email, phone, avatar_url, created_at, timezone').eq('id', effectiveUserId).single(),
         supabase.from('business_absences').select('*').eq('business_owner_id', effectiveUserId),
         supabase.from('business_availability_slots').select('*').eq('business_owner_id', effectiveUserId).order('day_of_week').order('start_time'),
-        supabase.from('business_appointments').select('id, date, time, duration, status, assigned_to, prospect_id, created_at').eq('user_id', effectiveUserId),
+        supabase.from('business_appointments').select('id, date, time, duration, status, assigned_to, prospect_id, created_at, datetime_utc').eq('user_id', effectiveUserId),
         isOwnerView
           ? supabase.from('business_connection_log').select('*').eq('business_owner_id', effectiveUserId).gte('created_at', oneWeekAgo.toISOString()).order('created_at', { ascending: false })
           : Promise.resolve({ data: [] }),
@@ -668,6 +669,7 @@ function IndividualView({
   onPayDayChange: (day: number) => Promise<void>
   onDelete?: () => void
 }) {
+  const { userTimezone } = useBusinessAuth()
   const color = getRoleColor(member.role)
   const [payDay, setPayDay] = useState<number>(member.pay_day || 1)
   const [savingPayDay, setSavingPayDay] = useState(false)
@@ -675,6 +677,7 @@ function IndividualView({
   const [editSetterScope, setEditSetterScope] = useState(member.setter_scope || 'all')
   const [savingRole, setSavingRole] = useState(false)
   const roleChanged = editRole !== member.role || (editRole === 'Setter-Closer' && editSetterScope !== (member.setter_scope || 'all'))
+  const memberTz = member.timezone || 'Europe/Paris'
 
   const memberProspects = useMemo(() => prospects.filter(p => p.assigned_to === member.id), [prospects, member.id])
   const won = memberProspects.filter(p => p.stage === 'won')
@@ -689,10 +692,17 @@ function IndividualView({
   const upcomingAppts = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10)
     return appointments
-      .filter(a => a.date >= today && a.status !== 'cancelled')
-      .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''))
+      .filter(a => {
+        const localDt = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone) : { date: a.date, time: a.time?.slice(0, 5) || '00:00' }
+        return localDt.date >= today && a.status !== 'cancelled'
+      })
+      .sort((a, b) => {
+        const aLocal = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone) : { date: a.date, time: a.time?.slice(0, 5) || '00:00' }
+        const bLocal = b.datetime_utc ? fromUTC(b.datetime_utc, userTimezone) : { date: b.date, time: b.time?.slice(0, 5) || '00:00' }
+        return aLocal.date.localeCompare(bLocal.date) || aLocal.time.localeCompare(bLocal.time)
+      })
       .slice(0, 5)
-  }, [appointments])
+  }, [appointments, userTimezone])
 
   const handleSavePayDay = async () => {
     setSavingPayDay(true)
@@ -1082,10 +1092,22 @@ function IndividualView({
                             </div>
                           </td>
                           <td className="py-4">
-                            <p className="text-sm font-semibold text-stone-900">
-                              {new Date(appt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                              {appt.time && `, ${appt.time.slice(0, 5)}`}
-                            </p>
+                            {(() => {
+                              const localDt = appt.datetime_utc ? fromUTC(appt.datetime_utc, userTimezone) : { date: appt.date, time: appt.time?.slice(0, 5) || '00:00' }
+                              const showMemberTz = memberTz !== userTimezone && appt.datetime_utc
+                              const memberLocal = showMemberTz ? fromUTC(appt.datetime_utc!, memberTz) : null
+                              return (
+                                <>
+                                  <p className="text-sm font-semibold text-stone-900">
+                                    {new Date(localDt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                    {`, ${localDt.time}`}
+                                  </p>
+                                  {memberLocal && (
+                                    <p className="text-xs text-stone-400">({memberLocal.time} chez {member.first_name})</p>
+                                  )}
+                                </>
+                              )
+                            })()}
                             {prospect && (
                               <p className="text-xs text-stone-400">{prospect.company || prospect.contact || ''}</p>
                             )}
