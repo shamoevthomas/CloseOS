@@ -809,7 +809,7 @@ export function SetterCallDetails() {
             className={cn('w-full rounded-full px-6 py-3 text-sm font-bold text-white transition-all mt-2 font-["Manrope"]',
               reminderTitle && reminderDate && reminderTime && !isSavingReminder
                 ? 'bg-stone-900 hover:bg-stone-800 shadow-sm'
-                : 'bg-stone-300 cursor-not-allowed'
+                : 'bg-stone-300 !text-stone-500 cursor-not-allowed'
             )}>
             {isSavingReminder ? (
               <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement...</span>
@@ -830,7 +830,7 @@ export function SetterCallDetails() {
               "px-10 py-3 rounded-full font-['Manrope'] font-bold text-sm text-white transition-all shadow-xl active:scale-95",
               isFormValid() && !saving
                 ? 'bg-stone-900 hover:bg-stone-800'
-                : 'bg-stone-300 cursor-not-allowed'
+                : 'bg-stone-300 !text-stone-500 cursor-not-allowed'
             )}>
             {saving ? 'Enregistrement...' : 'Tout Enregistrer'}
           </button>
