@@ -28,11 +28,11 @@ interface TeamMember {
   role: string
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  pending: { label: 'En attente', color: 'text-amber-700', bg: 'bg-amber-100' },
-  confirmed: { label: 'Confirme', color: 'text-blue-700', bg: 'bg-blue-100' },
-  cancelled: { label: 'Annule', color: 'text-red-700', bg: 'bg-red-100' },
-  done: { label: 'Termine', color: 'text-green-700', bg: 'bg-green-100' },
+const STATUS_CONFIG: Record<string, { label: string; badgeBg: string; badgeText: string }> = {
+  pending: { label: 'En attente', badgeBg: 'bg-amber-100/80', badgeText: 'text-amber-700' },
+  confirmed: { label: 'Confirme', badgeBg: 'bg-emerald-100/80', badgeText: 'text-emerald-700' },
+  cancelled: { label: 'Annule', badgeBg: 'bg-red-100/80', badgeText: 'text-red-600' },
+  done: { label: 'Termine', badgeBg: 'bg-stone-100', badgeText: 'text-stone-600' },
 }
 
 const API_URL = '/api/business'
@@ -137,29 +137,31 @@ export function CloserRendezVous() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+        <Loader2 className="h-8 w-8 text-stone-400 animate-spin" />
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
+      {/* Hero header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-            <Calendar className="h-5 w-5 text-amber-700" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100">
+            <Calendar className="h-5 w-5 text-stone-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Mes Rendez-vous</h2>
-            <p className="text-xs text-slate-500">{myAppointments.length} rendez-vous assignes</p>
+            <h2 className="font-['Manrope'] text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900">Mes Rendez-vous</h2>
+            <p className="text-sm text-stone-500">{myAppointments.length} rendez-vous assignes</p>
           </div>
         </div>
 
+        {/* Filters */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <select
               value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-              className="appearance-none rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-2 text-xs font-medium text-slate-600 focus:border-amber-500 focus:outline-none"
+              className="appearance-none rounded-lg border border-stone-200 bg-stone-50/50 pl-8 pr-8 py-2 text-xs font-medium text-stone-600 focus:border-stone-900 focus:outline-none"
             >
               <option value="all">Tous les statuts</option>
               <option value="pending">En attente</option>
@@ -167,35 +169,36 @@ export function CloserRendezVous() {
               <option value="cancelled">Annule</option>
               <option value="done">Termine</option>
             </select>
-            <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+            <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
           </div>
           <div className="flex items-center gap-1">
             <input
               type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 focus:border-amber-500 focus:outline-none"
+              className="rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-2 text-xs text-stone-600 focus:border-stone-900 focus:outline-none"
               placeholder="Du"
             />
-            <span className="text-xs text-slate-400">au</span>
+            <span className="text-xs text-stone-400">au</span>
             <input
               type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 focus:border-amber-500 focus:outline-none"
+              className="rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-2 text-xs text-stone-600 focus:border-stone-900 focus:outline-none"
               placeholder="Au"
             />
           </div>
           {(filterStatus !== 'all' || filterStartDate || filterEndDate) && (
-            <button onClick={() => { setFilterStatus('all'); setFilterStartDate(''); setFilterEndDate('') }} className="text-xs text-amber-600 hover:text-amber-700 font-medium">
+            <button onClick={() => { setFilterStatus('all'); setFilterStartDate(''); setFilterEndDate('') }} className="text-xs text-stone-900 hover:text-stone-700 font-medium underline underline-offset-2">
               Reinitialiser
             </button>
           )}
         </div>
       </div>
 
+      {/* Empty state */}
       {filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 py-16">
-          <Calendar className="h-12 w-12 text-amber-300 mb-4" />
-          <h3 className="text-lg font-semibold text-slate-700 mb-1">Aucun rendez-vous</h3>
-          <p className="text-sm text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-stone-200 bg-white/70 backdrop-blur-xl py-16">
+          <Calendar className="h-12 w-12 text-stone-300 mb-4" />
+          <h3 className="text-lg font-semibold text-stone-700 mb-1">Aucun rendez-vous</h3>
+          <p className="text-sm text-stone-500">
             {myAppointments.length === 0 ? 'Aucun rendez-vous ne vous est assigne' : 'Aucun rendez-vous ne correspond a vos filtres'}
           </p>
         </div>
@@ -203,9 +206,9 @@ export function CloserRendezVous() {
 
       {/* Table view */}
       {filtered.length > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-white overflow-hidden">
+        <div className="rounded-xl bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm overflow-hidden">
           {/* Desktop header */}
-          <div className="hidden md:grid grid-cols-12 gap-4 border-b border-amber-100 bg-amber-50/50 px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+          <div className="hidden md:grid grid-cols-12 gap-4 border-b border-stone-100 bg-stone-50/50 px-6 py-3 text-xs font-bold uppercase tracking-wider text-stone-500">
             <div className="col-span-2">Date & Heure</div>
             <div className="col-span-2">Contact</div>
             <div className="col-span-2">Email</div>
@@ -215,40 +218,40 @@ export function CloserRendezVous() {
             <div className="col-span-2 text-right">Actions</div>
           </div>
 
-          <div className="divide-y divide-amber-100">
+          <div className="divide-y divide-stone-100">
             {filtered.map((appt) => {
               const statusConf = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending
               return (
-                <div key={appt.id} className="px-6 py-4 hover:bg-amber-50/30 transition-colors">
+                <div key={appt.id} className="px-6 py-4 hover:bg-stone-50/40 transition-colors">
                   {/* Desktop */}
                   <div className="hidden md:grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-2">
-                      <p className="text-sm font-semibold text-slate-900">{formatDate(appt.date)}</p>
-                      <p className="text-xs text-slate-500">{appt.time?.slice(0, 5)}</p>
+                      <p className="text-sm font-semibold text-stone-900">{formatDate(appt.date)}</p>
+                      <p className="text-xs text-stone-500">{appt.time?.slice(0, 5)}</p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-slate-700 flex items-center gap-1">
-                        <User className="h-3.5 w-3.5 text-slate-400" />
-                        {appt.prospect?.contact || '—'}
+                      <p className="text-sm text-stone-700 flex items-center gap-1">
+                        <User className="h-3.5 w-3.5 text-stone-400" />
+                        {appt.prospect?.contact || '\u2014'}
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-slate-500 flex items-center gap-1 truncate">
-                        <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        {appt.prospect?.email || '—'}
+                      <p className="text-sm text-stone-500 flex items-center gap-1 truncate">
+                        <Mail className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                        {appt.prospect?.email || '\u2014'}
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-slate-500 flex items-center gap-1 truncate">
-                        <Megaphone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        {appt.campaign?.name || '—'}
+                      <p className="text-sm text-stone-500 flex items-center gap-1 truncate">
+                        <Megaphone className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                        {appt.campaign?.name || '\u2014'}
                       </p>
                     </div>
                     <div className="col-span-1">
-                      <span className="text-xs text-slate-500">{appt.duration}min</span>
+                      <span className="text-xs text-stone-500">{appt.duration}min</span>
                     </div>
                     <div className="col-span-1">
-                      <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', statusConf.bg, statusConf.color)}>
+                      <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium', statusConf.badgeBg, statusConf.badgeText)}>
                         {appt.status === 'pending' && <Clock className="h-3 w-3" />}
                         {appt.status === 'confirmed' && <CheckCircle2 className="h-3 w-3" />}
                         {appt.status === 'cancelled' && <XCircle className="h-3 w-3" />}
@@ -259,13 +262,13 @@ export function CloserRendezVous() {
                     <div className="col-span-2 flex items-center justify-end gap-1.5">
                       <button
                         onClick={() => openReassignModal(appt.id)}
-                        className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                        className="flex items-center gap-1 rounded-full border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors"
                         title="Reassigner"
                       >
                         <UserCheck className="h-3.5 w-3.5" /> Reassigner
                       </button>
                       {appt.status === 'confirmed' && (
-                        <button onClick={() => updateStatus(appt.id, 'done')} className="rounded-lg bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors">
+                        <button onClick={() => updateStatus(appt.id, 'done')} className="rounded-full bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-800 transition-colors">
                           Termine
                         </button>
                       )}
@@ -277,15 +280,15 @@ export function CloserRendezVous() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', statusConf.bg, statusConf.color)}>
+                          <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium', statusConf.badgeBg, statusConf.badgeText)}>
                             {statusConf.label}
                           </span>
-                          <span className="text-sm font-semibold text-slate-900">
+                          <span className="text-sm font-semibold text-stone-900">
                             {formatDate(appt.date)} a {appt.time?.slice(0, 5)}
                           </span>
-                          <span className="text-xs text-slate-400">{appt.duration}min</span>
+                          <span className="text-xs text-stone-400">{appt.duration}min</span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-stone-500">
                           {appt.prospect && (
                             <>
                               <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" />{appt.prospect.contact}</span>
@@ -300,12 +303,12 @@ export function CloserRendezVous() {
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <button
                           onClick={() => openReassignModal(appt.id)}
-                          className="rounded-lg border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50"
+                          className="rounded-full border border-stone-200 p-1.5 text-stone-600 hover:bg-stone-50"
                         >
                           <UserCheck className="h-3.5 w-3.5" />
                         </button>
                         {appt.status === 'confirmed' && (
-                          <button onClick={() => updateStatus(appt.id, 'done')} className="rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100">
+                          <button onClick={() => updateStatus(appt.id, 'done')} className="rounded-full bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-800">
                             Termine
                           </button>
                         )}
@@ -323,15 +326,15 @@ export function CloserRendezVous() {
       {reassignModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setReassignModalOpen(false)} />
-          <div className="relative w-full max-w-md rounded-2xl border border-amber-200 bg-white shadow-2xl p-6 animate-in zoom-in-95">
-            <button onClick={() => setReassignModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700">
+          <div className="relative w-full max-w-md rounded-xl bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl p-6 animate-in zoom-in-95">
+            <button onClick={() => setReassignModalOpen(false)} className="absolute top-4 right-4 text-stone-400 hover:text-stone-700">
               <X className="h-5 w-5" />
             </button>
-            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-amber-600" />
+            <h2 className="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-stone-600" />
               Reassigner le rendez-vous
             </h2>
-            <p className="text-sm text-slate-500 mb-4">Selectionnez un membre de l'equipe a qui assigner ce rendez-vous.</p>
+            <p className="text-sm text-stone-500 mb-4">Selectionnez un membre de l'equipe a qui assigner ce rendez-vous.</p>
             <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
               {teamMembers.filter(m => m.id !== teamMember?.id).map(m => (
                 <button
@@ -340,22 +343,22 @@ export function CloserRendezVous() {
                   className={cn(
                     'w-full text-left p-3 rounded-xl transition-colors border font-medium flex items-center justify-between',
                     selectedMemberId === m.id
-                      ? 'bg-amber-50 border-amber-300 text-amber-700'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                      ? 'bg-stone-100 border-stone-400 text-stone-900'
+                      : 'border-stone-200 hover:bg-stone-50 text-stone-700'
                   )}
                 >
                   <span>{m.first_name} {m.last_name}</span>
-                  <span className="text-xs text-slate-400">{m.role}</span>
+                  <span className="text-xs text-stone-400">{m.role}</span>
                 </button>
               ))}
               {teamMembers.filter(m => m.id !== teamMember?.id).length === 0 && (
-                <p className="text-center text-slate-400 text-sm py-4">Aucun autre membre disponible</p>
+                <p className="text-center text-stone-400 text-sm py-4">Aucun autre membre disponible</p>
               )}
             </div>
             <button
               onClick={handleReassign}
               disabled={!selectedMemberId}
-              className="w-full rounded-xl bg-amber-600 py-2.5 font-bold text-white hover:bg-amber-500 disabled:opacity-50 transition-all"
+              className="w-full rounded-full bg-stone-900 py-2.5 font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-all"
             >
               Confirmer la reassignation
             </button>
