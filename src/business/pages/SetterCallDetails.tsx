@@ -10,6 +10,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import { supabase } from '../../lib/supabase'
+import { toUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
 
 const setterOutcomes = [
@@ -51,7 +52,7 @@ export function SetterCallDetails() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const isReadonly = searchParams.get('readonly') === '1'
-  const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
+  const { user, teamMember, ownerUserId, isTeamMember, userTimezone } = useBusinessAuth()
   const { prospects, updateProspect } = useBusinessProspects()
   const { createEvent: createGoogleEvent, isConnected: isGoogleConnected } = useBusinessGoogleCalendar()
 
@@ -361,6 +362,8 @@ export function SetterCallDetails() {
           contact: call.contact_name,
           date: selectedSlot.date,
           time: selectedSlot.time,
+          datetime_utc: toUTC(selectedSlot.date, selectedSlot.time, userTimezone).toISOString(),
+          timezone: userTimezone,
           duration: 30,
           type: 'call',
           status: 'pending',
