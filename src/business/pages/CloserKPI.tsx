@@ -242,14 +242,14 @@ export function CloserKPI() {
   const v = getTabValues()
   const avgCommission = v.sales > 0 ? Math.round(v.commission / v.sales) : 0
 
-  const inputCls = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+  const inputCls = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
 
   // Member selector component
   const MemberSelector = ({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) => (
     <select
       value={value || ''}
       onChange={(e) => onChange(e.target.value || null)}
-      className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-amber-500 focus:outline-none"
+      className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-stone-400 focus:outline-none"
     >
       <option value="">Global (tous)</option>
       {teamClosers.map(c => (
@@ -277,7 +277,7 @@ export function CloserKPI() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+        <Loader2 className="h-8 w-8 text-stone-600 animate-spin" />
       </div>
     )
   }
@@ -287,8 +287,8 @@ export function CloserKPI() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-            <TrendingUp className="h-5 w-5 text-amber-700" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100">
+            <TrendingUp className="h-5 w-5 text-stone-700" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-slate-900">Performance Closer</h1>
@@ -306,16 +306,16 @@ export function CloserKPI() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex p-1.5 bg-stone-100 rounded-full w-fit">
         {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={cn(
-              'px-4 py-2 rounded-xl text-sm font-medium transition-all',
+              'px-4 py-2 rounded-full text-sm font-medium transition-all',
               activeTab === tab.key
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                ? 'bg-white text-stone-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                : 'text-stone-500 hover:text-stone-900'
             )}
           >
             {tab.label}
@@ -324,23 +324,23 @@ export function CloserKPI() {
       </div>
 
       {activeTab === 'org' && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-amber-700">KPIs de l'organisation</p>
+            <p className="text-sm text-stone-700">KPIs de l'organisation</p>
             {isOwnerView && teamClosers.length > 0 && <MemberSelector value={orgMemberId} onChange={setOrgMemberId} />}
           </div>
         </div>
       )}
 
       {activeTab === 'offer' && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-amber-700 shrink-0">Par Formule</p>
+            <p className="text-sm text-stone-700 shrink-0">Par Formule</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedOfferId || ''}
                 onChange={(e) => setSelectedOfferId(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-amber-500 focus:outline-none"
+                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
                 {formulas.length === 0 && <option value="">Aucune formule</option>}
                 {formulas.map(f => (
@@ -354,14 +354,14 @@ export function CloserKPI() {
       )}
 
       {activeTab === 'campaign' && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-amber-700 shrink-0">Par Campagne</p>
+            <p className="text-sm text-stone-700 shrink-0">Par Campagne</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedCampaignId || ''}
                 onChange={(e) => setSelectedCampaignId(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-amber-500 focus:outline-none"
+                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
                 {campaigns.length === 0 && <option value="">Aucune campagne</option>}
                 {campaigns.map(c => (
@@ -375,14 +375,14 @@ export function CloserKPI() {
       )}
 
       {activeTab === 'source' && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-amber-700 shrink-0">Par Source</p>
+            <p className="text-sm text-stone-700 shrink-0">Par Source</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedSource || ''}
                 onChange={(e) => setSelectedSource(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-amber-500 focus:outline-none"
+                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
                 {uniqueSources.length === 0 && <option value="">Aucune source</option>}
                 {uniqueSources.map(s => (
@@ -414,15 +414,15 @@ export function CloserKPI() {
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorClosingBiz" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#d97706" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#d97706" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#1c1917" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#1c1917" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} unit="%" />
                 <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', color: '#0f172a' }} />
-                <Area type="monotone" dataKey="closing" stroke="#d97706" strokeWidth={2} fill="url(#colorClosingBiz)" />
+                <Area type="monotone" dataKey="closing" stroke="#1c1917" strokeWidth={2} fill="url(#colorClosingBiz)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -505,7 +505,7 @@ export function CloserKPI() {
               </button>
               <button
                 onClick={saveConfig}
-                className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
+                className="flex items-center gap-2 rounded-xl bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-colors"
               >
                 <Save className="h-4 w-4" /> Sauvegarder
               </button>
@@ -524,7 +524,7 @@ const KpiCard = ({ title, value, icon: Icon, color, highlight }: any) => {
     emerald: { icon: 'bg-emerald-50 text-emerald-600' },
     blue: { icon: 'bg-blue-50 text-blue-600' },
     purple: { icon: 'bg-purple-50 text-purple-600' },
-    amber: { icon: 'bg-amber-50 text-amber-600' },
+    amber: { icon: 'bg-stone-50 text-stone-600' },
     rose: { icon: 'bg-rose-50 text-rose-600' },
     slate: { icon: 'bg-slate-100 text-slate-600' },
   }
@@ -532,7 +532,7 @@ const KpiCard = ({ title, value, icon: Icon, color, highlight }: any) => {
   return (
     <div className={cn(
       'bg-white rounded-2xl border p-5 transition-all hover:shadow-md',
-      highlight ? 'border-amber-200 shadow-sm' : 'border-slate-200'
+      highlight ? 'border-stone-200 shadow-sm' : 'border-slate-200'
     )}>
       <div className="flex items-center gap-3 mb-3">
         <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl', c.icon)}>
@@ -549,7 +549,7 @@ const SummaryItem = ({ label, value, icon: Icon, color }: any) => {
   const colors: any = {
     indigo: 'bg-indigo-50 text-indigo-600',
     cyan: 'bg-cyan-50 text-cyan-600',
-    amber: 'bg-amber-50 text-amber-600',
+    amber: 'bg-stone-50 text-stone-600',
   }
   return (
     <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
