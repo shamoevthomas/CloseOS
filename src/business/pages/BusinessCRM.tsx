@@ -203,7 +203,7 @@ export function BusinessCRM() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-stone-900" />
       </div>
     )
   }
@@ -211,7 +211,7 @@ export function BusinessCRM() {
   return (
     <div className="h-full flex flex-col">
       {/* CRM Integration Banner */}
-      <div className="mb-4 flex items-center justify-between rounded-xl border border-amber-200 bg-white px-4 py-3">
+      <div className="mb-4 flex items-center justify-between rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)] px-6 py-5">
         <div className="flex items-center gap-3">
           <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
             crmProvider === 'hubspot' ? 'bg-orange-500' :
@@ -222,14 +222,14 @@ export function BusinessCRM() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-slate-800">CRM : {crmLabel}</p>
+              <p className="text-sm font-semibold text-stone-900">CRM : {crmLabel}</p>
               {((crmProvider === 'hubspot' && hubspotConnected) || (crmProvider === 'pipedrive' && pipedriveConnected)) && (
                 <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
                   <Check className="h-2.5 w-2.5" /> Connecté
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-stone-500">
               {crmProvider === 'hubspot' && hubspotConnected
                 ? `Auto-sync dans ${Math.floor(nextSyncSeconds / 60)}:${String(nextSyncSeconds % 60).padStart(2, '0')}`
                 : 'Votre pipeline de prospection'
@@ -261,7 +261,7 @@ export function BusinessCRM() {
           {!isReadOnly && (
             <button
               onClick={() => setIsIntegrationModalOpen(true)}
-              className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all"
+              className="flex items-center gap-2 rounded-full bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-all"
             >
               <Settings2 className="h-3.5 w-3.5" />
               Intégration
@@ -273,32 +273,32 @@ export function BusinessCRM() {
       {/* Search & Filters & Add */}
       <div className="mb-4 flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Rechercher un prospect..."
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+            className="w-full rounded-full border-none bg-stone-100 py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
         </div>
         <div className="relative">
           <select
             value={filterStage}
             onChange={(e) => setFilterStage(e.target.value)}
-            className="appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 py-2.5 text-sm font-medium text-slate-600 focus:border-amber-500 focus:outline-none"
+            className="appearance-none rounded-full bg-white border-none shadow-[inset_0_0_0_0.5px_rgba(196,199,199,0.3)] pl-3 pr-8 py-2.5 text-sm font-medium text-stone-600 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           >
             <option value="all">Toutes les étapes</option>
             {ALL_STAGES.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
         </div>
         {!isReadOnly && (
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-500 transition-all"
+            className="flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-extrabold tracking-tight text-white hover:opacity-90 shadow-lg shadow-stone-900/10 transition-all"
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Nouveau prospect</span>
@@ -307,36 +307,36 @@ export function BusinessCRM() {
       </div>
 
       {/* Stats */}
-      <div className="mb-4 flex items-center gap-3 text-xs text-slate-500">
-        <span className="font-medium text-slate-700">{filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}</span>
+      <div className="mb-4 flex items-center gap-3 text-xs text-stone-500">
+        <span className="font-medium text-stone-700">{filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}</span>
         {filterStage !== 'all' && (
-          <button onClick={() => setFilterStage('all')} className="text-amber-600 hover:text-amber-700 font-medium">
+          <button onClick={() => setFilterStage('all')} className="text-stone-600 hover:text-stone-900 font-medium">
             Réinitialiser
           </button>
         )}
       </div>
 
       {/* Table View */}
-      <div className="flex-1 overflow-auto rounded-xl border border-slate-200 bg-white">
+      <div className="flex-1 overflow-auto rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
         <table className="w-full min-w-[800px]">
-          <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+          <thead className="sticky top-0 z-10 bg-stone-50/50 border-b border-stone-100">
             <tr>
-              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Contact</th>
-              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Entreprise</th>
-              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Email</th>
-              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Téléphone</th>
-              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Étape</th>
-              <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Valeur</th>
-              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Date</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Contact</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Entreprise</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Email</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Téléphone</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Étape</th>
+              <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Valeur</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Date</th>
               {!isReadOnly && (
-                <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Actions</th>
+                <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Actions</th>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-stone-100">
             {filteredProspects.length === 0 ? (
               <tr>
-                <td colSpan={isReadOnly ? 7 : 8} className="text-center py-12 text-sm text-slate-400">
+                <td colSpan={isReadOnly ? 7 : 8} className="text-center py-12 text-sm text-stone-400">
                   Aucun prospect trouvé
                 </td>
               </tr>
@@ -347,44 +347,44 @@ export function BusinessCRM() {
                   <tr
                     key={deal.id}
                     onClick={() => setSelectedProspect(deal)}
-                    className="cursor-pointer hover:bg-amber-50/50 transition-colors"
+                    className="cursor-pointer hover:bg-stone-50/30 transition-colors"
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
-                          <User className="h-4 w-4 text-slate-500" />
+                        <div className="h-8 w-8 rounded-full bg-stone-100 flex items-center justify-center flex-shrink-0">
+                          <User className="h-4 w-4 text-stone-500" />
                         </div>
-                        <span className="text-sm font-semibold text-slate-800">{getDisplayName(deal)}</span>
+                        <span className="text-sm font-semibold text-stone-900">{getDisplayName(deal)}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       {deal.company ? (
                         <div className="flex items-center gap-1.5">
-                          <Building2 className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                          <span className="text-sm text-slate-600">{deal.company}</span>
+                          <Building2 className="h-3.5 w-3.5 text-stone-400 flex-shrink-0" />
+                          <span className="text-sm text-stone-600">{deal.company}</span>
                         </div>
                       ) : (
-                        <span className="text-sm text-slate-300">—</span>
+                        <span className="text-sm text-stone-300">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {deal.email ? (
                         <div className="flex items-center gap-1.5">
-                          <Mail className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                          <span className="text-sm text-slate-600 truncate max-w-[200px]">{deal.email}</span>
+                          <Mail className="h-3.5 w-3.5 text-stone-400 flex-shrink-0" />
+                          <span className="text-sm text-stone-600 truncate max-w-[200px]">{deal.email}</span>
                         </div>
                       ) : (
-                        <span className="text-sm text-slate-300">—</span>
+                        <span className="text-sm text-stone-300">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {deal.phone ? (
                         <div className="flex items-center gap-1.5">
-                          <Phone className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                          <span className="text-sm text-slate-600">{deal.phone}</span>
+                          <Phone className="h-3.5 w-3.5 text-stone-400 flex-shrink-0" />
+                          <span className="text-sm text-stone-600">{deal.phone}</span>
                         </div>
                       ) : (
-                        <span className="text-sm text-slate-300">—</span>
+                        <span className="text-sm text-stone-300">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -394,30 +394,30 @@ export function BusinessCRM() {
                           {stage.name}
                         </span>
                       ) : (
-                        <span className="text-sm text-slate-300">—</span>
+                        <span className="text-sm text-stone-300">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {deal.value ? (
                         <span className="text-sm font-bold text-emerald-600">{deal.value.toLocaleString()} €</span>
                       ) : (
-                        <span className="text-sm text-slate-300">—</span>
+                        <span className="text-sm text-stone-300">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {deal.created_at ? (
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-stone-500">
                           {new Date(deal.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                         </span>
                       ) : (
-                        <span className="text-sm text-slate-300">—</span>
+                        <span className="text-sm text-stone-300">—</span>
                       )}
                     </td>
                     {!isReadOnly && (
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
-                          className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
+                          className="p-1.5 text-stone-300 hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -456,65 +456,65 @@ export function BusinessCRM() {
       {/* Add Prospect Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-amber-200 bg-white p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
             <button
               onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700"
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-600"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Nouveau prospect</h2>
+            <h2 className="text-xl font-extrabold text-stone-900 mb-4">Nouveau prospect</h2>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nom du contact *</label>
+                <label className="block text-sm font-semibold text-stone-900 mb-1">Nom du contact *</label>
                 <input
                   type="text"
                   value={newContact}
                   onChange={(e) => setNewContact(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   placeholder="Jean Dupont"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <label className="block text-sm font-semibold text-stone-900 mb-1">Email</label>
                 <input
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   placeholder="jean@email.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
+                <label className="block text-sm font-semibold text-stone-900 mb-1">Téléphone</label>
                 <input
                   type="tel"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   placeholder="+33 6 12 34 56 78"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Entreprise</label>
+                <label className="block text-sm font-semibold text-stone-900 mb-1">Entreprise</label>
                 <input
                   type="text"
                   value={newCompany}
                   onChange={(e) => setNewCompany(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   placeholder="Acme Corp"
                 />
               </div>
               {formulas.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Offre / Formule</label>
+                  <label className="block text-sm font-semibold text-stone-900 mb-1">Offre / Formule</label>
                   <select
                     value={newFormulaId}
                     onChange={(e) => setNewFormulaId(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   >
                     <option value="">Aucune offre</option>
                     {formulas.map(f => (
@@ -526,26 +526,26 @@ export function BusinessCRM() {
 
               {/* Setter assignment */}
               {isPureSetter ? (
-                <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5">
-                  <p className="text-xs font-medium text-amber-700">
+                <div className="rounded-xl bg-stone-100 border border-stone-200 px-4 py-2.5">
+                  <p className="text-xs font-medium text-stone-700">
                     Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
                   </p>
                 </div>
               ) : isSetterCloser ? (
-                <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5">
-                  <p className="text-xs font-medium text-amber-700">
+                <div className="rounded-xl bg-stone-100 border border-stone-200 px-4 py-2.5">
+                  <p className="text-xs font-medium text-stone-700">
                     Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
                     <span className="ml-1">• Closer assigné automatiquement</span>
                   </p>
                 </div>
               ) : isPureCloser ? (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Setter <span className="text-slate-400 font-normal">(facultatif)</span></label>
+                  <label className="block text-sm font-semibold text-stone-900 mb-1">Setter <span className="text-stone-400 font-normal">(facultatif)</span></label>
                   <div className="flex gap-2">
                     <select
                       value={newSetterId}
                       onChange={(e) => setNewSetterId(e.target.value)}
-                      className="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="flex-1 rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                     >
                       <option value="">Aucun setter</option>
                       {teamSetters.map(s => (
@@ -558,7 +558,7 @@ export function BusinessCRM() {
                         const next = getNextSetter()
                         if (next) setNewSetterId(next.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-all whitespace-nowrap"
+                      className="flex items-center gap-1 rounded-xl border border-stone-200 bg-stone-100 px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-200 transition-all whitespace-nowrap"
                       title="Tournante (round-robin)"
                     >
                       <ArrowRightCircle className="h-3.5 w-3.5" />
@@ -570,7 +570,7 @@ export function BusinessCRM() {
                         const rnd = getRandomSetter()
                         if (rnd) setNewSetterId(rnd.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-all whitespace-nowrap"
+                      className="flex items-center gap-1 rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-600 hover:bg-stone-100 transition-all whitespace-nowrap"
                       title="Hasard (aléatoire)"
                     >
                       <Shuffle className="h-3.5 w-3.5" />
@@ -580,12 +580,12 @@ export function BusinessCRM() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Setter *</label>
+                  <label className="block text-sm font-semibold text-stone-900 mb-1">Setter *</label>
                   <div className="flex gap-2">
                     <select
                       value={newSetterId}
                       onChange={(e) => setNewSetterId(e.target.value)}
-                      className="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="flex-1 rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                     >
                       <option value="">Choisir un setter</option>
                       {teamSetters.map(s => (
@@ -598,7 +598,7 @@ export function BusinessCRM() {
                         const next = getNextSetter()
                         if (next) setNewSetterId(next.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-all whitespace-nowrap"
+                      className="flex items-center gap-1 rounded-xl border border-stone-200 bg-stone-100 px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-200 transition-all whitespace-nowrap"
                       title="Tournante (round-robin)"
                     >
                       <ArrowRightCircle className="h-3.5 w-3.5" />
@@ -610,7 +610,7 @@ export function BusinessCRM() {
                         const rnd = getRandomSetter()
                         if (rnd) setNewSetterId(rnd.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-all whitespace-nowrap"
+                      className="flex items-center gap-1 rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-600 hover:bg-stone-100 transition-all whitespace-nowrap"
                       title="Hasard (aléatoire)"
                     >
                       <Shuffle className="h-3.5 w-3.5" />
@@ -629,11 +629,11 @@ export function BusinessCRM() {
                 </div>
               ) : needsCloserPicker && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Closer <span className="text-slate-400 font-normal">(facultatif)</span></label>
+                  <label className="block text-sm font-semibold text-stone-900 mb-1">Closer <span className="text-stone-400 font-normal">(facultatif)</span></label>
                   <select
                     value={newCloserId}
                     onChange={(e) => setNewCloserId(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   >
                     <option value="">Aucun closer</option>
                     {teamClosers.map(c => (
@@ -646,14 +646,14 @@ export function BusinessCRM() {
               <div className="flex gap-3 mt-4">
                 <button
                   onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
-                  className="flex-1 rounded-xl border border-slate-200 py-2.5 font-medium text-slate-600 hover:bg-slate-50 transition-all"
+                  className="flex-1 rounded-full bg-stone-100 border-none py-2.5 font-medium text-stone-600 hover:bg-stone-200 transition-all"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleAddProspect}
                   disabled={addLoading || !newContact || (isOwnerView && !newSetterId)}
-                  className="flex-1 rounded-xl bg-amber-600 py-2.5 font-bold text-white hover:bg-amber-500 transition-all disabled:opacity-50"
+                  className="flex-1 rounded-full bg-stone-900 py-2.5 font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
                 >
                   {addLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Ajouter'}
                 </button>
