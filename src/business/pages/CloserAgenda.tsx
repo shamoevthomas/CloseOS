@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   ChevronLeft, ChevronRight, Calendar, Clock, User, Bell, X, Loader2,
-  Video, Phone, MapPin, ExternalLink, RefreshCw,
+  Video, Phone, MapPin, ExternalLink, RefreshCw, Plus, ChevronDown,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
@@ -161,13 +161,27 @@ export function CloserAgenda() {
   const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([])
   const [selectedMemberId, setSelectedMemberId] = useState<string>('perso')
 
+  // Create event modal
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [createTitle, setCreateTitle] = useState('')
+  const [createDate, setCreateDate] = useState('')
+  const [createStartTime, setCreateStartTime] = useState('')
+  const [createEndTime, setCreateEndTime] = useState('')
+  const [createDuration, setCreateDuration] = useState(30)
+  const [createNotes, setCreateNotes] = useState('')
+  const [createAssignedTo, setCreateAssignedTo] = useState('')
+  const [createGoogleMeet, setCreateGoogleMeet] = useState(false)
+  const [createSaving, setCreateSaving] = useState(false)
+
+  const canAssign = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer'
+
   const dayScrollRef = useRef<HTMLDivElement>(null)
   const weekScrollRef = useRef<HTMLDivElement>(null)
   const dateInputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch team members for owner view
+  // Fetch team members (for owner filter + assignment dropdown)
   useEffect(() => {
-    if (!isOwnerView || !effectiveUserId) return
+    if ((!isOwnerView && !canAssign) || !effectiveUserId) return
     Promise.all([
       supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
       supabase.from('business_users').select('id, full_name').eq('id', effectiveUserId).single(),
@@ -179,7 +193,7 @@ export function CloserAgenda() {
       }
       setTeamMembers(list)
     })
-  }, [isOwnerView, effectiveUserId])
+  }, [isOwnerView, canAssign, effectiveUserId])
 
   // Fetch data
   const fetchAppointments = useCallback(async () => {
@@ -351,6 +365,78 @@ export function CloserAgenda() {
     }
     return { background: 'rgba(255,237,213,0.8)', backdropFilter: 'blur(12px)', color: '#9a3412', borderLeft: '4px solid #f97316', borderRadius: '12px', boxShadow: '0 2px 8px rgba(249,115,22,0.1)' }
   }
+
+  const openCreateModal = () => {
+    const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+    const mins = now.getMinutes()
+    const startH = mins < 30 ? now.getHours() : now.getHours() + 1
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    setCreateTitle('')
+    setCreateDate(todayStr)
+    setCreateStartTime(`${pad(startH)}:${pad(mins < 30 ? 30 : 0)}`)
+    setCreateEndTime(`${pad(startH + 1)}:${pad(mins < 30 ? 30 : 0)}`)
+    setCreateDuration(30)
+    setCreateNotes('')
+    setCreateAssignedTo(isTeamMember ? (teamMember?.id || '') : '')
+    setCreateGoogleMeet(false)
+    setIsCreateModalOpen(true)
+  }
+
+  const handleCreateEvent = async () => {
+    if (!createDate || !createStartTime) return
+    setCreateSaving(true)
+    try {
+      // Compute datetime_utc
+      const localDatetime = `${createDate}T${createStartTime}:00`
+      const localDate = new Date(localDatetime)
+      const datetime_utc = localDate.toISOString()
+
+      let google_meet_link: string | null = null
+      if (createGoogleMeet && isConnected) {
+        try {
+          const { createEvent: createGoogleEvent } = await import('../contexts/BusinessGoogleCalendarContext').then(() => ({ createEvent: null }))
+          // Use the google calendar context's createEvent if available
+        } catch {}
+      }
+
+      const payload: Record<string, any> = {
+        user_id: effectiveUserId,
+        title: createTitle || null,
+        date: createDate,
+        time: createStartTime,
+        duration: createDuration,
+        notes: createNotes || null,
+        datetime_utc,
+        timezone: userTimezone,
+      }
+      if (createAssignedTo) payload.assigned_to = createAssignedTo
+
+      const res = await fetch(`${API_URL}?action=appointments-create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (data.appointment) {
+        setIsCreateModalOpen(false)
+        fetchAppointments()
+      }
+    } catch (err) {
+      console.error('Error creating event:', err)
+    } finally {
+      setCreateSaving(false)
+    }
+  }
+
+  const DURATIONS = [
+    { value: 15, label: '15 min' },
+    { value: 30, label: '30 min' },
+    { value: 45, label: '45 min' },
+    { value: 60, label: '1h' },
+    { value: 90, label: '1h30' },
+    { value: 120, label: '2h' },
+  ]
 
   /* ─── DAY VIEW ────────────────────────────────── */
   const renderDayView = () => {
@@ -702,6 +788,15 @@ export function CloserAgenda() {
             ))}
           </div>
 
+          {/* Create event */}
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-2 rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white shadow-lg hover:scale-105 active:scale-95 transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            Nouveau
+          </button>
+
           {/* Google Calendar sync */}
           <button
             onClick={login}
@@ -893,6 +988,167 @@ export function CloserAgenda() {
                   </>
                 )
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Event Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setIsCreateModalOpen(false)}>
+          <div
+            className="w-full max-w-md max-h-[90vh] flex flex-col rounded-[2rem] bg-white shadow-[0_20px_40px_rgba(27,28,27,0.08)] overflow-hidden"
+            style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.08)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f5f3f2]">
+                  <Calendar className="h-5 w-5 text-[#1b1c1b]" />
+                </div>
+                <h3 className="text-lg font-extrabold text-[#1b1c1b] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  Nouvel événement
+                </h3>
+              </div>
+              <button onClick={() => setIsCreateModalOpen(false)} className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] hover:bg-[#f5f3f2] transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-5">
+              {/* Title */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] mb-2">Titre</label>
+                <input
+                  type="text"
+                  value={createTitle}
+                  onChange={e => setCreateTitle(e.target.value)}
+                  placeholder="Ex: Appel découverte, Point hebdo..."
+                  className="w-full border-b border-[#c4c7c7]/30 bg-transparent px-0 py-2.5 text-sm text-[#1b1c1b] placeholder-[#c4c7c7] focus:border-[#006c49] focus:outline-none transition-colors"
+                  autoFocus
+                />
+              </div>
+
+              {/* Date & Time */}
+              <div className="rounded-2xl bg-[#f5f3f2]/50 p-5 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="h-3.5 w-3.5 text-[#747878]" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#747878]">Date & Horaire</span>
+                </div>
+                <input
+                  type="date"
+                  value={createDate}
+                  onChange={e => setCreateDate(e.target.value)}
+                  className="w-full rounded-xl bg-white border border-[#c4c7c7]/20 px-4 py-2.5 text-sm text-[#1b1c1b] focus:border-[#006c49] focus:outline-none transition-colors"
+                />
+                <div className="flex items-center gap-3">
+                  <input
+                    type="time"
+                    value={createStartTime}
+                    onChange={e => setCreateStartTime(e.target.value)}
+                    className="flex-1 rounded-xl bg-white border border-[#c4c7c7]/20 px-4 py-2.5 text-sm text-[#1b1c1b] focus:border-[#006c49] focus:outline-none transition-colors"
+                  />
+                  <span className="text-xs font-bold text-[#747878]">à</span>
+                  <input
+                    type="time"
+                    value={createEndTime}
+                    onChange={e => setCreateEndTime(e.target.value)}
+                    className="flex-1 rounded-xl bg-white border border-[#c4c7c7]/20 px-4 py-2.5 text-sm text-[#1b1c1b] focus:border-[#006c49] focus:outline-none transition-colors"
+                  />
+                </div>
+                {createDate && createStartTime && (
+                  <p className="text-[10px] text-[#747878]">
+                    {new Date(createDate + 'T00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}, de {createStartTime} à {createEndTime || '...'}
+                  </p>
+                )}
+              </div>
+
+              {/* Duration */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] mb-3">Durée</label>
+                <div className="flex gap-2 flex-wrap">
+                  {DURATIONS.map(d => (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => {
+                        setCreateDuration(d.value)
+                        // Auto-set end time based on duration
+                        if (createStartTime) {
+                          const [h, m] = createStartTime.split(':').map(Number)
+                          const totalMins = h * 60 + m + d.value
+                          const endH = Math.floor(totalMins / 60) % 24
+                          const endM = totalMins % 60
+                          setCreateEndTime(`${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`)
+                        }
+                      }}
+                      className={cn(
+                        'rounded-xl border px-4 py-2 text-sm font-bold transition-all',
+                        createDuration === d.value
+                          ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                          : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
+                      )}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Assign to (Setter, Owner, HOS) */}
+              {canAssign && teamMembers.length > 0 && (
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] mb-2">Assigner à</label>
+                  <div className="relative">
+                    <select
+                      value={createAssignedTo}
+                      onChange={e => setCreateAssignedTo(e.target.value)}
+                      className="w-full appearance-none rounded-xl bg-[#f5f3f2] border-0 px-4 py-2.5 text-sm font-medium text-[#1b1c1b] focus:ring-2 focus:ring-[#1b1c1b] focus:outline-none transition-colors"
+                    >
+                      <option value="">Non assigné</option>
+                      {teamMembers.map(m => (
+                        <option key={m.id} value={m.id}>
+                          {m.first_name} {m.last_name} ({m.role})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
+                  </div>
+                  <p className="text-[10px] text-[#747878] mt-1.5">Choisissez un membre de l'équipe pour ce rendez-vous</p>
+                </div>
+              )}
+
+              {/* Notes */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] mb-2">Notes (optionnel)</label>
+                <textarea
+                  value={createNotes}
+                  onChange={e => setCreateNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Ajouter des notes..."
+                  className="w-full border-b border-[#c4c7c7]/30 bg-transparent px-0 py-2.5 text-sm text-[#1b1c1b] placeholder-[#c4c7c7] focus:border-[#006c49] focus:outline-none resize-none transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 bg-[#f5f3f2] px-6 py-4 flex-shrink-0">
+              <button
+                onClick={() => setIsCreateModalOpen(false)}
+                className="rounded-full border border-[#c4c7c7]/30 px-5 py-2.5 text-sm font-bold text-[#444748] hover:bg-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreateEvent}
+                disabled={createSaving || !createDate || !createStartTime}
+                className="flex items-center gap-2 rounded-full bg-[#1b1c1b] px-6 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {createSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Créer
+              </button>
             </div>
           </div>
         </div>
