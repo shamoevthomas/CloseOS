@@ -78,27 +78,33 @@ const isReallyOnline = (member: TeamMember) => {
   return diff < 2 * 60 * 1000
 }
 
-const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  'Closer': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
-  'Setter': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
-  'Setter-Closer': { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
-  'Admin': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
-  'Head of Sales': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
-  'Owner': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+/* ─── Design tokens (Liquid Stone & Glass) ─── */
+const GLASS_CARD = 'rounded-3xl bg-white/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] ring-1 ring-black/[0.03]'
+const GLASS_CARD_HOVER = 'hover:bg-white hover:shadow-[0_20px_40px_rgba(27,28,27,0.08)] transition-all duration-300'
+const STONE_SURFACE = 'bg-[#f5f3f2]/50'
+const SECTION_PADDING = 'px-7 py-6'
+
+const ROLE_COLORS: Record<string, { bg: string; text: string; surface: string }> = {
+  'Closer': { bg: 'bg-blue-50/80', text: 'text-blue-700', surface: 'bg-blue-50/20' },
+  'Setter': { bg: 'bg-purple-50/80', text: 'text-purple-700', surface: 'bg-purple-50/20' },
+  'Setter-Closer': { bg: 'bg-indigo-50/80', text: 'text-indigo-700', surface: 'bg-indigo-50/20' },
+  'Admin': { bg: 'bg-red-50/80', text: 'text-red-700', surface: 'bg-red-50/20' },
+  'Head of Sales': { bg: 'bg-emerald-50/80', text: 'text-emerald-700', surface: 'bg-emerald-50/20' },
+  'Owner': { bg: 'bg-amber-50/80', text: 'text-amber-700', surface: 'bg-amber-50/20' },
 }
 
 const getRoleColor = (role: string) =>
-  ROLE_COLORS[role] || { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200' }
+  ROLE_COLORS[role] || { bg: 'bg-slate-50/80', text: 'text-slate-700', surface: 'bg-slate-50/20' }
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 
 const PIPELINE_STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50' },
-  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700', bgLight: 'bg-purple-50' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-700', bgLight: 'bg-orange-50' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgLight: 'bg-emerald-50' },
-  { id: 'noshow', name: 'No Show', color: 'bg-slate-500', textColor: 'text-slate-700', bgLight: 'bg-slate-50' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50' },
+  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50/60' },
+  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700', bgLight: 'bg-purple-50/60' },
+  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-700', bgLight: 'bg-orange-50/60' },
+  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgLight: 'bg-emerald-50/60' },
+  { id: 'noshow', name: 'No Show', color: 'bg-slate-500', textColor: 'text-slate-700', bgLight: 'bg-slate-50/60' },
+  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50/60' },
 ]
 
 function calculateAge(dob: string): number {
@@ -131,14 +137,14 @@ const formatCurrency = (v: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 
 function Avatar({ member, size = 'md' }: { member: TeamMember; size?: 'sm' | 'md' | 'lg' }) {
-  const sizeClasses = { sm: 'h-9 w-9', md: 'h-11 w-11', lg: 'h-16 w-16' }
+  const sizeClasses = { sm: 'h-9 w-9', md: 'h-12 w-12', lg: 'h-20 w-20' }
   const textClasses = { sm: 'text-xs', md: 'text-sm', lg: 'text-xl' }
   return (
-    <div className={cn(sizeClasses[size], 'rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0')}>
+    <div className={cn(sizeClasses[size], 'rounded-full bg-[#f5f3f2] flex items-center justify-center overflow-hidden shrink-0 ring-2 ring-white/80')}>
       {member.avatar_url ? (
         <img src={member.avatar_url} alt={`${member.first_name} ${member.last_name}`} className="h-full w-full object-cover" />
       ) : (
-        <span className={cn(textClasses[size], 'font-bold text-slate-500')}>
+        <span className={cn(textClasses[size], 'font-extrabold text-[#1b1c1b]/40 font-business-display')}>
           {member.first_name[0]}{member.last_name[0]}
         </span>
       )}
@@ -179,27 +185,27 @@ function ContactInfo({ member }: { member: TeamMember }) {
   }
 
   return (
-    <div className="mt-2 pt-1.5 border-t border-slate-100 space-y-1" onClick={e => e.stopPropagation()}>
-      <div className="flex items-center gap-1.5 text-xs text-slate-500">
-        <Mail className="h-3 w-3 shrink-0" />
+    <div className="mt-3 pt-3 space-y-1.5" onClick={e => e.stopPropagation()}>
+      <div className="flex items-center gap-2 text-xs text-[#1b1c1b]/50">
+        <Mail className="h-3 w-3 shrink-0" strokeWidth={1.5} />
         <span className="truncate">{member.email}</span>
       </div>
-      <div className="flex items-center gap-1.5 text-xs text-slate-500">
-        <Phone className="h-3 w-3 shrink-0" />
+      <div className="flex items-center gap-2 text-xs text-[#1b1c1b]/50">
+        <Phone className="h-3 w-3 shrink-0" strokeWidth={1.5} />
         {editing ? (
           <div className="flex items-center gap-1 flex-1">
             <input
               value={phone}
               onChange={e => setPhone(e.target.value)}
               placeholder="+33612345678"
-              className="flex-1 min-w-0 rounded border border-slate-200 px-1.5 py-0.5 text-xs focus:border-amber-400 focus:outline-none"
+              className="flex-1 min-w-0 rounded-full bg-[#f5f3f2] px-3 py-1 text-xs text-[#1b1c1b] focus:ring-2 focus:ring-[#006c49]/20 focus:outline-none transition-all"
               onClick={e => e.stopPropagation()}
             />
-            <button onClick={handleSave} disabled={saving} className="text-emerald-600 hover:text-emerald-700">
-              <Check className="h-3.5 w-3.5" />
+            <button onClick={handleSave} disabled={saving} className="text-[#006c49] hover:text-[#005a3d]">
+              <Check className="h-3.5 w-3.5" strokeWidth={1.5} />
             </button>
-            <button onClick={e => { e.stopPropagation(); setEditing(false); setPhone(member.phone || '') }} className="text-slate-400 hover:text-slate-600">
-              <X className="h-3.5 w-3.5" />
+            <button onClick={e => { e.stopPropagation(); setEditing(false); setPhone(member.phone || '') }} className="text-[#1b1c1b]/30 hover:text-[#1b1c1b]/60">
+              <X className="h-3.5 w-3.5" strokeWidth={1.5} />
             </button>
           </div>
         ) : (
@@ -209,17 +215,17 @@ function ContactInfo({ member }: { member: TeamMember }) {
                 href={`https://wa.me/${cleanPhone}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-emerald-600 hover:underline truncate"
+                className="text-[#006c49] hover:underline truncate"
                 onClick={e => e.stopPropagation()}
               >
                 {member.phone}
               </a>
             ) : (
-              <span className="text-slate-400 italic">Non renseigné</span>
+              <span className="text-[#1b1c1b]/25 italic">Non renseigné</span>
             )}
             {isOwnCard && (
-              <button onClick={e => { e.stopPropagation(); setEditing(true) }} className="text-slate-400 hover:text-amber-600 ml-auto shrink-0">
-                <Pencil className="h-3 w-3" />
+              <button onClick={e => { e.stopPropagation(); setEditing(true) }} className="text-[#1b1c1b]/25 hover:text-[#1b1c1b]/60 ml-auto shrink-0">
+                <Pencil className="h-3 w-3" strokeWidth={1.5} />
               </button>
             )}
           </div>
@@ -300,7 +306,6 @@ export function BusinessTeam() {
   const memberAppointments = useMemo(() => selectedMember ? appointments.filter(a => a.assigned_to === selectedMember.id) : [], [selectedMember, appointments])
   const memberLogs = useMemo(() => selectedMember ? connectionLogs.filter(l => l.team_member_id === selectedMember.id) : [], [selectedMember, connectionLogs])
 
-  // Group members by role for kanban
   const roleGroups = useMemo(() => {
     return members.reduce<Record<string, TeamMember[]>>((acc, member) => {
       const role = member.role || 'Sans rôle'
@@ -311,18 +316,18 @@ export function BusinessTeam() {
   }, [members])
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-[#111111]/20" /></div>
   }
 
-  // Detail view
+  /* ─── Detail view ─── */
   if (selectedMember) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-8">
         <button
           onClick={() => setSelectedMemberId(null)}
-          className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
+          className="flex items-center gap-2 rounded-full bg-[#f5f3f2] px-5 py-2.5 text-sm font-medium text-[#1b1c1b]/60 hover:bg-[#eae8e7] transition-all duration-200"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
           Retour à l'équipe
         </button>
 
@@ -364,28 +369,23 @@ export function BusinessTeam() {
     )
   }
 
-  // Kanban view
+  /* ─── Kanban view ─── */
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-10">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-            <Users className="h-5 w-5 text-amber-700" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">
-              {members.length + 1} membre{members.length > 0 ? 's' : ''} dans l'équipe
-            </h2>
-            <p className="text-xs text-slate-500">Gérez votre équipe et consultez les fiches détaillées</p>
-          </div>
+        <div>
+          <h2 className="font-business-display text-3xl font-extrabold tracking-tight text-[#111111]">
+            {members.length + 1} membre{members.length > 0 ? 's' : ''}
+          </h2>
+          <p className="text-sm text-[#1b1c1b]/40 mt-1 leading-relaxed">Gérez votre équipe et consultez les fiches détaillées</p>
         </div>
         {isOwnerView && (
           <button
             onClick={() => setIsInviteModalOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-500 transition-all"
+            className="flex items-center gap-2.5 rounded-full bg-gradient-to-r from-rose-500 to-purple-600 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-all duration-200 shadow-lg shadow-purple-500/20"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" strokeWidth={1.5} />
             Inviter
           </button>
         )}
@@ -413,27 +413,27 @@ export function BusinessTeam() {
           _isOwner: true,
         }
         return (
-          <div className={cn("rounded-xl border bg-white", ownerColor.border)}>
-            <div className={cn("flex items-center justify-between px-4 py-3 border-b", ownerColor.border)}>
-              <div className="flex items-center gap-2">
-                <Users className={cn("h-4 w-4", ownerColor.text)} />
-                <span className={cn("text-sm font-bold", ownerColor.text)}>Owner</span>
+          <div className={cn(GLASS_CARD, 'overflow-hidden')}>
+            <div className={cn('px-7 pt-6 pb-2 flex items-center gap-2.5')}>
+              <div className={cn('flex h-7 w-7 items-center justify-center rounded-full', ownerColor.bg)}>
+                <Users className={cn('h-3.5 w-3.5', ownerColor.text)} strokeWidth={1.5} />
               </div>
+              <span className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Owner</span>
             </div>
-            <div className="p-3">
-              <div className="w-full rounded-lg border border-slate-100 bg-white p-3">
-                <div className="flex items-start gap-3">
+            <div className="px-7 pb-7">
+              <div className={cn('rounded-2xl p-5', STONE_SURFACE)}>
+                <div className="flex items-start gap-4">
                   <Avatar member={ownerAsMember} size="md" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">
+                    <p className="font-business-display text-base font-extrabold tracking-tight text-[#111111] truncate">
                       {ownerInfo.full_name || 'Owner'}
                     </p>
-                    <span className={cn('inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full', ownerColor.bg, ownerColor.text)}>
+                    <span className={cn('inline-block mt-1.5 text-xs font-semibold px-3 py-1 rounded-full', ownerColor.bg, ownerColor.text)}>
                       Owner
                     </span>
                     {ownerInfo.timezone && (
-                      <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
-                        <Globe className="h-3 w-3" />
+                      <div className="flex items-center gap-2 mt-2 text-xs text-[#1b1c1b]/40">
+                        <Globe className="h-3 w-3" strokeWidth={1.5} />
                         <span>{getTimezoneLabel(ownerInfo.timezone)}</span>
                       </div>
                     )}
@@ -446,22 +446,24 @@ export function BusinessTeam() {
         )
       })()}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Object.entries(roleGroups).map(([role, roleMembers]) => {
             const color = getRoleColor(role)
             return (
-              <div key={role} className={cn("rounded-xl border bg-white", color.border)}>
-                <div className={cn("flex items-center justify-between px-4 py-3 border-b", color.border)}>
-                  <div className="flex items-center gap-2">
-                    <Users className={cn("h-4 w-4", color.text)} />
-                    <span className={cn("text-sm font-bold", color.text)}>{role}</span>
+              <div key={role} className={cn('rounded-3xl', STONE_SURFACE, 'p-5')}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className={cn('flex h-7 w-7 items-center justify-center rounded-full', color.bg)}>
+                      <Users className={cn('h-3.5 w-3.5', color.text)} strokeWidth={1.5} />
+                    </div>
+                    <span className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">{role}</span>
                   </div>
-                  <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", color.bg, color.text)}>
+                  <span className={cn('text-xs font-bold px-2.5 py-1 rounded-full', color.bg, color.text)}>
                     {roleMembers.length}
                   </span>
                 </div>
 
-                <div className="p-3 space-y-2">
+                <div className="space-y-3">
                   {roleMembers.map((member) => {
                     const memberProspects = prospects.filter(p => p.assigned_to === member.id)
                     const memberWon = memberProspects.filter(p => p.stage === 'won')
@@ -473,53 +475,53 @@ export function BusinessTeam() {
                       <button
                         key={member.id}
                         onClick={() => setSelectedMemberId(member.id)}
-                        className="w-full rounded-lg border border-slate-100 bg-white p-3 text-left hover:shadow-md hover:border-amber-300 transition-all"
+                        className={cn('w-full rounded-2xl bg-white/90 p-5 text-left', GLASS_CARD_HOVER)}
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-4">
                           <div className="relative">
                             <Avatar member={member} size="md" />
                             <Circle
                               className={cn(
                                 'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 fill-current',
-                                isReallyOnline(member) ? 'text-emerald-500' : 'text-slate-300'
+                                isReallyOnline(member) ? 'text-[#006c49]' : 'text-[#c4c7c7]/60'
                               )}
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-slate-900 truncate">
+                            <p className="font-business-display text-sm font-extrabold tracking-tight text-[#111111] truncate">
                               {member.first_name} {member.last_name}
                             </p>
-                            <div className="mt-1.5 space-y-1 text-xs text-slate-500">
-                              <div className="flex items-center gap-1.5">
-                                <CalendarDays className="h-3 w-3" />
+                            <div className="mt-2.5 space-y-1.5 text-xs text-[#1b1c1b]/45">
+                              <div className="flex items-center gap-2">
+                                <CalendarDays className="h-3 w-3" strokeWidth={1.5} />
                                 <span>{formatAnciennete(member.joined_at)}</span>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                <Users className="h-3 w-3" />
+                              <div className="flex items-center gap-2">
+                                <Users className="h-3 w-3" strokeWidth={1.5} />
                                 <span>{memberProspects.length} prospect{memberProspects.length !== 1 ? 's' : ''}</span>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                <DollarSign className="h-3 w-3" />
+                              <div className="flex items-center gap-2">
+                                <DollarSign className="h-3 w-3" strokeWidth={1.5} />
                                 <span>{memberWon.length} vente{memberWon.length !== 1 ? 's' : ''} · {formatCurrency(memberCA)}</span>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                <Clock className="h-3 w-3" />
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-3 w-3" strokeWidth={1.5} />
                                 <span>{memberSlotsCount} créneau{memberSlotsCount !== 1 ? 'x' : ''}</span>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                <Circle className={cn('h-2.5 w-2.5 fill-current', isReallyOnline(member) ? 'text-emerald-500' : 'text-slate-300')} />
+                              <div className="flex items-center gap-2">
+                                <Circle className={cn('h-2.5 w-2.5 fill-current', isReallyOnline(member) ? 'text-[#006c49]' : 'text-[#c4c7c7]/60')} />
                                 <span>{isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}</span>
                               </div>
                               {member.timezone && (
-                                <div className="flex items-center gap-1.5">
-                                  <Globe className="h-3 w-3" />
+                                <div className="flex items-center gap-2">
+                                  <Globe className="h-3 w-3" strokeWidth={1.5} />
                                   <span>{getTimezoneLabel(member.timezone)}</span>
                                 </div>
                               )}
                             </div>
                             <ContactInfo member={member} />
                             {memberAbsCount > 0 && (
-                              <div className="mt-2 pt-1.5 border-t border-slate-100 text-xs text-amber-600 font-medium">
+                              <div className="mt-3 pt-3 text-xs text-[#ffb95f] font-semibold">
                                 {memberAbsCount} absence{memberAbsCount > 1 ? 's' : ''}
                               </div>
                             )}
@@ -534,13 +536,16 @@ export function BusinessTeam() {
           })}
         </div>
 
-      {/* Global KPI summary — owner/HoS only */}
+      {/* Global KPI summary */}
       {isOwnerView && members.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-amber-600" /> Résumé global
+        <div className={cn(GLASS_CARD, SECTION_PADDING)}>
+          <h3 className="font-business-display text-base font-extrabold tracking-tight text-[#111111] mb-6 flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-purple-100">
+              <BarChart3 className="h-4 w-4 text-purple-600" strokeWidth={1.5} />
+            </div>
+            Résumé global
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {(() => {
               const allAssigned = prospects.filter(p => members.some(m => m.id === p.assigned_to))
               const allWon = allAssigned.filter(p => p.stage === 'won')
@@ -552,21 +557,21 @@ export function BusinessTeam() {
 
               return (
                 <>
-                  <div className="rounded-lg border border-slate-100 p-3 text-center">
-                    <p className="text-lg font-bold text-slate-900">{allAssigned.length}</p>
-                    <p className="text-xs text-slate-500 mt-1">Prospects assignés</p>
+                  <div className={cn('rounded-2xl p-5 text-center', STONE_SURFACE)}>
+                    <p className="font-business-display text-2xl font-extrabold tracking-tight text-[#111111]">{allAssigned.length}</p>
+                    <p className="text-xs text-[#1b1c1b]/40 mt-1.5">Prospects assignés</p>
                   </div>
-                  <div className="rounded-lg border border-slate-100 p-3 text-center">
-                    <p className="text-lg font-bold text-emerald-600">{allWon.length}</p>
-                    <p className="text-xs text-slate-500 mt-1">Ventes</p>
+                  <div className={cn('rounded-2xl p-5 text-center', STONE_SURFACE)}>
+                    <p className="font-business-display text-2xl font-extrabold tracking-tight text-[#006c49]">{allWon.length}</p>
+                    <p className="text-xs text-[#1b1c1b]/40 mt-1.5">Ventes</p>
                   </div>
-                  <div className="rounded-lg border border-slate-100 p-3 text-center">
-                    <p className="text-lg font-bold text-emerald-600">{formatCurrency(totalCA)}</p>
-                    <p className="text-xs text-slate-500 mt-1">CA généré</p>
+                  <div className={cn('rounded-2xl p-5 text-center', STONE_SURFACE)}>
+                    <p className="font-business-display text-2xl font-extrabold tracking-tight text-[#006c49]">{formatCurrency(totalCA)}</p>
+                    <p className="text-xs text-[#1b1c1b]/40 mt-1.5">CA généré</p>
                   </div>
-                  <div className="rounded-lg border border-slate-100 p-3 text-center">
-                    <p className="text-lg font-bold text-purple-600">{convRate.toFixed(1)}%</p>
-                    <p className="text-xs text-slate-500 mt-1">Taux de conversion</p>
+                  <div className={cn('rounded-2xl p-5 text-center', STONE_SURFACE)}>
+                    <p className="font-business-display text-2xl font-extrabold tracking-tight text-purple-600">{convRate.toFixed(1)}%</p>
+                    <p className="text-xs text-[#1b1c1b]/40 mt-1.5">Taux de conversion</p>
                   </div>
                 </>
               )
@@ -641,66 +646,66 @@ function IndividualView({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Profile header */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
-        <div className="flex items-start gap-4">
+      <div className={cn(GLASS_CARD, 'p-8')}>
+        <div className="flex items-start gap-6">
           <div className="relative">
             <Avatar member={member} size="lg" />
             <Circle
               className={cn(
-                'absolute -bottom-0.5 -right-0.5 h-4 w-4 fill-current',
-                isReallyOnline(member) ? 'text-emerald-500' : 'text-slate-300'
+                'absolute -bottom-0.5 -right-0.5 h-5 w-5 fill-current',
+                isReallyOnline(member) ? 'text-[#006c49]' : 'text-[#c4c7c7]/60'
               )}
             />
           </div>
           <div className="flex-1">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">
+                <h3 className="font-business-display text-2xl font-extrabold tracking-tight text-[#111111]">
                   {member.first_name} {member.last_name}
                 </h3>
-                <span className={cn('inline-block mt-1 text-xs font-medium px-2.5 py-1 rounded-full', color.bg, color.text)}>
+                <span className={cn('inline-block mt-2 text-xs font-semibold px-3.5 py-1.5 rounded-full', color.bg, color.text)}>
                   {member.role}
                 </span>
               </div>
               {onDelete && (
                 <button
                   onClick={onDelete}
-                  className="p-2 text-slate-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                  className="p-2.5 text-[#c4c7c7] hover:text-red-500 transition-all duration-200 rounded-full hover:bg-red-50/50"
                   title="Supprimer le membre"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                 </button>
               )}
             </div>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-600">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-slate-400" />
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-[#1b1c1b]/60 leading-relaxed">
+              <div className="flex items-center gap-2.5">
+                <Mail className="h-4 w-4 text-[#1b1c1b]/25" strokeWidth={1.5} />
                 {member.email}
               </div>
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-slate-400" />
+              <div className="flex items-center gap-2.5">
+                <Phone className="h-4 w-4 text-[#1b1c1b]/25" strokeWidth={1.5} />
                 {member.phone ? (
-                  <a href={`https://wa.me/${(member.phone || '').replace(/[^0-9+]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">
+                  <a href={`https://wa.me/${(member.phone || '').replace(/[^0-9+]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-[#006c49] hover:underline">
                     {member.phone}
                   </a>
                 ) : (
-                  <span className="text-slate-400 italic">Téléphone non renseigné</span>
+                  <span className="text-[#1b1c1b]/25 italic">Téléphone non renseigné</span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-slate-400" />
+              <div className="flex items-center gap-2.5">
+                <Calendar className="h-4 w-4 text-[#1b1c1b]/25" strokeWidth={1.5} />
                 {member.date_of_birth
                   ? `${formatDate(member.date_of_birth)} (${calculateAge(member.date_of_birth)} ans)`
                   : 'Date de naissance non renseignée'}
               </div>
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-slate-400" />
+              <div className="flex items-center gap-2.5">
+                <CalendarDays className="h-4 w-4 text-[#1b1c1b]/25" strokeWidth={1.5} />
                 Arrivée le {formatDate(member.joined_at)} ({formatAnciennete(member.joined_at)})
               </div>
-              <div className="flex items-center gap-2">
-                <Circle className={cn('h-3 w-3 fill-current', isReallyOnline(member) ? 'text-emerald-500' : 'text-slate-300')} />
+              <div className="flex items-center gap-2.5">
+                <Circle className={cn('h-3 w-3 fill-current', isReallyOnline(member) ? 'text-[#006c49]' : 'text-[#c4c7c7]/60')} />
                 {isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}
               </div>
             </div>
@@ -708,12 +713,14 @@ function IndividualView({
         </div>
       </div>
 
-      {/* Role management — owner/HoS only */}
+      {/* Role management */}
       {isOwnerView && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <User className="h-4 w-4 text-amber-600" />
-            <h4 className="text-sm font-semibold text-slate-900">Rôle</h4>
+        <div className={cn(GLASS_CARD, SECTION_PADDING)}>
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
+              <User className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
+            </div>
+            <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Rôle</h4>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <select
@@ -722,7 +729,7 @@ function IndividualView({
                 setEditRole(e.target.value)
                 if (e.target.value === 'Setter-Closer') setEditSetterScope(member.setter_scope || 'all')
               }}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 focus:border-amber-500 focus:outline-none"
+              className="rounded-full bg-[#f5f3f2] px-4 py-2.5 text-sm font-medium text-[#1b1c1b] focus:ring-2 focus:ring-[#006c49]/20 focus:outline-none appearance-none cursor-pointer"
             >
               <option value="Closer">Closer</option>
               <option value="Setter">Setter</option>
@@ -733,14 +740,14 @@ function IndividualView({
 
             {editRole === 'Setter-Closer' && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500">Set pour :</span>
+                <span className="text-xs text-[#1b1c1b]/40">Set pour :</span>
                 <button
                   onClick={() => setEditSetterScope('self')}
                   className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                    'px-4 py-2 rounded-full text-xs font-medium transition-all duration-200',
                     editSetterScope === 'self'
-                      ? 'bg-amber-50 border-amber-300 text-amber-700'
-                      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                      ? 'bg-[#111111] text-white'
+                      : 'bg-[#f5f3f2] text-[#1b1c1b]/60 hover:bg-[#eae8e7]'
                   )}
                 >
                   Lui-même uniquement
@@ -748,10 +755,10 @@ function IndividualView({
                 <button
                   onClick={() => setEditSetterScope('all')}
                   className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                    'px-4 py-2 rounded-full text-xs font-medium transition-all duration-200',
                     editSetterScope === 'all'
-                      ? 'bg-amber-50 border-amber-300 text-amber-700'
-                      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                      ? 'bg-[#111111] text-white'
+                      : 'bg-[#f5f3f2] text-[#1b1c1b]/60 hover:bg-[#eae8e7]'
                   )}
                 >
                   Toute l'équipe
@@ -767,15 +774,15 @@ function IndividualView({
                   setSavingRole(false)
                 }}
                 disabled={savingRole}
-                className="flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-2 text-xs font-medium text-white hover:bg-amber-500 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-full bg-[#111111] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#222222] transition-all duration-200 disabled:opacity-50"
               >
-                {savingRole ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                {savingRole ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" strokeWidth={1.5} />}
                 Enregistrer
               </button>
             )}
           </div>
           {editRole === 'Setter-Closer' && (
-            <p className="text-xs text-slate-400 mt-3">
+            <p className="text-xs text-[#1b1c1b]/30 mt-4 leading-relaxed">
               {editSetterScope === 'self'
                 ? 'Ce membre set uniquement pour ses propres rendez-vous.'
                 : 'Ce membre set pour tous les closers de l\'équipe.'}
@@ -784,19 +791,21 @@ function IndividualView({
         </div>
       )}
 
-      {/* Connection History — owner/HoS only */}
+      {/* Connection History */}
       {isOwnerView && (
-        <div className="rounded-xl border border-slate-200 bg-white">
-          <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100">
-            <History className="h-4 w-4 text-amber-600" />
-            <h4 className="text-sm font-semibold text-slate-900">Historique de connexion</h4>
-            <span className="text-xs text-slate-400 ml-auto">7 derniers jours</span>
+        <div className={GLASS_CARD}>
+          <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
+              <History className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
+            </div>
+            <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Historique de connexion</h4>
+            <span className="text-xs text-[#1b1c1b]/30 ml-auto rounded-full bg-[#f5f3f2] px-3 py-1">7 derniers jours</span>
           </div>
-          <div className="p-5">
+          <div className="px-7 pb-7">
             {connectionLogs.length === 0 ? (
-              <div className="text-center py-4">
-                <History className="h-6 w-6 text-slate-300 mx-auto mb-2" />
-                <p className="text-sm text-slate-500">Aucun historique de connexion</p>
+              <div className={cn('text-center py-8 rounded-2xl', STONE_SURFACE)}>
+                <History className="h-6 w-6 text-[#1b1c1b]/15 mx-auto mb-2" strokeWidth={1.5} />
+                <p className="text-sm text-[#1b1c1b]/35">Aucun historique de connexion</p>
               </div>
             ) : (
               <div className="space-y-1.5 max-h-64 overflow-y-auto">
@@ -804,22 +813,22 @@ function IndividualView({
                   const date = new Date(log.created_at)
                   const isConnect = log.event_type === 'connect'
                   return (
-                    <div key={log.id} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-slate-50">
+                    <div key={log.id} className="flex items-center gap-3 py-2 px-3 rounded-2xl hover:bg-[#f5f3f2]/50 transition-colors duration-200">
                       <div className={cn(
-                        'flex h-7 w-7 items-center justify-center rounded-lg shrink-0',
-                        isConnect ? 'bg-emerald-50' : 'bg-red-50'
+                        'flex h-8 w-8 items-center justify-center rounded-full shrink-0',
+                        isConnect ? 'bg-[#006c49]/10' : 'bg-red-50/80'
                       )}>
                         {isConnect
-                          ? <LogIn className="h-3.5 w-3.5 text-emerald-600" />
-                          : <LogOut className="h-3.5 w-3.5 text-red-500" />
+                          ? <LogIn className="h-3.5 w-3.5 text-[#006c49]" strokeWidth={1.5} />
+                          : <LogOut className="h-3.5 w-3.5 text-red-500" strokeWidth={1.5} />
                         }
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={cn('text-sm font-medium', isConnect ? 'text-emerald-700' : 'text-red-600')}>
+                        <p className={cn('text-sm font-medium', isConnect ? 'text-[#006c49]' : 'text-red-500')}>
                           {isConnect ? 'Connexion' : 'Déconnexion'}
                         </p>
                       </div>
-                      <span className="text-xs text-slate-400 shrink-0">
+                      <span className="text-xs text-[#1b1c1b]/30 shrink-0">
                         {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -831,40 +840,42 @@ function IndividualView({
         </div>
       )}
 
-      {/* Pay day — owner/HoS only */}
+      {/* Pay day */}
       {isOwnerView && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className={cn(GLASS_CARD, SECTION_PADDING)}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-amber-600" />
-              <h4 className="text-sm font-semibold text-slate-900">Date de paiement mensuel</h4>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
+                <CreditCard className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
+              </div>
+              <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Date de paiement mensuel</h4>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Le</span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-xs text-[#1b1c1b]/40">Le</span>
               <select
                 value={payDay}
                 onChange={e => setPayDay(Number(e.target.value))}
-                className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm font-medium text-slate-700 focus:border-amber-500 focus:outline-none"
+                className="rounded-full bg-[#f5f3f2] px-3 py-2 text-sm font-medium text-[#1b1c1b] focus:ring-2 focus:ring-[#006c49]/20 focus:outline-none"
               >
                 {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
                   <option key={d} value={d}>{d}</option>
                 ))}
               </select>
-              <span className="text-xs text-slate-500">de chaque mois</span>
+              <span className="text-xs text-[#1b1c1b]/40">de chaque mois</span>
               {payDay !== (member.pay_day || 1) && (
                 <button
                   onClick={handleSavePayDay}
                   disabled={savingPayDay}
-                  className="flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-500 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-full bg-[#111111] px-4 py-2 text-xs font-semibold text-white hover:bg-[#222222] transition-all duration-200 disabled:opacity-50"
                 >
-                  {savingPayDay ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                  {savingPayDay ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" strokeWidth={1.5} />}
                   Enregistrer
                 </button>
               )}
             </div>
           </div>
           {member.pay_day && (
-            <p className="text-xs text-slate-400 mt-2">
+            <p className="text-xs text-[#1b1c1b]/30 mt-3 leading-relaxed">
               Prochain paiement le {member.pay_day} {new Date().getDate() >= member.pay_day
                 ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
                 : new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
@@ -874,14 +885,16 @@ function IndividualView({
         </div>
       )}
 
-      {/* KPIs — owner/HoS only */}
+      {/* KPIs */}
       {isOwnerView && (
-        <div className="rounded-xl border border-slate-200 bg-white">
-          <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100">
-            <BarChart3 className="h-4 w-4 text-amber-600" />
-            <h4 className="text-sm font-semibold text-slate-900">KPIs</h4>
+        <div className={GLASS_CARD}>
+          <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-purple-100">
+              <BarChart3 className="h-4 w-4 text-purple-600" strokeWidth={1.5} />
+            </div>
+            <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">KPIs</h4>
           </div>
-          <div className="p-5">
+          <div className="px-7 pb-7">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               <KpiMini icon={Users} label="Prospects" value={memberProspects.length} color="blue" />
               <KpiMini icon={ShoppingCart} label="Ventes" value={won.length} color="emerald" />
@@ -894,25 +907,27 @@ function IndividualView({
         </div>
       )}
 
-      {/* Pipeline — owner/HoS only */}
+      {/* Pipeline */}
       {isOwnerView && (
-        <div className="rounded-xl border border-slate-200 bg-white">
-          <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100">
-            <GitBranch className="h-4 w-4 text-amber-600" />
-            <h4 className="text-sm font-semibold text-slate-900">Pipeline</h4>
-            <span className="text-xs text-slate-400 ml-auto">{memberProspects.length} prospect{memberProspects.length !== 1 ? 's' : ''} total</span>
+        <div className={GLASS_CARD}>
+          <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
+              <GitBranch className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
+            </div>
+            <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Pipeline</h4>
+            <span className="text-xs text-[#1b1c1b]/30 ml-auto rounded-full bg-[#f5f3f2] px-3 py-1">{memberProspects.length} prospect{memberProspects.length !== 1 ? 's' : ''} total</span>
           </div>
-          <div className="p-5">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          <div className="px-7 pb-7">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {PIPELINE_STAGES.map(stage => {
                 const count = memberProspects.filter(p => p.stage === stage.id).length
                 return (
-                  <div key={stage.id} className="rounded-lg border border-slate-100 p-3 text-center">
-                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <div key={stage.id} className={cn('rounded-2xl p-4 text-center', STONE_SURFACE)}>
+                    <div className="flex items-center justify-center gap-1.5 mb-2">
                       <span className={cn('h-2 w-2 rounded-full', stage.color)} />
-                      <span className="text-xs text-slate-500">{stage.name}</span>
+                      <span className="text-xs text-[#1b1c1b]/40">{stage.name}</span>
                     </div>
-                    <p className={cn('text-lg font-bold', count > 0 ? stage.textColor : 'text-slate-300')}>{count}</p>
+                    <p className={cn('font-business-display text-xl font-extrabold tracking-tight', count > 0 ? stage.textColor : 'text-[#c4c7c7]/50')}>{count}</p>
                   </div>
                 )
               })}
@@ -921,18 +936,20 @@ function IndividualView({
         </div>
       )}
 
-      {/* Disponibilité — always visible */}
-      <div className="rounded-xl border border-slate-200 bg-white">
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100">
-          <Clock className="h-4 w-4 text-amber-600" />
-          <h4 className="text-sm font-semibold text-slate-900">Disponibilité</h4>
-          <span className="text-xs text-slate-400 ml-auto">{slots.length} créneau{slots.length !== 1 ? 'x' : ''}</span>
+      {/* Disponibilité */}
+      <div className={GLASS_CARD}>
+        <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
+            <Clock className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
+          </div>
+          <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Disponibilité</h4>
+          <span className="text-xs text-[#1b1c1b]/30 ml-auto rounded-full bg-[#f5f3f2] px-3 py-1">{slots.length} créneau{slots.length !== 1 ? 'x' : ''}</span>
         </div>
-        <div className="p-5">
+        <div className="px-7 pb-7">
           {slots.length === 0 ? (
-            <div className="text-center py-4">
-              <AlertCircle className="h-6 w-6 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">Aucun créneau configuré</p>
+            <div className={cn('text-center py-8 rounded-2xl', STONE_SURFACE)}>
+              <AlertCircle className="h-6 w-6 text-[#1b1c1b]/15 mx-auto mb-2" strokeWidth={1.5} />
+              <p className="text-sm text-[#1b1c1b]/35">Aucun créneau configuré</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -940,11 +957,11 @@ function IndividualView({
                 const daySlots = slots.filter(s => s.day_of_week === idx)
                 if (daySlots.length === 0) return null
                 return (
-                  <div key={idx} className="flex items-center gap-3 py-1.5">
-                    <span className="text-sm font-medium text-slate-700 w-24 shrink-0">{day}</span>
-                    <div className="flex flex-wrap gap-1.5">
+                  <div key={idx} className="flex items-center gap-4 py-2">
+                    <span className="text-sm font-semibold text-[#1b1c1b]/70 w-24 shrink-0">{day}</span>
+                    <div className="flex flex-wrap gap-2">
                       {daySlots.map(slot => (
-                        <span key={slot.id} className="text-xs font-medium px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
+                        <span key={slot.id} className="text-xs font-medium px-3.5 py-1.5 rounded-full bg-[#f5f3f2] text-[#1b1c1b]/60">
                           {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
                         </span>
                       ))}
@@ -957,33 +974,35 @@ function IndividualView({
         </div>
       </div>
 
-      {/* Absences — always visible */}
-      <div className="rounded-xl border border-slate-200 bg-white">
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100">
-          <Calendar className="h-4 w-4 text-slate-400" />
-          <h4 className="text-sm font-semibold text-slate-900">Absences</h4>
+      {/* Absences */}
+      <div className={GLASS_CARD}>
+        <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
+            <Calendar className="h-4 w-4 text-[#1b1c1b]/40" strokeWidth={1.5} />
+          </div>
+          <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Absences</h4>
           {absences.length > 0 && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-[#ffb95f]/15 text-[#ffb95f]">
               {absences.length}
             </span>
           )}
         </div>
-        <div className="p-5">
+        <div className="px-7 pb-7">
           {absences.length === 0 ? (
-            <div className="text-center py-4">
-              <AlertCircle className="h-6 w-6 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">Aucune absence enregistrée</p>
+            <div className={cn('text-center py-8 rounded-2xl', STONE_SURFACE)}>
+              <AlertCircle className="h-6 w-6 text-[#1b1c1b]/15 mx-auto mb-2" strokeWidth={1.5} />
+              <p className="text-sm text-[#1b1c1b]/35">Aucune absence enregistrée</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {absences.map(absence => (
-                <div key={absence.id} className="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3">
+                <div key={absence.id} className={cn('flex items-center justify-between rounded-2xl px-5 py-4', STONE_SURFACE)}>
                   <div>
-                    <p className="text-sm font-medium text-slate-800">
+                    <p className="text-sm font-semibold text-[#1b1c1b]/80">
                       {formatDate(absence.start_date)} → {formatDate(absence.end_date)}
                     </p>
                     {absence.reason && (
-                      <p className="text-xs text-slate-400 mt-0.5">{absence.reason}</p>
+                      <p className="text-xs text-[#1b1c1b]/35 mt-1">{absence.reason}</p>
                     )}
                   </div>
                 </div>
@@ -993,41 +1012,43 @@ function IndividualView({
         </div>
       </div>
 
-      {/* Upcoming appointments — always visible */}
-      <div className="rounded-xl border border-slate-200 bg-white">
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100">
-          <CalendarDays className="h-4 w-4 text-amber-600" />
-          <h4 className="text-sm font-semibold text-slate-900">Rendez-vous à venir</h4>
-          <span className="text-xs text-slate-400 ml-auto">{upcomingAppts.length} RDV</span>
+      {/* Upcoming appointments */}
+      <div className={GLASS_CARD}>
+        <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
+            <CalendarDays className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
+          </div>
+          <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Rendez-vous à venir</h4>
+          <span className="text-xs text-[#1b1c1b]/30 ml-auto rounded-full bg-[#f5f3f2] px-3 py-1">{upcomingAppts.length} RDV</span>
         </div>
-        <div className="p-5">
+        <div className="px-7 pb-7">
           {upcomingAppts.length === 0 ? (
-            <div className="text-center py-4">
-              <CalendarDays className="h-6 w-6 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">Aucun rendez-vous à venir</p>
+            <div className={cn('text-center py-8 rounded-2xl', STONE_SURFACE)}>
+              <CalendarDays className="h-6 w-6 text-[#1b1c1b]/15 mx-auto mb-2" strokeWidth={1.5} />
+              <p className="text-sm text-[#1b1c1b]/35">Aucun rendez-vous à venir</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {upcomingAppts.map(appt => {
                 const prospect = prospects.find(p => p.id === appt.prospect_id)
                 return (
-                  <div key={appt.id} className="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3">
+                  <div key={appt.id} className={cn('flex items-center justify-between rounded-2xl px-5 py-4', STONE_SURFACE)}>
                     <div>
-                      <p className="text-sm font-medium text-slate-800">
+                      <p className="text-sm font-semibold text-[#1b1c1b]/80">
                         {new Date(appt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
                         {appt.time && ` à ${appt.time.slice(0, 5)}`}
                       </p>
                       {prospect && (
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <p className="text-xs text-[#1b1c1b]/35 mt-1">
                           {prospect.contact || prospect.company || `Prospect #${prospect.id}`}
                         </p>
                       )}
                     </div>
                     <span className={cn(
-                      'text-xs font-medium px-2 py-0.5 rounded-full',
-                      appt.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
-                      appt.status === 'done' ? 'bg-emerald-100 text-emerald-700' :
-                      'bg-amber-100 text-amber-700'
+                      'text-xs font-semibold px-3 py-1.5 rounded-full',
+                      appt.status === 'confirmed' ? 'bg-blue-50/80 text-blue-700' :
+                      appt.status === 'done' ? 'bg-[#006c49]/10 text-[#006c49]' :
+                      'bg-[#ffb95f]/15 text-[#ffb95f]'
                     )}>
                       {appt.status === 'confirmed' ? 'Confirmé' : appt.status === 'done' ? 'Terminé' : 'En attente'}
                     </span>
@@ -1048,21 +1069,21 @@ function KpiMini({ icon: Icon, label, value, color, isText }: {
   icon: any; label: string; value: number | string; color: string; isText?: boolean
 }) {
   const colorMap: Record<string, { bg: string; text: string }> = {
-    blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
-    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
-    purple: { bg: 'bg-purple-50', text: 'text-purple-600' },
-    rose: { bg: 'bg-rose-50', text: 'text-rose-600' },
-    slate: { bg: 'bg-slate-50', text: 'text-slate-600' },
-    amber: { bg: 'bg-amber-50', text: 'text-amber-600' },
+    blue: { bg: 'bg-blue-50/60', text: 'text-blue-600' },
+    emerald: { bg: 'bg-[#006c49]/10', text: 'text-[#006c49]' },
+    purple: { bg: 'bg-purple-50/60', text: 'text-purple-600' },
+    rose: { bg: 'bg-rose-50/60', text: 'text-rose-600' },
+    slate: { bg: 'bg-[#f5f3f2]', text: 'text-[#1b1c1b]/60' },
+    amber: { bg: 'bg-[#ffb95f]/10', text: 'text-[#ffb95f]' },
   }
   const c = colorMap[color] || colorMap.slate
   return (
-    <div className="rounded-lg border border-slate-100 p-3 text-center">
-      <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg mx-auto mb-1.5', c.bg)}>
-        <Icon className={cn('h-3.5 w-3.5', c.text)} />
+    <div className={cn('rounded-2xl p-4 text-center', STONE_SURFACE)}>
+      <div className={cn('flex h-8 w-8 items-center justify-center rounded-full mx-auto mb-2', c.bg)}>
+        <Icon className={cn('h-3.5 w-3.5', c.text)} strokeWidth={1.5} />
       </div>
-      <p className={cn('text-lg font-bold', c.text)}>{value}</p>
-      <p className="text-xs text-slate-500 mt-0.5">{label}</p>
+      <p className={cn('font-business-display text-xl font-extrabold tracking-tight', c.text)}>{value}</p>
+      <p className="text-xs text-[#1b1c1b]/35 mt-1">{label}</p>
     </div>
   )
 }
