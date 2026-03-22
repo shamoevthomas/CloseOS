@@ -38,6 +38,7 @@ interface TeamMember {
   last_name: string
   email: string
   role: string
+  avatar_url: string | null
   is_online?: boolean
   last_heartbeat_at?: string | null
 }
@@ -482,8 +483,12 @@ export function BusinessDashboard() {
                       <tr key={m.id} className="hover:bg-neutral-50/50 transition-colors">
                         <td className="py-4 px-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-neutral-200 flex items-center justify-center text-xs font-bold text-neutral-600">
-                              {m.first_name[0]}{m.last_name[0]}
+                            <div className="w-9 h-9 rounded-full bg-neutral-200 flex items-center justify-center text-xs font-bold text-neutral-600 overflow-hidden shrink-0">
+                              {m.avatar_url ? (
+                                <img src={m.avatar_url} alt={`${m.first_name} ${m.last_name}`} className="h-full w-full object-cover" />
+                              ) : (
+                                <>{m.first_name[0]}{m.last_name[0]}</>
+                              )}
                             </div>
                             <div>
                               <p className="font-bold text-sm text-neutral-900">{m.first_name} {m.last_name}</p>
