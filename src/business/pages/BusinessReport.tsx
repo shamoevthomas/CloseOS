@@ -96,12 +96,12 @@ const PERIODS = [
 ]
 
 const ROLE_COLORS: Record<string, string> = {
-  Closer: 'bg-amber-50 text-amber-800',
+  Closer: 'bg-stone-100 text-stone-800',
   Setter: 'bg-stone-100 text-stone-600',
   'Setter-Closer': 'bg-emerald-50 text-emerald-800',
-  Manager: 'bg-amber-50 text-amber-800',
+  Manager: 'bg-stone-100 text-stone-800',
   Admin: 'bg-red-50 text-red-700',
-  Owner: 'bg-amber-50 text-amber-800',
+  Owner: 'bg-stone-100 text-stone-800',
 }
 
 // ─── Component ───
@@ -346,7 +346,7 @@ export function BusinessReport() {
           detail: `Le ${a.date}`,
           timestamp: d,
           icon: Calendar,
-          color: 'text-amber-700 bg-amber-50',
+          color: 'text-stone-700 bg-stone-100',
         })
       }
     })
@@ -363,7 +363,7 @@ export function BusinessReport() {
           detail: r.title,
           timestamp: d,
           icon: Bell,
-          color: 'text-amber-700 bg-amber-50',
+          color: 'text-stone-700 bg-stone-100',
         })
       }
     })
@@ -462,12 +462,12 @@ export function BusinessReport() {
         </div>
 
         {/* Taux de Closing */}
-        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300 border-l-4 border-amber-400">
+        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300 border-l-4 border-stone-400">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-amber-50 rounded-2xl">
-              <Target className="h-5 w-5 text-amber-700" />
+            <div className="p-3 bg-stone-100 rounded-2xl">
+              <Target className="h-5 w-5 text-stone-700" />
             </div>
-            <span className="text-amber-700 font-bold text-[10px] bg-amber-50 px-2.5 py-1 rounded-full">
+            <span className="text-stone-700 font-bold text-[10px] bg-stone-100 px-2.5 py-1 rounded-full">
               {closingRate >= 25 ? 'High' : closingRate >= 15 ? 'Normal' : 'Low'}
             </span>
           </div>
@@ -939,7 +939,7 @@ export function BusinessReport() {
 
 function StatLine({ label, value, color, isText }: { label: string; value: number | string; color: string; isText?: boolean }) {
   const colorMap: Record<string, string> = {
-    stone: 'text-stone-700', emerald: 'text-emerald-700', amber: 'text-amber-700',
+    stone: 'text-stone-700', emerald: 'text-emerald-700', amber: 'text-stone-700',
     red: 'text-red-600', slate: 'text-stone-500',
   }
   return (
