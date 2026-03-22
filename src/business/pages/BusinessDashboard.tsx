@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Loader2, DollarSign, TrendingUp, CalendarDays, Target, UserX, Activity,
   Megaphone, Users, Bell, ArrowUpRight, ArrowDownRight, FileDown, Circle,
-  AlertTriangle, Clock, MoreHorizontal, Search, Plus, X, CheckCircle2, Trash2,
+  AlertTriangle, Clock, Search, Plus, X, CheckCircle2, Trash2, GitBranch,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
@@ -18,6 +18,8 @@ interface Prospect {
   value: number | null
   created_at: string
   campaign_id: string | null
+  assigned_to: string | null
+  formula_id: string | null
 }
 
 interface Campaign {
@@ -120,6 +122,8 @@ export function BusinessDashboard() {
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [objectives, setObjectives] = useState<Objective[]>([])
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null)
+  const [commissionRates, setCommissionRates] = useState<Record<string, { roles: Record<string, number>; members: Record<string, number> }>>({})
+
 
   const fetchAll = useCallback(async () => {
     if (!effectiveUserId) return
@@ -143,6 +147,21 @@ export function BusinessDashboard() {
         const data = await res.json()
         if (data.objectives) setObjectives(data.objectives)
       } catch { /* ignore */ }
+
+      // Fetch commission rates
+      supabase.from('business_formula_commissions').select('formula_id, role, rate, team_member_id')
+        .then(({ data }) => {
+          const map: Record<string, { roles: Record<string, number>; members: Record<string, number> }> = {}
+          ;(data || []).forEach(c => {
+            if (!map[c.formula_id]) map[c.formula_id] = { roles: {}, members: {} }
+            if (c.team_member_id) {
+              map[c.formula_id].members[c.team_member_id] = c.rate
+            } else if (c.role) {
+              map[c.formula_id].roles[c.role] = c.rate
+            }
+          })
+          setCommissionRates(map)
+        })
     } catch (err) {
       console.error('Error fetching dashboard data:', err)
     } finally {
@@ -151,6 +170,23 @@ export function BusinessDashboard() {
   }, [effectiveUserId])
 
   useEffect(() => { fetchAll() }, [fetchAll])
+
+  // Total commission for a team member (sum of all won prospects assigned to them)
+  const getMemberCommission = (memberId: string, memberRole: string): number => {
+    const wonProspects = prospects.filter(p => p.stage === 'won' && p.assigned_to === memberId && p.value)
+    let total = 0
+    for (const p of wonProspects) {
+      if (!p.formula_id || !commissionRates[p.formula_id]) continue
+      const rates = commissionRates[p.formula_id]
+      // Member-specific rate first
+      if (rates.members[memberId] !== undefined) {
+        total += (p.value || 0) * rates.members[memberId] / 100
+      } else if (rates.roles[memberRole] !== undefined) {
+        total += (p.value || 0) * rates.roles[memberRole] / 100
+      }
+    }
+    return Math.round(total)
+  }
 
   const handleMarkDone = async (id: string) => {
     await supabase.from('reminders').update({ is_done: true }).eq('id', id)
@@ -197,6 +233,9 @@ export function BusinessDashboard() {
   const closingRate = totalDecided > 0 ? (wonProspects.length / totalDecided) * 100 : 0
   const noshowEligible = prospects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
   const noshowRate = noshowEligible.length > 0 ? (noshowProspects.length / noshowEligible.length) * 100 : 0
+  const totalPipeline = useMemo(() =>
+    prospects.filter(p => p.stage !== 'unqualified').reduce((s, p) => s + (Number(p.value) || 0), 0),
+    [prospects])
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
   const totalAppts = appointments.filter(a => a.date >= todayStart).length
 
@@ -270,7 +309,7 @@ export function BusinessDashboard() {
       {/* ─── Bento Grid ─── */}
       <div className="grid grid-cols-12 gap-6">
 
-        {/* ── KPI Row (6 mini cards) ── */}
+        {/* ── KPI Row ── */}
         {/* Revenue */}
         <Link to="/business/report" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
           <div className="flex justify-between items-start mb-3">
@@ -284,6 +323,17 @@ export function BusinessDashboard() {
           <div>
             <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Revenue</p>
             <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
+          </div>
+        </Link>
+
+        {/* Total Pipeline */}
+        <Link to="/business/pipeline-owner" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+          <div className="p-2 rounded-lg bg-blue-50 w-fit">
+            <GitBranch className="h-4 w-4 text-blue-600" />
+          </div>
+          <div className="mt-3">
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Total Pipeline</p>
+            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalPipeline)}</p>
           </div>
         </Link>
 
@@ -478,7 +528,7 @@ export function BusinessDashboard() {
         {/* Performance équipe */}
         <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-6 px-1">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Performance équipe</h3>
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Équipe</h3>
             <Link to="/business/team" className="px-5 py-2.5 bg-neutral-100 hover:bg-neutral-200 rounded-full text-xs font-bold text-neutral-900 transition-colors uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Voir l'équipe
             </Link>
@@ -530,9 +580,14 @@ export function BusinessDashboard() {
                           </div>
                         </td>
                         <td className="py-4 px-3 text-right">
-                          <button className="text-neutral-400 hover:text-neutral-900 transition-colors">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </button>
+                          {(() => {
+                            const com = getMemberCommission(m.id, m.role)
+                            return com > 0 ? (
+                              <span className="text-sm font-bold text-emerald-600">{com.toLocaleString()} €</span>
+                            ) : (
+                              <span className="text-xs text-neutral-300">—</span>
+                            )
+                          })()}
                         </td>
                       </tr>
                     )

@@ -361,26 +361,85 @@ export function BusinessProspectView({
       >
 
         {/* Header */}
-        <header className="p-8 pb-4 flex justify-between items-start">
-          <div className="flex items-center gap-5 min-w-0">
-            <div className="w-16 h-16 rounded-full bg-[#e4e2e1] flex items-center justify-center overflow-hidden shrink-0 text-2xl font-business-display font-extrabold text-stone-500">
-              {(local.contact || '?')[0]?.toUpperCase()}
+        <header className="p-8 pb-4">
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-5 min-w-0">
+              <div className="w-16 h-16 rounded-full bg-[#e4e2e1] flex items-center justify-center overflow-hidden shrink-0 text-2xl font-business-display font-extrabold text-stone-500">
+                {(local.contact || '?')[0]?.toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-3xl font-business-display font-extrabold tracking-tight text-stone-900 truncate">
+                  {local.contact || 'Sans nom'}
+                </h2>
+                {local.company && (
+                  <p className="text-stone-500 font-medium truncate">{local.company}</p>
+                )}
+              </div>
             </div>
-            <div className="min-w-0">
-              <h2 className="text-3xl font-business-display font-extrabold tracking-tight text-stone-900 truncate">
-                {local.contact || 'Sans nom'}
-              </h2>
-              {local.company && (
-                <p className="text-stone-500 font-medium truncate">{local.company}</p>
-              )}
-            </div>
+            <button
+              onClick={onClose}
+              className="w-12 h-12 rounded-full bg-[#f5f3f2] flex items-center justify-center hover:bg-[#efedec] transition-colors shrink-0"
+            >
+              <X className="h-5 w-5 text-stone-900" strokeWidth={1.5} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="w-12 h-12 rounded-full bg-[#f5f3f2] flex items-center justify-center hover:bg-[#efedec] transition-colors shrink-0"
-          >
-            <X className="h-5 w-5 text-stone-900" strokeWidth={1.5} />
-          </button>
+
+          {/* Tags - below name */}
+          <div className="mt-4 ml-[84px] relative">
+            <div className="flex flex-wrap items-center gap-2">
+              {prospectTagIds.map(tagId => {
+                const tag = allTags.find(t => t.id === tagId)
+                if (!tag) return null
+                return (
+                  <button
+                    key={tagId}
+                    onClick={() => handleToggleTag(tagId)}
+                    className="group inline-flex items-center gap-1.5 text-xs font-semibold pl-2 pr-1.5 py-1 rounded-full border transition-all hover:opacity-80"
+                    style={{ borderColor: tag.color, color: tag.color }}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
+                    {tag.name}
+                    <X className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
+                  </button>
+                )
+              })}
+              <button
+                onClick={() => setShowTagPicker(!showTagPicker)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-stone-400 px-2.5 py-1 rounded-full border border-dashed border-stone-300 hover:border-stone-400 hover:text-stone-500 transition-all"
+              >
+                <Plus className="h-3 w-3" strokeWidth={2} />
+                tag
+              </button>
+            </div>
+
+            {/* Tag dropdown */}
+            {showTagPicker && (
+              <div className="absolute left-0 top-full mt-1.5 z-20 bg-white rounded-xl shadow-lg border border-stone-200/60 p-2 min-w-[200px] max-w-[300px]">
+                <div className="flex flex-col gap-0.5">
+                  {allTags.map(tag => {
+                    const isActive = prospectTagIds.includes(tag.id)
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => handleToggleTag(tag.id)}
+                        className={cn(
+                          'flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg text-sm transition-all',
+                          isActive ? 'bg-stone-100 font-semibold' : 'hover:bg-stone-50'
+                        )}
+                      >
+                        <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                        <span className="flex-1 text-stone-700">{tag.name}</span>
+                        {isActive && <Check className="h-3.5 w-3.5 text-stone-500" strokeWidth={2} />}
+                      </button>
+                    )
+                  })}
+                  {allTags.length === 0 && (
+                    <p className="text-xs text-stone-400 text-center py-3">Aucun tag disponible</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </header>
 
         {/* Quick Actions */}
@@ -464,66 +523,6 @@ export function BusinessProspectView({
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-5 w-5 text-stone-400" strokeWidth={1.5} />
                 </div>
-              </div>
-
-              {/* Tags */}
-              <div>
-                <div className="flex items-center justify-between mb-2 ml-1">
-                  <label className={LABEL_STYLE}>Tags</label>
-                  <button
-                    onClick={() => setShowTagPicker(!showTagPicker)}
-                    className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] hover:text-stone-700 transition-colors"
-                  >
-                    <Tag className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {prospectTagIds.map(tagId => {
-                    const tag = allTags.find(t => t.id === tagId)
-                    if (!tag) return null
-                    return (
-                      <button
-                        key={tagId}
-                        onClick={() => handleToggleTag(tagId)}
-                        className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white hover:opacity-80 transition-opacity"
-                        style={{ backgroundColor: tag.color }}
-                      >
-                        {tag.name}
-                        <X className="h-3 w-3" strokeWidth={2} />
-                      </button>
-                    )
-                  })}
-                  {prospectTagIds.length === 0 && !showTagPicker && (
-                    <span className="text-xs text-stone-400">Aucun tag</span>
-                  )}
-                </div>
-                {showTagPicker && (
-                  <div className="mt-2 rounded-xl bg-[#f5f3f2] p-3">
-                    <div className="flex flex-wrap gap-1.5">
-                      {allTags.map(tag => {
-                        const isActive = prospectTagIds.includes(tag.id)
-                        return (
-                          <button
-                            key={tag.id}
-                            onClick={() => handleToggleTag(tag.id)}
-                            className={cn(
-                              'inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full transition-all',
-                              isActive ? 'text-white' : 'bg-white text-stone-600 hover:bg-stone-100'
-                            )}
-                            style={isActive ? { backgroundColor: tag.color } : {}}
-                          >
-                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tag.color }} />
-                            {tag.name}
-                            {isActive && <Check className="h-3 w-3" strokeWidth={2} />}
-                          </button>
-                        )
-                      })}
-                      {allTags.length === 0 && (
-                        <span className="text-xs text-stone-400">Aucun tag disponible</span>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Assignment */}
