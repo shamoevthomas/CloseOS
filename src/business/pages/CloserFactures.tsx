@@ -246,7 +246,7 @@ export function CloserFactures() {
         <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-neutral-700/30 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-stone-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
           <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-stone-100 text-stone-600">
+            <span className="p-3 rounded-xl bg-stone-100 dark:bg-neutral-700 text-stone-600 dark:text-neutral-300">
               <DollarSign className="h-5 w-5" />
             </span>
             <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">10% CA</span>
@@ -418,7 +418,7 @@ export function CloserFactures() {
                               href={inv.pdf_url}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-2 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors"
+                              className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-700 text-stone-400 hover:text-stone-700 dark:hover:text-white transition-colors"
                               title="Voir"
                             >
                               <Eye className="h-4 w-4" />
@@ -426,7 +426,7 @@ export function CloserFactures() {
                             <a
                               href={inv.pdf_url}
                               download
-                              className="p-2 rounded-full hover:bg-stone-100 text-stone-400 hover:text-emerald-600 transition-colors"
+                              className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-700 text-stone-400 hover:text-emerald-600 transition-colors"
                               title="Télécharger"
                             >
                               <Download className="h-4 w-4" />

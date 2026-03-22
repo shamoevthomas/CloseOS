@@ -332,7 +332,7 @@ export function CloserAgenda() {
         date: formatDateKey(start),
         time: `${startTime} - ${endTime}`,
         type: 'google',
-        color: 'bg-white text-stone-900',
+        color: 'bg-white dark:bg-neutral-800 text-stone-900 dark:text-white',
         isGoogleEvent: true,
         location: ge.location,
         description: ge.description,
@@ -479,9 +479,9 @@ export function CloserAgenda() {
           <div className="border-b border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 backdrop-blur-md p-3">
             <div className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-1.5">Toute la journée</div>
             {allDay.map(e => (
-              <div key={e.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border-l-4 border-blue-400 mb-1">
+              <div key={e.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-400 mb-1">
                 <Calendar className="h-3.5 w-3.5 text-blue-500" />
-                <span className="text-xs font-medium text-stone-700 truncate">{e.title}</span>
+                <span className="text-xs font-medium text-stone-700 dark:text-blue-200 truncate">{e.title}</span>
               </div>
             ))}
           </div>
@@ -501,8 +501,8 @@ export function CloserAgenda() {
               {showLine && (
                 <div className="absolute left-0 right-0 z-10" style={{ top: `${currentTimePos}%` }}>
                   <div className="flex items-center">
-                    <div className="h-2.5 w-2.5 rounded-full bg-stone-900" />
-                    <div className="h-0.5 flex-1 bg-stone-900" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-stone-900 dark:bg-red-500" />
+                    <div className="h-0.5 flex-1 bg-stone-900 dark:bg-red-500" />
                   </div>
                 </div>
               )}
@@ -536,28 +536,28 @@ export function CloserAgenda() {
     const todayIdx = weekDates.findIndex(d => isToday(d))
 
     return (
-      <div ref={weekScrollRef} className="flex-1 overflow-x-auto overflow-y-auto rounded-[2rem] border border-stone-200/60 bg-white shadow-[0_40px_80px_rgba(27,28,27,0.03)]" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+      <div ref={weekScrollRef} className="flex-1 overflow-x-auto overflow-y-auto rounded-[2rem] border border-stone-200/60 dark:border-neutral-700/30 bg-white dark:bg-neutral-900 shadow-[0_40px_80px_rgba(27,28,27,0.03)]" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         <div className="min-w-[900px]">
           {/* Sticky day header */}
           <div className="sticky top-0 z-20 grid grid-cols-[80px_1fr] border-b border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 backdrop-blur-md">
-            <div className="h-20 border-r border-stone-100" />
+            <div className="h-20 border-r border-stone-100 dark:border-neutral-800" />
             <div className="grid grid-cols-7">
               {weekDates.map((d, i) => (
                 <div key={i} className={cn(
                   'flex flex-col items-center justify-center h-20 border-r border-stone-100 dark:border-neutral-800 last:border-0',
-                  isToday(d) && 'bg-stone-100/30',
-                  (i >= 5) && !isToday(d) && 'bg-stone-50/50'
+                  isToday(d) && 'bg-stone-100/30 dark:bg-neutral-700/30',
+                  (i >= 5) && !isToday(d) && 'bg-stone-50/50 dark:bg-neutral-800/30'
                 )}>
                   <span className={cn(
                     'text-[10px] font-black uppercase tracking-widest mb-1',
-                    isToday(d) ? 'text-stone-900' : 'text-neutral-400'
+                    isToday(d) ? 'text-stone-900 dark:text-white' : 'text-neutral-400'
                   )}>
                     {DAY_NAMES_SHORT[i]}
                   </span>
-                  <span className="text-xl font-extrabold" style={{ fontFamily: "'Manrope', sans-serif" }}>
+                  <span className="text-xl font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: "'Manrope', sans-serif" }}>
                     {d.getDate()}
                   </span>
-                  {isToday(d) && <div className="w-1.5 h-1.5 bg-stone-900 rounded-full mt-1" />}
+                  {isToday(d) && <div className="w-1.5 h-1.5 bg-stone-900 dark:bg-white rounded-full mt-1" />}
                 </div>
               ))}
             </div>
@@ -565,8 +565,8 @@ export function CloserAgenda() {
 
           {/* All-day row */}
           {weekDates.some(d => getAllDayGoogleEvents(d).length > 0) && (
-            <div className="sticky top-[80px] z-10 grid grid-cols-[80px_1fr] border-b border-stone-100 bg-stone-50/80 backdrop-blur-md">
-              <div className="border-r border-stone-100 p-1.5 flex items-center justify-end pr-2">
+            <div className="sticky top-[80px] z-10 grid grid-cols-[80px_1fr] border-b border-stone-100 dark:border-neutral-800 bg-stone-50/80 dark:bg-neutral-800/80 backdrop-blur-md">
+              <div className="border-r border-stone-100 dark:border-neutral-800 p-1.5 flex items-center justify-end pr-2">
                 <span className="text-[10px] font-bold text-neutral-400">Journée</span>
               </div>
               <div className="grid grid-cols-7">
@@ -575,7 +575,7 @@ export function CloserAgenda() {
                   return (
                     <div key={i} className="border-r border-stone-100 dark:border-neutral-800 last:border-0 p-1 min-h-[32px]">
                       {allDay.map(e => (
-                        <div key={e.id} className="mb-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium truncate bg-blue-50 border-l-2 border-stone-400 text-stone-700">
+                        <div key={e.id} className="mb-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium truncate bg-blue-50 dark:bg-blue-900/30 border-l-2 border-stone-400 dark:border-blue-400 text-stone-700 dark:text-blue-200">
                           {e.title}
                         </div>
                       ))}
@@ -590,9 +590,9 @@ export function CloserAgenda() {
           <div className="relative overflow-y-auto" style={{ maxHeight: '800px' }}>
             <div className="grid grid-cols-[80px_1fr]">
               {/* Time column */}
-              <div className="bg-stone-50/30">
+              <div className="bg-stone-50/30 dark:bg-neutral-800/30">
                 {HOURS.map(h => (
-                  <div key={h} className="border-b border-stone-100/50 dark:border-neutral-800/50 border-r border-stone-100 p-2 text-right" style={{ height: `${ROW_H}px` }}>
+                  <div key={h} className="border-b border-stone-100/50 dark:border-neutral-800/50 border-r border-stone-100 dark:border-neutral-800 p-2 text-right" style={{ height: `${ROW_H}px` }}>
                     <span className="text-[10px] font-bold text-neutral-400">{h.toString().padStart(2, '0')}:00</span>
                   </div>
                 ))}
@@ -681,7 +681,7 @@ export function CloserAgenda() {
     const cm = currentDate.getMonth()
 
     return (
-      <div className="flex-1 overflow-auto rounded-[2rem] border border-stone-200/60 bg-white shadow-[0_40px_80px_rgba(27,28,27,0.03)]">
+      <div className="flex-1 overflow-auto rounded-[2rem] border border-stone-200/60 dark:border-neutral-700/30 bg-white dark:bg-neutral-900 shadow-[0_40px_80px_rgba(27,28,27,0.03)]">
         <div className="grid grid-cols-7 border-b border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 backdrop-blur-md">
           {DAY_NAMES_SHORT.map(n => (
             <div key={n} className="border-r border-stone-100 dark:border-neutral-800 last:border-0 py-3 text-center text-[10px] font-black uppercase tracking-widest text-neutral-400">{n}</div>
@@ -736,7 +736,7 @@ export function CloserAgenda() {
   /* ─── MAIN RENDER ─────────────────────────────── */
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-stone-900" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-stone-900 dark:text-white" /></div>
   }
 
   return (
@@ -749,7 +749,7 @@ export function CloserAgenda() {
             <button onClick={goToPrev} className="p-2 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-full transition-colors">
               <ChevronLeft className="h-4 w-4 text-neutral-600" />
             </button>
-            <button onClick={goToToday} className="px-4 py-2 text-sm font-bold uppercase tracking-tight text-neutral-900" style={{ fontFamily: "'Manrope', sans-serif" }}>
+            <button onClick={goToToday} className="px-4 py-2 text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: "'Manrope', sans-serif" }}>
               Aujourd'hui
             </button>
             <button onClick={goToNext} className="p-2 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-full transition-colors">
@@ -759,13 +759,13 @@ export function CloserAgenda() {
 
           {/* Date title */}
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tighter text-neutral-900 capitalize" style={{ fontFamily: "'Manrope', sans-serif" }}>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tighter text-neutral-900 dark:text-white capitalize" style={{ fontFamily: "'Manrope', sans-serif" }}>
               {getTitle()}
             </h1>
             <div className="relative">
               <button
                 onClick={() => dateInputRef.current?.showPicker()}
-                className="text-neutral-400 hover:text-neutral-700 transition-colors"
+                className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
                 title="Choisir une date"
               >
                 <Calendar className="h-5 w-5" />
@@ -854,8 +854,8 @@ export function CloserAgenda() {
         if (todayEvents.length === 0) return null
         return (
           <div className="mt-2">
-            <h3 className="mb-3 text-sm font-extrabold text-neutral-900 flex items-center gap-2 tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
-              <span className="w-2 h-2 rounded-full bg-stone-900 animate-pulse" />
+            <h3 className="mb-3 text-sm font-extrabold text-neutral-900 dark:text-white flex items-center gap-2 tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              <span className="w-2 h-2 rounded-full bg-stone-900 dark:bg-white animate-pulse" />
               Aujourd'hui
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -873,7 +873,7 @@ export function CloserAgenda() {
                       <Clock className="h-3 w-3" /> {ev.time?.split(' - ')[0] || '-'}
                     </span>
                   </div>
-                  <p className="text-sm font-extrabold text-neutral-900 truncate" style={{ fontFamily: "'Manrope', sans-serif" }}>{ev.title}</p>
+                  <p className="text-sm font-extrabold text-neutral-900 dark:text-white truncate" style={{ fontFamily: "'Manrope', sans-serif" }}>{ev.title}</p>
                   {ev.status && (
                     <span className={cn('inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full', STATUS_COLORS[ev.status] || 'bg-stone-100 text-stone-600')}>
                       {STATUS_LABELS[ev.status] || ev.status}
@@ -893,13 +893,13 @@ export function CloserAgenda() {
             {/* Header: icon + title + status + close */}
             <div className="px-7 pt-7 pb-2">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center shrink-0">
-                  {selectedEvent.type === 'appointment' && <Calendar className="h-5 w-5 text-neutral-600" />}
-                  {selectedEvent.type === 'reminder' && <Bell className="h-5 w-5 text-neutral-600" />}
-                  {selectedEvent.type === 'google' && <Calendar className="h-5 w-5 text-neutral-600" />}
+                <div className="w-12 h-12 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+                  {selectedEvent.type === 'appointment' && <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />}
+                  {selectedEvent.type === 'reminder' && <Bell className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />}
+                  {selectedEvent.type === 'google' && <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xl font-black text-neutral-900 leading-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
+                  <h3 className="text-xl font-black text-neutral-900 dark:text-white leading-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
                     {selectedEvent.title}
                   </h3>
                   <div className="flex items-center gap-2 mt-1.5">
@@ -916,7 +916,7 @@ export function CloserAgenda() {
                     )}
                   </div>
                 </div>
-                <button onClick={() => setSelectedEvent(null)} className="p-1.5 rounded-full hover:bg-neutral-100 transition-colors shrink-0 mt-1">
+                <button onClick={() => setSelectedEvent(null)} className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors shrink-0 mt-1">
                   <X className="w-4 h-4 text-neutral-400" />
                 </button>
               </div>
@@ -928,11 +928,11 @@ export function CloserAgenda() {
               <div className="flex items-start gap-4">
                 <Clock className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-bold text-neutral-900 capitalize">
+                  <p className="text-sm font-bold text-neutral-900 dark:text-white capitalize">
                     {new Date(selectedEvent.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                   </p>
                   {selectedEvent.time && (
-                    <p className="text-sm text-neutral-500 mt-0.5">
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
                       {selectedEvent.time}
                       {selectedEvent.type === 'appointment' && selectedEvent.data?.duration > 0 && (
                         <> ({selectedEvent.data.duration >= 60 ? `${Math.floor(selectedEvent.data.duration / 60)}h${selectedEvent.data.duration % 60 > 0 ? ` ${selectedEvent.data.duration % 60}min` : ''}` : `${selectedEvent.data.duration}min`})</>
@@ -952,9 +952,9 @@ export function CloserAgenda() {
                       <div className="flex items-start gap-4">
                         <User className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-sm font-bold text-neutral-900">{a.prospect.contact}</p>
+                          <p className="text-sm font-bold text-neutral-900 dark:text-white">{a.prospect.contact}</p>
                           {(a.prospect.email || a.prospect.phone) && (
-                            <p className="text-sm text-neutral-500 mt-0.5">
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
                               {a.prospect.email}{a.prospect.email && a.prospect.phone && ' · '}{a.prospect.phone}
                             </p>
                           )}
@@ -967,7 +967,7 @@ export function CloserAgenda() {
                       <div className="flex items-start gap-4">
                         <Megaphone className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-sm font-bold text-neutral-900">{a.campaign.name}</p>
+                          <p className="text-sm font-bold text-neutral-900 dark:text-white">{a.campaign.name}</p>
                         </div>
                       </div>
                     )}
@@ -976,9 +976,9 @@ export function CloserAgenda() {
                     {a.notes && (
                       <div className="flex items-start gap-4">
                         <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
-                        <div className="flex-1 bg-neutral-100 rounded-2xl p-4">
+                        <div className="flex-1 bg-neutral-100 dark:bg-neutral-800 rounded-2xl p-4">
                           <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
-                          <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">{a.notes}</p>
+                          <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">{a.notes}</p>
                         </div>
                       </div>
                     )}
@@ -992,7 +992,7 @@ export function CloserAgenda() {
                   {selectedEvent.location && (
                     <div className="flex items-start gap-4">
                       <MapPin className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
-                      <p className="text-sm text-neutral-700">{selectedEvent.location}</p>
+                      <p className="text-sm text-neutral-700 dark:text-neutral-300">{selectedEvent.location}</p>
                     </div>
                   )}
                   {selectedEvent.description && (
@@ -1015,9 +1015,9 @@ export function CloserAgenda() {
                     {r.description && (
                       <div className="flex items-start gap-4">
                         <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
-                        <div className="flex-1 bg-neutral-100 rounded-2xl p-4">
+                        <div className="flex-1 bg-neutral-100 dark:bg-neutral-800 rounded-2xl p-4">
                           <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
-                          <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">{r.description}</p>
+                          <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">{r.description}</p>
                         </div>
                       </div>
                     )}
@@ -1067,14 +1067,14 @@ export function CloserAgenda() {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 flex-shrink-0">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f5f3f2]">
-                  <Calendar className="h-5 w-5 text-[#1b1c1b]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800">
+                  <Calendar className="h-5 w-5 text-[#1b1c1b] dark:text-white" />
                 </div>
-                <h3 className="text-lg font-extrabold text-[#1b1c1b] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                <h3 className="text-lg font-extrabold text-[#1b1c1b] dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   Nouvel événement
                 </h3>
               </div>
-              <button onClick={() => setIsCreateModalOpen(false)} className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] hover:bg-[#f5f3f2] transition-colors">
+              <button onClick={() => setIsCreateModalOpen(false)} className="p-2 rounded-full text-[#444748]/40 dark:text-neutral-500 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1083,46 +1083,46 @@ export function CloserAgenda() {
             <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-5">
               {/* Title */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] mb-2">Titre</label>
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-2">Titre</label>
                 <input
                   type="text"
                   value={createTitle}
                   onChange={e => setCreateTitle(e.target.value)}
                   placeholder="Ex: Appel découverte, Point hebdo..."
-                  className="w-full border-b border-[#c4c7c7]/30 bg-transparent px-0 py-2.5 text-sm text-[#1b1c1b] placeholder-[#c4c7c7] focus:border-[#006c49] focus:outline-none transition-colors"
+                  className="w-full border-b border-[#c4c7c7]/30 dark:border-neutral-700 bg-transparent px-0 py-2.5 text-sm text-[#1b1c1b] dark:text-white placeholder-[#c4c7c7] dark:placeholder-neutral-600 focus:border-[#006c49] focus:outline-none transition-colors"
                   autoFocus
                 />
               </div>
 
               {/* Date & Time */}
-              <div className="rounded-2xl bg-[#f5f3f2]/50 p-5 space-y-4">
+              <div className="rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 space-y-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Clock className="h-3.5 w-3.5 text-[#747878]" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#747878]">Date & Horaire</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400">Date & Horaire</span>
                 </div>
                 <input
                   type="date"
                   value={createDate}
                   onChange={e => setCreateDate(e.target.value)}
-                  className="w-full rounded-xl bg-white border border-[#c4c7c7]/20 px-4 py-2.5 text-sm text-[#1b1c1b] focus:border-[#006c49] focus:outline-none transition-colors"
+                  className="w-full rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:outline-none transition-colors"
                 />
                 <div className="flex items-center gap-3">
                   <input
                     type="time"
                     value={createStartTime}
                     onChange={e => setCreateStartTime(e.target.value)}
-                    className="flex-1 rounded-xl bg-white border border-[#c4c7c7]/20 px-4 py-2.5 text-sm text-[#1b1c1b] focus:border-[#006c49] focus:outline-none transition-colors"
+                    className="flex-1 rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:outline-none transition-colors"
                   />
-                  <span className="text-xs font-bold text-[#747878]">à</span>
+                  <span className="text-xs font-bold text-[#747878] dark:text-neutral-400">à</span>
                   <input
                     type="time"
                     value={createEndTime}
                     onChange={e => setCreateEndTime(e.target.value)}
-                    className="flex-1 rounded-xl bg-white border border-[#c4c7c7]/20 px-4 py-2.5 text-sm text-[#1b1c1b] focus:border-[#006c49] focus:outline-none transition-colors"
+                    className="flex-1 rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:outline-none transition-colors"
                   />
                 </div>
                 {createDate && createStartTime && (
-                  <p className="text-[10px] text-[#747878]">
+                  <p className="text-[10px] text-[#747878] dark:text-neutral-400">
                     {new Date(createDate + 'T00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}, de {createStartTime} à {createEndTime || '...'}
                   </p>
                 )}
@@ -1130,7 +1130,7 @@ export function CloserAgenda() {
 
               {/* Duration */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] mb-3">Durée</label>
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-3">Durée</label>
                 <div className="flex gap-2 flex-wrap">
                   {DURATIONS.map(d => (
                     <button
@@ -1150,8 +1150,8 @@ export function CloserAgenda() {
                       className={cn(
                         'rounded-xl border px-4 py-2 text-sm font-bold transition-all',
                         createDuration === d.value
-                          ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                          : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
+                          ? 'bg-[#1b1c1b] dark:bg-white text-white dark:text-neutral-900 border-[#1b1c1b] dark:border-white'
+                          : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-300 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-600'
                       )}
                     >
                       {d.label}
@@ -1163,12 +1163,12 @@ export function CloserAgenda() {
               {/* Assign to (Setter, Owner, HOS) */}
               {canAssign && teamMembers.length > 0 && (
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] mb-2">Assigner à</label>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-2">Assigner à</label>
                   <div className="relative">
                     <select
                       value={createAssignedTo}
                       onChange={e => setCreateAssignedTo(e.target.value)}
-                      className="w-full appearance-none rounded-xl bg-[#f5f3f2] border-0 px-4 py-2.5 text-sm font-medium text-[#1b1c1b] focus:ring-2 focus:ring-[#1b1c1b] focus:outline-none transition-colors"
+                      className="w-full appearance-none rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-0 px-4 py-2.5 text-sm font-medium text-[#1b1c1b] dark:text-white focus:ring-2 focus:ring-[#1b1c1b] dark:focus:ring-neutral-500 focus:outline-none transition-colors"
                     >
                       <option value="">Non assigné</option>
                       {teamMembers.map(m => (
@@ -1179,28 +1179,28 @@ export function CloserAgenda() {
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
                   </div>
-                  <p className="text-[10px] text-[#747878] mt-1.5">Choisissez un membre de l'équipe pour ce rendez-vous</p>
+                  <p className="text-[10px] text-[#747878] dark:text-neutral-500 mt-1.5">Choisissez un membre de l'équipe pour ce rendez-vous</p>
                 </div>
               )}
 
               {/* Notes */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] mb-2">Notes (optionnel)</label>
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-2">Notes (optionnel)</label>
                 <textarea
                   value={createNotes}
                   onChange={e => setCreateNotes(e.target.value)}
                   rows={3}
                   placeholder="Ajouter des notes..."
-                  className="w-full border-b border-[#c4c7c7]/30 bg-transparent px-0 py-2.5 text-sm text-[#1b1c1b] placeholder-[#c4c7c7] focus:border-[#006c49] focus:outline-none resize-none transition-colors"
+                  className="w-full border-b border-[#c4c7c7]/30 dark:border-neutral-700 bg-transparent px-0 py-2.5 text-sm text-[#1b1c1b] dark:text-white placeholder-[#c4c7c7] dark:placeholder-neutral-600 focus:border-[#006c49] focus:outline-none resize-none transition-colors"
                 />
               </div>
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-3 bg-[#f5f3f2] dark:bg-neutral-900 px-6 py-4 flex-shrink-0">
+            <div className="flex justify-end gap-3 bg-[#f5f3f2] dark:bg-neutral-800 px-6 py-4 flex-shrink-0">
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="rounded-full border border-[#c4c7c7]/30 px-5 py-2.5 text-sm font-bold text-[#444748] hover:bg-white transition-colors"
+                className="rounded-full border border-[#c4c7c7]/30 dark:border-neutral-600 px-5 py-2.5 text-sm font-bold text-[#444748] dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-700 transition-colors"
               >
                 Annuler
               </button>

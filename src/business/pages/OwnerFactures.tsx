@@ -169,10 +169,10 @@ export function OwnerFactures() {
         {/* Total facturé */}
         <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 hover:bg-[#efedec]/30 dark:hover:bg-neutral-700/30 transition-colors duration-300">
           <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-2xl bg-[#efedec] text-[#444748]">
+            <span className="p-3 rounded-2xl bg-[#efedec] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300">
               <Receipt className="h-5 w-5" />
             </span>
-            <span className="text-[10px] font-bold text-[#444748]/40 tracking-widest uppercase">Global</span>
+            <span className="text-[10px] font-bold text-[#444748]/40 dark:text-neutral-500 tracking-widest uppercase">Global</span>
           </div>
           <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">Total facturé</p>
           <p className="text-4xl font-extrabold mt-1 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
@@ -213,7 +213,7 @@ export function OwnerFactures() {
       {/* Filter Bar — Glass pill */}
       <div className="bg-white/70 dark:bg-white/5 backdrop-blur-2xl rounded-full p-3 px-6 flex flex-wrap items-center gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] ring-1 ring-[#c4c7c7]/10 dark:ring-neutral-700">
         <div className="flex items-center gap-3 border-r border-[#c4c7c7]/20 dark:border-neutral-700 pr-6">
-          <span className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Période</span>
+          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter">Période</span>
           <div className="flex items-center gap-2">
             <input
               type="date"
@@ -233,7 +233,7 @@ export function OwnerFactures() {
 
         {teamMembers.length > 0 && (
           <div className="flex items-center gap-3 border-r border-[#c4c7c7]/20 dark:border-neutral-700 pr-6">
-            <span className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Membre</span>
+            <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter">Membre</span>
             <select
               value={filterMember}
               onChange={e => setFilterMember(e.target.value)}
@@ -248,7 +248,7 @@ export function OwnerFactures() {
         )}
 
         <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Statut</span>
+          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter">Statut</span>
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
@@ -262,10 +262,10 @@ export function OwnerFactures() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <button className="p-2 rounded-full hover:bg-[#eae8e7] transition-colors text-[#444748]">
+          <button className="p-2 rounded-full hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors text-[#444748] dark:text-neutral-400">
             <Filter className="h-5 w-5" />
           </button>
-          <button className="p-2 rounded-full hover:bg-[#eae8e7] transition-colors text-[#444748]">
+          <button className="p-2 rounded-full hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors text-[#444748] dark:text-neutral-400">
             <Download className="h-5 w-5" />
           </button>
         </div>
@@ -277,13 +277,13 @@ export function OwnerFactures() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#f5f3f2]/50 dark:bg-neutral-900/50">
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>N° Facture</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Date</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Client & Offre</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Membre</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Montant TTC</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest text-right" style={{ fontFamily: 'Manrope, sans-serif' }}>Actions</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>N° Facture</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Date</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Client & Offre</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Membre</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Montant TTC</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-right" style={{ fontFamily: 'Manrope, sans-serif' }}>Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#c4c7c7]/10 dark:divide-neutral-700">
@@ -294,12 +294,12 @@ export function OwnerFactures() {
 
                 return (
                   <tr key={inv.id} className="hover:bg-[#efedec]/30 dark:hover:bg-neutral-700/30 transition-colors group">
-                    <td className="px-8 py-6 font-mono text-xs font-bold text-[#444748]">{inv.invoice_number}</td>
+                    <td className="px-8 py-6 font-mono text-xs font-bold text-[#444748] dark:text-neutral-300">{inv.invoice_number}</td>
                     <td className="px-8 py-6 text-sm text-[#1b1c1b] dark:text-white font-medium">{formatDate(inv.created_at)}</td>
                     <td className="px-8 py-6">
                       <div className="flex flex-col">
                         <span className="font-bold text-sm text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{inv.client_name}</span>
-                        {inv.offer_name && <span className="text-[10px] text-[#444748] font-medium">{inv.offer_name}</span>}
+                        {inv.offer_name && <span className="text-[10px] text-[#444748] dark:text-neutral-400 font-medium">{inv.offer_name}</span>}
                       </div>
                     </td>
                     <td className="px-8 py-6">
@@ -311,7 +311,7 @@ export function OwnerFactures() {
                           <span className="text-xs font-semibold text-[#1b1c1b] dark:text-white">{memberName}</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-[#444748]/40">—</span>
+                        <span className="text-xs text-[#444748]/40 dark:text-neutral-600">—</span>
                       )}
                     </td>
                     <td className="px-8 py-6 text-sm font-extrabold text-[#1b1c1b] dark:text-white">{formatCurrency(inv.amount_ttc || 0)}</td>
@@ -345,7 +345,7 @@ export function OwnerFactures() {
                           Payer
                         </a>
                       ) : (
-                        <button className="text-[10px] font-black uppercase tracking-widest text-[#444748] hover:text-[#1b1c1b] transition-colors">
+                        <button className="text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors">
                           Détails
                         </button>
                       )}
@@ -373,14 +373,14 @@ export function OwnerFactures() {
         {/* Pagination */}
         {filtered.length > 0 && (
           <div className="px-8 py-6 bg-[#f5f3f2]/30 dark:bg-neutral-900/30 flex justify-between items-center">
-            <p className="text-[10px] font-bold text-[#444748] uppercase tracking-widest">
+            <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">
               Affichage de {(currentPage - 1) * ITEMS_PER_PAGE + 1} à {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} sur {filtered.length} facture{filtered.length !== 1 ? 's' : ''}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="w-10 h-10 rounded-full flex items-center justify-center bg-[#efedec] hover:bg-[#eae8e7] transition-colors text-[#1b1c1b] disabled:opacity-30"
+                className="w-10 h-10 rounded-full flex items-center justify-center bg-[#efedec] dark:bg-neutral-700 hover:bg-[#eae8e7] dark:hover:bg-neutral-600 transition-colors text-[#1b1c1b] dark:text-white disabled:opacity-30"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -393,8 +393,8 @@ export function OwnerFactures() {
                   onClick={() => setCurrentPage(page)}
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                     page === currentPage
-                      ? 'bg-[#1b1c1b] text-white shadow-lg shadow-black/10'
-                      : 'bg-[#efedec] hover:bg-[#eae8e7] text-[#1b1c1b]'
+                      ? 'bg-[#1b1c1b] dark:bg-white text-white dark:text-neutral-900 shadow-lg shadow-black/10'
+                      : 'bg-[#efedec] dark:bg-neutral-700 hover:bg-[#eae8e7] dark:hover:bg-neutral-600 text-[#1b1c1b] dark:text-white'
                   }`}
                 >
                   {page}
@@ -403,7 +403,7 @@ export function OwnerFactures() {
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="w-10 h-10 rounded-full flex items-center justify-center bg-[#efedec] hover:bg-[#eae8e7] transition-colors text-[#1b1c1b] disabled:opacity-30"
+                className="w-10 h-10 rounded-full flex items-center justify-center bg-[#efedec] dark:bg-neutral-700 hover:bg-[#eae8e7] dark:hover:bg-neutral-600 transition-colors text-[#1b1c1b] dark:text-white disabled:opacity-30"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
