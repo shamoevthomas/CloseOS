@@ -208,7 +208,7 @@ export function BusinessAcquisition() {
       {stats.length > 0 && (
         <section className="space-y-6">
           <div>
-            <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Performance par Campagne
             </h3>
             <p className="text-stone-500 dark:text-neutral-400 mt-1.5 text-sm">Détails granulaires des flux actifs</p>
@@ -225,7 +225,7 @@ export function BusinessAcquisition() {
               >
                 <div className="flex justify-between items-center mb-6">
                   <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-wide rounded-full ${
-                    c.is_active ? 'bg-emerald-500/10 text-emerald-700' : 'bg-stone-200/50 dark:bg-neutral-700/50 text-stone-500 dark:text-neutral-400'
+                    c.is_active ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-stone-200/50 dark:bg-neutral-700/50 text-stone-500 dark:text-neutral-400'
                   }`}>
                     {c.is_active ? 'Active' : 'Inactive'}
                   </span>
@@ -265,7 +265,7 @@ export function BusinessAcquisition() {
           {/* Pie Chart */}
           <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-8 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-              <h4 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h4 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 Répartition par campagne
               </h4>
               <div className="bg-stone-100 dark:bg-neutral-800 p-1 rounded-lg flex text-[10px] font-bold uppercase tracking-tight">
@@ -307,13 +307,13 @@ export function BusinessAcquisition() {
                         </Pie>
                         <Tooltip
                           formatter={(value: number) => [pieView === 'views' ? `${value} vues` : `${value}%`, '']}
-                          contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: 12 }}
+                          contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', fontSize: 12, backgroundColor: 'var(--tooltip-bg, #fff)', color: 'var(--tooltip-text, #1c1917)' }}
                         />
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                      <span className="text-[9px] font-bold uppercase text-stone-500 tracking-[0.15em]">Total</span>
-                      <span className="text-2xl font-black text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>100%</span>
+                      <span className="text-[9px] font-bold uppercase text-stone-500 dark:text-neutral-400 tracking-[0.15em]">Total</span>
+                      <span className="text-2xl font-black text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>100%</span>
                     </div>
                   </div>
                   <div className="flex-grow space-y-3.5 w-full">
@@ -337,11 +337,11 @@ export function BusinessAcquisition() {
           {/* Conversion Client (%) */}
           <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-8 space-y-6">
             <div className="flex justify-between items-center">
-              <h4 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h4 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 Conversion Client (%)
               </h4>
               {topPerformer && (
-                <span className="text-[10px] font-bold text-emerald-700 uppercase bg-emerald-500/10 px-3 py-1 rounded-full">
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full">
                   Top: {topPerformer.shortName}
                 </span>
               )}
@@ -358,7 +358,7 @@ export function BusinessAcquisition() {
                     </div>
                     <div className="w-full h-7 bg-stone-100 dark:bg-neutral-800 rounded-lg overflow-hidden">
                       <div
-                        className={`h-full rounded-lg transition-all duration-500 ${idx === 0 ? 'bg-emerald-600' : 'bg-stone-800'}`}
+                        className={`h-full rounded-lg transition-all duration-500 ${idx === 0 ? 'bg-emerald-600' : 'bg-stone-800 dark:bg-neutral-500'}`}
                         style={{ width: `${Math.min(d.wonRate * 10, 100)}%`, opacity: idx === 0 ? 1 : 0.6 - idx * 0.1 }}
                       />
                     </div>
@@ -382,7 +382,7 @@ export function BusinessAcquisition() {
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-stone-900" />
+                <div className="w-3 h-3 rounded-full bg-stone-900 dark:bg-neutral-300" />
                 <span className="text-xs font-bold text-stone-700 dark:text-neutral-200">Réalisé</span>
               </div>
             </div>
@@ -399,11 +399,11 @@ export function BusinessAcquisition() {
                       {formatCurrency(d.ca)}
                     </div>
                     <div
-                      className="w-full bg-stone-900 rounded-t-xl transition-all duration-500"
+                      className="w-full bg-stone-900 dark:bg-neutral-300 rounded-t-xl transition-all duration-500"
                       style={{ height: `${Math.max(heightPct * 2.8, 16)}px`, opacity: 1 - idx * 0.15 }}
                     />
                   </div>
-                  <span className="text-[10px] font-black uppercase text-stone-500 text-center leading-tight">
+                  <span className="text-[10px] font-black uppercase text-stone-500 dark:text-neutral-400 text-center leading-tight">
                     {d.shortName}
                   </span>
                 </div>
@@ -419,10 +419,10 @@ export function BusinessAcquisition() {
           {/* Taux d'implication */}
           <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-8 space-y-8">
             <div>
-              <h4 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h4 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 Taux d'implication (%)
               </h4>
-              <p className="text-sm text-stone-500 mt-1.5 font-medium">Réduction des no-shows et no-answers</p>
+              <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1.5 font-medium">Réduction des no-shows et no-answers</p>
             </div>
             <div className="space-y-5">
               {implicationData.length === 0 ? (
@@ -444,7 +444,7 @@ export function BusinessAcquisition() {
           {/* Taux d'éducation */}
           <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-8 space-y-8">
             <div>
-              <h4 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h4 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 Taux d'éducation (%)
               </h4>
               <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1.5 font-medium">Qualité des leads (lowest unqualified)</p>

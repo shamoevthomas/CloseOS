@@ -44,11 +44,28 @@ body.hide-cookieyes #cookieyes {
   /* text-slate-500 */
 }
 
+/* Dark-mode aware Recharts tooltips */
+:root {
+  --tooltip-bg: #fff;
+  --tooltip-text: #1c1917;
+}
+
+.dark {
+  --tooltip-bg: #262626;
+  --tooltip-text: #f5f5f5;
+}
+
 @layer utilities {
   .glass-card {
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(214, 211, 209, 0.3);
+  }
+
+  :is(.dark .glass-card) {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(64, 64, 64, 0.3);
   }
 
   .custom-scrollbar::-webkit-scrollbar {

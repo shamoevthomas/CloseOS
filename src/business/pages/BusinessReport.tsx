@@ -98,9 +98,9 @@ const PERIODS = [
 const ROLE_COLORS: Record<string, string> = {
   Closer: 'bg-stone-100 dark:bg-neutral-800 text-stone-800 dark:text-neutral-100',
   Setter: 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300',
-  'Setter-Closer': 'bg-emerald-50 text-emerald-800',
+  'Setter-Closer': 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300',
   'Head of Sales': 'bg-stone-100 dark:bg-neutral-800 text-stone-800 dark:text-neutral-100',
-  Admin: 'bg-red-50 text-red-700',
+  Admin: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300',
   Owner: 'bg-stone-100 dark:bg-neutral-800 text-stone-800 dark:text-neutral-100',
 }
 
@@ -397,7 +397,7 @@ export function BusinessReport() {
   const BAR_COLORS = ['#006c49', '#1b1c1b', '#ffb95f', '#747878', '#c4c7c7']
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-stone-400 dark:text-neutral-500 dark:text-neutral-500 animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-stone-400 dark:text-neutral-500 animate-spin" /></div>
   }
 
   return (
@@ -417,7 +417,7 @@ export function BusinessReport() {
                 className={`px-3 py-1.5 text-xs font-bold tracking-tight transition-all rounded-lg ${
                   periodDays === p.days
                     ? 'text-stone-900 dark:text-white border-b-2 border-emerald-600'
-                    : 'text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:text-neutral-300'
+                    : 'text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300'
                 }`}
               >
                 {p.label}
@@ -427,7 +427,7 @@ export function BusinessReport() {
           <button
             onClick={handleExportPDF}
             disabled={exporting}
-            className="flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2 text-sm font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-all active:scale-95"
+            className="flex items-center gap-2 rounded-full bg-stone-900 dark:bg-neutral-700 px-5 py-2 text-sm font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-600 disabled:opacity-50 transition-all active:scale-95"
           >
             {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             Export PDF
@@ -440,8 +440,8 @@ export function BusinessReport() {
         {/* CA Généré */}
         <div className="glass-card p-7 rounded-2xl flex flex-col justify-between group hover:shadow-lg transition-all duration-300">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-emerald-50 rounded-2xl">
-              <DollarSign className="h-5 w-5 text-emerald-700" />
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl">
+              <DollarSign className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
             </div>
           </div>
           <div>
@@ -465,7 +465,7 @@ export function BusinessReport() {
         </div>
 
         {/* Taux de Closing */}
-        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300 border-l-4 border-stone-400">
+        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300 border-l-4 border-stone-400 dark:border-neutral-500">
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-stone-100 dark:bg-neutral-800 rounded-2xl">
               <Target className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
@@ -483,8 +483,8 @@ export function BusinessReport() {
         {/* Commission estimée */}
         <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-emerald-50 rounded-2xl">
-              <Activity className="h-5 w-5 text-emerald-700" />
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl">
+              <Activity className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
             </div>
           </div>
           <div>
@@ -548,7 +548,7 @@ export function BusinessReport() {
               {todayActivities.map(event => {
                 const EventIcon = event.icon
                 return (
-                  <div key={event.id} className="flex items-start gap-3 py-3 px-3 rounded-xl hover:bg-stone-50 dark:bg-neutral-800 dark:hover:bg-neutral-800 transition-colors">
+                  <div key={event.id} className="flex items-start gap-3 py-3 px-3 rounded-xl hover:bg-stone-50 dark:hover:bg-neutral-800/50 transition-colors">
                     <div className={`flex h-8 w-8 items-center justify-center rounded-xl shrink-0 ${event.color}`}>
                       <EventIcon className="h-4 w-4" />
                     </div>
@@ -652,10 +652,10 @@ export function BusinessReport() {
               </thead>
               <tbody className="divide-y divide-stone-50 dark:divide-neutral-800">
                 {campaignStats.map(c => (
-                  <tr key={c.id} className="hover:bg-stone-50 dark:bg-neutral-800 dark:hover:bg-neutral-800/30 transition-colors">
+                  <tr key={c.id} className="hover:bg-stone-50 dark:hover:bg-neutral-800/50 transition-colors">
                     <td className="px-7 py-5 font-bold text-stone-900 dark:text-white">{c.name}</td>
                     <td className="px-7 py-5">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${c.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400'}`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${c.is_active ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400'}`}>
                         {c.is_active ? 'Active' : 'Paused'}
                       </span>
                     </td>
@@ -663,7 +663,7 @@ export function BusinessReport() {
                     <td className="px-7 py-5 text-sm text-stone-700 dark:text-neutral-200">{c.views.toLocaleString('fr-FR')}</td>
                     <td className="px-7 py-5 text-sm font-bold text-stone-700 dark:text-neutral-200">{formatPct(c.conversionRate)}</td>
                     <td className="px-7 py-5 font-extrabold text-stone-900 dark:text-white">{formatCurrency(c.ca)}</td>
-                    <td className="px-7 py-5 text-right font-medium text-emerald-700">{formatCurrency(c.commission)}</td>
+                    <td className="px-7 py-5 text-right font-medium text-emerald-700 dark:text-emerald-400">{formatCurrency(c.commission)}</td>
                   </tr>
                 ))}
                 {/* Totals row */}
@@ -674,7 +674,7 @@ export function BusinessReport() {
                   <td className="px-7 py-5 text-sm text-stone-700 dark:text-neutral-200">{campaignStats.reduce((s, c) => s + c.views, 0).toLocaleString('fr-FR')}</td>
                   <td></td>
                   <td className="px-7 py-5 font-extrabold text-stone-900 dark:text-white">{formatCurrency(totalCA)}</td>
-                  <td className="px-7 py-5 text-right font-medium text-emerald-700">{formatCurrency(totalCommission)}</td>
+                  <td className="px-7 py-5 text-right font-medium text-emerald-700 dark:text-emerald-400">{formatCurrency(totalCommission)}</td>
                 </tr>
               </tbody>
             </table>
@@ -696,7 +696,7 @@ export function BusinessReport() {
               {members.map(m => {
                 const memberWins = filteredProspects.filter(p => p.stage === 'won' && (p as any).assigned_to === m.id).length
                 return (
-                  <div key={m.id} className="flex items-center justify-between px-7 py-4 hover:bg-stone-50 dark:bg-neutral-800 dark:hover:bg-neutral-800/30 transition-colors">
+                  <div key={m.id} className="flex items-center justify-between px-7 py-4 hover:bg-stone-50 dark:hover:bg-neutral-800/50 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-sm font-bold text-stone-600 dark:text-neutral-300">
                         {m.first_name[0]}{m.last_name?.[0] || ''}
@@ -771,9 +771,9 @@ export function BusinessReport() {
         </div>
 
         {/* Pipeline Détaillé */}
-        <div className="glass-card p-7 rounded-2xl border-t-4 border-stone-900">
+        <div className="glass-card p-7 rounded-2xl border-t-4 border-stone-900 dark:border-neutral-400">
           <div className="flex items-center gap-4 mb-5">
-            <div className="w-11 h-11 bg-stone-900 rounded-full flex items-center justify-center">
+            <div className="w-11 h-11 bg-stone-900 dark:bg-neutral-700 rounded-full flex items-center justify-center">
               <TrendingUp className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -942,8 +942,8 @@ export function BusinessReport() {
 
 function StatLine({ label, value, color, isText }: { label: string; value: number | string; color: string; isText?: boolean }) {
   const colorMap: Record<string, string> = {
-    stone: 'text-stone-700 dark:text-neutral-200', emerald: 'text-emerald-700', amber: 'text-stone-700 dark:text-neutral-200',
-    red: 'text-red-600', slate: 'text-stone-500 dark:text-neutral-400',
+    stone: 'text-stone-700 dark:text-neutral-200', emerald: 'text-emerald-700 dark:text-emerald-400', amber: 'text-stone-700 dark:text-neutral-200',
+    red: 'text-red-600 dark:text-red-400', slate: 'text-stone-500 dark:text-neutral-400',
   }
   return (
     <div className="flex items-center justify-between py-1.5">
