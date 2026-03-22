@@ -238,7 +238,7 @@ export function CloserKPI() {
     const makeVals = (kpis: ReturnType<typeof computeCloserKpis>, comm: number, src: any[]) => ({
       revenue: kpis.revenue, sales: kpis.won.length, conversion: kpis.conversionRate,
       commission: comm, noShowRate: kpis.noShowRate, lost: kpis.lost.length,
-      leads: src.length, deals: src.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
+      leads: src.length, deals: src.filter(p => !['won', 'lost', 'noshow', 'noanswer'].includes(p.stage)).length,
     })
     if (activeTab === 'org') return makeVals(org, orgCommission, orgProspects)
     if (activeTab === 'offer') return makeVals(formula, formulaCommission, formulaProspects)
@@ -403,7 +403,7 @@ export function CloserKPI() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <KpiCard title="CA Généré" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title="Ventes Totales" value={v.sales} icon={ShoppingCart} color="blue" />
-        <KpiCard title="Taux de Conversion" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" />
+        <KpiCard title="Taux de Closing" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" />
         <KpiCard title={isOwnerView ? 'Commissions' : 'Mes Commissions'} value={`${formatCurrency(v.commission)} €`} icon={Award} color="stone" highlight />
         <KpiCard title="Taux de No Show" value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" />
         <KpiCard title="Deals Perdus" value={v.lost} icon={Ban} color="stone" />

@@ -179,9 +179,12 @@ export function BusinessDashboard() {
     ? ((revenueThisMonth - revenueLastMonth) / revenueLastMonth * 100)
     : revenueThisMonth > 0 ? 100 : 0
 
-  const totalDecided = wonProspects.length + lostProspects.length + noshowProspects.length
+  // No-shows only count if they came from follow-up stage
+  const noshowFromFollowup = noshowProspects.filter(p => p.previous_stage === 'followup')
+  const totalDecided = wonProspects.length + lostProspects.length + noshowFromFollowup.length
   const closingRate = totalDecided > 0 ? (wonProspects.length / totalDecided) * 100 : 0
-  const noshowRate = prospects.length > 0 ? (noshowProspects.length / prospects.length) * 100 : 0
+  const noshowEligible = prospects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const noshowRate = noshowEligible.length > 0 ? (noshowProspects.length / noshowEligible.length) * 100 : 0
   const totalAppts = appointments.length
 
   const revenueObjective = useMemo(() => objectives.find(o => o.metric === 'revenue'), [objectives])
@@ -304,7 +307,7 @@ export function BusinessDashboard() {
             )}
           </div>
           <div className="mt-3">
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Objectif</p>
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Objectif CA</p>
             {revenueObjective ? (
               <>
                 <div className="w-full bg-stone-100 h-1.5 rounded-full mt-2 mb-2 overflow-hidden">
@@ -339,7 +342,10 @@ export function BusinessDashboard() {
         </div>
 
         {/* KPI Health */}
-        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform bg-white/60 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}>
+        <div
+          title={`Basé sur le taux de closing (${closingRate.toFixed(1)}%).\n\n≥ 30% → Optimal (vert)\n15-30% → Moyen (orange)\n< 15% → Faible (rouge)\n\nCalcul : prospects gagnés / (gagnés + perdus + no-shows)`}
+          className={`col-span-6 sm:col-span-4 xl:col-span-2 rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform bg-white/60 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] cursor-help ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}
+        >
           <div className="flex justify-between items-start">
             <div className={`p-2 rounded-lg ${healthOk ? 'bg-emerald-50' : healthWarn ? 'bg-amber-50' : 'bg-red-50'}`}>
               <Activity className={`h-4 w-4 ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`} />

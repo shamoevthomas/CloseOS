@@ -51,11 +51,8 @@ export function SetterKPI() {
   const [campaigns, setCampaigns] = useState<{ id: string; name: string; source: string }[]>([])
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
-  // Per-tab member filters
-  const [orgMemberId, setOrgMemberId] = useState<string | null>(null)
-  const [formulaMemberId, setFormulaMemberId] = useState<string | null>(null)
-  const [campaignMemberId, setCampaignMemberId] = useState<string | null>(null)
-  const [sourceMemberId, setSourceMemberId] = useState<string | null>(null)
+  // Global member filter (persists across tabs)
+  const [globalMemberId, setGlobalMemberId] = useState<string | null>(null)
 
   // Load KPI config
   useEffect(() => {
@@ -92,19 +89,30 @@ export function SetterKPI() {
       .catch(() => {})
   }, [ownerUserId])
 
-  // Load team setters for member selectors
+  // Load team setters + Owner/HoS for member selector
   useEffect(() => {
     if (!ownerUserId) return
-    supabase
-      .from('business_team_members')
-      .select('id, first_name, last_name, role')
-      .eq('business_owner_id', ownerUserId)
-      .in('role', ['Setter', 'Setter-Closer'])
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          setTeamSetters(data)
-        }
-      })
+    Promise.all([
+      supabase
+        .from('business_team_members')
+        .select('id, first_name, last_name, role')
+        .eq('business_owner_id', ownerUserId),
+      supabase
+        .from('business_users')
+        .select('id, full_name')
+        .eq('id', ownerUserId)
+        .single(),
+    ]).then(([tmRes, ownerRes]) => {
+      const allMembers: TeamSetter[] = []
+      if (ownerRes.data) {
+        const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
+        allMembers.push({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
+      }
+      if (tmRes.data) {
+        allMembers.push(...tmRes.data)
+      }
+      setTeamSetters(allMembers)
+    })
   }, [ownerUserId])
 
   // Load campaigns
@@ -182,7 +190,7 @@ export function SetterKPI() {
   const commission = Math.round(personal.revenue * (kpiConfig.commission_rate / 100))
 
   // Org KPIs (filtered by member if selected)
-  const orgProspects = useMemo(() => filterByMember(prospects, orgMemberId), [prospects, orgMemberId])
+  const orgProspects = useMemo(() => filterByMember(prospects, globalMemberId), [prospects, globalMemberId])
   const orgWon = orgProspects.filter(p => p.stage === 'won')
   const orgNoShow = orgProspects.filter(p => p.stage === 'noshow')
   const orgLost = orgProspects.filter(p => p.stage === 'lost')
@@ -197,8 +205,8 @@ export function SetterKPI() {
     if (!selectedOfferId) return []
     const base = isOwnerView ? prospects : myProspects
     const filtered = base.filter(p => (p as any).offer_id === selectedOfferId || (p as any).formula_id === selectedOfferId)
-    return filterByMember(filtered, formulaMemberId)
-  }, [isOwnerView, myProspects, prospects, selectedOfferId, formulaMemberId])
+    return filterByMember(filtered, globalMemberId)
+  }, [isOwnerView, myProspects, prospects, selectedOfferId, globalMemberId])
 
   const formulaWon = formulaProspects.filter(p => p.stage === 'won')
   const formulaNoShow = formulaProspects.filter(p => p.stage === 'noshow')
@@ -214,8 +222,8 @@ export function SetterKPI() {
     if (!selectedCampaignId) return []
     const base = isOwnerView ? prospects : myProspects
     const filtered = base.filter(p => (p as any).campaign_id === selectedCampaignId)
-    return filterByMember(filtered, campaignMemberId)
-  }, [isOwnerView, myProspects, prospects, selectedCampaignId, campaignMemberId])
+    return filterByMember(filtered, globalMemberId)
+  }, [isOwnerView, myProspects, prospects, selectedCampaignId, globalMemberId])
 
   const campaignKpis = computeSetterKpis(campaignProspects)
   const campaignCommission = Math.round(campaignKpis.revenue * (kpiConfig.commission_rate / 100))
@@ -226,8 +234,8 @@ export function SetterKPI() {
     const campaignIds = campaigns.filter(c => (c.source || 'Direct') === selectedSource).map(c => c.id)
     const base = isOwnerView ? prospects : myProspects
     const filtered = base.filter(p => campaignIds.includes((p as any).campaign_id))
-    return filterByMember(filtered, sourceMemberId)
-  }, [isOwnerView, myProspects, prospects, selectedSource, campaigns, sourceMemberId])
+    return filterByMember(filtered, globalMemberId)
+  }, [isOwnerView, myProspects, prospects, selectedSource, campaigns, globalMemberId])
 
   const sourceKpis = computeSetterKpis(sourceProspects)
   const sourceCommission = Math.round(sourceKpis.revenue * (kpiConfig.commission_rate / 100))
@@ -260,7 +268,7 @@ export function SetterKPI() {
     const makeVals = (revenue: number, salesCount: number, conversion: number, comm: number, noShow: number, lostCount: number, src: any[]) => ({
       revenue, sales: salesCount, conversion,
       commission: comm, noShowRate: noShow, lost: lostCount,
-      leads: src.length, deals: src.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
+      leads: src.length, deals: src.filter(p => !['won', 'lost', 'noshow', 'noanswer'].includes(p.stage)).length,
     })
     if (activeTab === 'org') return makeVals(orgRevenue, orgWon.length, orgConversion, orgCommission, orgNoShowRate, orgLost.length, orgProspects)
     if (activeTab === 'offer') return makeVals(formulaRevenue, formulaWon.length, formulaConversion, formulaCommission, formulaNoShowRate, formulaLost.length, formulaProspects)
@@ -269,7 +277,7 @@ export function SetterKPI() {
     return {
       revenue: personal.revenue, sales: personal.won.length, conversion: personal.conversionRate,
       commission, noShowRate: personal.noShowRate, lost: personal.lost.length,
-      leads: myProspects.length, deals: myProspects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
+      leads: myProspects.length, deals: myProspects.filter(p => !['won', 'lost', 'noshow', 'noanswer'].includes(p.stage)).length,
     }
   }
 
@@ -283,19 +291,6 @@ export function SetterKPI() {
   const inputCls = "w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-500"
 
   // Member selector component
-  const MemberSelector = ({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) => (
-    <select
-      value={value || ''}
-      onChange={(e) => onChange(e.target.value || null)}
-      className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-500 focus:outline-none"
-    >
-      <option value="">Global (tous)</option>
-      {teamSetters.map(s => (
-        <option key={s.id} value={s.id}>{s.first_name} {s.last_name} ({s.role})</option>
-      ))}
-    </select>
-  )
-
   // Tabs definition
   const tabs = isOwnerView
     ? [
@@ -344,50 +339,52 @@ export function SetterKPI() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex p-1.5 bg-stone-100 rounded-full w-fit flex-wrap">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={cn(
-              'px-8 py-2.5 rounded-full text-sm font-bold transition-all',
-              activeTab === tab.key
-                ? 'bg-white text-stone-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
-                : 'text-stone-500 hover:text-stone-900'
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === 'org' && (
-        <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-stone-700">KPIs de l'organisation</p>
-            {isOwnerView && teamSetters.length > 0 && <MemberSelector value={orgMemberId} onChange={setOrgMemberId} />}
-          </div>
+      {/* Tabs + Global Member Selector */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex p-1.5 bg-stone-100 rounded-full w-fit flex-wrap">
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                'px-8 py-2.5 rounded-full text-sm font-bold transition-all',
+                activeTab === tab.key
+                  ? 'bg-white text-stone-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                  : 'text-stone-500 hover:text-stone-900'
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      )}
+        {isOwnerView && teamSetters.length > 0 && (
+          <select
+            value={globalMemberId || ''}
+            onChange={(e) => setGlobalMemberId(e.target.value || null)}
+            className="rounded-full border border-stone-200 bg-white text-sm font-semibold text-stone-900 px-5 py-2.5 focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 appearance-none"
+          >
+            <option value="">Tous les membres</option>
+            {teamSetters.map(s => (
+              <option key={s.id} value={s.id}>{s.first_name} {s.last_name} ({s.role})</option>
+            ))}
+          </select>
+        )}
+      </div>
 
       {activeTab === 'offer' && (
         <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 shrink-0">Par Formule</p>
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedOfferId || ''}
-                onChange={(e) => setSelectedOfferId(e.target.value)}
-                className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-500 focus:outline-none"
-              >
-                {formulas.length === 0 && <option value="">Aucune formule</option>}
-                {formulas.map(f => (
-                  <option key={f.id} value={f.id}>{f.name} ({f.price}€)</option>
-                ))}
-              </select>
-              {isOwnerView && teamSetters.length > 0 && <MemberSelector value={formulaMemberId} onChange={setFormulaMemberId} />}
-            </div>
+            <select
+              value={selectedOfferId || ''}
+              onChange={(e) => setSelectedOfferId(e.target.value)}
+              className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-500 focus:outline-none"
+            >
+              {formulas.length === 0 && <option value="">Aucune formule</option>}
+              {formulas.map(f => (
+                <option key={f.id} value={f.id}>{f.name} ({f.price}€)</option>
+              ))}
+            </select>
           </div>
         </div>
       )}
@@ -396,19 +393,16 @@ export function SetterKPI() {
         <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 shrink-0">Par Campagne</p>
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedCampaignId || ''}
-                onChange={(e) => setSelectedCampaignId(e.target.value)}
-                className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-500 focus:outline-none"
-              >
-                {campaigns.length === 0 && <option value="">Aucune campagne</option>}
-                {campaigns.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              {isOwnerView && teamSetters.length > 0 && <MemberSelector value={campaignMemberId} onChange={setCampaignMemberId} />}
-            </div>
+            <select
+              value={selectedCampaignId || ''}
+              onChange={(e) => setSelectedCampaignId(e.target.value)}
+              className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-500 focus:outline-none"
+            >
+              {campaigns.length === 0 && <option value="">Aucune campagne</option>}
+              {campaigns.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
         </div>
       )}
@@ -417,19 +411,16 @@ export function SetterKPI() {
         <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 shrink-0">Par Source</p>
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedSource || ''}
-                onChange={(e) => setSelectedSource(e.target.value)}
-                className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-500 focus:outline-none"
-              >
-                {uniqueSources.length === 0 && <option value="">Aucune source</option>}
-                {uniqueSources.map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              {isOwnerView && teamSetters.length > 0 && <MemberSelector value={sourceMemberId} onChange={setSourceMemberId} />}
-            </div>
+            <select
+              value={selectedSource || ''}
+              onChange={(e) => setSelectedSource(e.target.value)}
+              className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-500 focus:outline-none"
+            >
+              {uniqueSources.length === 0 && <option value="">Aucune source</option>}
+              {uniqueSources.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
         </div>
       )}
@@ -460,7 +451,7 @@ export function SetterKPI() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <KpiCard title="CA Généré" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title="Ventes Totales" value={v.sales} icon={ShoppingCart} color="blue" />
-        <KpiCard title="Taux de Conversion" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" subtitle={showSetterCards ? `${setterDisplay.won.length} gagnés / ${setterDisplay.qualifiedAll.length} qualifiés` : undefined} />
+        <KpiCard title="Taux de Closing" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" subtitle={showSetterCards ? `${setterDisplay.won.length} gagnés / ${setterDisplay.qualifiedAll.length} qualifiés` : undefined} />
         <KpiCard title={isOwnerView ? 'Commissions' : 'Mes Commissions'} value={`${formatCurrency(v.commission)} €`} icon={Award} color="stone" highlight />
         <KpiCard title="Taux de No Show" value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" subtitle={showSetterCards ? `${setterDisplay.noShow.length} no shows / ${setterDisplay.qualifiedAll.length} qualifiés` : undefined} />
         <KpiCard title="Deals Perdus" value={v.lost} icon={Ban} color="stone" />
