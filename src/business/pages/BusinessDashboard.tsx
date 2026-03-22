@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Loader2, DollarSign, TrendingUp, CalendarDays, Target, UserX, Activity,
@@ -100,6 +100,32 @@ const CAMPAIGN_ICON_CLASSES: Record<string, { bg: string; text: string }> = {
 }
 
 const glassCard = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-neutral-900/5 dark:border-neutral-700 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
+
+function KpiTooltip({ children, text }: { children: React.ReactNode; text: string }) {
+  const [show, setShow] = useState(false)
+  const [pos, setPos] = useState<'bottom' | 'top'>('bottom')
+  const ref = useRef<HTMLDivElement>(null)
+
+  const handleEnter = () => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect()
+      setPos(rect.bottom + 120 > window.innerHeight ? 'top' : 'bottom')
+    }
+    setShow(true)
+  }
+
+  return (
+    <div className="relative" ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)}>
+      {children}
+      {show && (
+        <div className={`absolute z-50 left-1/2 -translate-x-1/2 w-56 px-3 py-2.5 rounded-xl bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[11px] leading-relaxed font-medium shadow-xl pointer-events-none ${pos === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
+          {text}
+          <div className={`absolute left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-neutral-900 dark:bg-neutral-100 ${pos === 'bottom' ? '-top-1' : '-bottom-1'}`} />
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ─── Component ───
 
@@ -311,121 +337,134 @@ export function BusinessDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-4">
 
         {/* Revenue */}
-        <Link to="/business/report" title="Chiffre d'affaires total généré par les prospects gagnés (stage « Gagné »). Calculé en additionnant la valeur de chaque prospect avec le statut « Gagné »." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="flex justify-between items-start mb-2">
-            <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30">
-              <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
+        <KpiTooltip text="Chiffre d'affaires total généré par les prospects gagnés (stage « Gagné »). Calculé en additionnant la valeur de chaque prospect signé.">
+          <Link to="/business/report" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
+            <div className="flex justify-between items-start mb-2">
+              <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30">
+                <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
+              </div>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${revenueDelta >= 0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' : 'text-red-500 bg-red-50 dark:bg-red-900/30'}`}>
+                {revenueDelta >= 0 ? '+' : ''}{revenueDelta.toFixed(0)}%
+              </span>
             </div>
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${revenueDelta >= 0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' : 'text-red-500 bg-red-50 dark:bg-red-900/30'}`}>
-              {revenueDelta >= 0 ? '+' : ''}{revenueDelta.toFixed(0)}%
-            </span>
-          </div>
-          <div>
-            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Revenue</p>
-            <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
-          </div>
-        </Link>
+            <div>
+              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Revenue</p>
+              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
+            </div>
+          </Link>
+        </KpiTooltip>
 
         {/* Total Pipeline */}
-        <Link to="/business/pipeline-owner" title="Valeur totale de tous les prospects actifs dans le pipeline (tous statuts confondus). Représente le potentiel commercial global en cours." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 w-fit">
-            <GitBranch className="h-3.5 w-3.5 text-blue-600" />
-          </div>
-          <div className="mt-2">
-            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Pipeline</p>
-            <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalPipeline)}</p>
-          </div>
-        </Link>
+        <KpiTooltip text="Valeur totale de tous les prospects actifs dans le pipeline (tous statuts confondus). Représente le potentiel commercial global en cours.">
+          <Link to="/business/pipeline-owner" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
+            <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 w-fit">
+              <GitBranch className="h-3.5 w-3.5 text-blue-600" />
+            </div>
+            <div className="mt-2">
+              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Pipeline</p>
+              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalPipeline)}</p>
+            </div>
+          </Link>
+        </KpiTooltip>
 
         {/* Closing */}
-        <Link to="/business/acquisition" title="Taux de closing : pourcentage de prospects convertis en vente. Calculé : prospects gagnés ÷ (gagnés + perdus + no-shows ayant eu un rendez-vous)." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800 w-fit">
-            <TrendingUp className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
-          </div>
-          <div className="mt-2">
-            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Closing</p>
-            <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
-          </div>
-        </Link>
+        <KpiTooltip text="Taux de closing : pourcentage de prospects convertis en vente. Calculé : prospects gagnés ÷ (gagnés + perdus + no-shows ayant eu un rendez-vous).">
+          <Link to="/business/acquisition" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
+            <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800 w-fit">
+              <TrendingUp className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
+            </div>
+            <div className="mt-2">
+              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Closing</p>
+              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
+            </div>
+          </Link>
+        </KpiTooltip>
 
         {/* Rendez-vous */}
-        <Link to="/business/rendez-vous" title="Nombre total de rendez-vous planifiés (confirmés et en attente). Inclut tous les rendez-vous à venir et passés." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800 w-fit">
-            <CalendarDays className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
-          </div>
-          <div className="mt-2">
-            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Rendez-vous</p>
-            <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAppts.toLocaleString()}</p>
-          </div>
-        </Link>
+        <KpiTooltip text="Nombre total de rendez-vous planifiés à venir (confirmés et en attente) à partir d'aujourd'hui.">
+          <Link to="/business/rendez-vous" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
+            <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800 w-fit">
+              <CalendarDays className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
+            </div>
+            <div className="mt-2">
+              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Rendez-vous</p>
+              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAppts.toLocaleString()}</p>
+            </div>
+          </Link>
+        </KpiTooltip>
 
         {/* Objectif */}
-        <Link to="/business/objectifs" title="Progression vers votre objectif de chiffre d'affaires. Calculé : revenue actuel ÷ objectif défini × 100. « En bonne voie » si ≥ 80%." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="flex justify-between items-start">
-            <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800">
-              <Target className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
+        <KpiTooltip text="Progression vers votre objectif de chiffre d'affaires. Calculé : revenue actuel ÷ objectif défini × 100. « En bonne voie » si ≥ 80%.">
+          <Link to="/business/objectifs" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
+            <div className="flex justify-between items-start">
+              <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800">
+                <Target className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
+              </div>
+              {objectiveProgress !== null && (
+                <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-300">{objectiveProgress.toFixed(0)}%</span>
+              )}
             </div>
-            {objectiveProgress !== null && (
-              <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-300">{objectiveProgress.toFixed(0)}%</span>
-            )}
-          </div>
-          <div className="mt-2">
-            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Objectif CA</p>
-            {revenueObjective ? (
-              <>
-                <div className="w-full bg-stone-100 dark:bg-neutral-800 h-1 rounded-full mt-1.5 mb-1.5 overflow-hidden">
-                  <div className="bg-neutral-900 dark:bg-white h-full rounded-full transition-all" style={{ width: `${objectiveProgress}%` }} />
-                </div>
-                <p className="text-sm font-extrabold text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  {objectiveProgress! >= 80 ? 'En bonne voie' : 'En cours'}
-                </p>
-              </>
-            ) : (
-              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">Aucun objectif</p>
-            )}
-          </div>
-        </Link>
+            <div className="mt-2">
+              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Objectif CA</p>
+              {revenueObjective ? (
+                <>
+                  <div className="w-full bg-stone-100 dark:bg-neutral-800 h-1 rounded-full mt-1.5 mb-1.5 overflow-hidden">
+                    <div className="bg-neutral-900 dark:bg-white h-full rounded-full transition-all" style={{ width: `${objectiveProgress}%` }} />
+                  </div>
+                  <p className="text-sm font-extrabold text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    {objectiveProgress! >= 80 ? 'En bonne voie' : 'En cours'}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">Aucun objectif</p>
+              )}
+            </div>
+          </Link>
+        </KpiTooltip>
 
         {/* No-Show */}
-        <Link to="/business/crm" title="Taux de no-show : pourcentage de prospects qui ne se sont pas présentés au rendez-vous. Calculé : nombre de no-shows ÷ total des prospects ayant eu un rendez-vous qualifié." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="flex justify-between items-start">
-            <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30">
-              <UserX className="h-3.5 w-3.5 text-amber-600" />
+        <KpiTooltip text="Taux de no-show : pourcentage de prospects absents au rendez-vous. Calculé : no-shows ÷ total des prospects qualifiés ayant eu un rendez-vous.">
+          <Link to="/business/crm" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
+            <div className="flex justify-between items-start">
+              <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30">
+                <UserX className="h-3.5 w-3.5 text-amber-600" />
+              </div>
+              {noshowRate > 0 && (
+                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full">
+                  {noshowRate > 5 ? '!' : '-'}
+                </span>
+              )}
             </div>
-            {noshowRate > 0 && (
-              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full">
-                {noshowRate > 5 ? '!' : '-'}
-              </span>
-            )}
-          </div>
-          <div className="mt-2">
-            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">No-Show</p>
-            <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
-          </div>
-        </Link>
+            <div className="mt-2">
+              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">No-Show</p>
+              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
+            </div>
+          </Link>
+        </KpiTooltip>
 
         {/* KPI Health */}
-        <Link
-          to="/business/report"
-          title={`Basé sur le taux de closing (${closingRate.toFixed(1)}%).\n\n≥ 30% → Optimal (vert)\n15-30% → Moyen (orange)\n< 15% → Faible (rouge)\n\nCalcul : prospects gagnés / (gagnés + perdus + no-shows)`}
-          className={`rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform bg-white/60 dark:bg-white/5 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] cursor-pointer ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}
-        >
-          <div className="flex justify-between items-start">
-            <div className={`p-1.5 rounded-lg ${healthOk ? 'bg-emerald-50 dark:bg-emerald-900/30' : healthWarn ? 'bg-amber-50 dark:bg-amber-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
-              <Activity className={`h-3.5 w-3.5 ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`} />
+        <KpiTooltip text={`Santé globale basée sur le taux de closing (${closingRate.toFixed(1)}%). ≥ 30% → Optimal, 15-30% → Moyen, < 15% → Faible.`}>
+          <Link
+            to="/business/report"
+            className={`rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform bg-white/60 dark:bg-white/5 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] cursor-pointer h-full ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}
+          >
+            <div className="flex justify-between items-start">
+              <div className={`p-1.5 rounded-lg ${healthOk ? 'bg-emerald-50 dark:bg-emerald-900/30' : healthWarn ? 'bg-amber-50 dark:bg-amber-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
+                <Activity className={`h-3.5 w-3.5 ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`} />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className={`w-1.5 h-1.5 rounded-full ${healthOk ? 'bg-emerald-500' : healthWarn ? 'bg-amber-500' : 'bg-red-500'}`} />
+                <span className={`text-[9px] font-bold uppercase ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`}>
+                  {healthOk ? 'Healthy' : healthWarn ? 'Warning' : 'Low'}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <span className={`w-1.5 h-1.5 rounded-full ${healthOk ? 'bg-emerald-500' : healthWarn ? 'bg-amber-500' : 'bg-red-500'}`} />
-              <span className={`text-[9px] font-bold uppercase ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`}>
-                {healthOk ? 'Healthy' : healthWarn ? 'Warning' : 'Low'}
-              </span>
+            <div className="mt-2">
+              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Santé KPI</p>
+              <p className="text-base font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{healthLabel}</p>
             </div>
-          </div>
-          <div className="mt-2">
-            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Santé KPI</p>
-            <p className="text-base font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{healthLabel}</p>
-          </div>
-        </Link>
+          </Link>
+        </KpiTooltip>
       </div>
 
       {/* ─── Campaigns + Objectives ─── */}
