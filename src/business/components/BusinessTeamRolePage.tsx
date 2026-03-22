@@ -569,7 +569,7 @@ function IndividualView({
           {connectionLogs.length === 0 ? (
             <div className="text-center py-4">
               <History className="h-6 w-6 text-stone-300 mx-auto mb-2" />
-              <p className="text-sm text-stone-500">Aucun historique de connexion</p>
+              <p className="text-sm text-stone-500 dark:text-neutral-400">Aucun historique de connexion</p>
             </div>
           ) : (
             <div className="space-y-1.5 max-h-64 overflow-y-auto">
@@ -577,7 +577,7 @@ function IndividualView({
                 const date = new Date(log.created_at)
                 const isConnect = log.event_type === 'connect'
                 return (
-                  <div key={log.id} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-white/60">
+                  <div key={log.id} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-white/60 dark:hover:bg-white/5">
                     <div className={cn(
                       'flex h-7 w-7 items-center justify-center rounded-lg shrink-0',
                       isConnect ? 'bg-emerald-50' : 'bg-red-50'
@@ -677,7 +677,7 @@ function IndividualView({
                 <div key={stage.id} className="rounded-xl bg-white dark:bg-neutral-800 p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   <div className="flex items-center justify-center gap-1.5 mb-1">
                     <span className={cn('h-2 w-2 rounded-full', stage.color)} />
-                    <span className="text-xs text-stone-500">{stage.name}</span>
+                    <span className="text-xs text-stone-500 dark:text-neutral-400">{stage.name}</span>
                   </div>
                   <p className={cn('text-lg font-bold', count > 0 ? stage.textColor : 'text-stone-300')}>{count}</p>
                 </div>
@@ -698,7 +698,7 @@ function IndividualView({
           {slots.length === 0 ? (
             <div className="text-center py-4">
               <AlertCircle className="h-6 w-6 text-stone-300 mx-auto mb-2" />
-              <p className="text-sm text-stone-500">Aucun créneau configuré</p>
+              <p className="text-sm text-stone-500 dark:text-neutral-400">Aucun créneau configuré</p>
               <p className="text-xs text-stone-400 mt-1">Le membre n'a pas encore renseigné ses disponibilités</p>
             </div>
           ) : (
@@ -708,10 +708,10 @@ function IndividualView({
                 if (daySlots.length === 0) return null
                 return (
                   <div key={idx} className="flex items-center gap-3 py-1.5">
-                    <span className="text-sm font-medium text-stone-700 w-24 shrink-0">{day}</span>
+                    <span className="text-sm font-medium text-stone-700 dark:text-neutral-200 w-24 shrink-0">{day}</span>
                     <div className="flex flex-wrap gap-1.5">
                       {daySlots.map(slot => (
-                        <span key={slot.id} className="text-xs font-medium px-2.5 py-1 rounded-full bg-stone-100 border border-stone-200 text-stone-700">
+                        <span key={slot.id} className="text-xs font-medium px-2.5 py-1 rounded-full bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 text-stone-700 dark:text-neutral-200">
                           {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
                         </span>
                       ))}
@@ -739,14 +739,14 @@ function IndividualView({
           {absences.length === 0 ? (
             <div className="text-center py-4">
               <AlertCircle className="h-6 w-6 text-stone-300 mx-auto mb-2" />
-              <p className="text-sm text-stone-500">Aucune absence enregistrée</p>
+              <p className="text-sm text-stone-500 dark:text-neutral-400">Aucune absence enregistrée</p>
             </div>
           ) : (
             <div className="space-y-2">
               {absences.map(absence => (
-                <div key={absence.id} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                <div key={absence.id} className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-3 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   <div>
-                    <p className="text-sm font-medium text-stone-900">
+                    <p className="text-sm font-medium text-stone-900 dark:text-white">
                       {formatDate(absence.start_date)} → {formatDate(absence.end_date)}
                     </p>
                     {absence.reason && (
@@ -771,16 +771,16 @@ function IndividualView({
           {upcomingAppts.length === 0 ? (
             <div className="text-center py-4">
               <CalendarDays className="h-6 w-6 text-stone-300 mx-auto mb-2" />
-              <p className="text-sm text-stone-500">Aucun rendez-vous à venir</p>
+              <p className="text-sm text-stone-500 dark:text-neutral-400">Aucun rendez-vous à venir</p>
             </div>
           ) : (
             <div className="space-y-2">
               {upcomingAppts.map(appt => {
                 const prospect = prospects.find(p => p.id === appt.prospect_id)
                 return (
-                  <div key={appt.id} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                  <div key={appt.id} className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-3 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                     <div>
-                      <p className="text-sm font-medium text-stone-900">
+                      <p className="text-sm font-medium text-stone-900 dark:text-white">
                         {new Date(appt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
                         {appt.time && ` à ${appt.time.slice(0, 5)}`}
                       </p>
@@ -828,7 +828,7 @@ function KpiMini({ icon: Icon, label, value, color, isText }: {
         <Icon className={cn('h-3.5 w-3.5', c.text)} />
       </div>
       <p className={cn('text-lg font-bold', c.text)}>{value}</p>
-      <p className="text-xs text-stone-500 mt-0.5">{label}</p>
+      <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">{label}</p>
     </div>
   )
 }

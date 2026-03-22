@@ -200,7 +200,7 @@ export function BusinessOnboardingModal() {
           </div>
         )}
 
-        <div className="w-full max-w-lg rounded-xl border border-stone-200/20 bg-white/95 backdrop-blur-xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] animate-in zoom-in-95 duration-200">
+        <div className="w-full max-w-lg rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] animate-in zoom-in-95 duration-200">
           {/* Header with org info */}
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg overflow-hidden border border-stone-200/20 shrink-0">
@@ -213,8 +213,8 @@ export function BusinessOnboardingModal() {
               )}
             </div>
             <div>
-              <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900">Bienvenue chez {settings.company_name || 'votre organisation'} !</h2>
-              <p className="text-stone-500 text-sm">Complétez votre profil pour commencer</p>
+              <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">Bienvenue chez {settings.company_name || 'votre organisation'} !</h2>
+              <p className="text-stone-500 dark:text-neutral-400 text-sm">Complétez votre profil pour commencer</p>
             </div>
           </div>
 
@@ -222,7 +222,7 @@ export function BusinessOnboardingModal() {
             {/* Avatar */}
             <div className="flex justify-center mb-2">
               <div className="relative group cursor-pointer" onClick={handleTmAvatarClick}>
-                <div className="w-20 h-20 rounded-full border-2 border-stone-200/20 overflow-hidden bg-stone-100/50 flex items-center justify-center transition-all group-hover:border-stone-400">
+                <div className="w-20 h-20 rounded-full border-2 border-stone-200/20 dark:border-neutral-700 overflow-hidden bg-stone-100/50 dark:bg-neutral-800 flex items-center justify-center transition-all group-hover:border-stone-400">
                   {tmAvatarUrl ? (
                     <img src={tmAvatarUrl} alt="Profil" className="w-full h-full object-cover" />
                   ) : (
@@ -241,23 +241,23 @@ export function BusinessOnboardingModal() {
             {/* Prénom + Nom */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Prénom</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Prénom</label>
                 <input
                   type="text"
                   value={tmFirstName}
                   onChange={(e) => setTmFirstName(e.target.value)}
-                  className="w-full rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
+                  className="w-full rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                   placeholder="Jean"
                   required
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Nom</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Nom</label>
                 <input
                   type="text"
                   value={tmLastName}
                   onChange={(e) => setTmLastName(e.target.value)}
-                  className="w-full rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
+                  className="w-full rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                   placeholder="Dupont"
                   required
                 />
@@ -266,7 +266,7 @@ export function BusinessOnboardingModal() {
 
             {/* Date de naissance */}
             <div>
-              <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Date de naissance</label>
+              <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Date de naissance</label>
               <div className="relative">
                 <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
                 <input
@@ -283,26 +283,26 @@ export function BusinessOnboardingModal() {
 
             {/* Téléphone */}
             <div>
-              <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Téléphone</label>
+              <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Téléphone</label>
               <div className="flex gap-2">
                 <div className="relative" ref={tmCountryRef}>
                   <button
                     type="button"
                     onClick={() => { setIsTmCountryOpen(!isTmCountryOpen); setTmCountrySearch(''); }}
-                    className="w-28 shrink-0 rounded-xl bg-stone-100/50 border-none py-3 px-3 text-stone-900 text-sm focus:ring-2 focus:ring-emerald-600/20 focus:outline-none text-left truncate"
+                    className="w-28 shrink-0 rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-3 text-stone-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-600/20 focus:outline-none text-left truncate"
                   >
                     {tmSelectedCountry ? `${tmSelectedCountry.dial_code} ${tmSelectedCountry.code}` : tmCountryCode}
                   </button>
                   {isTmCountryOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white/95 backdrop-blur-xl border border-stone-200/20 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] z-50 overflow-hidden">
-                      <div className="sticky top-0 bg-white/95 backdrop-blur-xl p-2 border-b border-stone-100">
+                    <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border border-stone-200/20 dark:border-neutral-700 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] z-50 overflow-hidden">
+                      <div className="sticky top-0 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl p-2 border-b border-stone-100 dark:border-neutral-800">
                         <div className="relative">
                           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
                           <input
                             type="text"
                             value={tmCountrySearch}
                             onChange={(e) => setTmCountrySearch(e.target.value)}
-                            className="w-full rounded-lg bg-stone-100/50 border-none py-2 pl-8 pr-3 text-sm text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
+                            className="w-full rounded-lg bg-stone-100/50 dark:bg-neutral-800 border-none py-2 pl-8 pr-3 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                             placeholder="Rechercher un pays..."
                             autoFocus
                           />
@@ -314,7 +314,7 @@ export function BusinessOnboardingModal() {
                             key={c.code}
                             type="button"
                             onClick={() => { setTmCountryCode(c.dial_code); setIsTmCountryOpen(false); setTmCountrySearch(''); }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100/50 transition-colors flex items-center justify-between ${
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100/50 dark:hover:bg-neutral-800 transition-colors flex items-center justify-between ${
                               tmCountryCode === c.dial_code ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-stone-700'
                             }`}
                           >
@@ -333,7 +333,7 @@ export function BusinessOnboardingModal() {
                   type="tel"
                   value={tmPhone}
                   onChange={(e) => setTmPhone(e.target.value)}
-                  className="flex-1 rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
+                  className="flex-1 rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                   placeholder="6 12 34 56 78"
                 />
               </div>
@@ -492,7 +492,7 @@ export function BusinessOnboardingModal() {
         </div>
       )}
 
-      <div className="w-full max-w-lg rounded-xl border border-stone-200/20 bg-white/95 backdrop-blur-xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] animate-in zoom-in-95 duration-200">
+      <div className="w-full max-w-lg rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] animate-in zoom-in-95 duration-200">
         {/* Progress indicator */}
         <div className="flex items-center gap-2 mb-8">
           <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? 'bg-emerald-500' : 'bg-stone-200'}`} />
@@ -503,19 +503,19 @@ export function BusinessOnboardingModal() {
           <>
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-stone-100/50">
-                  <Briefcase className="h-5 w-5 text-stone-900" />
+                <div className="p-2 rounded-lg bg-stone-100/50 dark:bg-neutral-800">
+                  <Briefcase className="h-5 w-5 text-stone-900 dark:text-white" />
                 </div>
-                <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900">Votre profil</h2>
+                <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">Votre profil</h2>
               </div>
-              <p className="text-stone-500 text-sm">Présentez-vous en quelques secondes</p>
+              <p className="text-stone-500 dark:text-neutral-400 text-sm">Présentez-vous en quelques secondes</p>
             </div>
 
             <div className="space-y-4">
               {/* Avatar */}
               <div className="flex justify-center mb-2">
                 <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
-                  <div className="w-20 h-20 rounded-full border-2 border-stone-200/20 overflow-hidden bg-stone-100/50 flex items-center justify-center transition-all group-hover:border-stone-400">
+                  <div className="w-20 h-20 rounded-full border-2 border-stone-200/20 dark:border-neutral-700 overflow-hidden bg-stone-100/50 dark:bg-neutral-800 flex items-center justify-center transition-all group-hover:border-stone-400">
                     {avatarUrl ? (
                       <img src={avatarUrl} alt="Profil" className="w-full h-full object-cover" />
                     ) : (
@@ -538,39 +538,39 @@ export function BusinessOnboardingModal() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Nom complet</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Nom complet</label>
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
+                  className="w-full rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                   placeholder="John Doe"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Téléphone</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Téléphone</label>
                 <div className="flex gap-2">
                   {/* Searchable country code dropdown */}
                   <div className="relative" ref={countryDropdownRef}>
                     <button
                       type="button"
                       onClick={() => { setIsCountryDropdownOpen(!isCountryDropdownOpen); setCountrySearch(''); }}
-                      className="w-28 shrink-0 rounded-xl bg-stone-100/50 border-none py-3 px-3 text-stone-900 text-sm focus:ring-2 focus:ring-emerald-600/20 focus:outline-none text-left truncate"
+                      className="w-28 shrink-0 rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-3 text-stone-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-600/20 focus:outline-none text-left truncate"
                     >
                       {selectedCountry ? `${selectedCountry.dial_code} ${selectedCountry.code}` : countryCode}
                     </button>
                     {isCountryDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white/95 backdrop-blur-xl border border-stone-200/20 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] z-50 overflow-hidden">
-                        <div className="sticky top-0 bg-white/95 backdrop-blur-xl p-2 border-b border-stone-100">
+                      <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border border-stone-200/20 dark:border-neutral-700 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] z-50 overflow-hidden">
+                        <div className="sticky top-0 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl p-2 border-b border-stone-100 dark:border-neutral-800">
                           <div className="relative">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
                             <input
                               type="text"
                               value={countrySearch}
                               onChange={(e) => setCountrySearch(e.target.value)}
-                              className="w-full rounded-lg bg-stone-100/50 border-none py-2 pl-8 pr-3 text-sm text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
+                              className="w-full rounded-lg bg-stone-100/50 dark:bg-neutral-800 border-none py-2 pl-8 pr-3 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                               placeholder="Rechercher un pays..."
                               autoFocus
                             />
@@ -586,7 +586,7 @@ export function BusinessOnboardingModal() {
                                 setIsCountryDropdownOpen(false);
                                 setCountrySearch('');
                               }}
-                              className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100/50 transition-colors flex items-center justify-between ${
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100/50 dark:hover:bg-neutral-800 transition-colors flex items-center justify-between ${
                                 countryCode === c.dial_code ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-stone-700'
                               }`}
                             >
@@ -605,14 +605,14 @@ export function BusinessOnboardingModal() {
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="flex-1 rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
+                    className="flex-1 rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                     placeholder="6 12 34 56 78"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Votre rôle</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Votre rôle</label>
                 <div className="grid grid-cols-2 gap-2">
                   {['CEO / Fondateur', 'Sales Manager', 'Business Developer', 'Autre'].map((r) => (
                     <button
@@ -622,7 +622,7 @@ export function BusinessOnboardingModal() {
                       className={`rounded-full border py-2.5 px-3 text-sm font-medium transition-all ${
                         role === r
                           ? 'border-stone-900 bg-stone-900 text-white'
-                          : 'border-stone-300 bg-white text-stone-700 hover:bg-stone-50'
+                          : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-700'
                       }`}
                     >
                       {r}
@@ -647,29 +647,29 @@ export function BusinessOnboardingModal() {
           <>
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-stone-100/50">
-                  <Building2 className="h-5 w-5 text-stone-900" />
+                <div className="p-2 rounded-lg bg-stone-100/50 dark:bg-neutral-800">
+                  <Building2 className="h-5 w-5 text-stone-900 dark:text-white" />
                 </div>
-                <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900">Votre entreprise</h2>
+                <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">Votre entreprise</h2>
               </div>
-              <p className="text-stone-500 text-sm">Configurez votre espace Business</p>
+              <p className="text-stone-500 dark:text-neutral-400 text-sm">Configurez votre espace Business</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Nom de l'entreprise</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Nom de l'entreprise</label>
                 <input
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
+                  className="w-full rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                   placeholder="Mon entreprise"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Taille de l'équipe</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Taille de l'équipe</label>
                 <div className="flex flex-wrap gap-2">
                   {TEAM_SIZES.map((size) => (
                     <button
@@ -679,7 +679,7 @@ export function BusinessOnboardingModal() {
                       className={`rounded-full border py-2 px-4 text-sm font-medium transition-all ${
                         teamSize === size
                           ? 'border-stone-900 bg-stone-900 text-white'
-                          : 'border-stone-300 bg-white text-stone-700 hover:bg-stone-50'
+                          : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-700'
                       }`}
                     >
                       {size}
@@ -689,7 +689,7 @@ export function BusinessOnboardingModal() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Niche / Secteur</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Niche / Secteur</label>
                 <div className="grid grid-cols-2 gap-2">
                   {NICHES.map((n) => (
                     <button
@@ -699,7 +699,7 @@ export function BusinessOnboardingModal() {
                       className={`rounded-full border py-2 px-3 text-sm font-medium transition-all ${
                         niche === n
                           ? 'border-stone-900 bg-stone-900 text-white'
-                          : 'border-stone-300 bg-white text-stone-700 hover:bg-stone-50'
+                          : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-700'
                       }`}
                     >
                       {n}
@@ -711,7 +711,7 @@ export function BusinessOnboardingModal() {
                     type="text"
                     value={nicheCustom}
                     onChange={(e) => setNicheCustom(e.target.value)}
-                    className="mt-2 w-full rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
+                    className="mt-2 w-full rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                     placeholder="Précisez votre secteur..."
                   />
                 )}
@@ -720,7 +720,7 @@ export function BusinessOnboardingModal() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 rounded-full border border-stone-300 py-3 font-medium text-stone-700 hover:bg-stone-50 transition-all"
+                  className="flex-1 rounded-full border border-stone-300 dark:border-neutral-600 py-3 font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
                 >
                   Retour
                 </button>

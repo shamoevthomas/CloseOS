@@ -243,8 +243,8 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
       className={cn(
         'flex items-center gap-4 px-6 py-4 rounded-full font-business-display font-bold text-sm tracking-wide transition-all duration-300 w-full',
         activeTab === tab
-          ? 'bg-white shadow-[0_4px_12px_rgba(0,0,0,0.03),0_0_0_0.5px_rgba(196,199,199,0.2)] text-stone-900'
-          : 'text-stone-400 hover:translate-x-1'
+          ? 'bg-white dark:bg-neutral-800 shadow-[0_4px_12px_rgba(0,0,0,0.03),0_0_0_0.5px_rgba(196,199,199,0.2)] text-stone-900 dark:text-white'
+          : 'text-stone-400 dark:text-neutral-500 hover:translate-x-1'
       )}
     >
       {icon}
@@ -313,13 +313,13 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
       )}
 
       {/* Modal Container */}
-      <div className="relative z-10 w-full max-w-6xl h-[870px] bg-white rounded-[2rem] shadow-[0_40px_80px_rgba(27,28,27,0.08)] flex overflow-hidden">
+      <div className="relative z-10 w-full max-w-6xl h-[870px] bg-white dark:bg-neutral-900 rounded-[2rem] shadow-[0_40px_80px_rgba(27,28,27,0.08)] flex overflow-hidden">
 
         {/* ─── Sidebar ─── */}
-        <aside className="hidden md:flex flex-col w-80 bg-white/70 backdrop-blur-xl border-r border-[#c4c7c7]/10 py-12 px-6">
+        <aside className="hidden md:flex flex-col w-80 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-r border-[#c4c7c7]/10 dark:border-neutral-700 py-12 px-6">
           <div className="mb-12 px-4">
-            <h2 className="font-business-display font-extrabold text-2xl tracking-tighter text-stone-900">Settings</h2>
-            <p className="text-stone-500 text-sm mt-1">Manage your workspace</p>
+            <h2 className="font-business-display font-extrabold text-2xl tracking-tighter text-stone-900 dark:text-white">Settings</h2>
+            <p className="text-stone-500 dark:text-neutral-400 text-sm mt-1">Manage your workspace</p>
           </div>
 
           <nav className="flex-1 space-y-2">
@@ -331,15 +331,15 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
           {/* Footer */}
           <div className="mt-auto px-4 pt-8">
-            <div className="p-6 bg-[#f5f3f2] rounded-2xl">
-              <p className="text-[10px] uppercase tracking-widest font-bold text-stone-400 mb-2">Workspace Plan</p>
-              <p className="font-business-display font-extrabold text-sm text-stone-900">CloserOS Business</p>
+            <div className="p-6 bg-[#f5f3f2] dark:bg-neutral-800 rounded-2xl">
+              <p className="text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 mb-2">Workspace Plan</p>
+              <p className="font-business-display font-extrabold text-sm text-stone-900 dark:text-white">CloserOS Business</p>
             </div>
           </div>
         </aside>
 
         {/* ─── Main Content ─── */}
-        <main className="flex-1 overflow-y-auto bg-[#fbf9f8] py-12 px-8 lg:px-16">
+        <main className="flex-1 overflow-y-auto bg-[#fbf9f8] dark:bg-neutral-950 py-12 px-8 lg:px-16">
           <div className="max-w-3xl">
 
             {/* Message */}
@@ -358,7 +358,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             {/* ─── PROFILE TAB ─── */}
             {activeTab === 'profile' && (
               <form onSubmit={handleUpdateProfile} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 mb-8 tracking-tight">Mon Profil</h3>
+                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-8 tracking-tight">Mon Profil</h3>
 
                 <div className="flex flex-col md:flex-row gap-12 items-start">
                   {/* Avatar */}
@@ -392,50 +392,50 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                   <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Full name */}
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Nom complet</label>
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Nom complet</label>
                       <input
                         type="text"
                         disabled
                         value={formData.full_name}
-                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-400 cursor-not-allowed outline-none transition-all font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-400 dark:text-neutral-500 cursor-not-allowed outline-none transition-all font-medium"
                       />
                       <div className="flex items-start gap-2 mt-1 px-1">
                         <AlertCircle className="h-3.5 w-3.5 text-[#006c49] mt-0.5 shrink-0" strokeWidth={1.5} />
-                        <p className="text-[10px] text-stone-500 leading-relaxed">Le nom est verrouillé pour garantir la stabilité de vos liens.</p>
+                        <p className="text-[10px] text-stone-500 dark:text-neutral-400 leading-relaxed">Le nom est verrouillé pour garantir la stabilité de vos liens.</p>
                       </div>
                     </div>
 
                     {/* Email (read-only) */}
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Email</label>
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Email</label>
                       <input
                         type="email"
                         disabled
                         value={user?.email || ''}
-                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-400 cursor-not-allowed outline-none font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-400 dark:text-neutral-500 cursor-not-allowed outline-none font-medium"
                       />
                     </div>
 
                     {/* Phone */}
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Numero de telephone</label>
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Numero de telephone</label>
                       <input
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                         placeholder="+33 6 00 00 00 00"
                       />
                     </div>
 
                     {/* Role */}
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Role</label>
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Role</label>
                       <div className="relative">
                         <select
                           value={formData.role}
                           onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                          className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all cursor-pointer appearance-none font-medium"
+                          className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all cursor-pointer appearance-none font-medium"
                         >
                           <option value="Business Owner">Business Owner</option>
                           <option value="Head of Sales">Head of Sales</option>
@@ -452,15 +452,15 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 {/* Owner assignable toggle */}
                 <div
                   onClick={() => setFormData(prev => ({ ...prev, owner_assignable: !prev.owner_assignable }))}
-                  className="mt-8 flex items-center justify-between p-6 rounded-2xl bg-white border border-[#c4c7c7]/10 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                  className="mt-8 flex items-center justify-between p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all cursor-pointer group"
                 >
                   <div className="flex items-center gap-4">
                     <div className="p-2.5 rounded-xl bg-[#006c49]/10 text-[#006c49] group-hover:bg-[#006c49]/15 transition-colors">
                       <UserPlus className="h-5 w-5" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-stone-900 text-sm">Apparaitre dans les assignations</h4>
-                      <p className="text-xs text-stone-500 mt-0.5">Vous serez selectionnable comme Closer/Setter dans les menus d'assignation</p>
+                      <h4 className="font-bold text-stone-900 dark:text-white text-sm">Apparaitre dans les assignations</h4>
+                      <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">Vous serez selectionnable comme Closer/Setter dans les menus d'assignation</p>
                     </div>
                   </div>
                   {formData.owner_assignable
@@ -492,13 +492,13 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 {/* Security section inline */}
                 <section className="mt-16 mb-12">
                   <div className="flex items-baseline justify-between mb-8">
-                    <h3 className="font-business-display font-extrabold text-3xl text-stone-900 tracking-tight">Securite & Connexion</h3>
+                    <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white tracking-tight">Securite & Connexion</h3>
                     <span className="text-xs font-bold text-[#006c49] uppercase tracking-widest bg-[#006c49]/5 px-3 py-1 rounded-full">Proteger</span>
                   </div>
 
                   {/* Google Auth Banner */}
                   {isGoogleUser && (
-                    <div className="mb-8 p-6 rounded-2xl bg-white border border-[#c4c7c7]/10 shadow-sm flex items-center justify-between">
+                    <div className="mb-8 p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-[#eae8e7] rounded-full flex items-center justify-center">
                           <svg className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -509,8 +509,8 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                           </svg>
                         </div>
                         <div>
-                          <p className="font-business-display font-bold text-sm text-stone-900">Authentification Google active</p>
-                          <p className="text-xs text-stone-500">Connecte via {user?.email}</p>
+                          <p className="font-business-display font-bold text-sm text-stone-900 dark:text-white">Authentification Google active</p>
+                          <p className="text-xs text-stone-500 dark:text-neutral-400">Connecte via {user?.email}</p>
                         </div>
                       </div>
                       <Check className="h-6 w-6 text-[#006c49]" strokeWidth={2} />
@@ -521,22 +521,22 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                   {!isGoogleUser && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Mot de passe actuel</label>
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Mot de passe actuel</label>
                         <input
                           type="password"
                           value={formData.currentPassword}
                           onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-                          className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                          className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                           placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Nouveau mot de passe</label>
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Nouveau mot de passe</label>
                         <input
                           type="password"
                           value={formData.newPassword}
                           onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                          className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                          className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                           placeholder="Entrez 8 caracteres min."
                         />
                       </div>
@@ -545,11 +545,11 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 </section>
 
                 {/* Footer actions */}
-                <div className="mt-12 pt-8 border-t border-[#c4c7c7]/10 flex items-center justify-between">
+                <div className="mt-12 pt-8 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex items-center justify-between">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="text-sm font-business-display font-bold text-stone-400 hover:text-stone-900 transition-colors"
+                    className="text-sm font-business-display font-bold text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors"
                   >
                     Ignorer les modifications
                   </button>
@@ -569,7 +569,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             {/* ─── SECURITY TAB ─── */}
             {activeTab === 'security' && (
               <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 mb-8 tracking-tight">Securite & Connexion</h3>
+                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-8 tracking-tight">Securite & Connexion</h3>
 
                 {isGoogleUser ? (
                   <div className="p-6 bg-[#006c49]/5 border border-[#006c49]/10 rounded-2xl flex gap-4">
@@ -577,41 +577,41 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                       <Shield className="h-6 w-6 text-[#006c49] shrink-0" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-stone-900 mb-1 text-lg">Authentification Google active</h4>
-                      <p className="text-sm text-stone-500 leading-relaxed">Votre compte est securise par Google. La gestion du mot de passe se fait via Google.</p>
+                      <h4 className="font-bold text-stone-900 dark:text-white mb-1 text-lg">Authentification Google active</h4>
+                      <p className="text-sm text-stone-500 dark:text-neutral-400 leading-relaxed">Votre compte est securise par Google. La gestion du mot de passe se fait via Google.</p>
                     </div>
                   </div>
                 ) : (
                   <form onSubmit={handleUpdatePassword} className="space-y-6">
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Mot de passe actuel (Requis)</label>
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Mot de passe actuel (Requis)</label>
                       <input
                         type="password"
                         value={formData.currentPassword}
                         onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                         placeholder="Votre mot de passe actuel"
                         required
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Nouveau mot de passe</label>
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Nouveau mot de passe</label>
                       <input
                         type="password"
                         value={formData.newPassword}
                         onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                         placeholder="8 caracteres minimum"
                         minLength={8}
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Confirmer le mot de passe</label>
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Confirmer le mot de passe</label>
                       <input
                         type="password"
                         value={formData.confirmPassword}
                         onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                         placeholder="Repetez le mot de passe"
                         minLength={8}
                       />
@@ -632,7 +632,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             {/* ─── DELETE ACCOUNT TAB ─── */}
             {activeTab === 'delete_account' && (
               <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 mb-8 tracking-tight">Suppression du compte</h3>
+                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-8 tracking-tight">Suppression du compte</h3>
 
                 <div className="p-8 border border-red-200 bg-red-50 rounded-3xl space-y-6">
                   <div className="flex items-center gap-4 text-red-600">
@@ -640,7 +640,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     <h3 className="text-xl font-business-display font-extrabold">Zone de danger</h3>
                   </div>
                   <div className="space-y-4">
-                    <p className="text-stone-600 leading-relaxed">
+                    <p className="text-stone-600 dark:text-neutral-300 leading-relaxed">
                       La suppression est irreversible. Toutes vos donnees (prospects, campagnes, objectifs, equipe) seront supprimees definitivement.
                     </p>
                     {formData.deletion_scheduled_at && (
@@ -676,32 +676,32 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             {/* ─── SUPPORT TAB ─── */}
             {activeTab === 'support' && (
               <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 mb-8 tracking-tight">Centre d'Aide</h3>
+                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-8 tracking-tight">Centre d'Aide</h3>
 
-                <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-[#c4c7c7]/10 bg-white hover:shadow-md transition-all hover:scale-[1.01]">
+                <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:shadow-md transition-all hover:scale-[1.01]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-xl bg-[#006c49]/10 text-[#006c49] group-hover:bg-[#006c49]/15 transition-colors">
                         <Mail className="h-6 w-6" strokeWidth={1.5} />
                       </div>
                       <div>
-                        <h4 className="font-bold text-stone-900 text-lg">Email Support</h4>
-                        <p className="text-sm text-stone-500">Reponse sous 24h ouvrees</p>
+                        <h4 className="font-bold text-stone-900 dark:text-white text-lg">Email Support</h4>
+                        <p className="text-sm text-stone-500 dark:text-neutral-400">Reponse sous 24h ouvrees</p>
                       </div>
                     </div>
                     <ExternalLink className="h-5 w-5 text-stone-300 group-hover:text-stone-900 transition-colors" strokeWidth={1.5} />
                   </div>
                 </a>
 
-                <a href="#" className="group block p-6 rounded-2xl border border-[#c4c7c7]/10 bg-white hover:shadow-md transition-all hover:scale-[1.01]">
+                <a href="#" className="group block p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:shadow-md transition-all hover:scale-[1.01]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-xl bg-[#ffddb8]/30 text-[#2a1700] group-hover:bg-[#ffddb8]/50 transition-colors">
                         <AlertCircle className="h-6 w-6" strokeWidth={1.5} />
                       </div>
                       <div>
-                        <h4 className="font-bold text-stone-900 text-lg">Centre d'aide & FAQ</h4>
-                        <p className="text-sm text-stone-500">Guides et tutoriels (Bientot disponible)</p>
+                        <h4 className="font-bold text-stone-900 dark:text-white text-lg">Centre d'aide & FAQ</h4>
+                        <p className="text-sm text-stone-500 dark:text-neutral-400">Guides et tutoriels (Bientot disponible)</p>
                       </div>
                     </div>
                     <ExternalLink className="h-5 w-5 text-stone-300 group-hover:text-stone-900 transition-colors" strokeWidth={1.5} />
@@ -715,7 +715,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
         {/* Close button (top right) */}
         <button
           onClick={onClose}
-          className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/70 backdrop-blur-md flex items-center justify-center text-stone-400 hover:text-stone-900 transition-all z-20 shadow-sm"
+          className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/70 dark:bg-neutral-800/70 backdrop-blur-md flex items-center justify-center text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-all z-20 shadow-sm"
         >
           <X className="h-5 w-5" strokeWidth={1.5} />
         </button>
