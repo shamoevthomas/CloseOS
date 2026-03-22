@@ -473,7 +473,7 @@ export function SetterCallDetails() {
       <div className="mb-10">
         <button
           onClick={() => navigate('/business/appels')}
-          className="mb-6 flex items-center gap-2 text-stone-400 hover:text-stone-700 transition-colors font-['Manrope'] font-semibold"
+          className="mb-6 flex items-center gap-2 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors font-['Manrope'] font-semibold"
         >
           <ArrowLeft className="h-5 w-5" /> Retour
         </button>
@@ -486,10 +486,10 @@ export function SetterCallDetails() {
           </div>
         )}
 
-        <h1 className="font-['Manrope'] text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 mb-2">
+        <h1 className="font-['Manrope'] text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">
           {isReadonly ? "Détails de l'appel avec" : 'Qualifiez votre appel avec'} {call.contact_name}
         </h1>
-        <div className="flex items-center gap-2 text-stone-500">
+        <div className="flex items-center gap-2 text-stone-500 dark:text-neutral-400">
           <Clock className="h-4 w-4" />
           <span className="text-sm font-medium">
             {new Date(call.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -501,7 +501,7 @@ export function SetterCallDetails() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-8 mb-10 border-b border-stone-200/60">
+      <div className="flex gap-8 mb-10 border-b border-stone-200/60 dark:border-neutral-700/30">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -509,8 +509,8 @@ export function SetterCallDetails() {
             className={cn(
               "pb-4 font-['Manrope'] font-semibold transition-colors",
               activeTab === tab.id
-                ? "text-stone-900 border-b-2 border-stone-900 font-bold"
-                : "text-stone-400 hover:text-stone-600"
+                ? "text-stone-900 dark:text-white border-b-2 border-stone-900 dark:border-white font-bold"
+                : "text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300"
             )}
           >
             {tab.label}
@@ -554,8 +554,8 @@ export function SetterCallDetails() {
                       className={cn(
                         'p-5 rounded-xl border-2 text-left transition-all cursor-pointer',
                         isSelected
-                          ? 'bg-white border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
-                          : 'bg-stone-50/50 border-stone-200/40 hover:bg-white hover:border-stone-300'
+                          ? 'bg-white dark:bg-neutral-800 border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                          : 'bg-stone-50/50 dark:bg-neutral-800/50 border-stone-200/40 dark:border-neutral-700/30 hover:bg-white dark:hover:bg-neutral-800 hover:border-stone-300 dark:hover:border-neutral-600'
                       )}
                     >
                       <div className="mb-3">
@@ -563,7 +563,7 @@ export function SetterCallDetails() {
                       </div>
                       <p className={cn(
                         "font-['Manrope'] font-bold text-sm",
-                        isSelected ? 'text-stone-900' : 'text-stone-500'
+                        isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400'
                       )}>
                         {outcome.label}
                       </p>
@@ -577,9 +577,9 @@ export function SetterCallDetails() {
             {selectedOutcome === 'qualified' && (
               <section>
                 <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 1 — Assigner un Closer</h3>
-                <div className="bg-white/70 backdrop-blur-xl p-7 rounded-xl border border-white/40 shadow-sm">
+                <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-7 rounded-xl border border-white/40 dark:border-neutral-700/30 shadow-sm">
                   {closers.length === 0 ? (
-                    <div className="flex items-center gap-2 text-sm text-stone-500 bg-stone-50 rounded-lg p-4 border border-stone-200">
+                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-800 rounded-lg p-4 border border-stone-200 dark:border-neutral-800">
                       <AlertCircle className="h-4 w-4 text-amber-500" />
                       Aucun closer dans l'équipe
                     </div>
@@ -587,11 +587,11 @@ export function SetterCallDetails() {
                     <>
                       {/* Manual closer dropdown */}
                       <div className="mb-5">
-                        <label className="mb-2 block text-xs font-medium text-stone-500">Sélectionner manuellement</label>
+                        <label className="mb-2 block text-xs font-medium text-stone-500 dark:text-neutral-400">Sélectionner manuellement</label>
                         <select
                           value={assignmentMode === 'manual' ? selectedCloser?.id || '' : ''}
                           onChange={(e) => e.target.value && handleManualSelect(e.target.value)}
-                          className="w-full rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-700 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                          className="w-full rounded-lg border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm text-stone-700 dark:text-neutral-200 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                         >
                           <option value="">— Choisir un closer —</option>
                           {closers.map(c => (
@@ -606,8 +606,8 @@ export function SetterCallDetails() {
                           className={cn(
                             'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
                             assignmentMode === 'suivant'
-                              ? 'bg-stone-900 text-white'
-                              : 'border border-stone-300 text-stone-700 hover:bg-stone-100'
+                              ? 'bg-stone-900 dark:bg-white text-white dark:text-neutral-900'
+                              : 'border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-neutral-800'
                           )}
                         >
                           Suivant (Tournante)
@@ -617,8 +617,8 @@ export function SetterCallDetails() {
                           className={cn(
                             'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
                             assignmentMode === 'hasard'
-                              ? 'bg-stone-900 text-white'
-                              : 'border border-stone-300 text-stone-700 hover:bg-stone-100'
+                              ? 'bg-stone-900 dark:bg-white text-white dark:text-neutral-900'
+                              : 'border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-neutral-800'
                           )}
                         >
                           Hasard
@@ -626,12 +626,12 @@ export function SetterCallDetails() {
                       </div>
 
                       {selectedCloser && (
-                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 border border-stone-200/30">
-                          <div className="w-14 h-14 rounded-full bg-stone-200 flex items-center justify-center text-stone-700 font-bold text-lg shrink-0">
+                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 dark:bg-white/5 border border-stone-200/30 dark:border-neutral-700/30">
+                          <div className="w-14 h-14 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-stone-700 dark:text-neutral-200 font-bold text-lg shrink-0">
                             {selectedCloser.first_name?.[0]}{selectedCloser.last_name?.[0]}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-['Manrope'] font-extrabold text-stone-900">
+                            <h4 className="font-['Manrope'] font-extrabold text-stone-900 dark:text-white">
                               {selectedCloser.first_name} {selectedCloser.last_name}
                             </h4>
                             <p className="text-emerald-700 font-bold text-xs uppercase tracking-widest">
@@ -653,14 +653,14 @@ export function SetterCallDetails() {
             <div className="lg:col-span-5">
               <section>
                 <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 2 — Programmer le RDV</h3>
-                <div className="bg-white p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                <div className="bg-white dark:bg-neutral-800 p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   {loadingSlots ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
                       <span className="ml-2 text-sm text-stone-500">Chargement des créneaux...</span>
                     </div>
                   ) : dateKeys.length === 0 ? (
-                    <div className="flex items-center gap-2 text-sm text-stone-500 bg-stone-50 rounded-lg p-4 border border-stone-200">
+                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-800 rounded-lg p-4 border border-stone-200 dark:border-neutral-800">
                       <AlertCircle className="h-4 w-4 text-amber-500" />
                       Aucun créneau disponible pour ce closer dans les 14 prochains jours.
                     </div>
@@ -668,7 +668,7 @@ export function SetterCallDetails() {
                     <>
                       {/* Date navigation */}
                       <div className="flex justify-between items-center mb-5">
-                        <h4 className="font-['Manrope'] font-bold text-stone-900 capitalize">
+                        <h4 className="font-['Manrope'] font-bold text-stone-900 dark:text-white capitalize">
                           {currentDateSlots[0]?.dateLabel || ''}
                         </h4>
                         <div className="flex gap-2">
@@ -701,7 +701,7 @@ export function SetterCallDetails() {
                                 'py-3.5 text-sm font-bold rounded-lg transition-all',
                                 isSelected
                                   ? 'bg-emerald-700 text-white shadow-md'
-                                  : 'border border-stone-200/60 text-stone-600 hover:border-emerald-600/30'
+                                  : 'border border-stone-200/60 dark:border-neutral-700/30 text-stone-600 dark:text-neutral-300 hover:border-emerald-600/30'
                               )}
                             >
                               {slot.timeLabel}
@@ -728,8 +728,8 @@ export function SetterCallDetails() {
                           <div className="flex items-center gap-2">
                             <CalendarCheck className="h-4 w-4 text-emerald-600" />
                             <div>
-                              <p className="text-sm font-semibold text-stone-900">RDV confirmé</p>
-                              <p className="text-xs text-stone-500">
+                              <p className="text-sm font-semibold text-stone-900 dark:text-white">RDV confirmé</p>
+                              <p className="text-xs text-stone-500 dark:text-neutral-400">
                                 {selectedSlot.dateLabel} — {selectedSlot.timeLabel} avec {selectedCloser.first_name} {selectedCloser.last_name}
                               </p>
                             </div>
@@ -747,8 +747,8 @@ export function SetterCallDetails() {
 
       {/* NOTES TAB */}
       {activeTab === 'notes' && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 h-[500px] flex flex-col">
-          <label className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-900 font-['Manrope']">
+        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700/30 shadow-sm p-7 h-[500px] flex flex-col">
+          <label className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-900 dark:text-white font-['Manrope']">
             <FileText className="h-4 w-4 text-stone-500" /> Historique et Notes de l'appel
           </label>
           <textarea
@@ -757,11 +757,11 @@ export function SetterCallDetails() {
             readOnly={isReadonly}
             placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
             className={cn(
-              "flex-1 w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-3 text-base text-stone-800 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none leading-relaxed",
+              "flex-1 w-full rounded-lg border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-3 text-base text-stone-800 dark:text-neutral-100 placeholder-stone-400 dark:placeholder-neutral-500 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none leading-relaxed",
               isReadonly && "cursor-default"
             )}
           />
-          <p className="mt-3 text-xs text-stone-400 flex items-center gap-1">
+          <p className="mt-3 text-xs text-stone-400 dark:text-neutral-500 flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3" />
             Ces notes s'ajouteront à l'historique des appels du prospect.
           </p>
@@ -770,21 +770,21 @@ export function SetterCallDetails() {
 
       {/* REMINDER TAB */}
       {activeTab === 'reminder' && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 space-y-5">
+        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700/30 shadow-sm p-7 space-y-5">
           <div className="flex items-center gap-2 mb-2">
             <Bell className="h-5 w-5 text-stone-500" />
-            <h3 className="text-lg font-bold text-stone-900 font-['Manrope']">Programmer un rappel</h3>
+            <h3 className="text-lg font-bold text-stone-900 dark:text-white font-['Manrope']">Programmer un rappel</h3>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700">Titre <span className="text-red-500">*</span></label>
+            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Titre <span className="text-red-500">*</span></label>
             <input type="text" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)}
               placeholder="Ex: Rappeler Jean pour le contrat"
-              className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
+              className="w-full rounded-lg border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-neutral-500 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700">Description <span className="text-stone-400">(optionnel)</span></label>
+            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Description <span className="text-stone-400">(optionnel)</span></label>
             <textarea value={reminderDescription} onChange={(e) => setReminderDescription(e.target.value)}
               placeholder="Détails supplémentaires..." rows={3}
               className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none" />
@@ -792,18 +792,18 @@ export function SetterCallDetails() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700">
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-neutral-200">
                 <Calendar className="h-4 w-4" /> Date <span className="text-red-500">*</span>
               </label>
               <input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)}
-                className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
+                className="w-full rounded-lg border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
             </div>
             <div>
-              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700">
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-neutral-200">
                 <Clock className="h-4 w-4" /> Heure <span className="text-red-500">*</span>
               </label>
               <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)}
-                className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
+                className="w-full rounded-lg border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
             </div>
           </div>
 
@@ -823,9 +823,9 @@ export function SetterCallDetails() {
 
       {/* Footer Actions */}
       {!isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md px-8 py-5 flex items-center justify-end gap-5 z-40 border-t border-stone-200/40">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-end gap-5 z-40 border-t border-stone-200/40 dark:border-neutral-700/30">
           <button onClick={() => navigate('/business/appels')}
-            className="px-8 py-3 rounded-full border border-stone-300 text-stone-700 font-['Manrope'] font-bold text-sm hover:bg-stone-50 transition-all">
+            className="px-8 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 font-['Manrope'] font-bold text-sm hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all">
             Annuler
           </button>
           <button onClick={handleSave} disabled={!isFormValid() || saving}
@@ -840,7 +840,7 @@ export function SetterCallDetails() {
         </div>
       )}
       {isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md px-8 py-5 flex items-center justify-center z-40 border-t border-stone-200/40">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-neutral-700/30">
           <button onClick={() => navigate('/business/appels')}
             className="px-10 py-3 rounded-full bg-stone-900 text-white font-['Manrope'] font-bold text-sm hover:bg-stone-800 transition-all shadow-xl active:scale-95">
             Retour aux appels

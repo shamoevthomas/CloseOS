@@ -285,8 +285,8 @@ export function CloserRendezVous() {
                   {/* Desktop */}
                   <div className="hidden md:grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-2">
-                      <p className="text-sm font-semibold text-stone-900">{formatDate(localDt.date)}</p>
-                      <p className="text-xs text-stone-500">
+                      <p className="text-sm font-semibold text-stone-900 dark:text-white">{formatDate(localDt.date)}</p>
+                      <p className="text-xs text-stone-500 dark:text-neutral-400">
                         {localDt.time}
                         {(() => {
                           const mt = getMemberLocalTime(appt)
@@ -296,25 +296,25 @@ export function CloserRendezVous() {
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-stone-700 flex items-center gap-1">
+                      <p className="text-sm text-stone-700 dark:text-neutral-200 flex items-center gap-1">
                         <User className="h-3.5 w-3.5 text-stone-400" />
                         {appt.prospect?.contact || '\u2014'}
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-stone-500 flex items-center gap-1 truncate">
+                      <p className="text-sm text-stone-500 dark:text-neutral-400 flex items-center gap-1 truncate">
                         <Mail className="h-3.5 w-3.5 text-stone-400 shrink-0" />
                         {appt.prospect?.email || '\u2014'}
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-stone-500 flex items-center gap-1 truncate">
+                      <p className="text-sm text-stone-500 dark:text-neutral-400 flex items-center gap-1 truncate">
                         <Megaphone className="h-3.5 w-3.5 text-stone-400 shrink-0" />
                         {appt.campaign?.name || '\u2014'}
                       </p>
                     </div>
                     <div className="col-span-1">
-                      <span className="text-xs text-stone-500">{appt.duration}min</span>
+                      <span className="text-xs text-stone-500 dark:text-neutral-400">{appt.duration}min</span>
                     </div>
                     <div className="col-span-1 space-y-1">
                       <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium', statusConf.badgeBg, statusConf.badgeText)}>
@@ -331,7 +331,7 @@ export function CloserRendezVous() {
                     <div className="col-span-2 flex items-center justify-end gap-1.5">
                       <button
                         onClick={() => openReassignModal(appt.id)}
-                        className="flex items-center gap-1 rounded-full border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors"
+                        className="flex items-center gap-1 rounded-full border border-stone-200 dark:border-neutral-800 px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors"
                         title="Reassigner"
                       >
                         <UserCheck className="h-3.5 w-3.5" /> Reassigner
@@ -403,15 +403,15 @@ export function CloserRendezVous() {
       {reassignModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setReassignModalOpen(false)} />
-          <div className="relative w-full max-w-md rounded-xl bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl p-6 animate-in zoom-in-95">
-            <button onClick={() => setReassignModalOpen(false)} className="absolute top-4 right-4 text-stone-400 hover:text-stone-700">
+          <div className="relative w-full max-w-md rounded-xl bg-white/70 dark:bg-neutral-900/90 backdrop-blur-xl border border-white/40 dark:border-neutral-700/30 shadow-2xl p-6 animate-in zoom-in-95">
+            <button onClick={() => setReassignModalOpen(false)} className="absolute top-4 right-4 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200">
               <X className="h-5 w-5" />
             </button>
-            <h2 className="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-stone-600" />
+            <h2 className="text-lg font-bold text-stone-900 dark:text-white mb-4 flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-stone-600 dark:text-neutral-300" />
               Reassigner le rendez-vous
             </h2>
-            <p className="text-sm text-stone-500 mb-4">Selectionnez un membre de l'equipe a qui assigner ce rendez-vous.</p>
+            <p className="text-sm text-stone-500 dark:text-neutral-400 mb-4">Selectionnez un membre de l'equipe a qui assigner ce rendez-vous.</p>
             <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
               {teamMembers.filter(m => m.id !== teamMember?.id).map(m => (
                 <button
@@ -420,16 +420,16 @@ export function CloserRendezVous() {
                   className={cn(
                     'w-full text-left p-3 rounded-xl transition-colors border font-medium flex items-center justify-between',
                     selectedMemberId === m.id
-                      ? 'bg-stone-100 border-stone-400 text-stone-900'
-                      : 'border-stone-200 hover:bg-stone-50 text-stone-700'
+                      ? 'bg-stone-100 dark:bg-neutral-800 border-stone-400 dark:border-neutral-600 text-stone-900 dark:text-white'
+                      : 'border-stone-200 dark:border-neutral-800 hover:bg-stone-50 dark:hover:bg-neutral-800 text-stone-700 dark:text-neutral-200'
                   )}
                 >
                   <span>{m.first_name} {m.last_name}</span>
-                  <span className="text-xs text-stone-400">{m.role}</span>
+                  <span className="text-xs text-stone-400 dark:text-neutral-500">{m.role}</span>
                 </button>
               ))}
               {teamMembers.filter(m => m.id !== teamMember?.id).length === 0 && (
-                <p className="text-center text-stone-400 text-sm py-4">Aucun autre membre disponible</p>
+                <p className="text-center text-stone-400 dark:text-neutral-500 text-sm py-4">Aucun autre membre disponible</p>
               )}
             </div>
             <button
