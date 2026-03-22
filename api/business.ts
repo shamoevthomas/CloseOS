@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
+import { fromZonedTime } from 'date-fns-tz'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -1402,6 +1403,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ slots: [], freeMode: true })
       }
 
+      // Fetch member timezones
+      const { data: memberTzData } = await supabase
+        .from('business_team_members')
+        .select('id, timezone')
+        .in('id', memberIds)
+      const memberTimezones: Record<string, string> = {}
+      for (const m of (memberTzData || [])) {
+        memberTimezones[m.id] = m.timezone || 'Europe/Paris'
+      }
+
       const today = new Date().toISOString().split('T')[0]
       const now = new Date()
 
@@ -1416,8 +1427,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const allAbsences = absencesRes.data || []
       const allAppointments = appointmentsRes.data || []
 
-      // Build available slots per member, then merge
-      const availableSlots: { date: string; time: string; member_ids: string[] }[] = []
+      // Build available slots per member, keyed by UTC datetime
+      const availableSlots: { date: string; time: string; member_ids: string[]; datetime_utc: string }[] = []
 
       for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
         const dateObj = new Date(now)
@@ -1426,8 +1437,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1
         const dateStr = dateObj.toISOString().split('T')[0]
 
-        // For each time slot, track which members are available
-        const timeToMembers: Record<string, string[]> = {}
+        // Key by datetime_utc to group members at the same absolute time
+        const utcToMembers: Record<string, { member_ids: string[]; date: string; time: string }> = {}
 
         for (const memberId of memberIds) {
           // Check absence
@@ -1438,6 +1449,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (memberSlots.length === 0) continue
 
           const memberAppts = allAppointments.filter((a: any) => a.assigned_to === memberId && a.date === dateStr)
+          const memberTz = memberTimezones[memberId] || 'Europe/Paris'
 
           for (const slot of memberSlots) {
             const [startH, startM] = (slot as any).start_time.split(':').map(Number)
@@ -1466,20 +1478,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               })
               if (hasConflict) continue
 
-              if (!timeToMembers[timeStr]) timeToMembers[timeStr] = []
-              timeToMembers[timeStr].push(memberId)
+              // Convert member's local time to UTC
+              const localDateTimeStr = `${dateStr}T${timeStr}:00`
+              const utcDate = fromZonedTime(localDateTimeStr, memberTz)
+              const datetimeUtc = utcDate.toISOString()
+
+              if (!utcToMembers[datetimeUtc]) {
+                utcToMembers[datetimeUtc] = { member_ids: [], date: dateStr, time: timeStr }
+              }
+              utcToMembers[datetimeUtc].member_ids.push(memberId)
             }
           }
         }
 
         // Add all available time slots for this date
-        for (const [time, members] of Object.entries(timeToMembers)) {
-          availableSlots.push({ date: dateStr, time, member_ids: members })
+        for (const [datetimeUtc, info] of Object.entries(utcToMembers)) {
+          availableSlots.push({ date: info.date, time: info.time, member_ids: info.member_ids, datetime_utc: datetimeUtc })
         }
       }
 
-      // Sort by date then time
-      availableSlots.sort((a, b) => a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date))
+      // Sort by UTC datetime
+      availableSlots.sort((a, b) => a.datetime_utc.localeCompare(b.datetime_utc))
 
       return res.status(200).json({
         slots: availableSlots,
