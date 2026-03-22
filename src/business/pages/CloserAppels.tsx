@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Video, Search, Eye, X, Phone, Loader2, Trash2, FileText,
-  Save, ExternalLink, Link as LinkIcon, Plus, ChevronDown, Clock, Pencil, Check,
+  Save, ExternalLink, Link as LinkIcon, Plus, ChevronDown, Clock, Pencil, Check, MoreVertical, SlidersHorizontal,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -27,6 +27,8 @@ interface CallHistoryItem {
   notes: string | null
   contact_id: number | null
 }
+
+const GLASS_PANEL = 'bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 shadow-sm'
 
 export function CloserAppels() {
   const navigate = useNavigate()
@@ -215,98 +217,180 @@ export function CloserAppels() {
   const filteredHistory = callHistory.filter(c => !searchQuery || c.contact_name?.toLowerCase().includes(searchQuery.toLowerCase()))
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-stone-300" /></div>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher un appel..."
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none" />
+      <header className="space-y-2">
+        <div className="flex items-center gap-4 text-[#006c49] mb-2">
+          <Phone className="h-6 w-6" strokeWidth={1.5} />
+          <span className="h-px w-10 bg-[#c4c7c7]/30" />
+          <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Workspace</span>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setIsScriptModalOpen(true)} className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-100">
-            <FileText className="h-4 w-4" /> Script
+        <h1 className="text-4xl font-business-display font-extrabold tracking-tight text-stone-900">Appels</h1>
+        <p className="text-stone-500 text-base max-w-2xl font-light italic opacity-80">Gérez vos appels, scripts et suivez vos prospects.</p>
+      </header>
+
+      {/* Toolbar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="relative flex-1 max-w-2xl group">
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-400" strokeWidth={1.5} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Rechercher un prospect ou un appel..."
+            className="w-full pl-14 pr-6 py-5 bg-white border border-[#c4c7c7]/20 rounded-[2rem] shadow-sm group-hover:shadow-md transition-shadow focus:ring-2 focus:ring-[#006c49]/10 focus:border-[#006c49] outline-none font-medium text-stone-900"
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setIsScriptModalOpen(true)}
+            className="px-8 py-5 bg-[#ffddb8] text-[#2a1700] rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-3 shadow-lg shadow-[#ffddb8]/10"
+          >
+            <FileText className="h-5 w-5" strokeWidth={1.5} />
+            Script
           </button>
-          <button onClick={handleQuickCall} className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 transition-all">
-            <Video className="h-4 w-4" /> Call Rapide
+          <button
+            onClick={handleQuickCall}
+            className="px-8 py-5 bg-[#006c49] text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-3 shadow-lg shadow-[#006c49]/10"
+          >
+            <Video className="h-5 w-5" strokeWidth={1.5} />
+            Call Rapide
           </button>
-          <button onClick={() => setIsNewCallModalOpen(true)} className="flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-amber-500">
-            <Phone className="h-4 w-4" /> Nouvel Appel
+          <button
+            onClick={() => setIsNewCallModalOpen(true)}
+            className="px-8 py-5 bg-stone-900 text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-3 shadow-lg shadow-stone-900/10"
+          >
+            <Phone className="h-5 w-5" strokeWidth={1.5} />
+            Nouvel Appel
           </button>
         </div>
       </div>
 
-      {/* Call History */}
-      <div className="rounded-xl border border-amber-200 bg-white p-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">Appels Récents</h2>
-        <div className="space-y-3">
-          {filteredHistory.map(call => (
-            <div key={call.id} className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 hover:shadow-md transition-all">
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 border border-amber-200">
-                  <Video className="h-5 w-5 text-amber-600" />
-                </div>
-                <div>
-                  {editingCallId === call.id ? (
-                    <div className="flex items-center gap-2">
-                      <input type="text" value={editingName} onChange={(e) => setEditingName(e.target.value)} className="border border-amber-500 rounded px-2 py-1 text-sm font-bold" autoFocus />
-                      <button onClick={saveCallName} className="p-1 text-emerald-500 hover:bg-emerald-50 rounded"><Check className="h-4 w-4" /></button>
-                      <button onClick={() => setEditingCallId(null)} className="p-1 text-red-400 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-slate-900">{call.contact_name}</p>
-                      <button onClick={() => { setEditingCallId(call.id); setEditingName(call.contact_name) }} className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-slate-700 rounded">
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                    </div>
+      {/* Title bar */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900">Appels Récents</h2>
+        <div className="flex gap-2">
+          <button className="p-2.5 bg-[#eae8e7] rounded-full hover:bg-[#dbdad9] transition-colors">
+            <SlidersHorizontal className="h-4 w-4 text-stone-600" strokeWidth={1.5} />
+          </button>
+          <button className="p-2.5 bg-[#eae8e7] rounded-full hover:bg-[#dbdad9] transition-colors">
+            <MoreVertical className="h-4 w-4 text-stone-600" strokeWidth={1.5} />
+          </button>
+        </div>
+      </div>
+
+      {/* Call Cards List */}
+      <div className="space-y-4">
+        {filteredHistory.map(call => (
+          <div
+            key={call.id}
+            className={cn(
+              GLASS_PANEL,
+              'p-6 rounded-2xl group hover:border-[#006c49]/20 hover:shadow-md transition-all flex items-center justify-between'
+            )}
+          >
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 bg-[#eae8e7] rounded-xl flex items-center justify-center shadow-inner group-hover:bg-[#ffddb8] transition-colors">
+                <Video className="h-7 w-7 text-stone-700" strokeWidth={1.5} />
+              </div>
+              <div>
+                {editingCallId === call.id ? (
+                  <div className="flex items-center gap-2 mb-1">
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      className="border border-[#006c49] rounded-lg px-3 py-1.5 text-sm font-bold text-stone-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#006c49]/20"
+                      autoFocus
+                    />
+                    <button onClick={saveCallName} className="p-1.5 text-[#006c49] hover:bg-[#006c49]/10 rounded-full transition-colors"><Check className="h-4 w-4" /></button>
+                    <button onClick={() => setEditingCallId(null)} className="p-1.5 text-stone-400 hover:bg-stone-100 rounded-full transition-colors"><X className="h-4 w-4" /></button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-business-display font-bold text-lg text-stone-900">{call.contact_name}</h3>
+                    <button
+                      onClick={() => { setEditingCallId(call.id); setEditingName(call.contact_name) }}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-stone-100 rounded-full transition-all"
+                    >
+                      <Pencil className="h-3.5 w-3.5 text-stone-400" strokeWidth={1.5} />
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-center gap-4 text-sm text-stone-500">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Clock className="h-4 w-4" strokeWidth={1.5} />
+                    {formatTimeAgo(call.date)}
+                  </span>
+                  {call.duration && (
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      {call.duration}
+                    </span>
                   )}
-                  <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                    <Clock className="h-3 w-3" /> {formatTimeAgo(call.date)}
-                    {call.duration && <span className="ml-2 text-slate-400">{call.duration}</span>}
-                  </p>
+                  <span className="flex items-center gap-1.5 px-2.5 py-0.5 bg-[#006c49]/10 text-[#006c49] rounded-full text-xs font-bold">
+                    <span className="w-2 h-2 rounded-full bg-[#006c49]" />
+                    Terminé
+                  </span>
                 </div>
               </div>
-              <button onClick={() => navigate(`/business/appels/${call.id}?readonly=1`)}
-                className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                <Eye className="h-4 w-4" /> Détails
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate(`/business/appels/${call.id}?readonly=1`)}
+                className="flex items-center gap-2 px-6 py-3 bg-[#eae8e7] hover:bg-[#dbdad9] text-stone-900 rounded-full font-bold text-sm transition-all"
+              >
+                <Eye className="h-4 w-4" strokeWidth={1.5} />
+                Détails
+              </button>
+              <button className="p-3 text-stone-400 hover:text-stone-700 transition-colors">
+                <MoreVertical className="h-5 w-5" strokeWidth={1.5} />
               </button>
             </div>
-          ))}
-          {filteredHistory.length === 0 && (
-            <div className="py-12 text-center text-slate-400 border border-dashed border-slate-200 rounded-xl">
-              <Video className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p>Aucun appel récent.</p>
-            </div>
-          )}
-        </div>
+          </div>
+        ))}
+        {filteredHistory.length === 0 && (
+          <div className={cn(GLASS_PANEL, 'rounded-2xl py-16 text-center')}>
+            <Video className="h-12 w-12 mx-auto mb-4 text-stone-300" strokeWidth={1} />
+            <p className="text-stone-400 font-medium">Aucun appel récent.</p>
+            <p className="text-stone-400/60 text-sm mt-1">Lancez un appel pour commencer.</p>
+          </div>
+        )}
       </div>
 
       {/* New Call Modal */}
       {isNewCallModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsNewCallModalOpen(false)} />
-          <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl border border-amber-200 p-6 animate-in zoom-in-95">
-            <button onClick={() => setIsNewCallModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Sélectionner un prospect</h2>
-            <input type="text" placeholder="Rechercher..." value={prospectSearch} onChange={e => setProspectSearch(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm mb-4 focus:border-amber-500 focus:outline-none" />
-            <div className="max-h-48 overflow-y-auto space-y-1 mb-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsNewCallModalOpen(false)} />
+          <div className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl p-8 animate-in zoom-in-95">
+            <button onClick={() => setIsNewCallModalOpen(false)} className="absolute top-5 right-5 text-stone-300 hover:text-stone-700 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
+            <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 mb-6">Sélectionner un prospect</h2>
+            <div className="relative mb-4">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                value={prospectSearch}
+                onChange={e => setProspectSearch(e.target.value)}
+                className="w-full pl-11 pr-4 py-3.5 bg-[#f5f3f2] border-none rounded-2xl text-sm font-medium text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none"
+              />
+            </div>
+            <div className="max-h-48 overflow-y-auto space-y-1 mb-6">
               {myProspects.filter(p => !prospectSearch || p.contact.toLowerCase().includes(prospectSearch.toLowerCase())).map(p => (
                 <button key={p.id} onClick={() => setSelectedProspectId(p.id)}
-                  className={cn("w-full text-left p-3 rounded-xl transition-colors border border-transparent font-medium",
-                    selectedProspectId === p.id ? "bg-amber-50 border-amber-300 text-amber-700" : "hover:bg-slate-50 text-slate-700")}>
-                  {p.contact} {p.company && <span className="text-xs text-slate-400 ml-1">({p.company})</span>}
+                  className={cn("w-full text-left p-3.5 rounded-2xl transition-all font-medium text-sm",
+                    selectedProspectId === p.id ? "bg-[#006c49]/10 text-[#006c49] ring-1 ring-[#006c49]/20" : "hover:bg-[#f5f3f2] text-stone-700")}>
+                  {p.contact} {p.company && <span className="text-stone-400 ml-1">({p.company})</span>}
                 </button>
               ))}
-              {myProspects.length === 0 && <p className="text-center text-slate-400 text-sm py-4">Aucun prospect assigné</p>}
+              {myProspects.length === 0 && <p className="text-center text-stone-400 text-sm py-6">Aucun prospect assigné</p>}
             </div>
             <button onClick={() => prepareCall(selectedProspectId)} disabled={!selectedProspectId}
-              className="w-full rounded-xl bg-amber-600 py-2.5 font-bold text-white hover:bg-amber-500 disabled:opacity-50 transition-all">
+              className="w-full rounded-full bg-stone-900 py-4 font-business-display font-extrabold text-white text-sm hover:opacity-90 disabled:opacity-50 transition-all">
               Préparer l'appel
             </button>
           </div>
@@ -316,28 +400,28 @@ export function CloserAppels() {
       {/* Meet Preparation Modal */}
       {isMeetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMeetModalOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-amber-200 p-6 animate-in zoom-in-95">
-            <button onClick={() => setIsMeetModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
-            <h3 className="text-lg font-bold text-slate-900 mb-6">Préparer l'appel</h3>
-            <div className="space-y-4">
-              <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
-                <p className="font-medium text-blue-800 mb-2">1. Ouvrir Google Meet</p>
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsMeetModalOpen(false)} />
+          <div className="relative w-full max-w-lg rounded-3xl bg-white shadow-2xl p-8 animate-in zoom-in-95">
+            <button onClick={() => setIsMeetModalOpen(false)} className="absolute top-5 right-5 text-stone-300 hover:text-stone-700 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
+            <h3 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 mb-8">Préparer l'appel</h3>
+            <div className="space-y-5">
+              <div className="rounded-2xl bg-[#f5f3f2] p-6">
+                <p className="font-bold text-stone-900 mb-3 text-sm">1. Ouvrir Google Meet</p>
                 <button onClick={() => window.open('https://meet.google.com/new', '_blank')}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-500">
-                  <ExternalLink className="h-4 w-4" /> Ouvrir Meet
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-[#006c49] px-4 py-3.5 text-sm font-bold text-white hover:opacity-90 transition-all">
+                  <ExternalLink className="h-4 w-4" strokeWidth={1.5} /> Ouvrir Meet
                 </button>
               </div>
-              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
-                <p className="font-medium text-amber-800 mb-2">2. Lancer le Cockpit</p>
+              <div className="rounded-2xl bg-[#f5f3f2] p-6">
+                <p className="font-bold text-stone-900 mb-3 text-sm">2. Lancer le Cockpit</p>
                 <div className="relative mb-3">
-                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />
                   <input type="text" value={meetLinkInput} onChange={(e) => setMeetLinkInput(e.target.value)} placeholder="Lien Meet (optionnel)"
-                    className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-sm focus:border-amber-500 focus:outline-none" />
+                    className="w-full rounded-full bg-white border-none pl-11 pr-4 py-3 text-sm font-medium text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none" />
                 </div>
                 <button onClick={isQuickCall ? startQuickCockpit : startCockpit}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-amber-500">
-                  <Video className="h-4 w-4" /> Lancer le Cockpit
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 px-4 py-3.5 text-sm font-bold text-white hover:opacity-90 transition-all">
+                  <Video className="h-4 w-4" strokeWidth={1.5} /> Lancer le Cockpit
                 </button>
               </div>
             </div>
@@ -348,35 +432,39 @@ export function CloserAppels() {
       {/* Script Modal */}
       {isScriptModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsScriptModalOpen(false)} />
-          <div className="relative w-full max-w-3xl rounded-2xl border border-amber-200 bg-white p-6 shadow-2xl flex flex-col h-[70vh]">
-            <div className="mb-4 flex items-center justify-between border-b border-amber-100 pb-4">
-              <div className="flex items-center gap-3 flex-1">
-                <FileText className="h-5 w-5 text-amber-600" />
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsScriptModalOpen(false)} />
+          <div className="relative w-full max-w-4xl rounded-3xl bg-white shadow-2xl flex flex-col h-[70vh] overflow-hidden">
+            <div className="p-6 border-b border-[#c4c7c7]/10 flex justify-between items-center">
+              <div className="flex items-center gap-4 flex-1">
+                <FileText className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
                 <div className="relative flex-1 max-w-xs">
                   <select value={selectedScriptId} onChange={(e) => handleScriptChange(e.target.value)}
-                    className="w-full appearance-none bg-slate-50 border border-slate-200 text-sm rounded-xl px-4 py-2 pr-8 focus:outline-none focus:border-amber-500">
+                    className="w-full appearance-none bg-[#f5f3f2] border-none text-sm font-medium rounded-full px-5 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20 text-stone-900">
                     <option value="new">+ Nouveau Script</option>
                     {scripts.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
                 </div>
                 {selectedScriptId !== 'new' && (
-                  <button onClick={handleDeleteScript} className="p-2 text-slate-400 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={handleDeleteScript} className="p-2 text-stone-300 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" strokeWidth={1.5} /></button>
                 )}
               </div>
-              <button onClick={() => setIsScriptModalOpen(false)} className="text-slate-400 hover:text-slate-700 p-2"><X className="h-5 w-5" /></button>
+              <button onClick={() => setIsScriptModalOpen(false)} className="text-stone-300 hover:text-stone-700 p-2 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
             </div>
-            <input type="text" value={scriptTitle} onChange={(e) => setScriptTitle(e.target.value)} placeholder="Titre du script"
-              className="w-full bg-transparent text-xl font-bold text-slate-900 placeholder-slate-300 focus:outline-none mb-3" />
-            <textarea value={scriptContent} onChange={(e) => setScriptContent(e.target.value)}
-              className="flex-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-700 focus:border-amber-500 focus:outline-none resize-none"
-              placeholder="Rédigez votre script ici..." />
-            <div className="mt-4 flex justify-end gap-3">
-              <button onClick={() => setIsScriptModalOpen(false)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">Fermer</button>
+            <div className="px-8 pt-6">
+              <input type="text" value={scriptTitle} onChange={(e) => setScriptTitle(e.target.value)} placeholder="Titre du script"
+                className="w-full bg-transparent text-2xl font-business-display font-extrabold text-stone-900 placeholder-stone-300 focus:outline-none tracking-tight" />
+            </div>
+            <div className="flex-1 px-8 py-4">
+              <textarea value={scriptContent} onChange={(e) => setScriptContent(e.target.value)}
+                className="w-full h-full rounded-2xl bg-[#f5f3f2] border-none p-6 text-stone-700 font-medium leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#006c49]/10 resize-none"
+                placeholder="Rédigez votre script ici..." />
+            </div>
+            <div className="p-6 border-t border-[#c4c7c7]/10 flex justify-end gap-4">
+              <button onClick={() => setIsScriptModalOpen(false)} className="px-6 py-3 rounded-full font-bold text-sm text-stone-500 hover:text-stone-900 transition-colors">Fermer</button>
               <button onClick={handleSaveScript} disabled={isSavingScript}
-                className="flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-500">
-                <Save className="h-4 w-4" /> {isSavingScript ? 'Sauvegarde...' : 'Sauvegarder'}
+                className="flex items-center gap-2 rounded-full bg-stone-900 px-8 py-3 text-sm font-bold text-white hover:opacity-90 transition-all">
+                <Save className="h-4 w-4" strokeWidth={1.5} /> {isSavingScript ? 'Sauvegarde...' : 'Sauvegarder'}
               </button>
             </div>
           </div>

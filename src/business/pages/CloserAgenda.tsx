@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   ChevronLeft, ChevronRight, Calendar, Clock, User, Bell, X, Loader2,
-  Video, Phone, MapPin, ExternalLink,
+  Video, Phone, MapPin, ExternalLink, RefreshCw,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
@@ -111,6 +111,8 @@ const getDuration = (time: string) => {
   return dur
 }
 
+const ROW_H = 100 // px per hour row — matches maquette
+
 /* ─── Unified Event Type ─────────────────────────── */
 
 interface CalendarEvent {
@@ -188,7 +190,7 @@ export function CloserAgenda() {
       if (data.appointments) {
         if (isOwnerView) {
           if (selectedMemberId === 'perso') {
-            setAppointments([]) // Personal agenda: only Google + reminders, no team appointments
+            setAppointments([])
           } else if (selectedMemberId === 'all') {
             setAppointments(data.appointments as Appointment[])
           } else {
@@ -227,7 +229,7 @@ export function CloserAgenda() {
     const ref = view === 'day' ? dayScrollRef.current : view === 'week' ? weekScrollRef.current : null
     if (ref) {
       const h = Math.max(0, new Date().getHours() - 2)
-      ref.scrollTop = h * 80
+      ref.scrollTop = h * ROW_H
     }
   }, [view])
 
@@ -236,7 +238,6 @@ export function CloserAgenda() {
     const key = formatDateKey(date)
     const events: CalendarEvent[] = []
 
-    // Appointments — convert to viewer's timezone if datetime_utc available
     for (const a of appointments) {
       let apptDate = a.date
       let apptTime = a.time ? a.time.slice(0, 5) : ''
@@ -259,7 +260,6 @@ export function CloserAgenda() {
       }
     }
 
-    // Reminders
     for (const r of reminders) {
       const rKey = r.reminder_date.slice(0, 10)
       if (rKey === key) {
@@ -275,7 +275,6 @@ export function CloserAgenda() {
       }
     }
 
-    // Google events — only show own Google calendar, not when viewing a specific team member
     const showGoogleEvents = !isOwnerView || selectedMemberId === 'perso' || selectedMemberId === 'all'
     for (const ge of (showGoogleEvents ? googleEvents : [])) {
       if (!ge.start || ge.allDay) continue
@@ -342,16 +341,15 @@ export function CloserAgenda() {
     return (m / (24 * 60)) * 100
   }, [currentTime])
 
-  // Event style for timeline blocks
-  const getBlockStyle = (ev: CalendarEvent) => {
+  // Event block style — glass morphism inspired
+  const getBlockStyle = (ev: CalendarEvent): React.CSSProperties => {
     if (ev.isGoogleEvent) {
-      return { backgroundColor: '#fff', color: '#0f172a', border: '1px solid #e2e8f0', borderLeft: '4px solid #4285F4', borderRadius: '6px' }
+      return { background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', color: '#0f172a', borderLeft: '4px solid #60a5fa', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }
     }
     if (ev.type === 'appointment') {
-      return { backgroundColor: 'rgba(59,130,246,0.12)', color: '#1e40af', border: '1px solid rgba(59,130,246,0.3)', borderLeft: '4px solid #3b82f6', borderRadius: '6px' }
+      return { background: 'rgba(219,234,254,0.8)', backdropFilter: 'blur(12px)', color: '#1e40af', borderLeft: '4px solid #3b82f6', borderRadius: '12px', boxShadow: '0 2px 8px rgba(59,130,246,0.1)' }
     }
-    // reminder
-    return { backgroundColor: 'rgba(249,115,22,0.12)', color: '#9a3412', border: '1px solid rgba(249,115,22,0.3)', borderLeft: '4px solid #f97316', borderRadius: '6px' }
+    return { background: 'rgba(255,237,213,0.8)', backdropFilter: 'blur(12px)', color: '#9a3412', borderLeft: '4px solid #f97316', borderRadius: '12px', boxShadow: '0 2px 8px rgba(249,115,22,0.1)' }
   }
 
   /* ─── DAY VIEW ────────────────────────────────── */
@@ -361,10 +359,10 @@ export function CloserAgenda() {
     const showLine = isToday(currentDate)
 
     return (
-      <div className="flex flex-col flex-1 rounded-2xl border border-slate-200 bg-white overflow-hidden" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+      <div className="flex flex-col flex-1 rounded-[2rem] border border-stone-200/60 bg-white overflow-hidden shadow-[0_40px_80px_rgba(27,28,27,0.03)]" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         {allDay.length > 0 && (
-          <div className="border-b border-slate-100 bg-slate-50 p-3">
-            <div className="text-xs font-semibold text-slate-400 mb-1.5">Toute la journée</div>
+          <div className="border-b border-stone-100 bg-stone-50/50 backdrop-blur-md p-3">
+            <div className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-1.5">Toute la journée</div>
             {allDay.map(e => (
               <div key={e.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border-l-4 border-blue-400 mb-1">
                 <Calendar className="h-3.5 w-3.5 text-blue-500" />
@@ -373,18 +371,18 @@ export function CloserAgenda() {
             ))}
           </div>
         )}
-        <div ref={dayScrollRef} className="flex-1 overflow-y-auto custom-scrollbar">
-          <div className="relative min-h-[1920px]">
+        <div ref={dayScrollRef} className="flex-1 overflow-y-auto">
+          <div className="relative" style={{ minHeight: `${HOURS.length * ROW_H}px` }}>
             {/* Time labels */}
-            <div className="absolute left-0 top-0 w-16 border-r border-slate-100">
+            <div className="absolute left-0 top-0 w-20 border-r border-stone-100 bg-stone-50/30">
               {HOURS.map(h => (
-                <div key={h} className="h-20 border-b border-slate-100 px-2 py-1">
-                  <span className="text-xs font-medium text-slate-400">{h.toString().padStart(2, '0')}:00</span>
+                <div key={h} className="border-b border-stone-100/50 p-2 text-right" style={{ height: `${ROW_H}px` }}>
+                  <span className="text-[10px] font-bold text-neutral-400">{h.toString().padStart(2, '0')}:00</span>
                 </div>
               ))}
             </div>
-            <div className="absolute inset-0 left-16">
-              {HOURS.map(h => <div key={h} className="h-20 border-b border-slate-100" />)}
+            <div className="absolute inset-0 left-20">
+              {HOURS.map(h => <div key={h} className="border-b border-stone-100/50" style={{ height: `${ROW_H}px` }} />)}
               {showLine && (
                 <div className="absolute left-0 right-0 z-10" style={{ top: `${currentTimePos}%` }}>
                   <div className="flex items-center">
@@ -396,17 +394,17 @@ export function CloserAgenda() {
               {events.filter(e => e.time).map(ev => {
                 const startH = getStartHour(ev.time)
                 const dur = ev.time.includes(' - ') ? getDuration(ev.time) : (ev.data?.duration ? ev.data.duration / 60 : 0.5)
-                const top = startH * 80
-                const height = Math.max(dur * 80, 30)
+                const top = startH * ROW_H
+                const height = Math.max(dur * ROW_H, 36)
                 return (
                   <div
                     key={ev.id}
                     onClick={() => setSelectedEvent(ev)}
-                    className="absolute left-2 right-2 cursor-pointer overflow-hidden px-2.5 py-1.5 transition-all hover:shadow-md"
+                    className="absolute left-2 right-2 cursor-pointer overflow-hidden px-3 py-2 transition-all hover:scale-[1.02] hover:shadow-md"
                     style={{ top: `${top}px`, height: `${height}px`, ...getBlockStyle(ev) }}
                   >
-                    <p className="text-[11px] font-semibold opacity-70">{ev.time.split(' - ')[0]}</p>
-                    <p className="text-sm font-bold truncate">{ev.title}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-0.5">{ev.time.split(' - ')[0]}</p>
+                    <p className="text-sm font-extrabold leading-tight truncate" style={{ fontFamily: "'Manrope', sans-serif" }}>{ev.title}</p>
                   </div>
                 )
               })}
@@ -423,83 +421,138 @@ export function CloserAgenda() {
     const todayIdx = weekDates.findIndex(d => isToday(d))
 
     return (
-      <div ref={weekScrollRef} className="flex-1 overflow-x-auto overflow-y-auto rounded-2xl border border-slate-200 bg-white custom-scrollbar" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+      <div ref={weekScrollRef} className="flex-1 overflow-x-auto overflow-y-auto rounded-[2rem] border border-stone-200/60 bg-white shadow-[0_40px_80px_rgba(27,28,27,0.03)]" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         <div className="min-w-[900px]">
-          {/* Header row */}
-          <div className="sticky top-0 z-20 flex border-b border-slate-200 bg-white">
-            <div className="w-16 border-r border-slate-100 flex-shrink-0" />
-            {weekDates.map((d, i) => (
-              <div key={i} className={cn('flex-1 border-r border-slate-100 p-2.5 text-center min-w-[110px]', isToday(d) && 'bg-amber-50')}>
-                <div className="text-xs font-medium text-slate-400">{formatShortDay(d)}</div>
-                <div className={cn('mt-0.5 text-lg font-bold', isToday(d) ? 'text-amber-600' : 'text-slate-900')}>
-                  {d.getDate()}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* All-day row */}
-          <div className="sticky top-[60px] z-10 flex border-b border-slate-100 bg-slate-50/80">
-            <div className="w-16 border-r border-slate-100 p-1.5 flex-shrink-0">
-              <span className="text-[10px] font-medium text-slate-400">Journée</span>
-            </div>
-            {weekDates.map((d, i) => {
-              const allDay = getAllDayGoogleEvents(d)
-              return (
-                <div key={i} className="relative flex-1 border-r border-slate-100 p-1 min-h-[32px] min-w-[110px]">
-                  {allDay.map(e => (
-                    <div key={e.id} className="mb-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium truncate bg-blue-50 border-l-2 border-blue-400 text-slate-700">
-                      {e.title}
-                    </div>
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Time grid */}
-          <div className="relative min-h-[1920px]">
-            <div className="absolute left-0 top-0 w-16 border-r border-slate-100 flex-shrink-0 bg-white z-10">
-              {HOURS.map(h => (
-                <div key={h} className="h-20 border-b border-slate-100 px-2 py-1">
-                  <span className="text-xs font-medium text-slate-400">{h.toString().padStart(2, '0')}:00</span>
+          {/* Sticky day header */}
+          <div className="sticky top-0 z-20 grid grid-cols-[80px_1fr] border-b border-stone-100 bg-stone-50/50 backdrop-blur-md">
+            <div className="h-20 border-r border-stone-100" />
+            <div className="grid grid-cols-7">
+              {weekDates.map((d, i) => (
+                <div key={i} className={cn(
+                  'flex flex-col items-center justify-center h-20 border-r border-stone-100 last:border-0',
+                  isToday(d) && 'bg-stone-100/30',
+                  (i >= 5) && !isToday(d) && 'bg-stone-50/50'
+                )}>
+                  <span className={cn(
+                    'text-[10px] font-black uppercase tracking-widest mb-1',
+                    isToday(d) ? 'text-amber-600' : 'text-neutral-400'
+                  )}>
+                    {DAY_NAMES_SHORT[i]}
+                  </span>
+                  <span className="text-xl font-extrabold" style={{ fontFamily: "'Manrope', sans-serif" }}>
+                    {d.getDate()}
+                  </span>
+                  {isToday(d) && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-1" />}
                 </div>
               ))}
             </div>
-            <div className="absolute inset-0 left-16 flex">
-              {weekDates.map((d, dayIdx) => {
-                const events = getEventsForDate(d).filter(e => e.time)
-                return (
-                  <div key={dayIdx} className="relative flex-1 border-r border-slate-100 min-w-[110px]">
-                    {HOURS.map(h => <div key={h} className="h-20 border-b border-slate-100" />)}
-                    {dayIdx === todayIdx && (
-                      <div className="absolute left-0 right-0 z-10" style={{ top: `${currentTimePos}%` }}>
-                        <div className="flex items-center">
-                          <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                          <div className="h-0.5 flex-1 bg-amber-500" />
+          </div>
+
+          {/* All-day row */}
+          {weekDates.some(d => getAllDayGoogleEvents(d).length > 0) && (
+            <div className="sticky top-[80px] z-10 grid grid-cols-[80px_1fr] border-b border-stone-100 bg-stone-50/80 backdrop-blur-md">
+              <div className="border-r border-stone-100 p-1.5 flex items-center justify-end pr-2">
+                <span className="text-[10px] font-bold text-neutral-400">Journée</span>
+              </div>
+              <div className="grid grid-cols-7">
+                {weekDates.map((d, i) => {
+                  const allDay = getAllDayGoogleEvents(d)
+                  return (
+                    <div key={i} className="border-r border-stone-100 last:border-0 p-1 min-h-[32px]">
+                      {allDay.map(e => (
+                        <div key={e.id} className="mb-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium truncate bg-blue-50 border-l-2 border-blue-400 text-slate-700">
+                          {e.title}
                         </div>
-                      </div>
-                    )}
-                    {events.map(ev => {
-                      const startH = getStartHour(ev.time)
-                      const dur = ev.time.includes(' - ') ? getDuration(ev.time) : (ev.data?.duration ? ev.data.duration / 60 : 0.5)
-                      const top = startH * 80
-                      const height = Math.max(dur * 80, 24)
-                      return (
-                        <div
-                          key={ev.id}
-                          onClick={() => setSelectedEvent(ev)}
-                          className="absolute left-1 right-1 cursor-pointer overflow-hidden px-1.5 py-0.5 transition-all hover:shadow-md"
-                          style={{ top: `${top}px`, height: `${height}px`, ...getBlockStyle(ev) }}
-                        >
-                          <p className="truncate text-[10px] font-semibold opacity-70">{ev.time.split(' - ')[0]}</p>
-                          <p className="truncate text-xs font-bold">{ev.title}</p>
-                        </div>
-                      )
-                    })}
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Time grid */}
+          <div className="relative overflow-y-auto" style={{ maxHeight: '800px' }}>
+            <div className="grid grid-cols-[80px_1fr]">
+              {/* Time column */}
+              <div className="bg-stone-50/30">
+                {HOURS.map(h => (
+                  <div key={h} className="border-b border-stone-100/50 border-r border-stone-100 p-2 text-right" style={{ height: `${ROW_H}px` }}>
+                    <span className="text-[10px] font-bold text-neutral-400">{h.toString().padStart(2, '0')}:00</span>
                   </div>
-                )
-              })}
+                ))}
+              </div>
+              {/* Grid area */}
+              <div className="grid grid-cols-7 relative">
+                {/* Background vertical lines */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="grid grid-cols-7 h-full">
+                    {Array.from({ length: 7 }).map((_, i) => (
+                      <div key={i} className={cn(i < 6 && 'border-r border-stone-100')} />
+                    ))}
+                  </div>
+                </div>
+                {/* Background horizontal lines */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {HOURS.map(h => (
+                    <div key={h} className="border-b border-stone-100/50" style={{ height: `${ROW_H}px` }} />
+                  ))}
+                </div>
+
+                {/* Events per day */}
+                {weekDates.map((d, dayIdx) => {
+                  const events = getEventsForDate(d).filter(e => e.time)
+                  return (
+                    <div key={dayIdx} className="relative" style={{ gridColumn: dayIdx + 1, gridRow: 1 }}>
+                      {/* Invisible spacer for height */}
+                      <div style={{ height: `${HOURS.length * ROW_H}px` }} />
+
+                      {/* Current time line */}
+                      {dayIdx === todayIdx && (
+                        <div className="absolute left-0 right-0 z-10" style={{ top: `${currentTimePos}%` }}>
+                          <div className="flex items-center">
+                            <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                            <div className="h-0.5 flex-1 bg-amber-500" />
+                          </div>
+                        </div>
+                      )}
+
+                      {events.map(ev => {
+                        const startH = getStartHour(ev.time)
+                        const dur = ev.time.includes(' - ') ? getDuration(ev.time) : (ev.data?.duration ? ev.data.duration / 60 : 0.5)
+                        const top = startH * ROW_H
+                        const height = Math.max(dur * ROW_H, 30)
+                        return (
+                          <div
+                            key={ev.id}
+                            onClick={() => setSelectedEvent(ev)}
+                            className="absolute left-1 right-1 cursor-pointer overflow-hidden px-2.5 py-1.5 transition-all hover:scale-[1.02] hover:shadow-md"
+                            style={{ top: `${top}px`, height: `${height}px`, ...getBlockStyle(ev) }}
+                          >
+                            <p className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-0.5">{ev.time.split(' - ')[0]}</p>
+                            <p className="truncate text-xs font-extrabold leading-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>{ev.title}</p>
+                            {ev.type === 'appointment' && ev.data?.prospect && height >= 60 && (
+                              <p className="text-[11px] opacity-70 mt-0.5 flex items-center gap-1 truncate">
+                                <User className="h-3 w-3 flex-shrink-0" /> {ev.data.prospect.contact}
+                              </p>
+                            )}
+                            {ev.type === 'google' && ev.hangoutLink && height >= 60 && (
+                              <p className="text-[11px] opacity-70 mt-0.5 flex items-center gap-1 truncate">
+                                <Video className="h-3 w-3 flex-shrink-0" /> Google Meet
+                              </p>
+                            )}
+                            {ev.type === 'reminder' && height >= 60 && (
+                              <p className="text-[11px] opacity-70 mt-0.5 flex items-center gap-1 truncate">
+                                <Bell className="h-3 w-3 flex-shrink-0" /> Rappel
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -513,10 +566,10 @@ export function CloserAgenda() {
     const cm = currentDate.getMonth()
 
     return (
-      <div className="flex-1 overflow-auto rounded-2xl border border-slate-200 bg-white">
-        <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50">
+      <div className="flex-1 overflow-auto rounded-[2rem] border border-stone-200/60 bg-white shadow-[0_40px_80px_rgba(27,28,27,0.03)]">
+        <div className="grid grid-cols-7 border-b border-stone-100 bg-stone-50/50 backdrop-blur-md">
           {DAY_NAMES_SHORT.map(n => (
-            <div key={n} className="border-r border-slate-100 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">{n}</div>
+            <div key={n} className="border-r border-stone-100 last:border-0 py-3 text-center text-[10px] font-black uppercase tracking-widest text-neutral-400">{n}</div>
           ))}
         </div>
         <div className="grid grid-cols-7">
@@ -531,18 +584,18 @@ export function CloserAgenda() {
               <div
                 key={i}
                 className={cn(
-                  'min-h-[100px] border-b border-r border-slate-100 p-1.5 transition-colors',
-                  !isCurrent && 'bg-slate-50/60',
+                  'min-h-[100px] border-b border-r border-stone-100 p-1.5 transition-colors',
+                  !isCurrent && 'bg-stone-50/60',
                   td && 'bg-amber-50/50',
-                  isCurrent && !td && 'hover:bg-slate-50'
+                  isCurrent && !td && 'hover:bg-stone-50'
                 )}
               >
                 <div className={cn(
-                  'mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold',
+                  'mb-1 flex h-7 w-7 items-center justify-center rounded-full text-xs font-extrabold',
                   td && 'bg-amber-500 text-white',
                   !td && isCurrent && 'text-slate-900',
                   !td && !isCurrent && 'text-slate-300'
-                )}>
+                )} style={{ fontFamily: "'Manrope', sans-serif" }}>
                   {d.getDate()}
                 </div>
                 <div className="space-y-0.5">
@@ -550,7 +603,7 @@ export function CloserAgenda() {
                     <div
                       key={ev.id}
                       onClick={() => setSelectedEvent(ev)}
-                      className={cn('cursor-pointer px-1.5 py-0.5 text-[10px] font-medium rounded truncate', ev.color)}
+                      className={cn('cursor-pointer px-1.5 py-0.5 text-[10px] font-medium rounded-lg truncate', ev.color)}
                     >
                       {ev.time?.split(' - ')[0]} {ev.title}
                     </div>
@@ -572,49 +625,54 @@ export function CloserAgenda() {
   }
 
   return (
-    <div className="flex flex-col h-full gap-4">
+    <div className="flex flex-col h-full gap-6">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <button onClick={goToToday} className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
-            Aujourd'hui
-          </button>
-
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5">
-            <button onClick={goToPrev} className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors">
-              <ChevronLeft className="h-4 w-4" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-6">
+          {/* Navigation pill */}
+          <div className="flex items-center bg-white rounded-full p-1 shadow-sm border border-stone-200/60">
+            <button onClick={goToPrev} className="p-2 hover:bg-stone-50 rounded-full transition-colors">
+              <ChevronLeft className="h-4 w-4 text-neutral-600" />
             </button>
-            <h2 className="min-w-[180px] text-center text-sm font-bold capitalize text-slate-900">{getTitle()}</h2>
-            <button onClick={goToNext} className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors">
-              <ChevronRight className="h-4 w-4" />
+            <button onClick={goToToday} className="px-4 py-2 text-sm font-bold uppercase tracking-tight text-neutral-900" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              Aujourd'hui
+            </button>
+            <button onClick={goToNext} className="p-2 hover:bg-stone-50 rounded-full transition-colors">
+              <ChevronRight className="h-4 w-4 text-neutral-600" />
             </button>
           </div>
 
-          <div className="relative">
-            <button
-              onClick={() => dateInputRef.current?.showPicker()}
-              className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-              title="Choisir une date"
-            >
-              <Calendar className="h-4 w-4" />
-            </button>
-            <input
-              ref={dateInputRef}
-              type="date"
-              onChange={e => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) setCurrentDate(d) }}
-              className="absolute inset-0 cursor-pointer opacity-0"
-              value={currentDate.toISOString().split('T')[0]}
-            />
+          {/* Date title */}
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tighter text-neutral-900 capitalize" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              {getTitle()}
+            </h1>
+            <div className="relative">
+              <button
+                onClick={() => dateInputRef.current?.showPicker()}
+                className="text-neutral-400 hover:text-neutral-700 transition-colors"
+                title="Choisir une date"
+              >
+                <Calendar className="h-5 w-5" />
+              </button>
+              <input
+                ref={dateInputRef}
+                type="date"
+                onChange={e => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) setCurrentDate(d) }}
+                className="absolute inset-0 cursor-pointer opacity-0"
+                value={currentDate.toISOString().split('T')[0]}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           {/* Owner: team member filter */}
           {isOwnerView && teamMembers.length > 0 && (
             <select
               value={selectedMemberId}
               onChange={e => setSelectedMemberId(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="rounded-full border border-stone-200/60 bg-white px-4 py-2.5 text-xs font-bold text-neutral-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               <option value="perso">Mon agenda</option>
               <option value="all">Tous les membres</option>
@@ -626,15 +684,17 @@ export function CloserAgenda() {
             </select>
           )}
 
-          {/* View toggle */}
-          <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1">
+          {/* View toggle pill */}
+          <div className="flex bg-stone-100 p-1 rounded-full">
             {(['day', 'week', 'month'] as ViewMode[]).map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
                 className={cn(
-                  'rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all',
-                  view === v ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  'px-5 py-2 text-xs font-bold uppercase tracking-widest rounded-full transition-all',
+                  view === v
+                    ? 'bg-white shadow-sm text-neutral-900'
+                    : 'text-neutral-400 hover:text-neutral-600'
                 )}
               >
                 {v === 'day' ? 'Jour' : v === 'week' ? 'Semaine' : 'Mois'}
@@ -647,13 +707,13 @@ export function CloserAgenda() {
             onClick={login}
             disabled={gLoading}
             className={cn(
-              'flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all',
+              'flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm tracking-tight shadow-lg transition-all',
               isConnected
-                ? 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                ? 'bg-emerald-700 text-white hover:bg-emerald-800'
+                : 'bg-neutral-900 text-white hover:bg-neutral-800'
             )}
           >
-            <Calendar className="h-3.5 w-3.5" />
+            <RefreshCw className={cn('h-4 w-4', gLoading && 'animate-spin')} />
             {gLoading ? 'Chargement...' : isConnected ? 'Google connecté' : 'Synchroniser Google'}
           </button>
         </div>
@@ -670,7 +730,7 @@ export function CloserAgenda() {
         if (todayEvents.length === 0) return null
         return (
           <div className="mt-2">
-            <h3 className="mb-3 text-sm font-bold text-slate-900 flex items-center gap-2">
+            <h3 className="mb-3 text-sm font-extrabold text-neutral-900 flex items-center gap-2 tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
               Aujourd'hui
             </h3>
@@ -679,17 +739,17 @@ export function CloserAgenda() {
                 <div
                   key={ev.id}
                   onClick={() => setSelectedEvent(ev)}
-                  className="cursor-pointer rounded-xl border border-slate-200 bg-white p-3.5 hover:shadow-md hover:border-amber-200 transition-all"
+                  className="cursor-pointer rounded-2xl border border-stone-200/60 bg-white/70 backdrop-blur-md p-4 hover:shadow-md hover:scale-[1.01] transition-all"
                 >
                   <div className="flex items-center gap-2 mb-1.5">
                     {ev.type === 'appointment' && <User className="h-3.5 w-3.5 text-blue-500" />}
                     {ev.type === 'reminder' && <Bell className="h-3.5 w-3.5 text-orange-500" />}
                     {ev.type === 'google' && <Calendar className="h-3.5 w-3.5 text-blue-500" />}
-                    <span className="text-xs font-medium text-slate-500 flex items-center gap-1">
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-1">
                       <Clock className="h-3 w-3" /> {ev.time?.split(' - ')[0] || '-'}
                     </span>
                   </div>
-                  <p className="text-sm font-semibold text-slate-900 truncate">{ev.title}</p>
+                  <p className="text-sm font-extrabold text-neutral-900 truncate" style={{ fontFamily: "'Manrope', sans-serif" }}>{ev.title}</p>
                   {ev.status && (
                     <span className={cn('inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full', STATUS_COLORS[ev.status] || 'bg-slate-100 text-slate-600')}>
                       {STATUS_LABELS[ev.status] || ev.status}
@@ -705,39 +765,39 @@ export function CloserAgenda() {
       {/* Event detail modal */}
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setSelectedEvent(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className={cn(
-              'px-6 py-4 flex items-center justify-between',
-              selectedEvent.type === 'appointment' ? 'bg-blue-50' : selectedEvent.type === 'google' ? 'bg-blue-50' : 'bg-orange-50'
+              'px-6 py-5 flex items-center justify-between',
+              selectedEvent.type === 'appointment' ? 'bg-blue-50' : selectedEvent.type === 'google' ? 'bg-stone-50' : 'bg-orange-50'
             )}>
               <div className="flex items-center gap-2">
                 {selectedEvent.type === 'appointment' && <User className="h-5 w-5 text-blue-600" />}
                 {selectedEvent.type === 'reminder' && <Bell className="h-5 w-5 text-orange-600" />}
-                {selectedEvent.type === 'google' && <Calendar className="h-5 w-5 text-blue-600" />}
-                <h3 className="text-base font-semibold text-slate-900">
+                {selectedEvent.type === 'google' && <Calendar className="h-5 w-5 text-neutral-600" />}
+                <h3 className="text-base font-extrabold text-neutral-900" style={{ fontFamily: "'Manrope', sans-serif" }}>
                   {selectedEvent.type === 'appointment' ? 'Rendez-vous' : selectedEvent.type === 'google' ? 'Google Agenda' : 'Rappel'}
                 </h3>
               </div>
-              <button onClick={() => setSelectedEvent(null)} className="p-1.5 rounded-lg hover:bg-white/60 transition-colors">
+              <button onClick={() => setSelectedEvent(null)} className="p-2 rounded-full hover:bg-white/60 transition-colors">
                 <X className="w-4 h-4 text-slate-500" />
               </button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Titre</p>
-                <p className="text-sm font-medium text-slate-900">{selectedEvent.title}</p>
+                <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Titre</p>
+                <p className="text-sm font-bold text-neutral-900">{selectedEvent.title}</p>
               </div>
               <div className="flex gap-6">
                 <div>
-                  <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Date</p>
-                  <p className="text-sm text-slate-700">
+                  <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Date</p>
+                  <p className="text-sm text-neutral-700">
                     {new Date(selectedEvent.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                   </p>
                 </div>
                 {selectedEvent.time && (
                   <div>
-                    <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Heure</p>
-                    <p className="text-sm text-slate-700 flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-slate-400" />{selectedEvent.time}</p>
+                    <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Heure</p>
+                    <p className="text-sm text-neutral-700 flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-neutral-400" />{selectedEvent.time}</p>
                   </div>
                 )}
               </div>
@@ -748,34 +808,34 @@ export function CloserAgenda() {
                   <>
                     {a.status && (
                       <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Statut</p>
+                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Statut</p>
                         <span className={cn('inline-block text-xs font-medium px-2.5 py-1 rounded-full', STATUS_COLORS[a.status])}>{STATUS_LABELS[a.status]}</span>
                       </div>
                     )}
                     {a.prospect && (
                       <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Prospect</p>
-                        <p className="text-sm text-slate-700">{a.prospect.contact}</p>
-                        {a.prospect.email && <p className="text-xs text-slate-500">{a.prospect.email}</p>}
-                        {a.prospect.phone && <p className="text-xs text-slate-500">{a.prospect.phone}</p>}
+                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Prospect</p>
+                        <p className="text-sm text-neutral-700">{a.prospect.contact}</p>
+                        {a.prospect.email && <p className="text-xs text-neutral-500">{a.prospect.email}</p>}
+                        {a.prospect.phone && <p className="text-xs text-neutral-500">{a.prospect.phone}</p>}
                       </div>
                     )}
                     {a.campaign && (
                       <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Campagne</p>
-                        <p className="text-sm text-slate-700">{a.campaign.name}</p>
+                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Campagne</p>
+                        <p className="text-sm text-neutral-700">{a.campaign.name}</p>
                       </div>
                     )}
                     {a.duration > 0 && (
                       <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Durée</p>
-                        <p className="text-sm text-slate-700">{a.duration} min</p>
+                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Durée</p>
+                        <p className="text-sm text-neutral-700">{a.duration} min</p>
                       </div>
                     )}
                     {a.notes && (
                       <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Notes</p>
-                        <p className="text-sm text-slate-600 whitespace-pre-wrap">{a.notes}</p>
+                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Notes</p>
+                        <p className="text-sm text-neutral-600 whitespace-pre-wrap">{a.notes}</p>
                       </div>
                     )}
                   </>
@@ -786,14 +846,14 @@ export function CloserAgenda() {
                 <>
                   {selectedEvent.location && (
                     <div>
-                      <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Lieu</p>
-                      <p className="text-sm text-slate-700 flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-slate-400" />{selectedEvent.location}</p>
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Lieu</p>
+                      <p className="text-sm text-neutral-700 flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-neutral-400" />{selectedEvent.location}</p>
                     </div>
                   )}
                   {selectedEvent.description && (
                     <div>
-                      <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Description</p>
-                      <p className="text-sm text-slate-600 whitespace-pre-wrap">{selectedEvent.description}</p>
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Description</p>
+                      <p className="text-sm text-neutral-600 whitespace-pre-wrap">{selectedEvent.description}</p>
                     </div>
                   )}
                   {selectedEvent.hangoutLink && (
@@ -801,7 +861,7 @@ export function CloserAgenda() {
                       href={selectedEvent.hangoutLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 rounded-xl bg-blue-50 border border-blue-200 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                      className="flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-3 text-sm font-bold text-white hover:bg-neutral-800 transition-colors shadow-lg"
                     >
                       <Video className="h-4 w-4" />
                       Rejoindre Google Meet
@@ -817,12 +877,12 @@ export function CloserAgenda() {
                   <>
                     {r.description && (
                       <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Description</p>
-                        <p className="text-sm text-slate-600 whitespace-pre-wrap">{r.description}</p>
+                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Description</p>
+                        <p className="text-sm text-neutral-600 whitespace-pre-wrap">{r.description}</p>
                       </div>
                     )}
                     <div>
-                      <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Statut</p>
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-1">Statut</p>
                       <span className={cn(
                         'inline-block text-xs font-medium px-2.5 py-1 rounded-full',
                         r.is_done ? 'bg-green-100 text-green-700' : new Date(r.reminder_date) < new Date() ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'

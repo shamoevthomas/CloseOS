@@ -53,14 +53,14 @@ const PERIOD_DAYS: Record<string, number> = {
   yearly: 365,
 }
 
-const METRIC_COLORS: Record<string, string> = {
-  revenue: 'bg-green-100 text-green-700',
-  sales_count: 'bg-blue-100 text-blue-700',
-  conversion_rate: 'bg-purple-100 text-purple-700',
-  leads: 'bg-amber-100 text-amber-700',
-  appointments: 'bg-cyan-100 text-cyan-700',
-  noshow_rate: 'bg-red-100 text-red-700',
-  custom: 'bg-slate-100 text-slate-700',
+const METRIC_BADGE: Record<string, { bg: string; text: string }> = {
+  revenue: { bg: 'bg-[#6cf8bb]/30', text: 'text-[#00714d]' },
+  sales_count: { bg: 'bg-[#d0ebff]', text: 'text-[#004a7c]' },
+  conversion_rate: { bg: 'bg-[#6cf8bb]/30', text: 'text-[#00714d]' },
+  leads: { bg: 'bg-[#d0ebff]', text: 'text-[#004a7c]' },
+  appointments: { bg: 'bg-[#e4e2e1]', text: 'text-[#444748]' },
+  noshow_rate: { bg: 'bg-[#ffdad6]', text: 'text-[#ba1a1a]' },
+  custom: { bg: 'bg-[#e4e2e1]', text: 'text-[#444748]' },
 }
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -333,334 +333,434 @@ export function BusinessObjectives() {
     return new Date(deadline) < new Date()
   }
 
-  const inputCls = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-  const selectCls = "w-full appearance-none rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+  const getProgressColor = (progress: number | null) => {
+    if (progress === null) return 'bg-[#444748]'
+    if (progress >= 100) return 'bg-[#006c49]'
+    if (progress >= 60) return 'bg-[#ffb95f]'
+    if (progress < 50) return 'bg-[#ba1a1a]'
+    return 'bg-[#444748]'
+  }
+
+  const getProgressTextColor = (progress: number | null) => {
+    if (progress === null) return 'text-[#444748]'
+    if (progress >= 100) return 'text-[#006c49]'
+    if (progress >= 60) return 'text-[#ffb95f]'
+    if (progress < 50) return 'text-[#ba1a1a]'
+    return 'text-[#444748]'
+  }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-amber-600 animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-[#006c49] animate-spin" /></div>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-            <Target className="h-5 w-5 text-amber-700" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">{objectives.length} objectif{objectives.length !== 1 ? 's' : ''}</h2>
-            <p className="text-xs text-slate-500">Définissez vos objectifs et suivez votre progression</p>
-          </div>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Objectifs
+          </h1>
+          <p className="text-[#444748] max-w-lg">Définissez vos objectifs, suivez votre progression et alignez votre équipe.</p>
         </div>
         {!isTeamMember && (
-          <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors">
-            <Plus className="h-4 w-4" /> Ajouter un objectif
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={openCreate}
+              className="px-8 py-3 bg-gradient-to-r from-[#ff6b6b] to-[#a239ca] text-white rounded-full font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+              style={{ fontFamily: 'Manrope, sans-serif' }}
+            >
+              + Nouvel objectif
+            </button>
+          </div>
         )}
       </div>
 
       {/* Empty state */}
       {objectives.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 py-16">
-          <Target className="h-12 w-12 text-amber-300 mb-4" />
-          <h3 className="text-lg font-semibold text-slate-700 mb-1">Aucun objectif</h3>
-          <p className="text-sm text-slate-500 mb-4">
-            {isTeamMember ? "Aucun objectif ne vous a été assigné" : "Créez votre premier objectif pour suivre votre progression"}
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-48 h-48 bg-[#f5f3f2] rounded-full flex items-center justify-center mb-8 relative">
+            <Target className="h-20 w-20 text-[#c4c7c7]/40" />
+            <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center">
+              <Target className="h-6 w-6 text-[#006c49]" />
+            </div>
+          </div>
+          <h2 className="text-3xl font-extrabold mb-4 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Aucun objectif pour le moment</h2>
+          <p className="text-[#444748] max-w-sm mx-auto mb-10">
+            {isTeamMember ? "Aucun objectif ne vous a été assigné." : "Commencez dès maintenant à définir vos objectifs et suivre votre progression."}
           </p>
           {!isTeamMember && (
-            <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700">
-              <Plus className="h-4 w-4" /> Créer un objectif
+            <button
+              onClick={openCreate}
+              className="px-10 py-4 bg-[#1b1c1b] text-white rounded-full font-extrabold text-sm shadow-xl hover:scale-105 transition-transform"
+              style={{ fontFamily: 'Manrope, sans-serif' }}
+            >
+              Lancer mon premier objectif
             </button>
           )}
         </div>
       )}
 
-      {/* Objective cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {objectives.map((obj) => {
-          const currentValue = calculateCurrentValue(obj.metric, obj.period)
-          const progress = currentValue !== null && obj.target_value > 0
-            ? Math.min(Math.round((currentValue / obj.target_value) * 100), 100)
-            : null
-          const memberName = getMemberName(obj.assigned_to)
-          const memberRole = getMemberRole(obj.assigned_to)
-          const deadlineStr = formatDeadline(obj.deadline)
-          const overdue = isOverdue(obj.deadline)
+      {/* Objective cards — Bento grid */}
+      {objectives.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {objectives.map((obj) => {
+            const currentValue = calculateCurrentValue(obj.metric, obj.period)
+            const progress = currentValue !== null && obj.target_value > 0
+              ? Math.min(Math.round((currentValue / obj.target_value) * 100), 100)
+              : null
+            const memberName = getMemberName(obj.assigned_to)
+            const deadlineStr = formatDeadline(obj.deadline)
+            const overdue = isOverdue(obj.deadline)
+            const isComplete = progress !== null && progress >= 100
+            const metricBadge = METRIC_BADGE[obj.metric] || METRIC_BADGE.custom
 
-          return (
-            <div key={obj.id} className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="font-semibold text-slate-900 truncate flex-1 min-w-0">{obj.label}</h3>
-              </div>
+            return (
+              <div
+                key={obj.id}
+                className={`bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border hover:shadow-2xl transition-all group relative overflow-hidden ${
+                  isComplete ? 'border-[#c4c7c7]/10' : 'border-[#c4c7c7]/10'
+                }`}
+              >
+                {/* Verified icon for completed */}
+                {isComplete && (
+                  <div className="absolute top-4 right-4">
+                    <svg className="w-8 h-8 text-[#006c49]" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+                    </svg>
+                  </div>
+                )}
 
-              <div className="flex items-center gap-2 mb-3 flex-wrap">
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${METRIC_COLORS[obj.metric] || METRIC_COLORS.custom}`}>
-                  {getMetricLabel(obj.metric)}
-                </span>
-                <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                  {PERIOD_LABELS[obj.period] || obj.period}
-                </span>
-              </div>
-
-              {/* Assignment info */}
-              {obj.scope === 'global_org' ? (
-                <div className="flex items-center gap-2 mb-3">
-                  <Building2 className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="text-xs font-medium text-amber-700">Toute l'organisation</span>
-                </div>
-              ) : obj.scope === 'global_role' && obj.assigned_to_role ? (
-                <div className="flex items-center gap-2 mb-3">
-                  <Users className="h-3.5 w-3.5 text-indigo-500" />
-                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[obj.assigned_to_role] || 'bg-slate-100 text-slate-600'}`}>
-                    Tous les {obj.assigned_to_role}s
-                  </span>
-                </div>
-              ) : obj.assigned_to_members && obj.assigned_to_members.length > 1 ? (
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <Users className="h-3.5 w-3.5 text-slate-400" />
-                  {obj.assigned_to_members.map(mid => {
-                    const name = getMemberName(mid)
-                    const role = getMemberRole(mid)
-                    return name ? (
-                      <span key={mid} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-                        {name}
-                        {role && <span className={`inline-flex rounded-full px-1 py-0 text-[9px] font-medium ${ROLE_COLORS[role] || 'bg-slate-50 text-slate-500'}`}>{role}</span>}
-                      </span>
-                    ) : null
-                  })}
-                </div>
-              ) : memberName ? (
-                <div className="flex items-center gap-2 mb-3">
-                  <User className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="text-xs font-medium text-slate-700">{memberName}</span>
-                  {memberRole && (
-                    <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-medium ${ROLE_COLORS[memberRole] || 'bg-slate-100 text-slate-600'}`}>
-                      {memberRole}
+                {/* Tags */}
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${metricBadge.bg} ${metricBadge.text}`}>
+                      {getMetricLabel(obj.metric)}
                     </span>
+                    <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#eae8e7] text-[#444748]">
+                      {PERIOD_LABELS[obj.period] || obj.period}
+                    </span>
+                    {obj.scope === 'global_org' && (
+                      <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#ffddb8] text-[#653e00]">
+                        Organisation
+                      </span>
+                    )}
+                    {obj.scope === 'global_role' && obj.assigned_to_role && (
+                      <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#d0ebff] text-[#004a7c]">
+                        {obj.assigned_to_role}
+                      </span>
+                    )}
+                  </div>
+                  {!isTeamMember && !isComplete && (
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openEdit(obj)} className="p-1.5 hover:bg-[#eae8e7] rounded-full transition-colors">
+                        <Pencil className="h-4 w-4 text-[#444748]" />
+                      </button>
+                      <button onClick={() => deleteObjective(obj)} className="p-1.5 hover:bg-[#ffdad6] hover:text-[#ba1a1a] rounded-full transition-colors">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   )}
                 </div>
-              ) : null}
 
-              {/* Description for custom metric */}
-              {obj.metric === 'custom' && obj.description && (
-                <p className="text-xs text-slate-500 mb-3 line-clamp-2">{obj.description}</p>
-              )}
+                {/* Title */}
+                <h3 className="text-xl font-extrabold mb-4 text-[#1b1c1b] group-hover:text-[#006c49] transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  {obj.label}
+                </h3>
 
-              {/* Deadline */}
-              {deadlineStr && (
-                <div className="flex items-center gap-2 mb-3">
-                  <CalendarDays className={`h-3.5 w-3.5 ${overdue ? 'text-red-500' : 'text-slate-400'}`} />
-                  <span className={`text-xs font-medium ${overdue ? 'text-red-600' : 'text-slate-600'}`}>
-                    {overdue ? 'Expiré le ' : 'Échéance : '}{deadlineStr}
-                  </span>
-                </div>
-              )}
-
-              {/* Progress bar */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between text-sm mb-1.5">
-                  <span className="font-semibold text-slate-900">
-                    {formatValue(obj.metric, currentValue)}
-                  </span>
-                  <span className="text-slate-400">
-                    / {formatValue(obj.metric, obj.target_value)}
-                  </span>
-                </div>
-                {progress !== null ? (
-                  <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        progress >= 100 ? 'bg-green-500' : progress >= 60 ? 'bg-amber-500' : 'bg-blue-500'
-                      }`}
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                ) : (
-                  <div className="h-2.5 w-full rounded-full bg-slate-100" />
+                {/* Description for custom metric */}
+                {obj.metric === 'custom' && obj.description && (
+                  <p className="text-sm text-[#444748] mb-4 line-clamp-2">{obj.description}</p>
                 )}
-                {progress !== null && (
-                  <p className="text-xs text-slate-400 mt-1">{progress}% atteint</p>
-                )}
-              </div>
 
-              {!isTeamMember && (
-                <div className="flex gap-2 border-t border-slate-100 pt-3">
-                  <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                    <Pencil className="h-3.5 w-3.5" /> Modifier
-                  </button>
-                  <button onClick={() => deleteObjective(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
-                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
-                  </button>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Modal Create/Edit */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl">
-            {/* Modal header */}
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 flex-shrink-0">
-              <h3 className="text-lg font-bold text-slate-900">
-                {editingObjective ? "Modifier l'objectif" : 'Nouvel objectif'}
-              </h3>
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="text-slate-400 hover:text-slate-600">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              {/* Label */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nom de l'objectif *</label>
-                <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="Ex: CA mensuel" className={inputCls} />
-              </div>
-
-              {/* Metric */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Métrique *</label>
-                <div className="relative">
-                  <select value={formMetric} onChange={(e) => setFormMetric(e.target.value)} className={selectCls}>
-                    {METRICS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Description (only when custom metric) */}
-              {formMetric === 'custom' && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                  <textarea
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    placeholder="Décrivez votre métrique personnalisée..."
-                    rows={3}
-                    className={inputCls + ' resize-none'}
-                  />
-                </div>
-              )}
-
-              {/* Target value */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Valeur cible *</label>
-                <input type="number" min="0" step="any" value={formTargetValue} onChange={(e) => setFormTargetValue(e.target.value)} placeholder="Ex: 10000" className={inputCls} />
-              </div>
-
-              {/* Period */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Période</label>
-                <div className="relative">
-                  <select value={formPeriod} onChange={(e) => setFormPeriod(e.target.value)} className={selectCls}>
-                    {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Assignment switch */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Assigner à</label>
-                <div className="flex rounded-xl bg-slate-100 p-1 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormScope('individual')}
-                    className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      formScope === 'individual' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    <User className="h-4 w-4" /> Individuel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormScope('global')}
-                    className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      formScope === 'global' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    <Building2 className="h-4 w-4" /> Global
-                  </button>
-                </div>
-
-                {formScope === 'individual' ? (
-                  <div>
-                    <p className="text-xs text-slate-500 mb-2">Sélectionnez un ou plusieurs membres</p>
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto rounded-xl border border-slate-200 p-2">
-                      {members.filter(m => m.role !== 'Owner').map(m => (
-                        <label key={m.id} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-slate-50 cursor-pointer transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={formAssignedMembers.includes(m.id)}
-                            onChange={() => toggleMember(m.id)}
-                            className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
-                          />
-                          <span className="text-sm text-slate-700">{m.first_name} {m.last_name}</span>
-                          <span className={`ml-auto inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium ${ROLE_COLORS[m.role] || 'bg-slate-100 text-slate-600'}`}>
-                            {m.role}
-                          </span>
-                        </label>
-                      ))}
+                {/* Progress */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <div className="text-sm font-semibold text-[#1b1c1b]">
+                      {formatValue(obj.metric, currentValue)} <span className="text-[#444748] font-normal">/ {formatValue(obj.metric, obj.target_value)}</span>
                     </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex rounded-xl bg-slate-100 p-1 mb-3">
-                      <button
-                        type="button"
-                        onClick={() => setFormGlobalType('org')}
-                        className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                          formGlobalType === 'org' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        Toute l'orga
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormGlobalType('role')}
-                        className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                          formGlobalType === 'role' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        Par rôle
-                      </button>
-                    </div>
-                    {formGlobalType === 'role' && (
-                      <div className="relative">
-                        <select value={formAssignedRole} onChange={(e) => setFormAssignedRole(e.target.value)} className={selectCls}>
-                          <option value="">— Choisir un rôle —</option>
-                          {AVAILABLE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                    {progress !== null && (
+                      <div className={`text-sm font-extrabold ${getProgressTextColor(progress)}`}>
+                        {progress}%
                       </div>
                     )}
                   </div>
+                  <div className="w-full h-2 bg-[#efedec] rounded-full overflow-hidden">
+                    {progress !== null && (
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${getProgressColor(progress)}`}
+                        style={{ width: `${progress}%` }}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="mt-8 pt-6 border-t border-[#c4c7c7]/5 flex items-center justify-between">
+                  <div>
+                    {overdue && deadlineStr ? (
+                      <div className="flex items-center gap-2 text-[#ba1a1a] text-xs font-bold">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        En retard ({deadlineStr})
+                      </div>
+                    ) : isComplete ? (
+                      <div className="flex items-center gap-2 text-[#006c49] text-xs font-bold">
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                        Terminé
+                      </div>
+                    ) : deadlineStr ? (
+                      <div className="flex items-center gap-2 text-[#444748] text-xs font-medium">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        Échéance: {deadlineStr}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* Assignment info */}
+                  <div>
+                    {obj.assigned_to_members && obj.assigned_to_members.length > 1 ? (
+                      <div className="flex -space-x-2">
+                        {obj.assigned_to_members.slice(0, 3).map(mid => {
+                          const name = getMemberName(mid)
+                          const initials = name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?'
+                          return (
+                            <div key={mid} className="w-6 h-6 rounded-full bg-[#efedec] border-2 border-white flex items-center justify-center text-[8px] font-bold text-[#1b1c1b]" title={name || ''}>
+                              {initials}
+                            </div>
+                          )
+                        })}
+                        {obj.assigned_to_members.length > 3 && (
+                          <div className="w-6 h-6 rounded-full bg-[#efedec] border-2 border-white flex items-center justify-center text-[8px] font-bold text-[#444748]">
+                            +{obj.assigned_to_members.length - 3}
+                          </div>
+                        )}
+                      </div>
+                    ) : memberName ? (
+                      <span className="text-[#ffb95f] font-bold text-sm flex items-center gap-1">
+                        <User className="h-3.5 w-3.5" style={{ fill: 'currentColor' }} />
+                        {memberName}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Add New Card */}
+          {!isTeamMember && (
+            <button
+              onClick={openCreate}
+              className="bg-[#f5f3f2] rounded-2xl p-8 border-2 border-dashed border-[#c4c7c7]/40 flex flex-col items-center justify-center gap-4 hover:bg-[#eae8e7] hover:border-[#1b1c1b]/20 transition-all group/add min-h-[280px]"
+            >
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm group-hover/add:scale-110 transition-transform">
+                <Plus className="h-8 w-8 text-[#1b1c1b]" />
+              </div>
+              <div className="text-center">
+                <p className="font-extrabold text-lg text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Créer un objectif</p>
+                <p className="text-xs text-[#444748]">Définissez vos prochains succès</p>
+              </div>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Modal Create/Edit */}
+      {isModalOpen && (
+        <>
+          <div className="fixed inset-0 z-50 bg-[#1b1c1b]/40 backdrop-blur-md" onClick={() => { setIsModalOpen(false); resetForm() }} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
+            <div className="pointer-events-auto w-full max-w-xl max-h-[90vh] flex flex-col bg-white/70 backdrop-blur-2xl rounded-2xl shadow-2xl ring-1 ring-white/40 overflow-hidden" onClick={e => e.stopPropagation()}>
+              {/* Modal header */}
+              <div className="px-8 py-6 border-b border-[#c4c7c7]/10 flex justify-between items-center flex-shrink-0">
+                <h2 className="text-2xl font-extrabold tracking-tight text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  {editingObjective ? "Modifier l'objectif" : 'Nouvel Objectif'}
+                </h2>
+                <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-[#eae8e7] rounded-full transition-colors">
+                  <X className="h-5 w-5 text-[#444748]" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                {/* Label */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]">Titre de l'objectif</label>
+                  <input
+                    type="text"
+                    value={formLabel}
+                    onChange={(e) => setFormLabel(e.target.value)}
+                    placeholder="Ex: Atteindre 50k€ de CA"
+                    className="w-full bg-transparent border-0 border-b border-[#c4c7c7]/40 focus:ring-0 focus:border-[#006c49] py-3 text-lg font-semibold placeholder:text-[#c4c7c7] text-[#1b1c1b]"
+                  />
+                </div>
+
+                {/* Metric + Period */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]">Type</label>
+                    <select
+                      value={formMetric}
+                      onChange={(e) => setFormMetric(e.target.value)}
+                      className="w-full bg-[#f5f3f2] border-0 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b]"
+                    >
+                      {METRICS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]">Fréquence</label>
+                    <select
+                      value={formPeriod}
+                      onChange={(e) => setFormPeriod(e.target.value)}
+                      className="w-full bg-[#f5f3f2] border-0 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b]"
+                    >
+                      {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Description (only when custom metric) */}
+                {formMetric === 'custom' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]">Description</label>
+                    <textarea
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
+                      placeholder="Décrivez votre métrique personnalisée..."
+                      rows={3}
+                      className="w-full bg-[#f5f3f2] border-0 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#006c49]/20 font-medium text-sm resize-none text-[#1b1c1b]"
+                    />
+                  </div>
                 )}
+
+                {/* Target value + Deadline */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]">Valeur Cible</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={formTargetValue}
+                      onChange={(e) => setFormTargetValue(e.target.value)}
+                      placeholder="0"
+                      className="w-full bg-[#f5f3f2] border-0 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]">Date limite</label>
+                    <input
+                      type="date"
+                      value={formDeadline}
+                      onChange={(e) => setFormDeadline(e.target.value)}
+                      className="w-full bg-[#f5f3f2] border-0 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b]"
+                    />
+                  </div>
+                </div>
+
+                {/* Assignment */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]">Assigner à</label>
+                  <div className="flex rounded-full bg-[#f5f3f2] p-1">
+                    <button
+                      type="button"
+                      onClick={() => setFormScope('individual')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-all ${
+                        formScope === 'individual' ? 'bg-white text-[#1b1c1b] shadow-sm' : 'text-[#444748] hover:text-[#1b1c1b]'
+                      }`}
+                    >
+                      <User className="h-4 w-4" /> Individuel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormScope('global')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-all ${
+                        formScope === 'global' ? 'bg-white text-[#1b1c1b] shadow-sm' : 'text-[#444748] hover:text-[#1b1c1b]'
+                      }`}
+                    >
+                      <Building2 className="h-4 w-4" /> Global
+                    </button>
+                  </div>
+
+                  {formScope === 'individual' ? (
+                    <div>
+                      <p className="text-xs text-[#444748] mb-2">Sélectionnez un ou plusieurs membres</p>
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto rounded-xl bg-[#f5f3f2] p-2">
+                        {members.filter(m => m.role !== 'Owner').map(m => (
+                          <label key={m.id} className="flex items-center gap-2.5 rounded-full px-3 py-2 hover:bg-white cursor-pointer transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={formAssignedMembers.includes(m.id)}
+                              onChange={() => toggleMember(m.id)}
+                              className="h-4 w-4 rounded border-[#c4c7c7] text-[#006c49] focus:ring-[#006c49]"
+                            />
+                            <span className="text-sm font-medium text-[#1b1c1b]">{m.first_name} {m.last_name}</span>
+                            <span className={`ml-auto inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${ROLE_COLORS[m.role] || 'bg-[#eae8e7] text-[#444748]'}`}>
+                              {m.role}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex rounded-full bg-[#f5f3f2] p-1 mb-3">
+                        <button
+                          type="button"
+                          onClick={() => setFormGlobalType('org')}
+                          className={`flex-1 rounded-full px-3 py-2 text-sm font-semibold transition-all ${
+                            formGlobalType === 'org' ? 'bg-white text-[#1b1c1b] shadow-sm' : 'text-[#444748]'
+                          }`}
+                        >
+                          Toute l'orga
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormGlobalType('role')}
+                          className={`flex-1 rounded-full px-3 py-2 text-sm font-semibold transition-all ${
+                            formGlobalType === 'role' ? 'bg-white text-[#1b1c1b] shadow-sm' : 'text-[#444748]'
+                          }`}
+                        >
+                          Par rôle
+                        </button>
+                      </div>
+                      {formGlobalType === 'role' && (
+                        <select
+                          value={formAssignedRole}
+                          onChange={(e) => setFormAssignedRole(e.target.value)}
+                          className="w-full bg-[#f5f3f2] border-0 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b]"
+                        >
+                          <option value="">— Choisir un rôle —</option>
+                          {AVAILABLE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Deadline */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Date limite</label>
-                <input type="date" value={formDeadline} onChange={(e) => setFormDeadline(e.target.value)} className={inputCls} />
+              {/* Footer */}
+              <div className="px-8 py-6 bg-[#f5f3f2] flex justify-end gap-4 flex-shrink-0">
+                <button
+                  onClick={() => { setIsModalOpen(false); resetForm() }}
+                  className="px-6 py-3 font-bold text-sm text-[#444748] hover:text-[#1b1c1b] transition-colors"
+                  style={{ fontFamily: 'Manrope, sans-serif' }}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-10 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2"
+                  style={{ fontFamily: 'Manrope, sans-serif' }}
+                >
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {editingObjective ? 'Enregistrer' : 'Créer'}
+                </button>
               </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4 flex-shrink-0">
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                Annuler
-              </button>
-              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50">
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                {editingObjective ? 'Enregistrer' : 'Créer'}
-              </button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
