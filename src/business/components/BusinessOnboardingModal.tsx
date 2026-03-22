@@ -174,24 +174,24 @@ export function BusinessOnboardingModal() {
     };
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-md p-4 overflow-y-auto">
         {/* Crop overlay */}
         {imageSrc && (
           <div className="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center p-4">
-            <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-amber-700/30 bg-slate-900 mb-6">
+            <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-stone-700/30 bg-stone-900 mb-6">
               <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} />
             </div>
             <div className="w-full max-w-lg space-y-6">
               <div className="flex items-center gap-4 px-4">
-                <ZoomOut className="h-5 w-5 text-slate-400" />
-                <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500" />
-                <ZoomIn className="h-5 w-5 text-slate-400" />
+                <ZoomOut className="h-5 w-5 text-stone-400" />
+                <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-stone-400" />
+                <ZoomIn className="h-5 w-5 text-stone-400" />
               </div>
               <div className="flex gap-4 justify-center">
-                <button onClick={() => { setImageSrc(null); setZoom(1); }} disabled={uploading} className="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors flex items-center gap-2">
+                <button onClick={() => { setImageSrc(null); setZoom(1); }} disabled={uploading} className="px-6 py-3 rounded-full border border-stone-700 text-stone-300 font-bold hover:bg-stone-800 transition-colors flex items-center gap-2">
                   <X className="h-4 w-4" /> Annuler
                 </button>
-                <button onClick={saveTmCroppedImage} disabled={uploading} className="px-6 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors shadow-lg flex items-center gap-2">
+                <button onClick={saveTmCroppedImage} disabled={uploading} className="px-6 py-3 rounded-full bg-stone-900 text-white font-bold hover:bg-stone-800 transition-colors shadow-lg flex items-center gap-2 active:scale-95">
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                   Valider la photo
                 </button>
@@ -200,21 +200,21 @@ export function BusinessOnboardingModal() {
           </div>
         )}
 
-        <div className="w-full max-w-lg rounded-2xl border border-amber-200 bg-white p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="w-full max-w-lg rounded-xl border border-stone-200/20 bg-white/95 backdrop-blur-xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] animate-in zoom-in-95 duration-200">
           {/* Header with org info */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 shrink-0">
+            <div className="w-10 h-10 rounded-lg overflow-hidden border border-stone-200/20 shrink-0">
               {settings.logo_url ? (
                 <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                <div className="w-full h-full bg-stone-900 flex items-center justify-center">
                   <Building2 className="h-5 w-5 text-white" />
                 </div>
               )}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900">Bienvenue chez {settings.company_name || 'votre organisation'} !</h2>
-              <p className="text-slate-500 text-sm">Complétez votre profil pour commencer</p>
+              <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900">Bienvenue chez {settings.company_name || 'votre organisation'} !</h2>
+              <p className="text-stone-500 text-sm">Complétez votre profil pour commencer</p>
             </div>
           </div>
 
@@ -222,16 +222,16 @@ export function BusinessOnboardingModal() {
             {/* Avatar */}
             <div className="flex justify-center mb-2">
               <div className="relative group cursor-pointer" onClick={handleTmAvatarClick}>
-                <div className="w-20 h-20 rounded-full border-2 border-amber-200 overflow-hidden bg-amber-50 flex items-center justify-center transition-all group-hover:border-amber-500">
+                <div className="w-20 h-20 rounded-full border-2 border-stone-200/20 overflow-hidden bg-stone-100/50 flex items-center justify-center transition-all group-hover:border-stone-400">
                   {tmAvatarUrl ? (
                     <img src={tmAvatarUrl} alt="Profil" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-lg font-bold text-amber-600">
-                      {tmInitials || <User className="w-8 h-8 text-amber-400" />}
+                    <span className="text-lg font-bold text-stone-500">
+                      {tmInitials || <User className="w-8 h-8 text-stone-400" />}
                     </span>
                   )}
                 </div>
-                <div className="absolute bottom-0 right-0 bg-amber-600 p-1.5 rounded-full border-2 border-white text-white shadow-sm group-hover:scale-110 transition-transform">
+                <div className="absolute bottom-0 right-0 bg-stone-900 p-1.5 rounded-full border-2 border-white text-white shadow-sm group-hover:scale-110 transition-transform">
                   <Camera className="w-3.5 h-3.5" />
                 </div>
                 <input type="file" ref={tmFileInputRef} onChange={onTmFileChange} accept="image/*" className="hidden" />
@@ -241,23 +241,23 @@ export function BusinessOnboardingModal() {
             {/* Prénom + Nom */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Prénom</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Prénom</label>
                 <input
                   type="text"
                   value={tmFirstName}
                   onChange={(e) => setTmFirstName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                   placeholder="Jean"
                   required
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Nom</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Nom</label>
                 <input
                   type="text"
                   value={tmLastName}
                   onChange={(e) => setTmLastName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                   placeholder="Dupont"
                   required
                 />
@@ -266,43 +266,43 @@ export function BusinessOnboardingModal() {
 
             {/* Date de naissance */}
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Date de naissance</label>
+              <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Date de naissance</label>
               <div className="relative">
-                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
                 <input
                   type="date"
                   value={tmDob}
                   onChange={(e) => setTmDob(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full rounded-xl bg-stone-100/50 border-none py-3 pl-11 pr-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                 />
               </div>
               {tmAge !== null && tmAge >= 0 && (
-                <p className="text-xs text-slate-500 mt-1.5">{tmAge} ans</p>
+                <p className="text-xs text-stone-500 mt-1.5">{tmAge} ans</p>
               )}
             </div>
 
             {/* Téléphone */}
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Téléphone</label>
+              <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Téléphone</label>
               <div className="flex gap-2">
                 <div className="relative" ref={tmCountryRef}>
                   <button
                     type="button"
                     onClick={() => { setIsTmCountryOpen(!isTmCountryOpen); setTmCountrySearch(''); }}
-                    className="w-28 shrink-0 rounded-xl border border-slate-200 bg-slate-50 py-3 px-3 text-slate-900 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none text-left truncate"
+                    className="w-28 shrink-0 rounded-xl bg-stone-100/50 border-none py-3 px-3 text-stone-900 text-sm focus:ring-2 focus:ring-emerald-600/20 focus:outline-none text-left truncate"
                   >
                     {tmSelectedCountry ? `${tmSelectedCountry.dial_code} ${tmSelectedCountry.code}` : tmCountryCode}
                   </button>
                   {isTmCountryOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden">
-                      <div className="sticky top-0 bg-white p-2 border-b border-slate-100">
+                    <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white/95 backdrop-blur-xl border border-stone-200/20 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] z-50 overflow-hidden">
+                      <div className="sticky top-0 bg-white/95 backdrop-blur-xl p-2 border-b border-stone-100">
                         <div className="relative">
-                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
                           <input
                             type="text"
                             value={tmCountrySearch}
                             onChange={(e) => setTmCountrySearch(e.target.value)}
-                            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-3 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
+                            className="w-full rounded-lg bg-stone-100/50 border-none py-2 pl-8 pr-3 text-sm text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                             placeholder="Rechercher un pays..."
                             autoFocus
                           />
@@ -314,16 +314,16 @@ export function BusinessOnboardingModal() {
                             key={c.code}
                             type="button"
                             onClick={() => { setTmCountryCode(c.dial_code); setIsTmCountryOpen(false); setTmCountrySearch(''); }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-amber-50 transition-colors flex items-center justify-between ${
-                              tmCountryCode === c.dial_code ? 'bg-amber-50 text-amber-700 font-medium' : 'text-slate-700'
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100/50 transition-colors flex items-center justify-between ${
+                              tmCountryCode === c.dial_code ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-stone-700'
                             }`}
                           >
                             <span className="truncate">{c.name}</span>
-                            <span className="text-slate-400 ml-2 shrink-0">{c.dial_code}</span>
+                            <span className="text-stone-400 ml-2 shrink-0">{c.dial_code}</span>
                           </button>
                         ))}
                         {tmFilteredCountries.length === 0 && (
-                          <p className="px-3 py-4 text-sm text-slate-400 text-center">Aucun résultat</p>
+                          <p className="px-3 py-4 text-sm text-stone-400 text-center">Aucun résultat</p>
                         )}
                       </div>
                     </div>
@@ -333,7 +333,7 @@ export function BusinessOnboardingModal() {
                   type="tel"
                   value={tmPhone}
                   onChange={(e) => setTmPhone(e.target.value)}
-                  className="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="flex-1 rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                   placeholder="6 12 34 56 78"
                 />
               </div>
@@ -342,7 +342,7 @@ export function BusinessOnboardingModal() {
             <button
               onClick={handleTmSubmit}
               disabled={loading || !tmFirstName || !tmLastName}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-600 py-3.5 font-bold text-white transition-all hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-3.5 font-bold text-white transition-all hover:bg-stone-800 shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
                 <>
@@ -441,11 +441,11 @@ export function BusinessOnboardingModal() {
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-md p-4 overflow-y-auto">
       {/* Crop overlay */}
       {imageSrc && (
         <div className="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center p-4">
-          <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-amber-700/30 bg-slate-900 mb-6">
+          <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-stone-700/30 bg-stone-900 mb-6">
             <Cropper
               image={imageSrc}
               crop={crop}
@@ -458,7 +458,7 @@ export function BusinessOnboardingModal() {
           </div>
           <div className="w-full max-w-lg space-y-6">
             <div className="flex items-center gap-4 px-4">
-              <ZoomOut className="h-5 w-5 text-slate-400" />
+              <ZoomOut className="h-5 w-5 text-stone-400" />
               <input
                 type="range"
                 value={zoom}
@@ -466,15 +466,15 @@ export function BusinessOnboardingModal() {
                 max={3}
                 step={0.1}
                 onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                className="w-full h-2 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-stone-400"
               />
-              <ZoomIn className="h-5 w-5 text-slate-400" />
+              <ZoomIn className="h-5 w-5 text-stone-400" />
             </div>
             <div className="flex gap-4 justify-center">
               <button
                 onClick={() => { setImageSrc(null); setZoom(1); }}
                 disabled={uploading}
-                className="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
+                className="px-6 py-3 rounded-full border border-stone-700 text-stone-300 font-bold hover:bg-stone-800 transition-colors flex items-center gap-2"
               >
                 <X className="h-4 w-4" />
                 Annuler
@@ -482,7 +482,7 @@ export function BusinessOnboardingModal() {
               <button
                 onClick={showCroppedImage}
                 disabled={uploading}
-                className="px-6 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors shadow-lg flex items-center gap-2"
+                className="px-6 py-3 rounded-full bg-stone-900 text-white font-bold hover:bg-stone-800 transition-colors shadow-lg flex items-center gap-2 active:scale-95"
               >
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Valider la photo
@@ -492,39 +492,39 @@ export function BusinessOnboardingModal() {
         </div>
       )}
 
-      <div className="w-full max-w-lg rounded-2xl border border-amber-200 bg-white p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="w-full max-w-lg rounded-xl border border-stone-200/20 bg-white/95 backdrop-blur-xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] animate-in zoom-in-95 duration-200">
         {/* Progress indicator */}
         <div className="flex items-center gap-2 mb-8">
-          <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? 'bg-amber-500' : 'bg-slate-200'}`} />
-          <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? 'bg-amber-500' : 'bg-slate-200'}`} />
+          <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? 'bg-emerald-500' : 'bg-stone-200'}`} />
+          <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? 'bg-emerald-500' : 'bg-stone-200'}`} />
         </div>
 
         {step === 1 && (
           <>
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-amber-50">
-                  <Briefcase className="h-5 w-5 text-amber-600" />
+                <div className="p-2 rounded-lg bg-stone-100/50">
+                  <Briefcase className="h-5 w-5 text-stone-900" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-900">Votre profil</h2>
+                <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900">Votre profil</h2>
               </div>
-              <p className="text-slate-500 text-sm">Présentez-vous en quelques secondes</p>
+              <p className="text-stone-500 text-sm">Présentez-vous en quelques secondes</p>
             </div>
 
             <div className="space-y-4">
               {/* Avatar */}
               <div className="flex justify-center mb-2">
                 <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
-                  <div className="w-20 h-20 rounded-full border-2 border-amber-200 overflow-hidden bg-amber-50 flex items-center justify-center transition-all group-hover:border-amber-500">
+                  <div className="w-20 h-20 rounded-full border-2 border-stone-200/20 overflow-hidden bg-stone-100/50 flex items-center justify-center transition-all group-hover:border-stone-400">
                     {avatarUrl ? (
                       <img src={avatarUrl} alt="Profil" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-lg font-bold text-amber-600">
-                        {initials || <User className="w-8 h-8 text-amber-400" />}
+                      <span className="text-lg font-bold text-stone-500">
+                        {initials || <User className="w-8 h-8 text-stone-400" />}
                       </span>
                     )}
                   </div>
-                  <div className="absolute bottom-0 right-0 bg-amber-600 p-1.5 rounded-full border-2 border-white text-white shadow-sm group-hover:scale-110 transition-transform">
+                  <div className="absolute bottom-0 right-0 bg-stone-900 p-1.5 rounded-full border-2 border-white text-white shadow-sm group-hover:scale-110 transition-transform">
                     <Camera className="w-3.5 h-3.5" />
                   </div>
                   <input
@@ -538,39 +538,39 @@ export function BusinessOnboardingModal() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Nom complet</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Nom complet</label>
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                   placeholder="John Doe"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Téléphone</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Téléphone</label>
                 <div className="flex gap-2">
                   {/* Searchable country code dropdown */}
                   <div className="relative" ref={countryDropdownRef}>
                     <button
                       type="button"
                       onClick={() => { setIsCountryDropdownOpen(!isCountryDropdownOpen); setCountrySearch(''); }}
-                      className="w-28 shrink-0 rounded-xl border border-slate-200 bg-slate-50 py-3 px-3 text-slate-900 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none text-left truncate"
+                      className="w-28 shrink-0 rounded-xl bg-stone-100/50 border-none py-3 px-3 text-stone-900 text-sm focus:ring-2 focus:ring-emerald-600/20 focus:outline-none text-left truncate"
                     >
                       {selectedCountry ? `${selectedCountry.dial_code} ${selectedCountry.code}` : countryCode}
                     </button>
                     {isCountryDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden">
-                        <div className="sticky top-0 bg-white p-2 border-b border-slate-100">
+                      <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white/95 backdrop-blur-xl border border-stone-200/20 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] z-50 overflow-hidden">
+                        <div className="sticky top-0 bg-white/95 backdrop-blur-xl p-2 border-b border-stone-100">
                           <div className="relative">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
                             <input
                               type="text"
                               value={countrySearch}
                               onChange={(e) => setCountrySearch(e.target.value)}
-                              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-3 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
+                              className="w-full rounded-lg bg-stone-100/50 border-none py-2 pl-8 pr-3 text-sm text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                               placeholder="Rechercher un pays..."
                               autoFocus
                             />
@@ -586,16 +586,16 @@ export function BusinessOnboardingModal() {
                                 setIsCountryDropdownOpen(false);
                                 setCountrySearch('');
                               }}
-                              className={`w-full text-left px-3 py-2 text-sm hover:bg-amber-50 transition-colors flex items-center justify-between ${
-                                countryCode === c.dial_code ? 'bg-amber-50 text-amber-700 font-medium' : 'text-slate-700'
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100/50 transition-colors flex items-center justify-between ${
+                                countryCode === c.dial_code ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-stone-700'
                               }`}
                             >
                               <span className="truncate">{c.name}</span>
-                              <span className="text-slate-400 ml-2 shrink-0">{c.dial_code}</span>
+                              <span className="text-stone-400 ml-2 shrink-0">{c.dial_code}</span>
                             </button>
                           ))}
                           {filteredCountries.length === 0 && (
-                            <p className="px-3 py-4 text-sm text-slate-400 text-center">Aucun résultat</p>
+                            <p className="px-3 py-4 text-sm text-stone-400 text-center">Aucun résultat</p>
                           )}
                         </div>
                       </div>
@@ -605,24 +605,24 @@ export function BusinessOnboardingModal() {
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="flex-1 rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                     placeholder="6 12 34 56 78"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Votre rôle</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Votre rôle</label>
                 <div className="grid grid-cols-2 gap-2">
                   {['CEO / Fondateur', 'Sales Manager', 'Business Developer', 'Autre'].map((r) => (
                     <button
                       key={r}
                       type="button"
                       onClick={() => setRole(r)}
-                      className={`rounded-xl border py-2.5 px-3 text-sm font-medium transition-all ${
+                      className={`rounded-full border py-2.5 px-3 text-sm font-medium transition-all ${
                         role === r
-                          ? 'border-amber-500 bg-amber-50 text-amber-700'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                          ? 'border-stone-900 bg-stone-900 text-white'
+                          : 'border-stone-300 bg-white text-stone-700 hover:bg-stone-50'
                       }`}
                     >
                       {r}
@@ -634,7 +634,7 @@ export function BusinessOnboardingModal() {
               <button
                 onClick={handleStep1}
                 disabled={!fullName || !role}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-600 py-3.5 font-bold text-white transition-all hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-3.5 font-bold text-white transition-all hover:bg-stone-800 shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
               >
                 Continuer
                 <ChevronRight className="h-5 w-5" />
@@ -647,39 +647,39 @@ export function BusinessOnboardingModal() {
           <>
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-amber-50">
-                  <Building2 className="h-5 w-5 text-amber-600" />
+                <div className="p-2 rounded-lg bg-stone-100/50">
+                  <Building2 className="h-5 w-5 text-stone-900" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-900">Votre entreprise</h2>
+                <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900">Votre entreprise</h2>
               </div>
-              <p className="text-slate-500 text-sm">Configurez votre espace Business</p>
+              <p className="text-stone-500 text-sm">Configurez votre espace Business</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Nom de l'entreprise</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Nom de l'entreprise</label>
                 <input
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  className="w-full rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                   placeholder="Mon entreprise"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Taille de l'équipe</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Taille de l'équipe</label>
                 <div className="flex flex-wrap gap-2">
                   {TEAM_SIZES.map((size) => (
                     <button
                       key={size}
                       type="button"
                       onClick={() => setTeamSize(size)}
-                      className={`rounded-xl border py-2 px-4 text-sm font-medium transition-all ${
+                      className={`rounded-full border py-2 px-4 text-sm font-medium transition-all ${
                         teamSize === size
-                          ? 'border-amber-500 bg-amber-50 text-amber-700'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                          ? 'border-stone-900 bg-stone-900 text-white'
+                          : 'border-stone-300 bg-white text-stone-700 hover:bg-stone-50'
                       }`}
                     >
                       {size}
@@ -689,17 +689,17 @@ export function BusinessOnboardingModal() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Niche / Secteur</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500">Niche / Secteur</label>
                 <div className="grid grid-cols-2 gap-2">
                   {NICHES.map((n) => (
                     <button
                       key={n}
                       type="button"
                       onClick={() => setNiche(n)}
-                      className={`rounded-xl border py-2 px-3 text-sm font-medium transition-all ${
+                      className={`rounded-full border py-2 px-3 text-sm font-medium transition-all ${
                         niche === n
-                          ? 'border-amber-500 bg-amber-50 text-amber-700'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                          ? 'border-stone-900 bg-stone-900 text-white'
+                          : 'border-stone-300 bg-white text-stone-700 hover:bg-stone-50'
                       }`}
                     >
                       {n}
@@ -711,7 +711,7 @@ export function BusinessOnboardingModal() {
                     type="text"
                     value={nicheCustom}
                     onChange={(e) => setNicheCustom(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="mt-2 w-full rounded-xl bg-stone-100/50 border-none py-3 px-4 text-stone-900 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
                     placeholder="Précisez votre secteur..."
                   />
                 )}
@@ -720,14 +720,14 @@ export function BusinessOnboardingModal() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 rounded-xl border border-slate-200 py-3 font-medium text-slate-600 hover:bg-slate-50 transition-all"
+                  className="flex-1 rounded-full border border-stone-300 py-3 font-medium text-stone-700 hover:bg-stone-50 transition-all"
                 >
                   Retour
                 </button>
                 <button
                   onClick={handleStep2}
                   disabled={loading || !companyName || !teamSize || !niche}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-amber-600 py-3 font-bold text-white transition-all hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-full bg-stone-900 py-3 font-bold text-white transition-all hover:bg-stone-800 shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
                     <>
