@@ -17,12 +17,35 @@ import {
   Shuffle,
   Filter,
   Calendar,
+  Tag,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessCRMIntegrationModal } from '../components/BusinessCRMIntegrationModal'
 import { BusinessProspectView } from '../components/BusinessProspectView'
+import { supabase } from '../../lib/supabase'
+import toast from 'react-hot-toast'
+
+interface BusinessTag {
+  id: string
+  owner_id: string
+  name: string
+  color: string
+}
+
+const TAG_COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#22c55e', '#06b6d4',
+  '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280', '#1e293b',
+]
+
+const DEFAULT_TAGS = [
+  { name: 'VIP', color: '#f59e0b' },
+  { name: 'Chaud', color: '#ef4444' },
+  { name: 'Froid', color: '#3b82f6' },
+  { name: 'Relancer', color: '#f97316' },
+  { name: 'Urgent', color: '#ec4899' },
+]
 
 const ALL_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50', borderColor: 'border-blue-200' },
@@ -64,6 +87,14 @@ export function BusinessCRM() {
   const [allTeamMembers, setAllTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string }[]>([])
   const [isIntegrationModalOpen, setIsIntegrationModalOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+
+  // Tags state
+  const [tags, setTags] = useState<BusinessTag[]>([])
+  const [prospectTags, setProspectTags] = useState<Record<number, string[]>>({}) // prospect_id -> tag_id[]
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagColor, setNewTagColor] = useState(TAG_COLORS[0])
+  const [selectedTags, setSelectedTags] = useState<string[]>([]) // filter
 
   // Add prospect modal state
   const [newContact, setNewContact] = useState('')
@@ -126,6 +157,64 @@ export function BusinessCRM() {
     })
   }, [effectiveUserId])
 
+  // Fetch tags + prospect-tag associations
+  useEffect(() => {
+    if (!effectiveUserId) return
+    // Fetch tags
+    supabase.from('business_tags').select('*').eq('owner_id', effectiveUserId)
+      .then(async ({ data: tagsData }) => {
+        if (tagsData && tagsData.length === 0) {
+          // Seed default tags
+          const { data: seeded } = await supabase.from('business_tags')
+            .insert(DEFAULT_TAGS.map(t => ({ owner_id: effectiveUserId, name: t.name, color: t.color })))
+            .select()
+          setTags(seeded || [])
+        } else {
+          setTags(tagsData || [])
+        }
+      })
+    // Fetch all prospect-tag links
+    supabase.from('business_prospect_tags').select('prospect_id, tag_id')
+      .then(({ data }) => {
+        const map: Record<number, string[]> = {}
+        ;(data || []).forEach(pt => {
+          if (!map[pt.prospect_id]) map[pt.prospect_id] = []
+          map[pt.prospect_id].push(pt.tag_id)
+        })
+        setProspectTags(map)
+      })
+  }, [effectiveUserId])
+
+  const handleCreateTag = async () => {
+    if (!newTagName.trim() || !effectiveUserId) return
+    const { data, error } = await supabase.from('business_tags')
+      .insert({ owner_id: effectiveUserId, name: newTagName.trim(), color: newTagColor })
+      .select().single()
+    if (error) {
+      toast.error(error.message.includes('duplicate') ? 'Ce tag existe déjà' : 'Erreur')
+      return
+    }
+    setTags(prev => [...prev, data])
+    setNewTagName('')
+    setNewTagColor(TAG_COLORS[0])
+    toast.success('Tag créé')
+  }
+
+  const handleDeleteTag = async (tagId: string) => {
+    if (!confirm('Supprimer ce tag ?')) return
+    await supabase.from('business_tags').delete().eq('id', tagId)
+    setTags(prev => prev.filter(t => t.id !== tagId))
+    setProspectTags(prev => {
+      const next = { ...prev }
+      Object.keys(next).forEach(k => {
+        next[Number(k)] = next[Number(k)].filter(id => id !== tagId)
+      })
+      return next
+    })
+    setSelectedTags(prev => prev.filter(id => id !== tagId))
+    toast.success('Tag supprimé')
+  }
+
   // Round-robin for setters: find next setter after the last assigned
   const getNextSetter = useCallback(() => {
     if (teamSetters.length === 0) return null
@@ -141,13 +230,14 @@ export function BusinessCRM() {
     return teamSetters[Math.floor(Math.random() * teamSetters.length)]
   }, [teamSetters])
 
-  const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0
+  const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0 || selectedTags.length > 0
 
   const clearFilters = () => {
     setSelectedPeriod(0)
     setSelectedMembers([])
     setSelectedStages([])
     setSelectedOffers([])
+    setSelectedTags([])
   }
 
   const toggleMultiSelect = (arr: string[], setArr: (v: string[]) => void, val: string) => {
@@ -189,8 +279,15 @@ export function BusinessCRM() {
       )
     }
 
+    if (selectedTags.length > 0) {
+      result = result.filter(p => {
+        const pTags = prospectTags[p.id] || []
+        return selectedTags.some(t => pTags.includes(t))
+      })
+    }
+
     return result
-  }, [prospects, searchQuery, selectedPeriod, selectedMembers, selectedStages, selectedOffers])
+  }, [prospects, searchQuery, selectedPeriod, selectedMembers, selectedStages, selectedOffers, selectedTags, prospectTags])
 
   const getDisplayName = (deal: BusinessProspect) => {
     if (deal.firstName || deal.lastName) {
@@ -355,10 +452,20 @@ export function BusinessCRM() {
           Filtres
           {hasActiveFilters && (
             <span className="ml-1 bg-stone-900 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-              {(selectedPeriod > 0 ? 1 : 0) + (selectedMembers.length > 0 ? 1 : 0) + (selectedStages.length > 0 ? 1 : 0) + (selectedOffers.length > 0 ? 1 : 0)}
+              {(selectedPeriod > 0 ? 1 : 0) + (selectedMembers.length > 0 ? 1 : 0) + (selectedStages.length > 0 ? 1 : 0) + (selectedOffers.length > 0 ? 1 : 0) + (selectedTags.length > 0 ? 1 : 0)}
             </span>
           )}
         </button>
+
+        {!isReadOnly && (
+          <button
+            onClick={() => setIsTagModalOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-all"
+          >
+            <Tag className="h-4 w-4" />
+            <span className="hidden sm:inline">Tags</span>
+          </button>
+        )}
 
         {!isReadOnly && (
           <button
@@ -383,7 +490,7 @@ export function BusinessCRM() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Period */}
             <div>
               <label className="block text-xs font-medium text-stone-500 mb-2">
@@ -472,6 +579,32 @@ export function BusinessCRM() {
                 {formulas.length === 0 && <span className="text-xs text-stone-400">Aucune formule</span>}
               </div>
             </div>
+
+            {/* Tags */}
+            <div>
+              <label className="block text-xs font-medium text-stone-500 mb-2">
+                <Tag className="h-3 w-3 inline mr-1" />Tags
+              </label>
+              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                {tags.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => toggleMultiSelect(selectedTags, setSelectedTags, t.id)}
+                    className={cn(
+                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
+                      selectedTags.includes(t.id)
+                        ? 'text-white'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    )}
+                    style={selectedTags.includes(t.id) ? { backgroundColor: t.color } : {}}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.color }} />
+                    {t.name}
+                  </button>
+                ))}
+                {tags.length === 0 && <span className="text-xs text-stone-400">Aucun tag</span>}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -501,6 +634,7 @@ export function BusinessCRM() {
               <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Email</th>
               <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Téléphone</th>
               <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Étape</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Tags</th>
               <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Valeur</th>
               <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Date</th>
               {!isReadOnly && (
@@ -511,7 +645,7 @@ export function BusinessCRM() {
           <tbody className="divide-y divide-stone-100">
             {filteredProspects.length === 0 ? (
               <tr>
-                <td colSpan={isReadOnly ? 7 : 8} className="text-center py-12 text-sm text-stone-400">
+                <td colSpan={isReadOnly ? 8 : 9} className="text-center py-12 text-sm text-stone-400">
                   Aucun prospect trouvé
                 </td>
               </tr>
@@ -571,6 +705,19 @@ export function BusinessCRM() {
                       ) : (
                         <span className="text-sm text-stone-300">—</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {(prospectTags[deal.id] || []).map(tagId => {
+                          const tag = tags.find(t => t.id === tagId)
+                          if (!tag) return null
+                          return (
+                            <span key={tagId} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: tag.color }}>
+                              {tag.name}
+                            </span>
+                          )
+                        })}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right">
                       {deal.value ? (
@@ -833,6 +980,79 @@ export function BusinessCRM() {
                   {addLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Ajouter'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tag Management Modal */}
+      {isTagModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setIsTagModalOpen(false)}
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h2 className="text-xl font-extrabold text-stone-900 mb-1">Gérer les tags</h2>
+            <p className="text-sm text-stone-500 mb-5">Créez et gérez vos tags pour organiser vos prospects.</p>
+
+            {/* Create new tag */}
+            <div className="flex gap-2 mb-5">
+              <input
+                type="text"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
+                placeholder="Nom du tag..."
+                className="flex-1 rounded-xl border-none bg-stone-100 py-2.5 px-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+              />
+              <button
+                onClick={handleCreateTag}
+                disabled={!newTagName.trim()}
+                className="rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50 transition-all"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Color picker */}
+            <div className="flex gap-2 mb-5">
+              {TAG_COLORS.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setNewTagColor(c)}
+                  className={cn(
+                    'h-7 w-7 rounded-full transition-all',
+                    newTagColor === c ? 'ring-2 ring-offset-2 ring-stone-900 scale-110' : 'hover:scale-105'
+                  )}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+
+            {/* Existing tags */}
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {tags.length === 0 ? (
+                <p className="text-sm text-stone-400 text-center py-4">Aucun tag créé</p>
+              ) : (
+                tags.map(tag => (
+                  <div key={tag.id} className="flex items-center justify-between rounded-xl bg-stone-50 px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: tag.color }} />
+                      <span className="text-sm font-semibold text-stone-900">{tag.name}</span>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteTag(tag.id)}
+                      className="p-1 text-stone-300 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

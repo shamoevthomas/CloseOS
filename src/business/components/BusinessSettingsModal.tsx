@@ -436,7 +436,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                           className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all cursor-pointer appearance-none font-medium"
                         >
                           <option value="Business Owner">Business Owner</option>
-                          <option value="Manager">Manager</option>
+                          <option value="Head of Sales">Head of Sales</option>
                           <option value="Closer">Closer</option>
                           <option value="Setter">Setter</option>
                           <option value="Setter-Closer">Setter-Closer</option>

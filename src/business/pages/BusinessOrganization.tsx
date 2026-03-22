@@ -64,7 +64,7 @@ function genId() {
   return crypto.randomUUID()
 }
 
-const DEFAULT_ROLES = ['Général', 'Closer', 'Setter', 'Setter-Closer', 'Manager', 'Admin']
+const DEFAULT_ROLES = ['Général', 'Closer', 'Setter', 'Setter-Closer', 'Head of Sales', 'Admin']
 
 const blockColors: Record<string, { border: string; bg: string; text: string }> = {
   text: { border: 'border-l-[#006c49]', bg: 'bg-[#006c49]/10', text: 'text-[#006c49]' },

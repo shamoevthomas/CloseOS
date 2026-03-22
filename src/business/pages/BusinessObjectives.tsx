@@ -74,7 +74,7 @@ const ROLE_COLORS: Record<string, string> = {
   Closer: 'bg-blue-100 text-blue-700',
   Setter: 'bg-purple-100 text-purple-700',
   'Setter-Closer': 'bg-indigo-100 text-indigo-700',
-  Manager: 'bg-amber-100 text-amber-700',
+  'Head of Sales': 'bg-amber-100 text-amber-700',
   Admin: 'bg-red-100 text-red-700',
 }
 
@@ -163,7 +163,7 @@ export function BusinessObjectives() {
 
   useEffect(() => { fetchObjectives(); fetchAppointments(); fetchMembers() }, [fetchObjectives, fetchAppointments, fetchMembers])
 
-  const AVAILABLE_ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Manager', 'Admin']
+  const AVAILABLE_ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Head of Sales', 'Admin']
 
   const resetForm = () => {
     setFormLabel(''); setFormMetric('revenue'); setFormTargetValue(''); setFormPeriod('monthly')

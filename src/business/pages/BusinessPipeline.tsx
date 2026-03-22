@@ -3,13 +3,15 @@ import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
   User, ChevronDown, Search, LayoutGrid, List,
-  X, Filter, Calendar, Trash2,
+  X, Filter, Calendar, Trash2, Plus, AlertTriangle, Tag,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
+import { useCustomStages, type CustomStage } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
+import toast from 'react-hot-toast'
 
 const STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50', borderColor: 'border-blue-200' },
@@ -49,10 +51,41 @@ interface Formula {
   name: string
 }
 
+interface BusinessTag {
+  id: string
+  owner_id: string
+  name: string
+  color: string
+}
+
+const STAGE_COLORS = [
+  { value: '#6366f1', label: 'Indigo' },
+  { value: '#8b5cf6', label: 'Violet' },
+  { value: '#ec4899', label: 'Rose' },
+  { value: '#f43f5e', label: 'Rouge' },
+  { value: '#f97316', label: 'Orange' },
+  { value: '#eab308', label: 'Jaune' },
+  { value: '#22c55e', label: 'Vert' },
+  { value: '#14b8a6', label: 'Teal' },
+  { value: '#06b6d4', label: 'Cyan' },
+  { value: '#3b82f6', label: 'Bleu' },
+  { value: '#78716c', label: 'Pierre' },
+  { value: '#1e293b', label: 'Ardoise' },
+]
+
+const ROLE_OPTIONS = [
+  { value: 'Closer', label: 'Closer' },
+  { value: 'Setter', label: 'Setter' },
+  { value: 'Setter-Closer', label: 'Setter-Closer' },
+]
+
 export function BusinessPipeline() {
   const { prospects, updateProspect, deleteProspect } = useBusinessProspects()
-  const { user, ownerUserId } = useBusinessAuth()
+  const { user, ownerUserId, businessSettings } = useBusinessAuth()
   const effectiveUserId = ownerUserId || user?.id
+  const { customStages, addCustomStage, deleteCustomStage, canManage } = useCustomStages()
+  const crmProvider = businessSettings?.crm_provider || 'closeos'
+  const hasCrmIntegration = crmProvider !== 'closeos' && crmProvider !== 'zapier'
 
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban')
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
@@ -67,6 +100,61 @@ export function BusinessPipeline() {
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [formulas, setFormulas] = useState<Formula[]>([])
+
+  // Tags
+  const [tags, setTags] = useState<BusinessTag[]>([])
+  const [prospectTags, setProspectTags] = useState<Record<number, string[]>>({})
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+
+  // Custom stage creation modal
+  const [showCreateStage, setShowCreateStage] = useState(false)
+  const [newStageName, setNewStageName] = useState('')
+  const [newStageDescription, setNewStageDescription] = useState('')
+  const [newStageColor, setNewStageColor] = useState('#6366f1')
+  const [newStageRoles, setNewStageRoles] = useState<string[]>(['Closer'])
+  const [creatingStage, setCreatingStage] = useState(false)
+
+  // Merge built-in + custom stages for display
+  const ALL_STAGES_WITH_CUSTOM = useMemo(() => {
+    const builtIn = STAGES.map(s => ({ ...s, isCustom: false as const, customId: undefined as number | undefined }))
+    const custom = customStages.map(cs => ({
+      id: `custom_${cs.id}`,
+      name: cs.name,
+      color: '',
+      textColor: '',
+      bgLight: '',
+      borderColor: '',
+      isCustom: true as const,
+      customId: cs.id,
+      customColor: cs.color,
+      description: cs.description,
+      roles: cs.roles,
+    }))
+    return [...builtIn, ...custom]
+  }, [customStages])
+
+  const handleCreateStage = async () => {
+    if (!newStageName.trim() || newStageRoles.length === 0) return
+    setCreatingStage(true)
+    try {
+      await addCustomStage({
+        name: newStageName.trim(),
+        description: newStageDescription.trim(),
+        color: newStageColor,
+        roles: newStageRoles,
+      })
+      toast.success('Statut créé avec succès')
+      setShowCreateStage(false)
+      setNewStageName('')
+      setNewStageDescription('')
+      setNewStageColor('#6366f1')
+      setNewStageRoles(['Closer'])
+    } catch {
+      toast.error('Erreur lors de la création')
+    } finally {
+      setCreatingStage(false)
+    }
+  }
 
   // Fetch team + owner + formulas
   useEffect(() => {
@@ -86,6 +174,18 @@ export function BusinessPipeline() {
       .then(r => r.json())
       .then(data => setFormulas(data.formulas || []))
       .catch(() => {})
+    // Fetch tags
+    supabase.from('business_tags').select('*').eq('owner_id', effectiveUserId)
+      .then(({ data }) => setTags(data || []))
+    supabase.from('business_prospect_tags').select('prospect_id, tag_id')
+      .then(({ data }) => {
+        const map: Record<number, string[]> = {}
+        ;(data || []).forEach(pt => {
+          if (!map[pt.prospect_id]) map[pt.prospect_id] = []
+          map[pt.prospect_id].push(pt.tag_id)
+        })
+        setProspectTags(map)
+      })
   }, [effectiveUserId])
 
   // Filter logic
@@ -129,16 +229,25 @@ export function BusinessPipeline() {
       )
     }
 
-    return result
-  }, [prospects, searchQuery, selectedPeriod, selectedMembers, selectedStages, selectedOffers])
+    // Tags
+    if (selectedTags.length > 0) {
+      result = result.filter(p => {
+        const pTags = prospectTags[p.id] || []
+        return selectedTags.some(t => pTags.includes(t))
+      })
+    }
 
-  const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0
+    return result
+  }, [prospects, searchQuery, selectedPeriod, selectedMembers, selectedStages, selectedOffers, selectedTags, prospectTags])
+
+  const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0 || selectedTags.length > 0
 
   const clearFilters = () => {
     setSelectedPeriod(0)
     setSelectedMembers([])
     setSelectedStages([])
     setSelectedOffers([])
+    setSelectedTags([])
   }
 
   const toggleMultiSelect = (arr: string[], setArr: (v: string[]) => void, val: string) => {
@@ -202,10 +311,21 @@ export function BusinessPipeline() {
           Filtres
           {hasActiveFilters && (
             <span className="ml-1 bg-stone-900 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-              {(selectedPeriod > 0 ? 1 : 0) + (selectedMembers.length > 0 ? 1 : 0) + (selectedStages.length > 0 ? 1 : 0) + (selectedOffers.length > 0 ? 1 : 0)}
+              {(selectedPeriod > 0 ? 1 : 0) + (selectedMembers.length > 0 ? 1 : 0) + (selectedStages.length > 0 ? 1 : 0) + (selectedOffers.length > 0 ? 1 : 0) + (selectedTags.length > 0 ? 1 : 0)}
             </span>
           )}
         </button>
+
+        {/* Add custom stage button (Owner/HOS only) */}
+        {canManage && (
+          <button
+            onClick={() => setShowCreateStage(true)}
+            className="flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold bg-stone-900 text-white hover:opacity-90 transition-all"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Nouveau statut
+          </button>
+        )}
       </div>
 
       {/* Filters Panel */}
@@ -220,7 +340,7 @@ export function BusinessPipeline() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Period */}
             <div>
               <label className="block text-xs font-medium text-stone-500 mb-2">
@@ -285,6 +405,21 @@ export function BusinessPipeline() {
                     {s.name}
                   </button>
                 ))}
+                {customStages.map(cs => (
+                  <button
+                    key={`custom_${cs.id}`}
+                    onClick={() => toggleMultiSelect(selectedStages, setSelectedStages, `custom_${cs.id}`)}
+                    className={cn(
+                      'px-2.5 py-1 text-xs font-medium rounded-lg transition-all flex items-center gap-1',
+                      selectedStages.includes(`custom_${cs.id}`)
+                        ? 'bg-stone-900 text-white rounded-full'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-full'
+                    )}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cs.color }} />
+                    {cs.name}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -309,12 +444,38 @@ export function BusinessPipeline() {
                 {formulas.length === 0 && <span className="text-xs text-stone-400">Aucune formule</span>}
               </div>
             </div>
+
+            {/* Tags */}
+            <div>
+              <label className="block text-xs font-medium text-stone-500 mb-2">
+                <Tag className="h-3 w-3 inline mr-1" />Tags
+              </label>
+              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                {tags.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => toggleMultiSelect(selectedTags, setSelectedTags, t.id)}
+                    className={cn(
+                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
+                      selectedTags.includes(t.id)
+                        ? 'text-white'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    )}
+                    style={selectedTags.includes(t.id) ? { backgroundColor: t.color } : {}}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.color }} />
+                    {t.name}
+                  </button>
+                ))}
+                {tags.length === 0 && <span className="text-xs text-stone-400">Aucun tag</span>}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Stats bar */}
-      <div className="mb-3 flex items-center gap-4 text-xs text-stone-500">
+      <div className="mb-3 flex items-center gap-4 text-xs text-stone-500 flex-wrap">
         <span className="font-medium text-stone-700">{filtered.length} prospect{filtered.length !== 1 ? 's' : ''}</span>
         {STAGES.map(s => {
           const count = filtered.filter(p => p.stage === s.id).length
@@ -323,6 +484,16 @@ export function BusinessPipeline() {
             <span key={s.id} className="flex items-center gap-1">
               <span className={cn('h-2 w-2 rounded-full', s.color)} />
               {s.name}: {count}
+            </span>
+          )
+        })}
+        {customStages.map(cs => {
+          const count = filtered.filter(p => p.stage === `custom_${cs.id}`).length
+          if (count === 0) return null
+          return (
+            <span key={`custom_${cs.id}`} className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: cs.color }} />
+              {cs.name}: {count}
             </span>
           )
         })}
@@ -396,6 +567,19 @@ export function BusinessPipeline() {
                                           <Trash2 className="h-3.5 w-3.5" />
                                         </button>
                                       </div>
+                                      {(prospectTags[deal.id] || []).length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-1.5">
+                                          {(prospectTags[deal.id] || []).map(tagId => {
+                                            const tag = tags.find(t => t.id === tagId)
+                                            if (!tag) return null
+                                            return (
+                                              <span key={tagId} className="inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: tag.color }}>
+                                                {tag.name}
+                                              </span>
+                                            )
+                                          })}
+                                        </div>
+                                      )}
                                       {deal.value && (
                                         <p className="text-xs font-extrabold text-emerald-600 mt-1">{deal.value.toLocaleString()} €</p>
                                       )}
@@ -497,6 +681,124 @@ export function BusinessPipeline() {
                 })}
               </div>
             </section>
+
+            {/* CUSTOM STAGES */}
+            {customStages.length > 0 && (
+              <section>
+                <div className="flex items-baseline space-x-3 mb-6">
+                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900">Statuts Personnalisés</h2>
+                  <div className="h-1 w-1 rounded-full bg-stone-300" />
+                  <span className={LABEL_STYLE}>Créés par votre équipe</span>
+                </div>
+                <div className="grid grid-cols-4 gap-4" style={{ minHeight: '250px' }}>
+                  {customStages.map((cs) => {
+                    const stageId = `custom_${cs.id}`
+                    const stageDeals = filtered.filter(d => d.stage === stageId)
+
+                    return (
+                      <div key={stageId} className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between px-2">
+                          <div className="flex items-center gap-2">
+                            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: cs.color }} />
+                            <span className="text-sm font-extrabold tracking-tight text-stone-900">{cs.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="bg-stone-100 text-[10px] font-bold rounded-full px-2 py-0.5">
+                              {stageDeals.length}
+                            </span>
+                            {canManage && (
+                              <button
+                                onClick={() => { if (confirm(`Supprimer le statut "${cs.name}" ?`)) deleteCustomStage(cs.id) }}
+                                className="p-1 text-stone-300 hover:text-red-500 transition-colors"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <Droppable droppableId={stageId}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className={cn(
+                                "flex-1 bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto",
+                                snapshot.isDraggingOver && "bg-stone-50/50"
+                              )}
+                              style={{ borderTop: `3px solid ${cs.color}` }}
+                            >
+                              {stageDeals.map((deal, index) => (
+                                <Draggable key={deal.id} draggableId={String(deal.id)} index={index}>
+                                  {(provided, snapshot) => {
+                                    const child = (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        onClick={() => setSelectedProspect(deal)}
+                                        className={cn(
+                                          "group bg-white p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] hover:shadow-xl border border-transparent hover:border-stone-200/20 transition-all cursor-pointer",
+                                          snapshot.isDragging && "shadow-2xl ring-2 ring-stone-300 rotate-1 scale-105 z-[9999]"
+                                        )}
+                                      >
+                                        <div className="flex items-start justify-between mb-1">
+                                          <div className="flex items-center gap-2">
+                                            <div className="h-7 w-7 rounded-full bg-stone-100 flex items-center justify-center">
+                                              <User className="h-3.5 w-3.5 text-stone-500" />
+                                            </div>
+                                            <div>
+                                              <p className="text-sm font-extrabold text-stone-900 leading-tight">{getDisplayName(deal)}</p>
+                                              {deal.company && <p className="text-xs text-stone-500">{deal.company}</p>}
+                                            </div>
+                                          </div>
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
+                                            className="p-1 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-colors"
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </button>
+                                        </div>
+                                        {(prospectTags[deal.id] || []).length > 0 && (
+                                          <div className="flex flex-wrap gap-1 mt-1.5">
+                                            {(prospectTags[deal.id] || []).map(tagId => {
+                                              const tag = tags.find(t => t.id === tagId)
+                                              if (!tag) return null
+                                              return (
+                                                <span key={tagId} className="inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: tag.color }}>
+                                                  {tag.name}
+                                                </span>
+                                              )
+                                            })}
+                                          </div>
+                                        )}
+                                        {deal.value && (
+                                          <p className="text-xs font-extrabold text-emerald-600 mt-1">{deal.value.toLocaleString()} €</p>
+                                        )}
+                                        {deal.email && (
+                                          <p className="text-xs text-stone-400 truncate mt-1">{deal.email}</p>
+                                        )}
+                                      </div>
+                                    )
+                                    return snapshot.isDragging ? createPortal(child, document.body) : child
+                                  }}
+                                </Draggable>
+                              ))}
+                              {stageDeals.length === 0 && (
+                                <div className="flex items-center justify-center h-20">
+                                  <span className="text-xs text-stone-400 italic">Aucun prospect</span>
+                                </div>
+                              )}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
           </div>
         </DragDropContext>
       )}
@@ -510,6 +812,7 @@ export function BusinessPipeline() {
                 <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Contact</th>
                 <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Entreprise</th>
                 <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Étape</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Tags</th>
                 <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Assigné à</th>
                 <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Valeur</th>
                 <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Date</th>
@@ -519,7 +822,7 @@ export function BusinessPipeline() {
             <tbody className="divide-y divide-stone-100">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-sm text-stone-400">
+                  <td colSpan={8} className="text-center py-12 text-sm text-stone-400">
                     Aucun prospect trouvé
                   </td>
                 </tr>
@@ -548,12 +851,35 @@ export function BusinessPipeline() {
                         <span className="text-sm text-stone-600">{deal.company || '—'}</span>
                       </td>
                       <td className="px-4 py-3">
-                        {stage && (
+                        {stage ? (
                           <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full", stage.bgLight, stage.textColor)}>
                             <span className={cn("h-2 w-2 rounded-full", stage.color)} />
                             {stage.name}
                           </span>
-                        )}
+                        ) : (() => {
+                          const cs = customStages.find(c => `custom_${c.id}` === deal.stage)
+                          return cs ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-stone-50 text-stone-700">
+                              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: cs.color }} />
+                              {cs.name}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-stone-300">—</span>
+                          )
+                        })()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {(prospectTags[deal.id] || []).map(tagId => {
+                            const tag = tags.find(t => t.id === tagId)
+                            if (!tag) return null
+                            return (
+                              <span key={tagId} className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: tag.color }}>
+                                {tag.name}
+                              </span>
+                            )
+                          })}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         {assignedMember ? (
@@ -609,6 +935,111 @@ export function BusinessPipeline() {
             setSelectedProspect(null)
           }}
         />
+      )}
+
+      {/* Create Custom Stage Modal */}
+      {showCreateStage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowCreateStage(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-business-display text-lg font-extrabold text-stone-900">Nouveau statut</h3>
+              <button onClick={() => setShowCreateStage(false)} className="p-1 text-stone-400 hover:text-stone-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {hasCrmIntegration && (
+              <div className="mb-4 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3">
+                <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-700">
+                  Votre CRM intégré (<span className="font-bold">{crmProvider}</span>) ne prendra pas en compte les statuts personnalisés. Seul Zapier est compatible.
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-stone-500 mb-1.5">Titre</label>
+                <input
+                  type="text"
+                  value={newStageName}
+                  onChange={e => setNewStageName(e.target.value)}
+                  placeholder="Ex: Négociation"
+                  className="w-full rounded-xl bg-[#f5f3f2] border-none px-4 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-stone-500 mb-1.5">Description</label>
+                <input
+                  type="text"
+                  value={newStageDescription}
+                  onChange={e => setNewStageDescription(e.target.value)}
+                  placeholder="Optionnel"
+                  className="w-full rounded-xl bg-[#f5f3f2] border-none px-4 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-stone-500 mb-1.5">Couleur</label>
+                <div className="flex flex-wrap gap-2">
+                  {STAGE_COLORS.map(c => (
+                    <button
+                      key={c.value}
+                      onClick={() => setNewStageColor(c.value)}
+                      className={cn(
+                        'h-8 w-8 rounded-full transition-all',
+                        newStageColor === c.value ? 'ring-2 ring-offset-2 ring-stone-900 scale-110' : 'hover:scale-110'
+                      )}
+                      style={{ backgroundColor: c.value }}
+                      title={c.label}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-stone-500 mb-1.5">Rôles concernés</label>
+                <div className="flex gap-2">
+                  {ROLE_OPTIONS.map(r => (
+                    <button
+                      key={r.value}
+                      onClick={() => {
+                        setNewStageRoles(prev =>
+                          prev.includes(r.value) ? prev.filter(v => v !== r.value) : [...prev, r.value]
+                        )
+                      }}
+                      className={cn(
+                        'px-3 py-1.5 text-xs font-bold rounded-full transition-all',
+                        newStageRoles.includes(r.value)
+                          ? 'bg-stone-900 text-white'
+                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                      )}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowCreateStage(false)}
+                className="px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreateStage}
+                disabled={!newStageName.trim() || newStageRoles.length === 0 || creatingStage}
+                className="px-5 py-2 text-sm font-bold bg-stone-900 text-white rounded-full hover:opacity-90 disabled:opacity-50 transition-all"
+              >
+                {creatingStage ? 'Création...' : 'Créer le statut'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -8,6 +8,7 @@ import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
+import { useCustomStages } from '../hooks/useCustomStages'
 
 const GLASS_CARD = 'bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/20'
 const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 font-bold'
@@ -29,6 +30,8 @@ const INACTIVE_STAGES = [
 export function CloserPipeline() {
   const { prospects, updateProspect, loading } = useBusinessProspects()
   const { teamMember } = useBusinessAuth()
+  const { getStagesForRole } = useCustomStages()
+  const myCustomStages = getStagesForRole(teamMember?.role)
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -295,6 +298,109 @@ export function CloserPipeline() {
                 })}
               </div>
             </section>
+
+            {/* CUSTOM STAGES */}
+            {myCustomStages.length > 0 && (
+              <section>
+                <div className="flex items-baseline space-x-3 mb-8">
+                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900">Statuts Personnalisés</h2>
+                  <div className="h-1 w-1 rounded-full bg-stone-300" />
+                  <span className={LABEL_STYLE}>Créés par votre équipe</span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-6">
+                  {myCustomStages.map((cs) => {
+                    const stageId = `custom_${cs.id}`
+                    const stageDeals = filteredProspects.filter(d => d.stage === stageId)
+                    const stageTotal = stageDeals.reduce((sum, d) => sum + (d.value || 0), 0)
+
+                    return (
+                      <div key={stageId} className="space-y-4">
+                        <div className="flex justify-between items-center px-2">
+                          <div className="flex items-center space-x-2">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cs.color }} />
+                            <h4 className="font-bold text-sm text-stone-900">{cs.name}</h4>
+                            <span className="bg-stone-100 text-stone-500 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                              {stageDeals.length}
+                            </span>
+                          </div>
+                          <span className="text-xs font-black text-stone-900">{formatTotal(stageTotal)}</span>
+                        </div>
+
+                        <Droppable droppableId={stageId}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className={cn(
+                                'space-y-3 min-h-[200px] rounded-lg border-2 border-dashed border-stone-200/30 p-1 transition-colors',
+                                snapshot.isDraggingOver && 'bg-stone-100/30'
+                              )}
+                              style={{ borderTop: `3px solid ${cs.color}` }}
+                            >
+                              {stageDeals.map((deal, index) => {
+                                const isB2B = deal.company && deal.company !== 'N/A'
+                                const displayName = getDisplayName(deal)
+                                const mainTitle = isB2B ? deal.company : displayName
+                                const subTitle = isB2B ? displayName : null
+
+                                return (
+                                  <Draggable key={deal.id} draggableId={String(deal.id)} index={index}>
+                                    {(provided, snapshot) => {
+                                      const child = (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          onClick={() => setSelectedProspect(deal)}
+                                          className={cn(
+                                            GLASS_CARD,
+                                            'rounded-xl p-5 group cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all shadow-[0_20px_40px_rgba(27,28,27,0.04)]',
+                                            snapshot.isDragging && 'rotate-2 scale-105 z-[9999] shadow-2xl'
+                                          )}
+                                          style={provided.draggableProps.style}
+                                        >
+                                          <div className="flex justify-between items-start mb-4">
+                                            <div className="flex items-center space-x-2">
+                                              <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center">
+                                                {isB2B
+                                                  ? <Building2 className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                                                  : <User className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                                                }
+                                              </div>
+                                              <span className="font-bold text-sm tracking-tight text-stone-900 truncate max-w-[140px]">
+                                                {mainTitle || 'Sans nom'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          {subTitle && <p className="text-xs text-stone-500 mb-2 truncate">{subTitle}</p>}
+                                          <div className="flex justify-between items-end">
+                                            <p className="text-lg font-black text-stone-900">
+                                              {(deal.value || 0).toLocaleString()} €
+                                            </p>
+                                          </div>
+                                        </div>
+                                      )
+                                      return snapshot.isDragging ? createPortal(child, document.body) : child
+                                    }}
+                                  </Draggable>
+                                )
+                              })}
+                              {stageDeals.length === 0 && (
+                                <div className="flex items-center justify-center h-20">
+                                  <span className="text-xs text-stone-400 italic">Aucun prospect</span>
+                                </div>
+                              )}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
           </div>
         </DragDropContext>
       )}

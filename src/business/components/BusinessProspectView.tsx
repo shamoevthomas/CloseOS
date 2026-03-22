@@ -4,11 +4,12 @@ import {
   X, Phone, Mail, Calendar, Pencil, Trash2,
   MessageCircle, Save, Clock, Plus, ChevronDown,
   Bell, Check, Loader2, FileText, ClipboardList,
-  Package, ExternalLink, PhoneCall,
+  Package, ExternalLink, PhoneCall, Tag,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useCustomStages } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -65,6 +66,7 @@ export function BusinessProspectView({
 }: BusinessProspectViewProps) {
   const navigate = useNavigate()
   const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
+  const { customStages } = useCustomStages()
   const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string; setter_scope?: string }[]>([])
 
   // Who can assign: Owner, Head of Sales, Admin, and Setters (unless setter_scope is 'self')
@@ -140,6 +142,30 @@ export function BusinessProspectView({
   const [prospectReminders, setProspectReminders] = useState<any[]>([])
   const [remindersLoading, setRemindersLoading] = useState(false)
   const [reminderActionLoading, setReminderActionLoading] = useState<number | null>(null)
+
+  // Tags
+  const [allTags, setAllTags] = useState<{ id: string; name: string; color: string }[]>([])
+  const [prospectTagIds, setProspectTagIds] = useState<string[]>([])
+  const [showTagPicker, setShowTagPicker] = useState(false)
+
+  useEffect(() => {
+    const ownerId = isTeamMember ? ownerUserId : user?.id
+    if (!ownerId || !prospect.id) return
+    supabase.from('business_tags').select('id, name, color').eq('owner_id', ownerId)
+      .then(({ data }) => setAllTags(data || []))
+    supabase.from('business_prospect_tags').select('tag_id').eq('prospect_id', prospect.id)
+      .then(({ data }) => setProspectTagIds((data || []).map(d => d.tag_id)))
+  }, [prospect.id, user?.id, ownerUserId, isTeamMember])
+
+  const handleToggleTag = async (tagId: string) => {
+    if (prospectTagIds.includes(tagId)) {
+      await supabase.from('business_prospect_tags').delete().eq('prospect_id', prospect.id).eq('tag_id', tagId)
+      setProspectTagIds(prev => prev.filter(id => id !== tagId))
+    } else {
+      await supabase.from('business_prospect_tags').insert({ prospect_id: prospect.id, tag_id: tagId })
+      setProspectTagIds(prev => [...prev, tagId])
+    }
+  }
 
   // Formula & Campaign
   const [formula, setFormula] = useState<Formula | null>(null)
@@ -433,9 +459,71 @@ export function BusinessProspectView({
                     className={cn(SELECT_CLS, 'py-4 px-5')}
                   >
                     {ALL_STAGES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {customStages.length > 0 && <option disabled>──────────</option>}
+                    {customStages.map(cs => <option key={`custom_${cs.id}`} value={`custom_${cs.id}`}>{cs.name}</option>)}
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-5 w-5 text-stone-400" strokeWidth={1.5} />
                 </div>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <div className="flex items-center justify-between mb-2 ml-1">
+                  <label className={LABEL_STYLE}>Tags</label>
+                  <button
+                    onClick={() => setShowTagPicker(!showTagPicker)}
+                    className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] hover:text-stone-700 transition-colors"
+                  >
+                    <Tag className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {prospectTagIds.map(tagId => {
+                    const tag = allTags.find(t => t.id === tagId)
+                    if (!tag) return null
+                    return (
+                      <button
+                        key={tagId}
+                        onClick={() => handleToggleTag(tagId)}
+                        className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white hover:opacity-80 transition-opacity"
+                        style={{ backgroundColor: tag.color }}
+                      >
+                        {tag.name}
+                        <X className="h-3 w-3" strokeWidth={2} />
+                      </button>
+                    )
+                  })}
+                  {prospectTagIds.length === 0 && !showTagPicker && (
+                    <span className="text-xs text-stone-400">Aucun tag</span>
+                  )}
+                </div>
+                {showTagPicker && (
+                  <div className="mt-2 rounded-xl bg-[#f5f3f2] p-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {allTags.map(tag => {
+                        const isActive = prospectTagIds.includes(tag.id)
+                        return (
+                          <button
+                            key={tag.id}
+                            onClick={() => handleToggleTag(tag.id)}
+                            className={cn(
+                              'inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full transition-all',
+                              isActive ? 'text-white' : 'bg-white text-stone-600 hover:bg-stone-100'
+                            )}
+                            style={isActive ? { backgroundColor: tag.color } : {}}
+                          >
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                            {tag.name}
+                            {isActive && <Check className="h-3 w-3" strokeWidth={2} />}
+                          </button>
+                        )
+                      })}
+                      {allTags.length === 0 && (
+                        <span className="text-xs text-stone-400">Aucun tag disponible</span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Assignment */}

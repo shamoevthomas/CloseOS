@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Loader2, DollarSign, TrendingUp, CalendarDays, Target, UserX, Activity,
   Megaphone, Users, Bell, ArrowUpRight, ArrowDownRight, FileDown, Circle,
-  AlertTriangle, Clock, MoreHorizontal, Search, Plus,
+  AlertTriangle, Clock, MoreHorizontal, Search, Plus, X, CheckCircle2, Trash2,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
@@ -83,7 +83,6 @@ const ROLE_COLORS: Record<string, string> = {
   Setter: 'bg-stone-100 text-stone-600',
   'Setter-Closer': 'bg-stone-100 text-stone-600',
   'Head of Sales': 'bg-stone-100 text-stone-600',
-  Manager: 'bg-stone-100 text-stone-600',
   Admin: 'bg-stone-100 text-stone-600',
 }
 
@@ -106,6 +105,8 @@ export function BusinessDashboard() {
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
   const isAdmin = isTeamMember && teamMember?.role === 'Admin'
 
+  const navigate = useNavigate()
+
   if (isTeamMember && !isHeadOfSales && !isAdmin) {
     return <CloserDashboard />
   }
@@ -118,6 +119,7 @@ export function BusinessDashboard() {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [objectives, setObjectives] = useState<Objective[]>([])
+  const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null)
 
   const fetchAll = useCallback(async () => {
     if (!effectiveUserId) return
@@ -149,6 +151,16 @@ export function BusinessDashboard() {
   }, [effectiveUserId])
 
   useEffect(() => { fetchAll() }, [fetchAll])
+
+  const handleMarkDone = async (id: string) => {
+    await supabase.from('reminders').update({ is_done: true }).eq('id', id)
+    setReminders(prev => prev.filter(r => r.id !== id))
+  }
+
+  const handleDeleteReminder = async (id: string) => {
+    await supabase.from('reminders').delete().eq('id', id)
+    setReminders(prev => prev.filter(r => r.id !== id))
+  }
 
   // ─── KPI calculations ───
   const now = new Date()
@@ -260,7 +272,7 @@ export function BusinessDashboard() {
 
         {/* ── KPI Row (6 mini cards) ── */}
         {/* Revenue */}
-        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform`}>
+        <Link to="/business/report" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
           <div className="flex justify-between items-start mb-3">
             <div className="p-2 rounded-lg bg-emerald-50">
               <DollarSign className="h-4 w-4 text-emerald-600" />
@@ -273,10 +285,10 @@ export function BusinessDashboard() {
             <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Revenue</p>
             <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
           </div>
-        </div>
+        </Link>
 
         {/* Acquisition */}
-        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform`}>
+        <Link to="/business/acquisition" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
           <div className="p-2 rounded-lg bg-stone-100 w-fit">
             <TrendingUp className="h-4 w-4 text-neutral-600" />
           </div>
@@ -284,10 +296,10 @@ export function BusinessDashboard() {
             <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Acquisition</p>
             <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>Closing {formatPct(closingRate)}</p>
           </div>
-        </div>
+        </Link>
 
         {/* Rendez-vous */}
-        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform`}>
+        <Link to="/business/rendez-vous" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
           <div className="p-2 rounded-lg bg-stone-100 w-fit">
             <CalendarDays className="h-4 w-4 text-neutral-600" />
           </div>
@@ -295,10 +307,10 @@ export function BusinessDashboard() {
             <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Rendez-vous</p>
             <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAppts.toLocaleString()}</p>
           </div>
-        </div>
+        </Link>
 
         {/* Objectif */}
-        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform`}>
+        <Link to="/business/objectifs" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
           <div className="flex justify-between items-start">
             <div className="p-2 rounded-lg bg-stone-100">
               <Target className="h-4 w-4 text-neutral-600" />
@@ -322,10 +334,10 @@ export function BusinessDashboard() {
               <p className="text-sm text-neutral-400 mt-1">Aucun objectif</p>
             )}
           </div>
-        </div>
+        </Link>
 
         {/* No-Show */}
-        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform`}>
+        <Link to="/business/crm" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
           <div className="flex justify-between items-start">
             <div className="p-2 rounded-lg bg-amber-50">
               <UserX className="h-4 w-4 text-amber-600" />
@@ -340,12 +352,13 @@ export function BusinessDashboard() {
             <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">No-Show</p>
             <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
           </div>
-        </div>
+        </Link>
 
         {/* KPI Health */}
-        <div
+        <Link
+          to="/business/report"
           title={`Basé sur le taux de closing (${closingRate.toFixed(1)}%).\n\n≥ 30% → Optimal (vert)\n15-30% → Moyen (orange)\n< 15% → Faible (rouge)\n\nCalcul : prospects gagnés / (gagnés + perdus + no-shows)`}
-          className={`col-span-6 sm:col-span-4 xl:col-span-2 rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform bg-white/60 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] cursor-help ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}
+          className={`col-span-6 sm:col-span-4 xl:col-span-2 rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform bg-white/60 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] cursor-pointer ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}
         >
           <div className="flex justify-between items-start">
             <div className={`p-2 rounded-lg ${healthOk ? 'bg-emerald-50' : healthWarn ? 'bg-amber-50' : 'bg-red-50'}`}>
@@ -362,7 +375,7 @@ export function BusinessDashboard() {
             <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Santé KPI</p>
             <p className="text-lg font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{healthLabel}</p>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* ─── Campaigns + Objectives ─── */}
@@ -375,7 +388,7 @@ export function BusinessDashboard() {
               <p className="text-neutral-400 text-sm mt-0.5">Performance en temps réel des flux actifs.</p>
             </div>
             <Link to="/business/campagnes" className="text-sm font-bold text-neutral-900 border-b-2 border-neutral-900 pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Voir Entonnoir
+              Voir Tout
             </Link>
           </div>
           {activeCampaigns.length === 0 ? (
@@ -386,7 +399,7 @@ export function BusinessDashboard() {
                 const colorKey = CAMPAIGN_ICONS[idx % CAMPAIGN_ICONS.length]
                 const colors = CAMPAIGN_ICON_CLASSES[colorKey]
                 return (
-                  <div key={c.id} className="flex items-center justify-between p-5 bg-neutral-50/80 rounded-2xl group hover:bg-white transition-all cursor-pointer">
+                  <Link key={c.id} to="/business/campagnes" className="flex items-center justify-between p-5 bg-neutral-50/80 rounded-2xl group hover:bg-white transition-all cursor-pointer">
                     <div className="flex items-center gap-5">
                       <div className={`w-11 h-11 ${colors.bg} ${colors.text} rounded-full flex items-center justify-center`}>
                         <Megaphone className="h-5 w-5" />
@@ -406,7 +419,7 @@ export function BusinessDashboard() {
                         {c.is_active ? 'LIVE' : 'PAUSED'}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 )
               })}
             </div>
@@ -414,7 +427,7 @@ export function BusinessDashboard() {
         </div>
 
         {/* Objectifs de vente */}
-        <div className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-8 flex flex-col`}>
+        <Link to="/business/objectifs" className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-8 flex flex-col cursor-pointer hover:scale-[1.01] transition-transform`}>
           <div className="mb-8">
             <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Objectifs de vente</h3>
             <p className="text-neutral-400 text-sm mt-0.5">Progression mensuelle vers les objectifs.</p>
@@ -457,7 +470,7 @@ export function BusinessDashboard() {
               )}
             </div>
           )}
-        </div>
+        </Link>
       </div>
 
       {/* ─── Team + Reminders ─── */}
@@ -466,7 +479,7 @@ export function BusinessDashboard() {
         <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-6 px-1">
             <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Performance équipe</h3>
-            <Link to="/business/team" className="px-5 py-2.5 bg-neutral-100 hover:bg-neutral-200 rounded-full text-xs font-bold transition-colors uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <Link to="/business/team" className="px-5 py-2.5 bg-neutral-100 hover:bg-neutral-200 rounded-full text-xs font-bold text-neutral-900 transition-colors uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Voir l'équipe
             </Link>
           </div>
@@ -480,14 +493,14 @@ export function BusinessDashboard() {
                     <th className="pb-5 px-3">Membre</th>
                     <th className="pb-5 px-3">Rôle</th>
                     <th className="pb-5 px-3">Statut</th>
-                    <th className="pb-5 px-3 text-right">Action</th>
+                    <th className="pb-5 px-3 text-right">Com</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {members.map(m => {
                     const online = isReallyOnline(m)
                     return (
-                      <tr key={m.id} className="hover:bg-neutral-50/50 transition-colors">
+                      <tr key={m.id} onClick={() => navigate(`/business/team?member=${m.id}`)} className="hover:bg-neutral-50/50 transition-colors cursor-pointer">
                         <td className="py-4 px-3">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-neutral-200 flex items-center justify-center text-xs font-bold text-neutral-600 overflow-hidden shrink-0">
@@ -550,7 +563,8 @@ export function BusinessDashboard() {
                 return (
                   <div
                     key={r.id}
-                    className={`p-4 rounded-2xl ${isOverdue ? 'border-l-4 border-red-500 bg-red-50/50' : 'border-l-4 border-neutral-300 bg-neutral-50 hover:bg-white transition-all'}`}
+                    onClick={() => setSelectedReminder(r)}
+                    className={`p-4 rounded-2xl cursor-pointer ${isOverdue ? 'border-l-4 border-red-500 bg-red-50/50 hover:bg-red-50' : 'border-l-4 border-neutral-300 bg-neutral-50 hover:bg-white'} transition-all`}
                   >
                     <div className="flex justify-between items-start mb-1">
                       <h4 className="text-sm font-bold text-neutral-900">{r.title}</h4>
@@ -578,6 +592,81 @@ export function BusinessDashboard() {
           </Link>
         </div>
       </div>
+
+      {/* Reminder Detail Modal */}
+      {selectedReminder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setSelectedReminder(null)} />
+          <div className="relative w-full max-w-md bg-white rounded-3xl overflow-hidden" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}>
+            <div className="px-8 pt-8 pb-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-extrabold text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  Détail du rappel
+                </h2>
+                <button onClick={() => setSelectedReminder(null)} className="p-2 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-full transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            <div className="px-8 pb-8 space-y-5">
+              {/* Status */}
+              {(() => {
+                const isOverdue = new Date(selectedReminder.reminder_date) < now
+                return (
+                  <span className={`px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] border inline-block ${isOverdue ? 'bg-red-500/10 text-red-600 border-red-500/20' : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'}`}>
+                    {isOverdue ? 'En retard' : 'À venir'}
+                  </span>
+                )
+              })()}
+
+              {/* Title */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 mb-1">Titre</label>
+                <p className="text-lg font-extrabold text-neutral-900">{selectedReminder.title}</p>
+              </div>
+
+              {/* Description */}
+              {selectedReminder.description && (
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 mb-1">Description</label>
+                  <p className="text-sm text-neutral-700 leading-relaxed">{selectedReminder.description}</p>
+                </div>
+              )}
+
+              {/* Date & Time */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 mb-1">Date & Heure</label>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-neutral-400" />
+                  <p className={`text-sm font-medium ${new Date(selectedReminder.reminder_date) < now ? 'text-red-600' : 'text-neutral-900'}`}>
+                    {new Date(selectedReminder.reminder_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {' à '}
+                    {new Date(selectedReminder.reminder_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => { handleMarkDone(selectedReminder.id); setSelectedReminder(null) }}
+                  className="flex-1 py-3 bg-emerald-600 text-white rounded-full font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Marquer comme fait
+                </button>
+                <button
+                  onClick={() => { handleDeleteReminder(selectedReminder.id); setSelectedReminder(null) }}
+                  className="flex-1 py-3 bg-neutral-100 text-red-600 rounded-full font-bold text-sm hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -99,7 +99,7 @@ const ROLE_COLORS: Record<string, string> = {
   Closer: 'bg-stone-100 text-stone-800',
   Setter: 'bg-stone-100 text-stone-600',
   'Setter-Closer': 'bg-emerald-50 text-emerald-800',
-  Manager: 'bg-stone-100 text-stone-800',
+  'Head of Sales': 'bg-stone-100 text-stone-800',
   Admin: 'bg-red-50 text-red-700',
   Owner: 'bg-stone-100 text-stone-800',
 }

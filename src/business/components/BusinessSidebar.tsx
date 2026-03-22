@@ -216,17 +216,27 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
           "flex items-center h-[72px] border-b border-neutral-900/5 transition-all duration-300",
           collapsed ? "px-4 justify-center" : "px-6 gap-3"
         )}>
-          <div className="w-10 h-10 bg-neutral-900 flex items-center justify-center rounded-lg shadow-sm shrink-0">
-            <img
-              src="/logo.PNG"
-              alt="CloseOS"
-              className="h-8 w-8 object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-                (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-white font-black text-lg" style="font-family:Manrope,sans-serif">C</span>'
-              }}
-            />
-          </div>
+          {collapsed && businessSettings?.logo_url ? (
+            <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-neutral-100 flex items-center justify-center">
+              <img
+                src={businessSettings.logo_url}
+                alt={businessSettings?.company_name || 'Organisation'}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-10 h-10 bg-neutral-900 flex items-center justify-center rounded-lg shadow-sm shrink-0">
+              <img
+                src="/logo.PNG"
+                alt="CloseOS"
+                className="h-8 w-8 object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-white font-black text-lg" style="font-family:Manrope,sans-serif">C</span>'
+                }}
+              />
+            </div>
+          )}
           {!collapsed && (
             <div className="overflow-hidden">
               <h1 className="text-2xl font-black text-neutral-900 tracking-tighter" style={{ fontFamily: 'Manrope, sans-serif' }}>CloseOS</h1>

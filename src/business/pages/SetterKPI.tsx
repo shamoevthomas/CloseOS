@@ -189,18 +189,12 @@ export function SetterKPI() {
   const personal = computeSetterKpis(myProspects, teamMember?.id)
   const commission = Math.round(personal.revenue * (kpiConfig.commission_rate / 100))
 
-  // Org KPIs (filtered by member if selected)
+  // Org KPIs (filtered by member if selected) — uses computeSetterKpis for consistency
   const orgProspects = useMemo(() => filterByMember(prospects, globalMemberId), [prospects, globalMemberId])
-  const orgWon = orgProspects.filter(p => p.stage === 'won')
-  const orgNoShow = orgProspects.filter(p => p.stage === 'noshow')
-  const orgLost = orgProspects.filter(p => p.stage === 'lost')
-  const orgRevenue = orgWon.reduce((sum, p) => sum + (p.value || 0), 0)
-  const orgClosedTotal = orgWon.length + orgLost.length + orgNoShow.length
-  const orgConversion = orgClosedTotal > 0 ? (orgWon.length / orgClosedTotal) * 100 : 0
-  const orgNoShowRate = orgClosedTotal > 0 ? (orgNoShow.length / orgClosedTotal) * 100 : 0
-  const orgCommission = Math.round(orgRevenue * (kpiConfig.commission_rate / 100))
+  const orgKpis = computeSetterKpis(orgProspects)
+  const orgCommission = Math.round(orgKpis.revenue * (kpiConfig.commission_rate / 100))
 
-  // Per-formula KPIs
+  // Per-formula KPIs — uses computeSetterKpis for consistency
   const formulaProspects = useMemo(() => {
     if (!selectedOfferId) return []
     const base = isOwnerView ? prospects : myProspects
@@ -208,14 +202,8 @@ export function SetterKPI() {
     return filterByMember(filtered, globalMemberId)
   }, [isOwnerView, myProspects, prospects, selectedOfferId, globalMemberId])
 
-  const formulaWon = formulaProspects.filter(p => p.stage === 'won')
-  const formulaNoShow = formulaProspects.filter(p => p.stage === 'noshow')
-  const formulaLost = formulaProspects.filter(p => p.stage === 'lost')
-  const formulaRevenue = formulaWon.reduce((sum, p) => sum + (p.value || 0), 0)
-  const formulaClosedTotal = formulaWon.length + formulaLost.length + formulaNoShow.length
-  const formulaConversion = formulaClosedTotal > 0 ? (formulaWon.length / formulaClosedTotal) * 100 : 0
-  const formulaNoShowRate = formulaClosedTotal > 0 ? (formulaNoShow.length / formulaClosedTotal) * 100 : 0
-  const formulaCommission = Math.round(formulaRevenue * (kpiConfig.commission_rate / 100))
+  const formulaKpis = computeSetterKpis(formulaProspects)
+  const formulaCommission = Math.round(formulaKpis.revenue * (kpiConfig.commission_rate / 100))
 
   // Per-campaign KPIs
   const campaignProspects = useMemo(() => {
@@ -270,8 +258,8 @@ export function SetterKPI() {
       commission: comm, noShowRate: noShow, lost: lostCount,
       leads: src.length, deals: src.filter(p => !['won', 'lost', 'noshow', 'noanswer'].includes(p.stage)).length,
     })
-    if (activeTab === 'org') return makeVals(orgRevenue, orgWon.length, orgConversion, orgCommission, orgNoShowRate, orgLost.length, orgProspects)
-    if (activeTab === 'offer') return makeVals(formulaRevenue, formulaWon.length, formulaConversion, formulaCommission, formulaNoShowRate, formulaLost.length, formulaProspects)
+    if (activeTab === 'org') return makeVals(orgKpis.revenue, orgKpis.won.length, orgKpis.conversionRate, orgCommission, orgKpis.noShowRate, orgKpis.lost.length, orgProspects)
+    if (activeTab === 'offer') return makeVals(formulaKpis.revenue, formulaKpis.won.length, formulaKpis.conversionRate, formulaCommission, formulaKpis.noShowRate, formulaKpis.lost.length, formulaProspects)
     if (activeTab === 'campaign') return makeVals(campaignKpis.revenue, campaignKpis.won.length, campaignKpis.conversionRate, campaignCommission, campaignKpis.noShowRate, campaignKpis.lost.length, campaignProspects)
     if (activeTab === 'source') return makeVals(sourceKpis.revenue, sourceKpis.won.length, sourceKpis.conversionRate, sourceCommission, sourceKpis.noShowRate, sourceKpis.lost.length, sourceProspects)
     return {

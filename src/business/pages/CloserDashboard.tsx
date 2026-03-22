@@ -36,7 +36,6 @@ const ROLE_BADGE: Record<string, string> = {
   Closer: 'bg-[#6ffbbe] text-[#002113]',
   Setter: 'bg-[#ffddb8] text-[#2a1700]',
   'Setter-Closer': 'bg-[#e5e2e1] text-[#1c1b1b]',
-  Manager: 'bg-[#ffb95f] text-[#2a1700]',
   Admin: 'bg-[#ffdad6] text-[#93000a]',
   'Head of Sales': 'bg-[#6ffbbe] text-[#002113]',
 }

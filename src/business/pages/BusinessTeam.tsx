@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Plus, Users, User, Circle, Loader2, Trash2, ArrowLeft, Phone,
   Calendar, Clock, BarChart3, GitBranch, CalendarDays, Mail,
@@ -241,6 +242,7 @@ export function BusinessTeam() {
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const { prospects } = useBusinessProspects()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [members, setMembers] = useState<TeamMember[]>([])
   const [ownerInfo, setOwnerInfo] = useState<{ full_name: string; email: string; phone: string | null; avatar_url: string | null; created_at: string; timezone: string | null } | null>(null)
@@ -282,6 +284,19 @@ export function BusinessTeam() {
   }, [effectiveUserId, isOwnerView])
 
   useEffect(() => { loadData() }, [loadData])
+
+  // Auto-select member from URL param (e.g. /business/team?member=xxx)
+  useEffect(() => {
+    const memberId = searchParams.get('member')
+    if (memberId && members.length > 0) {
+      const found = members.find(m => m.id === memberId)
+      if (found) {
+        setSelectedMemberId(memberId)
+        searchParams.delete('member')
+        setSearchParams(searchParams, { replace: true })
+      }
+    }
+  }, [members, searchParams, setSearchParams])
 
   useEffect(() => {
     if (!effectiveUserId) return
