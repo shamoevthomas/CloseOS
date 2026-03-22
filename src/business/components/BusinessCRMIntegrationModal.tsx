@@ -492,724 +492,515 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
     setTimeout(() => setWebhookCopied(false), 2000);
   };
 
+  const selectedCrm = CRM_OPTIONS.find(c => c.id === selected);
+  const isConnected = (selected === 'hubspot' && hubspotConnected) ||
+    (selected === 'pipedrive' && pipedriveConnected) ||
+    (selected === 'airtable' && airtableConnected) ||
+    (selected === 'zapier' && !!zapierApiKey) ||
+    (selected === 'calendly' && !!calendlyApiKey) ||
+    selected === 'closeos';
+
+  const selectCls = "w-full bg-white border border-[#c4c7c7]/30 rounded-xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006c49]/20 focus:border-[#006c49] text-[#1b1c1b]";
+  const inputCls = "w-full bg-[#f5f3f2] border-none rounded-xl py-3 px-4 text-sm font-mono text-[#444748] focus:ring-2 focus:ring-[#006c49]/20";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-amber-200 bg-white p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
-        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors">
-          <X className="h-5 w-5" />
-        </button>
-
-        <h2 className="text-xl font-bold text-slate-900 mb-2">Intégration CRM</h2>
-        <p className="text-slate-500 text-sm mb-6">Choisissez et configurez votre CRM.</p>
-
-        {/* CRM Selection */}
-        <div className="space-y-2 mb-6">
-          {CRM_OPTIONS.map((crm) => (
-            <button
-              key={crm.id}
-              onClick={() => { setSelected(crm.id); setSyncResult(null); }}
-              className={`w-full flex items-center gap-4 rounded-xl border p-3 transition-all text-left ${
-                selected === crm.id ? `${crm.borderColor} ${crm.bgColor}` : 'border-slate-200 bg-white hover:bg-slate-50'
-              }`}
-            >
-              <div className={`h-9 w-9 rounded-lg ${crm.color} flex items-center justify-center shrink-0`}>
-                <span className="text-white font-bold text-sm">{crm.name[0]}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={`font-semibold text-sm ${selected === crm.id ? crm.textColor : 'text-slate-800'}`}>{crm.name}</p>
-                <p className="text-xs text-slate-500">{crm.description}</p>
-              </div>
-              {selected === crm.id && <Check className={`h-5 w-5 shrink-0 ${crm.textColor}`} />}
-            </button>
-          ))}
+    <div className="fixed inset-0 z-50 bg-[#1b1c1b]/20 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-5xl max-h-[85vh] rounded-2xl shadow-[0_40px_80px_rgba(27,28,27,0.12)] flex flex-col overflow-hidden">
+        {/* Modal Header */}
+        <div className="px-8 py-8 border-b border-[#c4c7c7]/10 flex justify-between items-start flex-shrink-0">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Intégration CRM</h1>
+            <p className="text-[#444748] mt-2 text-sm">Choisissez et configurez votre CRM pour synchroniser vos données.</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-[#eae8e7] rounded-full transition-colors">
+            <X className="h-5 w-5 text-[#444748]" />
+          </button>
         </div>
 
-        {/* ─── iClosed Config ─── */}
-        {selected === 'iclosed' && (
-          <div className="rounded-xl border border-purple-200 bg-purple-50 p-4 mb-4">
-            <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-purple-600 mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <h4 className="text-sm font-semibold text-purple-900">Configuration Webhook iClosed</h4>
-                <p className="mt-1 text-xs text-purple-700/80 leading-relaxed">
-                  Allez dans <strong>iClosed &gt; Paramètres &gt; Développeur &gt; Webhooks</strong> et collez l'URL ci-dessous.
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={webhookUrl}
-                    readOnly
-                    className="flex-1 rounded-lg border border-purple-200 bg-white py-2 px-3 text-xs text-slate-700 font-mono"
-                  />
-                  <button
-                    onClick={handleCopyWebhook}
-                    className="rounded-lg bg-purple-600 p-2 text-white hover:bg-purple-500 transition-colors"
-                  >
-                    {webhookCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-            </div>
+        {/* Modal Content (Split Layout) */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left Sidebar — CRM Selection */}
+          <div className="w-72 bg-[#f5f3f2] border-r border-[#c4c7c7]/10 overflow-y-auto p-4 space-y-2 flex-shrink-0">
+            <label className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#444748]/50 block">Available Integrations</label>
+            {CRM_OPTIONS.map((crm) => {
+              const isActive = selected === crm.id;
+              const isCrmConnected = (crm.id === 'hubspot' && hubspotConnected) ||
+                (crm.id === 'pipedrive' && pipedriveConnected) ||
+                (crm.id === 'airtable' && airtableConnected) ||
+                (crm.id === 'zapier' && !!zapierApiKey) ||
+                (crm.id === 'calendly' && !!calendlyApiKey);
+              return (
+                <button
+                  key={crm.id}
+                  onClick={() => { setSelected(crm.id); setSyncResult(null); }}
+                  className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-all ${
+                    isActive
+                      ? 'bg-[#e4e2e1] shadow-inner ring-1 ring-[#1b1c1b]/10'
+                      : 'hover:bg-[#eae8e7]'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl ${crm.iconBg} ${crm.iconText} flex items-center justify-center shrink-0`}>
+                    <span className="font-bold text-sm">{crm.name[0]}</span>
+                  </div>
+                  <span className={`font-bold text-sm ${isActive ? 'text-[#1b1c1b]' : 'text-[#444748]'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{crm.name}</span>
+                  {isCrmConnected && <div className="ml-auto w-2 h-2 rounded-full bg-[#006c49]" />}
+                </button>
+              );
+            })}
           </div>
-        )}
 
-        {/* ─── HubSpot Config ─── */}
-        {selected === 'hubspot' && (
-          <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 mb-4">
-            <h4 className="text-sm font-semibold text-orange-900 mb-3 flex items-center gap-2">
-              <ExternalLink className="h-4 w-4" />
-              Configuration HubSpot
-            </h4>
-
-            {!hubspotConnected ? (
-              <div>
-                <p className="text-xs text-orange-700/80 leading-relaxed mb-3">
-                  Connectez votre compte HubSpot pour synchroniser automatiquement vos contacts.
-                </p>
-                <button
-                  onClick={handleConnectHubspot}
-                  className="w-full flex justify-center items-center gap-2 rounded-xl bg-orange-600 py-3 text-sm font-bold text-white hover:bg-orange-500 transition-all"
-                >
-                  <LinkIcon className="h-4 w-4" />
-                  Connecter HubSpot
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Connected status */}
-                <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-2">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm font-semibold text-emerald-700">HubSpot Connecté</span>
+          {/* Right Configuration Area */}
+          <div className="flex-1 overflow-y-auto p-10 bg-white">
+            {selectedCrm && (
+              <section className="max-w-2xl">
+                {/* CRM Header */}
+                <div className="flex items-center gap-6 mb-10">
+                  <div className={`w-20 h-20 rounded-2xl ${selectedCrm.iconBg} ${selectedCrm.iconText} flex items-center justify-center shadow-xl`} style={{ boxShadow: `0 10px 30px ${selectedCrm.iconBg.includes('#ff7a59') ? 'rgba(255,122,89,0.2)' : selectedCrm.iconBg.includes('#ff4a00') ? 'rgba(255,74,0,0.2)' : selectedCrm.iconBg.includes('#006bff') ? 'rgba(0,107,255,0.2)' : selectedCrm.iconBg.includes('#18bfff') ? 'rgba(24,191,255,0.2)' : 'rgba(27,28,27,0.1)'}` }}>
+                    <span className="font-extrabold text-2xl">{selectedCrm.name[0]}</span>
                   </div>
-                  <button onClick={handleDisconnectHubspot} className="text-xs text-slate-500 hover:text-red-500 underline">Déconnecter</button>
-                </div>
-
-                {/* Sync button */}
-                <button
-                  onClick={handleSyncHubspot}
-                  disabled={isSyncingHubspot}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-orange-300 bg-orange-100 py-2.5 text-sm font-semibold text-orange-800 hover:bg-orange-200 transition-all disabled:opacity-50"
-                >
-                  {isSyncingHubspot ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Synchronisation en cours...</>
-                  ) : (
-                    <><RefreshCw className="h-4 w-4" /> Synchroniser les contacts HubSpot</>
-                  )}
-                </button>
-
-                {/* Sync result */}
-                {syncResult && (
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-700 font-medium">
-                    {syncResult.imported} contacts importés, {syncResult.updated} mis à jour
-                  </div>
-                )}
-
-                <p className="text-[10px] text-orange-600/70">
-                  La synchronisation auto se fait toutes les 2 minutes. Les changements de stage sont poussés vers HubSpot.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ─── Systeme.io Config ─── */}
-        {selected === 'systemeio' && (
-          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 mb-4">
-            <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
-              <ExternalLink className="h-4 w-4" />
-              Configuration Systeme.io
-            </h4>
-
-            <div className="space-y-3">
-              {/* API Key */}
-              <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                  Clé API Systeme.io
-                </label>
-                <p className="text-[11px] text-blue-700/70 mb-2">
-                  Trouvez votre clé dans <strong>Systeme.io → Paramètres → Clés API publiques</strong>
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type={systemeioShowKey ? 'text' : 'password'}
-                      value={systemeioApiKey}
-                      onChange={(e) => setSystemeioApiKey(e.target.value)}
-                      placeholder="Collez votre clé API ici"
-                      className="w-full rounded-lg border border-blue-200 bg-white py-2 px-3 pr-9 text-xs text-slate-700 font-mono"
-                    />
-                    <button
-                      onClick={() => setSystemeioShowKey(!systemeioShowKey)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {systemeioShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                    </button>
-                  </div>
-                  <button
-                    onClick={handleSaveSystemeioKey}
-                    disabled={systemeioSaving}
-                    className="rounded-lg bg-blue-600 px-3 py-2 text-white hover:bg-blue-500 transition-all disabled:opacity-50"
-                  >
-                    {systemeioSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Webhook URL */}
-              <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">URL du Webhook</label>
-                <p className="text-[11px] text-blue-700/70 mb-2">
-                  Collez cette URL dans <strong>Systeme.io → Paramètres → Webhooks</strong>
-                </p>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={systemeioWebhookUrl}
-                    readOnly
-                    className="flex-1 rounded-lg border border-blue-200 bg-white py-2 px-3 text-xs text-slate-700 font-mono"
-                  />
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(systemeioWebhookUrl);
-                      setSystemeioCopiedUrl(true);
-                      setTimeout(() => setSystemeioCopiedUrl(false), 2000);
-                    }}
-                    className="rounded-lg bg-blue-600 p-2 text-white hover:bg-blue-500 transition-colors"
-                  >
-                    {systemeioCopiedUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Instructions */}
-              <div className="rounded-lg border border-blue-200 bg-white p-3">
-                <h5 className="mb-2 text-xs font-bold text-slate-800">Comment configurer :</h5>
-                <ol className="text-[11px] text-slate-600 space-y-1.5 list-decimal list-inside">
-                  <li>Allez dans <strong>Systeme.io → Paramètres → Clés API publiques</strong> et copiez votre clé</li>
-                  <li>Collez la clé API ci-dessus et cliquez sur Sauvegarder</li>
-                  <li>Allez dans <strong>Systeme.io → Paramètres → Webhooks</strong></li>
-                  <li>Ajoutez un webhook avec l'URL ci-dessus</li>
-                  <li>Sélectionnez les événements : <strong>Opt-in</strong> et/ou <strong>Nouvelle vente</strong></li>
-                </ol>
-              </div>
-
-              <p className="text-[10px] text-blue-600/70">
-                <strong>Webhook :</strong> Chaque opt-in ou vente crée un prospect automatiquement.
-                <br />
-                <strong>Sync retour :</strong> Les changements de stage mettent à jour les tags du contact dans Systeme.io.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* ─── Zapier Config ─── */}
-        {selected === 'zapier' && (
-          <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 mb-4">
-            <h4 className="text-sm font-semibold text-[#FF4A00] mb-3 flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              Configuration Zapier
-            </h4>
-
-            {!zapierApiKey ? (
-              <div>
-                <p className="text-xs text-slate-600 leading-relaxed mb-3">
-                  Générez une clé API pour connecter Zapier à CloseOS. Les prospects créés via Zapier seront visibles par toute votre équipe.
-                </p>
-                <button
-                  onClick={handleGenerateZapierKey}
-                  disabled={zapierLoading}
-                  className="w-full flex justify-center items-center gap-2 rounded-xl bg-[#FF4A00] py-3 text-sm font-bold text-white hover:bg-[#e04300] transition-all disabled:opacity-50"
-                >
-                  {zapierLoading ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Génération...</>
-                  ) : (
-                    <><Key className="h-4 w-4" /> Générer une clé API</>
-                  )}
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Connected status */}
-                <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-2">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm font-semibold text-emerald-700">Clé API active</span>
-                  </div>
-                  <button
-                    onClick={handleDeleteZapierKey}
-                    disabled={zapierLoading}
-                    className="text-xs text-slate-500 hover:text-red-500 underline flex items-center gap-1"
-                  >
-                    <Trash2 className="h-3 w-3" /> Supprimer
-                  </button>
-                </div>
-
-                {/* Webhook URL */}
-                <div>
-                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">URL du Webhook</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={`${baseUrl}/api/zapier-webhook?type=business`}
-                      readOnly
-                      className="flex-1 rounded-lg border border-orange-200 bg-white py-2 px-3 text-xs text-slate-700 font-mono"
-                    />
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(`${baseUrl}/api/zapier-webhook?type=business`);
-                        setZapierCopiedUrl(true);
-                        setTimeout(() => setZapierCopiedUrl(false), 2000);
-                      }}
-                      className="rounded-lg bg-[#FF4A00] p-2 text-white hover:bg-[#e04300] transition-colors"
-                    >
-                      {zapierCopiedUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* API Key */}
-                <div>
-                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Clé API (Bearer Token)</label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <input
-                        type={zapierShowKey ? 'text' : 'password'}
-                        value={zapierApiKey}
-                        readOnly
-                        className="w-full rounded-lg border border-orange-200 bg-white py-2 px-3 pr-9 text-xs text-slate-700 font-mono"
-                      />
-                      <button
-                        onClick={() => setZapierShowKey(!zapierShowKey)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                      >
-                        {zapierShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(zapierApiKey!);
-                        setZapierCopiedKey(true);
-                        setTimeout(() => setZapierCopiedKey(false), 2000);
-                      }}
-                      className="rounded-lg bg-[#FF4A00] p-2 text-white hover:bg-[#e04300] transition-colors"
-                    >
-                      {zapierCopiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Instructions */}
-                <div className="rounded-lg border border-orange-200 bg-white p-3">
-                  <h5 className="mb-2 text-xs font-bold text-slate-800">Configuration dans Zapier :</h5>
-                  <ol className="text-[11px] text-slate-600 space-y-1.5 list-decimal list-inside">
-                    <li>Créez un nouveau Zap avec votre source (Facebook Ads, Typeform...)</li>
-                    <li>Action : <strong>Webhooks by Zapier</strong> → <strong>POST</strong></li>
-                    <li>URL : collez l'URL ci-dessus</li>
-                    <li>Headers : <code className="bg-slate-100 px-1 rounded text-[10px]">Authorization: Bearer votre_clé</code></li>
-                    <li>Body (JSON) : mappez vos champs → <code className="bg-slate-100 px-1 rounded text-[10px]">firstName, lastName, email, phone, company, source</code></li>
-                  </ol>
-                </div>
-
-                <p className="text-[10px] text-orange-600/70">
-                  Les prospects importés via Zapier sont visibles par le propriétaire et tous les membres de l'équipe.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ─── Calendly Config ─── */}
-        {selected === 'calendly' && (
-          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 mb-4">
-            <h4 className="text-sm font-semibold text-[#006BFF] mb-3 flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" />
-              Configuration Calendly
-            </h4>
-
-            {!calendlyApiKey ? (
-              <div>
-                <p className="text-xs text-slate-600 leading-relaxed mb-3">
-                  Générez une clé API pour connecter Calendly. Quand quelqu'un book un call, le prospect et le rendez-vous seront créés automatiquement.
-                </p>
-                <button
-                  onClick={handleGenerateCalendlyKey}
-                  disabled={calendlyLoading}
-                  className="w-full flex justify-center items-center gap-2 rounded-xl bg-[#006BFF] py-3 text-sm font-bold text-white hover:bg-[#0057d4] transition-all disabled:opacity-50"
-                >
-                  {calendlyLoading ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Génération...</>
-                  ) : (
-                    <><Key className="h-4 w-4" /> Générer une clé API</>
-                  )}
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Connected status */}
-                <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-2">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm font-semibold text-emerald-700">Clé API active</span>
-                  </div>
-                  <button
-                    onClick={handleDeleteCalendlyKey}
-                    disabled={calendlyLoading}
-                    className="text-xs text-slate-500 hover:text-red-500 underline flex items-center gap-1"
-                  >
-                    <Trash2 className="h-3 w-3" /> Supprimer
-                  </button>
-                </div>
-
-                {/* Webhook URL */}
-                <div>
-                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">URL du Webhook</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={`${baseUrl}/api/webhooks?action=calendly-webhook&api_key=${calendlyApiKey}`}
-                      readOnly
-                      className="flex-1 rounded-lg border border-blue-200 bg-white py-2 px-3 text-xs text-slate-700 font-mono"
-                    />
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(`${baseUrl}/api/webhooks?action=calendly-webhook&api_key=${calendlyApiKey}`);
-                        setCalendlyCopiedUrl(true);
-                        setTimeout(() => setCalendlyCopiedUrl(false), 2000);
-                      }}
-                      className="rounded-lg bg-[#006BFF] p-2 text-white hover:bg-[#0057d4] transition-colors"
-                    >
-                      {calendlyCopiedUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* API Key (for reference) */}
-                <div>
-                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Clé API</label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <input
-                        type={calendlyShowKey ? 'text' : 'password'}
-                        value={calendlyApiKey}
-                        readOnly
-                        className="w-full rounded-lg border border-blue-200 bg-white py-2 px-3 pr-9 text-xs text-slate-700 font-mono"
-                      />
-                      <button
-                        onClick={() => setCalendlyShowKey(!calendlyShowKey)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                      >
-                        {calendlyShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(calendlyApiKey!);
-                        setCalendlyCopiedKey(true);
-                        setTimeout(() => setCalendlyCopiedKey(false), 2000);
-                      }}
-                      className="rounded-lg bg-[#006BFF] p-2 text-white hover:bg-[#0057d4] transition-colors"
-                    >
-                      {calendlyCopiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Instructions */}
-                <div className="rounded-lg border border-blue-200 bg-white p-3">
-                  <h5 className="mb-2 text-xs font-bold text-slate-800">Configuration dans Calendly :</h5>
-                  <ol className="text-[11px] text-slate-600 space-y-1.5 list-decimal list-inside">
-                    <li>Allez dans <strong>Calendly → Integrations → Webhooks</strong> (ou Developer)</li>
-                    <li>Cliquez <strong>"Add Webhook"</strong></li>
-                    <li>Collez l'URL ci-dessus</li>
-                    <li>Sélectionnez les événements : <code className="bg-slate-100 px-1 rounded text-[10px]">invitee.created</code> et <code className="bg-slate-100 px-1 rounded text-[10px]">invitee.canceled</code></li>
-                    <li>Cliquez <strong>"Save"</strong></li>
-                  </ol>
-                </div>
-
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 mt-1">
-                  <p className="text-[11px] text-amber-800 font-medium">
-                    Important : pour que le prospect soit automatiquement assigné au bon membre, chaque membre doit être inscrit sur CloseOS avec <strong>le même email que son compte Calendly</strong>.
-                  </p>
-                </div>
-
-                <p className="text-[10px] text-blue-600/70">
-                  Chaque booking créera un prospect (étape "Qualifié") et un rendez-vous confirmé, assigné automatiquement au membre concerné.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ─── Pipedrive Config ─── */}
-        {selected === 'pipedrive' && (
-          <div className="rounded-xl border border-green-200 bg-green-50 p-4 mb-4">
-            <h4 className="text-sm font-semibold text-green-900 mb-3 flex items-center gap-2">
-              <ExternalLink className="h-4 w-4" />
-              Configuration Pipedrive
-            </h4>
-
-            {!pipedriveConnected ? (
-              <div>
-                <p className="text-xs text-green-700/80 leading-relaxed mb-3">
-                  Connectez votre compte Pipedrive pour synchroniser vos deals.
-                </p>
-                <button
-                  onClick={handleConnectPipedrive}
-                  className="w-full flex justify-center items-center gap-2 rounded-xl bg-green-600 py-3 text-sm font-bold text-white hover:bg-green-500 transition-all"
-                >
-                  <LinkIcon className="h-4 w-4" />
-                  Connecter Pipedrive
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Connected status */}
-                <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-2">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm font-semibold text-emerald-700">Pipedrive Connecté</span>
-                  </div>
-                  <button onClick={handleDisconnectPipedrive} className="text-xs text-slate-500 hover:text-red-500 underline">Déconnecter</button>
-                </div>
-
-                {/* Sync button */}
-                <button
-                  onClick={handleSyncPipedrive}
-                  disabled={isSyncingPipedrive}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-green-300 bg-green-100 py-2.5 text-sm font-semibold text-green-800 hover:bg-green-200 transition-all disabled:opacity-50"
-                >
-                  {isSyncingPipedrive ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Synchronisation en cours...</>
-                  ) : (
-                    <><RefreshCw className="h-4 w-4" /> Synchroniser Pipedrive</>
-                  )}
-                </button>
-
-                {/* Sync result */}
-                {syncResult && (
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-700 font-medium">
-                    {syncResult.imported} deals importés, {syncResult.updated} mis à jour
-                  </div>
-                )}
-
-                {/* Stage mapping */}
-                <div className="rounded-lg border border-green-200 bg-white p-4">
-                  <h5 className="mb-3 text-xs font-bold uppercase tracking-wider text-green-800">Mapping des étapes</h5>
-                  {loadingPipelines ? (
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {CLOSEOS_STAGES.map(stage => (
-                        <div key={stage.id}>
-                          <label className="mb-1 block text-[10px] font-bold uppercase text-slate-500">{stage.name}</label>
-                          <div className="relative">
-                            <select
-                              value={pipedriveMappings[stage.id] || ''}
-                              onChange={(e) => handleUpdatePipedriveMapping(stage.id, Number(e.target.value))}
-                              className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-sm text-slate-900 focus:border-green-500 focus:outline-none"
-                            >
-                              <option value="">Sélectionner une étape Pipedrive</option>
-                              {pipedrivePipelines.map(pipe => (
-                                <optgroup key={pipe.id} label={pipe.name}>
-                                  {pipedriveStages.filter((s: any) => s.pipeline_id === pipe.id).map((s: any) => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                  ))}
-                                </optgroup>
-                              ))}
-                            </select>
-                            <ChevronDown className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ─── Airtable Config ─── */}
-        {selected === 'airtable' && (
-          <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 mb-4">
-            <h4 className="text-sm font-semibold text-[#18BFFF] mb-3 flex items-center gap-2">
-              <ExternalLink className="h-4 w-4" />
-              Configuration Airtable
-            </h4>
-
-            {!airtableConnected ? (
-              <div>
-                <p className="text-xs text-slate-600 leading-relaxed mb-3">
-                  Connectez votre compte Airtable pour synchroniser vos enregistrements comme prospects.
-                </p>
-                <button
-                  onClick={handleConnectAirtable}
-                  className="w-full flex justify-center items-center gap-2 rounded-xl bg-[#18BFFF] py-3 text-sm font-bold text-white hover:bg-[#14a8e0] transition-all"
-                >
-                  <LinkIcon className="h-4 w-4" />
-                  Connecter Airtable
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Connected status */}
-                <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-2">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm font-semibold text-emerald-700">Airtable Connecté</span>
-                  </div>
-                  <button onClick={handleDisconnectAirtable} className="text-xs text-slate-500 hover:text-red-500 underline">Déconnecter</button>
-                </div>
-
-                {/* Base selector */}
-                <div>
-                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Base Airtable</label>
-                  {airtableLoadingBases ? (
-                    <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Chargement...</div>
-                  ) : (
-                    <div className="relative">
-                      <select
-                        value={airtableBaseId}
-                        onChange={(e) => { setAirtableBaseId(e.target.value); setAirtableTableId(''); setAirtableFields([]); }}
-                        className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-8 text-sm text-slate-900 focus:border-cyan-500 focus:outline-none"
-                      >
-                        <option value="">Sélectionner une base</option>
-                        {airtableBases.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Table selector */}
-                {airtableBaseId && (
                   <div>
-                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Table</label>
-                    {airtableLoadingTables ? (
-                      <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Chargement...</div>
-                    ) : (
-                      <div className="relative">
-                        <select
-                          value={airtableTableId}
-                          onChange={(e) => { setAirtableTableId(e.target.value); setAirtableFields([]); }}
-                          className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-8 text-sm text-slate-900 focus:border-cyan-500 focus:outline-none"
-                        >
-                          <option value="">Sélectionner une table</option>
-                          {airtableTables.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
-                        <ChevronDown className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                      </div>
+                    <h3 className="text-2xl md:text-3xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>{selectedCrm.name}</h3>
+                    {isConnected && (
+                      <p className="text-[#006c49] font-semibold text-sm flex items-center gap-1.5 mt-1">
+                        <Check className="h-4 w-4" />
+                        Connecté
+                      </p>
                     )}
                   </div>
-                )}
+                </div>
 
-                {/* Field mapping */}
-                {airtableTableId && airtableFields.length > 0 && (
-                  <div className="rounded-lg border border-cyan-200 bg-white p-4">
-                    <h5 className="mb-3 text-xs font-bold uppercase tracking-wider text-cyan-800">Mapping des champs</h5>
-                    {airtableLoadingFields ? (
-                      <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Chargement...</div>
-                    ) : (
-                      <div className="space-y-3">
-                        {['firstName', 'lastName', 'email', 'phone', 'company', 'stage', 'value'].map(field => (
-                          <div key={field}>
-                            <label className="mb-1 block text-[10px] font-bold uppercase text-slate-500">
-                              {field === 'firstName' ? 'Prénom' : field === 'lastName' ? 'Nom' : field === 'email' ? 'Email' : field === 'phone' ? 'Téléphone' : field === 'company' ? 'Entreprise' : field === 'stage' ? 'Étape' : 'Valeur'}
-                            </label>
-                            <div className="relative">
-                              <select
-                                value={airtableFieldMapping[field] || ''}
-                                onChange={(e) => setAirtableFieldMapping(prev => ({ ...prev, [field]: e.target.value }))}
-                                className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-sm text-slate-900 focus:border-cyan-500 focus:outline-none"
-                              >
-                                <option value="">— Non mappé —</option>
-                                {airtableFields.map(f => <option key={f.id} value={f.name}>{f.name} ({f.type})</option>)}
-                              </select>
-                              <ChevronDown className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <div className="space-y-8">
+                  {/* ─── CloseOS ─── */}
+                  {selected === 'closeos' && (
+                    <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                      <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>CRM Intégré</h4>
+                      <p className="text-[#444748] text-sm">Le CRM natif CloseOS est activé par défaut. Aucune configuration nécessaire.</p>
+                    </div>
+                  )}
+
+                  {/* ─── iClosed Config ─── */}
+                  {selected === 'iclosed' && (
+                    <div className="space-y-6">
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook URL</h4>
+                        <p className="text-[#444748] text-sm mb-4">Collez cette URL dans <strong>iClosed → Paramètres → Développeur → Webhooks</strong></p>
+                        <div className="flex gap-2">
+                          <input type="text" value={webhookUrl} readOnly className={inputCls} />
+                          <button onClick={handleCopyWebhook} className="p-3 rounded-xl bg-[#1b1c1b] text-white hover:bg-[#1b1c1b]/80 transition-colors shrink-0">
+                            {webhookCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── HubSpot Config ─── */}
+                  {selected === 'hubspot' && (
+                    <div className="space-y-6">
+                      {!hubspotConnected ? (
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
+                          <p className="text-[#444748] text-sm mb-6">Connectez votre compte HubSpot pour synchroniser automatiquement vos contacts.</p>
+                          <button onClick={handleConnectHubspot} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors">
+                            <LinkIcon className="h-4 w-4" /> Connecter HubSpot
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
+                            <p className="text-[#444748] text-sm mb-6">La synchronisation auto se fait toutes les 2 minutes.</p>
+                            <div className="flex gap-4 flex-wrap">
+                              <button onClick={handleSyncHubspot} disabled={isSyncingHubspot} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                                {isSyncingHubspot ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                Synchroniser maintenant
+                              </button>
+                              <button onClick={handleDisconnectHubspot} className="px-6 py-3 border border-[#c4c7c7]/30 rounded-full font-bold text-sm text-[#444748] hover:bg-[#f5f3f2] transition-colors">
+                                Déconnecter
+                              </button>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Stage mapping */}
-                {airtableFieldMapping.stage && (
-                  <div className="rounded-lg border border-cyan-200 bg-white p-4">
-                    <h5 className="mb-3 text-xs font-bold uppercase tracking-wider text-cyan-800">Mapping des étapes (retour vers Airtable)</h5>
-                    <div className="space-y-3">
-                      {CLOSEOS_STAGES.map(stage => (
-                        <div key={stage.id}>
-                          <label className="mb-1 block text-[10px] font-bold uppercase text-slate-500">{stage.name}</label>
-                          <input
-                            type="text"
-                            value={airtableStageMapping[stage.id] || ''}
-                            onChange={(e) => setAirtableStageMapping(prev => ({ ...prev, [stage.id]: e.target.value }))}
-                            placeholder={stage.name}
-                            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-cyan-500 focus:outline-none"
-                          />
-                        </div>
-                      ))}
+                          {syncResult && (
+                            <div className="p-4 rounded-2xl bg-[#006c49]/5 border border-[#006c49]/10 text-sm text-[#006c49] font-medium">
+                              {syncResult.imported} contacts importés, {syncResult.updated} mis à jour
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
-                  </div>
-                )}
-
-                {/* Save config */}
-                {airtableTableId && (
-                  <button
-                    onClick={handleSaveAirtableConfig}
-                    disabled={airtableSavingConfig}
-                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#18BFFF] py-2.5 text-sm font-semibold text-white hover:bg-[#14a8e0] transition-all disabled:opacity-50"
-                  >
-                    {airtableSavingConfig ? <><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement...</> : <><Save className="h-4 w-4" /> Sauvegarder la configuration</>}
-                  </button>
-                )}
-
-                {/* Sync button */}
-                <button
-                  onClick={handleSyncAirtable}
-                  disabled={isSyncingAirtable || !airtableBaseId || !airtableTableId}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-100 py-2.5 text-sm font-semibold text-cyan-800 hover:bg-cyan-200 transition-all disabled:opacity-50"
-                >
-                  {isSyncingAirtable ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Synchronisation en cours...</>
-                  ) : (
-                    <><RefreshCw className="h-4 w-4" /> Synchroniser Airtable</>
                   )}
-                </button>
 
-                {/* Sync result */}
-                {syncResult && (
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-700 font-medium">
-                    {syncResult.imported} enregistrements importés, {syncResult.updated} mis à jour
-                  </div>
-                )}
+                  {/* ─── Pipedrive Config ─── */}
+                  {selected === 'pipedrive' && (
+                    <div className="space-y-6">
+                      {!pipedriveConnected ? (
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
+                          <p className="text-[#444748] text-sm mb-6">Connectez votre compte Pipedrive pour synchroniser vos deals.</p>
+                          <button onClick={handleConnectPipedrive} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors">
+                            <LinkIcon className="h-4 w-4" /> Connecter Pipedrive
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
+                            <p className="text-[#444748] text-sm mb-6">Les changements de stage sont poussés automatiquement.</p>
+                            <div className="flex gap-4 flex-wrap">
+                              <button onClick={handleSyncPipedrive} disabled={isSyncingPipedrive} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                                {isSyncingPipedrive ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                Synchroniser maintenant
+                              </button>
+                              <button onClick={handleDisconnectPipedrive} className="px-6 py-3 border border-[#c4c7c7]/30 rounded-full font-bold text-sm text-[#444748] hover:bg-[#f5f3f2] transition-colors">
+                                Déconnecter
+                              </button>
+                            </div>
+                          </div>
+                          {syncResult && (
+                            <div className="p-4 rounded-2xl bg-[#006c49]/5 border border-[#006c49]/10 text-sm text-[#006c49] font-medium">
+                              {syncResult.imported} deals importés, {syncResult.updated} mis à jour
+                            </div>
+                          )}
+                          {/* Stage mapping */}
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 border border-[#c4c7c7]/10">
+                            <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Stage Mapping (Pipedrive)</h4>
+                            {loadingPipelines ? (
+                              <div className="flex items-center gap-2 text-sm text-[#444748]"><Loader2 className="h-4 w-4 animate-spin" /> Chargement...</div>
+                            ) : (
+                              <div className="grid grid-cols-2 gap-6">
+                                {CLOSEOS_STAGES.map(stage => (
+                                  <div key={stage.id} className="space-y-2">
+                                    <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">{stage.name}</label>
+                                    <select
+                                      value={pipedriveMappings[stage.id] || ''}
+                                      onChange={(e) => handleUpdatePipedriveMapping(stage.id, Number(e.target.value))}
+                                      className={selectCls}
+                                    >
+                                      <option value="">Sélectionner une étape</option>
+                                      {pipedrivePipelines.map(pipe => (
+                                        <optgroup key={pipe.id} label={pipe.name}>
+                                          {pipedriveStages.filter((s: any) => s.pipeline_id === pipe.id).map((s: any) => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                          ))}
+                                        </optgroup>
+                                      ))}
+                                    </select>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
 
-                <p className="text-[10px] text-cyan-600/70">
-                  Les changements de stage seront poussés vers Airtable. Tous les membres de l'équipe voient les prospects synchronisés.
-                </p>
-              </div>
+                  {/* ─── Systeme.io Config ─── */}
+                  {selected === 'systemeio' && (
+                    <div className="space-y-6">
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                        <h4 className="font-bold text-lg mb-4 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API</h4>
+                        <div className="space-y-5">
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Clé API Systeme.io</label>
+                            <div className="flex gap-2">
+                              <div className="relative flex-1">
+                                <input
+                                  type={systemeioShowKey ? 'text' : 'password'}
+                                  value={systemeioApiKey}
+                                  onChange={(e) => setSystemeioApiKey(e.target.value)}
+                                  placeholder="Collez votre clé API ici"
+                                  className={inputCls + ' pr-9'}
+                                />
+                                <button onClick={() => setSystemeioShowKey(!systemeioShowKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444748]/50 hover:text-[#1b1c1b]">
+                                  {systemeioShowKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                              </div>
+                              <button onClick={handleSaveSystemeioKey} disabled={systemeioSaving} className="px-4 bg-[#1b1c1b] text-white rounded-xl text-sm font-bold hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                                {systemeioSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sauvegarder'}
+                              </button>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Webhook URL</label>
+                            <div className="flex gap-2">
+                              <input type="text" value={systemeioWebhookUrl} readOnly className={inputCls} />
+                              <button onClick={() => { navigator.clipboard.writeText(systemeioWebhookUrl); setSystemeioCopiedUrl(true); setTimeout(() => setSystemeioCopiedUrl(false), 2000); }} className="p-3 rounded-xl bg-[#1b1c1b] text-white hover:bg-[#1b1c1b]/80 transition-colors shrink-0">
+                                {systemeioCopiedUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Instructions */}
+                      <div className="border-t border-[#c4c7c7]/10 pt-6">
+                        <h5 className="font-bold text-sm mb-4 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Instructions d'intégration</h5>
+                        <ul className="space-y-4">
+                          {[
+                            'Allez dans Systeme.io → Paramètres → Clés API publiques et copiez votre clé.',
+                            'Collez la clé API ci-dessus et cliquez sur Sauvegarder.',
+                            'Allez dans Systeme.io → Paramètres → Webhooks et ajoutez l\'URL ci-dessus.',
+                          ].map((text, i) => (
+                            <li key={i} className="flex items-start gap-3">
+                              <span className="w-5 h-5 rounded-full bg-[#efedec] text-[10px] font-bold flex items-center justify-center mt-0.5 shrink-0">{i + 1}</span>
+                              <p className="text-sm text-[#444748]">{text}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── Zapier Config ─── */}
+                  {selected === 'zapier' && (
+                    <div className="space-y-6">
+                      {!zapierApiKey ? (
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] text-sm mb-6">Générez une clé API pour connecter Zapier à CloseOS.</p>
+                          <button onClick={handleGenerateZapierKey} disabled={zapierLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                            {zapierLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
+                            Générer une clé API
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                            <div className="space-y-5">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL</label>
+                                <div className="flex gap-2">
+                                  <input type="text" value={`${baseUrl}/api/zapier-webhook?type=business`} readOnly className={inputCls} />
+                                  <button onClick={() => { navigator.clipboard.writeText(`${baseUrl}/api/zapier-webhook?type=business`); setZapierCopiedUrl(true); setTimeout(() => setZapierCopiedUrl(false), 2000); }} className="p-3 rounded-xl hover:bg-[#eae8e7] transition-colors shrink-0">
+                                    {zapierCopiedUrl ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4 text-[#444748]" />}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#444748]/60 uppercase">API Key (Zapier)</label>
+                                <div className="flex gap-2">
+                                  <div className="relative flex-1">
+                                    <input type={zapierShowKey ? 'text' : 'password'} value={zapierApiKey} readOnly className={inputCls + ' pr-9'} />
+                                    <button onClick={() => setZapierShowKey(!zapierShowKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444748]/50 hover:text-[#1b1c1b]">
+                                      {zapierShowKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                  </div>
+                                  <button onClick={() => { navigator.clipboard.writeText(zapierApiKey!); setZapierCopiedKey(true); setTimeout(() => setZapierCopiedKey(false), 2000); }} className="p-3 rounded-xl hover:bg-[#eae8e7] transition-colors shrink-0">
+                                    {zapierCopiedKey ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4 text-[#444748]" />}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <button onClick={handleDeleteZapierKey} disabled={zapierLoading} className="text-xs text-[#444748] hover:text-[#ba1a1a] flex items-center gap-1 font-semibold transition-colors">
+                              <Trash2 className="h-3 w-3" /> Supprimer la clé
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ─── Calendly Config ─── */}
+                  {selected === 'calendly' && (
+                    <div className="space-y-6">
+                      {!calendlyApiKey ? (
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] text-sm mb-6">Quand quelqu'un book un call, le prospect et le rendez-vous seront créés automatiquement.</p>
+                          <button onClick={handleGenerateCalendlyKey} disabled={calendlyLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                            {calendlyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
+                            Générer une clé API
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                            <div className="space-y-5">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL</label>
+                                <div className="flex gap-2">
+                                  <input type="text" value={`${baseUrl}/api/webhooks?action=calendly-webhook&api_key=${calendlyApiKey}`} readOnly className={inputCls} />
+                                  <button onClick={() => { navigator.clipboard.writeText(`${baseUrl}/api/webhooks?action=calendly-webhook&api_key=${calendlyApiKey}`); setCalendlyCopiedUrl(true); setTimeout(() => setCalendlyCopiedUrl(false), 2000); }} className="p-3 rounded-xl hover:bg-[#eae8e7] transition-colors shrink-0">
+                                    {calendlyCopiedUrl ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4 text-[#444748]" />}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#444748]/60 uppercase">API Key</label>
+                                <div className="flex gap-2">
+                                  <div className="relative flex-1">
+                                    <input type={calendlyShowKey ? 'text' : 'password'} value={calendlyApiKey} readOnly className={inputCls + ' pr-9'} />
+                                    <button onClick={() => setCalendlyShowKey(!calendlyShowKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444748]/50 hover:text-[#1b1c1b]">
+                                      {calendlyShowKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                  </div>
+                                  <button onClick={() => { navigator.clipboard.writeText(calendlyApiKey!); setCalendlyCopiedKey(true); setTimeout(() => setCalendlyCopiedKey(false), 2000); }} className="p-3 rounded-xl hover:bg-[#eae8e7] transition-colors shrink-0">
+                                    {calendlyCopiedKey ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4 text-[#444748]" />}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Instructions */}
+                          <div className="border-t border-[#c4c7c7]/10 pt-6">
+                            <h5 className="font-bold text-sm mb-4 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Instructions d'intégration</h5>
+                            <ul className="space-y-4">
+                              {[
+                                'Allez dans Calendly → Integrations → Webhooks (ou Developer).',
+                                'Cliquez "Add Webhook" et collez l\'URL ci-dessus.',
+                                'Sélectionnez les événements : invitee.created et invitee.canceled.',
+                              ].map((text, i) => (
+                                <li key={i} className="flex items-start gap-3">
+                                  <span className="w-5 h-5 rounded-full bg-[#efedec] text-[10px] font-bold flex items-center justify-center mt-0.5 shrink-0">{i + 1}</span>
+                                  <p className="text-sm text-[#444748]">{text}</p>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="p-4 rounded-2xl bg-[#ffb95f]/10 border border-[#ffb95f]/20">
+                            <p className="text-[11px] text-[#b87500] font-medium">
+                              Important : chaque membre doit être inscrit sur CloseOS avec <strong>le même email que son compte Calendly</strong>.
+                            </p>
+                          </div>
+                          <div className="flex justify-end">
+                            <button onClick={handleDeleteCalendlyKey} disabled={calendlyLoading} className="text-xs text-[#444748] hover:text-[#ba1a1a] flex items-center gap-1 font-semibold transition-colors">
+                              <Trash2 className="h-3 w-3" /> Supprimer la clé
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ─── Airtable Config ─── */}
+                  {selected === 'airtable' && (
+                    <div className="space-y-6">
+                      {!airtableConnected ? (
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
+                          <p className="text-[#444748] text-sm mb-6">Connectez votre compte Airtable pour synchroniser vos enregistrements comme prospects.</p>
+                          <button onClick={handleConnectAirtable} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors">
+                            <LinkIcon className="h-4 w-4" /> Connecter Airtable
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] border border-[#c4c7c7]/5">
+                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
+                            <div className="flex gap-4 flex-wrap mt-4">
+                              <button onClick={handleSyncAirtable} disabled={isSyncingAirtable || !airtableBaseId || !airtableTableId} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                                {isSyncingAirtable ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                Synchroniser maintenant
+                              </button>
+                              <button onClick={handleDisconnectAirtable} className="px-6 py-3 border border-[#c4c7c7]/30 rounded-full font-bold text-sm text-[#444748] hover:bg-[#f5f3f2] transition-colors">
+                                Déconnecter
+                              </button>
+                            </div>
+                          </div>
+                          {syncResult && (
+                            <div className="p-4 rounded-2xl bg-[#006c49]/5 border border-[#006c49]/10 text-sm text-[#006c49] font-medium">
+                              {syncResult.imported} enregistrements importés, {syncResult.updated} mis à jour
+                            </div>
+                          )}
+                          {/* Base + Table selectors */}
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 border border-[#c4c7c7]/10">
+                            <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Configuration Airtable</h4>
+                            <div className="grid grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Base</label>
+                                {airtableLoadingBases ? (
+                                  <div className="flex items-center gap-2 text-xs text-[#444748]"><Loader2 className="h-3 w-3 animate-spin" /> Chargement...</div>
+                                ) : (
+                                  <select value={airtableBaseId} onChange={(e) => { setAirtableBaseId(e.target.value); setAirtableTableId(''); setAirtableFields([]); }} className={selectCls}>
+                                    <option value="">Sélectionner</option>
+                                    {airtableBases.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                  </select>
+                                )}
+                              </div>
+                              {airtableBaseId && (
+                                <div className="space-y-2">
+                                  <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Table</label>
+                                  {airtableLoadingTables ? (
+                                    <div className="flex items-center gap-2 text-xs text-[#444748]"><Loader2 className="h-3 w-3 animate-spin" /> Chargement...</div>
+                                  ) : (
+                                    <select value={airtableTableId} onChange={(e) => { setAirtableTableId(e.target.value); setAirtableFields([]); }} className={selectCls}>
+                                      <option value="">Sélectionner</option>
+                                      {airtableTables.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                    </select>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {/* Field mapping */}
+                          {airtableTableId && airtableFields.length > 0 && (
+                            <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 border border-[#c4c7c7]/10">
+                              <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des champs</h4>
+                              {airtableLoadingFields ? (
+                                <div className="flex items-center gap-2 text-xs text-[#444748]"><Loader2 className="h-3 w-3 animate-spin" /> Chargement...</div>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-6">
+                                  {['firstName', 'lastName', 'email', 'phone', 'company', 'stage', 'value'].map(field => (
+                                    <div key={field} className="space-y-2">
+                                      <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">
+                                        {field === 'firstName' ? 'Prénom' : field === 'lastName' ? 'Nom' : field === 'email' ? 'Email' : field === 'phone' ? 'Téléphone' : field === 'company' ? 'Entreprise' : field === 'stage' ? 'Étape' : 'Valeur'}
+                                      </label>
+                                      <select value={airtableFieldMapping[field] || ''} onChange={(e) => setAirtableFieldMapping(prev => ({ ...prev, [field]: e.target.value }))} className={selectCls}>
+                                        <option value="">— Non mappé —</option>
+                                        {airtableFields.map(f => <option key={f.id} value={f.name}>{f.name} ({f.type})</option>)}
+                                      </select>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* Stage mapping */}
+                          {airtableFieldMapping.stage && (
+                            <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 border border-[#c4c7c7]/10">
+                              <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des étapes</h4>
+                              <div className="grid grid-cols-2 gap-6">
+                                {CLOSEOS_STAGES.map(stage => (
+                                  <div key={stage.id} className="space-y-2">
+                                    <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">{stage.name}</label>
+                                    <input
+                                      type="text"
+                                      value={airtableStageMapping[stage.id] || ''}
+                                      onChange={(e) => setAirtableStageMapping(prev => ({ ...prev, [stage.id]: e.target.value }))}
+                                      placeholder={stage.name}
+                                      className={selectCls}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {/* Save config */}
+                          {airtableTableId && (
+                            <button onClick={handleSaveAirtableConfig} disabled={airtableSavingConfig} className="w-full flex items-center justify-center gap-2 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                              {airtableSavingConfig ? <><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement...</> : <><Save className="h-4 w-4" /> Sauvegarder la configuration</>}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </section>
             )}
           </div>
-        )}
+        </div>
 
-        {/* Save button */}
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-xl border border-slate-200 py-3 font-medium text-slate-600 hover:bg-slate-50 transition-all"
-          >
+        {/* Modal Footer */}
+        <div className="px-8 py-6 bg-[#f5f3f2] border-t border-[#c4c7c7]/10 flex justify-end gap-4 flex-shrink-0">
+          <button onClick={onClose} className="px-10 py-3 rounded-full font-bold text-sm text-[#444748] hover:bg-[#eae8e7] transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Fermer
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 rounded-xl bg-amber-600 py-3 font-bold text-white hover:bg-amber-500 transition-all disabled:opacity-50"
-          >
+          <button onClick={handleSave} disabled={saving} className="px-10 py-3 rounded-full font-bold text-sm bg-[#1b1c1b] text-white shadow-xl shadow-black/10 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {saving ? 'Enregistrement...' : 'Enregistrer'}
           </button>
         </div>
