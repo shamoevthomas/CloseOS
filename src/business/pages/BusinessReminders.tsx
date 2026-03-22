@@ -793,7 +793,7 @@ function CreateReminderModal({
                     >
                       <User className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
                       <span className="truncate">{p.contact || p.company || 'Prospect'}</span>
-                      {p.company && p.contact && <span className="text-xs text-stone-400 truncate ml-auto">{p.company}</span>}
+                      {p.company && p.contact && <span className="text-xs text-stone-400 dark:text-neutral-500 truncate ml-auto">{p.company}</span>}
                     </button>
                   ))
                 )}

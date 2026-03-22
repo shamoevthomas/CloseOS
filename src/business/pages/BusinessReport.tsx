@@ -96,12 +96,12 @@ const PERIODS = [
 ]
 
 const ROLE_COLORS: Record<string, string> = {
-  Closer: 'bg-stone-100 text-stone-800',
-  Setter: 'bg-stone-100 text-stone-600',
+  Closer: 'bg-stone-100 dark:bg-neutral-800 text-stone-800 dark:text-neutral-100',
+  Setter: 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300',
   'Setter-Closer': 'bg-emerald-50 text-emerald-800',
-  'Head of Sales': 'bg-stone-100 text-stone-800',
+  'Head of Sales': 'bg-stone-100 dark:bg-neutral-800 text-stone-800 dark:text-neutral-100',
   Admin: 'bg-red-50 text-red-700',
-  Owner: 'bg-stone-100 text-stone-800',
+  Owner: 'bg-stone-100 dark:bg-neutral-800 text-stone-800 dark:text-neutral-100',
 }
 
 // ─── Component ───
@@ -321,7 +321,7 @@ export function BusinessReport() {
           const colorMap: Record<string, string> = {
             won: 'text-emerald-700 bg-emerald-50',
             lost: 'text-red-700 bg-red-50',
-            noshow: 'text-stone-600 bg-stone-100',
+            noshow: 'text-stone-600 dark:text-neutral-300 bg-stone-100 dark:bg-neutral-800',
           }
           events.push({
             id: `stage-${p.id}-${p.stage}`,
@@ -331,7 +331,7 @@ export function BusinessReport() {
             detail: (p as any).contact || `Prospect #${p.id}`,
             timestamp: d,
             icon: GitBranch,
-            color: colorMap[p.stage] || 'text-stone-600 bg-stone-100',
+            color: colorMap[p.stage] || 'text-stone-600 dark:text-neutral-300 bg-stone-100 dark:bg-neutral-800',
           })
         }
       }
@@ -349,7 +349,7 @@ export function BusinessReport() {
           detail: `Le ${a.date}`,
           timestamp: d,
           icon: Calendar,
-          color: 'text-stone-700 bg-stone-100',
+          color: 'text-stone-700 dark:text-neutral-200 bg-stone-100 dark:bg-neutral-800',
         })
       }
     })
@@ -366,7 +366,7 @@ export function BusinessReport() {
           detail: r.title,
           timestamp: d,
           icon: Bell,
-          color: 'text-stone-700 bg-stone-100',
+          color: 'text-stone-700 dark:text-neutral-200 bg-stone-100 dark:bg-neutral-800',
         })
       }
     })
@@ -397,7 +397,7 @@ export function BusinessReport() {
   const BAR_COLORS = ['#006c49', '#1b1c1b', '#ffb95f', '#747878', '#c4c7c7']
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-stone-400 animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-stone-400 dark:text-neutral-500 dark:text-neutral-500 animate-spin" /></div>
   }
 
   return (
@@ -405,8 +405,8 @@ export function BusinessReport() {
       {/* ─── Header ─── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 mb-1">Business Report</h1>
-          <p className="text-stone-500 text-sm">Visualisez la performance globale de vos campagnes et de votre équipe commerciale en temps réel.</p>
+          <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-1">Business Report</h1>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm">Visualisez la performance globale de vos campagnes et de votre équipe commerciale en temps réel.</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex gap-1 items-baseline">
@@ -416,8 +416,8 @@ export function BusinessReport() {
                 onClick={() => setPeriodDays(p.days)}
                 className={`px-3 py-1.5 text-xs font-bold tracking-tight transition-all rounded-lg ${
                   periodDays === p.days
-                    ? 'text-stone-900 border-b-2 border-emerald-600'
-                    : 'text-stone-400 hover:text-stone-600'
+                    ? 'text-stone-900 dark:text-white border-b-2 border-emerald-600'
+                    : 'text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:text-neutral-300'
                 }`}
               >
                 {p.label}
@@ -445,38 +445,38 @@ export function BusinessReport() {
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">CA Généré</p>
-            <p className="text-3xl font-extrabold text-stone-900">{formatCurrency(totalCA)}</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">CA Généré</p>
+            <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(totalCA)}</p>
           </div>
         </div>
 
         {/* Ventes */}
         <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-stone-100 rounded-2xl">
-              <ShoppingCart className="h-5 w-5 text-stone-700" />
+            <div className="p-3 bg-stone-100 dark:bg-neutral-800 rounded-2xl">
+              <ShoppingCart className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
             </div>
-            <span className="text-stone-500 font-bold text-[10px] bg-stone-100 px-2.5 py-1 rounded-full">{formatCurrency(avgDeal)} moy.</span>
+            <span className="text-stone-500 dark:text-neutral-400 font-bold text-[10px] bg-stone-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full">{formatCurrency(avgDeal)} moy.</span>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Ventes</p>
-            <p className="text-3xl font-extrabold text-stone-900">{wonLeads.length}</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Ventes</p>
+            <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{wonLeads.length}</p>
           </div>
         </div>
 
         {/* Taux de Closing */}
         <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300 border-l-4 border-stone-400">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-stone-100 rounded-2xl">
-              <Target className="h-5 w-5 text-stone-700" />
+            <div className="p-3 bg-stone-100 dark:bg-neutral-800 rounded-2xl">
+              <Target className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
             </div>
-            <span className="text-stone-700 font-bold text-[10px] bg-stone-100 px-2.5 py-1 rounded-full">
+            <span className="text-stone-700 dark:text-neutral-200 font-bold text-[10px] bg-stone-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full">
               {closingRate >= 25 ? 'High' : closingRate >= 15 ? 'Normal' : 'Low'}
             </span>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Taux de Closing</p>
-            <p className="text-3xl font-extrabold text-stone-900">{formatPct(closingRate)}</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Taux de Closing</p>
+            <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{formatPct(closingRate)}</p>
           </div>
         </div>
 
@@ -488,8 +488,8 @@ export function BusinessReport() {
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Commission estimée</p>
-            <p className="text-3xl font-extrabold text-stone-900">{formatCurrency(totalCommission)}</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Commission estimée</p>
+            <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(totalCommission)}</p>
           </div>
         </div>
       </section>
@@ -497,20 +497,20 @@ export function BusinessReport() {
       {/* Secondary KPIs row */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
         <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Total Leads</p>
-          <p className="text-2xl font-extrabold text-stone-900">{totalLeads}</p>
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Total Leads</p>
+          <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{totalLeads}</p>
         </div>
         <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Show Up</p>
-          <p className="text-2xl font-extrabold text-stone-900">{doneAppts}</p>
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Show Up</p>
+          <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{doneAppts}</p>
         </div>
         <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">No Show</p>
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">No Show</p>
           <p className="text-2xl font-extrabold text-red-600">{noshowLeads.length}</p>
         </div>
         <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.15em] mb-1">Taux de perte</p>
-          <p className="text-2xl font-extrabold text-stone-900">{formatPct(lostRate)}</p>
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Taux de perte</p>
+          <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{formatPct(lostRate)}</p>
         </div>
       </section>
 
@@ -518,13 +518,13 @@ export function BusinessReport() {
       {periodDays === 1 && (
         <section className="glass-card rounded-2xl p-7 mb-14">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-lg font-extrabold text-stone-900">Fil d'activité — Aujourd'hui</h3>
+            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">Fil d'activité — Aujourd'hui</h3>
             {members.length > 0 && (
               <div className="relative">
                 <select
                   value={activityFilterMember}
                   onChange={(e) => setActivityFilterMember(e.target.value)}
-                  className="appearance-none rounded-full border border-stone-200 bg-white pl-8 pr-9 py-2 text-xs font-semibold text-stone-600 focus:border-emerald-500 focus:outline-none"
+                  className="appearance-none rounded-full border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 pl-8 pr-9 py-2 text-xs font-semibold text-stone-600 dark:text-neutral-300 focus:border-emerald-500 focus:outline-none"
                 >
                   <option value="all">Tous les membres</option>
                   <option value="owner">Moi (Owner)</option>
@@ -532,34 +532,34 @@ export function BusinessReport() {
                     <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
                   ))}
                 </select>
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 dark:text-neutral-500" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 dark:text-neutral-500 pointer-events-none" />
               </div>
             )}
           </div>
 
           {todayActivities.length === 0 ? (
             <div className="text-center py-10">
-              <Activity className="h-10 w-10 text-stone-200 mx-auto mb-2" />
-              <p className="text-sm text-stone-400">Aucune activité aujourd'hui</p>
+              <Activity className="h-10 w-10 text-stone-200 dark:text-neutral-700 mx-auto mb-2" />
+              <p className="text-sm text-stone-400 dark:text-neutral-500">Aucune activité aujourd'hui</p>
             </div>
           ) : (
             <div className="space-y-1 max-h-[400px] overflow-y-auto">
               {todayActivities.map(event => {
                 const EventIcon = event.icon
                 return (
-                  <div key={event.id} className="flex items-start gap-3 py-3 px-3 rounded-xl hover:bg-stone-50 transition-colors">
+                  <div key={event.id} className="flex items-start gap-3 py-3 px-3 rounded-xl hover:bg-stone-50 dark:bg-neutral-800 dark:hover:bg-neutral-800 transition-colors">
                     <div className={`flex h-8 w-8 items-center justify-center rounded-xl shrink-0 ${event.color}`}>
                       <EventIcon className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-stone-800">
+                      <p className="text-sm text-stone-800 dark:text-neutral-100">
                         <span className="font-bold">{event.member_name}</span>{' '}
-                        <span className="text-stone-500">{event.action}</span>
+                        <span className="text-stone-500 dark:text-neutral-400">{event.action}</span>
                       </p>
-                      <p className="text-xs text-stone-400 truncate">{event.detail}</p>
+                      <p className="text-xs text-stone-400 dark:text-neutral-500 truncate">{event.detail}</p>
                     </div>
-                    <span className="text-[10px] text-stone-400 font-semibold shrink-0 mt-0.5">
+                    <span className="text-[10px] text-stone-400 dark:text-neutral-500 font-semibold shrink-0 mt-0.5">
                       {event.timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -574,17 +574,17 @@ export function BusinessReport() {
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-7 mb-14">
         {/* Donut chart: Répartition des leads */}
         <div className="lg:col-span-2 glass-card p-7 rounded-2xl">
-          <h3 className="text-lg font-extrabold text-stone-900 mb-7">Répartition des leads par étape</h3>
+          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">Répartition des leads par étape</h3>
           {stageData.length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-sm text-stone-400">Aucune donnée</div>
+            <div className="flex items-center justify-center h-64 text-sm text-stone-400 dark:text-neutral-500">Aucune donnée</div>
           ) : (
             <>
               <div className="relative w-56 h-56 mx-auto mb-7">
                 <div className="w-full h-full rounded-full" style={{ background: conicGradient }} />
-                <div className="absolute inset-8 bg-white rounded-full flex items-center justify-center shadow-inner">
+                <div className="absolute inset-8 bg-white dark:bg-neutral-900 rounded-full flex items-center justify-center shadow-inner">
                   <div className="text-center">
-                    <p className="text-2xl font-black text-stone-900">{totalLeads}</p>
-                    <p className="text-[10px] text-stone-400 font-bold uppercase tracking-[0.15em]">Leads</p>
+                    <p className="text-2xl font-black text-stone-900 dark:text-white">{totalLeads}</p>
+                    <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-[0.15em]">Leads</p>
                   </div>
                 </div>
               </div>
@@ -593,9 +593,9 @@ export function BusinessReport() {
                   <div key={s.name} className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
-                      <span className="text-sm font-medium text-stone-700">{s.name}</span>
+                      <span className="text-sm font-medium text-stone-700 dark:text-neutral-200">{s.name}</span>
                     </div>
-                    <span className="font-bold text-stone-900">{totalLeads > 0 ? Math.round((s.value / totalLeads) * 100) : 0}%</span>
+                    <span className="font-bold text-stone-900 dark:text-white">{totalLeads > 0 ? Math.round((s.value / totalLeads) * 100) : 0}%</span>
                   </div>
                 ))}
               </div>
@@ -605,18 +605,18 @@ export function BusinessReport() {
 
         {/* Horizontal bars: CA par campagne */}
         <div className="lg:col-span-3 glass-card p-7 rounded-2xl">
-          <h3 className="text-lg font-extrabold text-stone-900 mb-7">CA par campagne</h3>
+          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">CA par campagne</h3>
           {campaignStats.filter(c => c.ca > 0).length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-sm text-stone-400">Aucune donnée</div>
+            <div className="flex items-center justify-center h-64 text-sm text-stone-400 dark:text-neutral-500">Aucune donnée</div>
           ) : (
             <div className="space-y-5">
               {campaignStats.filter(c => c.ca > 0).map((c, i) => (
                 <div key={c.id}>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="font-bold text-stone-900">{c.name}</span>
+                    <span className="font-bold text-stone-900 dark:text-white">{c.name}</span>
                     <span className="font-bold" style={{ color: BAR_COLORS[i % BAR_COLORS.length] }}>{formatCurrency(c.ca)}</span>
                   </div>
-                  <div className="w-full bg-stone-100 h-3 rounded-full overflow-hidden">
+                  <div className="w-full bg-stone-100 dark:bg-neutral-800 h-3 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${(c.ca / maxCA) * 100}%`, backgroundColor: BAR_COLORS[i % BAR_COLORS.length] }}
@@ -631,49 +631,49 @@ export function BusinessReport() {
 
       {/* ─── Campaign Performance Table ─── */}
       <section className="glass-card rounded-2xl overflow-hidden mb-14">
-        <div className="p-7 border-b border-stone-100">
-          <h3 className="text-lg font-extrabold text-stone-900">Performance des Campagnes</h3>
+        <div className="p-7 border-b border-stone-100 dark:border-neutral-800">
+          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">Performance des Campagnes</h3>
         </div>
         {campaignStats.length === 0 ? (
-          <p className="text-sm text-stone-400 text-center py-10">Aucune campagne</p>
+          <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-10">Aucune campagne</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-stone-50/50">
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">Campagne</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">Statut</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">Date</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">Vues</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">Conv.</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">CA</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 text-right">Commission</th>
+                <tr className="bg-stone-50 dark:bg-neutral-800/50">
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">Campagne</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">Statut</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">Date</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">Vues</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">Conv.</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">CA</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-right">Commission</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-50">
+              <tbody className="divide-y divide-stone-50 dark:divide-neutral-800">
                 {campaignStats.map(c => (
-                  <tr key={c.id} className="hover:bg-stone-50/30 transition-colors">
-                    <td className="px-7 py-5 font-bold text-stone-900">{c.name}</td>
+                  <tr key={c.id} className="hover:bg-stone-50 dark:bg-neutral-800 dark:hover:bg-neutral-800/30 transition-colors">
+                    <td className="px-7 py-5 font-bold text-stone-900 dark:text-white">{c.name}</td>
                     <td className="px-7 py-5">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${c.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${c.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400'}`}>
                         {c.is_active ? 'Active' : 'Paused'}
                       </span>
                     </td>
-                    <td className="px-7 py-5 text-sm text-stone-500">{formatDate(c.created_at)}</td>
-                    <td className="px-7 py-5 text-sm text-stone-700">{c.views.toLocaleString('fr-FR')}</td>
-                    <td className="px-7 py-5 text-sm font-bold text-stone-700">{formatPct(c.conversionRate)}</td>
-                    <td className="px-7 py-5 font-extrabold text-stone-900">{formatCurrency(c.ca)}</td>
+                    <td className="px-7 py-5 text-sm text-stone-500 dark:text-neutral-400">{formatDate(c.created_at)}</td>
+                    <td className="px-7 py-5 text-sm text-stone-700 dark:text-neutral-200">{c.views.toLocaleString('fr-FR')}</td>
+                    <td className="px-7 py-5 text-sm font-bold text-stone-700 dark:text-neutral-200">{formatPct(c.conversionRate)}</td>
+                    <td className="px-7 py-5 font-extrabold text-stone-900 dark:text-white">{formatCurrency(c.ca)}</td>
                     <td className="px-7 py-5 text-right font-medium text-emerald-700">{formatCurrency(c.commission)}</td>
                   </tr>
                 ))}
                 {/* Totals row */}
-                <tr className="border-t-2 border-stone-200 font-bold bg-stone-50/30">
-                  <td className="px-7 py-5 text-stone-900">Total</td>
+                <tr className="border-t-2 border-stone-200 dark:border-neutral-800 font-bold bg-stone-50 dark:bg-neutral-800/30">
+                  <td className="px-7 py-5 text-stone-900 dark:text-white">Total</td>
                   <td></td>
                   <td></td>
-                  <td className="px-7 py-5 text-sm text-stone-700">{campaignStats.reduce((s, c) => s + c.views, 0).toLocaleString('fr-FR')}</td>
+                  <td className="px-7 py-5 text-sm text-stone-700 dark:text-neutral-200">{campaignStats.reduce((s, c) => s + c.views, 0).toLocaleString('fr-FR')}</td>
                   <td></td>
-                  <td className="px-7 py-5 font-extrabold text-stone-900">{formatCurrency(totalCA)}</td>
+                  <td className="px-7 py-5 font-extrabold text-stone-900 dark:text-white">{formatCurrency(totalCA)}</td>
                   <td className="px-7 py-5 text-right font-medium text-emerald-700">{formatCurrency(totalCommission)}</td>
                 </tr>
               </tbody>
@@ -686,35 +686,35 @@ export function BusinessReport() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-7 mb-14">
         {/* Team Performance */}
         <div className="lg:col-span-2 glass-card rounded-2xl overflow-hidden">
-          <div className="p-7 border-b border-stone-100">
-            <h3 className="text-lg font-extrabold text-stone-900">Performance de l'Équipe</h3>
+          <div className="p-7 border-b border-stone-100 dark:border-neutral-800">
+            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">Performance de l'Équipe</h3>
           </div>
           {members.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-10">Aucun membre dans l'équipe</p>
+            <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-10">Aucun membre dans l'équipe</p>
           ) : (
-            <div className="divide-y divide-stone-50">
+            <div className="divide-y divide-stone-50 dark:divide-neutral-800">
               {members.map(m => {
                 const memberWins = filteredProspects.filter(p => p.stage === 'won' && (p as any).assigned_to === m.id).length
                 return (
-                  <div key={m.id} className="flex items-center justify-between px-7 py-4 hover:bg-stone-50/30 transition-colors">
+                  <div key={m.id} className="flex items-center justify-between px-7 py-4 hover:bg-stone-50 dark:bg-neutral-800 dark:hover:bg-neutral-800/30 transition-colors">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-stone-200 flex items-center justify-center text-sm font-bold text-stone-600">
+                      <div className="w-10 h-10 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-sm font-bold text-stone-600 dark:text-neutral-300">
                         {m.first_name[0]}{m.last_name?.[0] || ''}
                       </div>
                       <div>
-                        <p className="font-bold text-stone-900">{m.first_name} {m.last_name}</p>
-                        <p className="text-[10px] text-stone-400">{m.email}</p>
+                        <p className="font-bold text-stone-900 dark:text-white">{m.first_name} {m.last_name}</p>
+                        <p className="text-[10px] text-stone-400 dark:text-neutral-500">{m.email}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-5">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded ${ROLE_COLORS[m.role] || 'bg-stone-100 text-stone-500'}`}>
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded ${ROLE_COLORS[m.role] || 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400'}`}>
                         {m.role}
                       </span>
                       <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-stone-400">Wins</span>
-                        <span className="font-bold text-stone-900">{memberWins}</span>
+                        <span className="text-[10px] text-stone-400 dark:text-neutral-500">Wins</span>
+                        <span className="font-bold text-stone-900 dark:text-white">{memberWins}</span>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-stone-300" />
+                      <ChevronRight className="h-4 w-4 text-stone-300 dark:text-neutral-600" />
                     </div>
                   </div>
                 )
@@ -752,12 +752,12 @@ export function BusinessReport() {
         {/* Rendez-vous */}
         <div className="glass-card p-7 rounded-2xl">
           <div className="flex items-center gap-4 mb-5">
-            <div className="w-11 h-11 bg-stone-100 rounded-full flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-stone-700" />
+            <div className="w-11 h-11 bg-stone-100 dark:bg-neutral-800 rounded-full flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
             </div>
             <div>
-              <h4 className="font-extrabold text-lg text-stone-900">Rendez-vous</h4>
-              <p className="text-sm text-stone-400">{totalAppts} total · {doneAppts} terminé{doneAppts !== 1 ? 's' : ''}</p>
+              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white">Rendez-vous</h4>
+              <p className="text-sm text-stone-400 dark:text-neutral-500">{totalAppts} total · {doneAppts} terminé{doneAppts !== 1 ? 's' : ''}</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -777,12 +777,12 @@ export function BusinessReport() {
               <TrendingUp className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h4 className="font-extrabold text-lg text-stone-900">Pipeline Détaillé</h4>
-              <p className="text-sm text-stone-400">Valeur totale : {formatCurrency(totalCA)}</p>
+              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white">Pipeline Détaillé</h4>
+              <p className="text-sm text-stone-400 dark:text-neutral-500">Valeur totale : {formatCurrency(totalCA)}</p>
             </div>
           </div>
           {/* Pipeline bar */}
-          <div className="w-full bg-stone-100 h-2 rounded-full mb-5 overflow-hidden">
+          <div className="w-full bg-stone-100 dark:bg-neutral-800 h-2 rounded-full mb-5 overflow-hidden">
             <div className="flex h-full">
               {stageData.map((s, i) => {
                 const pct = totalLeads > 0 ? (s.value / totalLeads) * 100 : 0
@@ -798,12 +798,12 @@ export function BusinessReport() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
-              <p className="text-2xl font-black text-stone-900">{filteredProspects.filter(p => p.stage === 'prospect').length}</p>
-              <p className="text-[10px] text-stone-400 font-bold uppercase tracking-[0.15em]">Prospects</p>
+              <p className="text-2xl font-black text-stone-900 dark:text-white">{filteredProspects.filter(p => p.stage === 'prospect').length}</p>
+              <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-[0.15em]">Prospects</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-black text-stone-900">{wonLeads.length}</p>
-              <p className="text-[10px] text-stone-400 font-bold uppercase tracking-[0.15em]">Gagnés</p>
+              <p className="text-2xl font-black text-stone-900 dark:text-white">{wonLeads.length}</p>
+              <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-[0.15em]">Gagnés</p>
             </div>
           </div>
         </div>
@@ -942,13 +942,13 @@ export function BusinessReport() {
 
 function StatLine({ label, value, color, isText }: { label: string; value: number | string; color: string; isText?: boolean }) {
   const colorMap: Record<string, string> = {
-    stone: 'text-stone-700', emerald: 'text-emerald-700', amber: 'text-stone-700',
-    red: 'text-red-600', slate: 'text-stone-500',
+    stone: 'text-stone-700 dark:text-neutral-200', emerald: 'text-emerald-700', amber: 'text-stone-700 dark:text-neutral-200',
+    red: 'text-red-600', slate: 'text-stone-500 dark:text-neutral-400',
   }
   return (
     <div className="flex items-center justify-between py-1.5">
-      <span className="text-sm font-medium text-stone-500">{label}</span>
-      <span className={`text-sm font-bold ${colorMap[color] || 'text-stone-900'}`}>
+      <span className="text-sm font-medium text-stone-500 dark:text-neutral-400">{label}</span>
+      <span className={`text-sm font-bold ${colorMap[color] || 'text-stone-900 dark:text-white'}`}>
         {value}
       </span>
     </div>
