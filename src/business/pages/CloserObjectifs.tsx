@@ -59,14 +59,14 @@ const PERIOD_DAYS: Record<string, number> = {
   weekly: 7, monthly: 30, quarterly: 90, yearly: 365,
 }
 
-const METRIC_COLORS: Record<string, string> = {
-  revenue: 'bg-green-100 text-green-700',
-  sales_count: 'bg-blue-100 text-blue-700',
-  conversion_rate: 'bg-purple-100 text-purple-700',
-  leads: 'bg-amber-100 text-amber-700',
-  appointments: 'bg-cyan-100 text-cyan-700',
-  noshow_rate: 'bg-red-100 text-red-700',
-  custom: 'bg-slate-100 text-slate-700',
+const METRIC_BADGE: Record<string, { bg: string; text: string }> = {
+  revenue: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  sales_count: { bg: 'bg-stone-100', text: 'text-stone-700' },
+  conversion_rate: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  leads: { bg: 'bg-stone-100', text: 'text-stone-700' },
+  appointments: { bg: 'bg-stone-100', text: 'text-stone-600' },
+  noshow_rate: { bg: 'bg-red-50', text: 'text-red-700' },
+  custom: { bg: 'bg-stone-100', text: 'text-stone-600' },
 }
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -288,11 +288,8 @@ export function CloserObjectifs() {
     { id: 'personal', label: 'Personnel', count: personalObjectives.length, icon: Lock },
   ]
 
-  const inputCls = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-  const selectCls = "w-full appearance-none rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-amber-600 animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-stone-900 animate-spin" /></div>
   }
 
   const renderObjectiveCard = (obj: Objective, type: 'org' | 'assigned') => {
@@ -302,55 +299,79 @@ export function CloserObjectifs() {
       : null
     const deadlineStr = formatDeadline(obj.deadline)
     const overdue = isOverdue(obj.deadline)
+    const isComplete = progress !== null && progress >= 100
+    const metricBadge = METRIC_BADGE[obj.metric] || METRIC_BADGE.custom
 
     return (
-      <div key={obj.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-        <h3 className="font-semibold text-slate-900 truncate mb-3">{obj.label}</h3>
-
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium', METRIC_COLORS[obj.metric] || METRIC_COLORS.custom)}>
-            {getMetricLabel(obj.metric)}
-          </span>
-          <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-            {PERIOD_LABELS[obj.period] || obj.period}
-          </span>
-          {type === 'org' && (
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-              <Building2 className="h-3 w-3 mr-1" /> Org
-            </span>
-          )}
-        </div>
-
-        {deadlineStr && (
-          <div className="flex items-center gap-2 mb-3">
-            <CalendarDays className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-slate-400')} />
-            <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-slate-600')}>
-              {overdue ? 'Expiré le ' : 'Échéance : '}{deadlineStr}
-            </span>
+      <div
+        key={obj.id}
+        className="bg-white rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 hover:shadow-xl transition-all group relative overflow-hidden"
+      >
+        {/* Verified icon for completed */}
+        {isComplete && (
+          <div className="absolute top-4 right-4">
+            <svg className="w-7 h-7 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+            </svg>
           </div>
         )}
 
-        <div className="mb-1">
-          <div className="flex items-center justify-between text-sm mb-1.5">
-            <span className="font-semibold text-slate-900">{formatValue(obj.metric, currentValue)}</span>
-            <span className="text-slate-400">/ {formatValue(obj.metric, obj.target_value)}</span>
-          </div>
-          {progress !== null ? (
-            <>
-              <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className={cn('h-full rounded-full transition-all duration-500',
-                    progress >= 100 ? 'bg-green-500' : progress >= 60 ? 'bg-amber-500' : 'bg-blue-500'
-                  )}
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <p className="text-xs text-slate-400 mt-1">{progress}% atteint</p>
-            </>
-          ) : (
-            <div className="h-2.5 w-full rounded-full bg-slate-100" />
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          <span className={cn('px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider', metricBadge.bg, metricBadge.text)}>
+            {getMetricLabel(obj.metric)}
+          </span>
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-500">
+            {PERIOD_LABELS[obj.period] || obj.period}
+          </span>
+          {type === 'org' && (
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-200 text-stone-700">
+              <Building2 className="h-3 w-3 mr-1 inline" /> Org
+            </span>
           )}
         </div>
+
+        {/* Title */}
+        <h3 className="text-lg font-extrabold mb-4 text-stone-900 truncate group-hover:text-emerald-700 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          {obj.label}
+        </h3>
+
+        {/* Progress */}
+        <div className="space-y-3 mb-4">
+          <div className="flex justify-between items-end">
+            <span className="text-sm font-extrabold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {formatValue(obj.metric, currentValue)}
+            </span>
+            <span className="text-sm text-stone-400 font-normal">/ {formatValue(obj.metric, obj.target_value)}</span>
+          </div>
+          <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
+            {progress !== null && (
+              <div
+                className={cn('h-full rounded-full transition-all duration-500',
+                  progress >= 100 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-emerald-500 to-emerald-600'
+                )}
+                style={{ width: `${progress}%` }}
+              />
+            )}
+          </div>
+          {progress !== null && (
+            <p className={cn('text-xs font-semibold', progress >= 100 ? 'text-emerald-600' : 'text-stone-400')}>
+              {progress}% atteint
+            </p>
+          )}
+        </div>
+
+        {/* Deadline footer */}
+        {deadlineStr && (
+          <div className="pt-3 border-t border-stone-100">
+            <div className="flex items-center gap-2">
+              <CalendarDays className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-stone-400')} />
+              <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-stone-500')}>
+                {overdue ? 'En retard (' + deadlineStr + ')' : 'Échéance : ' + deadlineStr}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -362,73 +383,94 @@ export function CloserObjectifs() {
       : null
     const deadlineStr = formatDeadline(obj.deadline)
     const overdue = isOverdue(obj.deadline)
+    const isComplete = progress !== null && progress >= 100
+    const metricBadge = METRIC_BADGE[obj.metric] || METRIC_BADGE.custom
 
     return (
-      <div key={obj.id} className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-        <div className="flex items-start justify-between mb-3">
-          <h3 className="font-semibold text-slate-900 truncate flex-1 min-w-0">{obj.label}</h3>
+      <div
+        key={obj.id}
+        className="bg-white rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 hover:shadow-xl transition-all group relative overflow-hidden"
+      >
+        {/* Completed badge */}
+        {isComplete && (
+          <div className="absolute top-4 right-4">
+            <svg className="w-7 h-7 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+            </svg>
+          </div>
+        )}
+
+        {/* Header with visibility */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-wrap gap-2">
+            <span className={cn('px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider', metricBadge.bg, metricBadge.text)}>
+              {getMetricLabel(obj.metric)}
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-500">
+              {PERIOD_LABELS[obj.period] || obj.period}
+            </span>
+          </div>
           <div className="flex items-center gap-1 ml-2">
             {obj.visible_to_owner ? (
               <span className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full" title="Visible par le manager">
                 <Eye className="h-3 w-3" />
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-xs text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full" title="Privé">
+              <span className="flex items-center gap-1 text-xs text-stone-400 bg-stone-50 px-2 py-0.5 rounded-full" title="Privé">
                 <EyeOff className="h-3 w-3" />
               </span>
             )}
           </div>
         </div>
 
+        {/* Title */}
+        <h3 className="text-lg font-extrabold mb-2 text-stone-900 truncate group-hover:text-emerald-700 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          {obj.label}
+        </h3>
+
         {obj.metric === 'custom' && obj.description && (
-          <p className="text-xs text-slate-500 mb-3 line-clamp-2">{obj.description}</p>
+          <p className="text-xs text-stone-500 mb-4 line-clamp-2">{obj.description}</p>
         )}
 
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium', METRIC_COLORS[obj.metric] || METRIC_COLORS.custom)}>
-            {getMetricLabel(obj.metric)}
-          </span>
-          <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-            {PERIOD_LABELS[obj.period] || obj.period}
-          </span>
+        {/* Progress */}
+        <div className="space-y-3 mb-4">
+          <div className="flex justify-between items-end">
+            <span className="text-sm font-extrabold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {formatValue(obj.metric, currentValue)}
+            </span>
+            <span className="text-sm text-stone-400 font-normal">/ {formatValue(obj.metric, obj.target_value)}</span>
+          </div>
+          <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
+            {progress !== null && (
+              <div
+                className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-emerald-500 to-emerald-600"
+                style={{ width: `${progress}%` }}
+              />
+            )}
+          </div>
+          {progress !== null && (
+            <p className={cn('text-xs font-semibold', progress >= 100 ? 'text-emerald-600' : 'text-stone-400')}>
+              {progress}% atteint
+            </p>
+          )}
         </div>
 
+        {/* Deadline */}
         {deadlineStr && (
-          <div className="flex items-center gap-2 mb-3">
-            <CalendarDays className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-slate-400')} />
-            <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-slate-600')}>
-              {overdue ? 'Expiré le ' : 'Échéance : '}{deadlineStr}
+          <div className="flex items-center gap-2 mb-4">
+            <CalendarDays className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-stone-400')} />
+            <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-stone-500')}>
+              {overdue ? 'En retard (' + deadlineStr + ')' : 'Échéance : ' + deadlineStr}
             </span>
           </div>
         )}
 
-        <div className="mb-3">
-          <div className="flex items-center justify-between text-sm mb-1.5">
-            <span className="font-semibold text-slate-900">{formatValue(obj.metric, currentValue)}</span>
-            <span className="text-slate-400">/ {formatValue(obj.metric, obj.target_value)}</span>
-          </div>
-          {progress !== null ? (
-            <>
-              <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className={cn('h-full rounded-full transition-all duration-500',
-                    progress >= 100 ? 'bg-green-500' : progress >= 60 ? 'bg-amber-500' : 'bg-blue-500'
-                  )}
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <p className="text-xs text-slate-400 mt-1">{progress}% atteint</p>
-            </>
-          ) : (
-            <div className="h-2.5 w-full rounded-full bg-slate-100" />
-          )}
-        </div>
-
-        <div className="flex gap-2 border-t border-slate-100 pt-3">
-          <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+        {/* Actions */}
+        <div className="flex gap-2 border-t border-stone-100 pt-3">
+          <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-stone-500 hover:bg-stone-50 hover:text-stone-900 transition-colors">
             <Pencil className="h-3.5 w-3.5" /> Modifier
           </button>
-          <button onClick={() => deletePersonalObjective(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
+          <button onClick={() => deletePersonalObjective(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
             <Trash2 className="h-3.5 w-3.5" /> Supprimer
           </button>
         </div>
@@ -441,27 +483,28 @@ export function CloserObjectifs() {
     : personalObjectives
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-            <Target className="h-5 w-5 text-amber-700" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Mes Objectifs</h2>
-            <p className="text-xs text-slate-500">Suivez vos objectifs et votre progression</p>
-          </div>
+    <div className="space-y-10">
+      {/* Hero Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Mes Objectifs
+          </h1>
+          <p className="text-stone-500 max-w-lg">Suivez vos objectifs et votre progression</p>
         </div>
         {activeTab === 'personal' && (
-          <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors">
-            <Plus className="h-4 w-4" /> Nouvel objectif
+          <button
+            onClick={openCreate}
+            className="px-6 py-3 bg-stone-900 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+            style={{ fontFamily: 'Manrope, sans-serif' }}
+          >
+            + Nouvel objectif
           </button>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 pb-0">
+      <div className="flex gap-6 border-b border-stone-200">
         {tabs.map(tab => {
           const Icon = tab.icon
           return (
@@ -469,17 +512,18 @@ export function CloserObjectifs() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all relative rounded-t-lg",
+                "flex items-center gap-2 px-1 pb-3 text-sm transition-all relative",
                 activeTab === tab.id
-                  ? "text-amber-700 bg-amber-50 border border-b-0 border-slate-200"
-                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  ? "text-stone-900 font-semibold border-b-2 border-stone-900"
+                  : "text-stone-400 font-medium hover:text-stone-600"
               )}
+              style={{ fontFamily: 'Manrope, sans-serif' }}
             >
               <Icon className="h-4 w-4" />
               {tab.label}
               <span className={cn(
                 "text-xs rounded-full px-1.5 py-0.5 font-semibold",
-                activeTab === tab.id ? "bg-amber-200 text-amber-800" : "bg-slate-100 text-slate-500"
+                activeTab === tab.id ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-400"
               )}>
                 {tab.count}
               </span>
@@ -490,26 +534,35 @@ export function CloserObjectifs() {
 
       {/* Content */}
       {currentObjectives.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 py-16">
-          <Target className="h-12 w-12 text-amber-300 mb-4" />
-          <h3 className="text-lg font-semibold text-slate-700 mb-1">
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-40 h-40 bg-stone-50 rounded-full flex items-center justify-center mb-8 relative">
+            <Target className="h-16 w-16 text-stone-300" />
+            <div className="absolute -bottom-2 -right-2 w-14 h-14 bg-white rounded-2xl shadow-xl flex items-center justify-center">
+              <Target className="h-6 w-6 text-emerald-600" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-extrabold mb-3 text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {activeTab === 'org' && "Aucun objectif d'organisation"}
             {activeTab === 'assigned' && "Aucun objectif assigné"}
             {activeTab === 'personal' && "Aucun objectif personnel"}
-          </h3>
-          <p className="text-sm text-slate-500 mb-4">
+          </h2>
+          <p className="text-stone-500 max-w-sm mx-auto mb-8">
             {activeTab === 'org' && "Votre manager n'a pas encore défini d'objectif pour l'organisation."}
             {activeTab === 'assigned' && "Aucun objectif ne vous a encore été assigné par votre manager."}
             {activeTab === 'personal' && "Créez vos propres objectifs pour suivre votre progression."}
           </p>
           {activeTab === 'personal' && (
-            <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700">
-              <Plus className="h-4 w-4" /> Créer un objectif
+            <button
+              onClick={openCreate}
+              className="px-8 py-3.5 bg-stone-900 text-white rounded-full font-extrabold text-sm shadow-xl hover:scale-105 transition-transform"
+              style={{ fontFamily: 'Manrope, sans-serif' }}
+            >
+              Créer mon premier objectif
             </button>
           )}
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {activeTab === 'personal'
             ? (personalObjectives as PersonalObjective[]).map(obj => renderPersonalCard(obj))
             : (currentObjectives as Objective[]).map(obj => renderObjectiveCard(obj, activeTab as 'org' | 'assigned'))
@@ -519,123 +572,132 @@ export function CloserObjectifs() {
 
       {/* Personal Objective Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 flex-shrink-0">
-              <h3 className="text-lg font-bold text-slate-900">
-                {editingObj ? "Modifier l'objectif" : 'Nouvel objectif personnel'}
-              </h3>
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="text-slate-400 hover:text-slate-600">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nom de l'objectif *</label>
-                <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)}
-                  placeholder="Ex: 5 ventes cette semaine" className={inputCls} />
+        <>
+          <div className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-md" onClick={() => { setIsModalOpen(false); resetForm() }} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <div className="pointer-events-auto w-full max-w-lg max-h-[90vh] flex flex-col bg-white/70 backdrop-blur-2xl rounded-2xl shadow-2xl ring-1 ring-white/40 overflow-hidden" onClick={e => e.stopPropagation()}>
+              {/* Modal header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 flex-shrink-0">
+                <h3 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  {editingObj ? "Modifier l'objectif" : 'Nouvel objectif personnel'}
+                </h3>
+                <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
+                  <X className="h-5 w-5 text-stone-400" />
+                </button>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Métrique</label>
-                <div className="relative">
-                  <select value={formMetric} onChange={(e) => setFormMetric(e.target.value)} className={selectCls}>
-                    {METRICS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-
-              {formMetric === 'custom' && (
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                  <textarea
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    placeholder="Décrivez votre métrique personnalisée..."
-                    rows={3}
-                    className={inputCls + ' resize-none'}
-                  />
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Nom de l'objectif *</label>
+                  <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)}
+                    placeholder="Ex: 5 ventes cette semaine"
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
                 </div>
-              )}
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Valeur cible</label>
-                <input type="number" min="0" step="any" value={formTargetValue}
-                  onChange={(e) => setFormTargetValue(e.target.value)}
-                  placeholder="Ex: 5" className={inputCls} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Période</label>
-                <div className="relative">
-                  <select value={formPeriod} onChange={(e) => setFormPeriod(e.target.value)} className={selectCls}>
-                    {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Date limite</label>
-                <input type="date" value={formDeadline} onChange={(e) => setFormDeadline(e.target.value)} className={inputCls} />
-              </div>
-
-              {/* Visibility toggle */}
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {formVisibleToOwner ? (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100">
-                        <Eye className="h-4 w-4 text-emerald-600" />
-                      </div>
-                    ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100">
-                        <EyeOff className="h-4 w-4 text-slate-500" />
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">
-                        {formVisibleToOwner ? 'Visible par le manager' : 'Objectif privé'}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {formVisibleToOwner
-                          ? 'Votre manager pourra voir cet objectif'
-                          : 'Seul vous pouvez voir cet objectif'}
-                      </p>
-                    </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Métrique</label>
+                  <div className="relative">
+                    <select value={formMetric} onChange={(e) => setFormMetric(e.target.value)}
+                      className="w-full appearance-none rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 pr-10 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900">
+                      {METRICS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setFormVisibleToOwner(!formVisibleToOwner)}
-                    className={cn(
-                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                      formVisibleToOwner ? 'bg-emerald-500' : 'bg-slate-300'
-                    )}
-                  >
-                    <span className={cn(
-                      'inline-block h-4 w-4 rounded-full bg-white transition-transform shadow-sm',
-                      formVisibleToOwner ? 'translate-x-6' : 'translate-x-1'
-                    )} />
-                  </button>
+                </div>
+
+                {formMetric === 'custom' && (
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Description</label>
+                    <textarea
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
+                      placeholder="Décrivez votre métrique personnalisée..."
+                      rows={3}
+                      className="w-full rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 resize-none"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Valeur cible</label>
+                  <input type="number" min="0" step="any" value={formTargetValue}
+                    onChange={(e) => setFormTargetValue(e.target.value)}
+                    placeholder="Ex: 5"
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Période</label>
+                  <div className="relative">
+                    <select value={formPeriod} onChange={(e) => setFormPeriod(e.target.value)}
+                      className="w-full appearance-none rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 pr-10 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900">
+                      {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Date limite</label>
+                  <input type="date" value={formDeadline} onChange={(e) => setFormDeadline(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+                </div>
+
+                {/* Visibility toggle */}
+                <div className="rounded-xl border border-stone-200 bg-stone-50/50 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {formVisibleToOwner ? (
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50">
+                          <Eye className="h-4 w-4 text-emerald-600" />
+                        </div>
+                      ) : (
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-stone-100">
+                          <EyeOff className="h-4 w-4 text-stone-400" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-semibold text-stone-900">
+                          {formVisibleToOwner ? 'Visible par le manager' : 'Objectif privé'}
+                        </p>
+                        <p className="text-xs text-stone-500">
+                          {formVisibleToOwner
+                            ? 'Votre manager pourra voir cet objectif'
+                            : 'Seul vous pouvez voir cet objectif'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormVisibleToOwner(!formVisibleToOwner)}
+                      className={cn(
+                        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                        formVisibleToOwner ? 'bg-emerald-500' : 'bg-stone-300'
+                      )}
+                    >
+                      <span className={cn(
+                        'inline-block h-4 w-4 rounded-full bg-white transition-transform shadow-sm',
+                        formVisibleToOwner ? 'translate-x-6' : 'translate-x-1'
+                      )} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4 flex-shrink-0">
-              <button onClick={() => { setIsModalOpen(false); resetForm() }}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                Annuler
-              </button>
-              <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50">
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                {editingObj ? 'Enregistrer' : 'Créer'}
-              </button>
+              <div className="flex justify-end gap-3 border-t border-stone-100 px-6 py-4 flex-shrink-0">
+                <button onClick={() => { setIsModalOpen(false); resetForm() }}
+                  className="rounded-xl border border-stone-200 px-5 py-2.5 text-sm font-semibold text-stone-500 hover:bg-stone-50 transition-colors">
+                  Annuler
+                </button>
+                <button onClick={handleSave} disabled={saving}
+                  className="flex items-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-colors">
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {editingObj ? 'Enregistrer' : 'Créer'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
