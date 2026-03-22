@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   User,
   Search,
@@ -15,6 +15,8 @@ import {
   ChevronDown,
   ArrowRightCircle,
   Shuffle,
+  Filter,
+  Calendar,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -33,6 +35,14 @@ const ALL_STAGES = [
   { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50', borderColor: 'border-red-200' },
 ]
 
+const PERIOD_OPTIONS = [
+  { label: 'Tout', days: 0 },
+  { label: "Aujourd'hui", days: 1 },
+  { label: '7 jours', days: 7 },
+  { label: '30 jours', days: 30 },
+  { label: '90 jours', days: 90 },
+]
+
 export function BusinessCRM() {
   const {
     prospects, updateProspect, addProspect, deleteProspect, loading,
@@ -46,7 +56,12 @@ export function BusinessCRM() {
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterStage, setFilterStage] = useState<string>('all')
+  const [showFilters, setShowFilters] = useState(false)
+  const [selectedPeriod, setSelectedPeriod] = useState(0)
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([])
+  const [selectedStages, setSelectedStages] = useState<string[]>([])
+  const [selectedOffers, setSelectedOffers] = useState<string[]>([])
+  const [allTeamMembers, setAllTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string }[]>([])
   const [isIntegrationModalOpen, setIsIntegrationModalOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
@@ -96,6 +111,11 @@ export function BusinessCRM() {
           last_name: (ownerRes.data.full_name || '').split(' ').slice(1).join(' ') || '',
           role: 'Owner',
         } : null
+        // All members for filter panel
+        const allList = [...all]
+        if (ownerMember) allList.unshift(ownerMember)
+        setAllTeamMembers(allList)
+        // Setters/Closers for add modal
         const setters = all.filter((m: any) => m.role === 'Setter' || m.role === 'Setter-Closer')
         if (ownerMember) setters.unshift(ownerMember)
         setTeamSetters(setters)
@@ -121,18 +141,56 @@ export function BusinessCRM() {
     return teamSetters[Math.floor(Math.random() * teamSetters.length)]
   }, [teamSetters])
 
-  const filteredProspects = prospects.filter(p => {
-    if (filterStage !== 'all' && p.stage !== filterStage) return false
-    if (!searchQuery) return true
-    const q = searchQuery.toLowerCase()
-    return (
-      (p.contact || '').toLowerCase().includes(q) ||
-      (p.company || '').toLowerCase().includes(q) ||
-      (p.email || '').toLowerCase().includes(q) ||
-      (p.firstName || '').toLowerCase().includes(q) ||
-      (p.lastName || '').toLowerCase().includes(q)
-    )
-  })
+  const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0
+
+  const clearFilters = () => {
+    setSelectedPeriod(0)
+    setSelectedMembers([])
+    setSelectedStages([])
+    setSelectedOffers([])
+  }
+
+  const toggleMultiSelect = (arr: string[], setArr: (v: string[]) => void, val: string) => {
+    setArr(arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val])
+  }
+
+  const filteredProspects = useMemo(() => {
+    let result = prospects
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      result = result.filter(p =>
+        (p.contact || '').toLowerCase().includes(q) ||
+        (p.company || '').toLowerCase().includes(q) ||
+        (p.email || '').toLowerCase().includes(q) ||
+        (p.firstName || '').toLowerCase().includes(q) ||
+        (p.lastName || '').toLowerCase().includes(q)
+      )
+    }
+
+    if (selectedPeriod > 0) {
+      const cutoff = new Date()
+      cutoff.setDate(cutoff.getDate() - selectedPeriod)
+      result = result.filter(p => p.created_at && new Date(p.created_at) >= cutoff)
+    }
+
+    if (selectedMembers.length > 0) {
+      result = result.filter(p => p.assigned_to && selectedMembers.includes(p.assigned_to))
+    }
+
+    if (selectedStages.length > 0) {
+      result = result.filter(p => selectedStages.includes(p.stage))
+    }
+
+    if (selectedOffers.length > 0) {
+      result = result.filter(p =>
+        (p.formula_id && selectedOffers.includes(p.formula_id)) ||
+        (p.offer_id && selectedOffers.includes(String(p.offer_id)))
+      )
+    }
+
+    return result
+  }, [prospects, searchQuery, selectedPeriod, selectedMembers, selectedStages, selectedOffers])
 
   const getDisplayName = (deal: BusinessProspect) => {
     if (deal.firstName || deal.lastName) {
@@ -279,22 +337,29 @@ export function BusinessCRM() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Rechercher un prospect..."
-            className="w-full rounded-full border-none bg-stone-100 py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+            className="w-full rounded-full border-none bg-stone-100 py-2.5 pl-10 pr-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
         </div>
-        <div className="relative">
-          <select
-            value={filterStage}
-            onChange={(e) => setFilterStage(e.target.value)}
-            className="appearance-none rounded-full bg-white border-none shadow-[inset_0_0_0_0.5px_rgba(196,199,199,0.3)] pl-3 pr-8 py-2.5 text-sm font-medium text-stone-600 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
-          >
-            <option value="all">Toutes les étapes</option>
-            {ALL_STAGES.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
-        </div>
+
+        {/* Filter toggle */}
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={cn(
+            'flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all border',
+            hasActiveFilters
+              ? 'bg-stone-100 border-stone-300 text-stone-700'
+              : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+          )}
+        >
+          <Filter className="h-4 w-4" />
+          Filtres
+          {hasActiveFilters && (
+            <span className="ml-1 bg-stone-900 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+              {(selectedPeriod > 0 ? 1 : 0) + (selectedMembers.length > 0 ? 1 : 0) + (selectedStages.length > 0 ? 1 : 0) + (selectedOffers.length > 0 ? 1 : 0)}
+            </span>
+          )}
+        </button>
+
         {!isReadOnly && (
           <button
             onClick={() => setIsAddModalOpen(true)}
@@ -306,14 +371,124 @@ export function BusinessCRM() {
         )}
       </div>
 
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="mb-4 rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)] p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-extrabold text-stone-900">Filtres</h3>
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="text-xs text-stone-600 hover:text-stone-900 font-medium">
+                Réinitialiser tout
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Period */}
+            <div>
+              <label className="block text-xs font-medium text-stone-500 mb-2">
+                <Calendar className="h-3 w-3 inline mr-1" />Période
+              </label>
+              <div className="flex flex-wrap gap-1">
+                {PERIOD_OPTIONS.map(p => (
+                  <button
+                    key={p.days}
+                    onClick={() => setSelectedPeriod(p.days)}
+                    className={cn(
+                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
+                      selectedPeriod === p.days
+                        ? 'bg-stone-900 text-white'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Members */}
+            <div>
+              <label className="block text-xs font-medium text-stone-500 mb-2">Closer / Setter</label>
+              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                {allTeamMembers.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => toggleMultiSelect(selectedMembers, setSelectedMembers, m.id)}
+                    className={cn(
+                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
+                      selectedMembers.includes(m.id)
+                        ? 'bg-stone-900 text-white'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    )}
+                  >
+                    {m.first_name} {m.last_name}
+                  </button>
+                ))}
+                {allTeamMembers.length === 0 && <span className="text-xs text-stone-400">Aucun membre</span>}
+              </div>
+            </div>
+
+            {/* Stages */}
+            <div>
+              <label className="block text-xs font-medium text-stone-500 mb-2">Statut</label>
+              <div className="flex flex-wrap gap-1">
+                {ALL_STAGES.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => toggleMultiSelect(selectedStages, setSelectedStages, s.id)}
+                    className={cn(
+                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
+                      selectedStages.includes(s.id)
+                        ? 'bg-stone-900 text-white'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    )}
+                  >
+                    <span className={cn('h-1.5 w-1.5 rounded-full', s.color)} />
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Offers */}
+            <div>
+              <label className="block text-xs font-medium text-stone-500 mb-2">Offre / Formule</label>
+              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                {formulas.map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => toggleMultiSelect(selectedOffers, setSelectedOffers, f.id)}
+                    className={cn(
+                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
+                      selectedOffers.includes(f.id)
+                        ? 'bg-stone-900 text-white'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    )}
+                  >
+                    {f.name}
+                  </button>
+                ))}
+                {formulas.length === 0 && <span className="text-xs text-stone-400">Aucune formule</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
-      <div className="mb-4 flex items-center gap-3 text-xs text-stone-500">
+      <div className="mb-3 flex items-center gap-4 text-xs text-stone-500">
         <span className="font-medium text-stone-700">{filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}</span>
-        {filterStage !== 'all' && (
-          <button onClick={() => setFilterStage('all')} className="text-stone-600 hover:text-stone-900 font-medium">
-            Réinitialiser
-          </button>
-        )}
+        {ALL_STAGES.map(s => {
+          const count = filteredProspects.filter(p => p.stage === s.id).length
+          if (!count) return null
+          return (
+            <span key={s.id} className="flex items-center gap-1">
+              <span className={cn('h-1.5 w-1.5 rounded-full', s.color)} />
+              {count} {s.name}
+            </span>
+          )
+        })}
       </div>
 
       {/* Table View */}

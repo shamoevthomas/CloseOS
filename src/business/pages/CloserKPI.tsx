@@ -50,11 +50,8 @@ export function CloserKPI() {
   const [campaigns, setCampaigns] = useState<{ id: string; name: string; source: string }[]>([])
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
-  // Per-tab member filters
-  const [orgMemberId, setOrgMemberId] = useState<string | null>(null)
-  const [formulaMemberId, setFormulaMemberId] = useState<string | null>(null)
-  const [campaignMemberId, setCampaignMemberId] = useState<string | null>(null)
-  const [sourceMemberId, setSourceMemberId] = useState<string | null>(null)
+  // Global member filter (persists across tabs)
+  const [globalMemberId, setGlobalMemberId] = useState<string | null>(null)
 
   // Load KPI config
   useEffect(() => {
@@ -91,19 +88,30 @@ export function CloserKPI() {
       .catch(() => {})
   }, [ownerUserId])
 
-  // Load team closers for member selectors
+  // Load team closers + Owner/HoS for member selector
   useEffect(() => {
     if (!ownerUserId) return
-    supabase
-      .from('business_team_members')
-      .select('id, first_name, last_name, role')
-      .eq('business_owner_id', ownerUserId)
-      .in('role', ['Closer', 'Setter-Closer'])
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          setTeamClosers(data)
-        }
-      })
+    Promise.all([
+      supabase
+        .from('business_team_members')
+        .select('id, first_name, last_name, role')
+        .eq('business_owner_id', ownerUserId),
+      supabase
+        .from('business_users')
+        .select('id, full_name')
+        .eq('id', ownerUserId)
+        .single(),
+    ]).then(([tmRes, ownerRes]) => {
+      const allMembers: TeamCloser[] = []
+      if (ownerRes.data) {
+        const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
+        allMembers.push({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
+      }
+      if (tmRes.data) {
+        allMembers.push(...tmRes.data)
+      }
+      setTeamClosers(allMembers)
+    })
   }, [ownerUserId])
 
   // Load campaigns
@@ -164,7 +172,7 @@ export function CloserKPI() {
   }
 
   // Org KPIs (filtered by member if selected)
-  const orgProspects = useMemo(() => filterByMember(prospects, orgMemberId), [prospects, orgMemberId])
+  const orgProspects = useMemo(() => filterByMember(prospects, globalMemberId), [prospects, globalMemberId])
   const org = computeCloserKpis(orgProspects)
   const orgCommission = Math.round(org.revenue * (kpiConfig.commission_rate / 100))
 
@@ -173,8 +181,8 @@ export function CloserKPI() {
     if (!selectedOfferId) return []
     const base = isOwnerView ? prospects : myProspects
     const filtered = base.filter(p => (p as any).offer_id === selectedOfferId || (p as any).formula_id === selectedOfferId)
-    return filterByMember(filtered, formulaMemberId)
-  }, [isOwnerView, myProspects, prospects, selectedOfferId, formulaMemberId])
+    return filterByMember(filtered, globalMemberId)
+  }, [isOwnerView, myProspects, prospects, selectedOfferId, globalMemberId])
 
   const formula = computeCloserKpis(formulaProspects)
   const formulaCommission = Math.round(formula.revenue * (kpiConfig.commission_rate / 100))
@@ -184,8 +192,8 @@ export function CloserKPI() {
     if (!selectedCampaignId) return []
     const base = isOwnerView ? prospects : myProspects
     const filtered = base.filter(p => (p as any).campaign_id === selectedCampaignId)
-    return filterByMember(filtered, campaignMemberId)
-  }, [isOwnerView, myProspects, prospects, selectedCampaignId, campaignMemberId])
+    return filterByMember(filtered, globalMemberId)
+  }, [isOwnerView, myProspects, prospects, selectedCampaignId, globalMemberId])
 
   const campaign = computeCloserKpis(campaignProspects)
   const campaignCommission = Math.round(campaign.revenue * (kpiConfig.commission_rate / 100))
@@ -196,8 +204,8 @@ export function CloserKPI() {
     const campaignIds = campaigns.filter(c => (c.source || 'Direct') === selectedSource).map(c => c.id)
     const base = isOwnerView ? prospects : myProspects
     const filtered = base.filter(p => campaignIds.includes((p as any).campaign_id))
-    return filterByMember(filtered, sourceMemberId)
-  }, [isOwnerView, myProspects, prospects, selectedSource, campaigns, sourceMemberId])
+    return filterByMember(filtered, globalMemberId)
+  }, [isOwnerView, myProspects, prospects, selectedSource, campaigns, globalMemberId])
 
   const source = computeCloserKpis(sourceProspects)
   const sourceCommission = Math.round(source.revenue * (kpiConfig.commission_rate / 100))
@@ -245,19 +253,6 @@ export function CloserKPI() {
   const inputCls = "w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
 
   // Member selector component
-  const MemberSelector = ({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) => (
-    <select
-      value={value || ''}
-      onChange={(e) => onChange(e.target.value || null)}
-      className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-400 focus:outline-none"
-    >
-      <option value="">Global (tous)</option>
-      {teamClosers.map(c => (
-        <option key={c.id} value={c.id}>{c.first_name} {c.last_name} ({c.role})</option>
-      ))}
-    </select>
-  )
-
   // Tabs definition
   const tabs = isOwnerView
     ? [
@@ -306,30 +301,41 @@ export function CloserKPI() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex p-1.5 bg-stone-100 rounded-full w-fit">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={cn(
-              'px-4 py-2 rounded-full text-sm font-medium transition-all',
-              activeTab === tab.key
-                ? 'bg-white text-stone-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
-                : 'text-stone-500 hover:text-stone-900'
-            )}
+      {/* Tabs + Global Member Selector */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex p-1.5 bg-stone-100 rounded-full w-fit">
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                'px-4 py-2 rounded-full text-sm font-medium transition-all',
+                activeTab === tab.key
+                  ? 'bg-white text-stone-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                  : 'text-stone-500 hover:text-stone-900'
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {isOwnerView && teamClosers.length > 0 && (
+          <select
+            value={globalMemberId || ''}
+            onChange={(e) => setGlobalMemberId(e.target.value || null)}
+            className="rounded-full border border-stone-200 bg-white text-sm text-stone-900 px-4 py-2 focus:border-stone-400 focus:outline-none shadow-[0_20px_40px_rgba(27,28,27,0.04)]"
           >
-            {tab.label}
-          </button>
-        ))}
+            <option value="">Tous les membres</option>
+            {teamClosers.map(c => (
+              <option key={c.id} value={c.id}>{c.first_name} {c.last_name} ({c.role})</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {activeTab === 'org' && (
         <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-stone-700">KPIs de l'organisation</p>
-            {isOwnerView && teamClosers.length > 0 && <MemberSelector value={orgMemberId} onChange={setOrgMemberId} />}
-          </div>
+          <p className="text-sm text-stone-700">KPIs de l'organisation</p>
         </div>
       )}
 
@@ -348,7 +354,6 @@ export function CloserKPI() {
                   <option key={f.id} value={f.id}>{f.name} ({f.price}€)</option>
                 ))}
               </select>
-              {isOwnerView && teamClosers.length > 0 && <MemberSelector value={formulaMemberId} onChange={setFormulaMemberId} />}
             </div>
           </div>
         </div>
@@ -369,7 +374,6 @@ export function CloserKPI() {
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
-              {isOwnerView && teamClosers.length > 0 && <MemberSelector value={campaignMemberId} onChange={setCampaignMemberId} />}
             </div>
           </div>
         </div>
@@ -390,7 +394,6 @@ export function CloserKPI() {
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
-              {isOwnerView && teamClosers.length > 0 && <MemberSelector value={sourceMemberId} onChange={setSourceMemberId} />}
             </div>
           </div>
         </div>
