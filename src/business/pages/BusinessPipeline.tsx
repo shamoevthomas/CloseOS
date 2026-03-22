@@ -242,6 +242,41 @@ export function BusinessPipeline() {
 
   const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0 || selectedTags.length > 0
 
+  // Count prospects per filter value (based on unfiltered prospects)
+  const filterCounts = useMemo(() => {
+    const byStage: Record<string, number> = {}
+    const byMember: Record<string, number> = {}
+    const byOffer: Record<string, number> = {}
+    const byTag: Record<string, number> = {}
+    const byPeriod: Record<number, number> = {}
+    const now = new Date()
+
+    for (const p of prospects) {
+      // Stage
+      byStage[p.stage] = (byStage[p.stage] || 0) + 1
+      // Member
+      if (p.assigned_to) byMember[p.assigned_to] = (byMember[p.assigned_to] || 0) + 1
+      // Offer
+      if (p.formula_id) byOffer[p.formula_id] = (byOffer[p.formula_id] || 0) + 1
+      if (p.offer_id) byOffer[String(p.offer_id)] = (byOffer[String(p.offer_id)] || 0) + 1
+      // Tags
+      const pTags = prospectTags[p.id] || []
+      for (const t of pTags) byTag[t] = (byTag[t] || 0) + 1
+      // Period
+      if (p.created_at) {
+        const created = new Date(p.created_at)
+        for (const opt of PERIOD_OPTIONS) {
+          if (opt.days === 0) continue
+          const cutoff = new Date()
+          cutoff.setDate(now.getDate() - opt.days)
+          if (created >= cutoff) byPeriod[opt.days] = (byPeriod[opt.days] || 0) + 1
+        }
+      }
+    }
+    byPeriod[0] = prospects.length
+    return { byStage, byMember, byOffer, byTag, byPeriod }
+  }, [prospects, prospectTags])
+
   const clearFilters = () => {
     setSelectedPeriod(0)
     setSelectedMembers([])
@@ -358,7 +393,7 @@ export function BusinessPipeline() {
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 rounded-full'
                     )}
                   >
-                    {p.label}
+                    {p.label} <span className="opacity-60">({filterCounts.byPeriod[p.days] || 0})</span>
                   </button>
                 ))}
               </div>
@@ -379,7 +414,7 @@ export function BusinessPipeline() {
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 rounded-full'
                     )}
                   >
-                    {m.first_name} {m.last_name}
+                    {m.first_name} {m.last_name} <span className="opacity-60">({filterCounts.byMember[m.id] || 0})</span>
                   </button>
                 ))}
                 {teamMembers.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun membre</span>}
@@ -402,7 +437,7 @@ export function BusinessPipeline() {
                     )}
                   >
                     <span className={cn('h-1.5 w-1.5 rounded-full', s.color)} />
-                    {s.name}
+                    {s.name} <span className="opacity-60">({filterCounts.byStage[s.id] || 0})</span>
                   </button>
                 ))}
                 {customStages.map(cs => (
@@ -417,7 +452,7 @@ export function BusinessPipeline() {
                     )}
                   >
                     <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cs.color }} />
-                    {cs.name}
+                    {cs.name} <span className="opacity-60">({filterCounts.byStage[`custom_${cs.id}`] || 0})</span>
                   </button>
                 ))}
               </div>
@@ -438,7 +473,7 @@ export function BusinessPipeline() {
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 rounded-full'
                     )}
                   >
-                    {f.name}
+                    {f.name} <span className="opacity-60">({filterCounts.byOffer[f.id] || 0})</span>
                   </button>
                 ))}
                 {formulas.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucune formule</span>}
@@ -464,7 +499,7 @@ export function BusinessPipeline() {
                     style={selectedTags.includes(t.id) ? { backgroundColor: t.color } : {}}
                   >
                     <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.color }} />
-                    {t.name}
+                    {t.name} <span className="opacity-60">({filterCounts.byTag[t.id] || 0})</span>
                   </button>
                 ))}
                 {tags.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun tag</span>}

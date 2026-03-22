@@ -328,7 +328,7 @@ export function SetterKPI() {
       </div>
 
       {/* Tabs + Global Member Selector */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-fit flex-wrap">
           {tabs.map(tab => (
             <button
@@ -346,16 +346,19 @@ export function SetterKPI() {
           ))}
         </div>
         {isOwnerView && teamSetters.length > 0 && (
-          <select
-            value={globalMemberId || ''}
-            onChange={(e) => setGlobalMemberId(e.target.value || null)}
-            className="rounded-full border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm font-semibold text-stone-900 dark:text-white px-5 py-2.5 focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 appearance-none"
-          >
-            <option value="">Tous les membres</option>
-            {teamSetters.map(s => (
-              <option key={s.id} value={s.id}>{s.first_name} {s.last_name} ({s.role})</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2 bg-white dark:bg-neutral-900 rounded-full border border-stone-200 dark:border-neutral-700 pl-3 pr-1 py-1 shadow-sm">
+            <Users className="h-4 w-4 text-stone-400 shrink-0" />
+            <select
+              value={globalMemberId || ''}
+              onChange={(e) => setGlobalMemberId(e.target.value || null)}
+              className="bg-transparent text-sm font-semibold text-stone-900 dark:text-white pr-6 py-1.5 focus:outline-none appearance-none cursor-pointer"
+            >
+              <option value="">Tous les membres</option>
+              {teamSetters.map(s => (
+                <option key={s.id} value={s.id}>{s.first_name} {s.last_name} ({s.role})</option>
+              ))}
+            </select>
+          </div>
         )}
       </div>
 

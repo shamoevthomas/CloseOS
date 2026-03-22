@@ -232,6 +232,36 @@ export function BusinessCRM() {
 
   const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0 || selectedTags.length > 0
 
+  // Count prospects per filter value
+  const filterCounts = useMemo(() => {
+    const byStage: Record<string, number> = {}
+    const byMember: Record<string, number> = {}
+    const byOffer: Record<string, number> = {}
+    const byTag: Record<string, number> = {}
+    const byPeriod: Record<number, number> = {}
+    const now = new Date()
+
+    for (const p of prospects) {
+      byStage[p.stage] = (byStage[p.stage] || 0) + 1
+      if (p.assigned_to) byMember[p.assigned_to] = (byMember[p.assigned_to] || 0) + 1
+      if (p.formula_id) byOffer[p.formula_id] = (byOffer[p.formula_id] || 0) + 1
+      if (p.offer_id) byOffer[String(p.offer_id)] = (byOffer[String(p.offer_id)] || 0) + 1
+      const pTags = prospectTags[p.id] || []
+      for (const t of pTags) byTag[t] = (byTag[t] || 0) + 1
+      if (p.created_at) {
+        const created = new Date(p.created_at)
+        for (const opt of PERIOD_OPTIONS) {
+          if (opt.days === 0) continue
+          const cutoff = new Date()
+          cutoff.setDate(now.getDate() - opt.days)
+          if (created >= cutoff) byPeriod[opt.days] = (byPeriod[opt.days] || 0) + 1
+        }
+      }
+    }
+    byPeriod[0] = prospects.length
+    return { byStage, byMember, byOffer, byTag, byPeriod }
+  }, [prospects, prospectTags])
+
   const clearFilters = () => {
     setSelectedPeriod(0)
     setSelectedMembers([])
@@ -508,7 +538,7 @@ export function BusinessCRM() {
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
                     )}
                   >
-                    {p.label}
+                    {p.label} <span className="opacity-60">({filterCounts.byPeriod[p.days] || 0})</span>
                   </button>
                 ))}
               </div>
@@ -529,7 +559,7 @@ export function BusinessCRM() {
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
                     )}
                   >
-                    {m.first_name} {m.last_name}
+                    {m.first_name} {m.last_name} <span className="opacity-60">({filterCounts.byMember[m.id] || 0})</span>
                   </button>
                 ))}
                 {allTeamMembers.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun membre</span>}
@@ -552,7 +582,7 @@ export function BusinessCRM() {
                     )}
                   >
                     <span className={cn('h-1.5 w-1.5 rounded-full', s.color)} />
-                    {s.name}
+                    {s.name} <span className="opacity-60">({filterCounts.byStage[s.id] || 0})</span>
                   </button>
                 ))}
               </div>
@@ -573,7 +603,7 @@ export function BusinessCRM() {
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
                     )}
                   >
-                    {f.name}
+                    {f.name} <span className="opacity-60">({filterCounts.byOffer[f.id] || 0})</span>
                   </button>
                 ))}
                 {formulas.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucune formule</span>}
@@ -599,7 +629,7 @@ export function BusinessCRM() {
                     style={selectedTags.includes(t.id) ? { backgroundColor: t.color } : {}}
                   >
                     <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.color }} />
-                    {t.name}
+                    {t.name} <span className="opacity-60">({filterCounts.byTag[t.id] || 0})</span>
                   </button>
                 ))}
                 {tags.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun tag</span>}
@@ -778,7 +808,7 @@ export function BusinessCRM() {
       {/* Add Prospect Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
               className="absolute top-4 right-4 text-stone-400 hover:text-stone-600 dark:text-neutral-500 dark:hover:text-neutral-300"

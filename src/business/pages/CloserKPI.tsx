@@ -306,8 +306,8 @@ export function CloserKPI() {
       </div>
 
       {/* Tabs + Global Member Selector */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-fit">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-fit flex-wrap">
           {tabs.map(tab => (
             <button
               key={tab.key}
@@ -324,16 +324,19 @@ export function CloserKPI() {
           ))}
         </div>
         {isOwnerView && teamClosers.length > 0 && (
-          <select
-            value={globalMemberId || ''}
-            onChange={(e) => setGlobalMemberId(e.target.value || null)}
-            className="rounded-full border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 text-sm text-stone-900 dark:text-white px-4 py-2 focus:border-stone-400 focus:outline-none shadow-[0_20px_40px_rgba(27,28,27,0.04)]"
-          >
-            <option value="">Tous les membres</option>
-            {teamClosers.map(c => (
-              <option key={c.id} value={c.id}>{c.first_name} {c.last_name} ({c.role})</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 rounded-full border border-stone-200 dark:border-neutral-700 pl-3 pr-1 py-1 shadow-sm">
+            <Users className="h-4 w-4 text-stone-400 shrink-0" />
+            <select
+              value={globalMemberId || ''}
+              onChange={(e) => setGlobalMemberId(e.target.value || null)}
+              className="bg-transparent text-sm font-semibold text-stone-900 dark:text-white pr-6 py-1.5 focus:outline-none appearance-none cursor-pointer"
+            >
+              <option value="">Tous les membres</option>
+              {teamClosers.map(c => (
+                <option key={c.id} value={c.id}>{c.first_name} {c.last_name} ({c.role})</option>
+              ))}
+            </select>
+          </div>
         )}
       </div>
 
