@@ -3,8 +3,10 @@ import { BusinessSidebar } from '../components/BusinessSidebar'
 import { BusinessSettingsModal } from '../components/BusinessSettingsModal'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
 import { Menu, Globe, X } from 'lucide-react'
+import { cn } from '../../lib/utils'
 import { useState, useEffect, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { BusinessThemeProvider, useTheme } from '../contexts/BusinessThemeContext'
 import { supabase } from '../../lib/supabase'
 import { getBrowserTimezone, getTimezoneLabel } from '../../lib/timezone'
 
@@ -98,7 +100,34 @@ export function BusinessLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-[#f4f2f1] overflow-hidden">
+    <BusinessThemeProvider>
+    <BusinessLayoutInner
+      isSidebarOpen={isSidebarOpen}
+      setIsSidebarOpen={setIsSidebarOpen}
+      isSidebarCollapsed={isSidebarCollapsed}
+      setIsSidebarCollapsed={setIsSidebarCollapsed}
+      isSettingsOpen={isSettingsOpen}
+      setIsSettingsOpen={setIsSettingsOpen}
+      pageInfo={pageInfo}
+      tzBannerVisible={tzBannerVisible}
+      storedTz={storedTz}
+      browserTz={browserTz}
+      handleAcceptTzChange={handleAcceptTzChange}
+      handleDismissTzBanner={handleDismissTzBanner}
+    />
+    </BusinessThemeProvider>
+  )
+}
+
+function BusinessLayoutInner({
+  isSidebarOpen, setIsSidebarOpen, isSidebarCollapsed, setIsSidebarCollapsed,
+  isSettingsOpen, setIsSettingsOpen, pageInfo, tzBannerVisible, storedTz,
+  browserTz, handleAcceptTzChange, handleDismissTzBanner,
+}: any) {
+  const { dark } = useTheme()
+
+  return (
+    <div className={cn("flex h-screen bg-[#f4f2f1] dark:bg-[#141211] overflow-hidden transition-colors duration-300", dark && 'dark')}>
       <BusinessSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -109,15 +138,15 @@ export function BusinessLayout() {
 
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         {/* Minimal mobile header — desktop has no header bar (content has its own) */}
-        <header className="z-30 lg:hidden border-b border-neutral-900/5 bg-white/60 backdrop-blur-xl">
+        <header className="z-30 lg:hidden border-b border-neutral-900/5 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl">
           <div className="flex h-14 items-center justify-between px-4">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="p-2 text-neutral-500 hover:text-neutral-900"
+              className="p-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
             >
               <Menu className="h-6 w-6" />
             </button>
-            <h1 className="text-sm font-extrabold text-neutral-900 uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <h1 className="text-sm font-extrabold text-neutral-900 dark:text-white uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {pageInfo.title}
             </h1>
             <BusinessReminderBell />
@@ -150,9 +179,9 @@ export function BusinessLayout() {
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto bg-[#f4f2f1] px-6 sm:px-12 py-8 sm:py-10 min-h-0 relative">
+        <main className="flex-1 overflow-y-auto bg-[#f4f2f1] dark:bg-[#141211] px-6 sm:px-12 py-8 sm:py-10 min-h-0 relative transition-colors duration-300">
           {/* Background decorative gradient */}
-          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-emerald-100/20 to-transparent rounded-full -mr-64 -mt-64 blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-emerald-100/20 dark:from-emerald-900/10 to-transparent rounded-full -mr-64 -mt-64 blur-3xl pointer-events-none" />
           <div className="relative z-10 max-w-[1600px] mx-auto">
             <Outlet />
           </div>

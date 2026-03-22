@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useTheme } from '../contexts/BusinessThemeContext'
 import { supabase } from '../../lib/supabase'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
@@ -37,6 +38,7 @@ interface BusinessSettingsModalProps {
 
 export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' }: BusinessSettingsModalProps) {
   const { user, businessProfile, updateBusinessProfile } = useBusinessAuth()
+  const { dark, toggle: toggleDark } = useTheme()
 
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'support' | 'delete_account'>(initialTab)
   const [loading, setLoading] = useState(false)
@@ -462,6 +464,26 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     </div>
                   </div>
                   {formData.owner_assignable
+                    ? <ToggleRight className="h-7 w-7 text-[#006c49] shrink-0" />
+                    : <ToggleLeft className="h-7 w-7 text-stone-300 shrink-0" />
+                  }
+                </div>
+
+                {/* Dark mode toggle */}
+                <div
+                  onClick={toggleDark}
+                  className="mt-4 flex items-center justify-between p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 rounded-xl bg-stone-900/10 dark:bg-white/10 text-stone-900 dark:text-white group-hover:bg-stone-900/15 dark:group-hover:bg-white/15 transition-colors">
+                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-stone-900 dark:text-white text-sm">Mode sombre</h4>
+                      <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">Basculer entre le thème clair et sombre</p>
+                    </div>
+                  </div>
+                  {dark
                     ? <ToggleRight className="h-7 w-7 text-[#006c49] shrink-0" />
                     : <ToggleLeft className="h-7 w-7 text-stone-300 shrink-0" />
                   }

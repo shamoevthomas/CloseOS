@@ -220,23 +220,23 @@ export function CloserCallRoom() {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-[#fbf9f8] text-stone-900 flex-col overflow-hidden relative" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="flex h-screen w-screen bg-[#fbf9f8] dark:bg-neutral-900 text-stone-900 dark:text-white flex-col overflow-hidden relative" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* ─── TopAppBar ─── */}
-      <header className="h-[72px] shrink-0 bg-white/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] px-8 flex items-center justify-between z-50 border-b border-stone-200/10">
+      <header className="h-[72px] shrink-0 bg-white/80 dark:bg-white/5 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] px-8 flex items-center justify-between z-50 border-b border-stone-200/10 dark:border-neutral-800">
         <div className="flex items-center gap-6">
-          <span className="font-extrabold text-xl tracking-tighter text-stone-900">Closer Call Room</span>
-          <div className="h-8 w-px bg-stone-200/30" />
+          <span className="font-extrabold text-xl tracking-tighter text-stone-900 dark:text-white">Closer Call Room</span>
+          <div className="h-8 w-px bg-stone-200/30 dark:bg-neutral-700" />
           <div className="flex flex-col">
-            <span className="text-sm font-extrabold tracking-tight text-stone-900">{contactName}</span>
+            <span className="text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">{contactName}</span>
             <div className="flex items-center gap-2">
               {isRecording && (
                 <>
                   <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Recording</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Recording</span>
                   <span className="text-[10px] font-bold text-stone-500">•</span>
                 </>
               )}
-              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">{formatDuration(callDuration)}</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{formatDuration(callDuration)}</span>
             </div>
           </div>
         </div>
@@ -244,13 +244,13 @@ export function CloserCallRoom() {
         <div className="flex items-center gap-3">
           {prospect && (
             <button onClick={() => setShowProspectView(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-stone-200/30 text-sm font-semibold hover:bg-stone-50 transition-all">
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-stone-200/30 dark:border-neutral-700 text-sm font-semibold hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all">
               <ExternalLink className="h-4 w-4" /> Fiche Prospect
             </button>
           )}
           <button onClick={isRecording ? stopRecording : startRecording}
             className={cn("flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all",
-              isRecording ? 'bg-red-50 text-red-600 border border-red-200' : 'border border-stone-200/30 text-stone-600 hover:bg-stone-50')}>
+              isRecording ? 'bg-red-50 text-red-600 border border-red-200' : 'border border-stone-200/30 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800')}>
             {isRecording ? <><div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />{formatDuration(recordingSeconds)}</> : <><div className="h-2.5 w-2.5 rounded-full bg-stone-400" />Enregistrer</>}
           </button>
           <button onClick={handleLeave}
@@ -258,8 +258,8 @@ export function CloserCallRoom() {
             Fin d'appel
           </button>
           <button onClick={() => setIsPanelOpen(!isPanelOpen)}
-            className="p-2.5 rounded-full hover:bg-stone-100 transition-all">
-            <Settings className="h-5 w-5 text-stone-500" />
+            className="p-2.5 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-800 transition-all">
+            <Settings className="h-5 w-5 text-stone-500 dark:text-neutral-400" />
           </button>
         </div>
       </header>
@@ -268,40 +268,40 @@ export function CloserCallRoom() {
       <div className="flex-1 flex overflow-hidden">
 
         {/* ─── Left Panel (Script + Offer) ─── */}
-        <section className={cn("transition-all duration-500 flex flex-col border-r border-stone-200/10 bg-stone-50/30", isPanelOpen ? 'w-[40%]' : 'w-0 overflow-hidden opacity-0')}>
+        <section className={cn("transition-all duration-500 flex flex-col border-r border-stone-200/10 dark:border-neutral-800 bg-stone-50/30 dark:bg-neutral-900/50", isPanelOpen ? 'w-[40%]' : 'w-0 overflow-hidden opacity-0')}>
 
           {/* Upper: Script */}
           <div className="h-1/2 flex flex-col p-7 space-y-5 overflow-hidden">
             <div className="flex items-center justify-between">
-              <h2 className="font-extrabold text-2xl tracking-tight text-stone-900">Script</h2>
+              <h2 className="font-extrabold text-2xl tracking-tight text-stone-900 dark:text-white">Script</h2>
               <div className="relative">
                 <select value={selectedScriptId} onChange={(e) => setSelectedScriptId(e.target.value)}
-                  className="appearance-none bg-white border-none rounded-full px-5 py-2 pr-10 text-xs font-bold shadow-sm focus:ring-2 focus:ring-emerald-600/20 cursor-pointer">
+                  className="appearance-none bg-white dark:bg-neutral-800 border-none rounded-full px-5 py-2 pr-10 text-xs font-bold shadow-sm focus:ring-2 focus:ring-emerald-600/20 cursor-pointer dark:text-white">
                   {scripts.map(s => <option key={s.id} value={s.id}>{s.title || 'Sans titre'}</option>)}
                 </select>
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
             </div>
-            <div className="flex-1 bg-white rounded-2xl p-7 overflow-y-auto no-scrollbar shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-stone-200/10">
+            <div className="flex-1 bg-white dark:bg-neutral-800 rounded-2xl p-7 overflow-y-auto no-scrollbar shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-stone-200/10 dark:border-neutral-700">
               <div className="space-y-7 max-w-prose">
-                <div className="prose prose-sm max-w-none text-stone-800 whitespace-pre-wrap leading-relaxed font-medium">{currentScriptContent}</div>
+                <div className="prose prose-sm max-w-none text-stone-800 dark:text-neutral-100 whitespace-pre-wrap leading-relaxed font-medium">{currentScriptContent}</div>
               </div>
             </div>
           </div>
 
           {/* Lower: Offer & Resources */}
           <div className="h-1/2 flex flex-col p-7 pt-0 space-y-5 overflow-hidden">
-            <div className="flex items-center gap-5 border-b border-stone-200/10">
+            <div className="flex items-center gap-5 border-b border-stone-200/10 dark:border-neutral-700">
               <button onClick={() => setActiveOfferTab('formulas')}
-                className={cn("pb-3 text-sm font-bold border-b-2 transition-all", activeOfferTab === 'formulas' ? 'border-stone-900 text-stone-900' : 'border-transparent text-stone-400 hover:text-stone-600')}>
+                className={cn("pb-3 text-sm font-bold border-b-2 transition-all", activeOfferTab === 'formulas' ? 'border-stone-900 dark:border-white text-stone-900 dark:text-white' : 'border-transparent text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300')}>
                 Formules
               </button>
               <button onClick={() => setActiveOfferTab('notes')}
-                className={cn("pb-3 text-sm font-semibold transition-all", activeOfferTab === 'notes' ? 'border-b-2 border-stone-900 text-stone-900' : 'text-stone-400 hover:text-stone-600')}>
+                className={cn("pb-3 text-sm font-semibold transition-all", activeOfferTab === 'notes' ? 'border-b-2 border-stone-900 dark:border-white text-stone-900 dark:text-white' : 'text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300')}>
                 Closing Notes
               </button>
               <button onClick={() => setActiveOfferTab('resources')}
-                className={cn("pb-3 text-sm font-semibold transition-all", activeOfferTab === 'resources' ? 'border-b-2 border-stone-900 text-stone-900' : 'text-stone-400 hover:text-stone-600')}>
+                className={cn("pb-3 text-sm font-semibold transition-all", activeOfferTab === 'resources' ? 'border-b-2 border-stone-900 dark:border-white text-stone-900 dark:text-white' : 'text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300')}>
                 Ressources
               </button>
 
@@ -309,7 +309,7 @@ export function CloserCallRoom() {
               {offers.length > 1 && (
                 <div className="relative ml-auto">
                   <select value={selectedOfferId} onChange={(e) => setSelectedOfferId(e.target.value)}
-                    className="appearance-none bg-white border-none rounded-full px-4 py-1.5 pr-8 text-xs font-bold shadow-sm focus:ring-2 focus:ring-emerald-600/20 cursor-pointer">
+                    className="appearance-none bg-white dark:bg-neutral-800 border-none rounded-full px-4 py-1.5 pr-8 text-xs font-bold shadow-sm focus:ring-2 focus:ring-emerald-600/20 cursor-pointer dark:text-white">
                     {offers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-stone-400 pointer-events-none" />
@@ -319,7 +319,7 @@ export function CloserCallRoom() {
 
             <div className="flex-1 overflow-y-auto no-scrollbar space-y-3">
               {!currentOffer ? (
-                <p className="text-sm text-stone-400 text-center mt-10">Sélectionnez une offre pour voir les détails.</p>
+                <p className="text-sm text-stone-400 dark:text-neutral-500 text-center mt-10">Sélectionnez une offre pour voir les détails.</p>
               ) : (
                 <>
                   {activeOfferTab === 'notes' && (

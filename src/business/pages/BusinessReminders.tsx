@@ -177,7 +177,7 @@ export function BusinessReminders() {
   const statusConfig: Record<ReminderStatus, { label: string; cls: string }> = {
     upcoming: { label: 'Upcoming', cls: 'bg-[#006c49]/10 text-[#006c49] border-[#006c49]/20' },
     overdue: { label: 'Passé', cls: 'bg-red-500/10 text-red-600 border-red-500/20' },
-    done: { label: 'Fait', cls: 'bg-stone-200/50 text-stone-500 border-stone-300/30' },
+    done: { label: 'Fait', cls: 'bg-stone-200/50 dark:bg-neutral-800/50 text-stone-500 dark:text-neutral-400 border-stone-300/30 dark:border-neutral-700/30' },
   }
 
   const sorted = sortReminders(reminders)
@@ -197,7 +197,7 @@ export function BusinessReminders() {
   const hasActiveFilters = filterMember !== 'all' || filterDate !== ''
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-stone-400" /></div>
+    return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-stone-400 dark:text-neutral-500" /></div>
   }
 
   return (
@@ -209,11 +209,11 @@ export function BusinessReminders() {
           <Bell className="h-7 w-7 text-amber-900" strokeWidth={1.5} />
         </div>
         <div>
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-stone-900 leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Rappels
           </h1>
           <div className="flex gap-4 mt-2.5 font-medium">
-            <span className="text-stone-500">{reminders.length} rappel{reminders.length !== 1 ? 's' : ''} au total</span>
+            <span className="text-stone-500 dark:text-neutral-400">{reminders.length} rappel{reminders.length !== 1 ? 's' : ''} au total</span>
             {overdueCount > 0 && (
               <span className="text-red-600 font-bold underline underline-offset-4 decoration-2">{overdueCount} en retard</span>
             )}
@@ -257,14 +257,14 @@ export function BusinessReminders() {
           {canAssign && teamMembers.length > 0 && (
             <>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center overflow-hidden">
-                  <Users className="h-4 w-4 text-stone-600" strokeWidth={1.5} />
+                <div className="w-8 h-8 rounded-full bg-stone-200 dark:bg-neutral-800 flex items-center justify-center overflow-hidden">
+                  <Users className="h-4 w-4 text-stone-600 dark:text-neutral-300" strokeWidth={1.5} />
                 </div>
                 <div className="relative">
                   <select
                     value={filterMember}
                     onChange={(e) => setFilterMember(e.target.value)}
-                    className="appearance-none bg-transparent border-none focus:ring-0 font-semibold text-stone-900 pr-6 text-sm cursor-pointer"
+                    className="appearance-none bg-transparent border-none focus:ring-0 font-semibold text-stone-900 dark:text-white pr-6 text-sm cursor-pointer"
                   >
                     <option value="all">Équipe : Tous</option>
                     {teamMembers.map(m => (
@@ -274,24 +274,24 @@ export function BusinessReminders() {
                   <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
                 </div>
               </div>
-              <div className="h-6 w-px bg-stone-300/30" />
+              <div className="h-6 w-px bg-stone-300/30 dark:bg-neutral-700/30" />
             </>
           )}
-          <div className="flex items-center gap-3 text-stone-500">
+          <div className="flex items-center gap-3 text-stone-500 dark:text-neutral-400">
             <Calendar className="h-4 w-4" strokeWidth={1.5} />
             <input
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="bg-transparent border-none focus:ring-0 font-semibold text-stone-900 text-sm p-0"
+              className="bg-transparent border-none focus:ring-0 font-semibold text-stone-900 dark:text-white text-sm p-0"
             />
           </div>
           {hasActiveFilters && (
             <>
-              <div className="h-6 w-px bg-stone-300/30" />
+              <div className="h-6 w-px bg-stone-300/30 dark:bg-neutral-700/30" />
               <button
                 onClick={() => { setFilterMember('all'); setFilterDate('') }}
-                className="text-xs text-stone-500 hover:text-stone-900 font-semibold transition-colors"
+                className="text-xs text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white font-semibold transition-colors"
               >
                 Réinitialiser
               </button>
@@ -310,11 +310,11 @@ export function BusinessReminders() {
       {/* ─── Data Table ─── */}
       {filteredReminders.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 text-center">
-          <div className="w-32 h-32 bg-stone-100 rounded-full flex items-center justify-center mb-8">
-            <Bell className="h-14 w-14 text-stone-300" strokeWidth={1} />
+          <div className="w-32 h-32 bg-stone-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-8">
+            <Bell className="h-14 w-14 text-stone-300 dark:text-neutral-600" strokeWidth={1} />
           </div>
-          <h3 className="text-2xl font-extrabold text-stone-900 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>Tout est à jour</h3>
-          <p className="text-stone-500 max-w-xs">Vous n'avez aucun rappel prévu pour le moment. Détendez-vous ou créez-en un nouveau.</p>
+          <h3 className="text-2xl font-extrabold text-stone-900 dark:text-white mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>Tout est à jour</h3>
+          <p className="text-stone-500 dark:text-neutral-400 max-w-xs">Vous n'avez aucun rappel prévu pour le moment. Détendez-vous ou créez-en un nouveau.</p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="mt-8 px-8 py-3 bg-stone-900 text-white rounded-full font-bold hover:bg-stone-800 transition-all active:scale-95"
@@ -324,14 +324,14 @@ export function BusinessReminders() {
         </div>
       ) : (
         <div
-          className="bg-white rounded-2xl overflow-hidden"
+          className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden"
           style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}
         >
           {/* Table header — desktop */}
-          <div className="hidden md:grid grid-cols-12 gap-4 bg-stone-50 px-8 py-5">
+          <div className="hidden md:grid grid-cols-12 gap-4 bg-stone-50 dark:bg-neutral-800 px-8 py-5">
             {['Titre', 'Description', 'Date & heure', 'Assigné', 'Lié à', 'Statut'].map((h, i) => (
               <div key={h} className={cn(
-                'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500',
+                'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400',
                 i === 0 ? 'col-span-3' : i === 1 ? 'col-span-2' : i === 2 ? 'col-span-2' : 'col-span-1'
               )}>
                 {h}
@@ -357,33 +357,33 @@ export function BusinessReminders() {
                   )}
                 >
                   {/* Desktop row */}
-                  <div onClick={() => setSelectedReminder(reminder)} className="hidden md:grid grid-cols-12 gap-4 items-center px-8 py-6 hover:bg-stone-50/40 transition-all duration-300 cursor-pointer">
+                  <div onClick={() => setSelectedReminder(reminder)} className="hidden md:grid grid-cols-12 gap-4 items-center px-8 py-6 hover:bg-stone-50/40 dark:hover:bg-neutral-800/40 transition-all duration-300 cursor-pointer">
                     <div className="col-span-3">
                       <p className={cn(
                         'font-bold text-sm',
-                        status === 'done' ? 'text-stone-400' : 'text-stone-900'
+                        status === 'done' ? 'text-stone-400 dark:text-neutral-500' : 'text-stone-900 dark:text-white'
                       )}>
                         {reminder.title}
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-stone-500 truncate max-w-[200px]">{reminder.description || '—'}</p>
+                      <p className="text-sm text-stone-500 dark:text-neutral-400 truncate max-w-[200px]">{reminder.description || '—'}</p>
                     </div>
                     <div className="col-span-2">
-                      <p className={cn('text-sm font-medium', isOverdue && status !== 'done' ? 'text-red-600' : 'text-stone-700')}>
+                      <p className={cn('text-sm font-medium', isOverdue && status !== 'done' ? 'text-red-600' : 'text-stone-700 dark:text-neutral-200')}>
                         {fmtDate},
                       </p>
-                      <p className={cn('text-sm font-medium', isOverdue && status !== 'done' ? 'text-red-600' : 'text-stone-700')}>
+                      <p className={cn('text-sm font-medium', isOverdue && status !== 'done' ? 'text-red-600' : 'text-stone-700 dark:text-neutral-200')}>
                         {fmtTime}
                       </p>
                     </div>
                     <div className="col-span-1">
                       {reminder.assigned_to ? (
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-stone-100 rounded-full">
-                          <div className="w-5 h-5 rounded-full bg-stone-300 flex items-center justify-center text-[9px] font-bold text-stone-700">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full">
+                          <div className="w-5 h-5 rounded-full bg-stone-300 dark:bg-neutral-600 flex items-center justify-center text-[9px] font-bold text-stone-700 dark:text-neutral-200">
                             {getMemberInitials(reminder.assigned_to)}
                           </div>
-                          <span className="text-xs font-bold text-stone-700 truncate max-w-[60px]">
+                          <span className="text-xs font-bold text-stone-700 dark:text-neutral-200 truncate max-w-[60px]">
                             {getMemberName(reminder.assigned_to)?.split(' ')[0] || '—'}
                           </span>
                         </div>

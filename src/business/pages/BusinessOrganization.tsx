@@ -57,8 +57,8 @@ interface CustomTab {
 
 // ─── Helpers ───
 
-const stoneInputClass = "w-full bg-transparent border-b border-[#c4c7c7]/30 py-2.5 text-[#1b1c1b] focus:border-[#006c49] focus:ring-0 outline-none transition-all placeholder:text-[#444748]/40 font-['Inter'] text-sm"
-const stoneLabelClass = "block text-[10px] uppercase tracking-widest font-bold text-[#444748] mb-2"
+const stoneInputClass = "w-full bg-transparent border-b border-[#c4c7c7]/30 dark:border-neutral-700 py-2.5 text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-0 outline-none transition-all placeholder:text-[#444748]/40 dark:placeholder:text-neutral-500 font-['Inter'] text-sm"
+const stoneLabelClass = "block text-[10px] uppercase tracking-widest font-bold text-[#444748] dark:text-neutral-400 mb-2"
 
 function genId() {
   return crypto.randomUUID()
@@ -149,7 +149,7 @@ function SectionEditor({
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSection() } }}
-          className={`${stoneInputClass} flex-1 border border-[#c4c7c7]/20 rounded-xl px-4 py-3 bg-white`}
+          className={`${stoneInputClass} flex-1 border border-[#c4c7c7]/20 dark:border-neutral-700 rounded-xl px-4 py-3 bg-white dark:bg-neutral-800`}
           placeholder="Nom de la nouvelle section..."
         />
         <button type="button" onClick={addSection} className="px-6 py-3 rounded-full bg-[#000000] text-white font-['Manrope'] font-extrabold text-sm hover:bg-[#1b1c1b] transition-all active:scale-95 flex items-center gap-2 shrink-0">
@@ -160,13 +160,13 @@ function SectionEditor({
 
       {sections.map(section => (
         <div key={section.id} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
-          <div className="flex items-center gap-2 px-5 py-4 bg-[#f5f3f2]/60">
+          <div className="flex items-center gap-2 px-5 py-4 bg-[#f5f3f2]/60 dark:bg-neutral-800/60">
             <GripVertical className="h-4 w-4 text-[#c4c7c7] shrink-0" />
             <input
               type="text"
               value={section.title}
               onChange={(e) => updateTitle(section.id, e.target.value)}
-              className="flex-1 bg-transparent font-['Manrope'] font-extrabold text-[#1b1c1b] outline-none focus:text-[#006c49] transition-colors text-sm"
+              className="flex-1 bg-transparent font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white outline-none focus:text-[#006c49] transition-colors text-sm"
             />
             <button onClick={() => toggleCollapse(section.id)} className="p-1.5 text-[#444748] hover:text-[#1b1c1b] transition-colors">
               {section.collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
@@ -282,11 +282,11 @@ function SectionEditor({
 
       {sections.length === 0 && (
         <div className="text-center py-16">
-          <div className="w-20 h-20 bg-[#efedec] rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-20 h-20 bg-[#efedec] dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <Plus className="h-8 w-8 text-[#444748]/30" />
           </div>
-          <p className="font-['Manrope'] font-extrabold text-[#1b1c1b] text-lg mb-1">{emptyLabel}</p>
-          <p className="text-sm text-[#444748]">{emptyDesc}</p>
+          <p className="font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white text-lg mb-1">{emptyLabel}</p>
+          <p className="text-sm text-[#444748] dark:text-neutral-400">{emptyDesc}</p>
         </div>
       )}
     </div>
@@ -304,8 +304,8 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
     <div className="space-y-5">
       {sections.map(section => (
         <div key={section.id} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
-          <div className="px-5 py-4 bg-[#f5f3f2]/60">
-            <h4 className="font-['Manrope'] font-extrabold text-[#1b1c1b] text-sm">{section.title}</h4>
+          <div className="px-5 py-4 bg-[#f5f3f2]/60 dark:bg-neutral-800/60">
+            <h4 className="font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white text-sm">{section.title}</h4>
           </div>
           <div className="p-5 space-y-4">
             {section.blocks.map(block => {
@@ -413,8 +413,8 @@ function TeamMemberOrganizationView() {
     <div className="max-w-5xl mx-auto pb-12">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] leading-none">Organisation</h1>
-        <p className="text-[#444748] mt-3 leading-relaxed max-w-xl">Informations et parcours d'intégration de votre organisation.</p>
+        <h1 className="text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">Organisation</h1>
+        <p className="text-[#444748] dark:text-neutral-400 mt-3 leading-relaxed max-w-xl">Informations et parcours d'intégration de votre organisation.</p>
       </div>
 
       {/* Tabs */}
@@ -818,8 +818,8 @@ export function BusinessOrganization() {
       {/* ─── Page Header ─── */}
       <div className="flex items-end justify-between mb-10">
         <div>
-          <h1 className="text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] leading-none">Organisation</h1>
-          <p className="text-[#444748] mt-3 leading-relaxed max-w-xl">Personnalisez votre identité de marque et définissez les parcours d'intégration de votre équipe.</p>
+          <h1 className="text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">Organisation</h1>
+          <p className="text-[#444748] dark:text-neutral-400 mt-3 leading-relaxed max-w-xl">Personnalisez votre identité de marque et définissez les parcours d'intégration de votre équipe.</p>
         </div>
         <button
           onClick={handleSave}

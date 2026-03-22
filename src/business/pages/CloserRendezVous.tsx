@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
+import { fromUTC, getTimezoneLabel } from '../../lib/timezone'
 import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
-  ChevronDown, User, Mail, Megaphone, UserCheck, X
+  ChevronDown, User, Mail, Megaphone, UserCheck, X, Globe
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
@@ -12,6 +13,8 @@ interface Appointment {
   id: string
   date: string
   time: string
+  datetime_utc?: string | null
+  timezone?: string | null
   duration: number
   status: 'pending' | 'confirmed' | 'cancelled' | 'done'
   notes: string | null
@@ -26,6 +29,7 @@ interface TeamMember {
   first_name: string
   last_name: string
   role: string
+  timezone?: string
 }
 
 const STATUS_CONFIG: Record<string, { label: string; badgeBg: string; badgeText: string }> = {
@@ -38,7 +42,7 @@ const STATUS_CONFIG: Record<string, { label: string; badgeBg: string; badgeText:
 const API_URL = '/api/business'
 
 export function CloserRendezVous() {
-  const { user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
+  const { user, isTeamMember, ownerUserId, teamMember, userTimezone } = useBusinessAuth()
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -60,7 +64,8 @@ export function CloserRendezVous() {
         const pastIds: string[] = []
         const appts = (data.appointments as Appointment[]).map(a => {
           if (a.status === 'pending' || a.status === 'confirmed') {
-            const start = new Date(`${a.date}T${a.time?.slice(0, 5) || '00:00'}:00`)
+            const localDt = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone) : { date: a.date, time: a.time?.slice(0, 5) || '00:00' }
+            const start = new Date(`${localDt.date}T${localDt.time}:00`)
             const end = new Date(start.getTime() + (a.duration || 30) * 60000)
             if (end.getTime() < now) {
               pastIds.push(a.id)
@@ -83,12 +88,12 @@ export function CloserRendezVous() {
     } finally {
       setLoading(false)
     }
-  }, [effectiveUserId])
+  }, [effectiveUserId, userTimezone])
 
   const fetchTeamMembers = useCallback(async () => {
     if (!ownerUserId) return
     const [tmRes, ownerRes] = await Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', ownerUserId),
+      supabase.from('business_team_members').select('id, first_name, last_name, role, timezone').eq('business_owner_id', ownerUserId),
       supabase.from('business_users').select('id, full_name, owner_assignable').eq('id', ownerUserId).single(),
     ])
     const list = tmRes.data || []
@@ -107,10 +112,26 @@ export function CloserRendezVous() {
     (a as any).assigned_to === teamMember?.id
   )
 
+  const getLocalDateTime = (appt: Appointment) => {
+    if (appt.datetime_utc) {
+      return fromUTC(appt.datetime_utc, userTimezone)
+    }
+    return { date: appt.date, time: appt.time?.slice(0, 5) || '00:00' }
+  }
+
+  const getMemberLocalTime = (appt: Appointment) => {
+    if (!appt.datetime_utc || !appt.assigned_to) return null
+    const member = teamMembers.find(t => t.id === appt.assigned_to)
+    if (!member?.timezone || member.timezone === userTimezone) return null
+    const memberLocal = fromUTC(appt.datetime_utc, member.timezone)
+    return { time: memberLocal.time, name: `${member.first_name}` }
+  }
+
   const filtered = myAppointments.filter(a => {
     if (filterStatus !== 'all' && a.status !== filterStatus) return false
-    if (filterStartDate && a.date < filterStartDate) return false
-    if (filterEndDate && a.date > filterEndDate) return false
+    const localDt = getLocalDateTime(a)
+    if (filterStartDate && localDt.date < filterStartDate) return false
+    if (filterEndDate && localDt.date > filterEndDate) return false
     return true
   })
 
@@ -243,17 +264,18 @@ export function CloserRendezVous() {
           <div className="divide-y divide-stone-100">
             {filtered.map((appt) => {
               const statusConf = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending
+              const localDt = getLocalDateTime(appt)
               // Temporal tag
               const nowMs = Date.now()
-              const apptStart = new Date(`${appt.date}T${appt.time?.slice(0, 5) || '00:00'}:00`)
+              const apptStart = new Date(`${localDt.date}T${localDt.time}:00`)
               const apptEnd = new Date(apptStart.getTime() + appt.duration * 60000)
               const todayStr = new Date().toISOString().split('T')[0]
               let timeTag: { label: string; bg: string; text: string }
               if (apptEnd.getTime() < nowMs) {
                 timeTag = { label: 'Passé', bg: 'bg-stone-100', text: 'text-stone-500' }
-              } else if (appt.date === todayStr && apptStart.getTime() > nowMs) {
+              } else if (localDt.date === todayStr && apptStart.getTime() > nowMs) {
                 timeTag = { label: 'Bientôt', bg: 'bg-amber-100/80', text: 'text-amber-700' }
-              } else if (appt.date === todayStr && apptStart.getTime() <= nowMs) {
+              } else if (localDt.date === todayStr && apptStart.getTime() <= nowMs) {
                 timeTag = { label: 'En cours', bg: 'bg-emerald-100/80', text: 'text-emerald-700' }
               } else {
                 timeTag = { label: 'Futur', bg: 'bg-blue-50', text: 'text-blue-600' }
@@ -263,8 +285,15 @@ export function CloserRendezVous() {
                   {/* Desktop */}
                   <div className="hidden md:grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-2">
-                      <p className="text-sm font-semibold text-stone-900">{formatDate(appt.date)}</p>
-                      <p className="text-xs text-stone-500">{appt.time?.slice(0, 5)}</p>
+                      <p className="text-sm font-semibold text-stone-900">{formatDate(localDt.date)}</p>
+                      <p className="text-xs text-stone-500">
+                        {localDt.time}
+                        {(() => {
+                          const mt = getMemberLocalTime(appt)
+                          if (!mt) return null
+                          return <span className="text-xs text-stone-400 ml-1">({mt.time} chez {mt.name})</span>
+                        })()}
+                      </p>
                     </div>
                     <div className="col-span-2">
                       <p className="text-sm text-stone-700 flex items-center gap-1">
@@ -327,7 +356,12 @@ export function CloserRendezVous() {
                             {timeTag.label}
                           </span>
                           <span className="text-sm font-semibold text-stone-900">
-                            {formatDate(appt.date)} a {appt.time?.slice(0, 5)}
+                            {formatDate(localDt.date)} a {localDt.time}
+                            {(() => {
+                              const mt = getMemberLocalTime(appt)
+                              if (!mt) return null
+                              return <span className="text-xs text-stone-400 ml-1">({mt.time} chez {mt.name})</span>
+                            })()}
                           </span>
                           <span className="text-xs text-stone-400">{appt.duration}min</span>
                         </div>

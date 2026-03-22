@@ -10,8 +10,8 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { useCustomStages } from '../hooks/useCustomStages'
 
-const GLASS_CARD = 'bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/20'
-const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 font-bold'
+const GLASS_CARD = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700'
+const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold'
 
 const ACTIVE_STAGES = [
   { id: 'prospect', name: 'Prospect', dot: 'bg-[#ffb95f]', border: 'border-l-[#ffb95f]' },
@@ -92,7 +92,7 @@ export function CloserPipeline() {
       <div className="mb-6 shrink-0">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900">Mon Pipeline</h1>
+            <h1 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Mon Pipeline</h1>
             <p className={cn(LABEL_STYLE, 'mt-1')}>{myProspects.length} prospects assignés</p>
           </div>
 
@@ -104,7 +104,7 @@ export function CloserPipeline() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Rechercher un prospect..."
-                className="w-64 rounded-full bg-stone-100/50 border border-stone-200/20 py-2 pl-10 pr-4 text-sm text-stone-900 placeholder-stone-400 font-medium focus:outline-none focus:ring-1 focus:ring-[#006c49]/30"
+                className="w-64 rounded-full bg-stone-100/50 dark:bg-neutral-800/50 border border-stone-200/20 dark:border-neutral-700/30 py-2 pl-10 pr-4 text-sm text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-neutral-500 font-medium focus:outline-none focus:ring-1 focus:ring-[#006c49]/30"
               />
             </div>
           </div>
@@ -113,9 +113,9 @@ export function CloserPipeline() {
 
       {myProspects.length === 0 ? (
         <div className={cn(GLASS_CARD, 'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200/30 py-16 flex-1')}>
-          <User className="h-12 w-12 text-stone-300 mb-4" strokeWidth={1.5} />
-          <h3 className="font-business-display text-lg font-extrabold text-stone-700 mb-1">Aucun prospect assigné</h3>
-          <p className="text-sm text-stone-500">Votre manager doit vous assigner des prospects depuis le CRM.</p>
+          <User className="h-12 w-12 text-stone-300 dark:text-neutral-600 mb-4" strokeWidth={1.5} />
+          <h3 className="font-business-display text-lg font-extrabold text-stone-700 dark:text-neutral-200 mb-1">Aucun prospect assigné</h3>
+          <p className="text-sm text-stone-500 dark:text-neutral-400">Votre manager doit vous assigner des prospects depuis le CRM.</p>
         </div>
       ) : (
         <DragDropContext onDragEnd={onDragEnd}>
@@ -123,8 +123,8 @@ export function CloserPipeline() {
             {/* FLUX ACTIF */}
             <section>
               <div className="flex items-baseline space-x-3 mb-8">
-                <h2 className="font-business-display text-3xl font-extrabold tracking-tight text-stone-900">Flux Actif</h2>
-                <div className="h-1 w-1 rounded-full bg-stone-300" />
+                <h2 className="font-business-display text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">Flux Actif</h2>
+                <div className="h-1 w-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
                 <span className={LABEL_STYLE}>Opérations Prioritaires</span>
               </div>
 
@@ -139,12 +139,12 @@ export function CloserPipeline() {
                       <div className="flex justify-between items-center px-2">
                         <div className="flex items-center space-x-2">
                           <span className={cn('w-2 h-2 rounded-full', stage.dot)} />
-                          <h4 className="font-bold text-sm text-stone-900">{stage.name}</h4>
-                          <span className="bg-stone-100 text-stone-500 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                          <h4 className="font-bold text-sm text-stone-900 dark:text-white">{stage.name}</h4>
+                          <span className="bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
                             {stageDeals.length}
                           </span>
                         </div>
-                        <span className="text-xs font-black text-stone-900">{formatTotal(stageTotal)}</span>
+                        <span className="text-xs font-black text-stone-900 dark:text-white">{formatTotal(stageTotal)}</span>
                       </div>
 
                       {/* Droppable zone */}
@@ -154,8 +154,8 @@ export function CloserPipeline() {
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                             className={cn(
-                              'space-y-3 min-h-[400px] rounded-lg border-2 border-dashed border-stone-200/30 p-1 transition-colors',
-                              snapshot.isDraggingOver && 'bg-stone-100/30'
+                              'space-y-3 min-h-[400px] rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
+                              snapshot.isDraggingOver && 'bg-stone-100/30 dark:bg-neutral-800/30'
                             )}
                           >
                             {stageDeals.map((deal, index) => {
@@ -183,24 +183,24 @@ export function CloserPipeline() {
                                       >
                                         <div className="flex justify-between items-start mb-4">
                                           <div className="flex items-center space-x-2">
-                                            <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center">
+                                            <div className="w-8 h-8 rounded-full bg-stone-50 dark:bg-neutral-800 flex items-center justify-center">
                                               {isB2B
-                                                ? <Building2 className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
-                                                : <User className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                                                ? <Building2 className="h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
+                                                : <User className="h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                                               }
                                             </div>
-                                            <span className="font-bold text-sm tracking-tight text-stone-900 truncate max-w-[140px]">
+                                            <span className="font-bold text-sm tracking-tight text-stone-900 dark:text-white truncate max-w-[140px]">
                                               {mainTitle || 'Sans nom'}
                                             </span>
                                           </div>
                                         </div>
 
                                         {subTitle && (
-                                          <p className="text-xs text-stone-500 mb-2 truncate">{subTitle}</p>
+                                          <p className="text-xs text-stone-500 dark:text-neutral-400 mb-2 truncate">{subTitle}</p>
                                         )}
 
                                         <div className="flex justify-between items-end">
-                                          <p className="text-lg font-black text-stone-900">
+                                          <p className="text-lg font-black text-stone-900 dark:text-white">
                                             {(deal.value || 0).toLocaleString()} €
                                           </p>
                                         </div>
@@ -224,8 +224,8 @@ export function CloserPipeline() {
             {/* FLUX INACTIF */}
             <section className="opacity-60 hover:opacity-100 transition-opacity">
               <div className="flex items-baseline space-x-3 mb-8">
-                <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-600">Flux Inactif</h2>
-                <div className="h-1 w-1 rounded-full bg-stone-300" />
+                <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-600 dark:text-neutral-300">Flux Inactif</h2>
+                <div className="h-1 w-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
                 <span className={LABEL_STYLE}>Archives & Rejets</span>
               </div>
 
@@ -241,16 +241,16 @@ export function CloserPipeline() {
                         onClick={() => toggleColumn(stage.id)}
                       >
                         <span className={cn('w-2 h-2 rounded-full', stage.id === 'lost' ? 'bg-[#ba1a1a]/40' : 'bg-stone-300')} />
-                        <h4 className="font-bold text-xs text-stone-500 uppercase tracking-wider">{stage.name}</h4>
+                        <h4 className="font-bold text-xs text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{stage.name}</h4>
                         <ChevronDown className={cn('h-3 w-3 text-stone-400 transition-transform', !isCollapsed && 'rotate-180')} strokeWidth={1.5} />
                       </div>
 
                       {isCollapsed ? (
                         <div
-                          className="h-24 rounded-xl border border-stone-200/50 flex items-center justify-center bg-stone-50/50 cursor-pointer hover:bg-stone-100/50 transition-colors"
+                          className="h-24 rounded-xl border border-stone-200/50 dark:border-neutral-700/30 flex items-center justify-center bg-stone-50/50 dark:bg-neutral-800/50 cursor-pointer hover:bg-stone-100/50 dark:hover:bg-neutral-800 transition-colors"
                           onClick={() => toggleColumn(stage.id)}
                         >
-                          <span className="text-xs font-medium text-stone-400">{stageDeals.length} éléments</span>
+                          <span className="text-xs font-medium text-stone-400 dark:text-neutral-500">{stageDeals.length} éléments</span>
                         </div>
                       ) : (
                         <Droppable droppableId={stage.id}>
@@ -259,8 +259,8 @@ export function CloserPipeline() {
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                               className={cn(
-                                'space-y-2 min-h-[100px] rounded-lg border-2 border-dashed border-stone-200/30 p-1 transition-colors',
-                                snapshot.isDraggingOver && 'bg-stone-100/30'
+                                'space-y-2 min-h-[100px] rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
+                                snapshot.isDraggingOver && 'bg-stone-100/30 dark:bg-neutral-800/30'
                               )}
                             >
                               {stageDeals.map((deal, index) => (
@@ -273,14 +273,14 @@ export function CloserPipeline() {
                                         {...provided.dragHandleProps}
                                         onClick={() => setSelectedProspect(deal)}
                                         className={cn(
-                                          "cursor-pointer rounded-xl border border-stone-200/50 bg-stone-50/50 p-3 hover:bg-white transition-colors",
-                                          snapshot.isDragging && "shadow-2xl z-[9999] bg-white"
+                                          "cursor-pointer rounded-xl border border-stone-200/50 dark:border-neutral-700/30 bg-stone-50/50 dark:bg-neutral-800/50 p-3 hover:bg-white dark:hover:bg-neutral-800 transition-colors",
+                                          snapshot.isDragging && "shadow-2xl z-[9999] bg-white dark:bg-neutral-800"
                                         )}
                                         style={provided.draggableProps.style}
                                       >
-                                        <p className="text-sm text-stone-600 font-medium">{getDisplayName(deal)}</p>
+                                        <p className="text-sm text-stone-600 dark:text-neutral-300 font-medium">{getDisplayName(deal)}</p>
                                         {deal.value ? (
-                                          <p className="text-xs text-stone-400 mt-1">{deal.value.toLocaleString()} €</p>
+                                          <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{deal.value.toLocaleString()} €</p>
                                         ) : null}
                                       </div>
                                     )
@@ -303,8 +303,8 @@ export function CloserPipeline() {
             {myCustomStages.length > 0 && (
               <section>
                 <div className="flex items-baseline space-x-3 mb-8">
-                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900">Statuts Personnalisés</h2>
-                  <div className="h-1 w-1 rounded-full bg-stone-300" />
+                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Statuts Personnalisés</h2>
+                  <div className="h-1 w-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
                   <span className={LABEL_STYLE}>Créés par votre équipe</span>
                 </div>
 
@@ -319,12 +319,12 @@ export function CloserPipeline() {
                         <div className="flex justify-between items-center px-2">
                           <div className="flex items-center space-x-2">
                             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cs.color }} />
-                            <h4 className="font-bold text-sm text-stone-900">{cs.name}</h4>
-                            <span className="bg-stone-100 text-stone-500 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            <h4 className="font-bold text-sm text-stone-900 dark:text-white">{cs.name}</h4>
+                            <span className="bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
                               {stageDeals.length}
                             </span>
                           </div>
-                          <span className="text-xs font-black text-stone-900">{formatTotal(stageTotal)}</span>
+                          <span className="text-xs font-black text-stone-900 dark:text-white">{formatTotal(stageTotal)}</span>
                         </div>
 
                         <Droppable droppableId={stageId}>
@@ -333,8 +333,8 @@ export function CloserPipeline() {
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                               className={cn(
-                                'space-y-3 min-h-[200px] rounded-lg border-2 border-dashed border-stone-200/30 p-1 transition-colors',
-                                snapshot.isDraggingOver && 'bg-stone-100/30'
+                                'space-y-3 min-h-[200px] rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
+                                snapshot.isDraggingOver && 'bg-stone-100/30 dark:bg-neutral-800/30'
                               )}
                               style={{ borderTop: `3px solid ${cs.color}` }}
                             >
@@ -362,20 +362,20 @@ export function CloserPipeline() {
                                         >
                                           <div className="flex justify-between items-start mb-4">
                                             <div className="flex items-center space-x-2">
-                                              <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center">
+                                              <div className="w-8 h-8 rounded-full bg-stone-50 dark:bg-neutral-800 flex items-center justify-center">
                                                 {isB2B
-                                                  ? <Building2 className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
-                                                  : <User className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                                                  ? <Building2 className="h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
+                                                  : <User className="h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                                                 }
                                               </div>
-                                              <span className="font-bold text-sm tracking-tight text-stone-900 truncate max-w-[140px]">
+                                              <span className="font-bold text-sm tracking-tight text-stone-900 dark:text-white truncate max-w-[140px]">
                                                 {mainTitle || 'Sans nom'}
                                               </span>
                                             </div>
                                           </div>
-                                          {subTitle && <p className="text-xs text-stone-500 mb-2 truncate">{subTitle}</p>}
+                                          {subTitle && <p className="text-xs text-stone-500 dark:text-neutral-400 mb-2 truncate">{subTitle}</p>}
                                           <div className="flex justify-between items-end">
-                                            <p className="text-lg font-black text-stone-900">
+                                            <p className="text-lg font-black text-stone-900 dark:text-white">
                                               {(deal.value || 0).toLocaleString()} €
                                             </p>
                                           </div>
@@ -388,7 +388,7 @@ export function CloserPipeline() {
                               })}
                               {stageDeals.length === 0 && (
                                 <div className="flex items-center justify-center h-20">
-                                  <span className="text-xs text-stone-400 italic">Aucun prospect</span>
+                                  <span className="text-xs text-stone-400 dark:text-neutral-500 italic">Aucun prospect</span>
                                 </div>
                               )}
                               {provided.placeholder}

@@ -13,10 +13,10 @@ import { useCustomStages } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
-const GLASS_PANEL = 'bg-white/70 backdrop-blur-xl'
-const LABEL_STYLE = 'text-[11px] font-business-display font-extrabold uppercase tracking-widest text-stone-500'
-const SELECT_CLS = 'w-full bg-[#f5f3f2] border-0 rounded-xl py-3.5 px-4 font-business-display font-bold text-stone-900 appearance-none focus:ring-2 focus:ring-stone-900 transition-all'
-const INPUT_CLS = 'w-full bg-[#f5f3f2] border-0 rounded-xl px-4 py-3 text-sm text-stone-900 font-medium focus:ring-2 focus:ring-stone-900 transition-all placeholder:text-stone-400'
+const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-xl'
+const LABEL_STYLE = 'text-[11px] font-business-display font-extrabold uppercase tracking-widest text-stone-500 dark:text-neutral-400'
+const SELECT_CLS = 'w-full bg-[#f5f3f2] dark:bg-neutral-800 border-0 rounded-xl py-3.5 px-4 font-business-display font-bold text-stone-900 dark:text-white appearance-none focus:ring-2 focus:ring-stone-900 transition-all'
+const INPUT_CLS = 'w-full bg-[#f5f3f2] dark:bg-neutral-800 border-0 rounded-xl px-4 py-3 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900 transition-all placeholder:text-stone-400 dark:placeholder:text-neutral-500'
 
 const ALL_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
@@ -356,7 +356,7 @@ export function BusinessProspectView({
       <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={onClose} />
 
       {/* Slide-over drawer */}
-      <aside className="absolute inset-y-0 right-0 w-full max-w-[580px] flex flex-col shadow-2xl rounded-l-2xl border-l border-[#c4c7c7]/10 overflow-hidden"
+      <aside className="absolute inset-y-0 right-0 w-full max-w-[580px] flex flex-col shadow-2xl rounded-l-2xl border-l border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden dark:bg-neutral-900/90"
         style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
       >
 
@@ -364,23 +364,23 @@ export function BusinessProspectView({
         <header className="p-8 pb-4">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-5 min-w-0">
-              <div className="w-16 h-16 rounded-full bg-[#e4e2e1] flex items-center justify-center overflow-hidden shrink-0 text-2xl font-business-display font-extrabold text-stone-500">
+              <div className="w-16 h-16 rounded-full bg-[#e4e2e1] dark:bg-neutral-800 flex items-center justify-center overflow-hidden shrink-0 text-2xl font-business-display font-extrabold text-stone-500 dark:text-neutral-400">
                 {(local.contact || '?')[0]?.toUpperCase()}
               </div>
               <div className="min-w-0">
-                <h2 className="text-3xl font-business-display font-extrabold tracking-tight text-stone-900 truncate">
+                <h2 className="text-3xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
                   {local.contact || 'Sans nom'}
                 </h2>
                 {local.company && (
-                  <p className="text-stone-500 font-medium truncate">{local.company}</p>
+                  <p className="text-stone-500 dark:text-neutral-400 font-medium truncate">{local.company}</p>
                 )}
               </div>
             </div>
             <button
               onClick={onClose}
-              className="w-12 h-12 rounded-full bg-[#f5f3f2] flex items-center justify-center hover:bg-[#efedec] transition-colors shrink-0"
+              className="w-12 h-12 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center hover:bg-[#efedec] dark:hover:bg-neutral-700 transition-colors shrink-0"
             >
-              <X className="h-5 w-5 text-stone-900" strokeWidth={1.5} />
+              <X className="h-5 w-5 text-stone-900 dark:text-white" strokeWidth={1.5} />
             </button>
           </div>
 
@@ -405,7 +405,7 @@ export function BusinessProspectView({
               })}
               <button
                 onClick={() => setShowTagPicker(!showTagPicker)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-stone-400 px-2.5 py-1 rounded-full border border-dashed border-stone-300 hover:border-stone-400 hover:text-stone-500 transition-all"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-stone-400 dark:text-neutral-500 px-2.5 py-1 rounded-full border border-dashed border-stone-300 dark:border-neutral-600 hover:border-stone-400 dark:hover:border-neutral-500 hover:text-stone-500 dark:hover:text-neutral-400 transition-all"
               >
                 <Plus className="h-3 w-3" strokeWidth={2} />
                 tag
@@ -414,7 +414,7 @@ export function BusinessProspectView({
 
             {/* Tag dropdown */}
             {showTagPicker && (
-              <div className="absolute left-0 top-full mt-1.5 z-20 bg-white rounded-xl shadow-lg border border-stone-200/60 p-2 min-w-[200px] max-w-[300px]">
+              <div className="absolute left-0 top-full mt-1.5 z-20 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-stone-200/60 dark:border-neutral-700 p-2 min-w-[200px] max-w-[300px]">
                 <div className="flex flex-col gap-0.5">
                   {allTags.map(tag => {
                     const isActive = prospectTagIds.includes(tag.id)
@@ -424,17 +424,17 @@ export function BusinessProspectView({
                         onClick={() => handleToggleTag(tag.id)}
                         className={cn(
                           'flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg text-sm transition-all',
-                          isActive ? 'bg-stone-100 font-semibold' : 'hover:bg-stone-50'
+                          isActive ? 'bg-stone-100 dark:bg-neutral-800 font-semibold' : 'hover:bg-stone-50 dark:hover:bg-neutral-800'
                         )}
                       >
                         <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
-                        <span className="flex-1 text-stone-700">{tag.name}</span>
+                        <span className="flex-1 text-stone-700 dark:text-neutral-200">{tag.name}</span>
                         {isActive && <Check className="h-3.5 w-3.5 text-stone-500" strokeWidth={2} />}
                       </button>
                     )
                   })}
                   {allTags.length === 0 && (
-                    <p className="text-xs text-stone-400 text-center py-3">Aucun tag disponible</p>
+                    <p className="text-xs text-stone-400 dark:text-neutral-500 text-center py-3">Aucun tag disponible</p>
                   )}
                 </div>
               </div>
@@ -443,7 +443,7 @@ export function BusinessProspectView({
         </header>
 
         {/* Quick Actions */}
-        <section className="px-8 py-5 flex flex-wrap gap-3 border-b border-[#c4c7c7]/10">
+        <section className="px-8 py-5 flex flex-wrap gap-3 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
           <button
             onClick={() => navigate(`/business/cockpit?name=${encodeURIComponent(local.contact)}&prospectId=${prospect.id}`)}
             className="flex items-center gap-2 px-6 py-3 bg-stone-900 text-white rounded-full font-business-display font-bold text-sm tracking-wide transition-transform active:scale-95 shadow-lg shadow-stone-900/20"
@@ -461,13 +461,13 @@ export function BusinessProspectView({
           <div className="flex gap-2">
             <button
               onClick={handleOpenGmail}
-              className="w-12 h-12 rounded-full bg-white border border-[#c4c7c7]/20 flex items-center justify-center text-stone-900 hover:bg-[#f5f3f2] transition-colors"
+              className="w-12 h-12 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
             >
               <Mail className="h-5 w-5" strokeWidth={1.5} />
             </button>
             <button
               onClick={handleOpenWhatsApp}
-              className="w-12 h-12 rounded-full bg-white border border-[#c4c7c7]/20 flex items-center justify-center text-stone-900 hover:bg-[#f5f3f2] transition-colors"
+              className="w-12 h-12 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
             >
               <MessageCircle className="h-5 w-5" strokeWidth={1.5} />
             </button>
@@ -487,8 +487,8 @@ export function BusinessProspectView({
               className={cn(
                 'pb-4 font-business-display font-bold transition-all flex items-center gap-2',
                 activeTab === tab.key
-                  ? 'text-stone-900 font-extrabold border-b-2 border-stone-900'
-                  : 'text-stone-400 hover:text-stone-900'
+                  ? 'text-stone-900 dark:text-white font-extrabold border-b-2 border-stone-900 dark:border-white'
+                  : 'text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white'
               )}
             >
               {tab.label}
@@ -591,8 +591,8 @@ export function BusinessProspectView({
               {campaign && (
                 <div>
                   <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Campagne d'origine</label>
-                  <div className="rounded-xl bg-[#f5f3f2] px-5 py-3.5">
-                    <p className="font-business-display font-bold text-stone-900">{campaign.name}</p>
+                  <div className="rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3.5">
+                    <p className="font-business-display font-bold text-stone-900 dark:text-white">{campaign.name}</p>
                   </div>
                 </div>
               )}
@@ -626,7 +626,7 @@ export function BusinessProspectView({
                         href={r.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-full bg-white border border-[#c4c7c7]/20 px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-[#f5f3f2] transition-colors"
+                        className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-3 py-1.5 text-xs font-medium text-stone-700 dark:text-neutral-200 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
                       >
                         <ExternalLink className="h-3 w-3" strokeWidth={1.5} /> {r.name || r.type}
                       </a>
@@ -641,11 +641,11 @@ export function BusinessProspectView({
                   <label className={cn(LABEL_STYLE, 'block mb-2 ml-1 flex items-center gap-2')}>
                     <FileText className="h-3.5 w-3.5" strokeWidth={1.5} /> Réponses de capture
                   </label>
-                  <div className="rounded-xl bg-white p-5 space-y-3 border border-[#c4c7c7]/10 shadow-sm">
+                  <div className="rounded-xl bg-white dark:bg-neutral-800 p-5 space-y-3 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm">
                     {Object.entries(captureData).map(([key, val]) => (
                       <div key={key} className="flex items-start gap-2">
-                        <span className="text-xs font-bold text-stone-500 min-w-0 shrink-0">{key} :</span>
-                        <span className="text-sm text-stone-900">{String(val)}</span>
+                        <span className="text-xs font-bold text-stone-500 dark:text-neutral-400 min-w-0 shrink-0">{key} :</span>
+                        <span className="text-sm text-stone-900 dark:text-white">{String(val)}</span>
                       </div>
                     ))}
                   </div>
@@ -653,10 +653,10 @@ export function BusinessProspectView({
               )}
 
               {/* Fiche Client */}
-              <section className="bg-white p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5">
+              <section className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5 dark:border-neutral-700">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className={cn(LABEL_STYLE, 'text-xs')}>Fiche Client</h3>
-                  <button onClick={() => setEditingClient(!editingClient)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] hover:text-stone-700 transition-colors">
+                  <button onClick={() => setEditingClient(!editingClient)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                     <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
                   </button>
                 </div>
@@ -668,36 +668,36 @@ export function BusinessProspectView({
                     <input type="tel" value={editedPhone} onChange={e => setEditedPhone(e.target.value)} className={INPUT_CLS} placeholder="Téléphone" />
                     <div className="flex gap-2 pt-2">
                       <button onClick={handleSaveClient} className="flex-1 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">Sauvegarder</button>
-                      <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone) }} className="rounded-full border border-[#c4c7c7]/20 px-4 py-2.5 text-sm font-medium text-stone-600 hover:bg-[#f5f3f2] transition-colors">Annuler</button>
+                      <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone) }} className="rounded-full border border-[#c4c7c7]/20 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">Annuler</button>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-5">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] flex items-center justify-center text-stone-500">
+                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
                         <Mail className="h-5 w-5" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Email</p>
-                        <button onClick={handleOpenGmail} className="text-sm font-semibold text-stone-900 hover:text-[#006c49] truncate text-left transition-colors">{local.email || '—'}</button>
+                        <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Email</p>
+                        <button onClick={handleOpenGmail} className="text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] truncate text-left transition-colors">{local.email || '—'}</button>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] flex items-center justify-center text-stone-500">
+                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
                         <Phone className="h-5 w-5" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Téléphone</p>
-                        <button onClick={handleOpenWhatsApp} className="text-sm font-semibold text-stone-900 hover:text-[#006c49] text-left transition-colors">{local.phone || '—'}</button>
+                        <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Téléphone</p>
+                        <button onClick={handleOpenWhatsApp} className="text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] text-left transition-colors">{local.phone || '—'}</button>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] flex items-center justify-center text-stone-500">
+                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
                         <Calendar className="h-5 w-5" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Date de création</p>
-                        <p className="text-sm font-semibold text-stone-900">
+                        <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Date de création</p>
+                        <p className="text-sm font-semibold text-stone-900 dark:text-white">
                           {local.created_at ? new Date(local.created_at).toLocaleDateString('fr-FR', {
                             day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
                           }) : '—'}
@@ -711,7 +711,7 @@ export function BusinessProspectView({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[10px] font-bold text-[#006c49] uppercase tracking-wider">Prochain rendez-vous</p>
-                          <p className="text-sm font-semibold text-stone-900">
+                          <p className="text-sm font-semibold text-stone-900 dark:text-white">
                             {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString('fr-FR', {
                               weekday: 'short', day: 'numeric', month: 'long'
                             })} à {nextAppointment.time?.slice(0, 5)}
@@ -727,7 +727,7 @@ export function BusinessProspectView({
               <div>
                 <div className="flex items-center justify-between mb-2 ml-1">
                   <label className={LABEL_STYLE}>Notes Internes</label>
-                  <button onClick={() => setEditingNotes(!editingNotes)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] hover:text-stone-700 transition-colors">
+                  <button onClick={() => setEditingNotes(!editingNotes)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                     <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
                   </button>
                 </div>
@@ -736,12 +736,12 @@ export function BusinessProspectView({
                     <textarea value={tempNotes} onChange={e => setTempNotes(e.target.value)} className={cn(INPUT_CLS, 'resize-none h-32')} placeholder="Ajouter un commentaire sur le profil du prospect..." />
                     <div className="mt-3 flex gap-2">
                       <button onClick={handleSaveNotes} className="rounded-full bg-stone-900 px-5 py-2 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">Enregistrer</button>
-                      <button onClick={() => setEditingNotes(false)} className="rounded-full border border-[#c4c7c7]/20 px-5 py-2 text-sm font-medium text-stone-600 hover:bg-[#f5f3f2] transition-colors">Annuler</button>
+                      <button onClick={() => setEditingNotes(false)} className="rounded-full border border-[#c4c7c7]/20 px-5 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">Annuler</button>
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl bg-[#f5f3f2] p-5">
-                    <p className="whitespace-pre-wrap text-sm text-stone-600">
+                  <div className="rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 p-5">
+                    <p className="whitespace-pre-wrap text-sm text-stone-600 dark:text-neutral-300">
                       {captureData ? '(Données de capture - voir section ci-dessus)' : (local.notes || 'Aucune note')}
                     </p>
                   </div>
@@ -756,12 +756,12 @@ export function BusinessProspectView({
               {!isAddingNote ? (
                 <button
                   onClick={() => setIsAddingNote(true)}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-200/30 bg-[#f5f3f2]/50 py-4 text-sm font-business-display font-bold text-stone-500 hover:bg-[#f5f3f2] hover:border-stone-300 transition-all"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 py-4 text-sm font-business-display font-bold text-stone-500 dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 hover:border-stone-300 dark:hover:border-neutral-600 transition-all"
                 >
                   <Plus className="h-4 w-4" strokeWidth={1.5} /> Ajouter une note manuelle
                 </button>
               ) : (
-                <div className="rounded-xl bg-white p-5 border border-[#c4c7c7]/10 shadow-sm">
+                <div className="rounded-xl bg-white dark:bg-neutral-800 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm">
                   <h4 className={cn(LABEL_STYLE, 'mb-3')}>Nouvelle Note</h4>
                   <textarea
                     value={newNoteContent}
@@ -782,14 +782,14 @@ export function BusinessProspectView({
               <div className="space-y-3">
                 {callNotes.length > 0 ? (
                   callNotes.map(note => (
-                    <details key={note.id} className="group rounded-xl bg-white border border-[#c4c7c7]/10 open:shadow-sm transition-all overflow-hidden">
-                      <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-[#f5f3f2] transition-colors select-none list-none [&::-webkit-details-marker]:hidden">
+                    <details key={note.id} className="group rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 open:shadow-sm transition-all overflow-hidden">
+                      <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors select-none list-none [&::-webkit-details-marker]:hidden">
                         <div className="flex items-center gap-3">
                           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f5f3f2] text-stone-400 group-open:bg-[#ffddb8] group-open:text-[#2a1700] transition-colors">
                             <Calendar className="h-4 w-4" strokeWidth={1.5} />
                           </div>
                           <div>
-                            <h4 className="text-sm font-semibold text-stone-900">
+                            <h4 className="text-sm font-semibold text-stone-900 dark:text-white">
                               {new Date(note.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                             </h4>
                             <div className="flex items-center gap-2 text-xs text-stone-400 mt-0.5">
@@ -807,16 +807,16 @@ export function BusinessProspectView({
                         </div>
                       </summary>
                       <div className="border-t border-[#c4c7c7]/10 p-5 pt-3">
-                        <p className="text-sm text-stone-600 whitespace-pre-wrap leading-relaxed">{note.content}</p>
+                        <p className="text-sm text-stone-600 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">{note.content}</p>
                       </div>
                     </details>
                   ))
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 bg-[#f5f3f2]/50">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] mb-3">
+                  <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-3">
                       <ClipboardList className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
                     </div>
-                    <p className="text-sm font-medium text-stone-500">Aucune note d'appel</p>
+                    <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">Aucune note d'appel</p>
                     <p className="text-xs text-stone-400 mt-1">Vos notes manuelles apparaîtront ici.</p>
                   </div>
                 )}
@@ -829,7 +829,7 @@ export function BusinessProspectView({
             <div className="space-y-4">
               <button
                 onClick={() => setShowReminderForm(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-200/30 bg-[#f5f3f2]/50 py-4 text-sm font-business-display font-bold text-stone-500 hover:bg-[#f5f3f2] hover:border-stone-300 transition-all"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 py-4 text-sm font-business-display font-bold text-stone-500 dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 hover:border-stone-300 dark:hover:border-neutral-600 transition-all"
               >
                 <Plus className="h-4 w-4" strokeWidth={1.5} /> Ajouter un rappel
               </button>
@@ -839,11 +839,11 @@ export function BusinessProspectView({
                   <Loader2 className="h-6 w-6 animate-spin text-stone-400" strokeWidth={1.5} />
                 </div>
               ) : prospectReminders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 bg-[#f5f3f2]/50">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] mb-3">
+                <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-3">
                     <Bell className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
                   </div>
-                  <p className="text-sm font-medium text-stone-500">Aucun rappel</p>
+                  <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">Aucun rappel</p>
                   <p className="text-xs text-stone-400 mt-1">Créez un rappel pour ce prospect.</p>
                 </div>
               ) : (
@@ -857,12 +857,12 @@ export function BusinessProspectView({
                         key={reminder.id}
                         className={cn(
                           'rounded-xl p-4 transition-all',
-                          isDone ? 'bg-[#f5f3f2]' : isOverdue ? 'bg-[#ba1a1a]/5 ring-1 ring-[#ba1a1a]/10' : 'bg-white border border-[#c4c7c7]/10'
+                          isDone ? 'bg-[#f5f3f2] dark:bg-neutral-800' : isOverdue ? 'bg-[#ba1a1a]/5 ring-1 ring-[#ba1a1a]/10' : 'bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700'
                         )}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <p className={cn('text-sm font-semibold', isDone ? 'text-stone-400 line-through' : 'text-stone-900')}>
+                            <p className={cn('text-sm font-semibold', isDone ? 'text-stone-400 dark:text-neutral-500 line-through' : 'text-stone-900 dark:text-white')}>
                               {reminder.title}
                             </p>
                             {reminder.description && <p className="text-xs text-stone-400 mt-0.5 truncate">{reminder.description}</p>}
@@ -899,10 +899,10 @@ export function BusinessProspectView({
         {showReminderForm && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => setShowReminderForm(false)} />
-            <div className="relative w-full max-w-sm rounded-3xl bg-white shadow-2xl border border-[#c4c7c7]/10">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10">
-                <h3 className="font-business-display font-extrabold text-stone-900">Nouveau rappel</h3>
-                <button onClick={() => setShowReminderForm(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] hover:text-stone-700 transition-colors">
+            <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+                <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">Nouveau rappel</h3>
+                <button onClick={() => setShowReminderForm(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                   <X className="h-4 w-4" strokeWidth={1.5} />
                 </button>
               </div>
@@ -944,7 +944,7 @@ export function BusinessProspectView({
         )}
 
         {/* Footer */}
-        <footer className="p-8 border-t border-[#c4c7c7]/10 flex justify-between items-center bg-white/20">
+        <footer className="p-8 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-between items-center bg-white/20 dark:bg-neutral-900/20">
           <button
             onClick={handleDelete}
             className="text-[#ba1a1a] font-business-display font-bold text-sm flex items-center gap-2 px-4 py-2 hover:bg-[#ba1a1a]/5 rounded-full transition-colors"

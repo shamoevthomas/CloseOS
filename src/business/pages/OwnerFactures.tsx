@@ -157,45 +157,45 @@ export function OwnerFactures() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Factures
           </h1>
-          <p className="text-[#444748] mt-2">Toutes les factures de votre organisation</p>
+          <p className="text-[#444748] dark:text-neutral-400 mt-2">Toutes les factures de votre organisation</p>
         </div>
       </div>
 
       {/* KPI Cards — Bento */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Total facturé */}
-        <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 hover:bg-[#efedec]/30 transition-colors duration-300">
+        <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 hover:bg-[#efedec]/30 dark:hover:bg-neutral-700/30 transition-colors duration-300">
           <div className="flex justify-between items-start mb-4">
             <span className="p-3 rounded-2xl bg-[#efedec] text-[#444748]">
               <Receipt className="h-5 w-5" />
             </span>
             <span className="text-[10px] font-bold text-[#444748]/40 tracking-widest uppercase">Global</span>
           </div>
-          <p className="text-[#444748] text-sm font-medium">Total facturé</p>
-          <p className="text-4xl font-extrabold mt-1 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">Total facturé</p>
+          <p className="text-4xl font-extrabold mt-1 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {totalAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
           </p>
         </div>
 
         {/* Payé */}
-        <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 relative overflow-hidden">
+        <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#006c49]/5 rounded-full -mr-16 -mt-16 blur-3xl" />
           <div className="flex justify-between items-start mb-4">
             <span className="p-3 rounded-2xl bg-[#006c49]/10 text-[#006c49]">
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
             </span>
           </div>
-          <p className="text-[#444748] text-sm font-medium">Payé</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">Payé</p>
           <p className="text-4xl font-extrabold mt-1 text-[#006c49]" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {paidAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
           </p>
         </div>
 
         {/* En attente */}
-        <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 relative overflow-hidden">
+        <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#ffb95f]/10 rounded-full -mr-16 -mt-16 blur-3xl" />
           <div className="flex justify-between items-start mb-4">
             <span className="p-3 rounded-2xl bg-[#ffb95f]/20 text-[#b87500]">
@@ -203,7 +203,7 @@ export function OwnerFactures() {
             </span>
             <span className="text-[10px] font-bold text-[#b87500] tracking-widest uppercase">{pendingCount} facture{pendingCount !== 1 ? 's' : ''}</span>
           </div>
-          <p className="text-[#444748] text-sm font-medium">En attente</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">En attente</p>
           <p className="text-4xl font-extrabold mt-1 text-[#b87500]" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {pendingAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
           </p>
@@ -211,33 +211,33 @@ export function OwnerFactures() {
       </div>
 
       {/* Filter Bar — Glass pill */}
-      <div className="bg-white/70 backdrop-blur-2xl rounded-full p-3 px-6 flex flex-wrap items-center gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] ring-1 ring-[#c4c7c7]/10">
-        <div className="flex items-center gap-3 border-r border-[#c4c7c7]/20 pr-6">
+      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-2xl rounded-full p-3 px-6 flex flex-wrap items-center gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] ring-1 ring-[#c4c7c7]/10 dark:ring-neutral-700">
+        <div className="flex items-center gap-3 border-r border-[#c4c7c7]/20 dark:border-neutral-700 pr-6">
           <span className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Période</span>
           <div className="flex items-center gap-2">
             <input
               type="date"
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
-              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-[#1b1c1b]"
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-[#1b1c1b] dark:text-white"
             />
             <span className="text-[#444748]/40">→</span>
             <input
               type="date"
               value={endDate}
               onChange={e => setEndDate(e.target.value)}
-              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-[#1b1c1b]"
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-[#1b1c1b] dark:text-white"
             />
           </div>
         </div>
 
         {teamMembers.length > 0 && (
-          <div className="flex items-center gap-3 border-r border-[#c4c7c7]/20 pr-6">
+          <div className="flex items-center gap-3 border-r border-[#c4c7c7]/20 dark:border-neutral-700 pr-6">
             <span className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Membre</span>
             <select
               value={filterMember}
               onChange={e => setFilterMember(e.target.value)}
-              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b]"
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white"
             >
               <option value="all">Tous les membres</option>
               {teamMembers.map(m => (
@@ -252,7 +252,7 @@ export function OwnerFactures() {
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
-            className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b]"
+            className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white"
           >
             <option value="all">Tous les statuts</option>
             {STATUS_OPTIONS.map(s => (
@@ -272,11 +272,11 @@ export function OwnerFactures() {
       </div>
 
       {/* Invoice Table */}
-      <div className="bg-white rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 overflow-hidden">
+      <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#f5f3f2]/50">
+              <tr className="bg-[#f5f3f2]/50 dark:bg-neutral-900/50">
                 <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>N° Facture</th>
                 <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Date</th>
                 <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Client & Offre</th>
@@ -286,35 +286,35 @@ export function OwnerFactures() {
                 <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest text-right" style={{ fontFamily: 'Manrope, sans-serif' }}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#c4c7c7]/10">
+            <tbody className="divide-y divide-[#c4c7c7]/10 dark:divide-neutral-700">
               {paginatedInvoices.map(inv => {
                 const config = getStatusConfig(inv.status)
                 const memberName = getMemberName(inv.team_member_id)
                 const memberInitials = getMemberInitials(inv.team_member_id)
 
                 return (
-                  <tr key={inv.id} className="hover:bg-[#efedec]/30 transition-colors group">
+                  <tr key={inv.id} className="hover:bg-[#efedec]/30 dark:hover:bg-neutral-700/30 transition-colors group">
                     <td className="px-8 py-6 font-mono text-xs font-bold text-[#444748]">{inv.invoice_number}</td>
-                    <td className="px-8 py-6 text-sm text-[#1b1c1b] font-medium">{formatDate(inv.created_at)}</td>
+                    <td className="px-8 py-6 text-sm text-[#1b1c1b] dark:text-white font-medium">{formatDate(inv.created_at)}</td>
                     <td className="px-8 py-6">
                       <div className="flex flex-col">
-                        <span className="font-bold text-sm text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>{inv.client_name}</span>
+                        <span className="font-bold text-sm text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{inv.client_name}</span>
                         {inv.offer_name && <span className="text-[10px] text-[#444748] font-medium">{inv.offer_name}</span>}
                       </div>
                     </td>
                     <td className="px-8 py-6">
                       {memberName ? (
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-[#eae8e7] flex items-center justify-center text-[8px] font-bold text-[#1b1c1b]">
+                          <div className="w-6 h-6 rounded-full bg-[#eae8e7] dark:bg-neutral-700 flex items-center justify-center text-[8px] font-bold text-[#1b1c1b] dark:text-white">
                             {memberInitials}
                           </div>
-                          <span className="text-xs font-semibold text-[#1b1c1b]">{memberName}</span>
+                          <span className="text-xs font-semibold text-[#1b1c1b] dark:text-white">{memberName}</span>
                         </div>
                       ) : (
                         <span className="text-xs text-[#444748]/40">—</span>
                       )}
                     </td>
-                    <td className="px-8 py-6 text-sm font-extrabold text-[#1b1c1b]">{formatCurrency(inv.amount_ttc || 0)}</td>
+                    <td className="px-8 py-6 text-sm font-extrabold text-[#1b1c1b] dark:text-white">{formatCurrency(inv.amount_ttc || 0)}</td>
                     <td className="px-8 py-6">
                       <div className="flex justify-center">
                         <select
@@ -357,11 +357,11 @@ export function OwnerFactures() {
                 <tr>
                   <td colSpan={7} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 bg-[#f5f3f2] rounded-full flex items-center justify-center mb-4">
+                      <div className="w-16 h-16 bg-[#f5f3f2] dark:bg-neutral-700 rounded-full flex items-center justify-center mb-4">
                         <FileText className="h-8 w-8 text-[#c4c7c7]" />
                       </div>
-                      <p className="text-sm font-semibold text-[#1b1c1b] mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>Aucune facture</p>
-                      <p className="text-xs text-[#444748]">Aucune facture sur cette période</p>
+                      <p className="text-sm font-semibold text-[#1b1c1b] dark:text-white mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>Aucune facture</p>
+                      <p className="text-xs text-[#444748] dark:text-neutral-400">Aucune facture sur cette période</p>
                     </div>
                   </td>
                 </tr>
@@ -372,7 +372,7 @@ export function OwnerFactures() {
 
         {/* Pagination */}
         {filtered.length > 0 && (
-          <div className="px-8 py-6 bg-[#f5f3f2]/30 flex justify-between items-center">
+          <div className="px-8 py-6 bg-[#f5f3f2]/30 dark:bg-neutral-900/30 flex justify-between items-center">
             <p className="text-[10px] font-bold text-[#444748] uppercase tracking-widest">
               Affichage de {(currentPage - 1) * ITEMS_PER_PAGE + 1} à {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} sur {filtered.length} facture{filtered.length !== 1 ? 's' : ''}
             </p>

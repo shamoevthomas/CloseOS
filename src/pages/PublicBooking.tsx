@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Globe } from 'lucide-react'
-import { toUTC, getTimezoneLabel } from '../lib/timezone'
+import { toUTC, fromUTC, getTimezoneLabel } from '../lib/timezone'
 
-interface SlotData { date: string; time: string }
+interface SlotData { date: string; time: string; datetime_utc?: string }
 interface BookingInfo {
   label: string
   duration: number
@@ -74,11 +74,21 @@ export function PublicBooking() {
       .finally(() => setLoading(false))
   }, [slug])
 
+  // Convert API slots from UTC to prospect's timezone for display
+  const prospectSlots = useMemo(() => {
+    if (!info?.slots || info.freeMode) return info?.slots || []
+    return info.slots.map(slot => {
+      if (!slot.datetime_utc) return slot
+      const local = fromUTC(slot.datetime_utc, prospectTimezone)
+      return { ...slot, date: local.date, time: local.time }
+    })
+  }, [info?.slots, info?.freeMode, prospectTimezone])
+
   // Available dates set (for calendar highlighting)
   const availableDates = useMemo(() => {
     if (!info?.slots) return new Set<string>()
-    return new Set(info.slots.map(s => s.date))
-  }, [info?.slots])
+    return new Set(prospectSlots.map(s => s.date))
+  }, [info?.slots, prospectSlots])
 
   // Slots for selected date
   const slotsForDate = useMemo(() => {
@@ -93,8 +103,8 @@ export function PublicBooking() {
       }
       return slots
     }
-    return (info?.slots || []).filter(s => s.date === selectedDate).map(s => s.time)
-  }, [selectedDate, info])
+    return prospectSlots.filter(s => s.date === selectedDate).map(s => s.time)
+  }, [selectedDate, info, prospectSlots])
 
   const handleContactSubmit = () => {
     if (!name.trim()) return

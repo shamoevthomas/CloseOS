@@ -28,7 +28,7 @@ interface CallHistoryItem {
   contact_id: number | null
 }
 
-const GLASS_PANEL = 'bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 shadow-sm'
+const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 dark:ring-neutral-700 shadow-sm'
 
 export function CloserAppels() {
   const navigate = useNavigate()
@@ -229,8 +229,8 @@ export function CloserAppels() {
           <span className="h-px w-10 bg-[#c4c7c7]/30" />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Workspace</span>
         </div>
-        <h1 className="text-4xl font-business-display font-extrabold tracking-tight text-stone-900">Appels</h1>
-        <p className="text-stone-500 text-base max-w-2xl font-light italic opacity-80">Gérez vos appels, scripts et suivez vos prospects.</p>
+        <h1 className="text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Appels</h1>
+        <p className="text-stone-500 dark:text-neutral-400 text-base max-w-2xl font-light italic opacity-80">Gérez vos appels, scripts et suivez vos prospects.</p>
       </header>
 
       {/* Toolbar */}
@@ -242,7 +242,7 @@ export function CloserAppels() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Rechercher un prospect ou un appel..."
-            className="w-full pl-14 pr-6 py-5 bg-white border border-[#c4c7c7]/20 rounded-[2rem] shadow-sm group-hover:shadow-md transition-shadow focus:ring-2 focus:ring-[#006c49]/10 focus:border-[#006c49] outline-none font-medium text-stone-900"
+            className="w-full pl-14 pr-6 py-5 bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 rounded-[2rem] shadow-sm group-hover:shadow-md transition-shadow focus:ring-2 focus:ring-[#006c49]/10 focus:border-[#006c49] outline-none font-medium text-stone-900 dark:text-white dark:placeholder-neutral-500"
           />
         </div>
         <div className="flex items-center gap-4">
@@ -272,12 +272,12 @@ export function CloserAppels() {
 
       {/* Title bar */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900">Appels Récents</h2>
+        <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Appels Récents</h2>
         <div className="flex gap-2">
-          <button className="p-2.5 bg-[#eae8e7] rounded-full hover:bg-[#dbdad9] transition-colors">
+          <button className="p-2.5 bg-[#eae8e7] dark:bg-neutral-800 rounded-full hover:bg-[#dbdad9] dark:hover:bg-neutral-700 transition-colors">
             <SlidersHorizontal className="h-4 w-4 text-stone-600" strokeWidth={1.5} />
           </button>
-          <button className="p-2.5 bg-[#eae8e7] rounded-full hover:bg-[#dbdad9] transition-colors">
+          <button className="p-2.5 bg-[#eae8e7] dark:bg-neutral-800 rounded-full hover:bg-[#dbdad9] dark:hover:bg-neutral-700 transition-colors">
             <MoreVertical className="h-4 w-4 text-stone-600" strokeWidth={1.5} />
           </button>
         </div>
@@ -294,8 +294,8 @@ export function CloserAppels() {
             )}
           >
             <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-[#eae8e7] rounded-xl flex items-center justify-center shadow-inner group-hover:bg-[#ffddb8] transition-colors">
-                <Video className="h-7 w-7 text-stone-700" strokeWidth={1.5} />
+              <div className="w-16 h-16 bg-[#eae8e7] dark:bg-neutral-800 rounded-xl flex items-center justify-center shadow-inner group-hover:bg-[#ffddb8] transition-colors">
+                <Video className="h-7 w-7 text-stone-700 dark:text-neutral-200" strokeWidth={1.5} />
               </div>
               <div>
                 {editingCallId === call.id ? (
@@ -312,7 +312,7 @@ export function CloserAppels() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-business-display font-bold text-lg text-stone-900">{call.contact_name}</h3>
+                    <h3 className="font-business-display font-bold text-lg text-stone-900 dark:text-white">{call.contact_name}</h3>
                     <button
                       onClick={() => { setEditingCallId(call.id); setEditingName(call.contact_name) }}
                       className="opacity-0 group-hover:opacity-100 p-1 hover:bg-stone-100 rounded-full transition-all"
@@ -321,7 +321,7 @@ export function CloserAppels() {
                     </button>
                   </div>
                 )}
-                <div className="flex items-center gap-4 text-sm text-stone-500">
+                <div className="flex items-center gap-4 text-sm text-stone-500 dark:text-neutral-400">
                   <span className="flex items-center gap-1.5 font-medium">
                     <Clock className="h-4 w-4" strokeWidth={1.5} />
                     {formatTimeAgo(call.date)}
@@ -342,7 +342,7 @@ export function CloserAppels() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate(`/business/appels/${call.id}?readonly=1`)}
-                className="flex items-center gap-2 px-6 py-3 bg-[#eae8e7] hover:bg-[#dbdad9] text-stone-900 rounded-full font-bold text-sm transition-all"
+                className="flex items-center gap-2 px-6 py-3 bg-[#eae8e7] dark:bg-neutral-800 hover:bg-[#dbdad9] dark:hover:bg-neutral-700 text-stone-900 dark:text-white rounded-full font-bold text-sm transition-all"
               >
                 <Eye className="h-4 w-4" strokeWidth={1.5} />
                 Détails
@@ -355,9 +355,9 @@ export function CloserAppels() {
         ))}
         {filteredHistory.length === 0 && (
           <div className={cn(GLASS_PANEL, 'rounded-2xl py-16 text-center')}>
-            <Video className="h-12 w-12 mx-auto mb-4 text-stone-300" strokeWidth={1} />
-            <p className="text-stone-400 font-medium">Aucun appel récent.</p>
-            <p className="text-stone-400/60 text-sm mt-1">Lancez un appel pour commencer.</p>
+            <Video className="h-12 w-12 mx-auto mb-4 text-stone-300 dark:text-neutral-600" strokeWidth={1} />
+            <p className="text-stone-400 dark:text-neutral-500 font-medium">Aucun appel récent.</p>
+            <p className="text-stone-400/60 dark:text-neutral-500/60 text-sm mt-1">Lancez un appel pour commencer.</p>
           </div>
         )}
       </div>
@@ -366,9 +366,9 @@ export function CloserAppels() {
       {isNewCallModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsNewCallModalOpen(false)} />
-          <div className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl p-8 animate-in zoom-in-95">
+          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl p-8 animate-in zoom-in-95">
             <button onClick={() => setIsNewCallModalOpen(false)} className="absolute top-5 right-5 text-stone-300 hover:text-stone-700 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
-            <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 mb-6">Sélectionner un prospect</h2>
+            <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white mb-6">Sélectionner un prospect</h2>
             <div className="relative mb-4">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />
               <input
@@ -376,14 +376,14 @@ export function CloserAppels() {
                 placeholder="Rechercher..."
                 value={prospectSearch}
                 onChange={e => setProspectSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-3.5 bg-[#f5f3f2] border-none rounded-2xl text-sm font-medium text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none"
+                className="w-full pl-11 pr-4 py-3.5 bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-2xl text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none"
               />
             </div>
             <div className="max-h-48 overflow-y-auto space-y-1 mb-6">
               {myProspects.filter(p => !prospectSearch || p.contact.toLowerCase().includes(prospectSearch.toLowerCase())).map(p => (
                 <button key={p.id} onClick={() => setSelectedProspectId(p.id)}
                   className={cn("w-full text-left p-3.5 rounded-2xl transition-all font-medium text-sm",
-                    selectedProspectId === p.id ? "bg-[#006c49]/10 text-[#006c49] ring-1 ring-[#006c49]/20" : "hover:bg-[#f5f3f2] text-stone-700")}>
+                    selectedProspectId === p.id ? "bg-[#006c49]/10 text-[#006c49] ring-1 ring-[#006c49]/20" : "hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 text-stone-700 dark:text-neutral-200")}>
                   {p.contact} {p.company && <span className="text-stone-400 ml-1">({p.company})</span>}
                 </button>
               ))}
@@ -401,23 +401,23 @@ export function CloserAppels() {
       {isMeetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsMeetModalOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-3xl bg-white shadow-2xl p-8 animate-in zoom-in-95">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl p-8 animate-in zoom-in-95">
             <button onClick={() => setIsMeetModalOpen(false)} className="absolute top-5 right-5 text-stone-300 hover:text-stone-700 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
-            <h3 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 mb-8">Préparer l'appel</h3>
+            <h3 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white mb-8">Préparer l'appel</h3>
             <div className="space-y-5">
-              <div className="rounded-2xl bg-[#f5f3f2] p-6">
-                <p className="font-bold text-stone-900 mb-3 text-sm">1. Ouvrir Google Meet</p>
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 p-6">
+                <p className="font-bold text-stone-900 dark:text-white mb-3 text-sm">1. Ouvrir Google Meet</p>
                 <button onClick={() => window.open('https://meet.google.com/new', '_blank')}
                   className="w-full flex items-center justify-center gap-2 rounded-full bg-[#006c49] px-4 py-3.5 text-sm font-bold text-white hover:opacity-90 transition-all">
                   <ExternalLink className="h-4 w-4" strokeWidth={1.5} /> Ouvrir Meet
                 </button>
               </div>
-              <div className="rounded-2xl bg-[#f5f3f2] p-6">
-                <p className="font-bold text-stone-900 mb-3 text-sm">2. Lancer le Cockpit</p>
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 p-6">
+                <p className="font-bold text-stone-900 dark:text-white mb-3 text-sm">2. Lancer le Cockpit</p>
                 <div className="relative mb-3">
                   <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />
                   <input type="text" value={meetLinkInput} onChange={(e) => setMeetLinkInput(e.target.value)} placeholder="Lien Meet (optionnel)"
-                    className="w-full rounded-full bg-white border-none pl-11 pr-4 py-3 text-sm font-medium text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none" />
+                    className="w-full rounded-full bg-white dark:bg-neutral-700 border-none pl-11 pr-4 py-3 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none" />
                 </div>
                 <button onClick={isQuickCall ? startQuickCockpit : startCockpit}
                   className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 px-4 py-3.5 text-sm font-bold text-white hover:opacity-90 transition-all">
@@ -433,13 +433,13 @@ export function CloserAppels() {
       {isScriptModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsScriptModalOpen(false)} />
-          <div className="relative w-full max-w-4xl rounded-3xl bg-white shadow-2xl flex flex-col h-[70vh] overflow-hidden">
-            <div className="p-6 border-b border-[#c4c7c7]/10 flex justify-between items-center">
+          <div className="relative w-full max-w-4xl rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl flex flex-col h-[70vh] overflow-hidden">
+            <div className="p-6 border-b border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-between items-center">
               <div className="flex items-center gap-4 flex-1">
                 <FileText className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
                 <div className="relative flex-1 max-w-xs">
                   <select value={selectedScriptId} onChange={(e) => handleScriptChange(e.target.value)}
-                    className="w-full appearance-none bg-[#f5f3f2] border-none text-sm font-medium rounded-full px-5 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20 text-stone-900">
+                    className="w-full appearance-none bg-[#f5f3f2] dark:bg-neutral-800 border-none text-sm font-medium rounded-full px-5 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20 text-stone-900 dark:text-white">
                     <option value="new">+ Nouveau Script</option>
                     {scripts.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                   </select>
@@ -453,15 +453,15 @@ export function CloserAppels() {
             </div>
             <div className="px-8 pt-6">
               <input type="text" value={scriptTitle} onChange={(e) => setScriptTitle(e.target.value)} placeholder="Titre du script"
-                className="w-full bg-transparent text-2xl font-business-display font-extrabold text-stone-900 placeholder-stone-300 focus:outline-none tracking-tight" />
+                className="w-full bg-transparent text-2xl font-business-display font-extrabold text-stone-900 dark:text-white placeholder-stone-300 dark:placeholder-neutral-600 focus:outline-none tracking-tight" />
             </div>
             <div className="flex-1 px-8 py-4">
               <textarea value={scriptContent} onChange={(e) => setScriptContent(e.target.value)}
-                className="w-full h-full rounded-2xl bg-[#f5f3f2] border-none p-6 text-stone-700 font-medium leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#006c49]/10 resize-none"
+                className="w-full h-full rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border-none p-6 text-stone-700 dark:text-neutral-200 font-medium leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#006c49]/10 resize-none"
                 placeholder="Rédigez votre script ici..." />
             </div>
-            <div className="p-6 border-t border-[#c4c7c7]/10 flex justify-end gap-4">
-              <button onClick={() => setIsScriptModalOpen(false)} className="px-6 py-3 rounded-full font-bold text-sm text-stone-500 hover:text-stone-900 transition-colors">Fermer</button>
+            <div className="p-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-end gap-4">
+              <button onClick={() => setIsScriptModalOpen(false)} className="px-6 py-3 rounded-full font-bold text-sm text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">Fermer</button>
               <button onClick={handleSaveScript} disabled={isSavingScript}
                 className="flex items-center gap-2 rounded-full bg-stone-900 px-8 py-3 text-sm font-bold text-white hover:opacity-90 transition-all">
                 <Save className="h-4 w-4" strokeWidth={1.5} /> {isSavingScript ? 'Sauvegarde...' : 'Sauvegarder'}

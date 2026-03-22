@@ -81,11 +81,11 @@ const formatCompact = (v: number) => {
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
 const ROLE_COLORS: Record<string, string> = {
-  Closer: 'bg-stone-100 text-stone-600',
-  Setter: 'bg-stone-100 text-stone-600',
-  'Setter-Closer': 'bg-stone-100 text-stone-600',
-  'Head of Sales': 'bg-stone-100 text-stone-600',
-  Admin: 'bg-stone-100 text-stone-600',
+  Closer: 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300',
+  Setter: 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300',
+  'Setter-Closer': 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300',
+  'Head of Sales': 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300',
+  Admin: 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300',
 }
 
 const CAMPAIGN_ICONS = ['emerald', 'amber', 'stone', 'blue', 'purple', 'rose'] as const
@@ -98,7 +98,7 @@ const CAMPAIGN_ICON_CLASSES: Record<string, { bg: string; text: string }> = {
   rose: { bg: 'bg-rose-100', text: 'text-rose-700' },
 }
 
-const glassCard = "bg-white/60 backdrop-blur-xl border border-neutral-900/5 shadow-[0_20px_40px_rgba(27,28,27,0.04)]"
+const glassCard = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-neutral-900/5 dark:border-neutral-700 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
 
 // ─── Component ───
 
@@ -286,10 +286,10 @@ export function BusinessDashboard() {
       {/* ─── Header ─── */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-1">
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Bonjour, {firstName}.
           </h2>
-          <p className="text-neutral-500 text-lg">Voici l'état de votre activité aujourd'hui.</p>
+          <p className="text-neutral-500 dark:text-neutral-400 text-lg">Voici l'état de votre activité aujourd'hui.</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex">
@@ -306,101 +306,100 @@ export function BusinessDashboard() {
         </div>
       </header>
 
-      {/* ─── Bento Grid ─── */}
-      <div className="grid grid-cols-12 gap-6">
+      {/* ─── KPI Row ─── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-4">
 
-        {/* ── KPI Row ── */}
         {/* Revenue */}
-        <Link to="/business/report" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="flex justify-between items-start mb-3">
-            <div className="p-2 rounded-lg bg-emerald-50">
-              <DollarSign className="h-4 w-4 text-emerald-600" />
+        <Link to="/business/report" title="Chiffre d'affaires total généré par les prospects gagnés (stage « Gagné »). Calculé en additionnant la valeur de chaque prospect avec le statut « Gagné »." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+          <div className="flex justify-between items-start mb-2">
+            <div className="p-1.5 rounded-lg bg-emerald-50">
+              <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
             </div>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${revenueDelta >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50'}`}>
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${revenueDelta >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50'}`}>
               {revenueDelta >= 0 ? '+' : ''}{revenueDelta.toFixed(0)}%
             </span>
           </div>
           <div>
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Revenue</p>
-            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
+            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Revenue</p>
+            <p className="text-lg font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
           </div>
         </Link>
 
         {/* Total Pipeline */}
-        <Link to="/business/pipeline-owner" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="p-2 rounded-lg bg-blue-50 w-fit">
-            <GitBranch className="h-4 w-4 text-blue-600" />
+        <Link to="/business/pipeline-owner" title="Valeur totale de tous les prospects actifs dans le pipeline (tous statuts confondus). Représente le potentiel commercial global en cours." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+          <div className="p-1.5 rounded-lg bg-blue-50 w-fit">
+            <GitBranch className="h-3.5 w-3.5 text-blue-600" />
           </div>
-          <div className="mt-3">
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Total Pipeline</p>
-            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalPipeline)}</p>
+          <div className="mt-2">
+            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Pipeline</p>
+            <p className="text-lg font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalPipeline)}</p>
           </div>
         </Link>
 
-        {/* Acquisition */}
-        <Link to="/business/acquisition" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="p-2 rounded-lg bg-stone-100 w-fit">
-            <TrendingUp className="h-4 w-4 text-neutral-600" />
+        {/* Closing */}
+        <Link to="/business/acquisition" title="Taux de closing : pourcentage de prospects convertis en vente. Calculé : prospects gagnés ÷ (gagnés + perdus + no-shows ayant eu un rendez-vous)." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+          <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800 w-fit">
+            <TrendingUp className="h-3.5 w-3.5 text-neutral-600" />
           </div>
-          <div className="mt-3">
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Acquisition</p>
-            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>Closing {formatPct(closingRate)}</p>
+          <div className="mt-2">
+            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Closing</p>
+            <p className="text-lg font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
           </div>
         </Link>
 
         {/* Rendez-vous */}
-        <Link to="/business/rendez-vous" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="p-2 rounded-lg bg-stone-100 w-fit">
-            <CalendarDays className="h-4 w-4 text-neutral-600" />
+        <Link to="/business/rendez-vous" title="Nombre total de rendez-vous planifiés (confirmés et en attente). Inclut tous les rendez-vous à venir et passés." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+          <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800 w-fit">
+            <CalendarDays className="h-3.5 w-3.5 text-neutral-600" />
           </div>
-          <div className="mt-3">
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Rendez-vous</p>
-            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAppts.toLocaleString()}</p>
+          <div className="mt-2">
+            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Rendez-vous</p>
+            <p className="text-lg font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAppts.toLocaleString()}</p>
           </div>
         </Link>
 
         {/* Objectif */}
-        <Link to="/business/objectifs" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+        <Link to="/business/objectifs" title="Progression vers votre objectif de chiffre d'affaires. Calculé : revenue actuel ÷ objectif défini × 100. « En bonne voie » si ≥ 80%." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
           <div className="flex justify-between items-start">
-            <div className="p-2 rounded-lg bg-stone-100">
-              <Target className="h-4 w-4 text-neutral-600" />
+            <div className="p-1.5 rounded-lg bg-stone-100">
+              <Target className="h-3.5 w-3.5 text-neutral-600" />
             </div>
             {objectiveProgress !== null && (
-              <span className="text-xs font-bold text-neutral-600">{objectiveProgress.toFixed(0)}%</span>
+              <span className="text-[10px] font-bold text-neutral-600">{objectiveProgress.toFixed(0)}%</span>
             )}
           </div>
-          <div className="mt-3">
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Objectif CA</p>
+          <div className="mt-2">
+            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Objectif CA</p>
             {revenueObjective ? (
               <>
-                <div className="w-full bg-stone-100 h-1.5 rounded-full mt-2 mb-2 overflow-hidden">
+                <div className="w-full bg-stone-100 dark:bg-neutral-800 h-1 rounded-full mt-1.5 mb-1.5 overflow-hidden">
                   <div className="bg-neutral-900 h-full rounded-full transition-all" style={{ width: `${objectiveProgress}%` }} />
                 </div>
-                <p className="text-base font-extrabold text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                <p className="text-sm font-extrabold text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {objectiveProgress! >= 80 ? 'En bonne voie' : 'En cours'}
                 </p>
               </>
             ) : (
-              <p className="text-sm text-neutral-400 mt-1">Aucun objectif</p>
+              <p className="text-xs text-neutral-400 mt-1">Aucun objectif</p>
             )}
           </div>
         </Link>
 
         {/* No-Show */}
-        <Link to="/business/crm" className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+        <Link to="/business/crm" title="Taux de no-show : pourcentage de prospects qui ne se sont pas présentés au rendez-vous. Calculé : nombre de no-shows ÷ total des prospects ayant eu un rendez-vous qualifié." className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
           <div className="flex justify-between items-start">
-            <div className="p-2 rounded-lg bg-amber-50">
-              <UserX className="h-4 w-4 text-amber-600" />
+            <div className="p-1.5 rounded-lg bg-amber-50">
+              <UserX className="h-3.5 w-3.5 text-amber-600" />
             </div>
             {noshowRate > 0 && (
-              <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
                 {noshowRate > 5 ? '!' : '-'}
               </span>
             )}
           </div>
-          <div className="mt-3">
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">No-Show</p>
-            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
+          <div className="mt-2">
+            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">No-Show</p>
+            <p className="text-lg font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
           </div>
         </Link>
 
@@ -408,22 +407,22 @@ export function BusinessDashboard() {
         <Link
           to="/business/report"
           title={`Basé sur le taux de closing (${closingRate.toFixed(1)}%).\n\n≥ 30% → Optimal (vert)\n15-30% → Moyen (orange)\n< 15% → Faible (rouge)\n\nCalcul : prospects gagnés / (gagnés + perdus + no-shows)`}
-          className={`col-span-6 sm:col-span-4 xl:col-span-2 rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform bg-white/60 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] cursor-pointer ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}
+          className={`rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform bg-white/60 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] cursor-pointer ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}
         >
           <div className="flex justify-between items-start">
-            <div className={`p-2 rounded-lg ${healthOk ? 'bg-emerald-50' : healthWarn ? 'bg-amber-50' : 'bg-red-50'}`}>
-              <Activity className={`h-4 w-4 ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`} />
+            <div className={`p-1.5 rounded-lg ${healthOk ? 'bg-emerald-50' : healthWarn ? 'bg-amber-50' : 'bg-red-50'}`}>
+              <Activity className={`h-3.5 w-3.5 ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`} />
             </div>
             <div className="flex items-center gap-1">
-              <span className={`w-2 h-2 rounded-full ${healthOk ? 'bg-emerald-500' : healthWarn ? 'bg-amber-500' : 'bg-red-500'}`} />
-              <span className={`text-[10px] font-bold uppercase ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${healthOk ? 'bg-emerald-500' : healthWarn ? 'bg-amber-500' : 'bg-red-500'}`} />
+              <span className={`text-[9px] font-bold uppercase ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`}>
                 {healthOk ? 'Healthy' : healthWarn ? 'Warning' : 'Low'}
               </span>
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Santé KPI</p>
-            <p className="text-lg font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{healthLabel}</p>
+          <div className="mt-2">
+            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Santé KPI</p>
+            <p className="text-base font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{healthLabel}</p>
           </div>
         </Link>
       </div>
@@ -434,8 +433,8 @@ export function BusinessDashboard() {
         <div className={`col-span-12 lg:col-span-7 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Campagnes actives</h3>
-              <p className="text-neutral-400 text-sm mt-0.5">Performance en temps réel des flux actifs.</p>
+              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Campagnes actives</h3>
+              <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-0.5">Performance en temps réel des flux actifs.</p>
             </div>
             <Link to="/business/campagnes" className="text-sm font-bold text-neutral-900 border-b-2 border-neutral-900 pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Voir Tout
@@ -449,21 +448,21 @@ export function BusinessDashboard() {
                 const colorKey = CAMPAIGN_ICONS[idx % CAMPAIGN_ICONS.length]
                 const colors = CAMPAIGN_ICON_CLASSES[colorKey]
                 return (
-                  <Link key={c.id} to="/business/campagnes" className="flex items-center justify-between p-5 bg-neutral-50/80 rounded-2xl group hover:bg-white transition-all cursor-pointer">
+                  <Link key={c.id} to="/business/campagnes" className="flex items-center justify-between p-5 bg-neutral-50/80 dark:bg-neutral-800/80 rounded-2xl group hover:bg-white dark:hover:bg-neutral-700 transition-all cursor-pointer">
                     <div className="flex items-center gap-5">
                       <div className={`w-11 h-11 ${colors.bg} ${colors.text} rounded-full flex items-center justify-center`}>
                         <Megaphone className="h-5 w-5" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-neutral-900">{c.name}</h4>
-                        <p className="text-neutral-400 text-[10px] font-semibold uppercase tracking-wider">
+                        <h4 className="font-bold text-neutral-900 dark:text-white">{c.name}</h4>
+                        <p className="text-neutral-400 dark:text-neutral-500 text-[10px] font-semibold uppercase tracking-wider">
                           {c.leadCount} lead{c.leadCount !== 1 ? 's' : ''}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <p className="font-black text-lg text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>{c.leadCount.toLocaleString()}</p>
+                        <p className="font-black text-lg text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{c.leadCount.toLocaleString()}</p>
                       </div>
                       <span className={`text-[10px] px-3 py-1.5 rounded-full font-black tracking-widest ${c.is_active ? 'bg-emerald-600 text-white' : 'bg-neutral-400 text-white'}`}>
                         {c.is_active ? 'LIVE' : 'PAUSED'}
@@ -479,8 +478,8 @@ export function BusinessDashboard() {
         {/* Objectifs de vente */}
         <Link to="/business/objectifs" className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-8 flex flex-col cursor-pointer hover:scale-[1.01] transition-transform`}>
           <div className="mb-8">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Objectifs de vente</h3>
-            <p className="text-neutral-400 text-sm mt-0.5">Progression mensuelle vers les objectifs.</p>
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Objectifs de vente</h3>
+            <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-0.5">Progression mensuelle vers les objectifs.</p>
           </div>
           {objectivesWithProgress.length === 0 ? (
             <p className="text-sm text-neutral-400 text-center py-8 flex-1 flex items-center justify-center">Aucun objectif défini</p>
@@ -489,12 +488,12 @@ export function BusinessDashboard() {
               {objectivesWithProgress.map(obj => (
                 <div key={obj.id} className="space-y-2.5">
                   <div className="flex justify-between items-end">
-                    <span className="font-bold text-neutral-900 text-sm">{obj.label}</span>
-                    <span className="text-xs font-black text-neutral-500">
+                    <span className="font-bold text-neutral-900 dark:text-white text-sm">{obj.label}</span>
+                    <span className="text-xs font-black text-neutral-500 dark:text-neutral-400">
                       {obj.progress.toFixed(0)}% ({obj.metric === 'revenue' ? formatCurrency(obj.current) : obj.current.toFixed(obj.metric.includes('rate') ? 1 : 0)} / {obj.metric === 'revenue' ? formatCurrency(obj.target_value) : obj.target_value})
                     </span>
                   </div>
-                  <div className="w-full bg-neutral-100 h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-neutral-100 dark:bg-neutral-700 h-2.5 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         obj.progress >= 80 ? 'bg-gradient-to-r from-emerald-600 to-emerald-400'
@@ -508,7 +507,7 @@ export function BusinessDashboard() {
               ))}
 
               {closingRate < 20 && closingRate > 0 && (
-                <div className="pt-4 mt-4 border-t border-neutral-100">
+                <div className="pt-4 mt-4 border-t border-neutral-100 dark:border-neutral-700">
                   <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-100">
                     <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                     <div>
@@ -528,7 +527,7 @@ export function BusinessDashboard() {
         {/* Performance équipe */}
         <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-6 px-1">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Équipe</h3>
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Équipe</h3>
             <Link to="/business/team" className="px-5 py-2.5 bg-neutral-100 hover:bg-neutral-200 rounded-full text-xs font-bold text-neutral-900 transition-colors uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Voir l'équipe
             </Link>
@@ -538,7 +537,7 @@ export function BusinessDashboard() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="text-[10px] uppercase font-black text-neutral-400 tracking-[0.15em]">
+                <thead className="text-[10px] uppercase font-black text-neutral-400 dark:text-neutral-500 tracking-[0.15em]">
                   <tr>
                     <th className="pb-5 px-3">Membre</th>
                     <th className="pb-5 px-3">Rôle</th>
@@ -546,14 +545,14 @@ export function BusinessDashboard() {
                     <th className="pb-5 px-3 text-right">Com</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100">
+                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
                   {members.map(m => {
                     const online = isReallyOnline(m)
                     return (
-                      <tr key={m.id} onClick={() => navigate(`/business/team?member=${m.id}`)} className="hover:bg-neutral-50/50 transition-colors cursor-pointer">
+                      <tr key={m.id} onClick={() => navigate(`/business/team?member=${m.id}`)} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer">
                         <td className="py-4 px-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-neutral-200 flex items-center justify-center text-xs font-bold text-neutral-600 overflow-hidden shrink-0">
+                            <div className="w-9 h-9 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 overflow-hidden shrink-0">
                               {m.avatar_url ? (
                                 <img src={m.avatar_url} alt={`${m.first_name} ${m.last_name}`} className="h-full w-full object-cover" />
                               ) : (
@@ -562,7 +561,7 @@ export function BusinessDashboard() {
                             </div>
                             <div>
                               <p className="font-bold text-sm text-neutral-900">{m.first_name} {m.last_name}</p>
-                              <p className="text-[10px] text-neutral-400">{m.email}</p>
+                              <p className="text-[10px] text-neutral-400 dark:text-neutral-500">{m.email}</p>
                             </div>
                           </div>
                         </td>
@@ -601,7 +600,7 @@ export function BusinessDashboard() {
         {/* Rappels & Tâches */}
         <div className={`col-span-12 lg:col-span-4 ${glassCard} rounded-2xl p-8 flex flex-col`}>
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Rappels</h3>
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Rappels</h3>
             {reminders.length > 0 && (
               <span className="w-6 h-6 bg-neutral-900 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
                 {reminders.length}
@@ -619,10 +618,10 @@ export function BusinessDashboard() {
                   <div
                     key={r.id}
                     onClick={() => setSelectedReminder(r)}
-                    className={`p-4 rounded-2xl cursor-pointer ${isOverdue ? 'border-l-4 border-red-500 bg-red-50/50 hover:bg-red-50' : 'border-l-4 border-neutral-300 bg-neutral-50 hover:bg-white'} transition-all`}
+                    className={`p-4 rounded-2xl cursor-pointer ${isOverdue ? 'border-l-4 border-red-500 bg-red-50/50 hover:bg-red-50' : 'border-l-4 border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 hover:bg-white dark:hover:bg-neutral-700'} transition-all`}
                   >
                     <div className="flex justify-between items-start mb-1">
-                      <h4 className="text-sm font-bold text-neutral-900">{r.title}</h4>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white">{r.title}</h4>
                       <span className={`text-[10px] font-black uppercase ${isOverdue ? 'text-red-500' : 'text-neutral-400'}`}>
                         {isOverdue ? 'EN RETARD' : 'À VENIR'}
                       </span>
@@ -641,7 +640,7 @@ export function BusinessDashboard() {
           )}
           <Link
             to="/business/rappels"
-            className="mt-4 w-full py-3 border-2 border-dashed border-neutral-200 rounded-2xl text-neutral-400 text-sm font-bold hover:border-neutral-900 hover:text-neutral-900 transition-all text-center block"
+            className="mt-4 w-full py-3 border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-2xl text-neutral-400 dark:text-neutral-500 text-sm font-bold hover:border-neutral-900 hover:text-neutral-900 dark:hover:border-neutral-400 dark:hover:text-white transition-all text-center block"
           >
             + Créer un rappel
           </Link>

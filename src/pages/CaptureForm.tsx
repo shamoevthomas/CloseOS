@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight, ChevronDown } from 'lucide-react'
-import { toUTC } from '../lib/timezone'
+import { toUTC, fromUTC } from '../lib/timezone'
 
 interface CustomField {
   label: string
@@ -258,7 +258,7 @@ export function CaptureForm() {
   const prospectTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
 
   // Real availability slots from API
-  const [realSlots, setRealSlots] = useState<{ date: string; time: string; member_ids: string[] }[]>([])
+  const [realSlots, setRealSlots] = useState<{ date: string; time: string; member_ids: string[]; datetime_utc?: string }[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [freeMode, setFreeMode] = useState(true)
   const [distribution, setDistribution] = useState<string>('round_robin')
@@ -304,17 +304,27 @@ export function CaptureForm() {
       .finally(() => setSlotsLoading(false))
   }, [campaign, slug])
 
+  // Convert API slots (in member's timezone) to prospect's timezone for display
+  const prospectSlots = useMemo(() => {
+    if (freeMode || !realSlots.length) return realSlots
+    return realSlots.map(slot => {
+      if (!slot.datetime_utc) return slot
+      const local = fromUTC(slot.datetime_utc, prospectTimezone)
+      return { ...slot, date: local.date, time: local.time }
+    })
+  }, [realSlots, freeMode, prospectTimezone])
+
   // Available dates and time slots based on real availability
   const availableDates = useMemo(() => {
     if (freeMode) return null // null = all dates available
-    return new Set(realSlots.map(s => s.date))
-  }, [realSlots, freeMode])
+    return new Set(prospectSlots.map(s => s.date))
+  }, [prospectSlots, freeMode])
 
   const availableTimesForDate = useMemo(() => {
     if (!selectedDate || freeMode) return null // null = all times available
     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
-    return realSlots.filter(s => s.date === dateStr)
-  }, [selectedDate, realSlots, freeMode])
+    return prospectSlots.filter(s => s.date === dateStr)
+  }, [selectedDate, prospectSlots, freeMode])
 
   const isInfoComplete = useMemo(() => {
     if (!firstName.trim()) return false
@@ -377,24 +387,28 @@ export function CaptureForm() {
         const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
         payload.date = dateStr
         payload.time = selectedTime
-        payload.datetime_utc = toUTC(dateStr, selectedTime, prospectTimezone).toISOString()
         payload.prospect_timezone = prospectTimezone
 
-        // Assign to a team member based on availability
+        // For real slots, use the original datetime_utc; for freeMode, compute from prospect TZ
         if (!freeMode) {
-          const slotMatch = realSlots.find(s => s.date === dateStr && s.time === selectedTime)
-          if (slotMatch && slotMatch.member_ids.length > 0) {
-            if (slotMatch.member_ids.length === 1) {
-              payload.assigned_member_id = slotMatch.member_ids[0]
+          const matchSlot = prospectSlots.find(s => s.date === dateStr && s.time === selectedTime)
+          payload.datetime_utc = matchSlot?.datetime_utc || toUTC(dateStr, selectedTime, prospectTimezone).toISOString()
+
+          // Assign to a team member based on availability
+          if (matchSlot && matchSlot.member_ids.length > 0) {
+            if (matchSlot.member_ids.length === 1) {
+              payload.assigned_member_id = matchSlot.member_ids[0]
             } else if (distribution === 'random') {
-              payload.assigned_member_id = slotMatch.member_ids[Math.floor(Math.random() * slotMatch.member_ids.length)]
+              payload.assigned_member_id = matchSlot.member_ids[Math.floor(Math.random() * matchSlot.member_ids.length)]
             } else {
               // round_robin: pick based on time hash for deterministic distribution
               const hash = dateStr.replace(/-/g, '') + selectedTime.replace(/:/g, '')
-              const idx = parseInt(hash, 10) % slotMatch.member_ids.length
-              payload.assigned_member_id = slotMatch.member_ids[isNaN(idx) ? 0 : idx]
+              const idx = parseInt(hash, 10) % matchSlot.member_ids.length
+              payload.assigned_member_id = matchSlot.member_ids[isNaN(idx) ? 0 : idx]
             }
           }
+        } else {
+          payload.datetime_utc = toUTC(dateStr, selectedTime, prospectTimezone).toISOString()
         }
       }
       const res = await fetch(`${API_URL}?action=capture-submit`, {

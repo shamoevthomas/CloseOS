@@ -203,7 +203,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col bg-white/60 backdrop-blur-xl border-r border-neutral-900/5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] transition-all duration-300 ease-in-out",
+          "fixed inset-y-0 left-0 z-50 flex flex-col bg-white/60 dark:bg-neutral-900/80 backdrop-blur-xl border-r border-neutral-900/5 dark:border-neutral-800 shadow-[0_20px_40px_rgba(27,28,27,0.04)] transition-all duration-300 ease-in-out",
           // Desktop: static with dynamic width
           "lg:static",
           collapsed ? "lg:w-[72px]" : "lg:w-72",
@@ -213,7 +213,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
       >
         {/* Header */}
         <div className={cn(
-          "flex items-center h-[72px] border-b border-neutral-900/5 transition-all duration-300",
+          "flex items-center h-[72px] border-b border-neutral-900/5 dark:border-neutral-800 transition-all duration-300",
           collapsed ? "px-4 justify-center" : "px-6 gap-3"
         )}>
           {collapsed && businessSettings?.logo_url ? (
@@ -239,8 +239,8 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
           )}
           {!collapsed && (
             <div className="overflow-hidden">
-              <h1 className="text-2xl font-black text-neutral-900 tracking-tighter" style={{ fontFamily: 'Manrope, sans-serif' }}>CloseOS</h1>
-              <p className="text-[10px] font-extrabold uppercase text-neutral-500 opacity-70 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>Business Suite</p>
+              <h1 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tighter" style={{ fontFamily: 'Manrope, sans-serif' }}>CloseOS</h1>
+              <p className="text-[10px] font-extrabold uppercase text-neutral-500 dark:text-neutral-400 opacity-70 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>Business Suite</p>
             </div>
           )}
           {!collapsed && (
@@ -254,20 +254,20 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
         {!collapsed && (
           <button
             onClick={() => { navigate('/business/organisation'); if (window.innerWidth < 1024) onClose?.(); }}
-            className="mx-4 mt-4 flex items-center gap-3 rounded-xl bg-neutral-900/5 px-3 py-2.5 transition-colors hover:bg-neutral-900/10"
+            className="mx-4 mt-4 flex items-center gap-3 rounded-xl bg-neutral-900/5 dark:bg-white/5 px-3 py-2.5 transition-colors hover:bg-neutral-900/10 dark:hover:bg-white/10"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100 overflow-hidden shrink-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800 overflow-hidden shrink-0">
               {businessSettings?.logo_url ? (
                 <img src={businessSettings.logo_url} alt="Logo" className="h-full w-full object-cover" />
               ) : (
-                <Building2 className="h-5 w-5 text-neutral-600" />
+                <Building2 className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
               )}
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-bold text-neutral-900 truncate">
+              <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">
                 {businessSettings?.company_name || (isTeamMember ? 'Organisation' : 'Mon organisation')}
               </p>
-              <p className="text-[10px] text-neutral-500 font-medium truncate uppercase tracking-widest">
+              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium truncate uppercase tracking-widest">
                 {isTeamMember ? (teamMember?.role || 'Membre') : 'Organisation'}
               </p>
             </div>
@@ -292,8 +292,8 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
                     'flex items-center gap-3 py-3 transition-all group cursor-pointer rounded-r-lg',
                     collapsed ? 'justify-center px-2' : 'pl-4',
                     isActive
-                      ? 'text-neutral-900 font-extrabold border-r-2 border-neutral-900'
-                      : 'text-neutral-500 font-medium hover:text-neutral-900 hover:bg-neutral-900/5'
+                      ? 'text-neutral-900 dark:text-white font-extrabold border-r-2 border-neutral-900 dark:border-white'
+                      : 'text-neutral-500 dark:text-neutral-400 font-medium hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5'
                   )
                 }
                 title={collapsed ? item.name : undefined}
@@ -319,7 +319,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
 
         {/* Footer */}
         <div className={cn(
-          "border-t border-neutral-900/5 space-y-1",
+          "border-t border-neutral-900/5 dark:border-neutral-800 space-y-1",
           collapsed ? "p-2" : "pt-4 pb-4 px-4"
         )}>
           {/* Settings */}
@@ -327,7 +327,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
             <button
               onClick={() => { onOpenSettings?.(); setIsMenuOpen(false) }}
               className={cn(
-                'flex items-center gap-3 py-3 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-900/5 rounded-r-lg transition-all w-full',
+                'flex items-center gap-3 py-3 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5 rounded-r-lg transition-all w-full',
                 collapsed ? 'justify-center px-2' : 'pl-4'
               )}
               title={collapsed ? 'Settings' : undefined}
@@ -344,10 +344,10 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
             {isMenuOpen && !collapsed && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)} />
-                <div className="absolute bottom-full left-0 right-0 z-20 mb-2 overflow-hidden rounded-xl border border-neutral-900/10 bg-white shadow-xl">
+                <div className="absolute bottom-full left-0 right-0 z-20 mb-2 overflow-hidden rounded-xl border border-neutral-900/10 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-xl">
                   <button
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-red-500"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-300 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-700 hover:text-red-500"
                   >
                     <LogOut className="h-4 w-4" />
                     Déconnexion
@@ -365,12 +365,12 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
                 }
               }}
               className={cn(
-                'flex items-center gap-3 rounded-xl hover:bg-neutral-900/5 transition-colors w-full',
+                'flex items-center gap-3 rounded-xl hover:bg-neutral-900/5 dark:hover:bg-white/5 transition-colors w-full',
                 collapsed ? 'justify-center p-2' : 'p-3'
               )}
               title={collapsed ? fullName : undefined}
             >
-              <div className="w-10 h-10 rounded-full bg-neutral-200 overflow-hidden shrink-0">
+              <div className="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden shrink-0">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt={fullName} className="w-full h-full object-cover" />
                 ) : (
@@ -382,8 +382,8 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
               {!collapsed && (
                 <>
                   <div className="flex-1 min-w-0 text-left overflow-hidden">
-                    <p className="text-sm font-bold text-neutral-900 truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>{fullName}</p>
-                    <p className="text-[10px] text-neutral-500 font-medium truncate uppercase tracking-widest">{userRole}</p>
+                    <p className="text-sm font-bold text-neutral-900 dark:text-white truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>{fullName}</p>
+                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium truncate uppercase tracking-widest">{userRole}</p>
                   </div>
                   <MoreVertical className="h-4 w-4 text-neutral-400 shrink-0" />
                 </>
@@ -395,9 +395,9 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
 
       {/* Logout overlay */}
       {isLoggingOut && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#fbf9f8] animate-in fade-in duration-300">
-          <Loader2 className="h-10 w-10 text-neutral-900 animate-spin mb-4" />
-          <p className="text-neutral-900 font-bold text-lg animate-pulse" style={{ fontFamily: 'Manrope, sans-serif' }}>Déconnexion sécurisée...</p>
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#fbf9f8] dark:bg-[#141211] animate-in fade-in duration-300">
+          <Loader2 className="h-10 w-10 text-neutral-900 dark:text-white animate-spin mb-4" />
+          <p className="text-neutral-900 dark:text-white font-bold text-lg animate-pulse" style={{ fontFamily: 'Manrope, sans-serif' }}>Déconnexion sécurisée...</p>
         </div>
       )}
     </>

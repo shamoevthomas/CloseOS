@@ -71,21 +71,21 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-md p-4">
-      <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 p-6 relative animate-in zoom-in-95 duration-200">
+      <div className="w-full max-w-md bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-700 p-6 relative animate-in zoom-in-95 duration-200">
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-stone-400 hover:text-stone-700 transition-colors"
+          className="absolute top-4 right-4 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
 
-        <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 mb-2">Inviter un membre</h2>
-        <p className="text-stone-500 text-sm mb-6">Générez un lien d'invitation pour un nouveau membre de votre équipe.</p>
+        <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">Inviter un membre</h2>
+        <p className="text-stone-500 dark:text-neutral-400 text-sm mb-6">Générez un lien d'invitation pour un nouveau membre de votre équipe.</p>
 
         {!generatedLink ? (
           <>
             <div className="mb-4">
-              <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 mb-2">Rôle</label>
+              <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Rôle</label>
               <div className="flex flex-wrap gap-2">
                 {DEFAULT_ROLES.map((role) => (
                   <button
@@ -94,7 +94,7 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
                     className={`rounded-full border py-2 px-3 text-sm font-medium transition-all ${
                       selectedRole === role
                         ? 'border-stone-900 bg-stone-900 text-white'
-                        : 'border-stone-300 bg-white text-stone-600 hover:bg-stone-50'
+                        : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-700'
                     }`}
                   >
                     {role}
@@ -112,11 +112,11 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
             )}
 
             {selectedRole === 'Head of Sales' && (
-              <div className="mb-4 rounded-xl border border-stone-200/20 bg-stone-100/50 p-4">
+              <div className="mb-4 rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-stone-100/50 dark:bg-neutral-800/50 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-stone-900">Gestion des campagnes</p>
-                    <p className="text-xs text-stone-500 mt-0.5">Lui donner accès à la page Campagnes</p>
+                    <p className="text-sm font-semibold text-stone-900 dark:text-white">Gestion des campagnes</p>
+                    <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">Lui donner accès à la page Campagnes</p>
                   </div>
                   <button
                     type="button"
@@ -136,8 +136,8 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
             )}
 
             {selectedRole === 'Setter-Closer' && (
-              <div className="mb-4 rounded-xl border border-stone-200/20 bg-stone-100/50 p-4">
-                <p className="text-sm font-semibold text-stone-900 mb-3">Mode de setting</p>
+              <div className="mb-4 rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-stone-100/50 dark:bg-neutral-800/50 p-4">
+                <p className="text-sm font-semibold text-stone-900 dark:text-white mb-3">Mode de setting</p>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -145,7 +145,7 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
                     className={`flex-1 rounded-full border py-2.5 px-3 text-sm font-medium transition-all ${
                       setterScope === 'self'
                         ? 'border-stone-900 bg-stone-900 text-white'
-                        : 'border-stone-300 bg-white text-stone-600 hover:bg-stone-50'
+                        : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-700'
                     }`}
                   >
                     Set pour lui-même
@@ -156,13 +156,13 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
                     className={`flex-1 rounded-full border py-2.5 px-3 text-sm font-medium transition-all ${
                       setterScope === 'all'
                         ? 'border-stone-900 bg-stone-900 text-white'
-                        : 'border-stone-300 bg-white text-stone-600 hover:bg-stone-50'
+                        : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-700'
                     }`}
                   >
                     Set pour tout le monde
                   </button>
                 </div>
-                <p className="text-xs text-stone-500 mt-2">
+                <p className="text-xs text-stone-500 dark:text-neutral-400 mt-2">
                   {setterScope === 'self'
                     ? "Ne peut booker que pour lui-même et ne peut pas assigner de prospects à d'autres closers."
                     : "Peut booker des RDV pour les autres membres et assigner des prospects aux closers."
@@ -195,7 +195,7 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
                   type="text"
                   value={generatedLink}
                   readOnly
-                  className="flex-1 rounded-full bg-stone-100/50 border-none py-2 px-3 text-xs text-stone-700 font-mono focus:ring-2 focus:ring-emerald-600/20"
+                  className="flex-1 rounded-full bg-stone-100/50 dark:bg-neutral-800 border-none py-2 px-3 text-xs text-stone-700 dark:text-neutral-200 font-mono focus:ring-2 focus:ring-emerald-600/20"
                 />
                 <button
                   onClick={handleCopy}
@@ -209,7 +209,7 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
 
             <button
               onClick={handleClose}
-              className="w-full rounded-full border border-stone-300 py-3 font-medium text-stone-700 hover:bg-stone-50 active:scale-95 transition-all"
+              className="w-full rounded-full border border-stone-300 dark:border-neutral-600 py-3 font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 active:scale-95 transition-all"
             >
               Fermer
             </button>

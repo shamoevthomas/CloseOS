@@ -245,12 +245,12 @@ export function BusinessFormules() {
   // Commission helpers
   const activeRoles = ROLES.filter(r => teamMembers.some(m => m.role === r))
 
-  const inputCls = "w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900"
-  const smallInputCls = "rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none"
-  const selectCls = "rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs text-stone-900 focus:border-stone-900 focus:outline-none"
+  const inputCls = "w-full rounded-2xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900"
+  const smallInputCls = "rounded-xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2 text-xs text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 focus:border-stone-900 focus:outline-none"
+  const selectCls = "rounded-xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2 text-xs text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none"
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-stone-400 animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-stone-400 dark:text-neutral-500 animate-spin" /></div>
   }
 
   return (
@@ -258,8 +258,8 @@ export function BusinessFormules() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
-          <span className="text-xs uppercase tracking-[0.2em] text-stone-400 font-bold">Gestion Commerciale</span>
-          <h1 className="text-4xl font-extrabold tracking-tight text-stone-900">Formules</h1>
+          <span className="text-xs uppercase tracking-[0.2em] text-stone-400 dark:text-neutral-500 font-bold">Gestion Commerciale</span>
+          <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">Formules</h1>
         </div>
         {!isTeamMember && (
           <button onClick={openCreate} className="flex items-center gap-2 bg-stone-900 text-white px-7 py-3.5 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xl text-sm">
@@ -270,10 +270,10 @@ export function BusinessFormules() {
 
       {/* Empty state */}
       {formulas.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50 py-16">
-          <Package className="h-12 w-12 text-stone-300 mb-4" />
-          <h3 className="text-lg font-semibold text-stone-700 mb-1">Aucune formule</h3>
-          <p className="text-sm text-stone-500 mb-4">Créez votre première formule tarifaire</p>
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200 dark:border-neutral-800 bg-stone-50 dark:bg-neutral-800 py-16">
+          <Package className="h-12 w-12 text-stone-300 dark:text-neutral-600 mb-4" />
+          <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">Aucune formule</h3>
+          <p className="text-sm text-stone-500 dark:text-neutral-400 mb-4">Créez votre première formule tarifaire</p>
           {!isTeamMember && (
             <button onClick={openCreate} className="flex items-center gap-2 bg-stone-900 text-white px-6 py-3 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xl text-sm">
               <Plus className="h-4 w-4" /> Créer une formule
@@ -288,27 +288,27 @@ export function BusinessFormules() {
           const resourceCount = (formula.resources || []).length
           const commissionRoles = activeRoles.filter(r => (roleRates[r] ?? 0) > 0).length
           return (
-            <div key={formula.id} className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] hover:shadow-xl transition-all border border-stone-100/50">
+            <div key={formula.id} className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl transition-all border border-stone-100/50 dark:border-neutral-700/30">
               {/* Top: badge + actions */}
               <div className="flex justify-between items-start mb-6">
                 <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
                   formula.is_active
                     ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-stone-100 text-stone-500'
+                    : 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400'
                 }`}>
                   {formula.is_active ? 'Active' : 'Inactive'}
                 </span>
                 <div className="flex gap-1">
                   {isTeamMember ? (
-                    <button onClick={() => openEdit(formula)} className="p-2 hover:bg-stone-50 rounded-full text-stone-400 hover:text-stone-900 transition-colors">
+                    <button onClick={() => openEdit(formula)} className="p-2 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
                       <Eye className="h-4 w-4" />
                     </button>
                   ) : (
                     <>
-                      <button onClick={() => openEdit(formula)} className="p-2 hover:bg-stone-50 rounded-full text-stone-400 hover:text-stone-900 transition-colors">
+                      <button onClick={() => openEdit(formula)} className="p-2 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button onClick={() => deleteFormula(formula)} className="p-2 hover:bg-red-50 rounded-full text-stone-400 hover:text-red-500 transition-colors">
+                      <button onClick={() => deleteFormula(formula)} className="p-2 hover:bg-red-50 rounded-full text-stone-400 dark:text-neutral-500 hover:text-red-500 transition-colors">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </>
@@ -317,28 +317,28 @@ export function BusinessFormules() {
               </div>
 
               {/* Name + description */}
-              <h3 className="text-xl font-extrabold text-stone-900 mb-2">{formula.name}</h3>
+              <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-2">{formula.name}</h3>
               {formula.description && (
-                <p className="text-stone-500 text-sm mb-8 leading-relaxed line-clamp-2">{formula.description}</p>
+                <p className="text-stone-500 dark:text-neutral-400 text-sm mb-8 leading-relaxed line-clamp-2">{formula.description}</p>
               )}
               {!formula.description && <div className="mb-8" />}
 
               {/* Price */}
               <div className="mb-8">
-                <span className="text-4xl font-extrabold text-stone-900">
+                <span className="text-4xl font-extrabold text-stone-900 dark:text-white">
                   {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                 </span>
-                <span className="text-stone-400 text-sm ml-1">/ unique</span>
+                <span className="text-stone-400 dark:text-neutral-500 text-sm ml-1">/ unique</span>
               </div>
 
               {/* Footer stats */}
-              <div className="flex items-center gap-4 py-4 border-t border-stone-100">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-600">
+              <div className="flex items-center gap-4 py-4 border-t border-stone-100 dark:border-neutral-800">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-neutral-300">
                   <File className="h-3.5 w-3.5" /> {resourceCount} Ressource{resourceCount !== 1 ? 's' : ''}
                 </div>
                 {!isTeamMember && (
                   <button onClick={() => toggleActive(formula)} className="ml-auto">
-                    {formula.is_active ? <ToggleRight className="h-5 w-5 text-emerald-600" /> : <ToggleLeft className="h-5 w-5 text-stone-300" />}
+                    {formula.is_active ? <ToggleRight className="h-5 w-5 text-emerald-600" /> : <ToggleLeft className="h-5 w-5 text-stone-300 dark:text-neutral-600" />}
                   </button>
                 )}
               </div>
@@ -350,13 +350,13 @@ export function BusinessFormules() {
       {/* Modal Create/Edit */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl">
+          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl">
             {/* Modal header */}
-            <div className="flex items-center justify-between border-b border-stone-100 px-8 py-5 flex-shrink-0">
-              <h3 className="text-xl font-extrabold text-stone-900">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-neutral-800 px-8 py-5 flex-shrink-0">
+              <h3 className="text-xl font-extrabold text-stone-900 dark:text-white">
                 {isTeamMember ? 'Détails de la formule' : editingFormula ? 'Modifier la formule' : 'Nouvelle formule'}
               </h3>
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-stone-100 rounded-full text-stone-400 hover:text-stone-900 transition-colors">
+              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-stone-100 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -365,38 +365,38 @@ export function BusinessFormules() {
             <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
               {/* Name */}
               <div>
-                <label className="block text-sm font-semibold text-stone-900 mb-2">Nom de la formule *</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Nom de la formule *</label>
                 <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Formule Premium" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 text-stone-500 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Price */}
               <div>
-                <label className="block text-sm font-semibold text-stone-900 mb-2">Prix (€)</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Prix (€)</label>
                 <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="0.00" disabled={isTeamMember || (isOwnerOnly && !!editingFormula)} className={`${inputCls} ${isTeamMember || (isOwnerOnly && !!editingFormula) ? 'bg-stone-50 text-stone-500 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-semibold text-stone-900 mb-2">Description</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Description</label>
                 <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} placeholder="Décrivez cette formule..." disabled={isTeamMember} className={`${inputCls} resize-none ${isTeamMember ? 'bg-stone-50 text-stone-500 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Resources */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-semibold text-stone-900">Ressources incluses</label>
+                  <label className="text-sm font-semibold text-stone-900 dark:text-white">Ressources incluses</label>
                   {!isTeamMember && (
-                    <button onClick={addResource} className="flex items-center gap-1.5 text-xs font-semibold text-stone-900 hover:text-stone-600 transition-colors">
+                    <button onClick={addResource} className="flex items-center gap-1.5 text-xs font-semibold text-stone-900 dark:text-white hover:text-stone-600 dark:hover:text-neutral-300 transition-colors">
                       <Plus className="h-3.5 w-3.5" /> Ajouter
                     </button>
                   )}
                 </div>
                 {formResources.length === 0 && (
-                  <p className="text-xs text-stone-400 italic">{isTeamMember ? 'Aucune ressource' : 'Aucune ressource. Ajoutez des fichiers PDF, liens vidéo, accès contenus...'}</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 italic">{isTeamMember ? 'Aucune ressource' : 'Aucune ressource. Ajoutez des fichiers PDF, liens vidéo, accès contenus...'}</p>
                 )}
                 <div className="space-y-2">
                   {formResources.map((resource, idx) => (
-                    <div key={idx} className="flex items-center gap-2 rounded-xl border border-stone-200 p-3 bg-stone-50/50">
+                    <div key={idx} className="flex items-center gap-2 rounded-xl border border-stone-200 dark:border-neutral-800 p-3 bg-stone-50/50 dark:bg-neutral-800/50">
                       <select
                         value={resource.type}
                         onChange={(e) => updateResource(idx, { type: e.target.value as Resource['type'] })}
@@ -435,8 +435,8 @@ export function BusinessFormules() {
               {canSeeCommissions && activeRoles.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <Percent className="h-4 w-4 text-stone-600" />
-                    <label className="text-sm font-semibold text-stone-900">Commission</label>
+                    <Percent className="h-4 w-4 text-stone-600 dark:text-neutral-300" />
+                    <label className="text-sm font-semibold text-stone-900 dark:text-white">Commission</label>
                   </div>
                   <div className="space-y-2">
                     {activeRoles.map(role => {
@@ -445,13 +445,13 @@ export function BusinessFormules() {
                       const isExpanded = expandedRoles[role] || false
 
                       return (
-                        <div key={role} className="rounded-2xl border border-stone-200 overflow-hidden">
+                        <div key={role} className="rounded-2xl border border-stone-200 dark:border-neutral-800 overflow-hidden">
                           {/* Role row */}
-                          <div className="flex items-center gap-3 px-4 py-3 bg-stone-50">
+                          <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-neutral-800">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <Users className="h-3.5 w-3.5 text-stone-400 shrink-0" />
-                              <span className="text-sm font-semibold text-stone-800">{role}</span>
-                              <span className="text-xs text-stone-400">({roleMembers.length})</span>
+                              <Users className="h-3.5 w-3.5 text-stone-400 dark:text-neutral-500 shrink-0" />
+                              <span className="text-sm font-semibold text-stone-800 dark:text-neutral-100">{role}</span>
+                              <span className="text-xs text-stone-400 dark:text-neutral-500">({roleMembers.length})</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="flex items-center gap-1">
@@ -466,14 +466,14 @@ export function BusinessFormules() {
                                     setRoleRates(prev => ({ ...prev, [role]: v }))
                                   }}
                                   disabled={isHoSOrAdmin}
-                                  className={`w-20 rounded-xl border border-stone-200 px-3 py-1.5 text-sm text-right font-medium text-stone-900 focus:border-stone-900 focus:outline-none ${isHoSOrAdmin ? 'bg-stone-50 text-stone-500 cursor-not-allowed' : ''}`}
+                                  className={`w-20 rounded-xl border border-stone-200 dark:border-neutral-800 px-3 py-1.5 text-sm text-right font-medium text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none ${isHoSOrAdmin ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
                                 />
-                                <span className="text-sm text-stone-500">%</span>
+                                <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
                               </div>
                               {!isHoSOrAdmin && (
                                 <button
                                   onClick={() => setExpandedRoles(prev => ({ ...prev, [role]: !prev[role] }))}
-                                  className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-200 transition-colors"
+                                  className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-colors"
                                 >
                                   {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                                   Avancé
@@ -484,7 +484,7 @@ export function BusinessFormules() {
 
                           {/* Expanded member list */}
                           {isExpanded && (
-                            <div className="border-t border-stone-200 divide-y divide-stone-100">
+                            <div className="border-t border-stone-200 dark:border-neutral-800 divide-y divide-stone-100 dark:divide-neutral-800">
                               {roleMembers.map(member => {
                                 const memberRate = memberRates[member.id] ?? null
                                 const displayRate = memberRate !== null ? memberRate : roleRate
@@ -493,9 +493,9 @@ export function BusinessFormules() {
                                 return (
                                   <div key={member.id} className="flex items-center gap-3 px-4 py-2.5 pl-10">
                                     <div className="flex-1 min-w-0">
-                                      <span className="text-sm text-stone-700">{member.first_name} {member.last_name}</span>
+                                      <span className="text-sm text-stone-700 dark:text-neutral-200">{member.first_name} {member.last_name}</span>
                                       {isOverridden && (
-                                        <span className="ml-2 text-[10px] font-bold text-stone-900 bg-stone-100 px-1.5 py-0.5 rounded-full">Personnalisé</span>
+                                        <span className="ml-2 text-[10px] font-bold text-stone-900 dark:text-white bg-stone-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded-full">Personnalisé</span>
                                       )}
                                     </div>
                                     <div className="flex items-center gap-1">
@@ -510,14 +510,14 @@ export function BusinessFormules() {
                                           setMemberRates(prev => ({ ...prev, [member.id]: v }))
                                         }}
                                         className={`w-20 rounded-xl border px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
-                                          isOverridden ? 'border-stone-400 text-stone-900 bg-stone-50' : 'border-stone-200 text-stone-600'
+                                          isOverridden ? 'border-stone-400 dark:border-neutral-600 text-stone-900 dark:text-white bg-stone-50 dark:bg-neutral-800' : 'border-stone-200 dark:border-neutral-800 text-stone-600 dark:text-neutral-300'
                                         }`}
                                       />
-                                      <span className="text-sm text-stone-500">%</span>
+                                      <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
                                       {isOverridden && (
                                         <button
                                           onClick={() => setMemberRates(prev => ({ ...prev, [member.id]: null }))}
-                                          className="ml-1 text-xs text-stone-400 hover:text-red-500 transition-colors"
+                                          className="ml-1 text-xs text-stone-400 dark:text-neutral-500 hover:text-red-500 transition-colors"
                                           title="Réinitialiser au taux du rôle"
                                         >
                                           <X className="h-3.5 w-3.5" />
@@ -538,8 +538,8 @@ export function BusinessFormules() {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-3 border-t border-stone-100 px-8 py-5 flex-shrink-0">
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-full border border-stone-200 px-6 py-2.5 text-sm font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
+            <div className="flex justify-end gap-3 border-t border-stone-100 dark:border-neutral-800 px-8 py-5 flex-shrink-0">
+              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-full border border-stone-200 dark:border-neutral-800 px-6 py-2.5 text-sm font-semibold text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
                 {isTeamMember ? 'Fermer' : 'Annuler'}
               </button>
               {canEdit && (

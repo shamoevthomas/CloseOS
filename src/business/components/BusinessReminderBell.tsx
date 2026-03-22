@@ -88,8 +88,8 @@ export function BusinessReminderBell() {
         className={cn(
           'relative flex items-center justify-center rounded-full p-2 transition-all',
           count > 0
-            ? 'text-stone-900 hover:bg-stone-100'
-            : 'text-stone-500 hover:bg-stone-100 hover:text-stone-700'
+            ? 'text-stone-900 dark:text-white hover:bg-stone-100 dark:hover:bg-neutral-800'
+            : 'text-stone-500 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-700 dark:hover:text-neutral-200'
         )}
       >
         <Bell className={cn('h-5 w-5', count > 0 && 'animate-[wiggle_1s_ease-in-out_infinite]')} />
@@ -101,11 +101,11 @@ export function BusinessReminderBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl bg-white/95 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
+        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-700 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between border-b border-stone-100 dark:border-neutral-800 px-4 py-3">
             <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4 text-stone-500" />
-              <h3 className="text-sm font-['Manrope'] font-extrabold tracking-tight text-stone-900">Rappels du jour</h3>
+              <Bell className="h-4 w-4 text-stone-500 dark:text-neutral-400" />
+              <h3 className="text-sm font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">Rappels du jour</h3>
               {count > 0 && (
                 <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 border border-emerald-100">
                   {count}
@@ -114,7 +114,7 @@ export function BusinessReminderBell() {
             </div>
             <button
               onClick={() => { setIsOpen(false); navigate('/business/rappels') }}
-              className="text-xs font-semibold text-stone-900 hover:text-stone-700 transition-colors"
+              className="text-xs font-semibold text-stone-900 dark:text-white hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
             >
               Tout voir
             </button>
@@ -123,36 +123,36 @@ export function BusinessReminderBell() {
           <div className="max-h-80 overflow-y-auto">
             {visibleReminders.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <Bell className="h-8 w-8 text-stone-300 mx-auto mb-2" />
-                <p className="text-sm text-stone-400">Aucun rappel pour aujourd'hui</p>
+                <Bell className="h-8 w-8 text-stone-300 dark:text-neutral-600 mx-auto mb-2" />
+                <p className="text-sm text-stone-400 dark:text-neutral-500">Aucun rappel pour aujourd'hui</p>
               </div>
             ) : (
-              <div className="divide-y divide-stone-100">
+              <div className="divide-y divide-stone-100 dark:divide-neutral-800">
                 {visibleReminders.map((reminder) => {
                   const overdue = isOverdue(reminder.reminder_date)
                   return (
                     <div
                       key={reminder.id}
                       className={cn(
-                        'px-4 py-3 transition-colors hover:bg-stone-50/60',
+                        'px-4 py-3 transition-colors hover:bg-stone-50/60 dark:hover:bg-neutral-800/60',
                         overdue && 'bg-red-50/40'
                       )}
                     >
                       <div className="flex items-start gap-3">
                         <div className={cn(
                           'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
-                          overdue ? 'bg-red-50 border border-red-100' : 'bg-stone-100 border border-stone-200/40'
+                          overdue ? 'bg-red-50 border border-red-100' : 'bg-stone-100 dark:bg-neutral-800 border border-stone-200/40 dark:border-neutral-700'
                         )}>
-                          <Clock className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-stone-500')} />
+                          <Clock className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-stone-500 dark:text-neutral-400')} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-stone-900 truncate">{reminder.title}</p>
+                          <p className="text-sm font-semibold text-stone-900 dark:text-white truncate">{reminder.title}</p>
                           {reminder.description && (
-                            <p className="text-xs text-stone-400 mt-0.5 truncate">{reminder.description}</p>
+                            <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5 truncate">{reminder.description}</p>
                           )}
                           <p className={cn(
                             'text-[10px] font-medium mt-1',
-                            overdue ? 'text-red-500' : 'text-stone-400'
+                            overdue ? 'text-red-500' : 'text-stone-400 dark:text-neutral-500'
                           )}>
                             {overdue ? 'En retard \u2014 ' : ''}
                             {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
@@ -171,7 +171,7 @@ export function BusinessReminderBell() {
                           </button>
                           <button
                             onClick={() => handleDismiss(reminder.id)}
-                            className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-all"
+                            className="rounded-full p-1.5 text-stone-400 dark:text-neutral-500 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-600 dark:hover:text-neutral-300 transition-all"
                             title="Masquer"
                           >
                             <X className="h-3.5 w-3.5" />

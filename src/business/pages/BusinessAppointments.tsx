@@ -392,23 +392,23 @@ export function BusinessAppointments() {
       <div className="flex flex-col gap-8">
         <div className="flex justify-between items-end flex-wrap gap-4">
           <div>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Mes Rendez-vous
             </h1>
-            <p className="text-[#444748] mt-2">
+            <p className="text-[#444748] dark:text-neutral-300 mt-2">
               {showTabs && activeTab === 'personnel' ? 'Gérez vos rendez-vous personnels.' : showTabs && activeTab === 'membre' ? 'Tous les rendez-vous de l\'équipe.' : 'Gérez vos rendez-vous et votre calendrier.'}
             </p>
           </div>
 
           {/* Personnel / Membre tabs */}
           {showTabs && (
-            <div className="flex gap-1 bg-[#f5f3f2] p-1 rounded-full">
+            <div className="flex gap-1 bg-[#f5f3f2] dark:bg-neutral-900 p-1 rounded-full">
               <button
                 onClick={() => setActiveTab('personnel')}
                 className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
                   activeTab === 'personnel'
-                    ? 'bg-white shadow-sm text-[#1b1c1b]'
-                    : 'text-[#444748] hover:bg-[#eae8e7]'
+                    ? 'bg-white dark:bg-neutral-800 shadow-sm text-[#1b1c1b] dark:text-white'
+                    : 'text-[#444748] dark:text-neutral-300 hover:bg-[#eae8e7] dark:hover:bg-neutral-800'
                 }`}
               >
                 Personnel
@@ -417,8 +417,8 @@ export function BusinessAppointments() {
                 onClick={() => setActiveTab('membre')}
                 className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
                   activeTab === 'membre'
-                    ? 'bg-white shadow-sm text-[#1b1c1b]'
-                    : 'text-[#444748] hover:bg-[#eae8e7]'
+                    ? 'bg-white dark:bg-neutral-800 shadow-sm text-[#1b1c1b] dark:text-white'
+                    : 'text-[#444748] dark:text-neutral-300 hover:bg-[#eae8e7] dark:hover:bg-neutral-800'
                 }`}
               >
                 Membre
@@ -428,15 +428,15 @@ export function BusinessAppointments() {
         </div>
 
         {/* Filter Bar — Glass morphism */}
-        <div className="bg-white/70 backdrop-blur-2xl p-4 rounded-2xl flex flex-wrap items-center gap-4 shadow-[0_20px_40px_rgba(27,28,27,0.04)] ring-1 ring-white/20">
+        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-4 rounded-2xl flex flex-wrap items-center gap-4 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] ring-1 ring-white/20 dark:ring-neutral-700">
           {/* Team member filter (owner/HoS) */}
           {isOwnerOrHoS && teamMembers.length > 0 && (
             <div className="flex-1 min-w-[180px] relative">
-              <Users className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444748]/60" />
+              <Users className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444748] dark:text-neutral-300/60" />
               <select
                 value={filterMember}
                 onChange={(e) => setFilterMember(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-white/50 border-none rounded-full text-sm focus:ring-2 ring-[#006c49]/20 appearance-none font-medium text-[#1b1c1b]"
+                className="w-full pl-11 pr-4 py-3 bg-white/50 dark:bg-white/5 border-none rounded-full text-sm focus:ring-2 ring-[#006c49]/20 appearance-none font-medium text-[#1b1c1b] dark:text-white"
               >
                 <option value="all">Tous les membres</option>
                 {teamMembers.map(m => (
@@ -446,11 +446,11 @@ export function BusinessAppointments() {
             </div>
           )}
           <div className="flex-1 min-w-[180px] relative">
-            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444748]/60" />
+            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444748] dark:text-neutral-300/60" />
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-white/50 border-none rounded-full text-sm focus:ring-2 ring-[#006c49]/20 appearance-none font-medium text-[#1b1c1b]"
+              className="w-full pl-11 pr-4 py-3 bg-white/50 dark:bg-white/5 border-none rounded-full text-sm focus:ring-2 ring-[#006c49]/20 appearance-none font-medium text-[#1b1c1b] dark:text-white"
             >
               <option value="all">Statut : Tous</option>
               <option value="pending">En attente</option>
@@ -460,12 +460,12 @@ export function BusinessAppointments() {
             </select>
           </div>
           <div className="flex-1 min-w-[180px] relative">
-            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444748]/60" />
+            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444748] dark:text-neutral-300/60" />
             <input
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-white/50 border-none rounded-full text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b]"
+              className="w-full pl-11 pr-4 py-3 bg-white/50 dark:bg-white/5 border-none rounded-full text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
             />
           </div>
           {hasActiveFilters && (
@@ -490,60 +490,60 @@ export function BusinessAppointments() {
         <>
           <div className="fixed inset-0 z-50 bg-[#1b1c1b]/30 backdrop-blur-md" onClick={() => { setShowBookModal(false); resetBookForm() }} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-            <div className="pointer-events-auto w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden relative" onClick={e => e.stopPropagation()}>
+            <div className="pointer-events-auto w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden relative" onClick={e => e.stopPropagation()}>
               {/* Gradient accent bar */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#006c49] to-[#ffb95f]" />
 
               <div className="flex justify-between items-start px-10 pt-10 pb-0">
                 <div>
-                  <h2 className="text-3xl font-extrabold tracking-tight text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Nouveau RDV</h2>
-                  <p className="text-sm text-[#444748] mt-1">Planifiez un nouveau rendez-vous.</p>
+                  <h2 className="text-3xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Nouveau RDV</h2>
+                  <p className="text-sm text-[#444748] dark:text-neutral-300 mt-1">Planifiez un nouveau rendez-vous.</p>
                 </div>
-                <button onClick={() => { setShowBookModal(false); resetBookForm() }} className="p-2 rounded-full hover:bg-[#f5f3f2] transition-all">
-                  <X className="h-5 w-5 text-[#444748]" />
+                <button onClick={() => { setShowBookModal(false); resetBookForm() }} className="p-2 rounded-full hover:bg-[#f5f3f2] dark:bg-neutral-900 transition-all">
+                  <X className="h-5 w-5 text-[#444748] dark:text-neutral-300" />
                 </button>
               </div>
 
               <div className="p-10 pt-8 space-y-6">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] mb-2 ml-1">Titre de l'événement</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Titre de l'événement</label>
                   <input
                     type="text"
                     value={bookTitle}
                     onChange={e => setBookTitle(e.target.value)}
                     placeholder="Ex: RDV Découverte, Follow-up..."
-                    className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b]"
+                    className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] mb-2 ml-1">Date *</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Date *</label>
                     <input
                       type="date"
                       value={bookDate}
                       onChange={e => setBookDate(e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b]"
+                      className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] mb-2 ml-1">Heure *</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Heure *</label>
                     <input
                       type="time"
                       value={bookTime}
                       onChange={e => setBookTime(e.target.value)}
-                      className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b]"
+                      className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] mb-2 ml-1">Durée</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Durée</label>
                   <select
                     value={bookDuration}
                     onChange={e => setBookDuration(Number(e.target.value))}
-                    className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b]"
+                    className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white"
                   >
                     <option value={15}>15 minutes</option>
                     <option value={30}>30 minutes</option>
@@ -556,11 +556,11 @@ export function BusinessAppointments() {
                 {/* For whom */}
                 {canBookForOthers && teamMembers.length > 0 ? (
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] mb-2 ml-1">Assigner à</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Assigner à</label>
                     <select
                       value={bookMemberId}
                       onChange={e => setBookMemberId(e.target.value)}
-                      className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b]"
+                      className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white"
                     >
                       <option value="">Pour moi</option>
                       {teamMembers.map(m => (
@@ -579,22 +579,22 @@ export function BusinessAppointments() {
                 ) : null}
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] mb-2 ml-1">Notes internes</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Notes internes</label>
                   <textarea
                     value={bookNotes}
                     onChange={e => setBookNotes(e.target.value)}
                     rows={3}
                     placeholder="Objectifs de l'appel, contexte..."
-                    className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] resize-none"
+                    className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white resize-none"
                   />
                 </div>
 
                 {/* Google Meet toggle */}
                 {isGoogleConnected && (
-                  <div className="flex items-center justify-between p-4 bg-[#f5f3f2] rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-[#f5f3f2] dark:bg-neutral-900 rounded-xl">
                     <div className="flex items-center gap-3">
-                      <Video className="h-5 w-5 text-[#444748]" />
-                      <span className="text-sm font-bold text-[#1b1c1b]">Activer Google Meet</span>
+                      <Video className="h-5 w-5 text-[#444748] dark:text-neutral-300" />
+                      <span className="text-sm font-bold text-[#1b1c1b] dark:text-white">Activer Google Meet</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -609,8 +609,8 @@ export function BusinessAppointments() {
                 )}
 
                 {!isGoogleConnected && (
-                  <div className="p-4 rounded-xl bg-[#f5f3f2]">
-                    <p className="text-xs text-[#444748]">
+                  <div className="p-4 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900">
+                    <p className="text-xs text-[#444748] dark:text-neutral-300">
                       Connectez votre Google Calendar depuis l'Agenda pour générer des liens Google Meet.
                     </p>
                   </div>
@@ -638,10 +638,10 @@ export function BusinessAppointments() {
         <div className={showBookingSection ? 'xl:col-span-2' : ''}>
           {/* Empty state */}
           {filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center bg-white rounded-2xl border border-[#e4e2e1]/50 py-20">
+            <div className="flex flex-col items-center justify-center bg-white dark:bg-neutral-900 rounded-2xl border border-[#e4e2e1]/50 dark:border-neutral-700/30 py-20">
               <Calendar className="h-12 w-12 text-[#c4c7c7] mb-4" />
-              <h3 className="text-lg font-bold text-[#1b1c1b] mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>Aucun rendez-vous</h3>
-              <p className="text-sm text-[#444748] mb-6">
+              <h3 className="text-lg font-bold text-[#1b1c1b] dark:text-white mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>Aucun rendez-vous</h3>
+              <p className="text-sm text-[#444748] dark:text-neutral-300 mb-6">
                 {visibleAppointments.length === 0
                   ? (isTeamMember ? 'Aucun rendez-vous ne vous est assigné' : 'Vos rendez-vous apparaîtront ici')
                   : 'Aucun rendez-vous ne correspond à vos filtres'}
@@ -681,7 +681,7 @@ export function BusinessAppointments() {
               }
 
               return (
-                <div key={appt.id} className="bg-white p-8 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.02)] border border-white/50 group hover:shadow-lg transition-all duration-500">
+                <div key={appt.id} className="bg-white dark:bg-neutral-800 p-8 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.02)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-white/50 dark:border-neutral-700/30 group hover:shadow-lg transition-all duration-500">
                   {/* Top: Status + Time + Member + Campaign */}
                   <div className="flex justify-between items-start mb-6">
                     <div className="flex flex-col gap-1">
@@ -693,10 +693,10 @@ export function BusinessAppointments() {
                           {timeTag.label}
                         </span>
                       </div>
-                      <h2 className="text-2xl font-extrabold mt-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                      <h2 className="text-2xl font-extrabold mt-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                         {localDt.time} — {endTime}
                       </h2>
-                      <p className="text-[#444748] font-medium capitalize">{formatDate(localDt.date)}</p>
+                      <p className="text-[#444748] dark:text-neutral-300 font-medium capitalize">{formatDate(localDt.date)}</p>
                       {memberTime && (
                         <span className="inline-flex items-center gap-1 text-xs text-[#747878] mt-0.5" title={`Heure locale de ${memberTime.name} (${getTimezoneLabel(memberTime.timezone)})`}>
                           <Globe className="h-3 w-3" />
@@ -712,7 +712,7 @@ export function BusinessAppointments() {
                         </span>
                       )}
                       {appt.campaign && (
-                        <span className="text-[11px] font-bold text-[#444748]/40 uppercase tracking-widest">
+                        <span className="text-[11px] font-bold text-[#444748] dark:text-neutral-300/40 uppercase tracking-widest">
                           Campagne: {appt.campaign.name}
                         </span>
                       )}
@@ -722,35 +722,35 @@ export function BusinessAppointments() {
                   {/* Prospect info */}
                   {appt.prospect && (
                     <div className="flex items-center gap-4 mb-8">
-                      <div className="w-12 h-12 rounded-full bg-[#efedec] flex items-center justify-center font-bold text-[#1b1c1b] text-sm">
+                      <div className="w-12 h-12 rounded-full bg-[#efedec] flex items-center justify-center font-bold text-[#1b1c1b] dark:text-white text-sm">
                         {getInitials(appt.prospect.contact)}
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg text-[#1b1c1b]">{appt.prospect.contact}</h3>
-                        <p className="text-sm text-[#444748]">{appt.prospect.email}</p>
+                        <h3 className="font-bold text-lg text-[#1b1c1b] dark:text-white">{appt.prospect.contact}</h3>
+                        <p className="text-sm text-[#444748] dark:text-neutral-300">{appt.prospect.email}</p>
                       </div>
                     </div>
                   )}
 
                   {appt.title && !appt.prospect && (
-                    <p className="text-base font-semibold text-[#1b1c1b] mb-6">{appt.title}</p>
+                    <p className="text-base font-semibold text-[#1b1c1b] dark:text-white mb-6">{appt.title}</p>
                   )}
 
                   {/* Bottom: Google Meet + Actions */}
-                  <div className="flex items-center justify-between border-t border-[#f5f3f2] pt-6">
+                  <div className="flex items-center justify-between border-t border-[#f5f3f2] dark:border-neutral-800 pt-6">
                     <div>
                       {appt.google_meet_link ? (
                         <a
                           href={appt.google_meet_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-[#1b1c1b] font-bold text-sm hover:underline"
+                          className="flex items-center gap-2 text-[#1b1c1b] dark:text-white font-bold text-sm hover:underline"
                         >
                           <Video className="h-4 w-4" />
                           Google Meet
                         </a>
                       ) : (
-                        <span className="text-[#444748]/40 italic text-sm">
+                        <span className="text-[#444748] dark:text-neutral-300/40 italic text-sm">
                           {appt.duration}min
                         </span>
                       )}
@@ -766,7 +766,7 @@ export function BusinessAppointments() {
                           </button>
                           <button
                             onClick={() => updateStatus(appt.id, 'cancelled')}
-                            className="px-6 py-2 rounded-full border border-[#c4c7c7]/30 text-sm font-bold text-[#1b1c1b] hover:bg-[#f5f3f2] transition-all"
+                            className="px-6 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] dark:bg-neutral-900 transition-all"
                           >
                             Annuler
                           </button>
@@ -781,7 +781,7 @@ export function BusinessAppointments() {
                         </button>
                       )}
                       {(appt.status === 'cancelled' || appt.status === 'done') && (
-                        <span className="px-6 py-2 rounded-full border border-[#c4c7c7]/30 text-sm font-bold text-[#444748]/50 italic">
+                        <span className="px-6 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#444748] dark:text-neutral-300/50 italic">
                           {appt.status === 'done' ? 'Terminé' : 'Annulé'}
                         </span>
                       )}
@@ -801,9 +801,9 @@ export function BusinessAppointments() {
 
         {/* Right: Booking Links Section */}
         {showBookingSection && (
-          <div className="bg-white/70 backdrop-blur-2xl p-8 rounded-2xl shadow-xl ring-1 ring-white/40 sticky top-8">
+          <div className="bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-8 rounded-2xl shadow-xl ring-1 ring-white/40 dark:ring-neutral-700 sticky top-8">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Liens de Booking</h2>
+              <h2 className="text-xl font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Liens de Booking</h2>
               <button
                 onClick={() => setShowCreateLink(true)}
                 className="w-8 h-8 rounded-full bg-[#1b1c1b] text-white flex items-center justify-center hover:scale-110 transition-all"
@@ -818,7 +818,7 @@ export function BusinessAppointments() {
                 <select
                   value={filterBookingMember}
                   onChange={(e) => setFilterBookingMember(e.target.value)}
-                  className="w-full bg-stone-50/50 border-none rounded-full px-4 py-2.5 text-sm font-medium text-[#1b1c1b] focus:ring-2 ring-[#006c49]/20 appearance-none"
+                  className="w-full bg-stone-50/50 dark:bg-neutral-800/50 border-none rounded-full px-4 py-2.5 text-sm font-medium text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20 appearance-none"
                 >
                   <option value="all">Tous les membres</option>
                   <option value="owner">Mes liens (Owner)</option>
@@ -831,23 +831,23 @@ export function BusinessAppointments() {
 
             {/* Create link form */}
             {showCreateLink && (
-              <div className="rounded-xl bg-[#f5f3f2] p-5 mb-6 space-y-4">
+              <div className="rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 p-5 mb-6 space-y-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] mb-2 ml-1">Nom du lien</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Nom du lien</label>
                   <input
                     type="text"
                     value={newLinkLabel}
                     onChange={e => setNewLinkLabel(e.target.value)}
                     placeholder="Ex: RDV Découverte 30min"
-                    className="w-full px-4 py-2.5 rounded-xl bg-white border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] mb-2 ml-1">Durée</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Durée</label>
                   <select
                     value={newLinkDuration}
                     onChange={e => setNewLinkDuration(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium dark:text-white"
                   >
                     <option value={15}>15 min</option>
                     <option value={30}>30 min</option>
@@ -858,11 +858,11 @@ export function BusinessAppointments() {
                 </div>
                 {(isOwnerOrHoS || (isSetter && canBookForOthers)) && (
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] mb-2 ml-1">Pour qui ?</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Pour qui ?</label>
                     <select
                       value={newLinkMemberId}
                       onChange={e => setNewLinkMemberId(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-white border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium dark:text-white"
                     >
                       <option value="">Pour moi</option>
                       {teamMembers.map(m => (
@@ -874,7 +874,7 @@ export function BusinessAppointments() {
                 <div className="flex justify-end gap-2 pt-1">
                   <button
                     onClick={() => setShowCreateLink(false)}
-                    className="px-4 py-2 rounded-full border border-[#c4c7c7]/30 text-xs font-bold text-[#444748] hover:bg-white transition-all"
+                    className="px-4 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-xs font-bold text-[#444748] dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800 transition-all"
                   >
                     Annuler
                   </button>
@@ -898,7 +898,7 @@ export function BusinessAppointments() {
                   ? bookingLinks.filter(bl => !bl.team_member_id)
                   : bookingLinks.filter(bl => bl.team_member_id === filterBookingMember)
               return filteredLinks.length === 0 && !showCreateLink ? (
-              <p className="text-sm text-[#444748]/50 text-center py-6">
+              <p className="text-sm text-[#444748] dark:text-neutral-300/50 text-center py-6">
                 Aucun lien de booking.
               </p>
             ) : (
@@ -909,8 +909,8 @@ export function BusinessAppointments() {
                   return (
                     <div key={bl.id} className="flex items-center justify-between group">
                       <div>
-                        <h4 className="font-bold text-sm text-[#1b1c1b]">{bl.label}</h4>
-                        <p className="text-[11px] text-[#444748]">
+                        <h4 className="font-bold text-sm text-[#1b1c1b] dark:text-white">{bl.label}</h4>
+                        <p className="text-[11px] text-[#444748] dark:text-neutral-300">
                           {bl.duration} min
                           {memberName && ` · ${memberName.first_name} ${memberName.last_name}`}
                           {!bl.team_member_id && isOwnerOrHoS && ' · Pour moi'}
@@ -919,7 +919,7 @@ export function BusinessAppointments() {
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                         <button
                           onClick={() => handleCopyLink(bookingUrl)}
-                          className="p-1.5 rounded-full hover:bg-white transition-all text-[#444748]"
+                          className="p-1.5 rounded-full hover:bg-white dark:hover:bg-neutral-800 transition-all text-[#444748] dark:text-neutral-300"
                           title="Copier le lien"
                         >
                           <Copy className="h-4 w-4" />
@@ -928,14 +928,14 @@ export function BusinessAppointments() {
                           href={bookingUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1.5 rounded-full hover:bg-white transition-all text-[#444748]"
+                          className="p-1.5 rounded-full hover:bg-white dark:hover:bg-neutral-800 transition-all text-[#444748] dark:text-neutral-300"
                           title="Ouvrir"
                         >
                           <Link2 className="h-4 w-4" />
                         </a>
                         <button
                           onClick={() => handleDeleteBookingLink(bl.id)}
-                          className="p-1.5 rounded-full hover:bg-white text-red-500 transition-all"
+                          className="p-1.5 rounded-full hover:bg-white dark:hover:bg-neutral-800 text-red-500 transition-all"
                           title="Supprimer"
                         >
                           <X className="h-4 w-4" />

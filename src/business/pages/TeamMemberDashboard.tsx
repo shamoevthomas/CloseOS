@@ -179,20 +179,20 @@ export function TeamMemberDashboard() {
       <header className="flex justify-between items-end">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b]">Bonjour {firstName}</h1>
+            <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b] dark:text-white">Bonjour {firstName}</h1>
             <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748]'}`}>
               {teamMember?.role}
             </span>
           </div>
-          <p className="text-[#444748] font-medium text-lg">{companyName}</p>
+          <p className="text-[#444748] dark:text-neutral-400 font-medium text-lg">{companyName}</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <p className="text-[10px] font-bold text-[#444748] uppercase tracking-widest">Dernière Sync</p>
-            <p className="font-bold text-[#1b1c1b]">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</p>
+            <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">Dernière Sync</p>
+            <p className="font-bold text-[#1b1c1b] dark:text-white">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</p>
           </div>
-          <div className="w-14 h-14 rounded-full border-2 border-[#eae8e7] p-1">
-            <div className="w-full h-full rounded-full bg-[#efedec] flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full border-2 border-[#eae8e7] dark:border-neutral-700 p-1">
+            <div className="w-full h-full rounded-full bg-[#efedec] dark:bg-neutral-800 flex items-center justify-center">
               <User className="h-6 w-6 text-[#747878]" />
             </div>
           </div>
@@ -202,50 +202,50 @@ export function TeamMemberDashboard() {
       {/* KPI Grid */}
       <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Revenue */}
-        <Link to={kpiLink} className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to={kpiLink} className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
               <DollarSign className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Revenue</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatCurrency(totalRevenue)}</p>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Revenue</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{formatCurrency(totalRevenue)}</p>
         </Link>
 
         {/* Closing Rate */}
-        <Link to={kpiLink} className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to={kpiLink} className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#ffb95f]/20 flex items-center justify-center text-[#b87500]">
               <TrendingUp className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Closing Rate</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatPct(closingRate)}</p>
-          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">{wonProspects.length} signés / {totalDecided} présentés</p>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Closing Rate</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{formatPct(closingRate)}</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">{wonProspects.length} signés / {totalDecided} présentés</p>
         </Link>
 
         {/* Appointments */}
-        <Link to="/business/rendez-vous" className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to="/business/rendez-vous" className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#000000]/5 flex items-center justify-center text-[#000000]">
               <CalendarDays className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Rendez-vous</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{totalAppts}</p>
-          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">Ce mois-ci</p>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Rendez-vous</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{totalAppts}</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">Ce mois-ci</p>
         </Link>
 
         {/* No-Show Rate */}
-        <Link to={kpiLink} className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to={kpiLink} className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#ba1a1a]/10 flex items-center justify-center text-[#ba1a1a]">
               <UserX className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">No-Show Rate</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatPct(noshowRate)}</p>
-          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">{noshowProspects.length} absences sur {prospects.length}</p>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">No-Show Rate</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{formatPct(noshowRate)}</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">{noshowProspects.length} absences sur {prospects.length}</p>
         </Link>
       </section>
 
@@ -253,7 +253,7 @@ export function TeamMemberDashboard() {
       {objectivesWithProgress.length > 0 && (
         <section className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Mes Objectifs</h2>
+            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Mes Objectifs</h2>
             <Link to="/business/closer-objectifs" className="text-[10px] font-bold text-[#000000] uppercase tracking-widest hover:underline">Voir tout</Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -267,16 +267,16 @@ export function TeamMemberDashboard() {
               const deadlineStr = obj.deadline ? new Date(obj.deadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : null
               const overdue = obj.deadline ? new Date(obj.deadline) < now : false
               return (
-                <div key={obj.id} className="bg-[#f5f3f2] rounded-xl p-6 space-y-4">
+                <div key={obj.id} className="bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl p-6 space-y-4">
                   <div className="flex justify-between items-end">
-                    <p className="font-bold text-sm text-[#1b1c1b]">{obj.label}</p>
+                    <p className="font-bold text-sm text-[#1b1c1b] dark:text-white">{obj.label}</p>
                     <p className={`text-xs font-bold ${color.text}`}>{obj.progress.toFixed(0)}%</p>
                   </div>
-                  <div className="h-2 w-full bg-[#eae8e7] rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-[#eae8e7] dark:bg-neutral-700 rounded-full overflow-hidden">
                     <div className={`h-full ${color.bar} rounded-full transition-all`} style={{ width: `${obj.progress}%` }} />
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-[#444748]">
+                    <p className="text-xs text-[#444748] dark:text-neutral-400">
                       {obj.metric === 'revenue' ? formatCurrency(obj.current) : obj.current.toFixed(obj.metric.includes('rate') ? 1 : 0)} / <span className="font-bold">{obj.metric === 'revenue' ? formatCurrency(obj.target_value) : obj.target_value}</span>
                     </p>
                     {deadlineStr && (
@@ -297,27 +297,27 @@ export function TeamMemberDashboard() {
         {/* Prochains rendez-vous */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Prochains rendez-vous</h2>
+            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Prochains rendez-vous</h2>
             <Link to="/business/rendez-vous" className="text-[10px] font-bold text-[#000000] uppercase tracking-widest hover:underline">Voir tout</Link>
           </div>
           {upcomingAppts.length === 0 ? (
             <div className="text-center py-12">
               <CalendarDays className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
-              <p className="text-sm text-[#444748]">Aucun rendez-vous à venir</p>
+              <p className="text-sm text-[#444748] dark:text-neutral-400">Aucun rendez-vous à venir</p>
             </div>
           ) : (
             <div className="space-y-4">
               {upcomingAppts.map((a, i) => (
-                <div key={a.id} onClick={() => navigate('/business/agenda')} className={`bg-white p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
+                <div key={a.id} onClick={() => navigate('/business/agenda')} className={`bg-white dark:bg-neutral-800 p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
                   <div className="flex items-center gap-6">
                     <div className="text-center min-w-[60px]">
-                      <p className="text-[10px] font-bold text-[#444748] uppercase tracking-tighter">{formatApptDate(a.date)}</p>
-                      <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b]">{a.time?.slice(0, 5)}</p>
+                      <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-tighter">{formatApptDate(a.date)}</p>
+                      <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">{a.time?.slice(0, 5)}</p>
                     </div>
-                    <div className="h-10 w-px bg-[#c4c7c7]/20" />
+                    <div className="h-10 w-px bg-[#c4c7c7]/20 dark:bg-neutral-700" />
                     <div>
-                      <p className="font-bold text-lg leading-tight text-[#1b1c1b]">{a.prospect?.contact || 'Rendez-vous'}</p>
-                      <p className="text-sm text-[#444748]">{a.campaign?.name || `${a.duration}min`}</p>
+                      <p className="font-bold text-lg leading-tight text-[#1b1c1b] dark:text-white">{a.prospect?.contact || 'Rendez-vous'}</p>
+                      <p className="text-sm text-[#444748] dark:text-neutral-400">{a.campaign?.name || `${a.duration}min`}</p>
                     </div>
                   </div>
                 </div>
@@ -330,7 +330,7 @@ export function TeamMemberDashboard() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Mes Rappels</h2>
+              <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Mes Rappels</h2>
               <Link to="/business/rappels" className="text-[10px] font-bold text-[#000000] uppercase tracking-widest hover:underline">Voir tout</Link>
             </div>
             {reminders.filter(r => new Date(r.reminder_date) < now).length > 0 && (
@@ -342,7 +342,7 @@ export function TeamMemberDashboard() {
           {reminders.length === 0 ? (
             <div className="text-center py-12">
               <Bell className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
-              <p className="text-sm text-[#444748]">Aucun rappel en attente</p>
+              <p className="text-sm text-[#444748] dark:text-neutral-400">Aucun rappel en attente</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -350,12 +350,12 @@ export function TeamMemberDashboard() {
                 const rDate = new Date(r.reminder_date)
                 const overdue = rDate < now
                 return (
-                  <div key={r.id} onClick={() => navigate('/business/rappels')} className={`bg-white p-5 rounded-xl border-l-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b]'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }}>
+                  <div key={r.id} onClick={() => navigate('/business/rappels')} className={`bg-white dark:bg-neutral-800 p-5 rounded-xl border-l-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b]'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }}>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${overdue ? 'border-[#c4c7c7]/30' : 'border-[#c4c7c7]/30'}`}>
                       {overdue && <div className="w-2 h-2 rounded-full bg-[#ba1a1a]" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-[#1b1c1b]">{r.title}</p>
+                      <p className="font-bold text-sm text-[#1b1c1b] dark:text-white">{r.title}</p>
                       <p className={`text-xs font-semibold ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748]'}`}>
                         {overdue ? `Retard : ${Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24))}j` : `Échéance : ${rDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
                       </p>
@@ -370,11 +370,11 @@ export function TeamMemberDashboard() {
 
       {/* Campagnes actives */}
       {activeCampaigns.length > 0 && (
-        <footer className="pt-10 border-t border-[#c4c7c7]/10">
-          <Link to="/business/campagnes" className="bg-[#f5f3f2] rounded-xl p-8 flex flex-col md:flex-row justify-between items-center gap-8 hover:shadow-lg transition-all cursor-pointer block">
+        <footer className="pt-10 border-t border-[#c4c7c7]/10 dark:border-neutral-800">
+          <Link to="/business/campagnes" className="bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl p-8 flex flex-col md:flex-row justify-between items-center gap-8 hover:shadow-lg transition-all cursor-pointer block">
             <div className="flex items-center gap-6">
               <div className="relative">
-                <div className="w-16 h-16 rounded-full bg-[#eae8e7] flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-[#eae8e7] dark:bg-neutral-700 flex items-center justify-center">
                   <Zap className="h-7 w-7 text-[#1b1c1b]" />
                 </div>
                 <span className="absolute top-0 right-0 flex h-4 w-4">
@@ -384,19 +384,19 @@ export function TeamMemberDashboard() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b]">Campagnes actives</h3>
+                  <h3 className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">Campagnes actives</h3>
                   <span className="text-[10px] font-black text-[#006c49] uppercase tracking-[0.2em]">LIVE</span>
                 </div>
-                <p className="text-sm text-[#444748] max-w-md mt-1">
-                  Vous êtes actuellement affecté à <span className="font-bold text-[#1b1c1b]">{activeCampaigns.length} campagne{activeCampaigns.length > 1 ? 's' : ''}</span>. {activeCampaigns.reduce((s, c) => s + c.leadCount, 0)} leads au total.
+                <p className="text-sm text-[#444748] dark:text-neutral-400 max-w-md mt-1">
+                  Vous êtes actuellement affecté à <span className="font-bold text-[#1b1c1b] dark:text-white">{activeCampaigns.length} campagne{activeCampaigns.length > 1 ? 's' : ''}</span>. {activeCampaigns.reduce((s, c) => s + c.leadCount, 0)} leads au total.
                 </p>
               </div>
             </div>
             <div className="flex gap-4">
               {activeCampaigns.slice(0, 2).map(c => (
                 <div key={c.id} className="px-6 py-4 rounded-xl text-center min-w-[120px]" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(16px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
-                  <p className="text-[10px] font-bold text-[#444748] uppercase tracking-widest">{c.name}</p>
-                  <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b]">{c.leadCount}</p>
+                  <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">{c.name}</p>
+                  <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">{c.leadCount}</p>
                 </div>
               ))}
             </div>

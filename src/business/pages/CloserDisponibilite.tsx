@@ -25,7 +25,7 @@ interface Absence {
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 const DAYS_SHORT = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.']
 
-const GLASS_PANEL = 'bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 shadow-sm'
+const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 dark:ring-neutral-700 shadow-sm'
 
 export function CloserDisponibilite() {
   const { teamMember, ownerUserId } = useBusinessAuth()
@@ -152,7 +152,7 @@ export function CloserDisponibilite() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 text-stone-300 animate-spin" />
+        <Loader2 className="h-8 w-8 text-stone-300 dark:text-neutral-600 animate-spin" />
       </div>
     )
   }
@@ -166,8 +166,8 @@ export function CloserDisponibilite() {
           <span className="h-px w-10 bg-[#c4c7c7]/30" />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Workspace</span>
         </div>
-        <h1 className="text-4xl font-business-display font-extrabold tracking-tight text-stone-900">Disponibilité</h1>
-        <p className="text-stone-500 text-base max-w-2xl font-light italic opacity-80">Gérez vos créneaux et absences pour optimiser votre tunnel de vente.</p>
+        <h1 className="text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Disponibilité</h1>
+        <p className="text-stone-500 dark:text-neutral-400 text-base max-w-2xl font-light italic opacity-80">Gérez vos créneaux et absences pour optimiser votre tunnel de vente.</p>
       </header>
 
       {/* Bento Grid */}
@@ -194,7 +194,7 @@ export function CloserDisponibilite() {
                   <div className="flex items-center gap-6 min-w-[140px]">
                     <span className={cn(
                       'font-business-display font-extrabold text-xl w-12',
-                      hasSlots ? 'text-stone-900' : 'text-stone-300'
+                      hasSlots ? 'text-stone-900 dark:text-white' : 'text-stone-300 dark:text-neutral-600'
                     )}>
                       {DAYS_SHORT[idx]}
                     </span>
@@ -211,21 +211,21 @@ export function CloserDisponibilite() {
                       </div>
                     ))}
                     {!hasSlots && !addingDay && (
-                      <span className="text-sm text-stone-400/50 italic py-2">Indisponible</span>
+                      <span className="text-sm text-stone-400/50 dark:text-neutral-500/50 italic py-2">Indisponible</span>
                     )}
 
                     {addingDay === idx ? (
                       <div className="flex items-center gap-2">
-                        <input type="time" value={newStart} onChange={e => setNewStart(e.target.value)} className="rounded-full bg-stone-50 border-none px-3 py-2 text-sm font-medium text-stone-900 focus:ring-2 focus:ring-[#006c49]/20" />
-                        <span className="text-xs text-stone-400">à</span>
-                        <input type="time" value={newEnd} onChange={e => setNewEnd(e.target.value)} className="rounded-full bg-stone-50 border-none px-3 py-2 text-sm font-medium text-stone-900 focus:ring-2 focus:ring-[#006c49]/20" />
-                        <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition-all">OK</button>
-                        <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 hover:text-stone-600">Annuler</button>
+                        <input type="time" value={newStart} onChange={e => setNewStart(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                        <span className="text-xs text-stone-400 dark:text-neutral-500">à</span>
+                        <input type="time" value={newEnd} onChange={e => setNewEnd(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                        <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition-all">OK</button>
+                        <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300">Annuler</button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setAddingDay(idx)}
-                        className="flex items-center gap-2 border border-dashed border-[#c4c7c7] px-4 py-2 rounded-full text-sm text-stone-500 hover:bg-stone-50 hover:border-stone-400 transition-all"
+                        className="flex items-center gap-2 border border-dashed border-[#c4c7c7] dark:border-neutral-700 px-4 py-2 rounded-full text-sm text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-neutral-800 hover:border-stone-400 transition-all"
                       >
                         <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
                         Ajouter un créneau
@@ -245,7 +245,7 @@ export function CloserDisponibilite() {
                       {copyingDay === idx && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => { setCopyingDay(null); setSelectedCopyTargets([]) }} />
-                          <div className="absolute top-full right-0 mt-1 z-20 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 py-2 min-w-[180px]">
+                          <div className="absolute top-full right-0 mt-1 z-20 rounded-2xl bg-white dark:bg-neutral-800 shadow-xl ring-1 ring-black/5 dark:ring-neutral-700 py-2 min-w-[180px]">
                             {DAYS.map((targetDay, targetIdx) => {
                               if (targetIdx === idx) return null
                               const isSelected = selectedCopyTargets.includes(targetIdx)
@@ -255,12 +255,12 @@ export function CloserDisponibilite() {
                                   onClick={() => setSelectedCopyTargets(prev => isSelected ? prev.filter(d => d !== targetIdx) : [...prev, targetIdx])}
                                   className={cn(
                                     'w-full text-left px-4 py-2 text-sm font-medium flex items-center gap-3 transition-colors',
-                                    isSelected ? 'bg-[#006c49]/5 text-[#006c49]' : 'text-stone-700 hover:bg-stone-50'
+                                    isSelected ? 'bg-[#006c49]/5 text-[#006c49]' : 'text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800'
                                   )}
                                 >
                                   <span className={cn(
                                     'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
-                                    isSelected ? 'border-[#006c49] bg-[#006c49] text-white' : 'border-stone-300'
+                                    isSelected ? 'border-[#006c49] bg-[#006c49] text-white' : 'border-stone-300 dark:border-neutral-600'
                                   )}>
                                     {isSelected && <span className="text-[10px]">✓</span>}
                                   </span>
@@ -269,7 +269,7 @@ export function CloserDisponibilite() {
                               )
                             })}
                             {selectedCopyTargets.length > 0 && (
-                              <div className="px-3 pt-2 mt-1 border-t border-stone-100">
+                              <div className="px-3 pt-2 mt-1 border-t border-stone-100 dark:border-neutral-800">
                                 <button
                                   onClick={() => handleCopySlots(idx, selectedCopyTargets)}
                                   className="w-full rounded-full bg-stone-900 px-4 py-2.5 text-xs font-bold text-white hover:opacity-90 transition-all"
@@ -288,7 +288,7 @@ export function CloserDisponibilite() {
             })}
 
             {/* Weekend separator */}
-            <div className="flex items-center gap-4 py-2 text-stone-300">
+            <div className="flex items-center gap-4 py-2 text-stone-300 dark:text-neutral-600">
               <div className="h-px flex-grow bg-[#c4c7c7]/20" />
               <span className="text-[10px] font-bold uppercase tracking-widest">Weekend</span>
               <div className="h-px flex-grow bg-[#c4c7c7]/20" />
@@ -310,7 +310,7 @@ export function CloserDisponibilite() {
                     )}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <span className="font-business-display font-extrabold text-lg text-stone-900">{DAYS_SHORT[idx]}</span>
+                      <span className="font-business-display font-extrabold text-lg text-stone-900 dark:text-white">{DAYS_SHORT[idx]}</span>
                       <div className={cn('h-2 w-2 rounded-full', hasSlots ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/30')} />
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -323,23 +323,23 @@ export function CloserDisponibilite() {
                         </div>
                       ))}
                       {!hasSlots && (
-                        <span className="text-[10px] italic text-stone-400">Indisponible</span>
+                        <span className="text-[10px] italic text-stone-400 dark:text-neutral-500">Indisponible</span>
                       )}
                     </div>
                     {addingDay === idx ? (
                       <div className="flex items-center gap-2 mt-3">
-                        <input type="time" value={newStart} onChange={e => setNewStart(e.target.value)} className="rounded-full bg-stone-50 border-none px-3 py-1.5 text-xs font-medium text-stone-900 focus:ring-2 focus:ring-[#006c49]/20" />
-                        <span className="text-xs text-stone-400">à</span>
-                        <input type="time" value={newEnd} onChange={e => setNewEnd(e.target.value)} className="rounded-full bg-stone-50 border-none px-3 py-1.5 text-xs font-medium text-stone-900 focus:ring-2 focus:ring-[#006c49]/20" />
-                        <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 px-3 py-1.5 text-xs font-bold text-white hover:opacity-90">OK</button>
-                        <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 hover:text-stone-600">
+                        <input type="time" value={newStart} onChange={e => setNewStart(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                        <span className="text-xs text-stone-400 dark:text-neutral-500">à</span>
+                        <input type="time" value={newEnd} onChange={e => setNewEnd(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                        <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:opacity-90">OK</button>
+                        <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300">
                           <X className="h-3 w-3" />
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setAddingDay(idx)}
-                        className="mt-3 flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-600 transition-colors"
+                        className="mt-3 flex items-center gap-1.5 text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 transition-colors"
                       >
                         <Plus className="h-3 w-3" strokeWidth={1.5} />
                         Ajouter
@@ -361,24 +361,24 @@ export function CloserDisponibilite() {
 
             <div className="space-y-4 mb-6 relative z-10">
               {absences.length === 0 ? (
-                <p className="text-sm text-stone-400 text-center py-6">Aucune absence programmée</p>
+                <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-6">Aucune absence programmée</p>
               ) : (
                 absences.map(abs => (
-                  <div key={abs.id} className="flex items-center justify-between p-4 bg-[#efedec] rounded-2xl ring-1 ring-[#c4c7c7]/10">
+                  <div key={abs.id} className="flex items-center justify-between p-4 bg-[#efedec] dark:bg-neutral-800 rounded-2xl ring-1 ring-[#c4c7c7]/10 dark:ring-neutral-700">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-[#006c49]/10 rounded-xl">
                         <Calendar className="h-4 w-4 text-[#006c49]" strokeWidth={1.5} />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-stone-900">
+                        <p className="text-sm font-bold text-stone-900 dark:text-white">
                           {new Date(abs.start_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} — {new Date(abs.end_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                         </p>
                         {abs.reason && (
-                          <p className="text-[10px] text-stone-500 uppercase tracking-wider">{abs.reason}</p>
+                          <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{abs.reason}</p>
                         )}
                       </div>
                     </div>
-                    <button onClick={() => handleDeleteAbsence(abs.id)} className="text-stone-300 hover:text-[#ba1a1a] transition-colors">
+                    <button onClick={() => handleDeleteAbsence(abs.id)} className="text-stone-300 dark:text-neutral-600 hover:text-[#ba1a1a] transition-colors">
                       <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                     </button>
                   </div>
@@ -388,24 +388,24 @@ export function CloserDisponibilite() {
 
             {/* Absence Form */}
             {showAbsenceForm && (
-              <div className="rounded-2xl bg-[#f5f3f2] p-5 mb-4 space-y-4 relative z-10">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-5 mb-4 space-y-4 relative z-10">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] uppercase tracking-widest text-stone-400 font-bold mb-2">Date début</label>
-                    <input type="date" value={absStartDate} onChange={e => setAbsStartDate(e.target.value)} className="w-full rounded-full bg-white border-none px-4 py-2.5 text-sm font-medium text-stone-900 focus:ring-2 focus:ring-[#006c49]/20" />
+                    <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">Date début</label>
+                    <input type="date" value={absStartDate} onChange={e => setAbsStartDate(e.target.value)} className="w-full rounded-full bg-white dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase tracking-widest text-stone-400 font-bold mb-2">Date fin</label>
-                    <input type="date" value={absEndDate} onChange={e => setAbsEndDate(e.target.value)} className="w-full rounded-full bg-white border-none px-4 py-2.5 text-sm font-medium text-stone-900 focus:ring-2 focus:ring-[#006c49]/20" />
+                    <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">Date fin</label>
+                    <input type="date" value={absEndDate} onChange={e => setAbsEndDate(e.target.value)} className="w-full rounded-full bg-white dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest text-stone-400 font-bold mb-2">Motif (optionnel)</label>
-                  <input type="text" value={absReason} onChange={e => setAbsReason(e.target.value)} placeholder="Ex: Vacances, Formation..." className="w-full rounded-full bg-white border-none px-4 py-2.5 text-sm text-stone-900 focus:ring-2 focus:ring-[#006c49]/20" />
+                  <input type="text" value={absReason} onChange={e => setAbsReason(e.target.value)} placeholder="Ex: Vacances, Formation..." className="w-full rounded-full bg-white dark:bg-neutral-800 border-none px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={handleAddAbsence} disabled={!absStartDate || !absEndDate} className="flex-1 rounded-full bg-stone-900 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-all disabled:opacity-50">Confirmer</button>
-                  <button onClick={() => setShowAbsenceForm(false)} className="px-4 py-3 text-sm font-bold text-stone-500 hover:text-stone-900 transition-colors">Annuler</button>
+                  <button onClick={handleAddAbsence} disabled={!absStartDate || !absEndDate} className="flex-1 rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-all disabled:opacity-50">Confirmer</button>
+                  <button onClick={() => setShowAbsenceForm(false)} className="px-4 py-3 text-sm font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">Annuler</button>
                 </div>
               </div>
             )}
@@ -414,7 +414,7 @@ export function CloserDisponibilite() {
             {!showAbsenceForm && (
               <button
                 onClick={() => setShowAbsenceForm(true)}
-                className="w-full py-4 border-2 border-dashed border-[#c4c7c7] hover:border-[#006c49] hover:text-[#006c49] hover:bg-[#006c49]/5 rounded-2xl transition-all flex items-center justify-center gap-2 text-stone-500 relative z-10"
+                className="w-full py-4 border-2 border-dashed border-[#c4c7c7] dark:border-neutral-700 hover:border-[#006c49] hover:text-[#006c49] hover:bg-[#006c49]/5 rounded-2xl transition-all flex items-center justify-center gap-2 text-stone-500 dark:text-neutral-400 relative z-10"
               >
                 <Plus className="h-4 w-4" strokeWidth={1.5} />
                 <span className="text-sm font-bold">Nouvelle absence</span>
@@ -428,34 +428,34 @@ export function CloserDisponibilite() {
       {showOnboardingPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={dismissOnboarding} />
-          <div className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl p-8">
-            <button onClick={dismissOnboarding} className="absolute top-5 right-5 text-stone-300 hover:text-stone-700 transition-colors">
+          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl p-8">
+            <button onClick={dismissOnboarding} className="absolute top-5 right-5 text-stone-300 dark:text-neutral-600 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
               <X className="h-5 w-5" strokeWidth={1.5} />
             </button>
             <div className="text-center mb-8">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#006c49]/10 mx-auto mb-5">
                 <Calendar className="h-8 w-8 text-[#006c49]" strokeWidth={1.5} />
               </div>
-              <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900">Configurez vos disponibilités</h2>
-              <p className="text-sm text-stone-500 mt-3 leading-relaxed">
+              <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Configurez vos disponibilités</h2>
+              <p className="text-sm text-stone-500 dark:text-neutral-400 mt-3 leading-relaxed">
                 Avant de commencer, indiquez vos créneaux de disponibilité hebdomadaires.
                 Cela permettra à votre manager de vous assigner des rendez-vous aux bons moments.
               </p>
             </div>
             <div className="space-y-3">
-              <div className="rounded-2xl bg-[#f5f3f2] p-4">
-                <p className="text-sm text-stone-700 font-medium">1. Ajoutez vos créneaux pour chaque jour</p>
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-4">
+                <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">1. Ajoutez vos créneaux pour chaque jour</p>
               </div>
-              <div className="rounded-2xl bg-[#f5f3f2] p-4">
-                <p className="text-sm text-stone-700 font-medium">2. Indiquez vos périodes d'absence si nécessaire</p>
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-4">
+                <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">2. Indiquez vos périodes d'absence si nécessaire</p>
               </div>
-              <div className="rounded-2xl bg-[#f5f3f2] p-4">
-                <p className="text-sm text-stone-700 font-medium">3. Modifiez ces informations à tout moment</p>
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-4">
+                <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">3. Modifiez ces informations à tout moment</p>
               </div>
             </div>
             <button
               onClick={dismissOnboarding}
-              className="w-full mt-8 rounded-full bg-stone-900 py-4 text-sm font-business-display font-extrabold text-white hover:opacity-90 transition-all"
+              className="w-full mt-8 rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 py-4 text-sm font-business-display font-extrabold text-white hover:opacity-90 transition-all"
             >
               C'est parti !
             </button>

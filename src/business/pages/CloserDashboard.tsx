@@ -7,6 +7,7 @@ import {
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { supabase } from '../../lib/supabase'
+import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
 
 interface Appointment {
@@ -15,6 +16,7 @@ interface Appointment {
   date: string
   time: string
   duration: number
+  datetime_utc?: string | null
   prospect: { id: number; contact: string; email: string; phone: string } | null
   campaign: { id: string; name: string } | null
 }
@@ -41,7 +43,7 @@ const ROLE_BADGE: Record<string, string> = {
 }
 
 export function CloserDashboard() {
-  const { user, teamMember, ownerUserId, businessSettings } = useBusinessAuth()
+  const { user, teamMember, ownerUserId, businessSettings, userTimezone } = useBusinessAuth()
   const { prospects } = useBusinessProspects()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -130,20 +132,20 @@ export function CloserDashboard() {
       <header className="flex justify-between items-end">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b]">Bonjour {firstName}</h1>
+            <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b] dark:text-white">Bonjour {firstName}</h1>
             <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748]'}`}>
               {teamMember?.role}
             </span>
           </div>
-          <p className="text-[#444748] font-medium text-lg">{companyName}</p>
+          <p className="text-[#444748] dark:text-neutral-300 font-medium text-lg">{companyName}</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <p className="text-[10px] font-bold text-[#444748] uppercase tracking-widest">Dernière Sync</p>
-            <p className="font-bold text-[#1b1c1b]">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</p>
+            <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">Dernière Sync</p>
+            <p className="font-bold text-[#1b1c1b] dark:text-white">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</p>
           </div>
-          <div className="w-14 h-14 rounded-full border-2 border-[#eae8e7] p-1">
-            <div className="w-full h-full rounded-full bg-[#efedec] flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full border-2 border-[#eae8e7] dark:border-neutral-700 p-1">
+            <div className="w-full h-full rounded-full bg-[#efedec] dark:bg-neutral-800 flex items-center justify-center">
               <User className="h-6 w-6 text-[#747878]" />
             </div>
           </div>
@@ -153,50 +155,50 @@ export function CloserDashboard() {
       {/* KPI Grid */}
       <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Revenue */}
-        <Link to={kpiLink} className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to={kpiLink} className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
               <DollarSign className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Revenue</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatCurrency(totalRevenue)}</p>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Revenue</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{formatCurrency(totalRevenue)}</p>
         </Link>
 
         {/* Closing Rate */}
-        <Link to={kpiLink} className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to={kpiLink} className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#ffb95f]/20 flex items-center justify-center text-[#b87500]">
               <TrendingUp className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Closing Rate</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatPct(closingRate)}</p>
-          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">{wonProspects.length} signés / {totalDecided} présentés</p>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Closing Rate</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{formatPct(closingRate)}</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">{wonProspects.length} signés / {totalDecided} présentés</p>
         </Link>
 
         {/* Appointments */}
-        <Link to="/business/rendez-vous" className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to="/business/rendez-vous" className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#000000]/5 flex items-center justify-center text-[#000000]">
               <CalendarDays className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Rendez-vous</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{appointments.length}</p>
-          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">Ce mois-ci</p>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Rendez-vous</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{appointments.length}</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">Ce mois-ci</p>
         </Link>
 
         {/* No-Show Rate */}
-        <Link to={kpiLink} className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <Link to={kpiLink} className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#ba1a1a]/10 flex items-center justify-center text-[#ba1a1a]">
               <UserX className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">No-Show Rate</h3>
-          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatPct(noshowRate)}</p>
-          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">{noShowProspects.length} absences sur {myProspects.length}</p>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">No-Show Rate</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-white">{formatPct(noshowRate)}</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">{noShowProspects.length} absences sur {myProspects.length}</p>
         </Link>
       </section>
 
@@ -205,27 +207,27 @@ export function CloserDashboard() {
         {/* Prochains rendez-vous */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Prochains rendez-vous</h2>
-            <Link to="/business/rendez-vous" className="text-[10px] font-bold text-[#000000] uppercase tracking-widest hover:underline">Voir tout</Link>
+            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Prochains rendez-vous</h2>
+            <Link to="/business/rendez-vous" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">Voir tout</Link>
           </div>
           {upcomingAppts.length === 0 ? (
             <div className="text-center py-12">
               <CalendarDays className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
-              <p className="text-sm text-[#444748]">Aucun rendez-vous à venir</p>
+              <p className="text-sm text-[#444748] dark:text-neutral-400">Aucun rendez-vous à venir</p>
             </div>
           ) : (
             <div className="space-y-4">
               {upcomingAppts.map((a, i) => (
-                <div key={a.id} onClick={() => navigate('/business/agenda')} className={`bg-white p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
+                <div key={a.id} onClick={() => navigate('/business/agenda')} className={`bg-white dark:bg-neutral-800 p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
                   <div className="flex items-center gap-6">
                     <div className="text-center min-w-[60px]">
-                      <p className="text-[10px] font-bold text-[#444748] uppercase tracking-tighter">{formatApptDate(a.date)}</p>
-                      <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b]">{a.time?.slice(0, 5)}</p>
+                      <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-tighter">{formatApptDate(a.date)}</p>
+                      <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">{a.time?.slice(0, 5)}</p>
                     </div>
-                    <div className="h-10 w-px bg-[#c4c7c7]/20" />
+                    <div className="h-10 w-px bg-[#c4c7c7]/20 dark:bg-neutral-700" />
                     <div>
-                      <p className="font-bold text-lg leading-tight text-[#1b1c1b]">{a.prospect?.contact || 'Rendez-vous'}</p>
-                      <p className="text-sm text-[#444748]">{a.campaign?.name || `${a.duration}min`}</p>
+                      <p className="font-bold text-lg leading-tight text-[#1b1c1b] dark:text-white">{a.prospect?.contact || 'Rendez-vous'}</p>
+                      <p className="text-sm text-[#444748] dark:text-neutral-400">{a.campaign?.name || `${a.duration}min`}</p>
                     </div>
                   </div>
                 </div>
@@ -238,8 +240,8 @@ export function CloserDashboard() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Mes Rappels</h2>
-              <Link to="/business/rappels" className="text-[10px] font-bold text-[#000000] uppercase tracking-widest hover:underline">Voir tout</Link>
+              <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Mes Rappels</h2>
+              <Link to="/business/rappels" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">Voir tout</Link>
             </div>
             {reminders.filter(r => isOverdue(r.reminder_date)).length > 0 && (
               <span className="bg-[#ba1a1a]/10 text-[#ba1a1a] px-2 py-0.5 rounded text-[10px] font-bold">
@@ -250,7 +252,7 @@ export function CloserDashboard() {
           {reminders.length === 0 ? (
             <div className="text-center py-12">
               <Bell className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
-              <p className="text-sm text-[#444748]">Aucun rappel en attente</p>
+              <p className="text-sm text-[#444748] dark:text-neutral-400">Aucun rappel en attente</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -259,7 +261,7 @@ export function CloserDashboard() {
                 const rDate = new Date(r.reminder_date)
                 const isLoading = actionLoading === r.id
                 return (
-                  <div key={r.id} className={`bg-white p-5 rounded-xl border-l-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b]'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }} onClick={() => navigate('/business/rappels')}>
+                  <div key={r.id} className={`bg-white dark:bg-neutral-800 p-5 rounded-xl border-l-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b]'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }} onClick={() => navigate('/business/rappels')}>
                     <div className="w-6 h-6 rounded-full border-2 border-[#c4c7c7]/30 flex items-center justify-center shrink-0 cursor-pointer group hover:border-[#006c49]" onClick={(e) => { e.stopPropagation(); handleMarkDone(r.id) }}>
                       {isLoading ? (
                         <Loader2 className="h-3 w-3 animate-spin text-[#444748]" />
@@ -270,7 +272,7 @@ export function CloserDashboard() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-[#1b1c1b]">{r.title}</p>
+                      <p className="font-bold text-sm text-[#1b1c1b] dark:text-white">{r.title}</p>
                       <p className={`text-xs font-semibold ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748]'}`}>
                         {overdue ? `Retard : ${Math.max(1, Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24)))}j` : `Échéance : ${rDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
                       </p>

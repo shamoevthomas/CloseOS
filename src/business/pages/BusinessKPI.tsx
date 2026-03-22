@@ -83,13 +83,13 @@ function KpiCard({
   const c = colorMap[color] || colorMap.slate
 
   return (
-    <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] hover:shadow-xl transition-all border border-stone-100/50">
+    <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl transition-all border border-stone-100/50 dark:border-neutral-700/50">
       <div className="flex items-center justify-between mb-6">
-        <span className="text-xs font-bold tracking-widest uppercase text-stone-500">{title}</span>
+        <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400">{title}</span>
         <Icon className={`h-5 w-5 ${c.icon}`} />
       </div>
       <div className="flex items-baseline gap-2">
-        <p className="text-4xl font-extrabold tracking-tighter text-stone-900">{value}</p>
+        <p className="text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{value}</p>
         {badge && (
           <span className={`text-sm font-bold ${
             badge.positive ? 'text-emerald-600' : 'text-red-500'
@@ -98,7 +98,7 @@ function KpiCard({
           </span>
         )}
       </div>
-      {subtitle && <p className="text-xs text-stone-400 mt-2">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-stone-400 dark:text-neutral-500 mt-2">{subtitle}</p>}
     </div>
   )
 }
@@ -328,15 +328,15 @@ export function BusinessKPI() {
   return (
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="flex p-1.5 bg-stone-100 rounded-full w-fit">
+      <div className="flex p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-fit">
         {TABS.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`px-8 py-2.5 rounded-full text-sm font-bold transition-all ${
               activeTab === tab.key
-                ? 'bg-white text-stone-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
-                : 'text-stone-500 hover:text-stone-900'
+                ? 'bg-white dark:bg-neutral-700 text-stone-900 dark:text-white shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]'
+                : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
             }`}
           >
             {tab.label}
@@ -383,8 +383,8 @@ export function BusinessKPI() {
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Closing Rate Chart */}
-            <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
-              <h3 className="text-xl font-extrabold text-stone-900 mb-8">Historique Taux de Closing</h3>
+            <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+              <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Historique Taux de Closing</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData}>
@@ -414,8 +414,8 @@ export function BusinessKPI() {
             </div>
 
             {/* CA Chart */}
-            <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
-              <h3 className="text-xl font-extrabold text-stone-900 mb-8">Historique CA par Mois</h3>
+            <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+              <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Historique CA par Mois</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData}>
@@ -454,18 +454,18 @@ export function BusinessKPI() {
           <div className="flex items-center justify-center gap-4">
             <button
               onClick={() => navigateMonth(-1)}
-              className="p-2 rounded-lg bg-white border border-stone-200 hover:bg-stone-50 transition-colors"
+              className="p-2 rounded-lg bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 hover:bg-stone-50 dark:hover:bg-neutral-700 transition-colors"
             >
-              <ChevronLeft className="h-5 w-5 text-stone-900" />
+              <ChevronLeft className="h-5 w-5 text-stone-900 dark:text-white" />
             </button>
-            <h2 className="text-lg font-semibold text-stone-900 min-w-[180px] text-center">
+            <h2 className="text-lg font-semibold text-stone-900 dark:text-white min-w-[180px] text-center">
               {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h2>
             <button
               onClick={() => navigateMonth(1)}
-              className="p-2 rounded-lg bg-white border border-stone-200 hover:bg-stone-50 transition-colors"
+              className="p-2 rounded-lg bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 hover:bg-stone-50 dark:hover:bg-neutral-700 transition-colors"
             >
-              <ChevronRight className="h-5 w-5 text-stone-900" />
+              <ChevronRight className="h-5 w-5 text-stone-900 dark:text-white" />
             </button>
           </div>
 
@@ -483,8 +483,8 @@ export function BusinessKPI() {
           })}
 
           {/* Period Bar Chart */}
-          <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
-            <h3 className="text-xl font-extrabold text-stone-900 mb-8">
+          <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+            <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">
               Répartition par Stage — {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h3>
             <div className="h-64">
@@ -507,13 +507,13 @@ export function BusinessKPI() {
       {/* ============ TEAM TAB ============ */}
       {activeTab === 'team' && !selectedMemberId && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 overflow-hidden">
-            <div className="px-5 py-4 border-b border-stone-100">
-              <h3 className="text-sm font-semibold text-stone-900 flex items-center gap-2">
-                <Users className="h-4 w-4 text-stone-600" />
+          <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50 overflow-hidden">
+            <div className="px-5 py-4 border-b border-stone-100 dark:border-neutral-700">
+              <h3 className="text-sm font-semibold text-stone-900 dark:text-white flex items-center gap-2">
+                <Users className="h-4 w-4 text-stone-600 dark:text-neutral-300" />
                 Performance par Membre
               </h3>
-              <p className="text-xs text-stone-400 mt-1">
+              <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">
                 Cliquez sur un membre pour voir ses KPIs détaillés.
               </p>
             </div>
@@ -521,24 +521,24 @@ export function BusinessKPI() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-stone-50/50">
-                    <th className="text-left px-5 py-3 font-medium text-stone-500">Nom</th>
-                    <th className="text-left px-5 py-3 font-medium text-stone-500">Rôle</th>
-                    <th className="text-center px-5 py-3 font-medium text-stone-500">Prospects</th>
-                    <th className="text-center px-5 py-3 font-medium text-stone-500">Ventes</th>
-                    <th className="text-center px-5 py-3 font-medium text-stone-500">CA</th>
-                    <th className="text-center px-5 py-3 font-medium text-stone-500">Taux Conv.</th>
+                  <tr className="bg-stone-50/50 dark:bg-neutral-800/50">
+                    <th className="text-left px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">Nom</th>
+                    <th className="text-left px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">Rôle</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">Prospects</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">Ventes</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">CA</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">Taux Conv.</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100">
+                <tbody className="divide-y divide-stone-100 dark:divide-neutral-700">
                   {/* Owner row */}
-                  <tr className="hover:bg-stone-50 transition-colors">
-                    <td className="px-5 py-3 font-medium text-stone-900">
+                  <tr className="hover:bg-stone-50 dark:hover:bg-neutral-700 transition-colors">
+                    <td className="px-5 py-3 font-medium text-stone-900 dark:text-white">
                       Vous (Owner)
                     </td>
-                    <td className="px-5 py-3 text-stone-400">Owner</td>
-                    <td className="px-5 py-3 text-center text-stone-900">{globalKpis.totalLeads}</td>
-                    <td className="px-5 py-3 text-center text-stone-900">{globalKpis.ventesTotales}</td>
+                    <td className="px-5 py-3 text-stone-400 dark:text-neutral-500">Owner</td>
+                    <td className="px-5 py-3 text-center text-stone-900 dark:text-white">{globalKpis.totalLeads}</td>
+                    <td className="px-5 py-3 text-center text-stone-900 dark:text-white">{globalKpis.ventesTotales}</td>
                     <td className="px-5 py-3 text-center text-emerald-700 font-medium">{formatCurrency(globalKpis.caGenere)}</td>
                     <td className="px-5 py-3 text-center text-purple-700 font-medium">{globalKpis.tauxConversion.toFixed(1)}%</td>
                   </tr>
@@ -557,14 +557,14 @@ export function BusinessKPI() {
                       <tr
                         key={member.id}
                         onClick={() => setSelectedMemberId(member.id)}
-                        className="hover:bg-stone-50 transition-colors cursor-pointer"
+                        className="hover:bg-stone-50 dark:hover:bg-neutral-700 transition-colors cursor-pointer"
                       >
-                        <td className="px-5 py-3 font-medium text-stone-900">
-                          <span className="hover:text-stone-600 transition-colors">{member.full_name}</span>
+                        <td className="px-5 py-3 font-medium text-stone-900 dark:text-white">
+                          <span className="hover:text-stone-600 dark:hover:text-neutral-300 transition-colors">{member.full_name}</span>
                         </td>
-                        <td className="px-5 py-3 text-stone-400 capitalize">{member.role}</td>
-                        <td className="px-5 py-3 text-center text-stone-900">{memberProspects.length}</td>
-                        <td className="px-5 py-3 text-center text-stone-900">{memberWon.length}</td>
+                        <td className="px-5 py-3 text-stone-400 dark:text-neutral-500 capitalize">{member.role}</td>
+                        <td className="px-5 py-3 text-center text-stone-900 dark:text-white">{memberProspects.length}</td>
+                        <td className="px-5 py-3 text-center text-stone-900 dark:text-white">{memberWon.length}</td>
                         <td className="px-5 py-3 text-center text-emerald-700 font-medium">{formatCurrency(memberCA)}</td>
                         <td className="px-5 py-3 text-center text-purple-700 font-medium">{memberConv.toFixed(1)}%</td>
                       </tr>
@@ -573,7 +573,7 @@ export function BusinessKPI() {
 
                   {teamMembers.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-5 py-8 text-center text-stone-900/40 text-sm">
+                      <td colSpan={6} className="px-5 py-8 text-center text-stone-900/40 dark:text-neutral-500 text-sm">
                         Aucun membre dans l'équipe. Invitez des membres depuis la page Équipe.
                       </td>
                     </tr>
@@ -630,7 +630,7 @@ export function BusinessKPI() {
             {/* Back button */}
             <button
               onClick={() => setSelectedMemberId(null)}
-              className="flex items-center gap-2 text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors"
+              className="flex items-center gap-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:text-stone-900 dark:hover:text-white transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Retour à la liste
@@ -638,12 +638,12 @@ export function BusinessKPI() {
 
             {/* Member header */}
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-100">
-                <Users className="h-6 w-6 text-stone-700" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-100 dark:bg-neutral-800">
+                <Users className="h-6 w-6 text-stone-700 dark:text-neutral-200" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-slate-900">{member.full_name}</h2>
-                <p className="text-sm text-slate-500 capitalize">{member.role}</p>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{member.full_name}</h2>
+                <p className="text-sm text-slate-500 dark:text-neutral-400 capitalize">{member.role}</p>
               </div>
             </div>
 
@@ -659,8 +659,8 @@ export function BusinessKPI() {
 
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
-                <h3 className="text-xl font-extrabold text-stone-900 mb-8">Historique Taux de Closing</h3>
+              <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Historique Taux de Closing</h3>
                 <div className="h-64">
                   {mChartData.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-sm text-slate-400">Pas encore de données</div>
@@ -684,8 +684,8 @@ export function BusinessKPI() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
-                <h3 className="text-xl font-extrabold text-stone-900 mb-8">Historique Commissions</h3>
+              <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Historique Commissions</h3>
                 <div className="h-64">
                   {mChartData.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-sm text-slate-400">Pas encore de données</div>

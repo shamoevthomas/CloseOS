@@ -505,9 +505,9 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 bg-[#1b1c1b]/20 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-5xl max-h-[85vh] rounded-2xl shadow-[0_40px_80px_rgba(27,28,27,0.12)] flex flex-col overflow-hidden">
+      <div className="bg-white dark:bg-neutral-900 w-full max-w-5xl max-h-[85vh] rounded-2xl shadow-[0_40px_80px_rgba(27,28,27,0.12)] flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="px-8 py-8 border-b border-[#c4c7c7]/10 flex justify-between items-start flex-shrink-0">
+        <div className="px-8 py-8 border-b border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-between items-start flex-shrink-0">
           <div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Intégration CRM</h1>
             <p className="text-[#444748] mt-2 text-sm">Choisissez et configurez votre CRM pour synchroniser vos données.</p>
