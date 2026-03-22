@@ -280,14 +280,14 @@ export function SetterKPI() {
   const setterDisplay = personal
   const showSetterCards = activeTab === 'personal'
 
-  const inputCls = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+  const inputCls = "w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-500"
 
   // Member selector component
   const MemberSelector = ({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) => (
     <select
       value={value || ''}
       onChange={(e) => onChange(e.target.value || null)}
-      className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-purple-500 focus:outline-none"
+      className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-500 focus:outline-none"
     >
       <option value="">Global (tous)</option>
       {teamSetters.map(s => (
@@ -315,7 +315,7 @@ export function SetterKPI() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+        <Loader2 className="h-8 w-8 text-stone-900 animate-spin" />
       </div>
     )
   }
@@ -325,18 +325,19 @@ export function SetterKPI() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100">
-            <TrendingUp className="h-5 w-5 text-purple-700" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100">
+            <TrendingUp className="h-5 w-5 text-stone-700" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Performance Setter</h1>
-            <p className="text-xs text-slate-500">{isOwnerView ? "Vue d'ensemble de l'équipe" : 'Vos indicateurs de performance'}</p>
+            <p className="text-xs font-bold tracking-widest uppercase text-stone-500 mb-1">PERFORMANCE SETTER</p>
+            <h1 className="text-4xl font-extrabold tracking-tight text-stone-900">Performance Setter</h1>
+            <p className="text-sm text-stone-500">{isOwnerView ? "Vue d'ensemble de l'équipe" : 'Vos indicateurs de performance'}</p>
           </div>
         </div>
         {!isOwnerView && (
           <button
             onClick={() => setIsConfigOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 bg-white text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"
           >
             <Settings className="h-4 w-4" /> Configurer
           </button>
@@ -344,16 +345,16 @@ export function SetterKPI() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex p-1.5 bg-stone-100 rounded-full w-fit flex-wrap">
         {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={cn(
-              'px-4 py-2 rounded-xl text-sm font-medium transition-all',
+              'px-8 py-2.5 rounded-full text-sm font-bold transition-all',
               activeTab === tab.key
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                ? 'bg-white text-stone-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                : 'text-stone-500 hover:text-stone-900'
             )}
           >
             {tab.label}
@@ -362,23 +363,23 @@ export function SetterKPI() {
       </div>
 
       {activeTab === 'org' && (
-        <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-purple-700">KPIs de l'organisation</p>
+            <p className="text-sm text-stone-700">KPIs de l'organisation</p>
             {isOwnerView && teamSetters.length > 0 && <MemberSelector value={orgMemberId} onChange={setOrgMemberId} />}
           </div>
         </div>
       )}
 
       {activeTab === 'offer' && (
-        <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-purple-700 shrink-0">Par Formule</p>
+            <p className="text-sm text-stone-700 shrink-0">Par Formule</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedOfferId || ''}
                 onChange={(e) => setSelectedOfferId(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-purple-500 focus:outline-none"
+                className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-500 focus:outline-none"
               >
                 {formulas.length === 0 && <option value="">Aucune formule</option>}
                 {formulas.map(f => (
@@ -392,14 +393,14 @@ export function SetterKPI() {
       )}
 
       {activeTab === 'campaign' && (
-        <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-purple-700 shrink-0">Par Campagne</p>
+            <p className="text-sm text-stone-700 shrink-0">Par Campagne</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedCampaignId || ''}
                 onChange={(e) => setSelectedCampaignId(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-purple-500 focus:outline-none"
+                className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-500 focus:outline-none"
               >
                 {campaigns.length === 0 && <option value="">Aucune campagne</option>}
                 {campaigns.map(c => (
@@ -413,14 +414,14 @@ export function SetterKPI() {
       )}
 
       {activeTab === 'source' && (
-        <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-purple-700 shrink-0">Par Source</p>
+            <p className="text-sm text-stone-700 shrink-0">Par Source</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedSource || ''}
                 onChange={(e) => setSelectedSource(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-purple-500 focus:outline-none"
+                className="rounded-lg border border-stone-200 bg-white text-sm text-stone-900 px-3 py-1.5 focus:border-stone-500 focus:outline-none"
               >
                 {uniqueSources.length === 0 && <option value="">Aucune source</option>}
                 {uniqueSources.map(s => (
@@ -436,25 +437,23 @@ export function SetterKPI() {
       {/* Setter-specific KPI Cards (personal or member tab) */}
       {showSetterCards && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-2xl border border-purple-200 p-5 shadow-sm">
+          <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
             <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
-                <PhoneIncoming className="h-4 w-4 text-purple-600" />
-              </div>
-              <span className="text-xs font-medium text-slate-500">Taux de Réponse</span>
+              <PhoneIncoming className="h-4 w-4 text-purple-600" />
+              <span className="text-xs font-bold tracking-widest uppercase text-stone-500">Taux de Réponse</span>
             </div>
-            <p className="text-2xl font-bold text-purple-700">{formatPercent(setterDisplay.responseRate)}%</p>
-            <p className="text-xs text-slate-400 mt-1">{setterDisplay.responded.length} réponses / {setterDisplay.contacted.length} contactés</p>
+            <p className="text-4xl font-extrabold tracking-tighter text-stone-900">{formatPercent(setterDisplay.responseRate)}%</p>
+            <p className="text-xs text-stone-400 mt-1">{setterDisplay.responded.length} réponses / {setterDisplay.contacted.length} contactés</p>
           </div>
-          <div className="bg-white rounded-2xl border border-purple-200 p-5 shadow-sm">
+          <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
             <div className="flex items-center gap-3 mb-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
                 <CalendarCheck className="h-4 w-4 text-purple-600" />
               </div>
-              <span className="text-xs font-medium text-slate-500">Taux de Booking</span>
+              <span className="text-xs font-bold tracking-widest uppercase text-stone-500">Taux de Booking</span>
             </div>
-            <p className="text-2xl font-bold text-purple-700">{formatPercent(setterDisplay.bookingRate)}%</p>
-            <p className="text-xs text-slate-400 mt-1">{setterDisplay.booked.length} bookés / {setterDisplay.contacted.length} contactés</p>
+            <p className="text-4xl font-extrabold tracking-tighter text-stone-900">{formatPercent(setterDisplay.bookingRate)}%</p>
+            <p className="text-xs text-stone-400 mt-1">{setterDisplay.booked.length} bookés / {setterDisplay.contacted.length} contactés</p>
           </div>
         </div>
       )}
@@ -471,8 +470,8 @@ export function SetterKPI() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="text-sm font-semibold text-slate-900 mb-4">Historique Taux de Closing</h3>
+        <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
+          <h3 className="text-sm font-semibold text-stone-900 mb-4">Historique Taux de Closing</h3>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
@@ -482,18 +481,18 @@ export function SetterKPI() {
                     <stop offset="95%" stopColor="#9333ea" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} unit="%" />
-                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', color: '#0f172a' }} />
+                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#0f172a' }} />
                 <Area type="monotone" dataKey="closing" stroke="#9333ea" strokeWidth={2} fill="url(#colorClosingSetter)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="text-sm font-semibold text-slate-900 mb-4">Historique Commissions</h3>
+        <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
+          <h3 className="text-sm font-semibold text-stone-900 mb-4">Historique Commissions</h3>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
@@ -503,10 +502,10 @@ export function SetterKPI() {
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} unit="€" />
-                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', color: '#0f172a' }} />
+                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#0f172a' }} />
                 <Area type="monotone" dataKey="commission" stroke="#10b981" strokeWidth={2} fill="url(#colorCommissionSetter)" />
               </AreaChart>
             </ResponsiveContainer>
@@ -515,8 +514,8 @@ export function SetterKPI() {
       </div>
 
       {/* Pipeline Summary */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5">
-        <h3 className="text-sm font-semibold text-slate-900 mb-4">Résumé du Pipeline</h3>
+      <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
+        <h3 className="text-sm font-semibold text-stone-900 mb-4">Résumé du Pipeline</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <SummaryItem label="Total Leads" value={v.leads} icon={Users} color="indigo" />
           <SummaryItem label="Deals en Cours" value={v.deals} icon={Briefcase} color="cyan" />
@@ -527,16 +526,16 @@ export function SetterKPI() {
       {/* Config Modal (team members only) */}
       {isConfigOpen && !isOwnerView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white border border-slate-200 shadow-2xl relative">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-              <h2 className="text-lg font-bold text-slate-900">Configuration KPI</h2>
-              <button onClick={() => setIsConfigOpen(false)} className="text-slate-400 hover:text-slate-600">
+          <div className="w-full max-w-md rounded-2xl bg-white border border-stone-200 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-stone-100 px-6 py-4">
+              <h2 className="text-lg font-bold text-stone-900">Configuration KPI</h2>
+              <button onClick={() => setIsConfigOpen(false)} className="text-stone-400 hover:text-stone-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Objectif de revenue (€)</label>
+                <label className="block text-sm font-medium text-stone-700 mb-1">Objectif de revenue (€)</label>
                 <input
                   type="number"
                   value={kpiConfig.revenue_target}
@@ -545,7 +544,7 @@ export function SetterKPI() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Appels prévus / mois</label>
+                <label className="block text-sm font-medium text-stone-700 mb-1">Appels prévus / mois</label>
                 <input
                   type="number"
                   value={kpiConfig.planned_calls}
@@ -554,7 +553,7 @@ export function SetterKPI() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Taux de commission (%)</label>
+                <label className="block text-sm font-medium text-stone-700 mb-1">Taux de commission (%)</label>
                 <input
                   type="number"
                   value={kpiConfig.commission_rate}
@@ -563,13 +562,13 @@ export function SetterKPI() {
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
-              <button onClick={() => setIsConfigOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            <div className="flex justify-end gap-3 border-t border-stone-100 px-6 py-4">
+              <button onClick={() => setIsConfigOpen(false)} className="rounded-xl border border-stone-200 px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50">
                 Annuler
               </button>
               <button
                 onClick={saveConfig}
-                className="flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 transition-colors"
+                className="flex items-center gap-2 rounded-xl bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-colors"
               >
                 <Save className="h-4 w-4" /> Sauvegarder
               </button>
@@ -588,24 +587,24 @@ const KpiCard = ({ title, value, icon: Icon, color, highlight, subtitle }: any) 
     emerald: { icon: 'bg-emerald-50 text-emerald-600' },
     blue: { icon: 'bg-blue-50 text-blue-600' },
     purple: { icon: 'bg-purple-50 text-purple-600' },
-    amber: { icon: 'bg-amber-50 text-amber-600' },
+    amber: { icon: 'bg-stone-100 text-stone-600' },
     rose: { icon: 'bg-rose-50 text-rose-600' },
     slate: { icon: 'bg-slate-100 text-slate-600' },
   }
   const c = colors[color] || colors.slate
   return (
     <div className={cn(
-      'bg-white rounded-2xl border p-5 transition-all hover:shadow-md',
-      highlight ? 'border-amber-200 shadow-sm' : 'border-slate-200'
+      'bg-white rounded-2xl p-8 transition-all hover:shadow-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]',
+      highlight ? 'border border-stone-100/50' : 'border border-stone-100/50'
     )}>
       <div className="flex items-center gap-3 mb-3">
         <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl', c.icon)}>
           <Icon className="h-4 w-4" />
         </div>
-        <span className="text-xs font-medium text-slate-500">{title}</span>
+        <span className="text-xs font-medium text-stone-500">{title}</span>
       </div>
-      <p className="text-2xl font-bold text-slate-900">{value}</p>
-      {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
+      <p className="text-2xl font-bold text-stone-900">{value}</p>
+      {subtitle && <p className="text-xs text-stone-400 mt-1">{subtitle}</p>}
     </div>
   )
 }
@@ -614,16 +613,16 @@ const SummaryItem = ({ label, value, icon: Icon, color }: any) => {
   const colors: any = {
     indigo: 'bg-indigo-50 text-indigo-600',
     cyan: 'bg-cyan-50 text-cyan-600',
-    amber: 'bg-amber-50 text-amber-600',
+    amber: 'bg-stone-100 text-stone-600',
   }
   return (
-    <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+    <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-stone-50 transition-colors">
       <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', colors[color])}>
         <Icon className="h-5 w-5" />
       </div>
       <div>
-        <p className="text-xs font-medium text-slate-500">{label}</p>
-        <p className="text-xl font-bold text-slate-900">{value}</p>
+        <p className="text-xs font-medium text-stone-500">{label}</p>
+        <p className="text-xl font-bold text-stone-900">{value}</p>
       </div>
     </div>
   )
