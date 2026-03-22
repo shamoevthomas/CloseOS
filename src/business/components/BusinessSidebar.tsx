@@ -147,7 +147,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
           .from('business_users')
           .select('avatar_url')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
 
         if (data?.avatar_url) {
           setDbAvatarUrl(data.avatar_url)
