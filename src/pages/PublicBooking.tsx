@@ -115,12 +115,20 @@ export function PublicBooking() {
     if (!selectedDate || !selectedTime || !slug) return
     setSubmitting(true)
     try {
+      // For real slots, use the original datetime_utc; for freeMode, compute from prospect TZ
+      let datetimeUtc: string
+      if (!info?.freeMode) {
+        const matchSlot = prospectSlots.find(s => s.date === selectedDate && s.time === selectedTime)
+        datetimeUtc = matchSlot?.datetime_utc || toUTC(selectedDate, selectedTime, prospectTimezone).toISOString()
+      } else {
+        datetimeUtc = toUTC(selectedDate, selectedTime, prospectTimezone).toISOString()
+      }
       const res = await fetch(`${API_URL}?action=booking-submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           slug, name, email, phone, date: selectedDate, time: selectedTime,
-          datetime_utc: toUTC(selectedDate, selectedTime, prospectTimezone).toISOString(),
+          datetime_utc: datetimeUtc,
           prospect_timezone: prospectTimezone,
         }),
       })
