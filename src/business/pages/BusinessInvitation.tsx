@@ -223,8 +223,8 @@ export function BusinessInvitation() {
   // ─── Loading ───
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-stone-50">
-        <Loader2 className="h-8 w-8 animate-spin text-stone-400" />
+      <div className="flex min-h-screen items-center justify-center bg-stone-50 dark:bg-neutral-900">
+        <Loader2 className="h-8 w-8 animate-spin text-stone-400 dark:text-neutral-500" />
       </div>
     );
   }
@@ -232,11 +232,11 @@ export function BusinessInvitation() {
   // ─── Error (no invitation) ───
   if (error && !invitation) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
-        <div className="w-full max-w-md rounded-3xl border border-stone-200 bg-white p-10 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+      <div className="flex min-h-screen items-center justify-center bg-stone-50 dark:bg-neutral-900 px-4">
+        <div className="w-full max-w-md rounded-3xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 p-10 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-extrabold text-stone-900 mb-2">Invitation invalide</h2>
-          <p className="text-stone-500 mb-6">{error}</p>
+          <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-2">Invitation invalide</h2>
+          <p className="text-stone-500 dark:text-neutral-400 mb-6">{error}</p>
           <Link
             to="/business/register"
             className="inline-flex items-center gap-2 bg-stone-900 text-white px-7 py-3.5 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xl text-sm"
@@ -251,14 +251,14 @@ export function BusinessInvitation() {
   // ─── Success ───
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
-        <div className="w-full max-w-md rounded-3xl border border-emerald-200 bg-white p-10 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+      <div className="flex min-h-screen items-center justify-center bg-stone-50 dark:bg-neutral-900 px-4">
+        <div className="w-full max-w-md rounded-3xl border border-emerald-200 bg-white dark:bg-neutral-800 p-10 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
           <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
-          <h2 className="text-xl font-extrabold text-stone-900 mb-2">Bienvenue dans l'équipe !</h2>
-          <p className="text-stone-500 mb-2">
+          <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-2">Bienvenue dans l'équipe !</h2>
+          <p className="text-stone-500 dark:text-neutral-400 mb-2">
             Vous avez rejoint <strong>{companyName}</strong> en tant que <strong>{role}</strong>.
           </p>
-          <p className="text-sm text-stone-400">Redirection vers le dashboard...</p>
+          <p className="text-sm text-stone-400 dark:text-neutral-500">Redirection vers le dashboard...</p>
         </div>
       </div>
     );
@@ -268,7 +268,7 @@ export function BusinessInvitation() {
   return (
     <div className="flex min-h-screen">
       {/* ─── LEFT PANEL: Company info ─── */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-stone-100 p-12 xl:p-24 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-stone-100 dark:bg-neutral-800 p-12 xl:p-24 relative overflow-hidden">
         {/* Decorative blob */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
 
@@ -284,55 +284,55 @@ export function BusinessInvitation() {
                 <Building2 className="h-6 w-6 text-white" />
               </div>
             )}
-            <span className="font-extrabold text-xl tracking-tight uppercase text-stone-900">{companyName}</span>
+            <span className="font-extrabold text-xl tracking-tight uppercase text-stone-900 dark:text-white">{companyName}</span>
           </div>
 
           {/* Headline */}
           <div className="max-w-md">
-            <h1 className="text-5xl font-extrabold tracking-tight leading-[1.1] mb-6 text-stone-900">
+            <h1 className="text-5xl font-extrabold tracking-tight leading-[1.1] mb-6 text-stone-900 dark:text-white">
               Rejoignez <span className="text-emerald-700 italic">{companyName}</span>.
             </h1>
             {ownerSettings?.description && (
-              <p className="text-stone-500 text-lg leading-relaxed">{ownerSettings.description}</p>
+              <p className="text-stone-500 dark:text-neutral-400 text-lg leading-relaxed">{ownerSettings.description}</p>
             )}
           </div>
 
           {/* Info Cards */}
           <div className="grid gap-4 max-w-sm">
             {inviterName && (
-              <div className="p-6 bg-white/50 border border-stone-200/20 rounded-2xl hover:bg-white transition-colors">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 mb-1">Dirigeant</p>
-                <p className="font-bold text-lg text-stone-900">{inviterName}</p>
+              <div className="p-6 bg-white/50 dark:bg-white/5 border border-stone-200/20 dark:border-neutral-700 rounded-2xl hover:bg-white dark:hover:bg-white/10 transition-colors">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">Dirigeant</p>
+                <p className="font-bold text-lg text-stone-900 dark:text-white">{inviterName}</p>
               </div>
             )}
 
             {ownerSettings?.website && (
-              <div className="p-6 bg-white/50 border border-stone-200/20 rounded-2xl hover:bg-white transition-colors">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 mb-1">Site web</p>
-                <a href={ownerSettings.website.startsWith('http') ? ownerSettings.website : `https://${ownerSettings.website}`} target="_blank" rel="noopener noreferrer" className="font-bold text-lg text-stone-900 hover:text-emerald-700 transition-colors">
+              <div className="p-6 bg-white/50 dark:bg-white/5 border border-stone-200/20 dark:border-neutral-700 rounded-2xl hover:bg-white dark:hover:bg-white/10 transition-colors">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">Site web</p>
+                <a href={ownerSettings.website.startsWith('http') ? ownerSettings.website : `https://${ownerSettings.website}`} target="_blank" rel="noopener noreferrer" className="font-bold text-lg text-stone-900 dark:text-white hover:text-emerald-700 transition-colors">
                   {ownerSettings.website}
                 </a>
               </div>
             )}
 
             {ownerSettings?.address && (
-              <div className="p-6 bg-white/50 border border-stone-200/20 rounded-2xl hover:bg-white transition-colors">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 mb-1">Adresse</p>
-                <p className="font-bold text-lg text-stone-900">{ownerSettings.address}</p>
+              <div className="p-6 bg-white/50 dark:bg-white/5 border border-stone-200/20 dark:border-neutral-700 rounded-2xl hover:bg-white dark:hover:bg-white/10 transition-colors">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">Adresse</p>
+                <p className="font-bold text-lg text-stone-900 dark:text-white">{ownerSettings.address}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Trust badge */}
-        <div className="relative z-10 mt-12 flex items-center gap-3 py-4 px-6 bg-white/70 backdrop-blur-xl rounded-full self-start border border-stone-200/10">
+        <div className="relative z-10 mt-12 flex items-center gap-3 py-4 px-6 bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-full self-start border border-stone-200/10 dark:border-neutral-700">
           <Shield className="h-5 w-5 text-emerald-600" />
-          <span className="text-xs font-bold tracking-widest uppercase text-stone-700">Accès sécurisé</span>
+          <span className="text-xs font-bold tracking-widest uppercase text-stone-700 dark:text-neutral-200">Accès sécurisé</span>
         </div>
       </div>
 
       {/* ─── RIGHT PANEL: Registration form ─── */}
-      <div className="flex flex-1 items-center justify-center bg-white px-6 py-12 sm:px-12">
+      <div className="flex flex-1 items-center justify-center bg-white dark:bg-neutral-900 px-6 py-12 sm:px-12">
         <div className="w-full max-w-md space-y-10">
           {/* Mobile logo */}
           <div className="lg:hidden text-center">
@@ -343,11 +343,11 @@ export function BusinessInvitation() {
 
           {/* Heading */}
           <div className="space-y-2">
-            <h2 className="text-4xl font-extrabold tracking-tight text-stone-900">
+            <h2 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">
               Rejoignez {companyName}
             </h2>
-            <p className="text-stone-500">
-              Invité par <span className="text-stone-900 font-semibold underline decoration-amber-300 decoration-4">{inviterFirstName}</span> en tant que{' '}
+            <p className="text-stone-500 dark:text-neutral-400">
+              Invité par <span className="text-stone-900 dark:text-white font-semibold underline decoration-amber-300 decoration-4">{inviterFirstName}</span> en tant que{' '}
               <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full uppercase tracking-tight">
                 {role}
               </span>
@@ -355,7 +355,7 @@ export function BusinessInvitation() {
           </div>
 
           {/* Mobile company info */}
-          <div className="lg:hidden rounded-2xl bg-stone-50 border border-stone-200/50 p-4 flex items-center gap-3">
+          <div className="lg:hidden rounded-2xl bg-stone-50 dark:bg-neutral-800 border border-stone-200/50 dark:border-neutral-700 p-4 flex items-center gap-3">
             {ownerSettings?.logo_url ? (
               <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 border border-white shadow-sm">
                 <img src={ownerSettings.logo_url} alt={companyName} className="h-full w-full object-cover" />
@@ -366,8 +366,8 @@ export function BusinessInvitation() {
               </div>
             )}
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-stone-800 truncate">{companyName}</p>
-              <p className="text-xs text-stone-500 truncate">Invité par {inviterName}</p>
+              <p className="text-sm font-semibold text-stone-800 dark:text-neutral-100 truncate">{companyName}</p>
+              <p className="text-xs text-stone-500 dark:text-neutral-400 truncate">Invité par {inviterName}</p>
             </div>
           </div>
 
@@ -381,7 +381,7 @@ export function BusinessInvitation() {
           <button
             onClick={handleGoogleSignup}
             disabled={googleLoading || submitLoading}
-            className="flex w-full items-center justify-center gap-3 py-4 px-6 border border-stone-200/30 rounded-full font-bold text-stone-900 hover:bg-stone-50 transition-colors active:scale-95 duration-200 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 py-4 px-6 border border-stone-200/30 dark:border-neutral-700 rounded-full font-bold text-stone-900 dark:text-white hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors active:scale-95 duration-200 disabled:opacity-50"
           >
             {googleLoading ? (
               <Loader2 className="h-5 w-5 animate-spin text-stone-400" />
@@ -398,9 +398,9 @@ export function BusinessInvitation() {
 
           {/* Separator */}
           <div className="relative flex items-center py-2">
-            <div className="flex-grow border-t border-stone-200/20" />
-            <span className="flex-shrink mx-4 text-[10px] font-bold tracking-widest uppercase text-stone-400">Ou avec email</span>
-            <div className="flex-grow border-t border-stone-200/20" />
+            <div className="flex-grow border-t border-stone-200/20 dark:border-neutral-700" />
+            <span className="flex-shrink mx-4 text-[10px] font-bold tracking-widest uppercase text-stone-400 dark:text-neutral-500">Ou avec email</span>
+            <div className="flex-grow border-t border-stone-200/20 dark:border-neutral-700" />
           </div>
 
           {/* Form */}
@@ -408,23 +408,23 @@ export function BusinessInvitation() {
             {/* First name / Last name */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 ml-2">Prénom</label>
+                <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">Prénom</label>
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full bg-stone-100 border-none rounded-xl py-4 px-6 text-stone-900 placeholder:text-stone-400/60 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
+                  className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl py-4 px-6 text-stone-900 dark:text-white placeholder:text-stone-400/60 dark:placeholder:text-neutral-500 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
                   placeholder="Jean"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 ml-2">Nom</label>
+                <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">Nom</label>
                 <input
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full bg-stone-100 border-none rounded-xl py-4 px-6 text-stone-900 placeholder:text-stone-400/60 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
+                  className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl py-4 px-6 text-stone-900 dark:text-white placeholder:text-stone-400/60 dark:placeholder:text-neutral-500 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
                   placeholder="Dupont"
                   required
                 />
@@ -433,12 +433,12 @@ export function BusinessInvitation() {
 
             {/* Email */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 ml-2">Adresse email</label>
+              <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">Adresse email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-stone-100 border-none rounded-xl py-4 px-6 text-stone-900 placeholder:text-stone-400/60 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
+                className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl py-4 px-6 text-stone-900 dark:text-white placeholder:text-stone-400/60 dark:placeholder:text-neutral-500 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
                 placeholder="jean.dupont@business.com"
                 required
               />
@@ -446,7 +446,7 @@ export function BusinessInvitation() {
 
             {/* Password */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 ml-2">Mot de passe</label>
+              <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">Mot de passe</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -460,7 +460,7 @@ export function BusinessInvitation() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-900 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -471,7 +471,7 @@ export function BusinessInvitation() {
             <button
               type="submit"
               disabled={submitLoading}
-              className="w-full py-5 bg-stone-900 text-white rounded-full font-extrabold text-lg tracking-tight hover:shadow-xl hover:shadow-stone-900/10 transition-all active:scale-95 duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-5 bg-stone-900 dark:bg-white dark:text-black text-white rounded-full font-extrabold text-lg tracking-tight hover:shadow-xl hover:shadow-stone-900/10 transition-all active:scale-95 duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin mx-auto" />
@@ -483,12 +483,12 @@ export function BusinessInvitation() {
 
           {/* Legal + login link */}
           <div className="space-y-4 text-center">
-            <p className="text-[11px] text-stone-500 leading-relaxed">
-              En continuant, vous acceptez nos <Link to="#" className="underline text-stone-900">Conditions Générales</Link> et notre <Link to="#" className="underline text-stone-900">Politique de Confidentialité</Link>.
+            <p className="text-[11px] text-stone-500 dark:text-neutral-400 leading-relaxed">
+              En continuant, vous acceptez nos <Link to="#" className="underline text-stone-900 dark:text-white">Conditions Générales</Link> et notre <Link to="#" className="underline text-stone-900 dark:text-white">Politique de Confidentialité</Link>.
             </p>
-            <p className="text-sm text-stone-500">
+            <p className="text-sm text-stone-500 dark:text-neutral-400">
               Déjà un compte ?{' '}
-              <Link to="/business/login" className="font-semibold text-stone-900 hover:text-stone-600 transition-colors">
+              <Link to="/business/login" className="font-semibold text-stone-900 dark:text-white hover:text-stone-600 dark:hover:text-neutral-200 transition-colors">
                 Se connecter
               </Link>
             </p>

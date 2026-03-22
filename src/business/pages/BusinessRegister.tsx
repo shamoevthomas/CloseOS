@@ -64,13 +64,13 @@ export default function BusinessRegister() {
         </div>
 
         {/* Glass card */}
-        <div className="rounded-xl border border-stone-200/20 bg-white/70 backdrop-blur-xl p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+        <div className="rounded-xl border border-stone-200/20 dark:border-neutral-800 bg-white/70 dark:bg-white/5 backdrop-blur-xl p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
           {/* Headline */}
           <div className="mb-10 text-center">
-            <h2 className="text-4xl font-extrabold text-stone-900 font-['Manrope'] tracking-tight mb-3">
+            <h2 className="text-4xl font-extrabold text-stone-900 dark:text-white font-['Manrope'] tracking-tight mb-3">
               Démarrez votre expansion
             </h2>
-            <p className="text-stone-500 text-base">Créez un compte et pilotez votre équipe de closers</p>
+            <p className="text-stone-500 dark:text-neutral-400 text-base">Créez un compte et pilotez votre équipe de closers</p>
           </div>
 
           {/* Error */}
@@ -84,7 +84,7 @@ export default function BusinessRegister() {
           <button
             onClick={handleGoogleLogin}
             disabled={googleLoading}
-            className="mb-8 flex w-full items-center justify-center gap-3 rounded-full border border-stone-200/20 bg-white py-4 font-semibold text-stone-700 font-['Manrope'] transition-all hover:shadow-md active:scale-95 disabled:opacity-50"
+            className="mb-8 flex w-full items-center justify-center gap-3 rounded-full border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 py-4 font-semibold text-stone-700 dark:text-neutral-200 font-['Manrope'] transition-all hover:shadow-md active:scale-95 disabled:opacity-50"
           >
             {googleLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -96,9 +96,9 @@ export default function BusinessRegister() {
 
           {/* Divider */}
           <div className="relative mb-8">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-stone-200/40"></div></div>
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-stone-200/40 dark:border-neutral-700"></div></div>
             <div className="relative flex justify-center">
-              <span className="bg-white/70 px-4 text-[0.65rem] font-semibold uppercase tracking-widest text-stone-400">
+              <span className="bg-white/70 dark:bg-transparent px-4 text-[0.65rem] font-semibold uppercase tracking-widest text-stone-400 dark:text-neutral-500">
                 Ou continuer avec
               </span>
             </div>
@@ -107,7 +107,7 @@ export default function BusinessRegister() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
+              <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 text-left">
                 Nom complet
               </label>
               <div className="relative">
@@ -116,7 +116,7 @@ export default function BusinessRegister() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-full bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
+                  className="w-full rounded-full bg-stone-100/50 dark:bg-neutral-800 border-none py-4 pl-12 pr-5 text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
                   placeholder="John Doe"
                   required
                 />
@@ -124,7 +124,7 @@ export default function BusinessRegister() {
             </div>
 
             <div>
-              <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
+              <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 text-left">
                 Email
               </label>
               <div className="relative">
@@ -133,7 +133,7 @@ export default function BusinessRegister() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-full bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
+                  className="w-full rounded-full bg-stone-100/50 dark:bg-neutral-800 border-none py-4 pl-12 pr-5 text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
                   placeholder="votre@email.com"
                   required
                 />
@@ -141,7 +141,7 @@ export default function BusinessRegister() {
             </div>
 
             <div>
-              <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
+              <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 text-left">
                 Mot de passe
               </label>
               <div className="relative">
@@ -150,7 +150,7 @@ export default function BusinessRegister() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-full bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
+                  className="w-full rounded-full bg-stone-100/50 dark:bg-neutral-800 border-none py-4 pl-12 pr-5 text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
                   placeholder="••••••••"
                   required
                   minLength={8}
@@ -161,7 +161,7 @@ export default function BusinessRegister() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-5 font-bold text-white font-['Manrope'] shadow-lg transition-all hover:bg-stone-800 active:scale-95 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-black py-5 font-bold text-white font-['Manrope'] shadow-lg transition-all hover:bg-stone-800 dark:hover:bg-neutral-200 active:scale-95 disabled:opacity-50"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Créer mon compte Business"}
               {!loading && <ArrowRight className="h-5 w-5" />}
@@ -170,24 +170,24 @@ export default function BusinessRegister() {
 
           {/* Footer link */}
           <div className="mt-8 text-center">
-            <p className="text-stone-500">
+            <p className="text-stone-500 dark:text-neutral-400">
               Vous avez déjà un compte ?{' '}
-              <Link to="/business/login" className="font-semibold text-stone-900 hover:text-stone-700 transition-colors">
+              <Link to="/business/login" className="font-semibold text-stone-900 dark:text-white hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                 Se connecter
               </Link>
             </p>
           </div>
 
-          <p className="mt-6 text-center text-xs text-stone-400">
+          <p className="mt-6 text-center text-xs text-stone-400 dark:text-neutral-500">
             En créant un compte, vous acceptez nos{' '}
-            <Link to="/cgu" className="text-stone-600 hover:underline">CGU</Link>
+            <Link to="/cgu" className="text-stone-600 dark:text-neutral-300 hover:underline">CGU</Link>
             {' '}et notre{' '}
-            <Link to="/confidentialite" className="text-stone-600 hover:underline">Politique de Confidentialité</Link>.
+            <Link to="/confidentialite" className="text-stone-600 dark:text-neutral-300 hover:underline">Politique de Confidentialité</Link>.
           </p>
         </div>
 
         {/* Bottom copyright */}
-        <p className="mt-8 text-center text-xs text-stone-400">
+        <p className="mt-8 text-center text-xs text-stone-400 dark:text-neutral-500">
           &copy; {new Date().getFullYear()} CloseOS. Tous droits réservés.
         </p>
       </div>
