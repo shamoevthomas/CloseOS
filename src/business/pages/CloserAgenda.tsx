@@ -46,7 +46,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-700',
+  pending: 'bg-orange-100 text-orange-700',
   confirmed: 'bg-blue-100 text-blue-700',
   cancelled: 'bg-red-100 text-red-700',
   done: 'bg-green-100 text-green-700',
@@ -289,7 +289,7 @@ export function CloserAgenda() {
         date: formatDateKey(start),
         time: `${startTime} - ${endTime}`,
         type: 'google',
-        color: 'bg-white text-slate-900',
+        color: 'bg-white text-stone-900',
         isGoogleEvent: true,
         location: ge.location,
         description: ge.description,
@@ -366,7 +366,7 @@ export function CloserAgenda() {
             {allDay.map(e => (
               <div key={e.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border-l-4 border-blue-400 mb-1">
                 <Calendar className="h-3.5 w-3.5 text-blue-500" />
-                <span className="text-xs font-medium text-slate-700 truncate">{e.title}</span>
+                <span className="text-xs font-medium text-stone-700 truncate">{e.title}</span>
               </div>
             ))}
           </div>
@@ -386,8 +386,8 @@ export function CloserAgenda() {
               {showLine && (
                 <div className="absolute left-0 right-0 z-10" style={{ top: `${currentTimePos}%` }}>
                   <div className="flex items-center">
-                    <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                    <div className="h-0.5 flex-1 bg-amber-500" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-stone-900" />
+                    <div className="h-0.5 flex-1 bg-stone-900" />
                   </div>
                 </div>
               )}
@@ -435,14 +435,14 @@ export function CloserAgenda() {
                 )}>
                   <span className={cn(
                     'text-[10px] font-black uppercase tracking-widest mb-1',
-                    isToday(d) ? 'text-amber-600' : 'text-neutral-400'
+                    isToday(d) ? 'text-stone-900' : 'text-neutral-400'
                   )}>
                     {DAY_NAMES_SHORT[i]}
                   </span>
                   <span className="text-xl font-extrabold" style={{ fontFamily: "'Manrope', sans-serif" }}>
                     {d.getDate()}
                   </span>
-                  {isToday(d) && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-1" />}
+                  {isToday(d) && <div className="w-1.5 h-1.5 bg-stone-900 rounded-full mt-1" />}
                 </div>
               ))}
             </div>
@@ -460,7 +460,7 @@ export function CloserAgenda() {
                   return (
                     <div key={i} className="border-r border-stone-100 last:border-0 p-1 min-h-[32px]">
                       {allDay.map(e => (
-                        <div key={e.id} className="mb-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium truncate bg-blue-50 border-l-2 border-blue-400 text-slate-700">
+                        <div key={e.id} className="mb-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium truncate bg-blue-50 border-l-2 border-stone-400 text-stone-700">
                           {e.title}
                         </div>
                       ))}
@@ -511,8 +511,8 @@ export function CloserAgenda() {
                       {dayIdx === todayIdx && (
                         <div className="absolute left-0 right-0 z-10" style={{ top: `${currentTimePos}%` }}>
                           <div className="flex items-center">
-                            <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                            <div className="h-0.5 flex-1 bg-amber-500" />
+                            <div className="h-2.5 w-2.5 rounded-full bg-stone-900" />
+                            <div className="h-0.5 flex-1 bg-stone-900" />
                           </div>
                         </div>
                       )}
@@ -586,15 +586,15 @@ export function CloserAgenda() {
                 className={cn(
                   'min-h-[100px] border-b border-r border-stone-100 p-1.5 transition-colors',
                   !isCurrent && 'bg-stone-50/60',
-                  td && 'bg-amber-50/50',
+                  td && 'bg-stone-100/50',
                   isCurrent && !td && 'hover:bg-stone-50'
                 )}
               >
                 <div className={cn(
                   'mb-1 flex h-7 w-7 items-center justify-center rounded-full text-xs font-extrabold',
-                  td && 'bg-amber-500 text-white',
-                  !td && isCurrent && 'text-slate-900',
-                  !td && !isCurrent && 'text-slate-300'
+                  td && 'bg-stone-900 text-white',
+                  !td && isCurrent && 'text-stone-900',
+                  !td && !isCurrent && 'text-stone-300'
                 )} style={{ fontFamily: "'Manrope', sans-serif" }}>
                   {d.getDate()}
                 </div>
@@ -608,7 +608,7 @@ export function CloserAgenda() {
                       {ev.time?.split(' - ')[0]} {ev.title}
                     </div>
                   ))}
-                  {extra > 0 && <div className="px-1.5 text-[10px] font-medium text-slate-400">+{extra}</div>}
+                  {extra > 0 && <div className="px-1.5 text-[10px] font-medium text-stone-400">+{extra}</div>}
                 </div>
               </div>
             )
@@ -621,7 +621,7 @@ export function CloserAgenda() {
   /* ─── MAIN RENDER ─────────────────────────────── */
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-amber-600" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-stone-900" /></div>
   }
 
   return (
@@ -672,7 +672,7 @@ export function CloserAgenda() {
             <select
               value={selectedMemberId}
               onChange={e => setSelectedMemberId(e.target.value)}
-              className="rounded-full border border-stone-200/60 bg-white px-4 py-2.5 text-xs font-bold text-neutral-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="rounded-full border border-stone-200/60 bg-white px-4 py-2.5 text-xs font-bold text-neutral-700 focus:outline-none focus:ring-2 focus:ring-stone-900"
             >
               <option value="perso">Mon agenda</option>
               <option value="all">Tous les membres</option>
@@ -731,7 +731,7 @@ export function CloserAgenda() {
         return (
           <div className="mt-2">
             <h3 className="mb-3 text-sm font-extrabold text-neutral-900 flex items-center gap-2 tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-stone-900 animate-pulse" />
               Aujourd'hui
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -751,7 +751,7 @@ export function CloserAgenda() {
                   </div>
                   <p className="text-sm font-extrabold text-neutral-900 truncate" style={{ fontFamily: "'Manrope', sans-serif" }}>{ev.title}</p>
                   {ev.status && (
-                    <span className={cn('inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full', STATUS_COLORS[ev.status] || 'bg-slate-100 text-slate-600')}>
+                    <span className={cn('inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full', STATUS_COLORS[ev.status] || 'bg-stone-100 text-stone-600')}>
                       {STATUS_LABELS[ev.status] || ev.status}
                     </span>
                   )}
@@ -779,7 +779,7 @@ export function CloserAgenda() {
                 </h3>
               </div>
               <button onClick={() => setSelectedEvent(null)} className="p-2 rounded-full hover:bg-white/60 transition-colors">
-                <X className="w-4 h-4 text-slate-500" />
+                <X className="w-4 h-4 text-stone-500" />
               </button>
             </div>
             <div className="px-6 py-5 space-y-4">
