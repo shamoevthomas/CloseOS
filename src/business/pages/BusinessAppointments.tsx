@@ -640,14 +640,35 @@ export function BusinessAppointments() {
               const memberTime = getMemberLocalTime(appt)
               const endTime = getEndTime(localDt.time, appt.duration)
 
+              // Temporal tag: passé / bientôt / futur
+              const nowMs = Date.now()
+              const apptStart = new Date(`${localDt.date}T${localDt.time}:00`)
+              const apptEnd = new Date(apptStart.getTime() + appt.duration * 60000)
+              const todayStr = new Date().toISOString().split('T')[0]
+              let timeTag: { label: string; bg: string; text: string }
+              if (apptEnd.getTime() < nowMs) {
+                timeTag = { label: 'Passé', bg: 'bg-[#eae8e7]', text: 'text-[#747878]' }
+              } else if (localDt.date === todayStr && apptStart.getTime() > nowMs) {
+                timeTag = { label: 'Bientôt', bg: 'bg-[#ffb95f]/20', text: 'text-[#b87500]' }
+              } else if (localDt.date === todayStr && apptStart.getTime() <= nowMs) {
+                timeTag = { label: 'En cours', bg: 'bg-[#006c49]/10', text: 'text-[#006c49]' }
+              } else {
+                timeTag = { label: 'Futur', bg: 'bg-blue-50', text: 'text-blue-600' }
+              }
+
               return (
                 <div key={appt.id} className="bg-white p-8 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.02)] border border-white/50 group hover:shadow-lg transition-all duration-500">
                   {/* Top: Status + Time + Member + Campaign */}
                   <div className="flex justify-between items-start mb-6">
                     <div className="flex flex-col gap-1">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusConf.badgeBg} ${statusConf.badgeText} w-fit`}>
-                        {statusConf.label}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusConf.badgeBg} ${statusConf.badgeText} w-fit`}>
+                          {statusConf.label}
+                        </span>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${timeTag.bg} ${timeTag.text} w-fit`}>
+                          {timeTag.label}
+                        </span>
+                      </div>
                       <h2 className="text-2xl font-extrabold mt-2 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
                         {localDt.time} — {endTime}
                       </h2>

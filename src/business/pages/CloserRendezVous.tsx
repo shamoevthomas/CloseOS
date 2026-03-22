@@ -221,6 +221,21 @@ export function CloserRendezVous() {
           <div className="divide-y divide-stone-100">
             {filtered.map((appt) => {
               const statusConf = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending
+              // Temporal tag
+              const nowMs = Date.now()
+              const apptStart = new Date(`${appt.date}T${appt.time?.slice(0, 5) || '00:00'}:00`)
+              const apptEnd = new Date(apptStart.getTime() + appt.duration * 60000)
+              const todayStr = new Date().toISOString().split('T')[0]
+              let timeTag: { label: string; bg: string; text: string }
+              if (apptEnd.getTime() < nowMs) {
+                timeTag = { label: 'Passé', bg: 'bg-stone-100', text: 'text-stone-500' }
+              } else if (appt.date === todayStr && apptStart.getTime() > nowMs) {
+                timeTag = { label: 'Bientôt', bg: 'bg-amber-100/80', text: 'text-amber-700' }
+              } else if (appt.date === todayStr && apptStart.getTime() <= nowMs) {
+                timeTag = { label: 'En cours', bg: 'bg-emerald-100/80', text: 'text-emerald-700' }
+              } else {
+                timeTag = { label: 'Futur', bg: 'bg-blue-50', text: 'text-blue-600' }
+              }
               return (
                 <div key={appt.id} className="px-6 py-4 hover:bg-stone-50/40 transition-colors">
                   {/* Desktop */}
@@ -250,13 +265,16 @@ export function CloserRendezVous() {
                     <div className="col-span-1">
                       <span className="text-xs text-stone-500">{appt.duration}min</span>
                     </div>
-                    <div className="col-span-1">
+                    <div className="col-span-1 space-y-1">
                       <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium', statusConf.badgeBg, statusConf.badgeText)}>
                         {appt.status === 'pending' && <Clock className="h-3 w-3" />}
                         {appt.status === 'confirmed' && <CheckCircle2 className="h-3 w-3" />}
                         {appt.status === 'cancelled' && <XCircle className="h-3 w-3" />}
                         {appt.status === 'done' && <CheckCircle2 className="h-3 w-3" />}
                         {statusConf.label}
+                      </span>
+                      <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider', timeTag.bg, timeTag.text)}>
+                        {timeTag.label}
                       </span>
                     </div>
                     <div className="col-span-2 flex items-center justify-end gap-1.5">
@@ -279,9 +297,12 @@ export function CloserRendezVous() {
                   <div className="md:hidden">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium', statusConf.badgeBg, statusConf.badgeText)}>
                             {statusConf.label}
+                          </span>
+                          <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider', timeTag.bg, timeTag.text)}>
+                            {timeTag.label}
                           </span>
                           <span className="text-sm font-semibold text-stone-900">
                             {formatDate(appt.date)} a {appt.time?.slice(0, 5)}
