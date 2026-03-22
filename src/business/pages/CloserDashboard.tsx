@@ -228,20 +228,21 @@ export function CloserDashboard() {
               {upcomingAppts.map((a, i) => {
                 const localDt = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone) : { date: a.date, time: a.time?.slice(0, 5) || '00:00' }
                 return (
-                <div key={a.id} onClick={() => navigate('/business/agenda')} className={`bg-white dark:bg-neutral-800 p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
-                  <div className="flex items-center gap-6">
-                    <div className="text-center min-w-[60px]">
-                      <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-tighter">{formatApptDate(localDt.date)}</p>
-                      <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">{localDt.time}</p>
-                    </div>
-                    <div className="h-10 w-px bg-[#c4c7c7]/20 dark:bg-neutral-700" />
-                    <div>
-                      <p className="font-bold text-lg leading-tight text-[#1b1c1b] dark:text-white">{a.prospect?.contact || 'Rendez-vous'}</p>
-                      <p className="text-sm text-[#444748] dark:text-neutral-400">{a.campaign?.name || `${a.duration}min`}</p>
+                  <div key={a.id} onClick={() => navigate('/business/agenda')} className={`bg-white dark:bg-neutral-800 p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
+                    <div className="flex items-center gap-6">
+                      <div className="text-center min-w-[60px]">
+                        <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-tighter">{formatApptDate(localDt.date)}</p>
+                        <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">{localDt.time}</p>
+                      </div>
+                      <div className="h-10 w-px bg-[#c4c7c7]/20 dark:bg-neutral-700" />
+                      <div>
+                        <p className="font-bold text-lg leading-tight text-[#1b1c1b] dark:text-white">{a.prospect?.contact || 'Rendez-vous'}</p>
+                        <p className="text-sm text-[#444748] dark:text-neutral-400">{a.campaign?.name || `${a.duration}min`}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )})
+                )
+              })}
             </div>
           )}
         </div>
