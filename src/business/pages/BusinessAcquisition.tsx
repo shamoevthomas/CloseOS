@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Megaphone, Eye, UserCheck, Loader2, TrendingUp } from 'lucide-react'
+import { Megaphone, Eye, UserCheck, Loader2, TrendingUp, TrendingDown } from 'lucide-react'
 import {
   PieChart, Pie, Cell,
   BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  ResponsiveContainer,
 } from 'recharts'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 
@@ -25,10 +25,15 @@ interface CampaignStat {
 
 const API_URL = '/api/business'
 
-const COLORS = ['#d97706', '#2563eb', '#7c3aed', '#059669', '#e11d48', '#0891b2', '#ea580c', '#4f46e5']
+const COLORS = ['#111111', '#006c49', '#9ca3af', '#d97706', '#2563eb', '#7c3aed', '#e11d48', '#0891b2']
 
 const formatCurrency = (value: number): string =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value)
+
+const formatCompact = (value: number): string => {
+  if (value >= 1000) return `${(value / 1000).toFixed(1).replace('.0', '')}k`
+  return value.toString()
+}
 
 export function BusinessAcquisition() {
   const { user, ownerUserId } = useBusinessAuth()
@@ -54,7 +59,7 @@ export function BusinessAcquisition() {
   useEffect(() => { fetchStats() }, [fetchStats])
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-amber-600 animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-stone-400 animate-spin" /></div>
   }
 
   const totalViews = stats.reduce((s, c) => s + c.views, 0)
@@ -63,7 +68,7 @@ export function BusinessAcquisition() {
   const totalCA = stats.reduce((s, c) => s + c.totalCA, 0)
   const globalConversion = totalViews > 0 ? ((totalLeads / totalViews) * 100).toFixed(1) : '0'
 
-  // ─── Pie chart data ───
+  // Pie chart data
   const pieData = stats
     .filter(c => pieView === 'views' ? c.views > 0 : c.conversionRate > 0)
     .map(c => ({
@@ -72,300 +77,412 @@ export function BusinessAcquisition() {
     }))
     .sort((a, b) => b.value - a.value)
 
-  // ─── Bar chart: campaigns that generate most "won" leads (%) ───
+  const pieTotal = pieData.reduce((s, d) => s + d.value, 0)
+
+  // Won rate bar data
   const wonBarData = stats
     .filter(c => c.totalLeads > 0)
     .map(c => ({
-      name: c.name.length > 15 ? c.name.slice(0, 15) + '…' : c.name,
-      fullName: c.name,
+      name: c.name,
+      shortName: c.name.length > 20 ? c.name.slice(0, 20) + '…' : c.name,
       wonRate: parseFloat(c.wonRate.toFixed(1)),
     }))
     .sort((a, b) => b.wonRate - a.wonRate)
 
-  // ─── Full width bar chart: CA per campaign ───
+  const topPerformer = wonBarData.length > 0 ? wonBarData[0] : null
+
+  // CA bar data
   const caBarData = stats
     .filter(c => c.totalCA > 0)
     .map(c => ({
-      name: c.name.length > 20 ? c.name.slice(0, 20) + '…' : c.name,
-      fullName: c.name,
+      name: c.name,
+      shortName: c.name.length > 20 ? c.name.slice(0, 20) + '…' : c.name,
       ca: c.totalCA,
     }))
     .sort((a, b) => b.ca - a.ca)
 
-  // ─── Taux d'implication: campaigns with lowest % of noanswer+noshow ───
+  const maxCA = caBarData.length > 0 ? caBarData[0].ca : 1
+
+  // Implication data
   const implicationData = stats
     .filter(c => c.totalLeads > 0)
     .map(c => {
       const badCount = c.noanswerCount + c.noshowCount
-      const implicationRate = ((1 - badCount / c.totalLeads) * 100)
-      return {
-        name: c.name.length > 15 ? c.name.slice(0, 15) + '…' : c.name,
-        fullName: c.name,
-        rate: parseFloat(implicationRate.toFixed(1)),
-      }
+      const rate = parseFloat(((1 - badCount / c.totalLeads) * 100).toFixed(1))
+      return { name: c.name, shortName: c.name.length > 15 ? c.name.slice(0, 15) + '…' : c.name, rate }
     })
     .sort((a, b) => b.rate - a.rate)
 
-  // ─── Taux d'éducation: campaigns with lowest % of unqualified (+ optionally noanswer/noshow) ───
+  // Education data
   const educationData = stats
     .filter(c => c.totalLeads > 0)
     .map(c => {
       const badCount = c.unqualifiedCount + (countAsUneducated ? c.noanswerCount + c.noshowCount : 0)
-      const educationRate = ((1 - badCount / c.totalLeads) * 100)
-      return {
-        name: c.name.length > 15 ? c.name.slice(0, 15) + '…' : c.name,
-        fullName: c.name,
-        rate: parseFloat(educationRate.toFixed(1)),
-      }
+      const rate = parseFloat(((1 - badCount / c.totalLeads) * 100).toFixed(1))
+      return { name: c.name, shortName: c.name.length > 15 ? c.name.slice(0, 15) + '…' : c.name, rate }
     })
     .sort((a, b) => b.rate - a.rate)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-16">
 
-      {/* ─── Campaign Cards (top) ─── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Global summary cards */}
-        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100">
-              <Megaphone className="h-4 w-4 text-amber-700" />
-            </div>
-            <p className="text-xs font-medium text-slate-500">Campagnes actives</p>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{stats.filter(c => c.is_active).length}</p>
+      {/* ─── Hero Header ─── */}
+      <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-3">
+          <h2 className="text-5xl md:text-7xl font-extrabold tracking-tighter text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Acquisition.
+          </h2>
+          <p className="text-stone-500 max-w-md font-medium leading-relaxed">
+            Pilotage stratégique des flux d'acquisition et conversion en temps réel pour le trimestre en cours.
+          </p>
         </div>
-        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100">
-              <Eye className="h-4 w-4 text-blue-700" />
-            </div>
-            <p className="text-xs font-medium text-slate-500">Vues totales</p>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{totalViews.toLocaleString()}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100">
-              <UserCheck className="h-4 w-4 text-purple-700" />
-            </div>
-            <p className="text-xs font-medium text-slate-500">Taux d'inscription global</p>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{globalConversion}%</p>
-          <p className="text-xs text-slate-400 mt-0.5">{totalLeads} leads / {totalViews} vues</p>
-        </div>
-        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100">
-              <TrendingUp className="h-4 w-4 text-emerald-700" />
-            </div>
-            <p className="text-xs font-medium text-slate-500">CA généré</p>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalCA)}</p>
-          <p className="text-xs text-slate-400 mt-0.5">{totalWon} client{totalWon !== 1 ? 's' : ''} gagné{totalWon !== 1 ? 's' : ''}</p>
-        </div>
-      </div>
+      </section>
 
-      {/* ─── Per-campaign stat cards ─── */}
+      {/* ─── Summary Cards ─── */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Campagnes Actives */}
+        <div className="bg-white/70 backdrop-blur-md border border-stone-200/30 rounded-2xl p-7 flex flex-col justify-between gap-5">
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Campagnes Actives</span>
+            <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <Megaphone className="h-4 w-4 text-emerald-600" />
+            </div>
+          </div>
+          <div>
+            <div className="text-4xl font-extrabold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {stats.filter(c => c.is_active).length}
+            </div>
+          </div>
+        </div>
+
+        {/* Vues Totales */}
+        <div className="bg-white/70 backdrop-blur-md border border-stone-200/30 rounded-2xl p-7 flex flex-col justify-between gap-5">
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Vues Totales</span>
+            <div className="w-9 h-9 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <Eye className="h-4 w-4 text-amber-600" />
+            </div>
+          </div>
+          <div>
+            <div className="text-4xl font-extrabold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {formatCompact(totalViews)}
+            </div>
+          </div>
+        </div>
+
+        {/* Taux Inscription */}
+        <div className="bg-white/70 backdrop-blur-md border border-stone-200/30 rounded-2xl p-7 flex flex-col justify-between gap-5">
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Taux Inscription</span>
+            <div className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center">
+              <UserCheck className="h-4 w-4 text-blue-600" />
+            </div>
+          </div>
+          <div>
+            <div className="text-4xl font-extrabold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {globalConversion}%
+            </div>
+            <div className="text-xs text-stone-400 mt-1">{totalLeads} leads / {totalViews} vues</div>
+          </div>
+        </div>
+
+        {/* CA Généré */}
+        <div className="bg-white/70 backdrop-blur-md border border-stone-200/30 rounded-2xl p-7 flex flex-col justify-between gap-5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-br from-purple-500/10 to-pink-500/10 blur-3xl -z-10" />
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">CA Généré</span>
+            <div className="w-9 h-9 rounded-full bg-purple-500/10 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-purple-600" />
+            </div>
+          </div>
+          <div>
+            <div className="text-4xl font-extrabold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {formatCompact(totalCA)}€
+            </div>
+            <div className="text-xs text-stone-400 mt-1">{totalWon} client{totalWon !== 1 ? 's' : ''} gagné{totalWon !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Performance par Campagne ─── */}
       {stats.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {stats.map(c => (
-            <div key={c.id} className="bg-white rounded-xl border border-[#493627]/10 p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-semibold text-slate-900 truncate flex-1 mr-2">{c.name}</h4>
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${c.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                  {c.is_active ? 'Active' : 'Inactive'}
-                </span>
+        <section className="space-y-6">
+          <div>
+            <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Performance par Campagne
+            </h3>
+            <p className="text-stone-500 mt-1.5 text-sm">Détails granulaires des flux actifs</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {stats.map(c => (
+              <div
+                key={c.id}
+                className={`bg-white/70 backdrop-blur-md rounded-2xl p-7 hover:-translate-y-1 transition-transform duration-300 ${
+                  c.is_active
+                    ? 'border border-stone-200/30'
+                    : 'border-2 border-dashed border-stone-300/30 opacity-60'
+                }`}
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-wide rounded-full ${
+                    c.is_active ? 'bg-emerald-500/10 text-emerald-700' : 'bg-stone-200/50 text-stone-500'
+                  }`}>
+                    {c.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <h4 className="text-xl font-extrabold text-stone-900 mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>{c.name}</h4>
+                <div className="grid grid-cols-2 gap-y-5">
+                  <div>
+                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-[0.15em] mb-1">Vues</p>
+                    <p className="text-lg font-bold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>{c.views.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-[0.15em] mb-1">Leads</p>
+                    <p className="text-lg font-bold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>{c.totalLeads.toLocaleString()}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-[0.15em] mb-2">Taux de Conversion</p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-grow h-2 bg-stone-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${c.is_active ? 'bg-emerald-600' : 'bg-stone-400'}`}
+                          style={{ width: `${Math.min(c.conversionRate, 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-black text-stone-900">{c.conversionRate.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <p className="text-lg font-bold text-blue-600">{c.views}</p>
-                  <p className="text-[10px] text-slate-400">Vues</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-purple-600">{c.totalLeads}</p>
-                  <p className="text-[10px] text-slate-400">Leads</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-amber-600">{c.conversionRate.toFixed(1)}%</p>
-                  <p className="text-[10px] text-slate-400">Conversion</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       )}
 
-      {/* ─── Charts row: Pie + Won bar ─── */}
+      {/* ─── Charts Row: Pie + Conversion Client ─── */}
       {stats.length > 0 && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Left: Pie chart */}
-          <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-[#493627]">Répartition par campagne</h3>
-              <div className="flex rounded-lg bg-amber-50 p-0.5 border border-amber-200">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Pie Chart */}
+          <div className="bg-white/70 backdrop-blur-md border border-stone-200/30 rounded-2xl p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <h4 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Répartition par campagne
+              </h4>
+              <div className="bg-stone-100 p-1 rounded-lg flex text-[10px] font-bold uppercase tracking-tight">
                 <button
                   onClick={() => setPieView('views')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${pieView === 'views' ? 'bg-amber-600 text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-3 py-1.5 rounded-md transition-all ${pieView === 'views' ? 'bg-white shadow-sm text-stone-900' : 'text-stone-500'}`}
                 >
                   Plus ouverte
                 </button>
                 <button
                   onClick={() => setPieView('conversion')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${pieView === 'conversion' ? 'bg-amber-600 text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-3 py-1.5 rounded-md transition-all ${pieView === 'conversion' ? 'bg-white shadow-sm text-stone-900' : 'text-stone-500'}`}
                 >
                   Plus convertie
                 </button>
               </div>
             </div>
-            <div className="h-72">
+            <div className="flex flex-col md:flex-row items-center gap-10">
               {pieData.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-sm text-slate-400">Aucune donnée</div>
+                <div className="flex items-center justify-center h-48 w-full text-sm text-stone-400">Aucune donnée</div>
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="value"
-                      label={({ name, value }) => `${name.length > 12 ? name.slice(0, 12) + '…' : name}: ${value}${pieView === 'conversion' ? '%' : ''}`}
-                    >
-                      {pieData.map((_, idx) => (
-                        <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number) => [pieView === 'views' ? `${value} vues` : `${value}%`, 'Valeur']}
-                      contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                <>
+                  <div className="relative w-44 h-44 flex items-center justify-center shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={70}
+                          paddingAngle={2}
+                          dataKey="value"
+                          strokeWidth={0}
+                        >
+                          {pieData.map((_, idx) => (
+                            <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value: number) => [pieView === 'views' ? `${value} vues` : `${value}%`, '']}
+                          contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: 12 }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                      <span className="text-[9px] font-bold uppercase text-stone-500 tracking-[0.15em]">Total</span>
+                      <span className="text-2xl font-black text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>100%</span>
+                    </div>
+                  </div>
+                  <div className="flex-grow space-y-3.5 w-full">
+                    {pieData.map((d, idx) => (
+                      <div key={d.name} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                          <span className="text-sm font-medium text-stone-700">{d.name}</span>
+                        </div>
+                        <span className="text-sm font-black text-stone-900">
+                          {pieTotal > 0 ? Math.round((d.value / pieTotal) * 100) : 0}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </div>
 
-          {/* Right: Won rate bar chart */}
-          <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-            <h3 className="text-sm font-semibold text-[#493627] mb-4">Taux de conversion en client (%)</h3>
-            <p className="text-xs text-slate-400 mb-4">Quelle campagne génère les leads qui achètent le plus ?</p>
-            <div className="h-64">
+          {/* Conversion Client (%) */}
+          <div className="bg-white/70 backdrop-blur-md border border-stone-200/30 rounded-2xl p-8 space-y-6">
+            <div className="flex justify-between items-center">
+              <h4 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Conversion Client (%)
+              </h4>
+              {topPerformer && (
+                <span className="text-[10px] font-bold text-emerald-700 uppercase bg-emerald-500/10 px-3 py-1 rounded-full">
+                  Top: {topPerformer.shortName}
+                </span>
+              )}
+            </div>
+            <div className="space-y-5">
               {wonBarData.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-sm text-slate-400">Aucune donnée</div>
+                <div className="flex items-center justify-center h-48 text-sm text-stone-400">Aucune donnée</div>
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={wonBarData} layout="vertical" margin={{ left: 10, right: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: '#493627' }} unit="%" domain={[0, 100]} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#493627' }} width={110} />
-                    <Tooltip
-                      formatter={(value: number, _: any, entry: any) => [`${value}%`, entry.payload.fullName]}
-                      contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }}
-                    />
-                    <Bar dataKey="wonRate" fill="#059669" radius={[0, 6, 6, 0]} barSize={20} />
-                  </BarChart>
-                </ResponsiveContainer>
+                wonBarData.map((d, idx) => (
+                  <div key={d.name} className="space-y-2">
+                    <div className="flex justify-between text-sm font-bold">
+                      <span className="text-stone-700">{d.shortName}</span>
+                      <span className={idx === 0 ? 'text-emerald-600' : 'text-stone-900'}>{d.wonRate}%</span>
+                    </div>
+                    <div className="w-full h-7 bg-stone-100 rounded-lg overflow-hidden">
+                      <div
+                        className={`h-full rounded-lg transition-all duration-500 ${idx === 0 ? 'bg-emerald-600' : 'bg-stone-800'}`}
+                        style={{ width: `${Math.min(d.wonRate * 10, 100)}%`, opacity: idx === 0 ? 1 : 0.6 - idx * 0.1 }}
+                      />
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* ─── Full width: CA per campaign bar chart ─── */}
+      {/* ─── CA par campagne ─── */}
       {caBarData.length > 0 && (
-        <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-          <h3 className="text-sm font-semibold text-[#493627] mb-1">Chiffre d'affaires par campagne</h3>
-          <p className="text-xs text-slate-400 mb-4">Quelle campagne génère le plus de CA ?</p>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={caBarData} margin={{ left: 10, right: 20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#493627' }} angle={-20} textAnchor="end" height={60} />
-                <YAxis tick={{ fontSize: 11, fill: '#493627' }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k€`} />
-                <Tooltip
-                  formatter={(value: number, _: any, entry: any) => [formatCurrency(value), entry.payload.fullName]}
-                  contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }}
-                />
-                <Bar dataKey="ca" fill="#d97706" radius={[6, 6, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
+        <section className="bg-white/70 backdrop-blur-md border border-stone-200/30 rounded-2xl p-10 space-y-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h4 className="text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Chiffre d'affaires par campagne
+              </h4>
+              <p className="text-stone-500 mt-1 text-sm">Projection brute vs réalisé par canal</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-stone-900" />
+                <span className="text-xs font-bold text-stone-700">Réalisé</span>
+              </div>
+            </div>
           </div>
-        </div>
+          <div className="flex items-end gap-6 md:gap-10 w-full pt-8 border-b border-stone-200/30 h-[350px] px-4">
+            {caBarData.map((d, idx) => {
+              const heightPct = maxCA > 0 ? (d.ca / maxCA) * 100 : 0
+              return (
+                <div key={d.name} className="flex-1 flex flex-col items-center gap-3 group">
+                  <div className="relative w-full max-w-[80px]">
+                    <div
+                      className="absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-1 bg-stone-900 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap"
+                    >
+                      {formatCurrency(d.ca)}
+                    </div>
+                    <div
+                      className="w-full bg-stone-900 rounded-t-xl transition-all duration-500"
+                      style={{ height: `${Math.max(heightPct * 2.8, 16)}px`, opacity: 1 - idx * 0.15 }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-stone-500 text-center leading-tight">
+                    {d.shortName}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </section>
       )}
 
-      {/* ─── Implication + Éducation charts row ─── */}
+      {/* ─── Implication + Éducation ─── */}
       {stats.length > 0 && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
           {/* Taux d'implication */}
-          <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-            <h3 className="text-sm font-semibold text-[#493627] mb-1">Taux d'implication (%)</h3>
-            <p className="text-xs text-slate-400 mb-4">Campagnes avec le moins de "Pas de réponse" et "No Show"</p>
-            <div className="h-64">
+          <div className="bg-white/70 backdrop-blur-md border border-stone-200/30 rounded-2xl p-8 space-y-8">
+            <div>
+              <h4 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Taux d'implication (%)
+              </h4>
+              <p className="text-sm text-stone-500 mt-1.5 font-medium">Réduction des no-shows et no-answers</p>
+            </div>
+            <div className="space-y-5">
               {implicationData.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-sm text-slate-400">Aucune donnée</div>
+                <div className="flex items-center justify-center h-32 text-sm text-stone-400">Aucune donnée</div>
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={implicationData} layout="vertical" margin={{ left: 10, right: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: '#493627' }} unit="%" domain={[0, 100]} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#493627' }} width={110} />
-                    <Tooltip
-                      formatter={(value: number, _: any, entry: any) => [`${value}%`, entry.payload.fullName]}
-                      contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }}
-                    />
-                    <Bar dataKey="rate" fill="#2563eb" radius={[0, 6, 6, 0]} barSize={20} />
-                  </BarChart>
-                </ResponsiveContainer>
+                implicationData.map(d => (
+                  <div key={d.name} className="flex items-center gap-5">
+                    <span className="w-20 text-[10px] font-black uppercase text-stone-500 leading-none shrink-0">{d.shortName}</span>
+                    <div className="flex-grow flex items-center gap-3">
+                      <div className={`h-3.5 bg-emerald-600 rounded-full transition-all duration-500`} style={{ width: `${d.rate}%` }} />
+                      <span className="text-sm font-black text-stone-900">{d.rate}%</span>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
 
           {/* Taux d'éducation */}
-          <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-sm font-semibold text-[#493627]">Taux d'éducation (%)</h3>
+          <div className="bg-white/70 backdrop-blur-md border border-stone-200/30 rounded-2xl p-8 space-y-8">
+            <div>
+              <h4 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Taux d'éducation (%)
+              </h4>
+              <p className="text-sm text-stone-500 mt-1.5 font-medium">Qualité des leads (lowest unqualified)</p>
             </div>
-            <p className="text-xs text-slate-400 mb-3">Campagnes avec le moins de "Non qualifié"</p>
-            <label className="flex items-center gap-2 mb-4 cursor-pointer select-none">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <button
                 onClick={() => setCountAsUneducated(!countAsUneducated)}
-                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${countAsUneducated ? 'bg-amber-600' : 'bg-slate-200'}`}
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${countAsUneducated ? 'bg-blue-600' : 'bg-stone-300'}`}
               >
-                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${countAsUneducated ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform shadow-sm ${countAsUneducated ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
               </button>
-              <span className="text-xs text-slate-500">Compter les "Pas de réponse" et "No Show" comme non éduqués</span>
+              <span className="text-xs text-stone-500">Inclure "Pas de réponse" et "No Show"</span>
             </label>
-            <div className="h-56">
+            <div className="space-y-5">
               {educationData.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-sm text-slate-400">Aucune donnée</div>
+                <div className="flex items-center justify-center h-32 text-sm text-stone-400">Aucune donnée</div>
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={educationData} layout="vertical" margin={{ left: 10, right: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: '#493627' }} unit="%" domain={[0, 100]} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#493627' }} width={110} />
-                    <Tooltip
-                      formatter={(value: number, _: any, entry: any) => [`${value}%`, entry.payload.fullName]}
-                      contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }}
-                    />
-                    <Bar dataKey="rate" fill="#7c3aed" radius={[0, 6, 6, 0]} barSize={20} />
-                  </BarChart>
-                </ResponsiveContainer>
+                educationData.map(d => (
+                  <div key={d.name} className="flex items-center gap-5">
+                    <span className="w-20 text-[10px] font-black uppercase text-stone-500 leading-none shrink-0">{d.shortName}</span>
+                    <div className="flex-grow flex items-center gap-3">
+                      <div className="h-3.5 bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${d.rate}%`, opacity: d.rate > 50 ? 1 : 0.5 }} />
+                      <span className="text-sm font-black text-stone-900">{d.rate}%</span>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
-        </div>
+        </section>
       )}
 
       {/* Empty state */}
       {stats.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 py-16">
-          <Megaphone className="h-12 w-12 text-amber-300 mb-4" />
-          <h3 className="text-lg font-semibold text-slate-700 mb-1">Aucune donnée d'acquisition</h3>
-          <p className="text-sm text-slate-500">Créez des campagnes et partagez vos pages de capture pour voir les statistiques ici.</p>
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50/50 py-16">
+          <Megaphone className="h-12 w-12 text-stone-300 mb-4" />
+          <h3 className="text-lg font-semibold text-stone-700 mb-1">Aucune donnée d'acquisition</h3>
+          <p className="text-sm text-stone-500">Créez des campagnes et partagez vos pages de capture pour voir les statistiques ici.</p>
         </div>
       )}
     </div>

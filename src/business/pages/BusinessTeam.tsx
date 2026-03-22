@@ -78,14 +78,14 @@ const isReallyOnline = (member: TeamMember) => {
   return diff < 2 * 60 * 1000
 }
 
-/* ─── Design tokens (Liquid Stone & Glass) ─── */
-const GLASS_CARD = 'rounded-3xl bg-white/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] ring-1 ring-black/[0.03]'
-const GLASS_CARD_HOVER = 'hover:bg-white hover:shadow-[0_20px_40px_rgba(27,28,27,0.08)] transition-all duration-300'
-const STONE_SURFACE = 'bg-[#f5f3f2]/50'
-const SECTION_PADDING = 'px-7 py-6'
+/* ─── Design tokens ─── */
+const GLASS_PANEL = 'bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/20'
+const WHITE_CARD = 'bg-white rounded-2xl border border-stone-100 shadow-sm'
+const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 font-bold'
+const SECTION_TITLE = 'font-business-display font-extrabold text-lg text-stone-900 flex items-center gap-2'
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; surface: string }> = {
-  'Closer': { bg: 'bg-blue-50/80', text: 'text-blue-700', surface: 'bg-blue-50/20' },
+  'Closer': { bg: 'bg-[#6ffbbe]/20', text: 'text-[#005236]', surface: 'bg-blue-50/20' },
   'Setter': { bg: 'bg-purple-50/80', text: 'text-purple-700', surface: 'bg-purple-50/20' },
   'Setter-Closer': { bg: 'bg-indigo-50/80', text: 'text-indigo-700', surface: 'bg-indigo-50/20' },
   'Admin': { bg: 'bg-red-50/80', text: 'text-red-700', surface: 'bg-red-50/20' },
@@ -102,7 +102,7 @@ const PIPELINE_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50/60' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700', bgLight: 'bg-purple-50/60' },
   { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-700', bgLight: 'bg-orange-50/60' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgLight: 'bg-emerald-50/60' },
+  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-[#006c49]', bgLight: 'bg-[#6cf8bb]/15' },
   { id: 'noshow', name: 'No Show', color: 'bg-slate-500', textColor: 'text-slate-700', bgLight: 'bg-slate-50/60' },
   { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50/60' },
 ]
@@ -136,15 +136,15 @@ function formatAnciennete(joinedAt: string): string {
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 
-function Avatar({ member, size = 'md' }: { member: TeamMember; size?: 'sm' | 'md' | 'lg' }) {
-  const sizeClasses = { sm: 'h-9 w-9', md: 'h-12 w-12', lg: 'h-20 w-20' }
-  const textClasses = { sm: 'text-xs', md: 'text-sm', lg: 'text-xl' }
+function Avatar({ member, size = 'md' }: { member: TeamMember; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
+  const sizeClasses = { sm: 'h-9 w-9', md: 'h-12 w-12', lg: 'h-20 w-20', xl: 'h-32 w-32' }
+  const textClasses = { sm: 'text-xs', md: 'text-sm', lg: 'text-xl', xl: 'text-3xl' }
   return (
-    <div className={cn(sizeClasses[size], 'rounded-full bg-[#f5f3f2] flex items-center justify-center overflow-hidden shrink-0 ring-2 ring-white/80')}>
+    <div className={cn(sizeClasses[size], 'rounded-full bg-stone-100 flex items-center justify-center overflow-hidden shrink-0', size === 'xl' ? 'border-4 border-white shadow-xl' : 'ring-2 ring-white/80')}>
       {member.avatar_url ? (
         <img src={member.avatar_url} alt={`${member.first_name} ${member.last_name}`} className="h-full w-full object-cover" />
       ) : (
-        <span className={cn(textClasses[size], 'font-extrabold text-[#1b1c1b]/40 font-business-display')}>
+        <span className={cn(textClasses[size], 'font-extrabold text-stone-400 font-business-display')}>
           {member.first_name[0]}{member.last_name[0]}
         </span>
       )}
@@ -186,11 +186,11 @@ function ContactInfo({ member }: { member: TeamMember }) {
 
   return (
     <div className="mt-3 pt-3 space-y-1.5" onClick={e => e.stopPropagation()}>
-      <div className="flex items-center gap-2 text-xs text-[#1b1c1b]/50">
+      <div className="flex items-center gap-2 text-xs text-stone-500">
         <Mail className="h-3 w-3 shrink-0" strokeWidth={1.5} />
         <span className="truncate">{member.email}</span>
       </div>
-      <div className="flex items-center gap-2 text-xs text-[#1b1c1b]/50">
+      <div className="flex items-center gap-2 text-xs text-stone-500">
         <Phone className="h-3 w-3 shrink-0" strokeWidth={1.5} />
         {editing ? (
           <div className="flex items-center gap-1 flex-1">
@@ -198,13 +198,13 @@ function ContactInfo({ member }: { member: TeamMember }) {
               value={phone}
               onChange={e => setPhone(e.target.value)}
               placeholder="+33612345678"
-              className="flex-1 min-w-0 rounded-full bg-[#f5f3f2] px-3 py-1 text-xs text-[#1b1c1b] focus:ring-2 focus:ring-[#006c49]/20 focus:outline-none transition-all"
+              className="flex-1 min-w-0 rounded-full bg-stone-50 border-none px-3 py-1 text-xs text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 focus:outline-none transition-all"
               onClick={e => e.stopPropagation()}
             />
-            <button onClick={handleSave} disabled={saving} className="text-[#006c49] hover:text-[#005a3d]">
+            <button onClick={handleSave} disabled={saving} className="text-[#006c49] hover:text-[#005236]">
               <Check className="h-3.5 w-3.5" strokeWidth={1.5} />
             </button>
-            <button onClick={e => { e.stopPropagation(); setEditing(false); setPhone(member.phone || '') }} className="text-[#1b1c1b]/30 hover:text-[#1b1c1b]/60">
+            <button onClick={e => { e.stopPropagation(); setEditing(false); setPhone(member.phone || '') }} className="text-stone-300 hover:text-stone-600">
               <X className="h-3.5 w-3.5" strokeWidth={1.5} />
             </button>
           </div>
@@ -221,10 +221,10 @@ function ContactInfo({ member }: { member: TeamMember }) {
                 {member.phone}
               </a>
             ) : (
-              <span className="text-[#1b1c1b]/25 italic">Non renseigné</span>
+              <span className="text-stone-300 italic">Non renseigné</span>
             )}
             {isOwnCard && (
-              <button onClick={e => { e.stopPropagation(); setEditing(true) }} className="text-[#1b1c1b]/25 hover:text-[#1b1c1b]/60 ml-auto shrink-0">
+              <button onClick={e => { e.stopPropagation(); setEditing(true) }} className="text-stone-300 hover:text-stone-600 ml-auto shrink-0">
                 <Pencil className="h-3 w-3" strokeWidth={1.5} />
               </button>
             )}
@@ -316,20 +316,32 @@ export function BusinessTeam() {
   }, [members])
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-[#111111]/20" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-stone-300" /></div>
   }
 
   /* ─── Detail view ─── */
   if (selectedMember) {
     return (
-      <div className="max-w-5xl mx-auto space-y-8">
-        <button
-          onClick={() => setSelectedMemberId(null)}
-          className="flex items-center gap-2 rounded-full bg-[#f5f3f2] px-5 py-2.5 text-sm font-medium text-[#1b1c1b]/60 hover:bg-[#eae8e7] transition-all duration-200"
-        >
-          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
-          Retour à l'équipe
-        </button>
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Top Action Bar */}
+        <header className="flex items-center justify-between">
+          <button
+            onClick={() => setSelectedMemberId(null)}
+            className="group flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" strokeWidth={1.5} />
+            <span className="font-business-display font-bold text-sm tracking-tight">Retour à l'équipe</span>
+          </button>
+          {isOwnerView && (
+            <button
+              onClick={() => handleDeleteMember(selectedMember.id)}
+              className="px-5 py-2.5 rounded-full bg-stone-900 text-white font-business-display font-bold text-sm hover:opacity-90 transition-all flex items-center gap-2"
+            >
+              <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+              Supprimer
+            </button>
+          )}
+        </header>
 
         <IndividualView
           member={selectedMember}
@@ -375,15 +387,15 @@ export function BusinessTeam() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-business-display text-3xl font-extrabold tracking-tight text-[#111111]">
+          <h2 className="font-business-display text-3xl font-extrabold tracking-tight text-stone-900">
             {members.length + 1} membre{members.length > 0 ? 's' : ''}
           </h2>
-          <p className="text-sm text-[#1b1c1b]/40 mt-1 leading-relaxed">Gérez votre équipe et consultez les fiches détaillées</p>
+          <p className="text-sm text-stone-400 mt-1">Gérez votre équipe et consultez les fiches détaillées</p>
         </div>
         {isOwnerView && (
           <button
             onClick={() => setIsInviteModalOpen(true)}
-            className="flex items-center gap-2.5 rounded-full bg-gradient-to-r from-rose-500 to-purple-600 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-all duration-200 shadow-lg shadow-purple-500/20"
+            className="flex items-center gap-2.5 rounded-full bg-stone-900 px-6 py-3 text-sm font-bold text-white font-business-display hover:opacity-90 transition-all"
           >
             <Plus className="h-4 w-4" strokeWidth={1.5} />
             Inviter
@@ -413,26 +425,24 @@ export function BusinessTeam() {
           _isOwner: true,
         }
         return (
-          <div className={cn(GLASS_CARD, 'overflow-hidden')}>
-            <div className={cn('px-7 pt-6 pb-2 flex items-center gap-2.5')}>
-              <div className={cn('flex h-7 w-7 items-center justify-center rounded-full', ownerColor.bg)}>
-                <Users className={cn('h-3.5 w-3.5', ownerColor.text)} strokeWidth={1.5} />
-              </div>
-              <span className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Owner</span>
+          <div className={cn(GLASS_PANEL, 'rounded-2xl overflow-hidden')}>
+            <div className="px-6 pt-5 pb-2 flex items-center gap-2.5">
+              <Users className={cn('h-4 w-4', ownerColor.text)} strokeWidth={1.5} />
+              <span className="font-business-display text-sm font-extrabold tracking-tight text-stone-900">Owner</span>
             </div>
-            <div className="px-7 pb-7">
-              <div className={cn('rounded-2xl p-5', STONE_SURFACE)}>
+            <div className="px-6 pb-6">
+              <div className="rounded-xl bg-stone-50/60 p-4">
                 <div className="flex items-start gap-4">
                   <Avatar member={ownerAsMember} size="md" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-business-display text-base font-extrabold tracking-tight text-[#111111] truncate">
+                    <p className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 truncate">
                       {ownerInfo.full_name || 'Owner'}
                     </p>
-                    <span className={cn('inline-block mt-1.5 text-xs font-semibold px-3 py-1 rounded-full', ownerColor.bg, ownerColor.text)}>
+                    <span className={cn('inline-block mt-1.5 text-xs font-bold uppercase tracking-widest px-3 py-0.5 rounded-full', ownerColor.bg, ownerColor.text)}>
                       Owner
                     </span>
                     {ownerInfo.timezone && (
-                      <div className="flex items-center gap-2 mt-2 text-xs text-[#1b1c1b]/40">
+                      <div className="flex items-center gap-2 mt-2 text-xs text-stone-400">
                         <Globe className="h-3 w-3" strokeWidth={1.5} />
                         <span>{getTimezoneLabel(ownerInfo.timezone)}</span>
                       </div>
@@ -450,15 +460,13 @@ export function BusinessTeam() {
         {Object.entries(roleGroups).map(([role, roleMembers]) => {
             const color = getRoleColor(role)
             return (
-              <div key={role} className={cn('rounded-3xl', STONE_SURFACE, 'p-5')}>
+              <div key={role} className="rounded-2xl bg-stone-50/50 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2.5">
-                    <div className={cn('flex h-7 w-7 items-center justify-center rounded-full', color.bg)}>
-                      <Users className={cn('h-3.5 w-3.5', color.text)} strokeWidth={1.5} />
-                    </div>
-                    <span className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">{role}</span>
+                    <Users className={cn('h-4 w-4', color.text)} strokeWidth={1.5} />
+                    <span className="font-business-display text-sm font-extrabold tracking-tight text-stone-900">{role}</span>
                   </div>
-                  <span className={cn('text-xs font-bold px-2.5 py-1 rounded-full', color.bg, color.text)}>
+                  <span className={cn('text-xs font-bold px-2.5 py-0.5 rounded-full', color.bg, color.text)}>
                     {roleMembers.length}
                   </span>
                 </div>
@@ -475,23 +483,23 @@ export function BusinessTeam() {
                       <button
                         key={member.id}
                         onClick={() => setSelectedMemberId(member.id)}
-                        className={cn('w-full rounded-2xl bg-white/90 p-5 text-left', GLASS_CARD_HOVER)}
+                        className="w-full rounded-xl bg-white/90 p-5 text-left hover:bg-white hover:shadow-[0_20px_40px_rgba(27,28,27,0.06)] transition-all duration-300"
                       >
                         <div className="flex items-start gap-4">
                           <div className="relative">
                             <Avatar member={member} size="md" />
-                            <Circle
+                            <div
                               className={cn(
-                                'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 fill-current',
-                                isReallyOnline(member) ? 'text-[#006c49]' : 'text-[#c4c7c7]/60'
+                                'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white',
+                                isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300'
                               )}
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-business-display text-sm font-extrabold tracking-tight text-[#111111] truncate">
+                            <p className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 truncate">
                               {member.first_name} {member.last_name}
                             </p>
-                            <div className="mt-2.5 space-y-1.5 text-xs text-[#1b1c1b]/45">
+                            <div className="mt-2.5 space-y-1.5 text-xs text-stone-500">
                               <div className="flex items-center gap-2">
                                 <CalendarDays className="h-3 w-3" strokeWidth={1.5} />
                                 <span>{formatAnciennete(member.joined_at)}</span>
@@ -509,7 +517,7 @@ export function BusinessTeam() {
                                 <span>{memberSlotsCount} créneau{memberSlotsCount !== 1 ? 'x' : ''}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Circle className={cn('h-2.5 w-2.5 fill-current', isReallyOnline(member) ? 'text-[#006c49]' : 'text-[#c4c7c7]/60')} />
+                                <div className={cn('h-2 w-2 rounded-full', isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300')} />
                                 <span>{isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}</span>
                               </div>
                               {member.timezone && (
@@ -521,7 +529,7 @@ export function BusinessTeam() {
                             </div>
                             <ContactInfo member={member} />
                             {memberAbsCount > 0 && (
-                              <div className="mt-3 pt-3 text-xs text-[#ffb95f] font-semibold">
+                              <div className="mt-3 pt-3 text-xs text-[#ffb95f] font-bold">
                                 {memberAbsCount} absence{memberAbsCount > 1 ? 's' : ''}
                               </div>
                             )}
@@ -538,11 +546,9 @@ export function BusinessTeam() {
 
       {/* Global KPI summary */}
       {isOwnerView && members.length > 0 && (
-        <div className={cn(GLASS_CARD, SECTION_PADDING)}>
-          <h3 className="font-business-display text-base font-extrabold tracking-tight text-[#111111] mb-6 flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-purple-100">
-              <BarChart3 className="h-4 w-4 text-purple-600" strokeWidth={1.5} />
-            </div>
+        <div className={cn(WHITE_CARD, 'p-8')}>
+          <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+            <BarChart3 className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
             Résumé global
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -557,21 +563,21 @@ export function BusinessTeam() {
 
               return (
                 <>
-                  <div className={cn('rounded-2xl p-5 text-center', STONE_SURFACE)}>
-                    <p className="font-business-display text-2xl font-extrabold tracking-tight text-[#111111]">{allAssigned.length}</p>
-                    <p className="text-xs text-[#1b1c1b]/40 mt-1.5">Prospects assignés</p>
+                  <div className="rounded-xl bg-stone-50 p-5 text-center">
+                    <p className={LABEL_STYLE}>Prospects assignés</p>
+                    <p className="text-2xl font-business-display font-extrabold text-stone-900 mt-1">{allAssigned.length}</p>
                   </div>
-                  <div className={cn('rounded-2xl p-5 text-center', STONE_SURFACE)}>
-                    <p className="font-business-display text-2xl font-extrabold tracking-tight text-[#006c49]">{allWon.length}</p>
-                    <p className="text-xs text-[#1b1c1b]/40 mt-1.5">Ventes</p>
+                  <div className="rounded-xl bg-stone-50 p-5 text-center">
+                    <p className={LABEL_STYLE}>Ventes</p>
+                    <p className="text-2xl font-business-display font-extrabold text-[#006c49] mt-1">{allWon.length}</p>
                   </div>
-                  <div className={cn('rounded-2xl p-5 text-center', STONE_SURFACE)}>
-                    <p className="font-business-display text-2xl font-extrabold tracking-tight text-[#006c49]">{formatCurrency(totalCA)}</p>
-                    <p className="text-xs text-[#1b1c1b]/40 mt-1.5">CA généré</p>
+                  <div className="rounded-xl bg-stone-50 p-5 text-center">
+                    <p className={LABEL_STYLE}>CA généré</p>
+                    <p className="text-2xl font-business-display font-extrabold text-stone-900 mt-1">{formatCurrency(totalCA)}</p>
                   </div>
-                  <div className={cn('rounded-2xl p-5 text-center', STONE_SURFACE)}>
-                    <p className="font-business-display text-2xl font-extrabold tracking-tight text-purple-600">{convRate.toFixed(1)}%</p>
-                    <p className="text-xs text-[#1b1c1b]/40 mt-1.5">Taux de conversion</p>
+                  <div className="rounded-xl bg-stone-50 p-5 text-center">
+                    <p className={LABEL_STYLE}>Conversion</p>
+                    <p className="text-2xl font-business-display font-extrabold text-stone-900 mt-1">{convRate.toFixed(1)}%</p>
                   </div>
                 </>
               )
@@ -590,7 +596,7 @@ export function BusinessTeam() {
   )
 }
 
-/* ─── Individual View ─── */
+/* ─── Individual View (Detail Page) ─── */
 
 function IndividualView({
   member,
@@ -601,7 +607,6 @@ function IndividualView({
   connectionLogs,
   isOwnerView,
   onPayDayChange,
-  onDelete,
 }: {
   member: TeamMember
   absences: Absence[]
@@ -645,445 +650,413 @@ function IndividualView({
     setSavingPayDay(false)
   }
 
+  const cleanPhone = (member.phone || '').replace(/[^0-9+]/g, '')
+
   return (
     <div className="space-y-8">
-      {/* Profile header */}
-      <div className={cn(GLASS_CARD, 'p-8')}>
-        <div className="flex items-start gap-6">
-          <div className="relative">
-            <Avatar member={member} size="lg" />
-            <Circle
-              className={cn(
-                'absolute -bottom-0.5 -right-0.5 h-5 w-5 fill-current',
-                isReallyOnline(member) ? 'text-[#006c49]' : 'text-[#c4c7c7]/60'
-              )}
-            />
+      {/* ─── Profile Header (glass panel) ─── */}
+      <section className={cn(GLASS_PANEL, 'rounded-2xl p-8 flex flex-col md:flex-row items-center md:items-start gap-10')}>
+        <div className="relative shrink-0">
+          <Avatar member={member} size="xl" />
+          <div
+            className={cn(
+              'absolute bottom-1 right-1 w-6 h-6 rounded-full border-4 border-white',
+              isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300'
+            )}
+            title={isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}
+          />
+        </div>
+        <div className="flex-1 text-center md:text-left">
+          <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+            <h2 className="text-4xl font-business-display font-extrabold tracking-tight text-stone-900">
+              {member.first_name} {member.last_name}
+            </h2>
+            <span className={cn('inline-flex px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest self-center md:self-auto', color.bg, color.text)}>
+              {member.role}
+            </span>
           </div>
-          <div className="flex-1">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-business-display text-2xl font-extrabold tracking-tight text-[#111111]">
-                  {member.first_name} {member.last_name}
-                </h3>
-                <span className={cn('inline-block mt-2 text-xs font-semibold px-3.5 py-1.5 rounded-full', color.bg, color.text)}>
-                  {member.role}
-                </span>
-              </div>
-              {onDelete && (
-                <button
-                  onClick={onDelete}
-                  className="p-2.5 text-[#c4c7c7] hover:text-red-500 transition-all duration-200 rounded-full hover:bg-red-50/50"
-                  title="Supprimer le membre"
-                >
-                  <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-1">
+              <p className={LABEL_STYLE}>Email</p>
+              <p className="text-sm font-semibold text-stone-900">{member.email}</p>
+            </div>
+            <div className="space-y-1">
+              <p className={LABEL_STYLE}>WhatsApp</p>
+              {member.phone ? (
+                <a href={`https://wa.me/${cleanPhone}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-stone-900 hover:text-[#006c49] transition-colors">
+                  {member.phone}
+                </a>
+              ) : (
+                <p className="text-sm text-stone-300 italic">Non renseigné</p>
               )}
             </div>
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-[#1b1c1b]/60 leading-relaxed">
-              <div className="flex items-center gap-2.5">
-                <Mail className="h-4 w-4 text-[#1b1c1b]/25" strokeWidth={1.5} />
-                {member.email}
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Phone className="h-4 w-4 text-[#1b1c1b]/25" strokeWidth={1.5} />
-                {member.phone ? (
-                  <a href={`https://wa.me/${(member.phone || '').replace(/[^0-9+]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-[#006c49] hover:underline">
-                    {member.phone}
-                  </a>
-                ) : (
-                  <span className="text-[#1b1c1b]/25 italic">Téléphone non renseigné</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Calendar className="h-4 w-4 text-[#1b1c1b]/25" strokeWidth={1.5} />
+            <div className="space-y-1">
+              <p className={LABEL_STYLE}>Anniversaire</p>
+              <p className="text-sm font-semibold text-stone-900">
                 {member.date_of_birth
                   ? `${formatDate(member.date_of_birth)} (${calculateAge(member.date_of_birth)} ans)`
-                  : 'Date de naissance non renseignée'}
-              </div>
-              <div className="flex items-center gap-2.5">
-                <CalendarDays className="h-4 w-4 text-[#1b1c1b]/25" strokeWidth={1.5} />
-                Arrivée le {formatDate(member.joined_at)} ({formatAnciennete(member.joined_at)})
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Circle className={cn('h-3 w-3 fill-current', isReallyOnline(member) ? 'text-[#006c49]' : 'text-[#c4c7c7]/60')} />
-                {isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}
-              </div>
+                  : 'Non renseigné'}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className={LABEL_STYLE}>Arrivée</p>
+              <p className="text-sm font-semibold text-stone-900">
+                {formatDate(member.joined_at)}
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Role management */}
+      {/* ─── KPI Row ─── */}
       {isOwnerView && (
-        <div className={cn(GLASS_CARD, SECTION_PADDING)}>
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
-              <User className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
-            </div>
-            <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Rôle</h4>
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className={cn(WHITE_CARD, 'p-5')}>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>Prospects</p>
+            <p className="text-2xl font-business-display font-extrabold text-stone-900">{memberProspects.length}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <select
-              value={editRole}
-              onChange={e => {
-                setEditRole(e.target.value)
-                if (e.target.value === 'Setter-Closer') setEditSetterScope(member.setter_scope || 'all')
-              }}
-              className="rounded-full bg-[#f5f3f2] px-4 py-2.5 text-sm font-medium text-[#1b1c1b] focus:ring-2 focus:ring-[#006c49]/20 focus:outline-none appearance-none cursor-pointer"
-            >
-              <option value="Closer">Closer</option>
-              <option value="Setter">Setter</option>
-              <option value="Setter-Closer">Setter-Closer</option>
-              <option value="Admin">Admin</option>
-              <option value="Head of Sales">Head of Sales</option>
-            </select>
-
-            {editRole === 'Setter-Closer' && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-[#1b1c1b]/40">Set pour :</span>
-                <button
-                  onClick={() => setEditSetterScope('self')}
-                  className={cn(
-                    'px-4 py-2 rounded-full text-xs font-medium transition-all duration-200',
-                    editSetterScope === 'self'
-                      ? 'bg-[#111111] text-white'
-                      : 'bg-[#f5f3f2] text-[#1b1c1b]/60 hover:bg-[#eae8e7]'
-                  )}
-                >
-                  Lui-même uniquement
-                </button>
-                <button
-                  onClick={() => setEditSetterScope('all')}
-                  className={cn(
-                    'px-4 py-2 rounded-full text-xs font-medium transition-all duration-200',
-                    editSetterScope === 'all'
-                      ? 'bg-[#111111] text-white'
-                      : 'bg-[#f5f3f2] text-[#1b1c1b]/60 hover:bg-[#eae8e7]'
-                  )}
-                >
-                  Toute l'équipe
-                </button>
-              </div>
-            )}
-
-            {roleChanged && (
-              <button
-                onClick={async () => {
-                  setSavingRole(true)
-                  await onRoleChange(editRole, editRole === 'Setter-Closer' ? editSetterScope : undefined)
-                  setSavingRole(false)
-                }}
-                disabled={savingRole}
-                className="flex items-center gap-1.5 rounded-full bg-[#111111] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#222222] transition-all duration-200 disabled:opacity-50"
-              >
-                {savingRole ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" strokeWidth={1.5} />}
-                Enregistrer
-              </button>
-            )}
+          <div className={cn(WHITE_CARD, 'p-5')}>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>Ventes</p>
+            <p className="text-2xl font-business-display font-extrabold text-[#006c49]">{won.length}</p>
           </div>
-          {editRole === 'Setter-Closer' && (
-            <p className="text-xs text-[#1b1c1b]/30 mt-4 leading-relaxed">
-              {editSetterScope === 'self'
-                ? 'Ce membre set uniquement pour ses propres rendez-vous.'
-                : 'Ce membre set pour tous les closers de l\'équipe.'}
-            </p>
-          )}
-        </div>
+          <div className={cn(WHITE_CARD, 'p-5')}>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>CA Généré</p>
+            <p className="text-2xl font-business-display font-extrabold text-stone-900">{formatCurrency(revenue)}</p>
+          </div>
+          <div className={cn(WHITE_CARD, 'p-5')}>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>Conversion</p>
+            <p className="text-2xl font-business-display font-extrabold text-stone-900">{convRate.toFixed(1)}%</p>
+          </div>
+          <div className={cn(WHITE_CARD, 'p-5')}>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>No Show</p>
+            <p className="text-2xl font-business-display font-extrabold text-[#ba1a1a]">{noshowRate.toFixed(1)}%</p>
+          </div>
+          <div className={cn(WHITE_CARD, 'p-5')}>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>Perdus</p>
+            <p className="text-2xl font-business-display font-extrabold text-stone-400">{lost.length}</p>
+          </div>
+        </section>
       )}
 
-      {/* Connection History */}
-      {isOwnerView && (
-        <div className={GLASS_CARD}>
-          <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
-              <History className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
-            </div>
-            <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Historique de connexion</h4>
-            <span className="text-xs text-[#1b1c1b]/30 ml-auto rounded-full bg-[#f5f3f2] px-3 py-1">7 derniers jours</span>
-          </div>
-          <div className="px-7 pb-7">
-            {connectionLogs.length === 0 ? (
-              <div className={cn('text-center py-8 rounded-2xl', STONE_SURFACE)}>
-                <History className="h-6 w-6 text-[#1b1c1b]/15 mx-auto mb-2" strokeWidth={1.5} />
-                <p className="text-sm text-[#1b1c1b]/35">Aucun historique de connexion</p>
+      {/* ─── Main Body Grid ─── */}
+      <div className="grid grid-cols-12 gap-8 items-start">
+        {/* ─── Left Column (Settings) ─── */}
+        <div className="col-span-12 lg:col-span-4 space-y-8">
+          {/* Role Management */}
+          {isOwnerView && (
+            <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+                <User className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                Gestion du Rôle
+              </h3>
+              <div className="space-y-6">
+                <div>
+                  <label className={cn(LABEL_STYLE, 'block mb-2')}>Assignation</label>
+                  <select
+                    value={editRole}
+                    onChange={e => {
+                      setEditRole(e.target.value)
+                      if (e.target.value === 'Setter-Closer') setEditSetterScope(member.setter_scope || 'all')
+                    }}
+                    className="w-full bg-stone-50 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 transition-all"
+                  >
+                    <option value="Closer">Closer</option>
+                    <option value="Setter">Setter</option>
+                    <option value="Setter-Closer">Setter-Closer</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Head of Sales">Head of Sales</option>
+                  </select>
+                </div>
+
+                {editRole === 'Setter-Closer' && (
+                  <div>
+                    <label className={cn(LABEL_STYLE, 'block mb-2')}>Scope de visibilité</label>
+                    <div className="flex p-1 bg-stone-100 rounded-full">
+                      <button
+                        onClick={() => setEditSetterScope('self')}
+                        className={cn(
+                          'flex-1 py-2 text-xs font-bold rounded-full transition-all',
+                          editSetterScope === 'self'
+                            ? 'bg-white shadow-sm text-stone-900'
+                            : 'text-stone-500 hover:text-stone-900'
+                        )}
+                      >
+                        Lui-même
+                      </button>
+                      <button
+                        onClick={() => setEditSetterScope('all')}
+                        className={cn(
+                          'flex-1 py-2 text-xs font-bold rounded-full transition-all',
+                          editSetterScope === 'all'
+                            ? 'bg-white shadow-sm text-stone-900'
+                            : 'text-stone-500 hover:text-stone-900'
+                        )}
+                      >
+                        Équipe
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {roleChanged && (
+                  <button
+                    onClick={async () => {
+                      setSavingRole(true)
+                      await onRoleChange(editRole, editRole === 'Setter-Closer' ? editSetterScope : undefined)
+                      setSavingRole(false)
+                    }}
+                    disabled={savingRole}
+                    className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
+                  >
+                    {savingRole ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" strokeWidth={1.5} />}
+                    Enregistrer
+                  </button>
+                )}
+
+                {editRole === 'Setter-Closer' && (
+                  <p className="text-xs text-stone-400">
+                    {editSetterScope === 'self'
+                      ? 'Ce membre set uniquement pour ses propres rendez-vous.'
+                      : 'Ce membre set pour tous les closers de l\'équipe.'}
+                  </p>
+                )}
               </div>
-            ) : (
-              <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                {connectionLogs.map(log => {
-                  const date = new Date(log.created_at)
-                  const isConnect = log.event_type === 'connect'
-                  return (
-                    <div key={log.id} className="flex items-center gap-3 py-2 px-3 rounded-2xl hover:bg-[#f5f3f2]/50 transition-colors duration-200">
-                      <div className={cn(
-                        'flex h-8 w-8 items-center justify-center rounded-full shrink-0',
-                        isConnect ? 'bg-[#006c49]/10' : 'bg-red-50/80'
-                      )}>
-                        {isConnect
-                          ? <LogIn className="h-3.5 w-3.5 text-[#006c49]" strokeWidth={1.5} />
-                          : <LogOut className="h-3.5 w-3.5 text-red-500" strokeWidth={1.5} />
-                        }
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn('text-sm font-medium', isConnect ? 'text-[#006c49]' : 'text-red-500')}>
-                          {isConnect ? 'Connexion' : 'Déconnexion'}
+            </div>
+          )}
+
+          {/* Pay Day */}
+          {isOwnerView && (
+            <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+                <CreditCard className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                Date de paiement
+              </h3>
+              <p className="text-xs text-stone-500 mb-4">Jour du mois pour le versement des commissions.</p>
+              <div className="flex items-center gap-3">
+                <select
+                  value={payDay}
+                  onChange={e => setPayDay(Number(e.target.value))}
+                  className="flex-1 bg-stone-50 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 transition-all"
+                >
+                  {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
+                    <option key={d} value={d}>Le {d} du mois</option>
+                  ))}
+                </select>
+                {payDay !== (member.pay_day || 1) && (
+                  <button
+                    onClick={handleSavePayDay}
+                    disabled={savingPayDay}
+                    className="flex items-center gap-1.5 rounded-full bg-stone-900 px-4 py-3 text-xs font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
+                  >
+                    {savingPayDay ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" strokeWidth={1.5} />}
+                  </button>
+                )}
+              </div>
+              {member.pay_day && (
+                <p className="text-xs text-stone-400 mt-3">
+                  Prochain paiement le {member.pay_day} {new Date().getDate() >= member.pay_day
+                    ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+                    : new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+                  }
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Connection History */}
+          {isOwnerView && (
+            <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+                <History className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                Dernière semaine
+              </h3>
+              {connectionLogs.length === 0 ? (
+                <div className="text-center py-6">
+                  <History className="h-6 w-6 text-stone-200 mx-auto mb-2" strokeWidth={1.5} />
+                  <p className="text-sm text-stone-400">Aucun historique</p>
+                </div>
+              ) : (
+                <div className="space-y-0 max-h-72 overflow-y-auto">
+                  {connectionLogs.map((log, idx) => {
+                    const date = new Date(log.created_at)
+                    const isConnect = log.event_type === 'connect'
+                    const isLast = idx === connectionLogs.length - 1
+                    return (
+                      <div key={log.id} className={cn('flex items-center justify-between py-3', !isLast && 'border-b border-stone-100')}>
+                        <div>
+                          <p className="text-sm font-bold text-stone-900">
+                            {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          </p>
+                          <p className="text-[10px] text-stone-500">{isConnect ? 'Log In' : 'Log Out'}</p>
+                        </div>
+                        <p className="text-sm font-medium text-stone-600">
+                          {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
-                      <span className="text-xs text-[#1b1c1b]/30 shrink-0">
-                        {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ─── Right Column (Data) ─── */}
+        <div className="col-span-12 lg:col-span-8 space-y-8">
+          {/* Pipeline */}
+          {isOwnerView && (
+            <div className={cn(WHITE_CARD, 'p-8')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-8')}>
+                <GitBranch className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                Distribution du Pipeline
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+                {PIPELINE_STAGES.map(stage => {
+                  const count = memberProspects.filter(p => p.stage === stage.id).length
+                  const isHighlight = stage.id === 'won'
+                  return (
+                    <div key={stage.id} className={cn(
+                      'flex flex-col items-center p-4 rounded-xl',
+                      isHighlight ? 'bg-[#6cf8bb]/15' : 'bg-stone-50',
+                      stage.id === 'lost' && 'border-2 border-dashed border-stone-200'
+                    )}>
+                      <span className={cn('text-xs font-bold mb-1', isHighlight ? 'text-[#006c49]' : 'text-stone-400')}>{stage.name}</span>
+                      <span className={cn('text-xl font-business-display font-extrabold', isHighlight ? 'text-[#006c49]' : count > 0 ? 'text-stone-900' : 'text-stone-300')}>{count}</span>
                     </div>
                   )
                 })}
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Pay day */}
-      {isOwnerView && (
-        <div className={cn(GLASS_CARD, SECTION_PADDING)}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
-                <CreditCard className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
-              </div>
-              <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Date de paiement mensuel</h4>
             </div>
-            <div className="flex items-center gap-2.5">
-              <span className="text-xs text-[#1b1c1b]/40">Le</span>
-              <select
-                value={payDay}
-                onChange={e => setPayDay(Number(e.target.value))}
-                className="rounded-full bg-[#f5f3f2] px-3 py-2 text-sm font-medium text-[#1b1c1b] focus:ring-2 focus:ring-[#006c49]/20 focus:outline-none"
-              >
-                {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-              <span className="text-xs text-[#1b1c1b]/40">de chaque mois</span>
-              {payDay !== (member.pay_day || 1) && (
-                <button
-                  onClick={handleSavePayDay}
-                  disabled={savingPayDay}
-                  className="flex items-center gap-1.5 rounded-full bg-[#111111] px-4 py-2 text-xs font-semibold text-white hover:bg-[#222222] transition-all duration-200 disabled:opacity-50"
-                >
-                  {savingPayDay ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" strokeWidth={1.5} />}
-                  Enregistrer
-                </button>
+          )}
+
+          {/* Slots + Absences side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Disponibilité */}
+            <div className={cn(WHITE_CARD, 'p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+                <Clock className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                Slots Hebdomadaires
+              </h3>
+              {slots.length === 0 ? (
+                <div className="text-center py-6">
+                  <AlertCircle className="h-6 w-6 text-stone-200 mx-auto mb-2" strokeWidth={1.5} />
+                  <p className="text-sm text-stone-400">Aucun créneau configuré</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {DAYS.map((day, idx) => {
+                    const daySlots = slots.filter(s => s.day_of_week === idx)
+                    return (
+                      <div key={idx} className="flex items-center justify-between text-sm">
+                        <span className="text-stone-500 font-medium">{day}</span>
+                        {daySlots.length > 0 ? (
+                          <span className="font-bold text-stone-900">
+                            {daySlots.map(s => `${s.start_time?.slice(0, 5)} — ${s.end_time?.slice(0, 5)}`).join(', ')}
+                          </span>
+                        ) : (
+                          <span className="text-stone-300 italic">Indisponible</span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Absences */}
+            <div className={cn(WHITE_CARD, 'p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+                <Calendar className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                Absences prévues
+              </h3>
+              {absences.length === 0 ? (
+                <div className="text-center py-6">
+                  <AlertCircle className="h-6 w-6 text-stone-200 mx-auto mb-2" strokeWidth={1.5} />
+                  <p className="text-sm text-stone-400">Aucune absence</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {absences.map(absence => (
+                    <div key={absence.id} className="flex items-center gap-3 p-2 bg-stone-50 rounded-xl">
+                      <div className="w-2 h-2 rounded-full bg-[#ffb95f] shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-stone-900 truncate">{absence.reason || absence.type || 'Absence'}</p>
+                        <p className="text-[10px] text-stone-500">
+                          {formatDate(absence.start_date)} — {formatDate(absence.end_date)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
-          {member.pay_day && (
-            <p className="text-xs text-[#1b1c1b]/30 mt-3 leading-relaxed">
-              Prochain paiement le {member.pay_day} {new Date().getDate() >= member.pay_day
-                ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
-                : new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
-              }
-            </p>
-          )}
-        </div>
-      )}
 
-      {/* KPIs */}
-      {isOwnerView && (
-        <div className={GLASS_CARD}>
-          <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-purple-100">
-              <BarChart3 className="h-4 w-4 text-purple-600" strokeWidth={1.5} />
-            </div>
-            <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">KPIs</h4>
+          {/* Upcoming Appointments (table format) */}
+          <div className={cn(WHITE_CARD, 'p-8')}>
+            <h3 className={cn(SECTION_TITLE, 'mb-8')}>
+              <CalendarDays className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
+              Prochains Rendez-vous
+            </h3>
+            {upcomingAppts.length === 0 ? (
+              <div className="text-center py-8">
+                <CalendarDays className="h-6 w-6 text-stone-200 mx-auto mb-2" strokeWidth={1.5} />
+                <p className="text-sm text-stone-400">Aucun rendez-vous à venir</p>
+              </div>
+            ) : (
+              <div className="overflow-hidden">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-stone-100">
+                      <th className={cn(LABEL_STYLE, 'pb-4')}>Prospect</th>
+                      <th className={cn(LABEL_STYLE, 'pb-4')}>Date</th>
+                      <th className={cn(LABEL_STYLE, 'pb-4 text-right')}>Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-50">
+                    {upcomingAppts.map(appt => {
+                      const prospect = prospects.find(p => p.id === appt.prospect_id)
+                      const prospectName = prospect ? (prospect.contact || prospect.company || `Prospect #${prospect.id}`) : `RDV`
+                      const initials = prospectName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+                      return (
+                        <tr key={appt.id} className="group hover:bg-stone-50 transition-colors">
+                          <td className="py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center text-xs font-bold text-stone-500 shrink-0">
+                                {initials}
+                              </div>
+                              <span className="text-sm font-bold text-stone-900 truncate">{prospectName}</span>
+                            </div>
+                          </td>
+                          <td className="py-4">
+                            <p className="text-sm font-semibold text-stone-900">
+                              {new Date(appt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                              {appt.time && `, ${appt.time.slice(0, 5)}`}
+                            </p>
+                            {prospect && (
+                              <p className="text-xs text-stone-400">{prospect.company || prospect.contact || ''}</p>
+                            )}
+                          </td>
+                          <td className="py-4 text-right">
+                            <span className={cn(
+                              'text-xs font-bold px-3 py-1 rounded-full',
+                              appt.status === 'confirmed' ? 'bg-blue-50 text-blue-700' :
+                              appt.status === 'done' ? 'bg-[#6ffbbe]/20 text-[#005236]' :
+                              'bg-[#ffddb8]/40 text-[#653e00]'
+                            )}>
+                              {appt.status === 'confirmed' ? 'Confirmé' : appt.status === 'done' ? 'Terminé' : 'En attente'}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-          <div className="px-7 pb-7">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <KpiMini icon={Users} label="Prospects" value={memberProspects.length} color="blue" />
-              <KpiMini icon={ShoppingCart} label="Ventes" value={won.length} color="emerald" />
-              <KpiMini icon={DollarSign} label="CA" value={formatCurrency(revenue)} color="emerald" isText />
-              <KpiMini icon={Target} label="Conversion" value={`${convRate.toFixed(1)}%`} color="purple" isText />
-              <KpiMini icon={UserX} label="No Show" value={`${noshowRate.toFixed(1)}%`} color="rose" isText />
-              <KpiMini icon={Ban} label="Perdus" value={lost.length} color="slate" />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Pipeline */}
-      {isOwnerView && (
-        <div className={GLASS_CARD}>
-          <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
-              <GitBranch className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
-            </div>
-            <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Pipeline</h4>
-            <span className="text-xs text-[#1b1c1b]/30 ml-auto rounded-full bg-[#f5f3f2] px-3 py-1">{memberProspects.length} prospect{memberProspects.length !== 1 ? 's' : ''} total</span>
-          </div>
-          <div className="px-7 pb-7">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {PIPELINE_STAGES.map(stage => {
-                const count = memberProspects.filter(p => p.stage === stage.id).length
-                return (
-                  <div key={stage.id} className={cn('rounded-2xl p-4 text-center', STONE_SURFACE)}>
-                    <div className="flex items-center justify-center gap-1.5 mb-2">
-                      <span className={cn('h-2 w-2 rounded-full', stage.color)} />
-                      <span className="text-xs text-[#1b1c1b]/40">{stage.name}</span>
-                    </div>
-                    <p className={cn('font-business-display text-xl font-extrabold tracking-tight', count > 0 ? stage.textColor : 'text-[#c4c7c7]/50')}>{count}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Disponibilité */}
-      <div className={GLASS_CARD}>
-        <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
-            <Clock className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
-          </div>
-          <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Disponibilité</h4>
-          <span className="text-xs text-[#1b1c1b]/30 ml-auto rounded-full bg-[#f5f3f2] px-3 py-1">{slots.length} créneau{slots.length !== 1 ? 'x' : ''}</span>
-        </div>
-        <div className="px-7 pb-7">
-          {slots.length === 0 ? (
-            <div className={cn('text-center py-8 rounded-2xl', STONE_SURFACE)}>
-              <AlertCircle className="h-6 w-6 text-[#1b1c1b]/15 mx-auto mb-2" strokeWidth={1.5} />
-              <p className="text-sm text-[#1b1c1b]/35">Aucun créneau configuré</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {DAYS.map((day, idx) => {
-                const daySlots = slots.filter(s => s.day_of_week === idx)
-                if (daySlots.length === 0) return null
-                return (
-                  <div key={idx} className="flex items-center gap-4 py-2">
-                    <span className="text-sm font-semibold text-[#1b1c1b]/70 w-24 shrink-0">{day}</span>
-                    <div className="flex flex-wrap gap-2">
-                      {daySlots.map(slot => (
-                        <span key={slot.id} className="text-xs font-medium px-3.5 py-1.5 rounded-full bg-[#f5f3f2] text-[#1b1c1b]/60">
-                          {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Absences */}
-      <div className={GLASS_CARD}>
-        <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
-            <Calendar className="h-4 w-4 text-[#1b1c1b]/40" strokeWidth={1.5} />
-          </div>
-          <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Absences</h4>
-          {absences.length > 0 && (
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-[#ffb95f]/15 text-[#ffb95f]">
-              {absences.length}
-            </span>
-          )}
-        </div>
-        <div className="px-7 pb-7">
-          {absences.length === 0 ? (
-            <div className={cn('text-center py-8 rounded-2xl', STONE_SURFACE)}>
-              <AlertCircle className="h-6 w-6 text-[#1b1c1b]/15 mx-auto mb-2" strokeWidth={1.5} />
-              <p className="text-sm text-[#1b1c1b]/35">Aucune absence enregistrée</p>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {absences.map(absence => (
-                <div key={absence.id} className={cn('flex items-center justify-between rounded-2xl px-5 py-4', STONE_SURFACE)}>
-                  <div>
-                    <p className="text-sm font-semibold text-[#1b1c1b]/80">
-                      {formatDate(absence.start_date)} → {formatDate(absence.end_date)}
-                    </p>
-                    {absence.reason && (
-                      <p className="text-xs text-[#1b1c1b]/35 mt-1">{absence.reason}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Upcoming appointments */}
-      <div className={GLASS_CARD}>
-        <div className="flex items-center gap-2.5 px-7 pt-6 pb-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f3f2]">
-            <CalendarDays className="h-4 w-4 text-[#111111]/60" strokeWidth={1.5} />
-          </div>
-          <h4 className="font-business-display text-sm font-extrabold tracking-tight text-[#111111]">Rendez-vous à venir</h4>
-          <span className="text-xs text-[#1b1c1b]/30 ml-auto rounded-full bg-[#f5f3f2] px-3 py-1">{upcomingAppts.length} RDV</span>
-        </div>
-        <div className="px-7 pb-7">
-          {upcomingAppts.length === 0 ? (
-            <div className={cn('text-center py-8 rounded-2xl', STONE_SURFACE)}>
-              <CalendarDays className="h-6 w-6 text-[#1b1c1b]/15 mx-auto mb-2" strokeWidth={1.5} />
-              <p className="text-sm text-[#1b1c1b]/35">Aucun rendez-vous à venir</p>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {upcomingAppts.map(appt => {
-                const prospect = prospects.find(p => p.id === appt.prospect_id)
-                return (
-                  <div key={appt.id} className={cn('flex items-center justify-between rounded-2xl px-5 py-4', STONE_SURFACE)}>
-                    <div>
-                      <p className="text-sm font-semibold text-[#1b1c1b]/80">
-                        {new Date(appt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                        {appt.time && ` à ${appt.time.slice(0, 5)}`}
-                      </p>
-                      {prospect && (
-                        <p className="text-xs text-[#1b1c1b]/35 mt-1">
-                          {prospect.contact || prospect.company || `Prospect #${prospect.id}`}
-                        </p>
-                      )}
-                    </div>
-                    <span className={cn(
-                      'text-xs font-semibold px-3 py-1.5 rounded-full',
-                      appt.status === 'confirmed' ? 'bg-blue-50/80 text-blue-700' :
-                      appt.status === 'done' ? 'bg-[#006c49]/10 text-[#006c49]' :
-                      'bg-[#ffb95f]/15 text-[#ffb95f]'
-                    )}>
-                      {appt.status === 'confirmed' ? 'Confirmé' : appt.status === 'done' ? 'Terminé' : 'En attente'}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ─── KPI Mini Card ─── */
-
-function KpiMini({ icon: Icon, label, value, color, isText }: {
-  icon: any; label: string; value: number | string; color: string; isText?: boolean
-}) {
-  const colorMap: Record<string, { bg: string; text: string }> = {
-    blue: { bg: 'bg-blue-50/60', text: 'text-blue-600' },
-    emerald: { bg: 'bg-[#006c49]/10', text: 'text-[#006c49]' },
-    purple: { bg: 'bg-purple-50/60', text: 'text-purple-600' },
-    rose: { bg: 'bg-rose-50/60', text: 'text-rose-600' },
-    slate: { bg: 'bg-[#f5f3f2]', text: 'text-[#1b1c1b]/60' },
-    amber: { bg: 'bg-[#ffb95f]/10', text: 'text-[#ffb95f]' },
-  }
-  const c = colorMap[color] || colorMap.slate
-  return (
-    <div className={cn('rounded-2xl p-4 text-center', STONE_SURFACE)}>
-      <div className={cn('flex h-8 w-8 items-center justify-center rounded-full mx-auto mb-2', c.bg)}>
-        <Icon className={cn('h-3.5 w-3.5', c.text)} strokeWidth={1.5} />
-      </div>
-      <p className={cn('font-business-display text-xl font-extrabold tracking-tight', c.text)}>{value}</p>
-      <p className="text-xs text-[#1b1c1b]/35 mt-1">{label}</p>
     </div>
   )
 }
