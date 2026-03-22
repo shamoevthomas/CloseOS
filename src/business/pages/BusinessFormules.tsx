@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import {
   Plus, Package, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, FileText, Video, Link2, File,
-  Percent, ChevronDown, ChevronUp, Users,
+  Percent, ChevronDown, ChevronUp, Users, Eye,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -43,9 +43,12 @@ const ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Head of Sales', 'Admin']
 const API_URL = '/api/business'
 
 export function BusinessFormules() {
-  const { user, isTeamMember, ownerUserId } = useBusinessAuth()
+  const { user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const isOwnerOnly = !isTeamMember
+  const isHoSOrAdmin = isTeamMember && (teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin')
+  const canEdit = isOwnerOnly // Only owner can edit
+  const canSeeCommissions = isOwnerOnly || isHoSOrAdmin
   const [formulas, setFormulas] = useState<Formula[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -81,12 +84,12 @@ export function BusinessFormules() {
 
   // Fetch team members once (for commission section)
   useEffect(() => {
-    if (!effectiveUserId || !isOwnerOnly) return
+    if (!effectiveUserId || !canSeeCommissions) return
     supabase.from('business_team_members')
       .select('id, first_name, last_name, role')
       .eq('business_owner_id', effectiveUserId)
       .then(({ data }) => { if (data) setTeamMembers(data) })
-  }, [effectiveUserId, isOwnerOnly])
+  }, [effectiveUserId, canSeeCommissions])
 
   // Load commissions for a formula
   const loadFormulaCommissions = async (formulaId: string) => {
@@ -123,7 +126,7 @@ export function BusinessFormules() {
     setFormDescription(formula.description || '')
     setFormResources(formula.resources || [])
     setRoleRates({}); setMemberRates({}); setExpandedRoles({})
-    if (isOwnerOnly) await loadFormulaCommissions(formula.id)
+    if (canSeeCommissions) await loadFormulaCommissions(formula.id)
     setIsModalOpen(true)
   }
 
@@ -156,12 +159,15 @@ export function BusinessFormules() {
     if (!formName.trim()) return toast.error('Le nom est requis')
     setSaving(true)
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         user_id: user?.id,
         name: formName,
-        price: parseFloat(formPrice) || 0,
         description: formDescription || null,
         resources: formResources,
+      }
+      // Owner cannot change price when editing
+      if (!editingFormula) {
+        payload.price = parseFloat(formPrice) || 0
       }
       let savedFormulaId = editingFormula?.id
       if (editingFormula) {
@@ -314,16 +320,22 @@ export function BusinessFormules() {
                   {resourceCount > 3 && <span className="text-xs text-slate-400">+{resourceCount - 3}</span>}
                 </div>
               )}
-              {!isTeamMember && (
-                <div className="flex gap-2 border-t border-slate-100 pt-3">
+              <div className="flex gap-2 border-t border-slate-100 pt-3">
+                {isTeamMember ? (
                   <button onClick={() => openEdit(formula)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                    <Pencil className="h-3.5 w-3.5" /> Modifier
+                    <Eye className="h-3.5 w-3.5" /> Voir détails
                   </button>
-                  <button onClick={() => deleteFormula(formula)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
-                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
-                  </button>
-                </div>
-              )}
+                ) : (
+                  <>
+                    <button onClick={() => openEdit(formula)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                      <Pencil className="h-3.5 w-3.5" /> Modifier
+                    </button>
+                    <button onClick={() => deleteFormula(formula)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
+                      <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           )
         })}
@@ -336,7 +348,7 @@ export function BusinessFormules() {
             {/* Modal header */}
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 flex-shrink-0">
               <h3 className="text-lg font-bold text-slate-900">
-                {editingFormula ? 'Modifier la formule' : 'Nouvelle formule'}
+                {isTeamMember ? 'Détails de la formule' : editingFormula ? 'Modifier la formule' : 'Nouvelle formule'}
               </h3>
               <button onClick={() => { setIsModalOpen(false); resetForm() }} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
@@ -348,31 +360,33 @@ export function BusinessFormules() {
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Nom de la formule *</label>
-                <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Formule Premium" className={inputCls} />
+                <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Formule Premium" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Price */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Prix (€)</label>
-                <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="0.00" className={inputCls} />
+                <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="0.00" disabled={isTeamMember || (isOwnerOnly && !!editingFormula)} className={`${inputCls} ${isTeamMember || (isOwnerOnly && !!editingFormula) ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} placeholder="Décrivez cette formule..." className={`${inputCls} resize-none`} />
+                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} placeholder="Décrivez cette formule..." disabled={isTeamMember} className={`${inputCls} resize-none ${isTeamMember ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Resources */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-sm font-medium text-slate-700">Ressources incluses</label>
-                  <button onClick={addResource} className="flex items-center gap-1 text-xs font-medium text-amber-600 hover:text-amber-700">
-                    <Plus className="h-3.5 w-3.5" /> Ajouter une ressource
-                  </button>
+                  {!isTeamMember && (
+                    <button onClick={addResource} className="flex items-center gap-1 text-xs font-medium text-amber-600 hover:text-amber-700">
+                      <Plus className="h-3.5 w-3.5" /> Ajouter une ressource
+                    </button>
+                  )}
                 </div>
                 {formResources.length === 0 && (
-                  <p className="text-xs text-slate-400 italic">Aucune ressource. Ajoutez des fichiers PDF, liens vidéo, accès contenus...</p>
+                  <p className="text-xs text-slate-400 italic">{isTeamMember ? 'Aucune ressource' : 'Aucune ressource. Ajoutez des fichiers PDF, liens vidéo, accès contenus...'}</p>
                 )}
                 <div className="space-y-2">
                   {formResources.map((resource, idx) => (
@@ -380,7 +394,8 @@ export function BusinessFormules() {
                       <select
                         value={resource.type}
                         onChange={(e) => updateResource(idx, { type: e.target.value as Resource['type'] })}
-                        className={selectCls}
+                        disabled={isTeamMember}
+                        className={`${selectCls} ${isTeamMember ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''}`}
                       >
                         {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
@@ -389,25 +404,29 @@ export function BusinessFormules() {
                         value={resource.name}
                         onChange={(e) => updateResource(idx, { name: e.target.value })}
                         placeholder="Nom"
-                        className={`flex-1 ${smallInputCls}`}
+                        disabled={isTeamMember}
+                        className={`flex-1 ${smallInputCls} ${isTeamMember ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''}`}
                       />
                       <input
                         type="url"
                         value={resource.url}
                         onChange={(e) => updateResource(idx, { url: e.target.value })}
                         placeholder="URL"
-                        className={`flex-[2] ${smallInputCls}`}
+                        disabled={isTeamMember}
+                        className={`flex-[2] ${smallInputCls} ${isTeamMember ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''}`}
                       />
-                      <button onClick={() => removeResource(idx)} className="text-red-400 hover:text-red-600 flex-shrink-0">
-                        <X className="h-4 w-4" />
-                      </button>
+                      {!isTeamMember && (
+                        <button onClick={() => removeResource(idx)} className="text-red-400 hover:text-red-600 flex-shrink-0">
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Commission — owner only */}
-              {isOwnerOnly && activeRoles.length > 0 && (
+              {/* Commission — owner (editable) + HoS/Admin (read-only) */}
+              {canSeeCommissions && activeRoles.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Percent className="h-4 w-4 text-emerald-600" />
@@ -440,17 +459,20 @@ export function BusinessFormules() {
                                     const v = parseFloat(e.target.value) || 0
                                     setRoleRates(prev => ({ ...prev, [role]: v }))
                                   }}
-                                  className="w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right font-medium text-slate-900 focus:border-amber-500 focus:outline-none"
+                                  disabled={isHoSOrAdmin}
+                                  className={`w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right font-medium text-slate-900 focus:border-amber-500 focus:outline-none ${isHoSOrAdmin ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''}`}
                                 />
                                 <span className="text-sm text-slate-500">%</span>
                               </div>
-                              <button
-                                onClick={() => setExpandedRoles(prev => ({ ...prev, [role]: !prev[role] }))}
-                                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors"
-                              >
-                                {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                                Avancé
-                              </button>
+                              {!isHoSOrAdmin && (
+                                <button
+                                  onClick={() => setExpandedRoles(prev => ({ ...prev, [role]: !prev[role] }))}
+                                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors"
+                                >
+                                  {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                  Avancé
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -512,12 +534,14 @@ export function BusinessFormules() {
             {/* Footer */}
             <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4 flex-shrink-0">
               <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                Annuler
+                {isTeamMember ? 'Fermer' : 'Annuler'}
               </button>
-              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50">
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                {editingFormula ? 'Enregistrer' : 'Créer'}
-              </button>
+              {canEdit && (
+                <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50">
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {editingFormula ? 'Enregistrer' : 'Créer'}
+                </button>
+              )}
             </div>
           </div>
         </div>
