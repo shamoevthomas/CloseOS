@@ -40,7 +40,7 @@ export function SetterKPI() {
   const { teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const { prospects } = useBusinessProspects()
-  const [activeTab, setActiveTab] = useState<'personal' | 'org' | 'offer' | 'member'>(isOwnerView ? 'org' : 'personal')
+  const [activeTab, setActiveTab] = useState<'personal' | 'org' | 'offer' | 'campaign' | 'source'>(isOwnerView ? 'org' : 'personal')
   const [kpiConfig, setKpiConfig] = useState<KpiConfig>({ planned_calls: 20, revenue_target: 10000, commission_rate: 10 })
   const [isConfigOpen, setIsConfigOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -48,6 +48,14 @@ export function SetterKPI() {
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null)
   const [teamSetters, setTeamSetters] = useState<TeamSetter[]>([])
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string; source: string }[]>([])
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
+  const [selectedSource, setSelectedSource] = useState<string | null>(null)
+  // Per-tab member filters
+  const [orgMemberId, setOrgMemberId] = useState<string | null>(null)
+  const [formulaMemberId, setFormulaMemberId] = useState<string | null>(null)
+  const [campaignMemberId, setCampaignMemberId] = useState<string | null>(null)
+  const [sourceMemberId, setSourceMemberId] = useState<string | null>(null)
 
   // Load KPI config
   useEffect(() => {
@@ -84,9 +92,9 @@ export function SetterKPI() {
       .catch(() => {})
   }, [ownerUserId])
 
-  // Load team setters for member tab (owner view only)
+  // Load team setters for member selectors
   useEffect(() => {
-    if (!isOwnerView || !ownerUserId) return
+    if (!ownerUserId) return
     supabase
       .from('business_team_members')
       .select('id, first_name, last_name, role')
@@ -95,10 +103,25 @@ export function SetterKPI() {
       .then(({ data }) => {
         if (data && data.length > 0) {
           setTeamSetters(data)
-          if (!selectedMemberId) setSelectedMemberId(data[0].id)
         }
       })
-  }, [isOwnerView, ownerUserId])
+  }, [ownerUserId])
+
+  // Load campaigns
+  useEffect(() => {
+    if (!ownerUserId) return
+    supabase
+      .from('business_campaigns')
+      .select('id, name, source')
+      .eq('user_id', ownerUserId)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setCampaigns(data)
+          if (!selectedCampaignId) setSelectedCampaignId(data[0].id)
+          if (!selectedSource) setSelectedSource(data[0].source || 'Direct')
+        }
+      })
+  }, [ownerUserId])
 
   const saveConfig = async () => {
     if (!teamMember?.id || !ownerUserId) return
@@ -112,14 +135,20 @@ export function SetterKPI() {
     setIsConfigOpen(false)
   }
 
+  // Unique sources from campaigns
+  const uniqueSources = useMemo(() => {
+    const sources = new Set(campaigns.map(c => c.source || 'Direct'))
+    return Array.from(sources)
+  }, [campaigns])
+
+  // Helper: filter prospects by setter member
+  const filterByMember = (src: any[], memberId: string | null) => {
+    if (!memberId) return src
+    return src.filter(p => p.assigned_setter === memberId)
+  }
+
   // Setter prospects = prospects assigned to this setter via assigned_setter
   const myProspects = prospects.filter(p => p.assigned_setter === teamMember?.id)
-
-  // Member prospects (for member tab)
-  const memberProspects = useMemo(() => {
-    if (!selectedMemberId) return []
-    return prospects.filter(p => p.assigned_setter === selectedMemberId)
-  }, [prospects, selectedMemberId])
 
   // Helper: compute setter KPIs for a given set of prospects
   const computeSetterKpis = (src: any[], memberId?: string) => {
@@ -152,41 +181,62 @@ export function SetterKPI() {
   const personal = computeSetterKpis(myProspects, teamMember?.id)
   const commission = Math.round(personal.revenue * (kpiConfig.commission_rate / 100))
 
-  // Org KPIs (all prospects)
-  const orgWon = prospects.filter(p => p.stage === 'won')
-  const orgNoShow = prospects.filter(p => p.stage === 'noshow')
-  const orgLost = prospects.filter(p => p.stage === 'lost')
+  // Org KPIs (filtered by member if selected)
+  const orgProspects = useMemo(() => filterByMember(prospects, orgMemberId), [prospects, orgMemberId])
+  const orgWon = orgProspects.filter(p => p.stage === 'won')
+  const orgNoShow = orgProspects.filter(p => p.stage === 'noshow')
+  const orgLost = orgProspects.filter(p => p.stage === 'lost')
   const orgRevenue = orgWon.reduce((sum, p) => sum + (p.value || 0), 0)
   const orgClosedTotal = orgWon.length + orgLost.length + orgNoShow.length
   const orgConversion = orgClosedTotal > 0 ? (orgWon.length / orgClosedTotal) * 100 : 0
   const orgNoShowRate = orgClosedTotal > 0 ? (orgNoShow.length / orgClosedTotal) * 100 : 0
   const orgCommission = Math.round(orgRevenue * (kpiConfig.commission_rate / 100))
 
-  // Per-offer KPIs
-  const offerProspects = useMemo(() => {
+  // Per-formula KPIs
+  const formulaProspects = useMemo(() => {
     if (!selectedOfferId) return []
     const base = isOwnerView ? prospects : myProspects
-    return base.filter(p => (p as any).offer_id === selectedOfferId || (p as any).formula_id === selectedOfferId)
-  }, [isOwnerView, myProspects, prospects, selectedOfferId])
+    const filtered = base.filter(p => (p as any).offer_id === selectedOfferId || (p as any).formula_id === selectedOfferId)
+    return filterByMember(filtered, formulaMemberId)
+  }, [isOwnerView, myProspects, prospects, selectedOfferId, formulaMemberId])
 
-  const offerWon = offerProspects.filter(p => p.stage === 'won')
-  const offerNoShow = offerProspects.filter(p => p.stage === 'noshow')
-  const offerLost = offerProspects.filter(p => p.stage === 'lost')
-  const offerRevenue = offerWon.reduce((sum, p) => sum + (p.value || 0), 0)
-  const offerClosedTotal = offerWon.length + offerLost.length + offerNoShow.length
-  const offerConversion = offerClosedTotal > 0 ? (offerWon.length / offerClosedTotal) * 100 : 0
-  const offerNoShowRate = offerClosedTotal > 0 ? (offerNoShow.length / offerClosedTotal) * 100 : 0
-  const offerCommission = Math.round(offerRevenue * (kpiConfig.commission_rate / 100))
+  const formulaWon = formulaProspects.filter(p => p.stage === 'won')
+  const formulaNoShow = formulaProspects.filter(p => p.stage === 'noshow')
+  const formulaLost = formulaProspects.filter(p => p.stage === 'lost')
+  const formulaRevenue = formulaWon.reduce((sum, p) => sum + (p.value || 0), 0)
+  const formulaClosedTotal = formulaWon.length + formulaLost.length + formulaNoShow.length
+  const formulaConversion = formulaClosedTotal > 0 ? (formulaWon.length / formulaClosedTotal) * 100 : 0
+  const formulaNoShowRate = formulaClosedTotal > 0 ? (formulaNoShow.length / formulaClosedTotal) * 100 : 0
+  const formulaCommission = Math.round(formulaRevenue * (kpiConfig.commission_rate / 100))
 
-  // Member KPIs
-  const member = computeSetterKpis(memberProspects, selectedMemberId || undefined)
-  const memberCommission = Math.round(member.revenue * (kpiConfig.commission_rate / 100))
+  // Per-campaign KPIs
+  const campaignProspects = useMemo(() => {
+    if (!selectedCampaignId) return []
+    const base = isOwnerView ? prospects : myProspects
+    const filtered = base.filter(p => (p as any).campaign_id === selectedCampaignId)
+    return filterByMember(filtered, campaignMemberId)
+  }, [isOwnerView, myProspects, prospects, selectedCampaignId, campaignMemberId])
+
+  const campaignKpis = computeSetterKpis(campaignProspects)
+  const campaignCommission = Math.round(campaignKpis.revenue * (kpiConfig.commission_rate / 100))
+
+  // Per-source KPIs
+  const sourceProspects = useMemo(() => {
+    if (!selectedSource) return []
+    const campaignIds = campaigns.filter(c => (c.source || 'Direct') === selectedSource).map(c => c.id)
+    const base = isOwnerView ? prospects : myProspects
+    const filtered = base.filter(p => campaignIds.includes((p as any).campaign_id))
+    return filterByMember(filtered, sourceMemberId)
+  }, [isOwnerView, myProspects, prospects, selectedSource, campaigns, sourceMemberId])
+
+  const sourceKpis = computeSetterKpis(sourceProspects)
+  const sourceCommission = Math.round(sourceKpis.revenue * (kpiConfig.commission_rate / 100))
 
   // Chart data: group prospects by month
   const chartData = useMemo(() => {
-    const source = activeTab === 'personal' ? myProspects : activeTab === 'org' ? prospects : activeTab === 'member' ? memberProspects : offerProspects
+    const tabSource = activeTab === 'personal' ? myProspects : activeTab === 'org' ? orgProspects : activeTab === 'offer' ? formulaProspects : activeTab === 'campaign' ? campaignProspects : activeTab === 'source' ? sourceProspects : orgProspects
     const monthMap: Record<string, { won: number; total: number; commission: number }> = {}
-    source.forEach(p => {
+    tabSource.forEach(p => {
       const date = new Date(p.created_at || Date.now())
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
       if (!monthMap[key]) monthMap[key] = { won: 0, total: 0, commission: 0 }
@@ -203,31 +253,19 @@ export function SetterKPI() {
         closing: val.total > 0 ? Math.round((val.won / val.total) * 100) : 0,
         commission: val.commission,
       }))
-  }, [prospects, myProspects, offerProspects, memberProspects, activeTab, kpiConfig.commission_rate])
+  }, [myProspects, orgProspects, formulaProspects, campaignProspects, sourceProspects, activeTab, kpiConfig.commission_rate])
 
   // Current tab values
   const getTabValues = () => {
-    if (activeTab === 'org') {
-      return {
-        revenue: orgRevenue, sales: orgWon.length, conversion: orgConversion,
-        commission: orgCommission, noShowRate: orgNoShowRate, lost: orgLost.length,
-        leads: prospects.length, deals: prospects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
-      }
-    }
-    if (activeTab === 'offer') {
-      return {
-        revenue: offerRevenue, sales: offerWon.length, conversion: offerConversion,
-        commission: offerCommission, noShowRate: offerNoShowRate, lost: offerLost.length,
-        leads: offerProspects.length, deals: offerProspects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
-      }
-    }
-    if (activeTab === 'member') {
-      return {
-        revenue: member.revenue, sales: member.won.length, conversion: member.conversionRate,
-        commission: memberCommission, noShowRate: member.noShowRate, lost: member.lost.length,
-        leads: memberProspects.length, deals: memberProspects.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
-      }
-    }
+    const makeVals = (revenue: number, salesCount: number, conversion: number, comm: number, noShow: number, lostCount: number, src: any[]) => ({
+      revenue, sales: salesCount, conversion,
+      commission: comm, noShowRate: noShow, lost: lostCount,
+      leads: src.length, deals: src.filter(p => !['won', 'lost', 'noshow'].includes(p.stage)).length,
+    })
+    if (activeTab === 'org') return makeVals(orgRevenue, orgWon.length, orgConversion, orgCommission, orgNoShowRate, orgLost.length, orgProspects)
+    if (activeTab === 'offer') return makeVals(formulaRevenue, formulaWon.length, formulaConversion, formulaCommission, formulaNoShowRate, formulaLost.length, formulaProspects)
+    if (activeTab === 'campaign') return makeVals(campaignKpis.revenue, campaignKpis.won.length, campaignKpis.conversionRate, campaignCommission, campaignKpis.noShowRate, campaignKpis.lost.length, campaignProspects)
+    if (activeTab === 'source') return makeVals(sourceKpis.revenue, sourceKpis.won.length, sourceKpis.conversionRate, sourceCommission, sourceKpis.noShowRate, sourceKpis.lost.length, sourceProspects)
     return {
       revenue: personal.revenue, sales: personal.won.length, conversion: personal.conversionRate,
       commission, noShowRate: personal.noShowRate, lost: personal.lost.length,
@@ -238,23 +276,40 @@ export function SetterKPI() {
   const v = getTabValues()
   const avgCommission = v.sales > 0 ? Math.round(v.commission / v.sales) : 0
 
-  // Setter-specific display values (personal or member tab)
-  const setterDisplay = activeTab === 'member' ? member : personal
-  const showSetterCards = activeTab === 'personal' || activeTab === 'member'
+  // Setter-specific display values (personal tab only)
+  const setterDisplay = personal
+  const showSetterCards = activeTab === 'personal'
 
   const inputCls = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+
+  // Member selector component
+  const MemberSelector = ({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) => (
+    <select
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value || null)}
+      className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-purple-500 focus:outline-none"
+    >
+      <option value="">Global (tous)</option>
+      {teamSetters.map(s => (
+        <option key={s.id} value={s.id}>{s.first_name} {s.last_name} ({s.role})</option>
+      ))}
+    </select>
+  )
 
   // Tabs definition
   const tabs = isOwnerView
     ? [
         { key: 'org' as const, label: 'Organisation' },
-        { key: 'offer' as const, label: 'Par Offre' },
-        { key: 'member' as const, label: 'Membre' },
+        { key: 'offer' as const, label: 'Par Formule' },
+        { key: 'campaign' as const, label: 'Par Campagne' },
+        { key: 'source' as const, label: 'Par Source' },
       ]
     : [
         { key: 'personal' as const, label: 'Global (Personnel)' },
         { key: 'org' as const, label: 'Organisation' },
-        { key: 'offer' as const, label: 'Par Offre' },
+        { key: 'offer' as const, label: 'Par Formule' },
+        { key: 'campaign' as const, label: 'Par Campagne' },
+        { key: 'source' as const, label: 'Par Source' },
       ]
 
   if (loading) {
@@ -308,42 +363,72 @@ export function SetterKPI() {
 
       {activeTab === 'org' && (
         <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3">
-          <p className="text-sm text-purple-700 text-center">Vue en lecture seule des KPIs de l'organisation.</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-purple-700">KPIs de l'organisation</p>
+            {isOwnerView && teamSetters.length > 0 && <MemberSelector value={orgMemberId} onChange={setOrgMemberId} />}
+          </div>
         </div>
       )}
 
       {activeTab === 'offer' && (
         <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-purple-700">KPIs par offre/formule</p>
-            <select
-              value={selectedOfferId || ''}
-              onChange={(e) => setSelectedOfferId(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-purple-500 focus:outline-none"
-            >
-              {formulas.length === 0 && <option value="">Aucune formule</option>}
-              {formulas.map(f => (
-                <option key={f.id} value={f.id}>{f.name} ({f.price}€)</option>
-              ))}
-            </select>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-purple-700 shrink-0">Par Formule</p>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedOfferId || ''}
+                onChange={(e) => setSelectedOfferId(e.target.value)}
+                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-purple-500 focus:outline-none"
+              >
+                {formulas.length === 0 && <option value="">Aucune formule</option>}
+                {formulas.map(f => (
+                  <option key={f.id} value={f.id}>{f.name} ({f.price}€)</option>
+                ))}
+              </select>
+              {isOwnerView && teamSetters.length > 0 && <MemberSelector value={formulaMemberId} onChange={setFormulaMemberId} />}
+            </div>
           </div>
         </div>
       )}
 
-      {activeTab === 'member' && (
+      {activeTab === 'campaign' && (
         <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-purple-700">KPIs par membre (Setter)</p>
-            <select
-              value={selectedMemberId || ''}
-              onChange={(e) => setSelectedMemberId(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-purple-500 focus:outline-none"
-            >
-              {teamSetters.length === 0 && <option value="">Aucun setter</option>}
-              {teamSetters.map(s => (
-                <option key={s.id} value={s.id}>{s.first_name} {s.last_name} ({s.role})</option>
-              ))}
-            </select>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-purple-700 shrink-0">Par Campagne</p>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedCampaignId || ''}
+                onChange={(e) => setSelectedCampaignId(e.target.value)}
+                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-purple-500 focus:outline-none"
+              >
+                {campaigns.length === 0 && <option value="">Aucune campagne</option>}
+                {campaigns.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {isOwnerView && teamSetters.length > 0 && <MemberSelector value={campaignMemberId} onChange={setCampaignMemberId} />}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'source' && (
+        <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-purple-700 shrink-0">Par Source</p>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedSource || ''}
+                onChange={(e) => setSelectedSource(e.target.value)}
+                className="rounded-lg border border-slate-200 bg-white text-sm text-slate-900 px-3 py-1.5 focus:border-purple-500 focus:outline-none"
+              >
+                {uniqueSources.length === 0 && <option value="">Aucune source</option>}
+                {uniqueSources.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              {isOwnerView && teamSetters.length > 0 && <MemberSelector value={sourceMemberId} onChange={setSourceMemberId} />}
+            </div>
           </div>
         </div>
       )}
