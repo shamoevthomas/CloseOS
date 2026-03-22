@@ -1721,7 +1721,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Upgrade partial to full prospect
           const { data: updated, error: upErr } = await supabase
             .from('business_prospects')
-            .update({ contact: name, firstName, lastName, phone: phone || data.phone, stage: 'prospect', formula_id: campaign.formula_id || null, notes: custom_data ? JSON.stringify(custom_data) : null })
+            .update({ contact: name, firstName, lastName, phone: phone || data.phone, stage: 'prospect', formula_id: campaign.formula_id || null, notes: custom_data ? JSON.stringify(custom_data) : null, ...(assigned_member_id ? { [campaign.booking_with === 'setter' ? 'assigned_setter' : 'assigned_to']: assigned_member_id } : {}) })
             .eq('id', data.id)
             .select()
             .single()
@@ -1744,6 +1744,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             campaign_id: campaign.id,
             formula_id: campaign.formula_id || null,
             notes: custom_data ? JSON.stringify(custom_data) : null,
+            ...(assigned_member_id ? { [campaign.booking_with === 'setter' ? 'assigned_setter' : 'assigned_to']: assigned_member_id } : {}),
           })
           .select()
           .single()
