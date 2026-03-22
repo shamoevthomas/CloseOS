@@ -454,7 +454,7 @@ export function BusinessCampaigns() {
         {campaigns.map((campaign) => {
           const leadCount = campaign.business_prospects?.[0]?.count || 0
           return (
-            <div key={campaign.id} className="rounded-xl p-8 group hover:shadow-[0_30px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_30px_60px_rgba(0,0,0,0.3)] transition-all duration-500 dark:bg-white/5 dark:border dark:border-neutral-700" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+            <div key={campaign.id} className="rounded-xl p-8 group hover:shadow-[0_30px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_30px_60px_rgba(0,0,0,0.3)] transition-all duration-500 bg-white/70 dark:bg-neutral-800 backdrop-blur-xl border border-[#c4c7c7]/20 dark:border-neutral-700">
               <div className="flex justify-between items-start mb-6">
                 <div className="flex gap-4 items-center">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${campaign.capture_type === 'without_rdv' ? 'bg-[#ffb95f]/10 text-[#b87500]' : 'bg-[#006c49]/10 text-[#006c49]'}`}>

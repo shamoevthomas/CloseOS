@@ -554,7 +554,7 @@ export function BusinessPipeline() {
                       <div className="flex items-center justify-between px-2">
                         <div className="flex items-center gap-2">
                           <div className={cn("h-3 w-3 rounded-full", stage.color)} />
-                          <span className="text-sm font-extrabold tracking-tight text-stone-900">{stage.name}</span>
+                          <span className="text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">{stage.name}</span>
                         </div>
                         <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5">
                           {stageDeals.length}
@@ -653,7 +653,7 @@ export function BusinessPipeline() {
                       <div className="flex items-center justify-between px-2">
                         <div className="flex items-center gap-2">
                           <div className={cn("h-2.5 w-2.5 rounded-full", stage.id === 'lost' ? 'bg-[#ba1a1a]/40' : 'bg-stone-300')} />
-                          <span className="text-xs font-bold uppercase tracking-wider text-stone-500">{stage.name}</span>
+                          <span className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-neutral-300">{stage.name}</span>
                         </div>
                         <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5 text-stone-500">
                           {stageDeals.length}
@@ -735,7 +735,7 @@ export function BusinessPipeline() {
                         <div className="flex items-center justify-between px-2">
                           <div className="flex items-center gap-2">
                             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: cs.color }} />
-                            <span className="text-sm font-extrabold tracking-tight text-stone-900">{cs.name}</span>
+                            <span className="text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">{cs.name}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5">

@@ -38,8 +38,8 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     try {
       // Fetch business_users AND team_members in parallel
       const [profileRes, teamRes] = await Promise.all([
-        supabase.from('business_users').select('*').eq('id', userId).single(),
-        supabase.from('business_team_members').select('*').eq('user_id', userId).single(),
+        supabase.from('business_users').select('*').eq('id', userId).maybeSingle(),
+        supabase.from('business_team_members').select('*').eq('user_id', userId).maybeSingle(),
       ]);
 
       if (!isMountedRef.current || initVersionRef.current !== version) return;
