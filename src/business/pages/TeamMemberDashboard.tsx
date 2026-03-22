@@ -56,11 +56,11 @@ const formatCurrency = (v: number) =>
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
 const ROLE_BADGE: Record<string, string> = {
-  Closer: 'bg-[#6ffbbe] text-[#002113]',
-  Setter: 'bg-[#ffddb8] text-[#2a1700]',
-  'Setter-Closer': 'bg-[#e5e2e1] text-[#1c1b1b]',
-  Admin: 'bg-[#ffdad6] text-[#93000a]',
-  'Head of Sales': 'bg-[#6ffbbe] text-[#002113]',
+  Closer: 'bg-[#6ffbbe] text-[#002113] dark:bg-emerald-700 dark:text-white',
+  Setter: 'bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700 dark:text-white',
+  'Setter-Closer': 'bg-[#e5e2e1] text-[#1c1b1b] dark:bg-neutral-700 dark:text-white',
+  Admin: 'bg-[#ffdad6] text-[#93000a] dark:bg-red-800 dark:text-white',
+  'Head of Sales': 'bg-[#6ffbbe] text-[#002113] dark:bg-emerald-700 dark:text-white',
 }
 
 const METRIC_LABELS: Record<string, string> = {
@@ -190,7 +190,7 @@ export function TeamMemberDashboard() {
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b] dark:text-white">Bonjour {firstName}</h1>
-            <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748]'}`}>
+            <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748] dark:bg-neutral-700 dark:text-neutral-300'}`}>
               {teamMember?.role}
             </span>
           </div>
@@ -237,7 +237,7 @@ export function TeamMemberDashboard() {
         {/* Appointments */}
         <Link to="/business/rendez-vous" className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-full bg-[#000000]/5 flex items-center justify-center text-[#000000]">
+            <div className="w-12 h-12 rounded-full bg-[#000000]/5 dark:bg-white/10 flex items-center justify-center text-[#000000] dark:text-white">
               <CalendarDays className="h-5 w-5" />
             </div>
           </div>
@@ -264,14 +264,14 @@ export function TeamMemberDashboard() {
         <section className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Mes Objectifs</h2>
-            <Link to="/business/closer-objectifs" className="text-[10px] font-bold text-[#000000] uppercase tracking-widest hover:underline">Voir tout</Link>
+            <Link to="/business/closer-objectifs" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">Voir tout</Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {objectivesWithProgress.map((obj, i) => {
               const colors = [
-                { bar: 'bg-[#006c49]', text: 'text-[#006c49]' },
-                { bar: 'bg-[#ffb95f]', text: 'text-[#b87500]' },
-                { bar: 'bg-[#000000]', text: 'text-[#000000]' },
+                { bar: 'bg-[#006c49]', text: 'text-[#006c49] dark:text-emerald-400' },
+                { bar: 'bg-[#ffb95f]', text: 'text-[#b87500] dark:text-amber-400' },
+                { bar: 'bg-[#000000] dark:bg-white', text: 'text-[#000000] dark:text-white' },
               ]
               const color = colors[i % colors.length]
               const deadlineStr = obj.deadline ? new Date(obj.deadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : null
@@ -290,7 +290,7 @@ export function TeamMemberDashboard() {
                       {obj.metric === 'revenue' ? formatCurrency(obj.current) : obj.current.toFixed(obj.metric.includes('rate') ? 1 : 0)} / <span className="font-bold">{obj.metric === 'revenue' ? formatCurrency(obj.target_value) : obj.target_value}</span>
                     </p>
                     {deadlineStr && (
-                      <span className={`text-[11px] font-medium ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748]'}`}>
+                      <span className={`text-[11px] font-medium ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748] dark:text-neutral-400'}`}>
                         {overdue ? 'Expiré ' : ''}{deadlineStr}
                       </span>
                     )}
@@ -308,7 +308,7 @@ export function TeamMemberDashboard() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Prochains rendez-vous</h2>
-            <Link to="/business/rendez-vous" className="text-[10px] font-bold text-[#000000] uppercase tracking-widest hover:underline">Voir tout</Link>
+            <Link to="/business/rendez-vous" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">Voir tout</Link>
           </div>
           {upcomingAppts.length === 0 ? (
             <div className="text-center py-12">
@@ -344,7 +344,7 @@ export function TeamMemberDashboard() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Mes Rappels</h2>
-              <Link to="/business/rappels" className="text-[10px] font-bold text-[#000000] uppercase tracking-widest hover:underline">Voir tout</Link>
+              <Link to="/business/rappels" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">Voir tout</Link>
             </div>
             {reminders.filter(r => new Date(r.reminder_date) < now).length > 0 && (
               <span className="bg-[#ba1a1a]/10 text-[#ba1a1a] px-2 py-0.5 rounded text-[10px] font-bold">
@@ -363,13 +363,13 @@ export function TeamMemberDashboard() {
                 const rDate = new Date(r.reminder_date)
                 const overdue = rDate < now
                 return (
-                  <div key={r.id} onClick={() => navigate('/business/rappels')} className={`bg-white dark:bg-neutral-800 p-5 rounded-xl border-l-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b]'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }}>
+                  <div key={r.id} onClick={() => navigate('/business/rappels')} className={`bg-white dark:bg-neutral-800 p-5 rounded-xl border-l-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b] dark:border-l-neutral-400'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }}>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${overdue ? 'border-[#c4c7c7]/30' : 'border-[#c4c7c7]/30'}`}>
                       {overdue && <div className="w-2 h-2 rounded-full bg-[#ba1a1a]" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm text-[#1b1c1b] dark:text-white">{r.title}</p>
-                      <p className={`text-xs font-semibold ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748]'}`}>
+                      <p className={`text-xs font-semibold ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748] dark:text-neutral-400'}`}>
                         {(() => {
                           const rLocal = fromUTC(r.reminder_date, userTimezone)
                           const localDate = new Date(rLocal.date + 'T00:00:00')
@@ -394,7 +394,7 @@ export function TeamMemberDashboard() {
             <div className="flex items-center gap-6">
               <div className="relative">
                 <div className="w-16 h-16 rounded-full bg-[#eae8e7] dark:bg-neutral-700 flex items-center justify-center">
-                  <Zap className="h-7 w-7 text-[#1b1c1b]" />
+                  <Zap className="h-7 w-7 text-[#1b1c1b] dark:text-white" />
                 </div>
                 <span className="absolute top-0 right-0 flex h-4 w-4">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#006c49] opacity-75" />
@@ -413,7 +413,7 @@ export function TeamMemberDashboard() {
             </div>
             <div className="flex gap-4">
               {activeCampaigns.slice(0, 2).map(c => (
-                <div key={c.id} className="px-6 py-4 rounded-xl text-center min-w-[120px]" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(16px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+                <div key={c.id} className="px-6 py-4 rounded-xl text-center min-w-[120px] bg-white/70 dark:bg-neutral-700/70 backdrop-blur-xl" style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
                   <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">{c.name}</p>
                   <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">{c.leadCount}</p>
                 </div>

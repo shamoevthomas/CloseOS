@@ -35,11 +35,11 @@ const formatCurrency = (v: number) =>
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
 const ROLE_BADGE: Record<string, string> = {
-  Closer: 'bg-[#6ffbbe] text-[#002113]',
-  Setter: 'bg-[#ffddb8] text-[#2a1700]',
-  'Setter-Closer': 'bg-[#e5e2e1] text-[#1c1b1b]',
-  Admin: 'bg-[#ffdad6] text-[#93000a]',
-  'Head of Sales': 'bg-[#6ffbbe] text-[#002113]',
+  Closer: 'bg-[#6ffbbe] text-[#002113] dark:bg-emerald-700 dark:text-white',
+  Setter: 'bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700 dark:text-white',
+  'Setter-Closer': 'bg-[#e5e2e1] text-[#1c1b1b] dark:bg-neutral-700 dark:text-white',
+  Admin: 'bg-[#ffdad6] text-[#93000a] dark:bg-red-800 dark:text-white',
+  'Head of Sales': 'bg-[#6ffbbe] text-[#002113] dark:bg-emerald-700 dark:text-white',
 }
 
 export function CloserDashboard() {
@@ -141,7 +141,7 @@ export function CloserDashboard() {
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b] dark:text-white">Bonjour {firstName}</h1>
-            <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748]'}`}>
+            <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748] dark:bg-neutral-700 dark:text-neutral-300'}`}>
               {teamMember?.role}
             </span>
           </div>
@@ -188,7 +188,7 @@ export function CloserDashboard() {
         {/* Appointments */}
         <Link to="/business/rendez-vous" className="bg-white dark:bg-neutral-800 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-full bg-[#000000]/5 flex items-center justify-center text-[#000000]">
+            <div className="w-12 h-12 rounded-full bg-[#000000]/5 dark:bg-white/10 flex items-center justify-center text-[#000000] dark:text-white">
               <CalendarDays className="h-5 w-5" />
             </div>
           </div>
@@ -272,7 +272,7 @@ export function CloserDashboard() {
                 const rDate = new Date(r.reminder_date)
                 const isLoading = actionLoading === r.id
                 return (
-                  <div key={r.id} className={`bg-white dark:bg-neutral-800 p-5 rounded-xl border-l-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b]'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }} onClick={() => navigate('/business/rappels')}>
+                  <div key={r.id} className={`bg-white dark:bg-neutral-800 p-5 rounded-xl border-l-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b] dark:border-l-neutral-400'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }} onClick={() => navigate('/business/rappels')}>
                     <div className="w-6 h-6 rounded-full border-2 border-[#c4c7c7]/30 flex items-center justify-center shrink-0 cursor-pointer group hover:border-[#006c49]" onClick={(e) => { e.stopPropagation(); handleMarkDone(r.id) }}>
                       {isLoading ? (
                         <Loader2 className="h-3 w-3 animate-spin text-[#444748]" />
@@ -284,7 +284,7 @@ export function CloserDashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm text-[#1b1c1b] dark:text-white">{r.title}</p>
-                      <p className={`text-xs font-semibold ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748]'}`}>
+                      <p className={`text-xs font-semibold ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748] dark:text-neutral-400'}`}>
                         {(() => {
                           const rLocal = fromUTC(r.reminder_date, userTimezone)
                           const localDate = new Date(rLocal.date + 'T00:00:00')
