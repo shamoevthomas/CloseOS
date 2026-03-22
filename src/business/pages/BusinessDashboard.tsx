@@ -136,9 +136,6 @@ export function BusinessDashboard() {
 
   const navigate = useNavigate()
 
-  if (isTeamMember && !isHeadOfSales && !isAdmin) {
-    return <CloserDashboard />
-  }
   const effectiveUserId = ownerUserId || user?.id
   const [loading, setLoading] = useState(true)
 
@@ -302,6 +299,10 @@ export function BusinessDashboard() {
   const firstName = isTeamMember
     ? (teamMember?.first_name || 'Utilisateur')
     : (businessProfile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Utilisateur')
+
+  if (isTeamMember && !isHeadOfSales && !isAdmin) {
+    return <CloserDashboard />
+  }
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-neutral-400 animate-spin" /></div>
