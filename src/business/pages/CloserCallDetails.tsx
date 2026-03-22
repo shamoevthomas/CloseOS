@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign,
-  Calendar, Award, LayoutList, PenTool, Bell, Loader2, Save, Eye,
+  Calendar, Award, Bell, Loader2,
   User, Shuffle, ArrowRightCircle, CalendarCheck, AlertCircle,
+  ChevronLeft, ChevronRight, PhoneMissed,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -21,17 +22,17 @@ const objectionReasons = [
 ]
 
 const closerOutcomes = [
-  { id: 'won', label: 'Vente', description: 'Deal gagné', icon: CheckCircle2, color: 'emerald', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600' },
-  { id: 'followup', label: 'Follow up', description: 'Follow-up nécessaire', icon: Clock, color: 'orange', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600' },
-  { id: 'lost', label: 'Perdu', description: 'Deal perdu', icon: XCircle, color: 'red', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-600' },
-  { id: 'noshow', label: 'No Show', description: 'Pas de réponse', icon: XCircle, color: 'slate', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600' },
+  { id: 'won', label: 'Vente', icon: CheckCircle2, iconClass: 'text-emerald-600' },
+  { id: 'followup', label: 'Follow up', icon: Clock, iconClass: 'text-stone-500' },
+  { id: 'lost', label: 'Perdu', icon: XCircle, iconClass: 'text-stone-500' },
+  { id: 'noshow', label: 'No Show', icon: PhoneMissed, iconClass: 'text-stone-500' },
 ]
 
 const setterOutcomesForOwner = [
-  { id: 'qualified', label: 'Qualifié', description: 'Prospect qualifié', icon: CheckCircle2, color: 'purple', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-600' },
-  { id: 'booklater', label: 'À booker plus tard', description: 'Qualifié, rappel', icon: Clock, color: 'indigo', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-600' },
-  { id: 'unqualified', label: 'Non Qualifié', description: 'Prospect non qualifié', icon: XCircle, color: 'rose', bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-600' },
-  { id: 'noanswer', label: 'Pas de Réponse', description: 'Aucune réponse', icon: XCircle, color: 'zinc', bg: 'bg-zinc-50', border: 'border-zinc-200', text: 'text-zinc-600' },
+  { id: 'qualified', label: 'Qualifié', icon: CheckCircle2, iconClass: 'text-emerald-600' },
+  { id: 'booklater', label: 'À booker plus tard', icon: Calendar, iconClass: 'text-stone-500' },
+  { id: 'unqualified', label: 'Non Qualifié', icon: XCircle, iconClass: 'text-stone-500' },
+  { id: 'noanswer', label: 'Pas de Réponse', icon: PhoneMissed, iconClass: 'text-stone-500' },
 ]
 
 interface Formula {
@@ -121,6 +122,8 @@ export function CloserCallDetails() {
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
   const [loadingSlots, setLoadingSlots] = useState(false)
+  const [currentDateIndex, setCurrentDateIndex] = useState(0)
+  const [showAllSlots, setShowAllSlots] = useState(false)
 
   // Get live notes from state if coming from cockpit
   const liveNotes = (location.state as any)?.liveNotes || ''
@@ -326,6 +329,7 @@ export function CloserCallDetails() {
         }
       }
       setAvailableSlots(slots)
+      setCurrentDateIndex(0)
     } catch (err) {
       console.error('Error loading slots:', err)
       toast.error('Erreur lors du chargement des créneaux')
@@ -548,14 +552,14 @@ export function CloserCallDetails() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-stone-400" /></div>
   }
 
   if (!call) {
     return (
       <div className="text-center py-16">
-        <p className="text-slate-500">Appel introuvable</p>
-        <button onClick={() => navigate('/business/appels')} className="mt-4 text-amber-600 hover:underline">Retour aux appels</button>
+        <p className="text-stone-500">Appel introuvable</p>
+        <button onClick={() => navigate('/business/appels')} className="mt-4 text-stone-900 font-semibold hover:underline">Retour aux appels</button>
       </div>
     )
   }
@@ -566,502 +570,549 @@ export function CloserCallDetails() {
     acc[slot.date].push(slot)
     return acc
   }, {})
+  const dateKeys = Object.keys(slotsByDate)
+  const currentDateKey = dateKeys[currentDateIndex]
+  const currentDateSlots = currentDateKey ? slotsByDate[currentDateKey] : []
 
-  const renderOutcomeButton = (outcome: any) => {
-    const Icon = outcome.icon
-    const isSelected = selectedOutcome === outcome.id
-    return (
-      <button
-        key={outcome.id}
-        disabled={isReadonly}
-        onClick={() => {
-          if (isReadonly) return
-          setSelectedOutcome(outcome.id)
-          // Reset closer assignment when switching outcomes
-          if (outcome.id !== 'qualified') {
-            setSelectedCloser(null)
-            setSelectedSlot(null)
-            setAssignmentMode(null)
-            setAvailableSlots([])
-          }
-          if (outcome.id === 'booklater') {
-            setActiveTab('reminder')
-          }
-        }}
-        className={cn(
-          'group relative flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all',
-          isSelected
-            ? `${outcome.bg} ${outcome.border} ring-2 ring-amber-300`
-            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+  const renderOutcomeCards = (outcomes: typeof closerOutcomes, label: string, required?: boolean) => (
+    <section>
+      <h3 className="font-['Manrope'] text-lg font-bold mb-5 flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-emerald-600" />
+        {label} {required && <span className="text-red-500">*</span>}
+      </h3>
+      <div className="grid grid-cols-2 gap-4">
+        {outcomes.map(outcome => {
+          const Icon = outcome.icon
+          const isSelected = selectedOutcome === outcome.id
+          return (
+            <button
+              key={outcome.id}
+              disabled={isReadonly}
+              onClick={() => {
+                if (isReadonly) return
+                setSelectedOutcome(outcome.id)
+                if (outcome.id !== 'qualified') {
+                  setSelectedCloser(null)
+                  setSelectedSlot(null)
+                  setAssignmentMode(null)
+                  setAvailableSlots([])
+                }
+                if (outcome.id === 'booklater') {
+                  setActiveTab('reminder')
+                }
+              }}
+              className={cn(
+                'p-5 rounded-xl border-2 text-left transition-all cursor-pointer',
+                isSelected
+                  ? 'bg-white border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                  : 'bg-stone-50/50 border-stone-200/40 hover:bg-white hover:border-stone-300'
+              )}
+            >
+              <div className="mb-3">
+                <Icon className={cn('h-5 w-5', isSelected ? 'text-emerald-600' : outcome.iconClass)} />
+              </div>
+              <p className={cn(
+                "font-['Manrope'] font-bold text-sm",
+                isSelected ? 'text-stone-900' : 'text-stone-500'
+              )}>
+                {outcome.label}
+              </p>
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+
+  const tabs = [
+    { id: 'qualification' as const, label: 'Qualification' },
+    { id: 'notes' as const, label: "Notes d'appel" },
+    { id: 'reminder' as const, label: 'Programmer un rappel' },
+  ]
+
+  return (
+    <div className="pb-28">
+      {/* Header */}
+      <div className="mb-10">
+        <button
+          onClick={() => navigate('/business/appels')}
+          className="mb-6 flex items-center gap-2 text-stone-400 hover:text-stone-700 transition-colors font-['Manrope'] font-semibold"
+        >
+          <ArrowLeft className="h-5 w-5" /> Retour
+        </button>
+
+        {/* Readonly banner */}
+        {isReadonly && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50/70 backdrop-blur-md px-5 py-3 flex items-center gap-3 mb-6">
+            <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
+            <p className="text-sm font-medium text-blue-700">Mode consultation — Cet appel a déjà été qualifié</p>
+          </div>
         )}
-      >
-        <div className={cn(
-          'flex h-12 w-12 items-center justify-center rounded-full transition-all',
-          isSelected ? outcome.bg : 'bg-slate-100 group-hover:bg-slate-200'
-        )}>
-          <Icon className={cn('h-6 w-6 transition-colors', isSelected ? outcome.text : 'text-slate-400 group-hover:text-slate-500')} />
+
+        <h1 className="font-['Manrope'] text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 mb-2">
+          {isReadonly ? "Détails de l'appel avec" : isSetterCloser ? "Résumé d'appel avec" : 'Résumé de Vente avec'} {call.contact_name}
+        </h1>
+        <div className="flex items-center gap-2 text-stone-500">
+          <Clock className="h-4 w-4" />
+          <span className="text-sm font-medium">
+            {new Date(call.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {' à '}
+            {new Date(call.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            {call.duration && call.duration !== 'En cours...' && ` (${call.duration})`}
+          </span>
         </div>
-        <div className="text-center">
-          <p className={cn('text-sm font-semibold', isSelected ? 'text-slate-900' : 'text-slate-600')}>{outcome.label}</p>
-          <p className="mt-0.5 text-xs text-slate-500">{outcome.description}</p>
-        </div>
-        {isSelected && (
-          <div className="absolute -top-2 -right-2">
-            <div className={cn('rounded-full p-1 border-2', outcome.bg, outcome.border)}>
-              <CheckCircle2 className={cn('h-4 w-4', outcome.text)} />
+        {prospect && prospectFormula && (
+          <div className="mt-4 inline-flex items-center gap-3 rounded-xl bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm px-5 py-3">
+            <Award className="h-4 w-4 text-emerald-600" />
+            <div>
+              <p className="text-xs text-stone-400">Offre liée</p>
+              <p className="text-sm font-bold text-stone-900 font-['Manrope']">{prospectFormula.name} - {prospectFormula.price}€</p>
             </div>
           </div>
         )}
-      </button>
-    )
-  }
-
-  return (
-    <div className={cn("max-w-3xl mx-auto space-y-6", isReadonly && "pointer-events-auto")}>
-      {/* Readonly banner */}
-      {isReadonly && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 flex items-center gap-3">
-          <Eye className="h-5 w-5 text-blue-600 shrink-0" />
-          <p className="text-sm font-medium text-blue-700">Mode consultation — Cet appel a déjà été qualifié</p>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="mb-8">
-        <button onClick={() => navigate('/business/appels')} className="mb-4 flex items-center gap-2 text-slate-400 hover:text-amber-700 transition-colors">
-          <ArrowLeft className="h-5 w-5" /> Retour
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            {isReadonly ? 'Détails de l\'appel' : isSetterCloser ? 'Résumé d\'appel' : 'Résumé de Vente'}
-          </h1>
-          <p className="mt-1 text-slate-500">
-            {isReadonly ? 'Appel avec' : 'Qualifiez votre appel avec'} <span className="font-semibold text-slate-900">{call.contact_name}</span>
-          </p>
-          <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-1">
-            <Clock className="h-3 w-3" />
-            {new Date(call.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-            {call.duration && call.duration !== 'En cours...' && <span className="ml-2">({call.duration})</span>}
-          </p>
-          {prospect && prospectFormula && (
-            <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2">
-              <Award className="h-4 w-4 text-amber-600" />
-              <div>
-                <p className="text-xs text-slate-500">Offre liée</p>
-                <p className="text-sm font-semibold text-amber-700">{prospectFormula.name} - {prospectFormula.price}€</p>
-              </div>
-            </div>
-          )}
-          {prospect && !prospectFormula && (
-            <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-2">
-              <p className="text-sm text-yellow-700">Aucune offre liée à ce prospect</p>
-            </div>
-          )}
-        </div>
+        {prospect && !prospectFormula && (
+          <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-stone-50/50 border border-stone-200/40 px-5 py-3">
+            <p className="text-sm text-stone-500">Aucune offre liée à ce prospect</p>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 border-b border-slate-200">
-        <button
-          onClick={() => setActiveTab('qualification')}
-          className={cn("pb-3 px-2 text-sm font-medium flex items-center gap-2 transition-all relative",
-            activeTab === 'qualification' ? "text-amber-600" : "text-slate-400 hover:text-slate-600"
-          )}
-        >
-          <LayoutList className="h-4 w-4" /> Qualification
-          {activeTab === 'qualification' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-amber-500 rounded-t-full" />}
-        </button>
-        <button
-          onClick={() => setActiveTab('notes')}
-          className={cn("pb-3 px-2 text-sm font-medium flex items-center gap-2 transition-all relative",
-            activeTab === 'notes' ? "text-amber-600" : "text-slate-400 hover:text-slate-600"
-          )}
-        >
-          <PenTool className="h-4 w-4" /> Notes d'appel
-          {activeTab === 'notes' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-amber-500 rounded-t-full" />}
-        </button>
-        <button
-          onClick={() => setActiveTab('reminder')}
-          className={cn("pb-3 px-2 text-sm font-medium flex items-center gap-2 transition-all relative",
-            activeTab === 'reminder' ? "text-amber-600" : "text-slate-400 hover:text-slate-600"
-          )}
-        >
-          <Bell className="h-4 w-4" /> Programmer un rappel
-          {activeTab === 'reminder' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-amber-500 rounded-t-full" />}
-        </button>
+      <div className="flex gap-8 mb-10 border-b border-stone-200/60">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              "pb-4 font-['Manrope'] font-semibold transition-colors",
+              activeTab === tab.id
+                ? "text-stone-900 border-b-2 border-stone-900 font-bold"
+                : "text-stone-400 hover:text-stone-600"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Tab content */}
-      <div className="space-y-6">
-        {/* QUALIFICATION TAB */}
-        {activeTab === 'qualification' && (
-          <div className="space-y-6">
-            {/* Outcome Selection */}
-            <div className="rounded-xl border border-slate-200 bg-white p-6">
-              <label className="mb-4 block text-sm font-bold text-slate-900">
-                Résultat de l'appel — Closer <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {closerOutcomes.map(renderOutcomeButton)}
-              </div>
+      {/* QUALIFICATION TAB */}
+      {activeTab === 'qualification' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Left Column */}
+          <div className="lg:col-span-7 space-y-10">
+            {/* Closer Outcomes */}
+            {renderOutcomeCards(closerOutcomes, "Résultat de l'appel — Closer", true)}
 
-              {showSetterOutcomes && (
-                <>
-                  <label className="mt-6 mb-4 block text-sm font-bold text-slate-900">
-                    Résultat de l'appel — Setter
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {setterOutcomesForOwner.map(renderOutcomeButton)}
-                  </div>
-                </>
-              )}
-            </div>
+            {/* Setter Outcomes (for owner/HOS/admin/setter-closer) */}
+            {showSetterOutcomes && renderOutcomeCards(setterOutcomesForOwner, "Résultat de l'appel — Setter")}
 
             {/* Won: Payment Terms & Commission */}
             {selectedOutcome === 'won' && (
-              <div className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-6">
-                <h3 className="text-sm font-bold text-emerald-700 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" /> Détails de la vente
+              <section className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 space-y-5">
+                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-emerald-600" /> Détails de la vente
                 </h3>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-900">Montant de la vente <span className="text-red-500">*</span></label>
+                  <label className="mb-2 block text-sm font-medium text-stone-700">Montant de la vente <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <input
                       type="number" min="0" step="0.01"
                       value={amount || ''}
                       onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
                       placeholder="Ex: 5000"
-                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 pr-12 text-lg text-slate-900 placeholder-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                      className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-3 pr-12 text-lg text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">€</div>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 font-medium">€</div>
                   </div>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-900">Mode de paiement</label>
-                  <div className="flex gap-2">
+                  <label className="mb-2 block text-sm font-medium text-stone-700">Mode de paiement</label>
+                  <div className="flex gap-3">
                     <button onClick={() => setPaymentType('comptant')}
-                      className={cn('flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
-                        paymentType === 'comptant' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300')}>
+                      className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-[\"Manrope\"]',
+                        paymentType === 'comptant' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 bg-stone-50/50 text-stone-500 hover:border-stone-300')}>
                       Comptant
                     </button>
                     <button onClick={() => setPaymentType('installments')}
-                      className={cn('flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
-                        paymentType === 'installments' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300')}>
+                      className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-[\"Manrope\"]',
+                        paymentType === 'installments' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 bg-stone-50/50 text-stone-500 hover:border-stone-300')}>
                       Plusieurs fois
                     </button>
                   </div>
                 </div>
                 {paymentType === 'installments' && (
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-900">Nombre de mensualités</label>
+                    <label className="mb-2 block text-sm font-medium text-stone-700">Nombre de mensualités</label>
                     <select value={installmentsCount} onChange={(e) => setInstallmentsCount(parseInt(e.target.value))}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none">
+                      className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
                       {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
                         <option key={num} value={num}>{num} mois</option>
                       ))}
                     </select>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-stone-500">
                       Montant par mois: <span className="text-emerald-600 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
                     </p>
                   </div>
                 )}
                 {amount > 0 && (
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <Award className="h-4 w-4 text-emerald-600" />
-                      <h4 className="text-sm font-bold text-emerald-700">Ta Commission</h4>
+                      <h4 className="text-sm font-bold text-emerald-700 font-['Manrope']">Ta Commission</h4>
                     </div>
-                    <p className="text-2xl font-bold text-emerald-600">{totalCommission.toFixed(2)} €</p>
+                    <p className="text-2xl font-extrabold text-emerald-600 font-['Manrope']">{totalCommission.toFixed(2)} €</p>
                     {paymentType === 'installments' && (
-                      <p className="mt-1 text-sm text-slate-600">
+                      <p className="mt-1 text-sm text-stone-600">
                         Tu recevras: <span className="font-semibold text-emerald-600">{monthlyCommission.toFixed(2)}€/mois</span>
                       </p>
                     )}
-                    <p className="mt-2 text-xs text-slate-500">Taux de commission: {commissionRate}%</p>
+                    <p className="mt-2 text-xs text-stone-400">Taux de commission: {commissionRate}%</p>
                   </div>
                 )}
-              </div>
+              </section>
             )}
 
             {/* Follow up (closer outcome) */}
             {selectedOutcome === 'followup' && (
-              <div className="space-y-4 rounded-xl border border-orange-200 bg-orange-50/50 p-6">
-                <h3 className="text-sm font-bold text-orange-700 flex items-center gap-2">
-                  <Clock className="h-4 w-4" /> Informations de suivi
+              <section className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 space-y-5">
+                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-stone-500" /> Informations de suivi
                 </h3>
                 <div>
-                  <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-900">
+                  <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700">
                     <Calendar className="h-4 w-4" /> Date de reprogrammation <span className="text-red-500">*</span>
                   </label>
                   <input type="datetime-local" value={followupDate} onChange={(e) => setFollowupDate(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20" />
+                    className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-900">Motif du report <span className="text-red-500">*</span></label>
+                  <label className="mb-2 block text-sm font-medium text-stone-700">Motif du report <span className="text-red-500">*</span></label>
                   <select value={followupReason} onChange={(e) => { setFollowupReason(e.target.value); if (e.target.value !== 'Autre') setFollowupReasonOther('') }}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20">
+                    className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
                     <option value="">Sélectionnez un motif</option>
                     {objectionReasons.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                   {followupReason === 'Autre' && (
                     <div className="mt-3">
-                      <label className="mb-2 block text-sm font-medium text-slate-900">Précisez le motif <span className="text-red-500">*</span></label>
+                      <label className="mb-2 block text-sm font-medium text-stone-700">Précisez le motif <span className="text-red-500">*</span></label>
                       <input type="text" value={followupReasonOther} onChange={(e) => setFollowupReasonOther(e.target.value)}
                         placeholder="Ex: Indisponibilité exceptionnelle..."
-                        className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-amber-500 focus:outline-none" />
+                        className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
                     </div>
                   )}
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Lost (closer outcome) */}
             {selectedOutcome === 'lost' && (
-              <div className="space-y-4 rounded-xl border border-red-200 bg-red-50/50 p-6">
-                <h3 className="text-sm font-bold text-red-700 flex items-center gap-2">
-                  <XCircle className="h-4 w-4" /> Raison de la perte
+              <section className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 space-y-5">
+                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
+                  <XCircle className="h-5 w-5 text-stone-500" /> Raison de la perte
                 </h3>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-900">Motif <span className="text-red-500">*</span></label>
+                  <label className="mb-2 block text-sm font-medium text-stone-700">Motif <span className="text-red-500">*</span></label>
                   <select value={lostReason} onChange={(e) => { setLostReason(e.target.value); if (e.target.value !== 'Autre') setLostReasonOther('') }}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20">
+                    className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
                     <option value="">Sélectionnez un motif</option>
                     {objectionReasons.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                   {lostReason === 'Autre' && (
                     <div className="mt-3">
-                      <label className="mb-2 block text-sm font-medium text-slate-900">Précisez le motif <span className="text-red-500">*</span></label>
+                      <label className="mb-2 block text-sm font-medium text-stone-700">Précisez le motif <span className="text-red-500">*</span></label>
                       <input type="text" value={lostReasonOther} onChange={(e) => setLostReasonOther(e.target.value)}
                         placeholder="Ex: Prix trop élevé..."
-                        className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-red-500 focus:outline-none" />
+                        className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
                     </div>
                   )}
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Qualified: auto-assign for setter-closer self */}
             {selectedOutcome === 'qualified' && isSetterCloserSelf && (
-              <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-4">
-                <p className="text-sm text-purple-700 text-center">
+              <div className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-5">
+                <p className="text-sm text-stone-700 text-center font-['Manrope'] font-medium">
                   Le prospect sera automatiquement assigné à vous en tant que Closer.
                 </p>
               </div>
             )}
 
-            {/* Qualified: Closer assignment + scheduling (setter outcome) */}
+            {/* Qualified: Closer assignment (setter outcome for owner) */}
             {selectedOutcome === 'qualified' && showSetterOutcomes && !isSetterCloserSelf && (
-              <div className="space-y-5">
-                {/* Step 1: Closer Assignment */}
-                <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-6">
-                  <h3 className="text-sm font-bold text-purple-700 flex items-center gap-2 mb-4">
-                    <User className="h-4 w-4" /> Étape 1 — Assigner un Closer
-                  </h3>
-
+              <section>
+                <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 1 — Assigner un Closer</h3>
+                <div className="bg-white/70 backdrop-blur-xl p-7 rounded-xl border border-white/40 shadow-sm">
                   {closerMembers.length === 0 ? (
-                    <div className="flex items-center gap-2 text-sm text-slate-500 bg-white rounded-lg p-4 border border-slate-200">
-                      <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <div className="flex items-center gap-2 text-sm text-stone-500 bg-stone-50 rounded-lg p-4 border border-stone-200">
+                      <AlertCircle className="h-4 w-4 text-stone-400" />
                       Aucun closer dans l'équipe
                     </div>
                   ) : (
                     <>
-                      <div className="mb-4">
-                        <label className="mb-2 block text-xs font-medium text-purple-600">Sélectionner manuellement</label>
+                      {/* Manual closer dropdown */}
+                      <div className="mb-5">
+                        <label className="mb-2 block text-xs font-medium text-stone-500">Sélectionner manuellement</label>
                         <select
                           value={assignmentMode === 'manual' ? selectedCloser?.id || '' : ''}
                           onChange={(e) => e.target.value && handleManualSelect(e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                          className="w-full rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-700 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                         >
-                          <option value="">— Choisir un closer —</option>
+                          <option value="">-- Choisir un closer --</option>
                           {closerMembers.map(c => (
                             <option key={c.id} value={c.id}>{c.first_name} {c.last_name}{c.role === 'Owner' ? ' (Owner)' : ''}</option>
                           ))}
                         </select>
                       </div>
-                      <div className="flex gap-3 mb-4">
-                        <button onClick={() => handleAssign('suivant')}
-                          className={cn('flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-4 py-3 text-sm font-semibold transition-all',
-                            assignmentMode === 'suivant' ? 'border-purple-500 bg-purple-100 text-purple-700' : 'border-slate-200 bg-white text-slate-600 hover:border-purple-300 hover:bg-purple-50')}>
-                          <ArrowRightCircle className="h-4 w-4" /> Suivant (Tournante)
+
+                      <div className="flex gap-3 mb-6">
+                        <button
+                          onClick={() => handleAssign('suivant')}
+                          className={cn(
+                            'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
+                            assignmentMode === 'suivant'
+                              ? 'bg-stone-900 text-white'
+                              : 'border border-stone-300 text-stone-700 hover:bg-stone-100'
+                          )}
+                        >
+                          Suivant (Tournante)
                         </button>
-                        <button onClick={() => handleAssign('hasard')}
-                          className={cn('flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-4 py-3 text-sm font-semibold transition-all',
-                            assignmentMode === 'hasard' ? 'border-purple-500 bg-purple-100 text-purple-700' : 'border-slate-200 bg-white text-slate-600 hover:border-purple-300 hover:bg-purple-50')}>
-                          <Shuffle className="h-4 w-4" /> Hasard
+                        <button
+                          onClick={() => handleAssign('hasard')}
+                          className={cn(
+                            'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
+                            assignmentMode === 'hasard'
+                              ? 'bg-stone-900 text-white'
+                              : 'border border-stone-300 text-stone-700 hover:bg-stone-100'
+                          )}
+                        >
+                          Hasard
                         </button>
                       </div>
+
                       {selectedCloser && (
-                        <div className="flex items-center gap-3 rounded-lg bg-white border border-purple-200 p-4">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-700 font-bold text-sm">
+                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 border border-stone-200/30">
+                          <div className="w-14 h-14 rounded-full bg-stone-200 flex items-center justify-center text-stone-700 font-bold text-lg shrink-0">
                             {selectedCloser.first_name?.[0]}{selectedCloser.last_name?.[0]}
                           </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-slate-900">{selectedCloser.first_name} {selectedCloser.last_name}</p>
-                            <p className="text-xs text-slate-500">{selectedCloser.email}</p>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-['Manrope'] font-extrabold text-stone-900">
+                              {selectedCloser.first_name} {selectedCloser.last_name}
+                            </h4>
+                            <p className="text-emerald-700 font-bold text-xs uppercase tracking-widest">
+                              {selectedCloser.role === 'Owner' ? 'Owner' : 'Closer'} {'\u2022'} Disponible
+                            </p>
                           </div>
-                          <div className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
-                            {assignmentMode === 'suivant' ? 'Tournante' : assignmentMode === 'hasard' ? 'Hasard' : 'Manuel'}
+                          <CheckCircle2 className="h-6 w-6 text-emerald-600 shrink-0" />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </section>
+            )}
+          </div>
+
+          {/* Right Column: Step 2 - Scheduling */}
+          {selectedOutcome === 'qualified' && selectedCloser && showSetterOutcomes && !isSetterCloserSelf && (
+            <div className="lg:col-span-5">
+              <section>
+                <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 2 — Programmer le RDV</h3>
+                <div className="bg-white p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                  {loadingSlots ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
+                      <span className="ml-2 text-sm text-stone-500">Chargement des créneaux...</span>
+                    </div>
+                  ) : dateKeys.length === 0 ? (
+                    <div className="flex items-center gap-2 text-sm text-stone-500 bg-stone-50 rounded-lg p-4 border border-stone-200">
+                      <AlertCircle className="h-4 w-4 text-stone-400" />
+                      Aucun créneau disponible pour ce closer dans les 14 prochains jours.
+                    </div>
+                  ) : (
+                    <>
+                      {/* Date navigation */}
+                      <div className="flex justify-between items-center mb-5">
+                        <h4 className="font-['Manrope'] font-bold text-stone-900 capitalize">
+                          {currentDateSlots[0]?.dateLabel || ''}
+                        </h4>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setCurrentDateIndex(Math.max(0, currentDateIndex - 1))}
+                            disabled={currentDateIndex === 0}
+                            className="p-2 rounded-full hover:bg-stone-100 transition-colors disabled:opacity-30"
+                          >
+                            <ChevronLeft className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => setCurrentDateIndex(Math.min(dateKeys.length - 1, currentDateIndex + 1))}
+                            disabled={currentDateIndex >= dateKeys.length - 1}
+                            className="p-2 rounded-full hover:bg-stone-100 transition-colors disabled:opacity-30"
+                          >
+                            <ChevronRight className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Time slots grid */}
+                      <div className="grid grid-cols-2 gap-3">
+                        {(showAllSlots ? currentDateSlots : currentDateSlots.slice(0, 10)).map(slot => {
+                          const isSelected = selectedSlot?.date === slot.date && selectedSlot?.time === slot.time
+                          return (
+                            <button
+                              key={`${slot.date}-${slot.time}`}
+                              onClick={() => setSelectedSlot(slot)}
+                              className={cn(
+                                'py-3.5 text-sm font-bold rounded-lg transition-all',
+                                isSelected
+                                  ? 'bg-emerald-700 text-white shadow-md'
+                                  : 'border border-stone-200/60 text-stone-600 hover:border-emerald-600/30'
+                              )}
+                            >
+                              {slot.timeLabel}
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      {/* Show all slots link */}
+                      {currentDateSlots.length > 10 && !showAllSlots && (
+                        <div className="mt-6 flex items-center justify-center">
+                          <button
+                            onClick={() => setShowAllSlots(true)}
+                            className="text-emerald-700 font-['Manrope'] font-bold text-sm hover:underline"
+                          >
+                            Voir tous les créneaux
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Selected slot confirmation */}
+                      {selectedSlot && (
+                        <div className="mt-5 rounded-lg bg-emerald-50 border border-emerald-200 p-4">
+                          <div className="flex items-center gap-2">
+                            <CalendarCheck className="h-4 w-4 text-emerald-600" />
+                            <div>
+                              <p className="text-sm font-semibold text-stone-900">RDV confirmé</p>
+                              <p className="text-xs text-stone-500">
+                                {selectedSlot.dateLabel} — {selectedSlot.timeLabel} avec {selectedCloser.first_name} {selectedCloser.last_name}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       )}
                     </>
                   )}
                 </div>
+              </section>
+            </div>
+          )}
+        </div>
+      )}
 
-                {/* Step 2: Time Slot Selection */}
-                {selectedCloser && (
-                  <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-6">
-                    <h3 className="text-sm font-bold text-blue-700 flex items-center gap-2 mb-4">
-                      <CalendarCheck className="h-4 w-4" /> Étape 2 — Programmer le RDV
-                    </h3>
-                    {loadingSlots ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-                        <span className="ml-2 text-sm text-slate-500">Chargement des créneaux...</span>
-                      </div>
-                    ) : availableSlots.length === 0 ? (
-                      <div className="flex items-center gap-2 text-sm text-slate-500 bg-white rounded-lg p-4 border border-slate-200">
-                        <AlertCircle className="h-4 w-4 text-amber-500" />
-                        Aucun créneau disponible pour ce closer dans les 14 prochains jours.
-                      </div>
-                    ) : (
-                      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                        {Object.entries(slotsByDate).map(([date, slots]) => (
-                          <div key={date}>
-                            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2 sticky top-0 bg-blue-50/90 py-1">
-                              {slots[0].dateLabel}
-                            </p>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                              {slots.map(slot => {
-                                const isSlotSelected = selectedSlot?.date === slot.date && selectedSlot?.time === slot.time
-                                return (
-                                  <button key={`${slot.date}-${slot.time}`} onClick={() => setSelectedSlot(slot)}
-                                    className={cn('rounded-lg border px-3 py-2 text-xs font-medium transition-all text-center',
-                                      isSlotSelected ? 'border-blue-500 bg-blue-100 text-blue-700 ring-2 ring-blue-300' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50')}>
-                                    {slot.timeLabel}
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {selectedSlot && (
-                      <div className="mt-4 rounded-lg bg-white border border-blue-200 p-4">
-                        <div className="flex items-center gap-2">
-                          <CalendarCheck className="h-4 w-4 text-blue-600" />
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">RDV confirmé</p>
-                            <p className="text-xs text-slate-500">
-                              {selectedSlot.dateLabel} — {selectedSlot.timeLabel} avec {selectedCloser.first_name} {selectedCloser.last_name}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+      {/* NOTES TAB */}
+      {activeTab === 'notes' && (
+        <div className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 h-[500px] flex flex-col">
+          <label className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-900 font-['Manrope']">
+            <FileText className="h-4 w-4 text-stone-500" /> Historique et Notes de l'appel
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => !isReadonly && setNotes(e.target.value)}
+            readOnly={isReadonly}
+            placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
+            className={cn(
+              "flex-1 w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-3 text-base text-stone-800 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none leading-relaxed",
+              isReadonly && "cursor-default"
             )}
-          </div>
-        )}
+          />
+          <p className="mt-3 text-xs text-stone-400 flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3" />
+            Ces notes s'ajouteront a l'historique des appels du prospect.
+          </p>
+        </div>
+      )}
 
-        {/* NOTES TAB */}
-        {activeTab === 'notes' && (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 h-[500px] flex flex-col">
-            <label className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-              <FileText className="h-4 w-4 text-amber-600" /> Historique et Notes de l'appel
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => !isReadonly && setNotes(e.target.value)}
-              readOnly={isReadonly}
-              placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
-              className={cn("flex-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-800 placeholder-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 resize-none leading-relaxed", isReadonly && "cursor-default")}
-            />
-            <p className="mt-3 text-xs text-slate-400 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3" />
-              Ces notes s'ajouteront à l'historique des appels du prospect.
-            </p>
+      {/* REMINDER TAB */}
+      {activeTab === 'reminder' && (
+        <div className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 space-y-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Bell className="h-5 w-5 text-stone-500" />
+            <h3 className="text-lg font-bold text-stone-900 font-['Manrope']">Programmer un rappel</h3>
           </div>
-        )}
 
-        {/* REMINDER TAB */}
-        {activeTab === 'reminder' && (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Bell className="h-5 w-5 text-amber-600" />
-              <h3 className="text-sm font-bold text-slate-900">Programmer un rappel</h3>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-stone-700">Titre <span className="text-red-500">*</span></label>
+            <input type="text" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)}
+              placeholder="Ex: Rappeler Jean pour le contrat"
+              className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-stone-700">Description <span className="text-stone-400">(optionnel)</span></label>
+            <textarea value={reminderDescription} onChange={(e) => setReminderDescription(e.target.value)}
+              placeholder="Details supplémentaires..." rows={3}
+              className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700">
+                <Calendar className="h-4 w-4" /> Date <span className="text-red-500">*</span>
+              </label>
+              <input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)}
+                className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Titre <span className="text-red-500">*</span></label>
-              <input type="text" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)}
-                placeholder="Ex: Rappeler Jean pour le contrat"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-amber-500 focus:outline-none" />
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700">
+                <Clock className="h-4 w-4" /> Heure <span className="text-red-500">*</span>
+              </label>
+              <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)}
+                className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Description <span className="text-slate-400">(optionnel)</span></label>
-              <textarea value={reminderDescription} onChange={(e) => setReminderDescription(e.target.value)}
-                placeholder="Détails supplémentaires..." rows={3}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-amber-500 focus:outline-none resize-none" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <Calendar className="h-4 w-4" /> Date <span className="text-red-500">*</span>
-                </label>
-                <input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none" />
-              </div>
-              <div>
-                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <Clock className="h-4 w-4" /> Heure <span className="text-red-500">*</span>
-                </label>
-                <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none" />
-              </div>
-            </div>
-            <button onClick={handleSaveReminder}
-              disabled={!reminderTitle || !reminderDate || !reminderTime || isSavingReminder}
-              className={cn('w-full rounded-lg px-6 py-3 text-sm font-bold text-white transition-all mt-2',
-                reminderTitle && reminderDate && reminderTime && !isSavingReminder
-                  ? 'bg-amber-600 hover:bg-amber-500 shadow-sm'
-                  : 'bg-slate-300 cursor-not-allowed'
-              )}>
-              {isSavingReminder ? (
-                <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement...</span>
-              ) : 'Enregistrer le rappel'}
-            </button>
           </div>
-        )}
 
-        {/* Action Buttons */}
-        {!isReadonly && (
-          <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-200 mt-6">
-            <button onClick={() => navigate('/business/appels')}
-              className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
-              Annuler
-            </button>
-            <button onClick={handleSave} disabled={!isFormValid() || saving}
-              className={cn('flex items-center gap-2 rounded-xl px-8 py-2.5 text-sm font-bold text-white transition-all',
-                isFormValid() && !saving
-                  ? 'bg-amber-600 hover:bg-amber-500 shadow-sm'
-                  : 'bg-slate-300 cursor-not-allowed'
-              )}>
-              <Save className="h-4 w-4" /> {saving ? 'Enregistrement...' : 'Tout Enregistrer'}
-            </button>
-          </div>
-        )}
-        {isReadonly && (
-          <div className="flex justify-center pt-4 border-t border-slate-200 mt-6">
-            <button onClick={() => navigate('/business/appels')}
-              className="rounded-xl bg-amber-600 px-8 py-2.5 text-sm font-bold text-white hover:bg-amber-500 transition-all">
-              Retour aux appels
-            </button>
-          </div>
-        )}
-      </div>
+          <button onClick={handleSaveReminder}
+            disabled={!reminderTitle || !reminderDate || !reminderTime || isSavingReminder}
+            className={cn('w-full rounded-full px-6 py-3 text-sm font-bold text-white transition-all mt-2 font-["Manrope"]',
+              reminderTitle && reminderDate && reminderTime && !isSavingReminder
+                ? 'bg-stone-900 hover:bg-stone-800 shadow-sm'
+                : 'bg-stone-300 cursor-not-allowed'
+            )}>
+            {isSavingReminder ? (
+              <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement...</span>
+            ) : 'Enregistrer le rappel'}
+          </button>
+        </div>
+      )}
+
+      {/* Footer Actions */}
+      {!isReadonly && (
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md px-8 py-5 flex items-center justify-end gap-5 z-40 border-t border-stone-200/40">
+          <button onClick={() => navigate('/business/appels')}
+            className="px-8 py-3 rounded-full border border-stone-300 text-stone-700 font-['Manrope'] font-bold text-sm hover:bg-stone-50 transition-all">
+            Annuler
+          </button>
+          <button onClick={handleSave} disabled={!isFormValid() || saving}
+            className={cn(
+              "px-10 py-3 rounded-full font-['Manrope'] font-bold text-sm text-white transition-all shadow-xl active:scale-95",
+              isFormValid() && !saving
+                ? 'bg-stone-900 hover:bg-stone-800'
+                : 'bg-stone-300 cursor-not-allowed'
+            )}>
+            {saving ? 'Enregistrement...' : 'Tout Enregistrer'}
+          </button>
+        </div>
+      )}
+      {isReadonly && (
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md px-8 py-5 flex items-center justify-center z-40 border-t border-stone-200/40">
+          <button onClick={() => navigate('/business/appels')}
+            className="px-10 py-3 rounded-full bg-stone-900 text-white font-['Manrope'] font-bold text-sm hover:bg-stone-800 transition-all shadow-xl active:scale-95">
+            Retour aux appels
+          </button>
+        </div>
+      )}
     </div>
   )
 }
