@@ -17,6 +17,9 @@ import {
   Trash2,
   ZoomIn,
   ZoomOut,
+  ToggleLeft,
+  ToggleRight,
+  UserPlus,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
@@ -49,6 +52,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     phone: '',
     role: '',
     avatar_url: '',
+    owner_assignable: false,
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -63,6 +67,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
         phone: businessProfile?.phone || user.user_metadata?.phone || '',
         role: businessProfile?.role || 'Business Owner',
         avatar_url: businessProfile?.avatar_url || user.user_metadata?.avatar_url || '',
+        owner_assignable: businessProfile?.owner_assignable ?? false,
         deletion_scheduled_at: null,
       }))
       setMessage({ type: '', text: '' })
@@ -138,6 +143,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
         phone: formData.phone,
         role: formData.role,
         avatar_url: formData.avatar_url,
+        owner_assignable: formData.owner_assignable,
       })
 
       // Also update auth metadata
@@ -445,6 +451,26 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         <option value="Setter-Closer">Setter-Closer</option>
                       </select>
                     </div>
+                  </div>
+
+                  {/* Owner assignable toggle */}
+                  <div
+                    onClick={() => setFormData(prev => ({ ...prev, owner_assignable: !prev.owner_assignable }))}
+                    className="flex items-center justify-between p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 transition-colors">
+                        <UserPlus className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-white text-sm">Apparaître dans les assignations</h4>
+                        <p className="text-xs text-slate-400 mt-0.5">Vous serez sélectionnable comme Closer/Setter dans les menus d'assignation</p>
+                      </div>
+                    </div>
+                    {formData.owner_assignable
+                      ? <ToggleRight className="h-7 w-7 text-amber-500 shrink-0" />
+                      : <ToggleLeft className="h-7 w-7 text-slate-500 shrink-0" />
+                    }
                   </div>
                 </div>
 

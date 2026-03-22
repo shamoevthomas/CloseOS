@@ -17,6 +17,10 @@ interface Objective {
   assigned_to: string | null
   deadline: string | null
   created_at: string
+  description: string | null
+  scope: string
+  assigned_to_role: string | null
+  assigned_to_members: string[] | null
 }
 
 interface PersonalObjective {
@@ -29,6 +33,7 @@ interface PersonalObjective {
   current_value: number
   period: string
   deadline: string | null
+  description: string | null
   visible_to_owner: boolean
   created_at: string
 }
@@ -94,6 +99,7 @@ export function CloserObjectifs() {
   const [formTargetValue, setFormTargetValue] = useState('')
   const [formPeriod, setFormPeriod] = useState('monthly')
   const [formDeadline, setFormDeadline] = useState('')
+  const [formDescription, setFormDescription] = useState('')
   const [formVisibleToOwner, setFormVisibleToOwner] = useState(false)
 
   const fetchAll = useCallback(async () => {
@@ -105,10 +111,19 @@ export function CloserObjectifs() {
       const data = await res.json()
       const allObjs: Objective[] = data.objectives || []
 
-      // Org-wide = no assigned_to
-      setOrgObjectives(allObjs.filter(o => !o.assigned_to))
-      // Assigned to me
-      setAssignedObjectives(allObjs.filter(o => o.assigned_to === teamMember.id))
+      // Org-wide = global_org scope or global_role matching my role
+      setOrgObjectives(allObjs.filter(o =>
+        o.scope === 'global_org' ||
+        (o.scope === 'global_role' && o.assigned_to_role === teamMember.role) ||
+        (!o.scope && !o.assigned_to) // legacy: no scope + no assigned_to = org-wide
+      ))
+      // Assigned to me individually
+      setAssignedObjectives(allObjs.filter(o =>
+        (o.scope === 'individual' || !o.scope) && (
+          o.assigned_to === teamMember.id ||
+          (o.assigned_to_members && o.assigned_to_members.includes(teamMember.id))
+        )
+      ))
 
       // Fetch personal objectives
       const pRes = await fetch(`${API_URL}?action=personal-objectives-list&team_member_id=${teamMember.id}`)
@@ -191,7 +206,7 @@ export function CloserObjectifs() {
   // Personal objectives CRUD
   const resetForm = () => {
     setFormLabel(''); setFormMetric('custom'); setFormTargetValue('')
-    setFormPeriod('monthly'); setFormDeadline(''); setFormVisibleToOwner(false)
+    setFormPeriod('monthly'); setFormDeadline(''); setFormDescription(''); setFormVisibleToOwner(false)
     setEditingObj(null)
   }
 
@@ -204,6 +219,7 @@ export function CloserObjectifs() {
     setFormTargetValue(obj.target_value.toString())
     setFormPeriod(obj.period)
     setFormDeadline(obj.deadline ? obj.deadline.slice(0, 10) : '')
+    setFormDescription(obj.description || '')
     setFormVisibleToOwner(obj.visible_to_owner)
     setIsModalOpen(true)
   }
@@ -225,12 +241,13 @@ export function CloserObjectifs() {
             target_value: parseFloat(formTargetValue) || 0,
             period: formPeriod,
             deadline: formDeadline || null,
+            description: formMetric === 'custom' ? formDescription : null,
             visible_to_owner: formVisibleToOwner,
           }),
         })
         toast.success('Objectif modifié')
       } else {
-        await fetch(`${API_URL}?action=personal-objectives-create`, {
+        const createRes = await fetch(`${API_URL}?action=personal-objectives-create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -241,9 +258,12 @@ export function CloserObjectifs() {
             target_value: parseFloat(formTargetValue) || 0,
             period: formPeriod,
             deadline: formDeadline || null,
+            description: formMetric === 'custom' ? formDescription : null,
             visible_to_owner: formVisibleToOwner,
           }),
         })
+        const createData = await createRes.json()
+        if (createData.error) { toast.error(createData.error); return }
         toast.success('Objectif créé')
       }
       setIsModalOpen(false)
@@ -359,6 +379,10 @@ export function CloserObjectifs() {
             )}
           </div>
         </div>
+
+        {obj.metric === 'custom' && obj.description && (
+          <p className="text-xs text-slate-500 mb-3 line-clamp-2">{obj.description}</p>
+        )}
 
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium', METRIC_COLORS[obj.metric] || METRIC_COLORS.custom)}>
@@ -522,6 +546,19 @@ export function CloserObjectifs() {
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                 </div>
               </div>
+
+              {formMetric === 'custom' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                  <textarea
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    placeholder="Décrivez votre métrique personnalisée..."
+                    rows={3}
+                    className={inputCls + ' resize-none'}
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Valeur cible</label>

@@ -69,7 +69,7 @@ export function BusinessAppointments() {
   const isOwnerOrHoS = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const isCloserOnly = isTeamMember && teamMember?.role === 'Closer'
   const isSetterCloserSelf = isTeamMember && teamMember?.role === 'Setter-Closer' && teamMember?.setter_scope === 'self'
-  const showBookingSection = isSetter || isOwnerOrHoS
+  const showBookingSection = isSetter || isOwnerOrHoS || isCloserOnly
   const canBookForOthers = !isCloserOnly && !isSetterCloserSelf // closers and setter-closer(self) can't book for others
   const [bookingLinks, setBookingLinks] = useState<BookingLink[]>([])
   const [showCreateLink, setShowCreateLink] = useState(false)
@@ -77,6 +77,10 @@ export function BusinessAppointments() {
   const [newLinkDuration, setNewLinkDuration] = useState(30)
   const [newLinkMemberId, setNewLinkMemberId] = useState<string>('')
   const [savingLink, setSavingLink] = useState(false)
+
+  // Personnel / Membre tabs for Setter, HOS, Owner
+  const showTabs = isSetter || isOwnerOrHoS
+  const [activeTab, setActiveTab] = useState<'personnel' | 'membre'>('personnel')
 
   // Book RDV modal state
   const [showBookModal, setShowBookModal] = useState(false)
@@ -94,10 +98,10 @@ export function BusinessAppointments() {
     if (!effectiveUserId) return
     Promise.all([
       supabase.from('business_team_members').select('id, first_name, last_name, role, timezone').eq('business_owner_id', effectiveUserId),
-      supabase.from('business_users').select('id, full_name, timezone').eq('id', effectiveUserId).single(),
+      supabase.from('business_users').select('id, full_name, timezone, owner_assignable').eq('id', effectiveUserId).single(),
     ]).then(([tmRes, ownerRes]) => {
       const list = tmRes.data || []
-      if (ownerRes.data) {
+      if (ownerRes.data?.owner_assignable) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
         list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner', timezone: ownerRes.data.timezone || 'Europe/Paris' })
       }
@@ -108,7 +112,7 @@ export function BusinessAppointments() {
   // Fetch booking links
   useEffect(() => {
     if (!showBookingSection) return
-    if (isSetter && teamMember?.id) {
+    if ((isSetter || isCloserOnly) && teamMember?.id) {
       supabase
         .from('business_booking_links')
         .select('*')
@@ -123,7 +127,7 @@ export function BusinessAppointments() {
         .order('created_at', { ascending: false })
         .then(({ data }) => setBookingLinks(data || []))
     }
-  }, [showBookingSection, isSetter, isOwnerOrHoS, teamMember?.id, effectiveUserId])
+  }, [showBookingSection, isSetter, isCloserOnly, isOwnerOrHoS, teamMember?.id, effectiveUserId])
 
   const handleCreateBookingLink = async () => {
     if (!newLinkLabel.trim()) return
@@ -131,7 +135,7 @@ export function BusinessAppointments() {
     if (!ownerId) return
     setSavingLink(true)
     const slug = crypto.randomUUID().slice(0, 8)
-    const memberIdToUse = (isSetter && !canBookForOthers) ? teamMember?.id : (newLinkMemberId || (isSetter ? teamMember?.id : null))
+    const memberIdToUse = ((isSetter || isCloserOnly) && !canBookForOthers) ? teamMember?.id : (newLinkMemberId || ((isSetter || isCloserOnly) ? teamMember?.id : null))
     const bookingUrl = `${window.location.origin}/book/${slug}`
     const { data, error } = await supabase
       .from('business_booking_links')
@@ -274,10 +278,19 @@ export function BusinessAppointments() {
     setBookWithMeet(true)
   }
 
-  // Team members only see their assigned appointments
-  const visibleAppointments = isTeamMember
-    ? appointments.filter(a => (a as any).assigned_to === teamMember?.id)
-    : appointments
+  // Determine my member ID (for filtering personal appointments)
+  const myMemberId = isTeamMember ? teamMember?.id : effectiveUserId
+
+  // With tabs: "personnel" = my appointments, "membre" = all team
+  const visibleAppointments = (() => {
+    if (showTabs && activeTab === 'personnel') {
+      return appointments.filter(a => (a as any).assigned_to === myMemberId)
+    }
+    if (isCloserOnly) {
+      return appointments.filter(a => (a as any).assigned_to === teamMember?.id)
+    }
+    return appointments
+  })()
 
   /** Convert appointment to viewer's local date/time */
   const getLocalDateTime = (appt: Appointment) => {
@@ -346,7 +359,9 @@ export function BusinessAppointments() {
           </div>
           <div>
             <h2 className="text-lg font-bold text-slate-900">{visibleAppointments.length} rendez-vous</h2>
-            <p className="text-xs text-slate-500">Tous vos rendez-vous</p>
+            <p className="text-xs text-slate-500">
+              {showTabs && activeTab === 'personnel' ? 'Mes rendez-vous' : showTabs && activeTab === 'membre' ? 'Tous les rendez-vous de l\'équipe' : 'Tous vos rendez-vous'}
+            </p>
           </div>
         </div>
 
@@ -370,7 +385,7 @@ export function BusinessAppointments() {
               >
                 <option value="all">Tous les membres</option>
                 {teamMembers.map(m => (
-                  <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
+                  <option key={m.id} value={m.id}>{m.first_name} {m.last_name}{m.role === 'Owner' ? ' (Owner)' : ''}</option>
                 ))}
               </select>
               <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
@@ -409,6 +424,32 @@ export function BusinessAppointments() {
         </div>
       </div>
 
+      {/* Personnel / Membre tabs */}
+      {showTabs && (
+        <div className="flex gap-1 rounded-lg bg-slate-100 p-1 w-fit">
+          <button
+            onClick={() => setActiveTab('personnel')}
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'personnel'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Personnel
+          </button>
+          <button
+            onClick={() => setActiveTab('membre')}
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'membre'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Membre
+          </button>
+        </div>
+      )}
+
       {/* Book RDV Modal */}
       {showBookModal && (
         <>
@@ -427,44 +468,44 @@ export function BusinessAppointments() {
 
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Titre (optionnel)</label>
+                  <label className="block text-xs font-medium text-slate-900 mb-1">Titre (optionnel)</label>
                   <input
                     type="text"
                     value={bookTitle}
                     onChange={e => setBookTitle(e.target.value)}
                     placeholder="Ex: RDV Découverte, Follow-up..."
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Date *</label>
+                    <label className="block text-xs font-medium text-slate-900 mb-1">Date *</label>
                     <input
                       type="date"
                       value={bookDate}
                       onChange={e => setBookDate(e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Heure *</label>
+                    <label className="block text-xs font-medium text-slate-900 mb-1">Heure *</label>
                     <input
                       type="time"
                       value={bookTime}
                       onChange={e => setBookTime(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Durée</label>
+                  <label className="block text-xs font-medium text-slate-900 mb-1">Durée</label>
                   <select
                     value={bookDuration}
                     onChange={e => setBookDuration(Number(e.target.value))}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
                   >
                     <option value={15}>15 min</option>
                     <option value={30}>30 min</option>
@@ -477,11 +518,11 @@ export function BusinessAppointments() {
                 {/* For whom — everyone can book for self, non-closers can book for others */}
                 {canBookForOthers && teamMembers.length > 0 ? (
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Pour qui ?</label>
+                    <label className="block text-xs font-medium text-slate-900 mb-1">Pour qui ?</label>
                     <select
                       value={bookMemberId}
                       onChange={e => setBookMemberId(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
                     >
                       <option value="">Pour moi</option>
                       {teamMembers.map(m => (
@@ -500,13 +541,13 @@ export function BusinessAppointments() {
                 ) : null}
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Notes (optionnel)</label>
+                  <label className="block text-xs font-medium text-slate-900 mb-1">Notes (optionnel)</label>
                   <textarea
                     value={bookNotes}
                     onChange={e => setBookNotes(e.target.value)}
                     rows={2}
                     placeholder="Contexte, détails..."
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none resize-none"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none resize-none"
                   />
                 </div>
 

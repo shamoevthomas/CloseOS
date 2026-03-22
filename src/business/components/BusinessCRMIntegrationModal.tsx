@@ -927,8 +927,14 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                   </ol>
                 </div>
 
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 mt-1">
+                  <p className="text-[11px] text-amber-800 font-medium">
+                    Important : pour que le prospect soit automatiquement assigné au bon membre, chaque membre doit être inscrit sur CloseOS avec <strong>le même email que son compte Calendly</strong>.
+                  </p>
+                </div>
+
                 <p className="text-[10px] text-blue-600/70">
-                  Chaque booking créera un prospect (étape "Qualifié") et un rendez-vous confirmé dans CloseOS.
+                  Chaque booking créera un prospect (étape "Qualifié") et un rendez-vous confirmé, assigné automatiquement au membre concerné.
                 </p>
               </div>
             )}

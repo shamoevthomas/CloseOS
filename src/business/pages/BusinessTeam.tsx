@@ -29,6 +29,7 @@ interface TeamMember {
   date_of_birth: string | null
   pay_day?: number | null
   timezone?: string | null
+  setter_scope?: string | null
   _isOwner?: boolean
 }
 
@@ -333,6 +334,21 @@ export function BusinessTeam() {
           appointments={memberAppointments}
           connectionLogs={memberLogs}
           isOwnerView={isOwnerView}
+          onRoleChange={async (role: string, setterScope?: string) => {
+            const updates: any = { role }
+            if (role === 'Setter-Closer') {
+              updates.setter_scope = setterScope || 'all'
+            } else {
+              updates.setter_scope = null
+            }
+            const { error } = await supabase
+              .from('business_team_members')
+              .update(updates)
+              .eq('id', selectedMember.id)
+            if (error) { toast.error('Erreur lors du changement de rôle'); return }
+            toast.success('Rôle mis à jour')
+            setMembers(prev => prev.map(m => m.id === selectedMember.id ? { ...m, role, setter_scope: updates.setter_scope } : m))
+          }}
           onPayDayChange={async (day: number) => {
             const { error } = await supabase
               .from('business_team_members')
@@ -589,12 +605,17 @@ function IndividualView({
   appointments: Appointment[]
   connectionLogs: ConnectionLog[]
   isOwnerView: boolean
+  onRoleChange: (role: string, setterScope?: string) => Promise<void>
   onPayDayChange: (day: number) => Promise<void>
   onDelete?: () => void
 }) {
   const color = getRoleColor(member.role)
   const [payDay, setPayDay] = useState<number>(member.pay_day || 1)
   const [savingPayDay, setSavingPayDay] = useState(false)
+  const [editRole, setEditRole] = useState(member.role)
+  const [editSetterScope, setEditSetterScope] = useState(member.setter_scope || 'all')
+  const [savingRole, setSavingRole] = useState(false)
+  const roleChanged = editRole !== member.role || (editRole === 'Setter-Closer' && editSetterScope !== (member.setter_scope || 'all'))
 
   const memberProspects = useMemo(() => prospects.filter(p => p.assigned_to === member.id), [prospects, member.id])
   const won = memberProspects.filter(p => p.stage === 'won')
@@ -686,6 +707,82 @@ function IndividualView({
           </div>
         </div>
       </div>
+
+      {/* Role management — owner/HoS only */}
+      {isOwnerView && (
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <User className="h-4 w-4 text-amber-600" />
+            <h4 className="text-sm font-semibold text-slate-900">Rôle</h4>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={editRole}
+              onChange={e => {
+                setEditRole(e.target.value)
+                if (e.target.value === 'Setter-Closer') setEditSetterScope(member.setter_scope || 'all')
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 focus:border-amber-500 focus:outline-none"
+            >
+              <option value="Closer">Closer</option>
+              <option value="Setter">Setter</option>
+              <option value="Setter-Closer">Setter-Closer</option>
+              <option value="Admin">Admin</option>
+              <option value="Head of Sales">Head of Sales</option>
+            </select>
+
+            {editRole === 'Setter-Closer' && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500">Set pour :</span>
+                <button
+                  onClick={() => setEditSetterScope('self')}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                    editSetterScope === 'self'
+                      ? 'bg-amber-50 border-amber-300 text-amber-700'
+                      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                  )}
+                >
+                  Lui-même uniquement
+                </button>
+                <button
+                  onClick={() => setEditSetterScope('all')}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                    editSetterScope === 'all'
+                      ? 'bg-amber-50 border-amber-300 text-amber-700'
+                      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                  )}
+                >
+                  Toute l'équipe
+                </button>
+              </div>
+            )}
+
+            {roleChanged && (
+              <button
+                onClick={async () => {
+                  setSavingRole(true)
+                  await onRoleChange(editRole, editRole === 'Setter-Closer' ? editSetterScope : undefined)
+                  setSavingRole(false)
+                }}
+                disabled={savingRole}
+                className="flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-2 text-xs font-medium text-white hover:bg-amber-500 transition-colors disabled:opacity-50"
+              >
+                {savingRole ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                Enregistrer
+              </button>
+            )}
+          </div>
+          {editRole === 'Setter-Closer' && (
+            <p className="text-xs text-slate-400 mt-3">
+              {editSetterScope === 'self'
+                ? 'Ce membre set uniquement pour ses propres rendez-vous.'
+                : 'Ce membre set pour tous les closers de l\'équipe.'}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Connection History — owner/HoS only */}
       {isOwnerView && (

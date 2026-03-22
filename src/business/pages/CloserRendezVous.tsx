@@ -65,11 +65,16 @@ export function CloserRendezVous() {
 
   const fetchTeamMembers = useCallback(async () => {
     if (!ownerUserId) return
-    const { data } = await supabase
-      .from('business_team_members')
-      .select('id, first_name, last_name, role')
-      .eq('business_owner_id', ownerUserId)
-    if (data) setTeamMembers(data)
+    const [tmRes, ownerRes] = await Promise.all([
+      supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', ownerUserId),
+      supabase.from('business_users').select('id, full_name, owner_assignable').eq('id', ownerUserId).single(),
+    ])
+    const list = tmRes.data || []
+    if (ownerRes.data?.owner_assignable) {
+      const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
+      list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
+    }
+    setTeamMembers(list)
   }, [ownerUserId])
 
   useEffect(() => { fetchAppointments() }, [fetchAppointments])

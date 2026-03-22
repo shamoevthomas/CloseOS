@@ -87,10 +87,10 @@ export function BusinessCRM() {
     import('../../lib/supabase').then(({ supabase }) => {
       Promise.all([
         supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
-        supabase.from('business_users').select('id, full_name, email').eq('id', effectiveUserId).single(),
+        supabase.from('business_users').select('id, full_name, email, owner_assignable').eq('id', effectiveUserId).single(),
       ]).then(([tmRes, ownerRes]) => {
         const all = tmRes.data || []
-        const ownerMember = ownerRes.data ? {
+        const ownerMember = (ownerRes.data?.owner_assignable) ? {
           id: ownerRes.data.id,
           first_name: (ownerRes.data.full_name || 'Owner').split(' ')[0] || 'Owner',
           last_name: (ownerRes.data.full_name || '').split(' ').slice(1).join(' ') || '',

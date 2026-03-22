@@ -36,14 +36,7 @@ interface Formula {
 
 const formatCurrency = (n: number) => n.toLocaleString('fr-FR') + ' €'
 
-const SOURCES = [
-  'LinkedIn Ads',
-  'Facebook Ads',
-  'Prospection',
-  'Recommandation',
-  'Organique',
-  'Autre'
-]
+const DEFAULT_SOURCES = ['Insta', 'LinkedIn', 'ADS', 'Organique']
 
 function getStageConfig(stageId: string) {
   return ALL_STAGES.find(s => s.id === stageId) || ALL_STAGES[0]
@@ -72,7 +65,7 @@ export function CloserCRM() {
     phone: '',
     company: '',
     formulaId: '',
-    source: 'LinkedIn Ads'
+    source: 'Insta'
   })
 
   // Filters
@@ -85,6 +78,49 @@ export function CloserCRM() {
   // Data for filters
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [formulas, setFormulas] = useState<Formula[]>([])
+
+  // Custom sources
+  const [customSources, setCustomSources] = useState<{ id: string; name: string }[]>([])
+  const [isNewSourceModalOpen, setIsNewSourceModalOpen] = useState(false)
+  const [newSourceName, setNewSourceName] = useState('')
+  const [savingSource, setSavingSource] = useState(false)
+
+  const allSources = useMemo(() => [...DEFAULT_SOURCES, ...customSources.map(s => s.name)], [customSources])
+
+  // Fetch custom sources
+  useEffect(() => {
+    if (!ownerUserId) return
+    fetch(`/api/business?action=sources-list&user_id=${ownerUserId}`)
+      .then(r => r.json())
+      .then(data => { if (data.sources) setCustomSources(data.sources) })
+      .catch(() => {})
+  }, [ownerUserId])
+
+  const handleCreateSource = async () => {
+    if (!newSourceName.trim() || !ownerUserId) return
+    setSavingSource(true)
+    try {
+      const res = await fetch(`/api/business?action=sources-create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: ownerUserId, name: newSourceName.trim() }),
+      })
+      const data = await res.json()
+      if (res.ok && data.source) {
+        setCustomSources(prev => [...prev, data.source])
+        setNewProspectForm(f => ({ ...f, source: data.source.name }))
+        setNewSourceName('')
+        setIsNewSourceModalOpen(false)
+        toast.success('Source créée')
+      } else {
+        toast.error(data.error || 'Erreur lors de la création')
+      }
+    } catch {
+      toast.error('Erreur réseau')
+    } finally {
+      setSavingSource(false)
+    }
+  }
 
   // Fetch team members
   useEffect(() => {
@@ -584,9 +620,16 @@ export function CloserCRM() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Source</label>
                 <select value={newProspectForm.source}
-                  onChange={e => setNewProspectForm({ ...newProspectForm, source: e.target.value })}
+                  onChange={e => {
+                    if (e.target.value === '__new__') {
+                      setIsNewSourceModalOpen(true)
+                    } else {
+                      setNewProspectForm({ ...newProspectForm, source: e.target.value })
+                    }
+                  }}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 focus:border-amber-500 focus:outline-none">
-                  {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+                  {allSources.map(s => <option key={s} value={s}>{s}</option>)}
+                  <option value="__new__">+ Nouvelle source</option>
                 </select>
               </div>
 
@@ -601,6 +644,39 @@ export function CloserCRM() {
                   {isCreating ? 'Création...' : 'Créer le prospect'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mini-modal Nouvelle source */}
+      {isNewSourceModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Nouvelle source</h3>
+            <input
+              type="text"
+              value={newSourceName}
+              onChange={(e) => setNewSourceName(e.target.value)}
+              placeholder="Nom de la source"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:border-amber-500 focus:outline-none mb-4"
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateSource()}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setIsNewSourceModalOpen(false); setNewSourceName('') }}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-xl transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreateSource}
+                disabled={!newSourceName.trim() || savingSource}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-medium py-2.5 rounded-xl transition-colors"
+              >
+                {savingSource ? 'Création...' : 'Créer'}
+              </button>
             </div>
           </div>
         </div>

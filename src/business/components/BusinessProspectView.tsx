@@ -75,10 +75,10 @@ export function BusinessProspectView({
     if (!ownerId) return
     Promise.all([
       supabase.from('business_team_members').select('id, first_name, last_name, role, setter_scope').eq('business_owner_id', ownerId),
-      supabase.from('business_users').select('id, full_name, email').eq('id', ownerId).single(),
+      supabase.from('business_users').select('id, full_name, email, owner_assignable').eq('id', ownerId).single(),
     ]).then(([tmRes, ownerRes]) => {
       const list = tmRes.data || []
-      if (ownerRes.data) {
+      if (ownerRes.data?.owner_assignable) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
         list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
       }
@@ -430,7 +430,7 @@ export function BusinessProspectView({
                               <option value="">Aucun closer assigné</option>
                               {closers.map(tm => (
                                 <option key={tm.id} value={tm.id}>
-                                  {tm.first_name} {tm.last_name}
+                                  {tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}
                                 </option>
                               ))}
                             </select>
@@ -460,7 +460,7 @@ export function BusinessProspectView({
                               <option value="">Aucun setter assigné</option>
                               {setters.map(tm => (
                                 <option key={tm.id} value={tm.id}>
-                                  {tm.first_name} {tm.last_name}
+                                  {tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}
                                 </option>
                               ))}
                             </select>

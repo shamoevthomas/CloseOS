@@ -5,7 +5,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-import { createHash, randomBytes } from 'crypto'
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto'
 
 const AIRTABLE_API = 'https://api.airtable.com/v0'
 const AIRTABLE_META = 'https://api.airtable.com/v0/meta'
@@ -579,6 +579,200 @@ function mapCloseosStageToAirtable(stage: string, stageMapping?: Record<string, 
 }
 
 // ============================================================
+// ACTION: calendly-webhook
+// Receives Calendly webhook events (invitee.created / invitee.canceled)
+// Creates prospect + appointment in business tables
+// ============================================================
+async function handleCalendlyWebhook(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  // 1. Extract API key from query param or Authorization header
+  const apiKey = (req.query.api_key as string) || (req.headers['authorization'] || '').replace('Bearer ', '').trim()
+  if (!apiKey) return res.status(401).json({ error: 'Missing API key' })
+
+  const supabase = getSupabase()
+
+  // 2. Validate API key
+  const { data: keyRecord } = await supabase
+    .from('business_webhook_keys')
+    .select('user_id, is_active')
+    .eq('api_key', apiKey)
+    .single()
+
+  if (!keyRecord) return res.status(401).json({ error: 'Invalid API key' })
+  if (!keyRecord.is_active) return res.status(403).json({ error: 'API key is disabled' })
+
+  const ownerUserId = keyRecord.user_id
+
+  // 3. Parse Calendly webhook payload
+  const { event, payload } = req.body || {}
+  if (!event || !payload) return res.status(400).json({ error: 'Invalid Calendly payload' })
+
+  // 4. Handle invitee.canceled → update appointment status
+  if (event === 'invitee.canceled') {
+    const cancelUri = payload.event || payload.scheduled_event?.uri || ''
+    if (cancelUri) {
+      await supabase
+        .from('business_appointments')
+        .update({ status: 'cancelled' })
+        .eq('user_id', ownerUserId)
+        .eq('calendly_event_uri', cancelUri)
+    }
+    return res.status(200).json({ success: true, action: 'appointment_cancelled' })
+  }
+
+  // 5. Handle invitee.created → create prospect + appointment
+  if (event === 'invitee.created') {
+    const invitee = payload.invitee || payload
+    const scheduledEvent = payload.scheduled_event || payload.event_type || {}
+
+    // Extract invitee info
+    const fullName = invitee.name || ''
+    const nameParts = fullName.split(' ')
+    const firstName = nameParts[0] || ''
+    const lastName = nameParts.slice(1).join(' ') || ''
+    const email = invitee.email || ''
+    const phone = invitee.text_reminder_number || ''
+
+    // Extract event info
+    const eventName = scheduledEvent.name || payload.event_type?.name || 'Calendly'
+    const startTime = scheduledEvent.start_time || payload.event?.start_time || ''
+    const endTime = scheduledEvent.end_time || payload.event?.end_time || ''
+    const eventUri = payload.event || scheduledEvent.uri || ''
+    const meetLink = scheduledEvent.location?.join_url || scheduledEvent.location?.data?.url || ''
+
+    // Extract host/member info (who the call is with)
+    const eventMemberships = scheduledEvent.event_memberships || []
+    const hostName = eventMemberships.map((m: any) => m.user_name || m.user?.name || '').filter(Boolean).join(', ')
+    const hostEmail = eventMemberships.map((m: any) => m.user_email || m.user?.email || '').filter(Boolean)[0] || ''
+
+    // Extract answers to Calendly questions as notes
+    const questions = (invitee.questions_and_answers || payload.questions_and_answers || [])
+      .map((qa: any) => `${qa.question}: ${qa.answer}`)
+      .join('\n')
+
+    // Calculate duration
+    let duration = 30
+    if (startTime && endTime) {
+      const diffMs = new Date(endTime).getTime() - new Date(startTime).getTime()
+      if (diffMs > 0) duration = Math.round(diffMs / 60000)
+    }
+
+    // Parse date and time from startTime
+    let appointmentDate = ''
+    let appointmentTime = ''
+    let datetimeUtc: string | null = null
+    if (startTime) {
+      const dt = new Date(startTime)
+      appointmentDate = dt.toISOString().split('T')[0]
+      appointmentTime = dt.toISOString().split('T')[1].substring(0, 5)
+      datetimeUtc = dt.toISOString()
+    }
+
+    // 5a. Deduplicate prospect by email
+    let prospectId: number | null = null
+    if (email) {
+      const { data: existing } = await supabase
+        .from('business_prospects')
+        .select('id')
+        .eq('user_id', ownerUserId)
+        .eq('email', email)
+        .maybeSingle()
+
+      if (existing) {
+        prospectId = existing.id
+        // Update existing prospect with any new info
+        const updates: Record<string, any> = {}
+        if (phone && phone.length > 0) updates.phone = phone
+        if (Object.keys(updates).length > 0) {
+          await supabase.from('business_prospects').update(updates).eq('id', prospectId)
+        }
+      }
+    }
+
+    // 5b. Create prospect if not found
+    if (!prospectId) {
+      const contact = [firstName, lastName].filter(Boolean).join(' ') || email || 'Calendly'
+      const { data: newProspect, error: prospectError } = await supabase
+        .from('business_prospects')
+        .insert({
+          user_id: ownerUserId,
+          contact,
+          firstName,
+          lastName,
+          email,
+          phone,
+          stage: 'qualified',
+          status: 'new',
+          notes: [
+            'Source: Calendly',
+            hostName ? `Call avec: ${hostName}` : '',
+            questions,
+          ].filter(Boolean).join('\n'),
+        })
+        .select('id')
+        .single()
+
+      if (prospectError) {
+        console.error('[Calendly] Prospect insert error:', prospectError)
+        return res.status(500).json({ error: 'Failed to create prospect', details: prospectError.message })
+      }
+      prospectId = newProspect.id
+    }
+
+    // 5c. Auto-assign prospect to team member by matching Calendly host email
+    let assignedTo: string | null = null
+    if (hostEmail) {
+      const { data: member } = await supabase
+        .from('business_team_members')
+        .select('user_id, role')
+        .eq('business_owner_id', ownerUserId)
+        .eq('email', hostEmail)
+        .maybeSingle()
+
+      if (member) {
+        assignedTo = member.user_id
+        const assignField = (member.role === 'setter' || member.role === 'setter-closer')
+          ? 'assigned_setter' : 'assigned_to'
+        await supabase.from('business_prospects').update({ [assignField]: assignedTo }).eq('id', prospectId)
+      }
+    }
+
+    // 5d. Create appointment linked to prospect
+    if (appointmentDate && appointmentTime) {
+      const { error: apptError } = await supabase
+        .from('business_appointments')
+        .insert({
+          user_id: ownerUserId,
+          prospect_id: prospectId,
+          title: eventName,
+          date: appointmentDate,
+          time: appointmentTime,
+          duration,
+          status: 'confirmed',
+          notes: questions || null,
+          google_meet_link: meetLink || null,
+          datetime_utc: datetimeUtc,
+          timezone: 'UTC',
+          calendly_event_uri: eventUri || null,
+          assigned_to: assignedTo || undefined,
+        })
+
+      if (apptError) {
+        console.error('[Calendly] Appointment insert error:', apptError)
+        // Prospect was still created, so return partial success
+        return res.status(200).json({ success: true, prospect_id: prospectId, appointment_error: apptError.message })
+      }
+    }
+
+    return res.status(200).json({ success: true, prospect_id: prospectId, action: 'prospect_and_appointment_created' })
+  }
+
+  // Unknown event type — just acknowledge
+  return res.status(200).json({ success: true, action: 'ignored', event })
+}
+
+// ============================================================
 // MAIN HANDLER - Routes based on req.query.action
 // ============================================================
 export default async function handler(req: any, res: any) {
@@ -616,10 +810,12 @@ export default async function handler(req: any, res: any) {
       return handleAirtableSync(req, res);
     case 'airtable-push':
       return handleAirtablePush(req, res);
+    case 'calendly-webhook':
+      return handleCalendlyWebhook(req, res);
     default:
       return res.status(400).json({
         error: 'Missing or invalid action parameter',
-        valid_actions: ['crm-webhook', 'sync-brevo', 'airtable-authorize', 'airtable-callback', 'airtable-bases', 'airtable-tables', 'airtable-fields', 'airtable-sync', 'airtable-push']
+        valid_actions: ['crm-webhook', 'sync-brevo', 'airtable-authorize', 'airtable-callback', 'airtable-bases', 'airtable-tables', 'airtable-fields', 'airtable-sync', 'airtable-push', 'calendly-webhook']
       });
   }
 }

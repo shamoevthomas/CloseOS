@@ -37,6 +37,7 @@ export function CloserDisponibilite() {
 
   // Copy slots
   const [copyingDay, setCopyingDay] = useState<number | null>(null)
+  const [selectedCopyTargets, setSelectedCopyTargets] = useState<number[]>([])
 
   // Add absence form
   const [showAbsenceForm, setShowAbsenceForm] = useState(false)
@@ -101,21 +102,25 @@ export function CloserDisponibilite() {
     setSlots(prev => prev.filter(s => s.id !== id))
   }
 
-  const handleCopySlots = async (fromDay: number, toDay: number) => {
-    if (!teamMember?.id || !ownerUserId) return
+  const handleCopySlots = async (fromDay: number, targetDays: number[]) => {
+    if (!teamMember?.id || !ownerUserId || targetDays.length === 0) return
     const sourceSlots = slots.filter(s => s.day_of_week === fromDay)
     if (sourceSlots.length === 0) { toast.error('Aucun créneau à copier'); return }
-    for (const slot of sourceSlots) {
-      await supabase.from('business_availability_slots').insert([{
-        team_member_id: teamMember.id,
-        business_owner_id: ownerUserId,
-        day_of_week: toDay,
-        start_time: slot.start_time,
-        end_time: slot.end_time,
-      }])
+    for (const toDay of targetDays) {
+      for (const slot of sourceSlots) {
+        await supabase.from('business_availability_slots').insert([{
+          team_member_id: teamMember.id,
+          business_owner_id: ownerUserId,
+          day_of_week: toDay,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+        }])
+      }
     }
-    toast.success(`Créneaux copiés vers ${DAYS[toDay]}`)
+    const names = targetDays.map(d => DAYS[d]).join(', ')
+    toast.success(`Créneaux copiés vers ${names}`)
     setCopyingDay(null)
+    setSelectedCopyTargets([])
     fetchData()
   }
 
@@ -193,27 +198,41 @@ export function CloserDisponibilite() {
                     {daySlots.length > 0 && (
                       <div className="relative inline-block">
                         <button
-                          onClick={() => setCopyingDay(copyingDay === idx ? null : idx)}
+                          onClick={() => { setCopyingDay(copyingDay === idx ? null : idx); setSelectedCopyTargets([]) }}
                           className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500 hover:text-amber-600 hover:border-amber-300 transition-colors"
                         >
                           <Copy className="h-3 w-3" /> Copier <ChevronDown className="h-3 w-3" />
                         </button>
                         {copyingDay === idx && (
                           <>
-                            <div className="fixed inset-0 z-10" onClick={() => setCopyingDay(null)} />
-                            <div className="absolute top-full left-0 mt-1 z-20 rounded-xl border border-amber-200 bg-white shadow-xl py-1 min-w-[140px]">
+                            <div className="fixed inset-0 z-10" onClick={() => { setCopyingDay(null); setSelectedCopyTargets([]) }} />
+                            <div className="absolute top-full left-0 mt-1 z-20 rounded-xl border border-amber-200 bg-white shadow-xl py-1 min-w-[160px]">
                               {DAYS.map((targetDay, targetIdx) => {
                                 if (targetIdx === idx) return null
+                                const isSelected = selectedCopyTargets.includes(targetIdx)
                                 return (
                                   <button
                                     key={targetIdx}
-                                    onClick={() => handleCopySlots(idx, targetIdx)}
-                                    className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                                    onClick={() => setSelectedCopyTargets(prev => isSelected ? prev.filter(d => d !== targetIdx) : [...prev, targetIdx])}
+                                    className={`w-full text-left px-3 py-1.5 text-xs font-medium flex items-center gap-2 transition-colors ${isSelected ? 'bg-amber-50 text-amber-700' : 'text-slate-700 hover:bg-amber-50 hover:text-amber-700'}`}
                                   >
+                                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${isSelected ? 'border-amber-500 bg-amber-500 text-white' : 'border-slate-300'}`}>
+                                      {isSelected && <span className="text-[10px]">✓</span>}
+                                    </span>
                                     {targetDay}
                                   </button>
                                 )
                               })}
+                              {selectedCopyTargets.length > 0 && (
+                                <div className="border-t border-slate-100 mt-1 pt-1 px-2 pb-1">
+                                  <button
+                                    onClick={() => handleCopySlots(idx, selectedCopyTargets)}
+                                    className="w-full rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-500 transition-colors"
+                                  >
+                                    Copier vers {selectedCopyTargets.length} jour{selectedCopyTargets.length > 1 ? 's' : ''}
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </>
                         )}
@@ -222,9 +241,9 @@ export function CloserDisponibilite() {
                   </div>
                   {addingDay === idx ? (
                     <div className="flex items-center gap-2">
-                      <input type="time" value={newStart} onChange={e => setNewStart(e.target.value)} className="rounded-lg border border-slate-200 px-2 py-1 text-xs" />
+                      <input type="time" value={newStart} onChange={e => setNewStart(e.target.value)} className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-900 bg-white" />
                       <span className="text-xs text-slate-400">à</span>
-                      <input type="time" value={newEnd} onChange={e => setNewEnd(e.target.value)} className="rounded-lg border border-slate-200 px-2 py-1 text-xs" />
+                      <input type="time" value={newEnd} onChange={e => setNewEnd(e.target.value)} className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-900 bg-white" />
                       <button onClick={() => handleAddSlot(idx)} className="rounded-lg bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-500">Ajouter</button>
                       <button onClick={() => setAddingDay(null)} className="text-xs text-slate-400 hover:text-slate-600">Annuler</button>
                     </div>

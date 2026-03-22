@@ -1024,7 +1024,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'personal-objectives-create' && req.method === 'POST') {
-      const { team_member_id, business_owner_id, label, metric, target_value, period, deadline, visible_to_owner } = req.body
+      const { team_member_id, business_owner_id, label, metric, target_value, period, deadline, description, visible_to_owner } = req.body
       if (!team_member_id || !business_owner_id || !label) {
         return res.status(400).json({ error: 'team_member_id, business_owner_id, and label required' })
       }
@@ -1039,6 +1039,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           target_value: target_value || 0,
           period: period || 'monthly',
           deadline: deadline || null,
+          description: description || null,
           visible_to_owner: visible_to_owner ?? false,
         })
         .select()

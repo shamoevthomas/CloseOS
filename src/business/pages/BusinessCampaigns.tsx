@@ -60,7 +60,7 @@ interface TeamMember {
   role: string
 }
 
-const SOURCES = ['Direct', 'Google Ads', 'Facebook Ads', 'Instagram', 'LinkedIn', 'Email', 'Autre']
+const DEFAULT_SOURCES = ['Insta', 'LinkedIn', 'ADS', 'Organique']
 
 const BOOKING_DURATIONS = [
   { value: 15, label: '15 min' },
@@ -89,11 +89,17 @@ export function BusinessCampaigns() {
   // Formulas for dropdown
   const [formulas, setFormulas] = useState<Formula[]>([])
 
+  // Custom sources
+  const [customSources, setCustomSources] = useState<{ id: string; name: string }[]>([])
+  const [isNewSourceModalOpen, setIsNewSourceModalOpen] = useState(false)
+  const [newSourceName, setNewSourceName] = useState('')
+  const [savingSource, setSavingSource] = useState(false)
+
   // Form state - General
   const [formName, setFormName] = useState('')
   const [formFormulaId, setFormFormulaId] = useState<string | null>(null)
   const [formDescription, setFormDescription] = useState('')
-  const [formSource, setFormSource] = useState('Direct')
+  const [formSource, setFormSource] = useState('Insta')
   const [formUtmSource, setFormUtmSource] = useState('')
   const [formUtmMedium, setFormUtmMedium] = useState('')
   const [formUtmCampaign, setFormUtmCampaign] = useState('')
@@ -147,6 +153,45 @@ export function BusinessCampaigns() {
     }
   }, [effectiveUserId])
 
+  const fetchCustomSources = useCallback(async () => {
+    if (!effectiveUserId) return
+    try {
+      const res = await fetch(`${API_URL}?action=sources-list&user_id=${effectiveUserId}`)
+      const data = await res.json()
+      if (data.sources) setCustomSources(data.sources)
+    } catch (err) {
+      console.error('Error fetching custom sources:', err)
+    }
+  }, [effectiveUserId])
+
+  const allSources = useMemo(() => [...DEFAULT_SOURCES, ...customSources.map(s => s.name)], [customSources])
+
+  const handleCreateSource = async () => {
+    if (!newSourceName.trim() || !effectiveUserId) return
+    setSavingSource(true)
+    try {
+      const res = await fetch(`${API_URL}?action=sources-create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: effectiveUserId, name: newSourceName.trim() }),
+      })
+      const data = await res.json()
+      if (res.ok && data.source) {
+        setCustomSources(prev => [...prev, data.source])
+        setFormSource(data.source.name)
+        setNewSourceName('')
+        setIsNewSourceModalOpen(false)
+        toast.success('Source créée')
+      } else {
+        toast.error(data.error || 'Erreur lors de la création')
+      }
+    } catch {
+      toast.error('Erreur réseau')
+    } finally {
+      setSavingSource(false)
+    }
+  }
+
   const fetchTeamMembers = useCallback(async () => {
     if (!effectiveUserId) return
     const { supabase } = await import('../../lib/supabase')
@@ -166,10 +211,10 @@ export function BusinessCampaigns() {
     setTeamMembers(members)
   }, [effectiveUserId])
 
-  useEffect(() => { fetchCampaigns(); fetchFormulas(); fetchTeamMembers() }, [fetchCampaigns, fetchFormulas, fetchTeamMembers])
+  useEffect(() => { fetchCampaigns(); fetchFormulas(); fetchTeamMembers(); fetchCustomSources() }, [fetchCampaigns, fetchFormulas, fetchTeamMembers, fetchCustomSources])
 
   const resetForm = () => {
-    setFormName(''); setFormDescription(''); setFormSource('Direct')
+    setFormName(''); setFormDescription(''); setFormSource('Insta')
     setFormUtmSource(''); setFormUtmMedium(''); setFormUtmCampaign('')
     setFormRedirectUrl('')
     setFormLandingTitle(''); setFormLandingSubtitle(''); setFormLandingText(''); setFormLandingVideoUrl('')
@@ -186,7 +231,7 @@ export function BusinessCampaigns() {
   const openEdit = (campaign: Campaign) => {
     setEditingCampaign(campaign)
     setFormName(campaign.name); setFormDescription(campaign.description || '')
-    setFormSource(campaign.source || 'Direct')
+    setFormSource(campaign.source || 'Insta')
     setFormUtmSource(campaign.utm_source || ''); setFormUtmMedium(campaign.utm_medium || '')
     setFormUtmCampaign(campaign.utm_campaign || '')
     setFormRedirectUrl(campaign.redirect_url || '')
@@ -541,8 +586,15 @@ export function BusinessCampaigns() {
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Source</label>
                     <div className="relative">
-                      <select value={formSource} onChange={(e) => setFormSource(e.target.value)} className={selectCls}>
-                        {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+                      <select value={formSource} onChange={(e) => {
+                        if (e.target.value === '__new__') {
+                          setIsNewSourceModalOpen(true)
+                        } else {
+                          setFormSource(e.target.value)
+                        }
+                      }} className={selectCls}>
+                        {allSources.map(s => <option key={s} value={s}>{s}</option>)}
+                        <option value="__new__">+ Nouvelle source</option>
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                     </div>
@@ -1360,6 +1412,38 @@ export function BusinessCampaigns() {
             <div className="flex justify-end border-t border-slate-100 px-6 py-3 flex-shrink-0">
               <button onClick={() => setEmbedModalCampaign(null)} className="rounded-xl bg-slate-100 px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors">
                 Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Mini-modal Nouvelle source */}
+      {isNewSourceModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Nouvelle source</h3>
+            <input
+              type="text"
+              value={newSourceName}
+              onChange={(e) => setNewSourceName(e.target.value)}
+              placeholder="Nom de la source"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:border-amber-500 focus:outline-none mb-4"
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateSource()}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setIsNewSourceModalOpen(false); setNewSourceName('') }}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-xl transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreateSource}
+                disabled={!newSourceName.trim() || savingSource}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-medium py-2.5 rounded-xl transition-colors"
+              >
+                {savingSource ? 'Création...' : 'Créer'}
               </button>
             </div>
           </div>

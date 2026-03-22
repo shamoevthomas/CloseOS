@@ -353,7 +353,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   }, [user, ghlConnected, editedOffer.crmProvider])
 
   const handleConnectGhl = () => {
-    const clientId = import.meta.env.VITE_GHL_CLIENT_ID || ''
+    const clientId = '69beebc7d57c763956c7f6f9-mn0pott1'
     const redirectUri = 'https://www.closeos.fr/api/ghll/callback'
     const scopes = 'contacts.readonly contacts.write opportunities.readonly opportunities.write locations.readonly'
     const state = user?.id

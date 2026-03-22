@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import {
-  Plus, Target, Pencil, Trash2, X, Loader2, ChevronDown, CalendarDays, User
+  Plus, Target, Pencil, Trash2, X, Loader2, ChevronDown, CalendarDays, User, Users, Building2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -16,6 +16,10 @@ interface Objective {
   assigned_to: string | null
   deadline: string | null
   created_at: string
+  description: string | null
+  scope: string
+  assigned_to_role: string | null
+  assigned_to_members: string[] | null
 }
 
 interface TeamMember {
@@ -97,6 +101,11 @@ export function BusinessObjectives() {
   const [formPeriod, setFormPeriod] = useState('monthly')
   const [formAssignedTo, setFormAssignedTo] = useState('')
   const [formDeadline, setFormDeadline] = useState('')
+  const [formDescription, setFormDescription] = useState('')
+  const [formScope, setFormScope] = useState<'individual' | 'global'>('individual')
+  const [formGlobalType, setFormGlobalType] = useState<'org' | 'role'>('org')
+  const [formAssignedRole, setFormAssignedRole] = useState('')
+  const [formAssignedMembers, setFormAssignedMembers] = useState<string[]>([])
 
   const fetchObjectives = useCallback(async () => {
     if (!effectiveUserId) return
@@ -104,9 +113,15 @@ export function BusinessObjectives() {
       const res = await fetch(`${API_URL}?action=objectives-list&user_id=${effectiveUserId}`)
       const data = await res.json()
       let objs = data.objectives || []
-      // Team members only see objectives assigned to them
+      // Team members only see objectives assigned to them (individual or via role/org)
       if (isTeamMember && teamMember?.id) {
-        objs = objs.filter((o: Objective) => o.assigned_to === teamMember.id)
+        objs = objs.filter((o: Objective) => {
+          if (o.scope === 'global_org') return true
+          if (o.scope === 'global_role' && o.assigned_to_role === teamMember.role) return true
+          if (o.assigned_to === teamMember.id) return true
+          if (o.assigned_to_members && o.assigned_to_members.includes(teamMember.id)) return true
+          return false
+        })
       }
       setObjectives(objs)
     } catch (err) {
@@ -147,9 +162,12 @@ export function BusinessObjectives() {
 
   useEffect(() => { fetchObjectives(); fetchAppointments(); fetchMembers() }, [fetchObjectives, fetchAppointments, fetchMembers])
 
+  const AVAILABLE_ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Manager', 'Admin']
+
   const resetForm = () => {
     setFormLabel(''); setFormMetric('revenue'); setFormTargetValue(''); setFormPeriod('monthly')
-    setFormAssignedTo(''); setFormDeadline('')
+    setFormAssignedTo(''); setFormDeadline(''); setFormDescription('')
+    setFormScope('individual'); setFormGlobalType('org'); setFormAssignedRole(''); setFormAssignedMembers([])
     setEditingObjective(null)
   }
 
@@ -161,9 +179,26 @@ export function BusinessObjectives() {
     setFormMetric(obj.metric)
     setFormTargetValue(obj.target_value.toString())
     setFormPeriod(obj.period)
-    setFormAssignedTo(obj.assigned_to || '')
     setFormDeadline(obj.deadline ? obj.deadline.slice(0, 10) : '')
+    setFormDescription(obj.description || '')
+    if (obj.scope === 'global_org' || obj.scope === 'global_role') {
+      setFormScope('global')
+      setFormGlobalType(obj.scope === 'global_org' ? 'org' : 'role')
+      setFormAssignedRole(obj.assigned_to_role || '')
+      setFormAssignedMembers([])
+      setFormAssignedTo('')
+    } else {
+      setFormScope('individual')
+      setFormAssignedMembers(obj.assigned_to_members || (obj.assigned_to ? [obj.assigned_to] : []))
+      setFormAssignedTo(obj.assigned_to || '')
+      setFormGlobalType('org')
+      setFormAssignedRole('')
+    }
     setIsModalOpen(true)
+  }
+
+  const toggleMember = (id: string) => {
+    setFormAssignedMembers(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id])
   }
 
   const handleSave = async () => {
@@ -171,14 +206,22 @@ export function BusinessObjectives() {
     if (!formTargetValue || Number(formTargetValue) < 0) return toast.error('La valeur cible doit être >= 0')
     setSaving(true)
     try {
+      const scope = formScope === 'global'
+        ? (formGlobalType === 'org' ? 'global_org' : 'global_role')
+        : 'individual'
+
       const payload: Record<string, any> = {
         user_id: user?.id,
         label: formLabel,
         metric: formMetric,
         target_value: parseFloat(formTargetValue) || 0,
         period: formPeriod,
-        assigned_to: formAssignedTo || null,
         deadline: formDeadline || null,
+        description: formMetric === 'custom' ? formDescription : null,
+        scope,
+        assigned_to: formScope === 'individual' && formAssignedMembers.length === 1 ? formAssignedMembers[0] : null,
+        assigned_to_members: formScope === 'individual' ? formAssignedMembers : [],
+        assigned_to_role: scope === 'global_role' ? formAssignedRole : null,
       }
       if (editingObjective) {
         const res = await fetch(`${API_URL}?action=objectives-update`, {
@@ -360,8 +403,34 @@ export function BusinessObjectives() {
                 </span>
               </div>
 
-              {/* Assigned member */}
-              {memberName && (
+              {/* Assignment info */}
+              {obj.scope === 'global_org' ? (
+                <div className="flex items-center gap-2 mb-3">
+                  <Building2 className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="text-xs font-medium text-amber-700">Toute l'organisation</span>
+                </div>
+              ) : obj.scope === 'global_role' && obj.assigned_to_role ? (
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-3.5 w-3.5 text-indigo-500" />
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[obj.assigned_to_role] || 'bg-slate-100 text-slate-600'}`}>
+                    Tous les {obj.assigned_to_role}s
+                  </span>
+                </div>
+              ) : obj.assigned_to_members && obj.assigned_to_members.length > 1 ? (
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <Users className="h-3.5 w-3.5 text-slate-400" />
+                  {obj.assigned_to_members.map(mid => {
+                    const name = getMemberName(mid)
+                    const role = getMemberRole(mid)
+                    return name ? (
+                      <span key={mid} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                        {name}
+                        {role && <span className={`inline-flex rounded-full px-1 py-0 text-[9px] font-medium ${ROLE_COLORS[role] || 'bg-slate-50 text-slate-500'}`}>{role}</span>}
+                      </span>
+                    ) : null
+                  })}
+                </div>
+              ) : memberName ? (
                 <div className="flex items-center gap-2 mb-3">
                   <User className="h-3.5 w-3.5 text-slate-400" />
                   <span className="text-xs font-medium text-slate-700">{memberName}</span>
@@ -371,6 +440,11 @@ export function BusinessObjectives() {
                     </span>
                   )}
                 </div>
+              ) : null}
+
+              {/* Description for custom metric */}
+              {obj.metric === 'custom' && obj.description && (
+                <p className="text-xs text-slate-500 mb-3 line-clamp-2">{obj.description}</p>
               )}
 
               {/* Deadline */}
@@ -458,6 +532,20 @@ export function BusinessObjectives() {
                 </div>
               </div>
 
+              {/* Description (only when custom metric) */}
+              {formMetric === 'custom' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                  <textarea
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    placeholder="Décrivez votre métrique personnalisée..."
+                    rows={3}
+                    className={inputCls + ' resize-none'}
+                  />
+                </div>
+              )}
+
               {/* Target value */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Valeur cible *</label>
@@ -475,18 +563,83 @@ export function BusinessObjectives() {
                 </div>
               </div>
 
-              {/* Assigned to */}
+              {/* Assignment switch */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Assigner à un membre</label>
-                <div className="relative">
-                  <select value={formAssignedTo} onChange={(e) => setFormAssignedTo(e.target.value)} className={selectCls}>
-                    <option value="">— Aucun (objectif global) —</option>
-                    {members.map(m => (
-                      <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <label className="block text-sm font-medium text-slate-700 mb-2">Assigner à</label>
+                <div className="flex rounded-xl bg-slate-100 p-1 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormScope('individual')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      formScope === 'individual' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <User className="h-4 w-4" /> Individuel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormScope('global')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      formScope === 'global' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <Building2 className="h-4 w-4" /> Global
+                  </button>
                 </div>
+
+                {formScope === 'individual' ? (
+                  <div>
+                    <p className="text-xs text-slate-500 mb-2">Sélectionnez un ou plusieurs membres</p>
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto rounded-xl border border-slate-200 p-2">
+                      {members.filter(m => m.role !== 'Owner').map(m => (
+                        <label key={m.id} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-slate-50 cursor-pointer transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={formAssignedMembers.includes(m.id)}
+                            onChange={() => toggleMember(m.id)}
+                            className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                          />
+                          <span className="text-sm text-slate-700">{m.first_name} {m.last_name}</span>
+                          <span className={`ml-auto inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium ${ROLE_COLORS[m.role] || 'bg-slate-100 text-slate-600'}`}>
+                            {m.role}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex rounded-xl bg-slate-100 p-1 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormGlobalType('org')}
+                        className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                          formGlobalType === 'org' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Toute l'orga
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormGlobalType('role')}
+                        className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                          formGlobalType === 'role' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Par rôle
+                      </button>
+                    </div>
+                    {formGlobalType === 'role' && (
+                      <div className="relative">
+                        <select value={formAssignedRole} onChange={(e) => setFormAssignedRole(e.target.value)} className={selectCls}>
+                          <option value="">— Choisir un rôle —</option>
+                          {AVAILABLE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Deadline */}
