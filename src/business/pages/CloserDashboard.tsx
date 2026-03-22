@@ -2,9 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Loader2, DollarSign, TrendingUp, CalendarDays, Target, UserX,
-  Bell, Clock, User, Check, AlertTriangle,
+  Bell, Clock, User, Check, AlertTriangle, Zap,
 } from 'lucide-react'
-import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { supabase } from '../../lib/supabase'
@@ -33,12 +32,13 @@ const formatCurrency = (v: number) =>
 
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
-const ROLE_COLORS: Record<string, string> = {
-  Closer: 'bg-blue-100 text-blue-700',
-  Setter: 'bg-purple-100 text-purple-700',
-  'Setter-Closer': 'bg-indigo-100 text-indigo-700',
-  Manager: 'bg-amber-100 text-amber-700',
-  Admin: 'bg-red-100 text-red-700',
+const ROLE_BADGE: Record<string, string> = {
+  Closer: 'bg-[#6ffbbe] text-[#002113]',
+  Setter: 'bg-[#ffddb8] text-[#2a1700]',
+  'Setter-Closer': 'bg-[#e5e2e1] text-[#1c1b1b]',
+  Manager: 'bg-[#ffb95f] text-[#2a1700]',
+  Admin: 'bg-[#ffdad6] text-[#93000a]',
+  'Head of Sales': 'bg-[#6ffbbe] text-[#002113]',
 }
 
 export function CloserDashboard() {
@@ -95,7 +95,7 @@ export function CloserDashboard() {
       const { error } = await supabase.from('reminders').update({ is_done: true }).eq('id', id).eq('user_id', user!.id)
       if (error) throw error
       setReminders(prev => prev.filter(r => r.id !== id))
-      toast.success('Rappel termine')
+      toast.success('Rappel terminé')
     } catch { toast.error('Erreur') }
     finally { setActionLoading(null) }
   }
@@ -105,161 +105,185 @@ export function CloserDashboard() {
   const firstName = teamMember?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'Membre'
   const companyName = businessSettings?.company_name || 'Organisation'
 
+  const formatApptDate = (dateStr: string) => {
+    const d = new Date(dateStr + 'T00:00:00')
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    if (d.getTime() === today.getTime()) return 'AUJ'
+    if (d.getTime() === tomorrow.getTime()) return 'DEM'
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).toUpperCase()
+  }
+
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-amber-600 animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-[#444748] animate-spin" /></div>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1200px] mx-auto space-y-10 pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Bonjour {firstName}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold', ROLE_COLORS[teamMember?.role || ''] || 'bg-slate-100 text-slate-600')}>
+      <header className="flex justify-between items-end">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b]">Bonjour {firstName}</h1>
+            <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748]'}`}>
               {teamMember?.role}
             </span>
-            <span className="text-sm text-slate-500">{companyName}</span>
           </div>
+          <p className="text-[#444748] font-medium text-lg">{companyName}</p>
         </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50">
-              <DollarSign className="h-4 w-4 text-emerald-600" />
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-[10px] font-bold text-[#444748] uppercase tracking-widest">Dernière Sync</p>
+            <p className="font-bold text-[#1b1c1b]">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</p>
+          </div>
+          <div className="w-14 h-14 rounded-full border-2 border-[#eae8e7] p-1">
+            <div className="w-full h-full rounded-full bg-[#efedec] flex items-center justify-center">
+              <User className="h-6 w-6 text-[#747878]" />
             </div>
-            <span className="text-xs font-medium text-slate-500">CA Genere</span>
           </div>
-          <p className="text-xl font-bold text-slate-900">{formatCurrency(totalRevenue)}</p>
         </div>
+      </header>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
-              <TrendingUp className="h-4 w-4 text-amber-600" />
+      {/* KPI Grid */}
+      <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Revenue */}
+        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 rounded-full bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
+              <DollarSign className="h-5 w-5" />
             </div>
-            <span className="text-xs font-medium text-slate-500">Taux de Closing</span>
           </div>
-          <p className="text-xl font-bold text-slate-900">{formatPct(closingRate)}</p>
-          <p className="text-[11px] text-slate-400 mt-1">{wonProspects.length} / {totalDecided} decide</p>
+          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Revenue</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatCurrency(totalRevenue)}</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
-              <CalendarDays className="h-4 w-4 text-blue-600" />
+        {/* Closing Rate */}
+        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 rounded-full bg-[#ffb95f]/20 flex items-center justify-center text-[#b87500]">
+              <TrendingUp className="h-5 w-5" />
             </div>
-            <span className="text-xs font-medium text-slate-500">Rendez-vous</span>
           </div>
-          <p className="text-xl font-bold text-slate-900">{appointments.length}</p>
+          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Closing Rate</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatPct(closingRate)}</p>
+          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">{wonProspects.length} signés / {totalDecided} présentés</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50">
-              <UserX className="h-4 w-4 text-rose-600" />
+        {/* Appointments */}
+        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 rounded-full bg-[#000000]/5 flex items-center justify-center text-[#000000]">
+              <CalendarDays className="h-5 w-5" />
             </div>
-            <span className="text-xs font-medium text-slate-500">No-Show</span>
           </div>
-          <p className="text-xl font-bold text-slate-900">{formatPct(noshowRate)}</p>
-          <p className="text-[11px] text-slate-400 mt-1">{noShowProspects.length} / {myProspects.length}</p>
+          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Rendez-vous</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{appointments.length}</p>
+          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">Ce mois-ci</p>
         </div>
-      </div>
 
-      {/* Rappels */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-            <Bell className="h-4 w-4 text-amber-600" />
-            Rappels
-          </h3>
-          <Link to="/business/rappels" className="text-xs font-medium text-amber-600 hover:text-amber-700">
-            Tout voir
-          </Link>
-        </div>
-        {reminders.length === 0 ? (
-          <div className="text-center py-8">
-            <Bell className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm text-slate-400">Aucun rappel en attente</p>
+        {/* No-Show Rate */}
+        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 rounded-full bg-[#ba1a1a]/10 flex items-center justify-center text-[#ba1a1a]">
+              <UserX className="h-5 w-5" />
+            </div>
           </div>
-        ) : (
-          <div className="space-y-2">
-            {reminders.map(r => {
-              const overdue = isOverdue(r.reminder_date)
-              const isLoading = actionLoading === r.id
-              return (
-                <div key={r.id} className={cn(
-                  'flex items-center justify-between rounded-xl px-3 py-2.5',
-                  overdue ? 'bg-red-50 border border-red-100' : 'bg-blue-50 border border-blue-100'
-                )}>
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className={cn(
-                      'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
-                      overdue ? 'bg-red-100' : 'bg-blue-100'
-                    )}>
-                      {overdue ? <AlertTriangle className="h-3.5 w-3.5 text-red-500" /> : <Clock className="h-3.5 w-3.5 text-blue-500" />}
+          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">No-Show Rate</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatPct(noshowRate)}</p>
+          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">{noShowProspects.length} absences sur {myProspects.length}</p>
+        </div>
+      </section>
+
+      {/* Two Column: Rappels + Prochains RDV */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* Prochains rendez-vous */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Prochains rendez-vous</h2>
+            <Link to="/business/rendez-vous" className="text-[10px] font-bold text-[#000000] uppercase tracking-widest hover:underline">Voir tout</Link>
+          </div>
+          {upcomingAppts.length === 0 ? (
+            <div className="text-center py-12">
+              <CalendarDays className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
+              <p className="text-sm text-[#444748]">Aucun rendez-vous à venir</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {upcomingAppts.map((a, i) => (
+                <div key={a.id} className={`bg-white p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
+                  <div className="flex items-center gap-6">
+                    <div className="text-center min-w-[60px]">
+                      <p className="text-[10px] font-bold text-[#444748] uppercase tracking-tighter">{formatApptDate(a.date)}</p>
+                      <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b]">{a.time?.slice(0, 5)}</p>
                     </div>
-                    <div className="min-w-0">
-                      <p className={cn('text-sm font-medium', overdue ? 'text-red-700' : 'text-blue-700')}>{r.title}</p>
-                      <p className={cn('text-[11px]', overdue ? 'text-red-400' : 'text-blue-400')}>
-                        {overdue ? 'En retard — ' : ''}
-                        {new Date(r.reminder_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                    <div className="h-10 w-px bg-[#c4c7c7]/20" />
+                    <div>
+                      <p className="font-bold text-lg leading-tight text-[#1b1c1b]">{a.prospect?.contact || 'Rendez-vous'}</p>
+                      <p className="text-sm text-[#444748]">{a.campaign?.name || `${a.duration}min`}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleMarkDone(r.id)}
-                    disabled={isLoading}
-                    className="shrink-0 ml-2 rounded-lg p-1.5 text-emerald-500 hover:bg-emerald-50 transition-all disabled:opacity-50"
-                    title="Marquer comme fait"
-                  >
-                    <Check className="h-4 w-4" />
-                  </button>
                 </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Prochains RDV */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-blue-600" />
-            Prochains rendez-vous
-          </h3>
-          <Link to="/business/rendez-vous" className="text-xs font-medium text-amber-600 hover:text-amber-700">
-            Tout voir
-          </Link>
+              ))}
+            </div>
+          )}
         </div>
-        {upcomingAppts.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6">Aucun rendez-vous a venir</p>
-        ) : (
-          <div className="space-y-2">
-            {upcomingAppts.map(a => (
-              <div key={a.id} className="flex items-center justify-between rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
-                <div>
-                  <p className="text-sm font-medium text-blue-700">
-                    {new Date(a.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} a {a.time?.slice(0, 5)}
-                  </p>
-                  {a.prospect && (
-                    <p className="text-[11px] text-blue-500 flex items-center gap-1">
-                      <User className="h-3 w-3" /> {a.prospect.contact}
-                    </p>
-                  )}
-                </div>
-                <span className="text-[10px] font-bold uppercase text-blue-500">
-                  {a.duration}min
-                </span>
-              </div>
-            ))}
+
+        {/* Mes Rappels */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Mes Rappels</h2>
+            {reminders.filter(r => isOverdue(r.reminder_date)).length > 0 && (
+              <span className="bg-[#ba1a1a]/10 text-[#ba1a1a] px-2 py-0.5 rounded text-[10px] font-bold">
+                {reminders.filter(r => isOverdue(r.reminder_date)).length} RETARDS
+              </span>
+            )}
           </div>
-        )}
-      </div>
+          {reminders.length === 0 ? (
+            <div className="text-center py-12">
+              <Bell className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
+              <p className="text-sm text-[#444748]">Aucun rappel en attente</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {reminders.map(r => {
+                const overdue = isOverdue(r.reminder_date)
+                const rDate = new Date(r.reminder_date)
+                const isLoading = actionLoading === r.id
+                return (
+                  <div key={r.id} className={`bg-white p-5 rounded-xl border-l-4 flex items-center gap-4 ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b]'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }}>
+                    <div className="w-6 h-6 rounded-full border-2 border-[#c4c7c7]/30 flex items-center justify-center shrink-0 cursor-pointer group hover:border-[#006c49]" onClick={() => handleMarkDone(r.id)}>
+                      {isLoading ? (
+                        <Loader2 className="h-3 w-3 animate-spin text-[#444748]" />
+                      ) : overdue ? (
+                        <div className="w-2 h-2 rounded-full bg-[#ba1a1a] group-hover:bg-[#006c49] transition-colors" />
+                      ) : (
+                        <div className="w-2 h-2 rounded-full bg-transparent group-hover:bg-[#006c49] transition-colors" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-[#1b1c1b]">{r.title}</p>
+                      <p className={`text-xs font-semibold ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748]'}`}>
+                        {overdue ? `Retard : ${Math.max(1, Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24)))}j` : `Échéance : ${rDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                      </p>
+                    </div>
+                    {!isLoading && (
+                      <button
+                        onClick={() => handleMarkDone(r.id)}
+                        className="shrink-0 p-2 rounded-full text-[#006c49] hover:bg-[#006c49]/10 transition-colors"
+                        title="Marquer comme fait"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   )
 }

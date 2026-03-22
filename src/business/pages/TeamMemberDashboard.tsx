@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Loader2, DollarSign, TrendingUp, CalendarDays, UserX, Target,
-  Bell, Clock, User, Megaphone, Circle,
+  Bell, Clock, User, Megaphone, Circle, Zap,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
@@ -52,15 +52,16 @@ const formatCurrency = (v: number) =>
 
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
-const ROLE_COLORS: Record<string, string> = {
-  Closer: 'bg-blue-100 text-blue-700',
-  Setter: 'bg-purple-100 text-purple-700',
-  'Setter-Closer': 'bg-indigo-100 text-indigo-700',
-  Admin: 'bg-red-100 text-red-700',
+const ROLE_BADGE: Record<string, string> = {
+  Closer: 'bg-[#6ffbbe] text-[#002113]',
+  Setter: 'bg-[#ffddb8] text-[#2a1700]',
+  'Setter-Closer': 'bg-[#e5e2e1] text-[#1c1b1b]',
+  Admin: 'bg-[#ffdad6] text-[#93000a]',
+  'Head of Sales': 'bg-[#6ffbbe] text-[#002113]',
 }
 
 const METRIC_LABELS: Record<string, string> = {
-  revenue: 'CA g\u00e9n\u00e9r\u00e9',
+  revenue: 'CA généré',
   sales_count: 'Nombre de ventes',
   conversion_rate: 'Taux de conversion',
   leads: 'Nombre de leads',
@@ -100,7 +101,7 @@ export function TeamMemberDashboard() {
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
-  // KPI calculations (owner-level, read-only)
+  // KPI calculations
   const wonProspects = useMemo(() => prospects.filter(p => p.stage === 'won'), [prospects])
   const noshowProspects = useMemo(() => prospects.filter(p => p.stage === 'noshow'), [prospects])
   const lostProspects = useMemo(() => prospects.filter(p => p.stage === 'lost'), [prospects])
@@ -111,10 +112,9 @@ export function TeamMemberDashboard() {
   const noshowRate = prospects.length > 0 ? (noshowProspects.length / prospects.length) * 100 : 0
   const totalAppts = appointments.length
 
-  // My objectives (assigned to me)
+  // My objectives
   const myObjectives = useMemo(() => objectives.filter(o => o.assigned_to === teamMember?.id), [objectives, teamMember?.id])
 
-  // Objective progress calculation
   const objectivesWithProgress = useMemo(() => {
     return myObjectives.map(obj => {
       let current = 0
@@ -132,7 +132,7 @@ export function TeamMemberDashboard() {
     })
   }, [myObjectives, totalRevenue, wonProspects.length, closingRate, prospects.length, totalAppts, noshowRate])
 
-  // Next 5 appointments
+  // Next appointments
   const now = new Date()
   const upcomingAppts = useMemo(() => {
     return appointments
@@ -152,100 +152,127 @@ export function TeamMemberDashboard() {
   const firstName = teamMember?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'Membre'
   const companyName = businessSettings?.company_name || 'Organisation'
 
+  const formatApptDate = (dateStr: string) => {
+    const d = new Date(dateStr + 'T00:00:00')
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    if (d.getTime() === today.getTime()) return 'AUJ'
+    if (d.getTime() === tomorrow.getTime()) return 'DEM'
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).toUpperCase()
+  }
+
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-amber-600 animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-[#444748] animate-spin" /></div>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1200px] mx-auto space-y-10 pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Bonjour {firstName}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${ROLE_COLORS[teamMember?.role] || 'bg-slate-100 text-slate-600'}`}>
+      <header className="flex justify-between items-end">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b]">Bonjour {firstName}</h1>
+            <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748]'}`}>
               {teamMember?.role}
             </span>
-            <span className="text-sm text-slate-500">{companyName}</span>
           </div>
+          <p className="text-[#444748] font-medium text-lg">{companyName}</p>
         </div>
-      </div>
-
-      {/* KPI Cards (read-only) */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50">
-              <DollarSign className="h-4 w-4 text-emerald-600" />
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-[10px] font-bold text-[#444748] uppercase tracking-widest">Dernière Sync</p>
+            <p className="font-bold text-[#1b1c1b]">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</p>
+          </div>
+          <div className="w-14 h-14 rounded-full border-2 border-[#eae8e7] p-1">
+            <div className="w-full h-full rounded-full bg-[#efedec] flex items-center justify-center">
+              <User className="h-6 w-6 text-[#747878]" />
             </div>
-            <span className="text-xs font-medium text-slate-500">Revenue</span>
           </div>
-          <p className="text-xl font-bold text-slate-900">{formatCurrency(totalRevenue)}</p>
         </div>
+      </header>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
-              <TrendingUp className="h-4 w-4 text-amber-600" />
+      {/* KPI Grid */}
+      <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Revenue */}
+        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 rounded-full bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
+              <DollarSign className="h-5 w-5" />
             </div>
-            <span className="text-xs font-medium text-slate-500">Closing rate</span>
           </div>
-          <p className="text-xl font-bold text-slate-900">{formatPct(closingRate)}</p>
-          <p className="text-[11px] text-slate-400 mt-1">{wonProspects.length} / {totalDecided} d\u00e9cid\u00e9</p>
+          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Revenue</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatCurrency(totalRevenue)}</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
-              <CalendarDays className="h-4 w-4 text-blue-600" />
+        {/* Closing Rate */}
+        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 rounded-full bg-[#ffb95f]/20 flex items-center justify-center text-[#b87500]">
+              <TrendingUp className="h-5 w-5" />
             </div>
-            <span className="text-xs font-medium text-slate-500">Rendez-vous</span>
           </div>
-          <p className="text-xl font-bold text-slate-900">{totalAppts}</p>
+          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Closing Rate</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatPct(closingRate)}</p>
+          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">{wonProspects.length} signés / {totalDecided} présentés</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50">
-              <UserX className="h-4 w-4 text-rose-600" />
+        {/* Appointments */}
+        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 rounded-full bg-[#000000]/5 flex items-center justify-center text-[#000000]">
+              <CalendarDays className="h-5 w-5" />
             </div>
-            <span className="text-xs font-medium text-slate-500">No-Show</span>
           </div>
-          <p className="text-xl font-bold text-slate-900">{formatPct(noshowRate)}</p>
-          <p className="text-[11px] text-slate-400 mt-1">{noshowProspects.length} / {prospects.length}</p>
+          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">Rendez-vous</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{totalAppts}</p>
+          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">Ce mois-ci</p>
         </div>
-      </div>
 
-      {/* My Objectives */}
+        {/* No-Show Rate */}
+        <div className="bg-white rounded-xl p-8 group hover:-translate-y-1 transition-all" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 rounded-full bg-[#ba1a1a]/10 flex items-center justify-center text-[#ba1a1a]">
+              <UserX className="h-5 w-5" />
+            </div>
+          </div>
+          <h3 className="text-[#444748] text-[10px] font-bold uppercase tracking-widest mb-1">No-Show Rate</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b]">{formatPct(noshowRate)}</p>
+          <p className="text-[#444748] text-[11px] mt-1 font-medium italic">{noshowProspects.length} absences sur {prospects.length}</p>
+        </div>
+      </section>
+
+      {/* Mes Objectifs */}
       {objectivesWithProgress.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2 mb-4">
-            <Target className="h-4 w-4 text-purple-600" />
-            Mes Objectifs
-          </h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {objectivesWithProgress.map(obj => {
+        <section className="space-y-6">
+          <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Mes Objectifs</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {objectivesWithProgress.map((obj, i) => {
+              const colors = [
+                { bar: 'bg-[#006c49]', text: 'text-[#006c49]' },
+                { bar: 'bg-[#ffb95f]', text: 'text-[#b87500]' },
+                { bar: 'bg-[#000000]', text: 'text-[#000000]' },
+              ]
+              const color = colors[i % colors.length]
               const deadlineStr = obj.deadline ? new Date(obj.deadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : null
               const overdue = obj.deadline ? new Date(obj.deadline) < now : false
               return (
-                <div key={obj.id} className="rounded-xl border border-slate-100 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-slate-900">{obj.label}</span>
-                    <span className="text-xs font-bold text-slate-700">{obj.progress.toFixed(0)}%</span>
+                <div key={obj.id} className="bg-[#f5f3f2] rounded-xl p-6 space-y-4">
+                  <div className="flex justify-between items-end">
+                    <p className="font-bold text-sm text-[#1b1c1b]">{obj.label}</p>
+                    <p className={`text-xs font-bold ${color.text}`}>{obj.progress.toFixed(0)}%</p>
                   </div>
-                  <div className="h-2 rounded-full bg-slate-100 overflow-hidden mb-1.5">
-                    <div
-                      className={`h-full rounded-full transition-all ${obj.progress >= 100 ? 'bg-emerald-500' : obj.progress >= 50 ? 'bg-amber-500' : 'bg-blue-500'}`}
-                      style={{ width: `${obj.progress}%` }}
-                    />
+                  <div className="h-2 w-full bg-[#eae8e7] rounded-full overflow-hidden">
+                    <div className={`h-full ${color.bar} rounded-full transition-all`} style={{ width: `${obj.progress}%` }} />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400">
-                      {obj.metric === 'revenue' ? formatCurrency(obj.current) : obj.current.toFixed(obj.metric.includes('rate') ? 1 : 0)} / {obj.metric === 'revenue' ? formatCurrency(obj.target_value) : obj.target_value}
-                    </span>
+                    <p className="text-xs text-[#444748]">
+                      {obj.metric === 'revenue' ? formatCurrency(obj.current) : obj.current.toFixed(obj.metric.includes('rate') ? 1 : 0)} / <span className="font-bold">{obj.metric === 'revenue' ? formatCurrency(obj.target_value) : obj.target_value}</span>
+                    </p>
                     {deadlineStr && (
-                      <span className={`text-[11px] font-medium ${overdue ? 'text-red-500' : 'text-slate-400'}`}>
-                        {overdue ? 'Expir\u00e9 ' : ''}{deadlineStr}
+                      <span className={`text-[11px] font-medium ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748]'}`}>
+                        {overdue ? 'Expiré ' : ''}{deadlineStr}
                       </span>
                     )}
                   </div>
@@ -253,36 +280,37 @@ export function TeamMemberDashboard() {
               )
             })}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Two columns: Upcoming appointments + Reminders */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Prochains RDV */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2 mb-4">
-            <CalendarDays className="h-4 w-4 text-blue-600" />
-            Prochains rendez-vous
-          </h3>
+      {/* Two Column: Prochains RDV + Rappels */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* Prochains rendez-vous */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Prochains rendez-vous</h2>
+            <span className="text-[10px] font-bold text-[#000000] uppercase tracking-widest cursor-pointer hover:underline">Voir tout</span>
+          </div>
           {upcomingAppts.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-6">Aucun rendez-vous \u00e0 venir</p>
+            <div className="text-center py-12">
+              <CalendarDays className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
+              <p className="text-sm text-[#444748]">Aucun rendez-vous à venir</p>
+            </div>
           ) : (
-            <div className="space-y-2">
-              {upcomingAppts.map(a => (
-                <div key={a.id} className="flex items-center justify-between rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
-                  <div>
-                    <p className="text-sm font-medium text-blue-700">
-                      {new Date(a.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} \u00e0 {a.time?.slice(0, 5)}
-                    </p>
-                    {a.prospect && (
-                      <p className="text-[11px] text-blue-500 flex items-center gap-1">
-                        <User className="h-3 w-3" /> {a.prospect.contact}
-                      </p>
-                    )}
+            <div className="space-y-4">
+              {upcomingAppts.map((a, i) => (
+                <div key={a.id} className={`bg-white p-6 rounded-xl flex items-center justify-between group hover:shadow-lg transition-all ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`} style={{ border: '0.5px solid rgba(196,199,199,0.2)' }}>
+                  <div className="flex items-center gap-6">
+                    <div className="text-center min-w-[60px]">
+                      <p className="text-[10px] font-bold text-[#444748] uppercase tracking-tighter">{formatApptDate(a.date)}</p>
+                      <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b]">{a.time?.slice(0, 5)}</p>
+                    </div>
+                    <div className="h-10 w-px bg-[#c4c7c7]/20" />
+                    <div>
+                      <p className="font-bold text-lg leading-tight text-[#1b1c1b]">{a.prospect?.contact || 'Rendez-vous'}</p>
+                      <p className="text-sm text-[#444748]">{a.campaign?.name || `${a.duration}min`}</p>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-bold uppercase text-blue-500">
-                    {a.duration}min
-                  </span>
                 </div>
               ))}
             </div>
@@ -290,59 +318,78 @@ export function TeamMemberDashboard() {
         </div>
 
         {/* Mes Rappels */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2 mb-4">
-            <Bell className="h-4 w-4 text-amber-600" />
-            Mes Rappels
-          </h3>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b]">Mes Rappels</h2>
+            {reminders.filter(r => new Date(r.reminder_date) < now).length > 0 && (
+              <span className="bg-[#ba1a1a]/10 text-[#ba1a1a] px-2 py-0.5 rounded text-[10px] font-bold">
+                {reminders.filter(r => new Date(r.reminder_date) < now).length} RETARDS
+              </span>
+            )}
+          </div>
           {reminders.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-6">Aucun rappel en attente</p>
+            <div className="text-center py-12">
+              <Bell className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
+              <p className="text-sm text-[#444748]">Aucun rappel en attente</p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {reminders.map(r => {
                 const rDate = new Date(r.reminder_date)
-                const isOverdue = rDate < now
+                const overdue = rDate < now
                 return (
-                  <div key={r.id} className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${isOverdue ? 'bg-red-50 border border-red-100' : 'bg-blue-50 border border-blue-100'}`}>
-                    <div>
-                      <p className={`text-sm font-medium ${isOverdue ? 'text-red-700' : 'text-blue-700'}`}>{r.title}</p>
-                      <p className={`text-[11px] ${isOverdue ? 'text-red-400' : 'text-blue-400'}`}>
-                        {rDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  <div key={r.id} className={`bg-white p-5 rounded-xl border-l-4 flex items-center gap-4 ${overdue ? 'border-l-[#ba1a1a]' : 'border-l-[#1c1b1b]'}`} style={{ boxShadow: '0 4px 12px rgba(27,28,27,0.03)' }}>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${overdue ? 'border-[#c4c7c7]/30' : 'border-[#c4c7c7]/30'}`}>
+                      {overdue && <div className="w-2 h-2 rounded-full bg-[#ba1a1a]" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-[#1b1c1b]">{r.title}</p>
+                      <p className={`text-xs font-semibold ${overdue ? 'text-[#ba1a1a]' : 'text-[#444748]'}`}>
+                        {overdue ? `Retard : ${Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24))}j` : `Échéance : ${rDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
                       </p>
                     </div>
-                    <span className={`text-[10px] font-bold uppercase ${isOverdue ? 'text-red-500' : 'text-blue-500'}`}>
-                      {isOverdue ? 'En retard' : '\u00c0 venir'}
-                    </span>
                   </div>
                 )
               })}
             </div>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Campagnes actives (lecture seule) */}
+      {/* Campagnes actives */}
       {activeCampaigns.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2 mb-4">
-            <Megaphone className="h-4 w-4 text-amber-600" />
-            Campagnes actives
-          </h3>
-          <div className="space-y-3">
-            {activeCampaigns.map(c => (
-              <div key={c.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-                <div>
-                  <p className="text-sm font-medium text-slate-900">{c.name}</p>
-                  <p className="text-xs text-slate-400">{c.leadCount} lead{c.leadCount > 1 ? 's' : ''}</p>
+        <footer className="pt-10 border-t border-[#c4c7c7]/10">
+          <div className="bg-[#f5f3f2] rounded-xl p-8 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="flex items-center gap-6">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-[#eae8e7] flex items-center justify-center">
+                  <Zap className="h-7 w-7 text-[#1b1c1b]" />
                 </div>
-                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700">
-                  <Circle className="h-1.5 w-1.5 fill-current text-emerald-500" />
-                  LIVE
+                <span className="absolute top-0 right-0 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#006c49] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-[#006c49]" />
                 </span>
               </div>
-            ))}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b]">Campagnes actives</h3>
+                  <span className="text-[10px] font-black text-[#006c49] uppercase tracking-[0.2em]">LIVE</span>
+                </div>
+                <p className="text-sm text-[#444748] max-w-md mt-1">
+                  Vous êtes actuellement affecté à <span className="font-bold text-[#1b1c1b]">{activeCampaigns.length} campagne{activeCampaigns.length > 1 ? 's' : ''}</span>. {activeCampaigns.reduce((s, c) => s + c.leadCount, 0)} leads au total.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              {activeCampaigns.slice(0, 2).map(c => (
+                <div key={c.id} className="px-6 py-4 rounded-xl text-center min-w-[120px]" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(16px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+                  <p className="text-[10px] font-bold text-[#444748] uppercase tracking-widest">{c.name}</p>
+                  <p className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b]">{c.leadCount}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </footer>
       )}
     </div>
   )
