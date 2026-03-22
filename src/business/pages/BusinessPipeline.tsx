@@ -154,27 +154,27 @@ export function BusinessPipeline() {
       {/* Header */}
       <div className="mb-4 flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Rechercher..."
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+            className="w-full rounded-full border-none bg-stone-100 py-2.5 pl-10 pr-4 text-sm text-stone-900 focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
         </div>
 
         {/* View toggle */}
-        <div className="flex rounded-lg border border-slate-200 bg-white p-0.5">
+        <div className="flex rounded-full bg-stone-100 p-1">
           <button
             onClick={() => setViewMode('kanban')}
-            className={cn('p-2 rounded-md transition-all', viewMode === 'kanban' ? 'bg-amber-600 text-white' : 'text-slate-500 hover:text-slate-700')}
+            className={cn('p-2 rounded-full transition-all', viewMode === 'kanban' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400 hover:text-stone-900')}
           >
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button
             onClick={() => setViewMode('table')}
-            className={cn('p-2 rounded-md transition-all', viewMode === 'table' ? 'bg-amber-600 text-white' : 'text-slate-500 hover:text-slate-700')}
+            className={cn('p-2 rounded-full transition-all', viewMode === 'table' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400 hover:text-stone-900')}
           >
             <List className="h-4 w-4" />
           </button>
@@ -184,16 +184,16 @@ export function BusinessPipeline() {
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={cn(
-            'flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all border',
+            'flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all border',
             hasActiveFilters
-              ? 'bg-amber-50 border-amber-300 text-amber-700'
-              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+              ? 'bg-stone-100 border-stone-300 text-stone-700'
+              : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
           )}
         >
           <Filter className="h-4 w-4" />
           Filtres
           {hasActiveFilters && (
-            <span className="ml-1 bg-amber-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+            <span className="ml-1 bg-stone-900 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
               {(selectedPeriod > 0 ? 1 : 0) + (selectedMembers.length > 0 ? 1 : 0) + (selectedStages.length > 0 ? 1 : 0) + (selectedOffers.length > 0 ? 1 : 0)}
             </span>
           )}
@@ -202,11 +202,11 @@ export function BusinessPipeline() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="mb-4 rounded-xl border border-amber-200 bg-white p-4 space-y-4">
+        <div className="mb-4 rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)] p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-800">Filtres</h3>
+            <h3 className="text-sm font-extrabold text-stone-900">Filtres</h3>
             {hasActiveFilters && (
-              <button onClick={clearFilters} className="text-xs text-amber-600 hover:text-amber-700 font-medium">
+              <button onClick={clearFilters} className="text-xs text-stone-600 hover:text-stone-900 font-medium">
                 Réinitialiser tout
               </button>
             )}
@@ -215,7 +215,7 @@ export function BusinessPipeline() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Period */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-2">
+              <label className="block text-xs font-medium text-stone-500 mb-2">
                 <Calendar className="h-3 w-3 inline mr-1" />Période
               </label>
               <div className="flex flex-wrap gap-1">
@@ -226,8 +226,8 @@ export function BusinessPipeline() {
                     className={cn(
                       'px-2.5 py-1 text-xs font-medium rounded-lg transition-all',
                       selectedPeriod === p.days
-                        ? 'bg-amber-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-stone-900 text-white rounded-full'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-full'
                     )}
                   >
                     {p.label}
@@ -238,7 +238,7 @@ export function BusinessPipeline() {
 
             {/* Members */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-2">Closer / Setter</label>
+              <label className="block text-xs font-medium text-stone-500 mb-2">Closer / Setter</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {teamMembers.map(m => (
                   <button
@@ -247,20 +247,20 @@ export function BusinessPipeline() {
                     className={cn(
                       'px-2.5 py-1 text-xs font-medium rounded-lg transition-all',
                       selectedMembers.includes(m.id)
-                        ? 'bg-amber-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-stone-900 text-white rounded-full'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-full'
                     )}
                   >
                     {m.first_name} {m.last_name}
                   </button>
                 ))}
-                {teamMembers.length === 0 && <span className="text-xs text-slate-400">Aucun membre</span>}
+                {teamMembers.length === 0 && <span className="text-xs text-stone-400">Aucun membre</span>}
               </div>
             </div>
 
             {/* Stages */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-2">Statut</label>
+              <label className="block text-xs font-medium text-stone-500 mb-2">Statut</label>
               <div className="flex flex-wrap gap-1">
                 {STAGES.map(s => (
                   <button
@@ -269,8 +269,8 @@ export function BusinessPipeline() {
                     className={cn(
                       'px-2.5 py-1 text-xs font-medium rounded-lg transition-all flex items-center gap-1',
                       selectedStages.includes(s.id)
-                        ? 'bg-amber-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-stone-900 text-white rounded-full'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-full'
                     )}
                   >
                     <span className={cn('h-1.5 w-1.5 rounded-full', s.color)} />
@@ -282,7 +282,7 @@ export function BusinessPipeline() {
 
             {/* Offers */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-2">Offre / Formule</label>
+              <label className="block text-xs font-medium text-stone-500 mb-2">Offre / Formule</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {formulas.map(f => (
                   <button
@@ -291,14 +291,14 @@ export function BusinessPipeline() {
                     className={cn(
                       'px-2.5 py-1 text-xs font-medium rounded-lg transition-all',
                       selectedOffers.includes(f.id)
-                        ? 'bg-amber-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-stone-900 text-white rounded-full'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-full'
                     )}
                   >
                     {f.name}
                   </button>
                 ))}
-                {formulas.length === 0 && <span className="text-xs text-slate-400">Aucune formule</span>}
+                {formulas.length === 0 && <span className="text-xs text-stone-400">Aucune formule</span>}
               </div>
             </div>
           </div>
@@ -306,8 +306,8 @@ export function BusinessPipeline() {
       )}
 
       {/* Stats bar */}
-      <div className="mb-3 flex items-center gap-4 text-xs text-slate-500">
-        <span className="font-medium text-slate-700">{filtered.length} prospect{filtered.length !== 1 ? 's' : ''}</span>
+      <div className="mb-3 flex items-center gap-4 text-xs text-stone-500">
+        <span className="font-medium text-stone-700">{filtered.length} prospect{filtered.length !== 1 ? 's' : ''}</span>
         {STAGES.map(s => {
           const count = filtered.filter(p => p.stage === s.id).length
           if (count === 0) return null
@@ -329,11 +329,13 @@ export function BusinessPipeline() {
                 const stageDeals = filtered.filter(d => d.stage === stage.id)
 
                 return (
-                  <div key={stage.id} className={cn("flex flex-col rounded-xl border bg-white w-72", stage.borderColor)}>
-                    <div className={cn("flex items-center gap-2 px-3 py-3 border-b", stage.borderColor)}>
-                      <div className={cn("h-3 w-3 rounded-full", stage.color)} />
-                      <span className="text-sm font-semibold text-slate-800 flex-1 text-left">{stage.name}</span>
-                      <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", stage.bgLight, stage.textColor)}>
+                  <div key={stage.id} className="w-80 flex flex-col gap-4">
+                    <div className="flex items-center justify-between px-2">
+                      <div className="flex items-center gap-2">
+                        <div className={cn("h-3 w-3 rounded-full", stage.color)} />
+                        <span className="text-sm font-extrabold tracking-tight text-stone-900">{stage.name}</span>
+                      </div>
+                      <span className="bg-stone-100 text-[10px] font-bold rounded px-2 py-0.5">
                         {stageDeals.length}
                       </span>
                     </div>
@@ -344,8 +346,8 @@ export function BusinessPipeline() {
                           ref={provided.innerRef}
                           {...provided.droppableProps}
                           className={cn(
-                            "flex-1 p-2 space-y-2 overflow-y-auto",
-                            snapshot.isDraggingOver && stage.bgLight
+                            "flex-1 bg-white/70 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto",
+                            snapshot.isDraggingOver && "bg-stone-50/50"
                           )}
                         >
                           {stageDeals.map((deal, index) => (
@@ -357,32 +359,32 @@ export function BusinessPipeline() {
                                   {...provided.dragHandleProps}
                                   onClick={() => setSelectedProspect(deal)}
                                   className={cn(
-                                    "rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer",
-                                    snapshot.isDragging && "shadow-lg ring-2 ring-amber-300"
+                                    "group bg-white p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] hover:shadow-xl border border-transparent hover:border-stone-200/20 transition-all cursor-pointer",
+                                    snapshot.isDragging && "shadow-2xl ring-2 ring-stone-300 rotate-1 scale-105"
                                   )}
                                 >
                                   <div className="flex items-start justify-between mb-1">
                                     <div className="flex items-center gap-2">
-                                      <div className="h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center">
-                                        <User className="h-3.5 w-3.5 text-slate-500" />
+                                      <div className="h-7 w-7 rounded-full bg-stone-100 flex items-center justify-center">
+                                        <User className="h-3.5 w-3.5 text-stone-500" />
                                       </div>
                                       <div>
-                                        <p className="text-sm font-semibold text-slate-800 leading-tight">{getDisplayName(deal)}</p>
-                                        {deal.company && <p className="text-xs text-slate-500">{deal.company}</p>}
+                                        <p className="text-sm font-extrabold text-stone-900 leading-tight">{getDisplayName(deal)}</p>
+                                        {deal.company && <p className="text-xs text-stone-500">{deal.company}</p>}
                                       </div>
                                     </div>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
-                                      className="p-1 text-slate-300 hover:text-red-500 transition-colors"
+                                      className="p-1 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-colors"
                                     >
                                       <Trash2 className="h-3.5 w-3.5" />
                                     </button>
                                   </div>
                                   {deal.value && (
-                                    <p className="text-xs font-bold text-emerald-600 mt-1">{deal.value.toLocaleString()} €</p>
+                                    <p className="text-xs font-extrabold text-emerald-600 mt-1">{deal.value.toLocaleString()} €</p>
                                   )}
                                   {deal.email && (
-                                    <p className="text-xs text-slate-400 truncate mt-1">{deal.email}</p>
+                                    <p className="text-xs text-stone-400 truncate mt-1">{deal.email}</p>
                                   )}
                                 </div>
                               )}
@@ -402,23 +404,23 @@ export function BusinessPipeline() {
 
       {/* Table View */}
       {viewMode === 'table' && (
-        <div className="flex-1 overflow-auto rounded-xl border border-slate-200 bg-white">
+        <div className="flex-1 overflow-auto rounded-2xl bg-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
           <table className="w-full min-w-[900px]">
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+            <thead className="sticky top-0 z-10 bg-stone-50/50 border-b border-stone-100">
               <tr>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Contact</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Entreprise</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Étape</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Assigné à</th>
-                <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Valeur</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Date</th>
-                <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Actions</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Contact</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Entreprise</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Étape</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Assigné à</th>
+                <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Valeur</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Date</th>
+                <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-stone-100">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-sm text-slate-400">
+                  <td colSpan={7} className="text-center py-12 text-sm text-stone-400">
                     Aucun prospect trouvé
                   </td>
                 </tr>
@@ -430,21 +432,21 @@ export function BusinessPipeline() {
                     <tr
                       key={deal.id}
                       onClick={() => setSelectedProspect(deal)}
-                      className="cursor-pointer hover:bg-amber-50/50 transition-colors"
+                      className="cursor-pointer hover:bg-stone-50/30 transition-colors"
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
-                            <User className="h-4 w-4 text-slate-500" />
+                          <div className="h-8 w-8 rounded-full bg-stone-100 flex items-center justify-center flex-shrink-0">
+                            <User className="h-4 w-4 text-stone-500" />
                           </div>
                           <div>
-                            <span className="text-sm font-semibold text-slate-800">{getDisplayName(deal)}</span>
-                            {deal.email && <p className="text-xs text-slate-400 truncate max-w-[180px]">{deal.email}</p>}
+                            <span className="text-sm font-extrabold text-stone-900">{getDisplayName(deal)}</span>
+                            {deal.email && <p className="text-xs text-stone-400 truncate max-w-[180px]">{deal.email}</p>}
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm text-slate-600">{deal.company || '—'}</span>
+                        <span className="text-sm text-stone-600">{deal.company || '—'}</span>
                       </td>
                       <td className="px-4 py-3">
                         {stage && (
@@ -456,31 +458,31 @@ export function BusinessPipeline() {
                       </td>
                       <td className="px-4 py-3">
                         {assignedMember ? (
-                          <span className="text-sm text-slate-600">{assignedMember.first_name} {assignedMember.last_name}</span>
+                          <span className="text-sm text-stone-600">{assignedMember.first_name} {assignedMember.last_name}</span>
                         ) : (
-                          <span className="text-sm text-slate-300">—</span>
+                          <span className="text-sm text-stone-300">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {deal.value ? (
-                          <span className="text-sm font-bold text-emerald-600">{deal.value.toLocaleString()} €</span>
+                          <span className="text-sm font-extrabold text-emerald-600">{deal.value.toLocaleString()} €</span>
                         ) : (
-                          <span className="text-sm text-slate-300">—</span>
+                          <span className="text-sm text-stone-300">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         {deal.created_at ? (
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-stone-500">
                             {new Date(deal.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                           </span>
                         ) : (
-                          <span className="text-sm text-slate-300">—</span>
+                          <span className="text-sm text-stone-300">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
-                          className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
+                          className="p-1.5 text-stone-300 hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
