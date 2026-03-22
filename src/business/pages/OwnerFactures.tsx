@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 import {
-  FileText, Calendar, Loader2, Receipt, ExternalLink, Filter, ChevronDown,
+  FileText, Calendar, Loader2, Receipt, ExternalLink, Filter, ChevronDown, ChevronLeft, ChevronRight, Download, User,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
@@ -30,25 +30,27 @@ interface TeamMember {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'à payer', label: 'À payer', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
-  { value: 'en cours', label: 'En cours', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
-  { value: 'payé', label: 'Payé', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  { value: 'à payer', label: 'À payer', bg: 'bg-[#ffb95f]/20', text: 'text-[#b87500]', border: 'border-[#ffb95f]/30' },
+  { value: 'en cours', label: 'En cours', bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200' },
+  { value: 'payé', label: 'Payé', bg: 'bg-[#006c49]/10', text: 'text-[#006c49]', border: 'border-[#006c49]/20' },
 ]
 
 const getStatusConfig = (status: string) => {
   const found = STATUS_OPTIONS.find(s => s.value === status)
   if (found) return found
   switch (status) {
-    case 'envoyée': return { value: status, label: 'Envoyée', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' }
-    case 'générée': return { value: status, label: 'Générée', bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' }
-    case 'retard': return { value: status, label: 'En retard', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' }
-    case 'en attente': case 'en_attente': return { value: status, label: 'En attente', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' }
-    default: return { value: status, label: status || 'Brouillon', bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' }
+    case 'envoyée': return { value: status, label: 'Envoyée', bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200' }
+    case 'générée': return { value: status, label: 'Générée', bg: 'bg-[#eae8e7]', text: 'text-[#444748]', border: 'border-[#c4c7c7]/20' }
+    case 'retard': return { value: status, label: 'En retard', bg: 'bg-[#ffdad6]', text: 'text-[#ba1a1a]', border: 'border-[#ba1a1a]/20' }
+    case 'en attente': case 'en_attente': return { value: status, label: 'En attente', bg: 'bg-[#ffb95f]/20', text: 'text-[#b87500]', border: 'border-[#ffb95f]/30' }
+    default: return { value: status, label: status || 'Brouillon', bg: 'bg-[#eae8e7]', text: 'text-[#444748]', border: 'border-[#c4c7c7]/20' }
   }
 }
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
+
+const ITEMS_PER_PAGE = 10
 
 export function OwnerFactures() {
   const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
@@ -60,6 +62,7 @@ export function OwnerFactures() {
 
   const [filterMember, setFilterMember] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState(1)
 
   const now = new Date()
   const [startDate, setStartDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0])
@@ -99,10 +102,21 @@ export function OwnerFactures() {
     })
   }, [invoices, startDate, endDate, filterMember, filterStatus])
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const paginatedInvoices = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return filtered.slice(start, start + ITEMS_PER_PAGE)
+  }, [filtered, currentPage])
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1) }, [filterMember, filterStatus, startDate, endDate])
+
   // KPIs
   const totalAmount = useMemo(() => filtered.reduce((s, i) => s + (i.amount_ttc || 0), 0), [filtered])
   const paidAmount = useMemo(() => filtered.filter(i => i.status === 'payé').reduce((s, i) => s + (i.amount_ttc || 0), 0), [filtered])
   const pendingAmount = useMemo(() => filtered.filter(i => i.status !== 'payé').reduce((s, i) => s + (i.amount_ttc || 0), 0), [filtered])
+  const pendingCount = useMemo(() => filtered.filter(i => i.status !== 'payé').length, [filtered])
 
   // Update status
   const handleStatusChange = useCallback(async (invoiceId: string, newStatus: string) => {
@@ -113,51 +127,118 @@ export function OwnerFactures() {
   }, [])
 
   const getMemberName = (id: string | null) => {
-    if (!id) return '—'
+    if (!id) return null
     const m = teamMembers.find(t => t.id === id)
-    return m ? `${m.first_name} ${m.last_name}` : '—'
+    return m ? `${m.first_name.charAt(0)}. ${m.last_name}` : null
   }
 
-  const inputCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all"
+  const getMemberInitials = (id: string | null) => {
+    if (!id) return null
+    const m = teamMembers.find(t => t.id === id)
+    return m ? `${m.first_name.charAt(0)}${m.last_name.charAt(0)}`.toUpperCase() : null
+  }
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr)
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
+
+  const formatDateInput = (dateStr: string) => {
+    const d = new Date(dateStr + 'T00:00:00')
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-amber-600" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-[#006c49]" /></div>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-          <Receipt className="h-5 w-5 text-amber-700" />
-        </div>
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-lg font-bold text-slate-900">Factures</h1>
-          <p className="text-xs text-slate-500">Toutes les factures de votre organisation</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Factures
+          </h1>
+          <p className="text-[#444748] mt-2">Toutes les factures de votre organisation</p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-end gap-4 rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 shrink-0">
-            <Calendar className="h-4 w-4 text-amber-600" />
+      {/* KPI Cards — Bento */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Total facturé */}
+        <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 hover:bg-[#efedec]/30 transition-colors duration-300">
+          <div className="flex justify-between items-start mb-4">
+            <span className="p-3 rounded-2xl bg-[#efedec] text-[#444748]">
+              <Receipt className="h-5 w-5" />
+            </span>
+            <span className="text-[10px] font-bold text-[#444748]/40 tracking-widest uppercase">Global</span>
           </div>
-          <div className="flex-1">
-            <label className="mb-1 block text-xs font-medium text-slate-500">Début</label>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={inputCls} />
+          <p className="text-[#444748] text-sm font-medium">Total facturé</p>
+          <p className="text-4xl font-extrabold mt-1 text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {totalAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
+          </p>
+        </div>
+
+        {/* Payé */}
+        <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#006c49]/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+          <div className="flex justify-between items-start mb-4">
+            <span className="p-3 rounded-2xl bg-[#006c49]/10 text-[#006c49]">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+            </span>
           </div>
-          <span className="mt-5 text-slate-400">→</span>
-          <div className="flex-1">
-            <label className="mb-1 block text-xs font-medium text-slate-500">Fin</label>
-            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className={inputCls} />
+          <p className="text-[#444748] text-sm font-medium">Payé</p>
+          <p className="text-4xl font-extrabold mt-1 text-[#006c49]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {paidAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
+          </p>
+        </div>
+
+        {/* En attente */}
+        <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#ffb95f]/10 rounded-full -mr-16 -mt-16 blur-3xl" />
+          <div className="flex justify-between items-start mb-4">
+            <span className="p-3 rounded-2xl bg-[#ffb95f]/20 text-[#b87500]">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            </span>
+            <span className="text-[10px] font-bold text-[#b87500] tracking-widest uppercase">{pendingCount} facture{pendingCount !== 1 ? 's' : ''}</span>
+          </div>
+          <p className="text-[#444748] text-sm font-medium">En attente</p>
+          <p className="text-4xl font-extrabold mt-1 text-[#b87500]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {pendingAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Filter Bar — Glass pill */}
+      <div className="bg-white/70 backdrop-blur-2xl rounded-full p-3 px-6 flex flex-wrap items-center gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] ring-1 ring-[#c4c7c7]/10">
+        <div className="flex items-center gap-3 border-r border-[#c4c7c7]/20 pr-6">
+          <span className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Période</span>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-[#1b1c1b]"
+            />
+            <span className="text-[#444748]/40">→</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-[#1b1c1b]"
+            />
           </div>
         </div>
 
         {teamMembers.length > 0 && (
-          <div className="min-w-[180px]">
-            <label className="mb-1 block text-xs font-medium text-slate-500">Membre</label>
-            <select value={filterMember} onChange={e => setFilterMember(e.target.value)} className={inputCls}>
+          <div className="flex items-center gap-3 border-r border-[#c4c7c7]/20 pr-6">
+            <span className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Membre</span>
+            <select
+              value={filterMember}
+              onChange={e => setFilterMember(e.target.value)}
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b]"
+            >
               <option value="all">Tous les membres</option>
               {teamMembers.map(m => (
                 <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
@@ -166,109 +247,169 @@ export function OwnerFactures() {
           </div>
         )}
 
-        <div className="min-w-[140px]">
-          <label className="mb-1 block text-xs font-medium text-slate-500">Statut</label>
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className={inputCls}>
-            <option value="all">Tous</option>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Statut</span>
+          <select
+            value={filterStatus}
+            onChange={e => setFilterStatus(e.target.value)}
+            className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b]"
+          >
+            <option value="all">Tous les statuts</option>
             {STATUS_OPTIONS.map(s => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
         </div>
-      </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 grid-cols-3">
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">Total facturé</p>
-          <p className="text-xl font-bold text-slate-900">{formatCurrency(totalAmount)}</p>
-          <p className="text-[11px] text-slate-400 mt-1">{filtered.length} facture(s)</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">Payé</p>
-          <p className="text-xl font-bold text-emerald-600">{formatCurrency(paidAmount)}</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">En attente</p>
-          <p className="text-xl font-bold text-amber-600">{formatCurrency(pendingAmount)}</p>
+        <div className="ml-auto flex items-center gap-2">
+          <button className="p-2 rounded-full hover:bg-[#eae8e7] transition-colors text-[#444748]">
+            <Filter className="h-5 w-5" />
+          </button>
+          <button className="p-2 rounded-full hover:bg-[#eae8e7] transition-colors text-[#444748]">
+            <Download className="h-5 w-5" />
+          </button>
         </div>
       </div>
 
-      {/* Invoices table */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      {/* Invoice Table */}
+      <div className="bg-white rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-100">
-              <tr>
-                <th className="px-5 py-3 font-medium tracking-wider">N° Facture</th>
-                <th className="px-5 py-3 font-medium tracking-wider">Date</th>
-                <th className="px-5 py-3 font-medium tracking-wider">Client</th>
-                <th className="px-5 py-3 font-medium tracking-wider">Membre</th>
-                <th className="px-5 py-3 font-medium tracking-wider">Montant TTC</th>
-                <th className="px-5 py-3 font-medium tracking-wider">Statut</th>
-                <th className="px-5 py-3 text-right font-medium tracking-wider">Actions</th>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#f5f3f2]/50">
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>N° Facture</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Date</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Client & Offre</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Membre</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Montant TTC</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 uppercase tracking-widest text-right" style={{ fontFamily: 'Manrope, sans-serif' }}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map(inv => {
+            <tbody className="divide-y divide-[#c4c7c7]/10">
+              {paginatedInvoices.map(inv => {
                 const config = getStatusConfig(inv.status)
+                const memberName = getMemberName(inv.team_member_id)
+                const memberInitials = getMemberInitials(inv.team_member_id)
+
                 return (
-                  <tr key={inv.id} className="hover:bg-slate-50 transition-colors group">
-                    <td className="px-5 py-3.5 font-mono text-sm font-medium text-amber-700">{inv.invoice_number}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{new Date(inv.created_at).toLocaleDateString('fr-FR')}</td>
-                    <td className="px-5 py-3.5">
-                      <div className="font-medium text-slate-900">{inv.client_name}</div>
-                      {inv.offer_name && <div className="text-xs text-slate-400">{inv.offer_name}</div>}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-600 text-xs">{getMemberName(inv.team_member_id)}</td>
-                    <td className="px-5 py-3.5 font-semibold text-slate-900">{formatCurrency(inv.amount_ttc || 0)}</td>
-                    <td className="px-5 py-3.5">
-                      <select
-                        value={inv.status || ''}
-                        onChange={e => handleStatusChange(inv.id, e.target.value)}
-                        className={cn(
-                          'rounded-full px-2.5 py-1 text-xs font-medium border cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500/30',
-                          config.bg, config.text, config.border
-                        )}
-                      >
-                        {STATUS_OPTIONS.map(s => (
-                          <option key={s.value} value={s.value}>{s.label}</option>
-                        ))}
-                        {/* Keep existing status if it's not in our list */}
-                        {!STATUS_OPTIONS.find(s => s.value === inv.status) && inv.status && (
-                          <option value={inv.status}>{getStatusConfig(inv.status).label}</option>
-                        )}
-                      </select>
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <div className="flex justify-end gap-2">
-                        {inv.stripe_payment_link && (
-                          <a
-                            href={inv.stripe_payment_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
-                          >
-                            Payer
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        )}
+                  <tr key={inv.id} className="hover:bg-[#efedec]/30 transition-colors group">
+                    <td className="px-8 py-6 font-mono text-xs font-bold text-[#444748]">{inv.invoice_number}</td>
+                    <td className="px-8 py-6 text-sm text-[#1b1c1b] font-medium">{formatDate(inv.created_at)}</td>
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-sm text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>{inv.client_name}</span>
+                        {inv.offer_name && <span className="text-[10px] text-[#444748] font-medium">{inv.offer_name}</span>}
                       </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      {memberName ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-[#eae8e7] flex items-center justify-center text-[8px] font-bold text-[#1b1c1b]">
+                            {memberInitials}
+                          </div>
+                          <span className="text-xs font-semibold text-[#1b1c1b]">{memberName}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[#444748]/40">—</span>
+                      )}
+                    </td>
+                    <td className="px-8 py-6 text-sm font-extrabold text-[#1b1c1b]">{formatCurrency(inv.amount_ttc || 0)}</td>
+                    <td className="px-8 py-6">
+                      <div className="flex justify-center">
+                        <select
+                          value={inv.status || ''}
+                          onChange={e => handleStatusChange(inv.id, e.target.value)}
+                          className={cn(
+                            'rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-widest border cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-[#006c49]/20',
+                            config.bg, config.text, config.border
+                          )}
+                        >
+                          {STATUS_OPTIONS.map(s => (
+                            <option key={s.value} value={s.value}>{s.label}</option>
+                          ))}
+                          {!STATUS_OPTIONS.find(s => s.value === inv.status) && inv.status && (
+                            <option value={inv.status}>{getStatusConfig(inv.status).label}</option>
+                          )}
+                        </select>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      {inv.stripe_payment_link ? (
+                        <a
+                          href={inv.stripe_payment_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-[#1b1c1b] text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#1b1c1b]/80 transition-all inline-block"
+                        >
+                          Payer
+                        </a>
+                      ) : (
+                        <button className="text-[10px] font-black uppercase tracking-widest text-[#444748] hover:text-[#1b1c1b] transition-colors">
+                          Détails
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-16 text-center">
-                    <FileText className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-                    <p className="text-sm text-slate-500">Aucune facture sur cette période</p>
+                  <td colSpan={7} className="px-8 py-20 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 bg-[#f5f3f2] rounded-full flex items-center justify-center mb-4">
+                        <FileText className="h-8 w-8 text-[#c4c7c7]" />
+                      </div>
+                      <p className="text-sm font-semibold text-[#1b1c1b] mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>Aucune facture</p>
+                      <p className="text-xs text-[#444748]">Aucune facture sur cette période</p>
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {filtered.length > 0 && (
+          <div className="px-8 py-6 bg-[#f5f3f2]/30 flex justify-between items-center">
+            <p className="text-[10px] font-bold text-[#444748] uppercase tracking-widest">
+              Affichage de {(currentPage - 1) * ITEMS_PER_PAGE + 1} à {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} sur {filtered.length} facture{filtered.length !== 1 ? 's' : ''}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="w-10 h-10 rounded-full flex items-center justify-center bg-[#efedec] hover:bg-[#eae8e7] transition-colors text-[#1b1c1b] disabled:opacity-30"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).slice(
+                Math.max(0, currentPage - 3),
+                Math.min(totalPages, currentPage + 2)
+              ).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                    page === currentPage
+                      ? 'bg-[#1b1c1b] text-white shadow-lg shadow-black/10'
+                      : 'bg-[#efedec] hover:bg-[#eae8e7] text-[#1b1c1b]'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="w-10 h-10 rounded-full flex items-center justify-center bg-[#efedec] hover:bg-[#eae8e7] transition-colors text-[#1b1c1b] disabled:opacity-30"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

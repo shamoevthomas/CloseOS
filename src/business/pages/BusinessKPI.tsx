@@ -83,24 +83,22 @@ function KpiCard({
   const c = colorMap[color] || colorMap.slate
 
   return (
-    <div className="bg-white rounded-xl border border-[#493627]/10 p-5 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-[#493627]/70">{title}</span>
-        <div className={`${c.bg} p-2 rounded-lg`}>
-          <Icon className={`h-4 w-4 ${c.icon}`} />
-        </div>
+    <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] hover:shadow-xl transition-all border border-stone-100/50">
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-xs font-bold tracking-widest uppercase text-stone-500">{title}</span>
+        <Icon className={`h-5 w-5 ${c.icon}`} />
       </div>
-      <div className="flex items-end gap-2">
-        <p className={`text-2xl font-bold ${c.text}`}>{value}</p>
+      <div className="flex items-baseline gap-2">
+        <p className="text-4xl font-extrabold tracking-tighter text-stone-900">{value}</p>
         {badge && (
-          <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full mb-1 ${
-            badge.positive ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+          <span className={`text-sm font-bold ${
+            badge.positive ? 'text-emerald-600' : 'text-red-500'
           }`}>
-            {badge.positive ? '↑' : '↓'} {badge.label}
+            {badge.positive ? '+' : '-'}{badge.label}
           </span>
         )}
       </div>
-      {subtitle && <p className="text-xs text-[#493627]/50 mt-1">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-stone-400 mt-2">{subtitle}</p>}
     </div>
   )
 }
@@ -327,15 +325,15 @@ export function BusinessKPI() {
   return (
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="flex gap-1 bg-white rounded-xl border border-[#493627]/10 p-1 w-fit">
+      <div className="flex p-1.5 bg-stone-100 rounded-full w-fit">
         {TABS.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-8 py-2.5 rounded-full text-sm font-bold transition-all ${
               activeTab === tab.key
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'text-[#493627]/70 hover:bg-amber-50'
+                ? 'bg-white text-stone-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                : 'text-stone-500 hover:text-stone-900'
             }`}
           >
             {tab.label}
@@ -348,21 +346,33 @@ export function BusinessKPI() {
         <div className="space-y-6">
           {renderKpiCards(globalKpis)}
 
-          {/* Summary */}
-          <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-            <h3 className="text-sm font-semibold text-[#493627] mb-3">Résumé</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="text-center p-3 bg-amber-50 rounded-lg">
-                <p className="text-2xl font-bold text-[#493627]">{globalKpis.totalLeads}</p>
-                <p className="text-xs text-[#493627]/60">Total Leads</p>
+          {/* Pipeline Summary */}
+          <div className="bg-stone-900 rounded-2xl p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)] flex flex-wrap justify-between items-center gap-8">
+            <div className="flex items-center gap-6">
+              <div className="p-4 bg-white/5 rounded-full">
+                <Users className="h-5 w-5 text-white" />
               </div>
-              <div className="text-center p-3 bg-amber-50 rounded-lg">
-                <p className="text-2xl font-bold text-[#493627]">{globalKpis.dealsEnCours}</p>
-                <p className="text-xs text-[#493627]/60">Deals en Cours</p>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Total Leads</p>
+                <p className="text-2xl font-extrabold text-white">{globalKpis.totalLeads}</p>
               </div>
-              <div className="text-center p-3 bg-amber-50 rounded-lg">
-                <p className="text-2xl font-bold text-[#493627]">{formatCurrency(globalKpis.valeurMoyenne)}</p>
-                <p className="text-xs text-[#493627]/60">Valeur Moyenne par Deal</p>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="p-4 bg-white/5 rounded-full">
+                <Briefcase className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Deals en Cours</p>
+                <p className="text-2xl font-extrabold text-white">{globalKpis.dealsEnCours}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="p-4 bg-white/5 rounded-full">
+                <Award className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Valeur Moyenne</p>
+                <p className="text-2xl font-extrabold text-white">{formatCurrency(globalKpis.valeurMoyenne)}</p>
               </div>
             </div>
           </div>
@@ -370,28 +380,28 @@ export function BusinessKPI() {
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Closing Rate Chart */}
-            <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-              <h3 className="text-sm font-semibold text-[#493627] mb-4">Historique Taux de Closing</h3>
+            <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
+              <h3 className="text-xl font-extrabold text-stone-900 mb-8">Historique Taux de Closing</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData}>
                     <defs>
                       <linearGradient id="closingGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#d97706" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#d97706" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#1c1917" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#1c1917" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" />
-                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#493627' }} />
-                    <YAxis tick={{ fontSize: 11, fill: '#493627' }} unit="%" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#78716c' }} />
+                    <YAxis tick={{ fontSize: 11, fill: '#78716c' }} unit="%" />
                     <Tooltip
-                      contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }}
+                      contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }}
                       formatter={(v: number) => [`${v}%`, 'Taux de closing']}
                     />
                     <Area
                       type="monotone"
                       dataKey="closing"
-                      stroke="#d97706"
+                      stroke="#1c1917"
                       strokeWidth={2}
                       fill="url(#closingGrad)"
                     />
@@ -401,8 +411,8 @@ export function BusinessKPI() {
             </div>
 
             {/* CA Chart */}
-            <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-              <h3 className="text-sm font-semibold text-[#493627] mb-4">Historique CA par Mois</h3>
+            <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
+              <h3 className="text-xl font-extrabold text-stone-900 mb-8">Historique CA par Mois</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData}>
@@ -412,11 +422,11 @@ export function BusinessKPI() {
                         <stop offset="95%" stopColor="#059669" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" />
-                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#493627' }} />
-                    <YAxis tick={{ fontSize: 11, fill: '#493627' }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#78716c' }} />
+                    <YAxis tick={{ fontSize: 11, fill: '#78716c' }} />
                     <Tooltip
-                      contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }}
+                      contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }}
                       formatter={(v: number) => [formatCurrency(v), 'CA']}
                     />
                     <Area
@@ -441,18 +451,18 @@ export function BusinessKPI() {
           <div className="flex items-center justify-center gap-4">
             <button
               onClick={() => navigateMonth(-1)}
-              className="p-2 rounded-lg bg-white border border-[#493627]/10 hover:bg-amber-50 transition-colors"
+              className="p-2 rounded-lg bg-white border border-stone-200 hover:bg-stone-50 transition-colors"
             >
-              <ChevronLeft className="h-5 w-5 text-[#493627]" />
+              <ChevronLeft className="h-5 w-5 text-stone-900" />
             </button>
-            <h2 className="text-lg font-semibold text-[#493627] min-w-[180px] text-center">
+            <h2 className="text-lg font-semibold text-stone-900 min-w-[180px] text-center">
               {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h2>
             <button
               onClick={() => navigateMonth(1)}
-              className="p-2 rounded-lg bg-white border border-[#493627]/10 hover:bg-amber-50 transition-colors"
+              className="p-2 rounded-lg bg-white border border-stone-200 hover:bg-stone-50 transition-colors"
             >
-              <ChevronRight className="h-5 w-5 text-[#493627]" />
+              <ChevronRight className="h-5 w-5 text-stone-900" />
             </button>
           </div>
 
@@ -470,20 +480,20 @@ export function BusinessKPI() {
           })}
 
           {/* Period Bar Chart */}
-          <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-            <h3 className="text-sm font-semibold text-[#493627] mb-4">
+          <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
+            <h3 className="text-xl font-extrabold text-stone-900 mb-8">
               Répartition par Stage — {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={periodBarData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" />
-                  <XAxis dataKey="stage" tick={{ fontSize: 11, fill: '#493627' }} />
-                  <YAxis tick={{ fontSize: 11, fill: '#493627' }} allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                  <XAxis dataKey="stage" tick={{ fontSize: 11, fill: '#78716c' }} />
+                  <YAxis tick={{ fontSize: 11, fill: '#78716c' }} allowDecimals={false} />
                   <Tooltip
-                    contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }}
+                    contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }}
                   />
-                  <Bar dataKey="count" fill="#d97706" radius={[6, 6, 0, 0]} name="Prospects" />
+                  <Bar dataKey="count" fill="#1c1917" radius={[6, 6, 0, 0]} name="Prospects" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -494,13 +504,13 @@ export function BusinessKPI() {
       {/* ============ TEAM TAB ============ */}
       {activeTab === 'team' && !selectedMemberId && (
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-[#493627]/10 overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#493627]/10">
-              <h3 className="text-sm font-semibold text-[#493627] flex items-center gap-2">
-                <Users className="h-4 w-4 text-amber-600" />
+          <div className="bg-white rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 overflow-hidden">
+            <div className="px-5 py-4 border-b border-stone-100">
+              <h3 className="text-sm font-semibold text-stone-900 flex items-center gap-2">
+                <Users className="h-4 w-4 text-stone-600" />
                 Performance par Membre
               </h3>
-              <p className="text-xs text-[#493627]/50 mt-1">
+              <p className="text-xs text-stone-400 mt-1">
                 Cliquez sur un membre pour voir ses KPIs détaillés.
               </p>
             </div>
@@ -508,24 +518,24 @@ export function BusinessKPI() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-amber-50/50">
-                    <th className="text-left px-5 py-3 font-medium text-[#493627]/70">Nom</th>
-                    <th className="text-left px-5 py-3 font-medium text-[#493627]/70">Rôle</th>
-                    <th className="text-center px-5 py-3 font-medium text-[#493627]/70">Prospects</th>
-                    <th className="text-center px-5 py-3 font-medium text-[#493627]/70">Ventes</th>
-                    <th className="text-center px-5 py-3 font-medium text-[#493627]/70">CA</th>
-                    <th className="text-center px-5 py-3 font-medium text-[#493627]/70">Taux Conv.</th>
+                  <tr className="bg-stone-50/50">
+                    <th className="text-left px-5 py-3 font-medium text-stone-500">Nom</th>
+                    <th className="text-left px-5 py-3 font-medium text-stone-500">Rôle</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500">Prospects</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500">Ventes</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500">CA</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500">Taux Conv.</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#493627]/5">
+                <tbody className="divide-y divide-stone-100">
                   {/* Owner row */}
-                  <tr className="hover:bg-amber-50/30 transition-colors">
-                    <td className="px-5 py-3 font-medium text-[#493627]">
+                  <tr className="hover:bg-stone-50 transition-colors">
+                    <td className="px-5 py-3 font-medium text-stone-900">
                       Vous (Owner)
                     </td>
-                    <td className="px-5 py-3 text-[#493627]/60">Owner</td>
-                    <td className="px-5 py-3 text-center text-[#493627]">{globalKpis.totalLeads}</td>
-                    <td className="px-5 py-3 text-center text-[#493627]">{globalKpis.ventesTotales}</td>
+                    <td className="px-5 py-3 text-stone-400">Owner</td>
+                    <td className="px-5 py-3 text-center text-stone-900">{globalKpis.totalLeads}</td>
+                    <td className="px-5 py-3 text-center text-stone-900">{globalKpis.ventesTotales}</td>
                     <td className="px-5 py-3 text-center text-emerald-700 font-medium">{formatCurrency(globalKpis.caGenere)}</td>
                     <td className="px-5 py-3 text-center text-purple-700 font-medium">{globalKpis.tauxConversion.toFixed(1)}%</td>
                   </tr>
@@ -544,14 +554,14 @@ export function BusinessKPI() {
                       <tr
                         key={member.id}
                         onClick={() => setSelectedMemberId(member.id)}
-                        className="hover:bg-amber-50/30 transition-colors cursor-pointer"
+                        className="hover:bg-stone-50 transition-colors cursor-pointer"
                       >
-                        <td className="px-5 py-3 font-medium text-[#493627]">
-                          <span className="hover:text-amber-600 transition-colors">{member.full_name}</span>
+                        <td className="px-5 py-3 font-medium text-stone-900">
+                          <span className="hover:text-stone-600 transition-colors">{member.full_name}</span>
                         </td>
-                        <td className="px-5 py-3 text-[#493627]/60 capitalize">{member.role}</td>
-                        <td className="px-5 py-3 text-center text-[#493627]">{memberProspects.length}</td>
-                        <td className="px-5 py-3 text-center text-[#493627]">{memberWon.length}</td>
+                        <td className="px-5 py-3 text-stone-400 capitalize">{member.role}</td>
+                        <td className="px-5 py-3 text-center text-stone-900">{memberProspects.length}</td>
+                        <td className="px-5 py-3 text-center text-stone-900">{memberWon.length}</td>
                         <td className="px-5 py-3 text-center text-emerald-700 font-medium">{formatCurrency(memberCA)}</td>
                         <td className="px-5 py-3 text-center text-purple-700 font-medium">{memberConv.toFixed(1)}%</td>
                       </tr>
@@ -560,7 +570,7 @@ export function BusinessKPI() {
 
                   {teamMembers.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-5 py-8 text-center text-[#493627]/40 text-sm">
+                      <td colSpan={6} className="px-5 py-8 text-center text-stone-900/40 text-sm">
                         Aucun membre dans l'équipe. Invitez des membres depuis la page Équipe.
                       </td>
                     </tr>
@@ -617,7 +627,7 @@ export function BusinessKPI() {
             {/* Back button */}
             <button
               onClick={() => setSelectedMemberId(null)}
-              className="flex items-center gap-2 text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors"
+              className="flex items-center gap-2 text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Retour à la liste
@@ -625,8 +635,8 @@ export function BusinessKPI() {
 
             {/* Member header */}
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100">
-                <Users className="h-6 w-6 text-amber-700" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-100">
+                <Users className="h-6 w-6 text-stone-700" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-slate-900">{member.full_name}</h2>
@@ -646,8 +656,8 @@ export function BusinessKPI() {
 
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-                <h3 className="text-sm font-semibold text-[#493627] mb-4">Historique Taux de Closing</h3>
+              <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
+                <h3 className="text-xl font-extrabold text-stone-900 mb-8">Historique Taux de Closing</h3>
                 <div className="h-64">
                   {mChartData.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-sm text-slate-400">Pas encore de données</div>
@@ -656,23 +666,23 @@ export function BusinessKPI() {
                       <AreaChart data={mChartData}>
                         <defs>
                           <linearGradient id="memberClosingGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#d97706" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#d97706" stopOpacity={0} />
+                            <stop offset="5%" stopColor="#1c1917" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#1c1917" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" />
-                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#493627' }} />
-                        <YAxis tick={{ fontSize: 11, fill: '#493627' }} unit="%" />
-                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }} formatter={(v: number) => [`${v}%`, 'Closing']} />
-                        <Area type="monotone" dataKey="closing" stroke="#d97706" strokeWidth={2} fill="url(#memberClosingGrad)" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#78716c' }} />
+                        <YAxis tick={{ fontSize: 11, fill: '#78716c' }} unit="%" />
+                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v: number) => [`${v}%`, 'Closing']} />
+                        <Area type="monotone" dataKey="closing" stroke="#1c1917" strokeWidth={2} fill="url(#memberClosingGrad)" />
                       </AreaChart>
                     </ResponsiveContainer>
                   )}
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-                <h3 className="text-sm font-semibold text-[#493627] mb-4">Historique Commissions</h3>
+              <div className="bg-white rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50">
+                <h3 className="text-xl font-extrabold text-stone-900 mb-8">Historique Commissions</h3>
                 <div className="h-64">
                   {mChartData.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-sm text-slate-400">Pas encore de données</div>
@@ -685,10 +695,10 @@ export function BusinessKPI() {
                             <stop offset="95%" stopColor="#059669" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" />
-                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#493627' }} />
-                        <YAxis tick={{ fontSize: 11, fill: '#493627' }} unit="€" />
-                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5d5c3', fontSize: 12 }} formatter={(v: number) => [`${formatCurrency(v)} €`, 'Commission']} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#78716c' }} />
+                        <YAxis tick={{ fontSize: 11, fill: '#78716c' }} unit="€" />
+                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v: number) => [`${formatCurrency(v)} €`, 'Commission']} />
                         <Area type="monotone" dataKey="commission" stroke="#059669" strokeWidth={2} fill="url(#memberCommGrad)" />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -698,35 +708,32 @@ export function BusinessKPI() {
             </div>
 
             {/* Pipeline Summary */}
-            <div className="bg-white rounded-xl border border-[#493627]/10 p-5">
-              <h3 className="text-sm font-semibold text-[#493627] mb-4">Résumé du Pipeline</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-slate-500">Total Leads</p>
-                    <p className="text-xl font-bold text-slate-900">{memberProspects.length}</p>
-                  </div>
+            <div className="bg-stone-900 rounded-2xl p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)] flex flex-wrap justify-between items-center gap-8">
+              <div className="flex items-center gap-6">
+                <div className="p-4 bg-white/5 rounded-full">
+                  <Users className="h-5 w-5 text-white" />
                 </div>
-                <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
-                    <Briefcase className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-slate-500">Deals en Cours</p>
-                    <p className="text-xl font-bold text-slate-900">{mActive.length}</p>
-                  </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Total Leads</p>
+                  <p className="text-2xl font-extrabold text-white">{memberProspects.length}</p>
                 </div>
-                <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                    <Award className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-slate-500">Commission Moy.</p>
-                    <p className="text-xl font-bold text-slate-900">{formatCurrency(mAvgCommission)} €</p>
-                  </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="p-4 bg-white/5 rounded-full">
+                  <Briefcase className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Deals en Cours</p>
+                  <p className="text-2xl font-extrabold text-white">{mActive.length}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="p-4 bg-white/5 rounded-full">
+                  <Award className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Com. Moyenne</p>
+                  <p className="text-2xl font-extrabold text-white">{formatCurrency(mAvgCommission)}</p>
                 </div>
               </div>
             </div>

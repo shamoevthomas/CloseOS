@@ -12,6 +12,11 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
+const GLASS_PANEL = 'bg-white/70 backdrop-blur-xl'
+const LABEL_STYLE = 'text-[11px] font-business-display font-extrabold uppercase tracking-widest text-stone-500'
+const SELECT_CLS = 'w-full bg-[#f5f3f2] border-0 rounded-xl py-3.5 px-4 font-business-display font-bold text-stone-900 appearance-none focus:ring-2 focus:ring-stone-900 transition-all'
+const INPUT_CLS = 'w-full bg-[#f5f3f2] border-0 rounded-xl px-4 py-3 text-sm text-stone-900 font-medium focus:ring-2 focus:ring-stone-900 transition-all placeholder:text-stone-400'
+
 const ALL_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500' },
@@ -319,511 +324,555 @@ export function BusinessProspectView({
   }
   const captureData = getCaptureData()
 
-  const inputCls = "w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
-        <div className="w-screen max-w-md">
-          <div className="flex h-full flex-col bg-white shadow-xl ring-1 ring-amber-200">
+      {/* Slide-over drawer */}
+      <aside className="absolute inset-y-0 right-0 w-full max-w-[580px] flex flex-col shadow-2xl rounded-l-2xl border-l border-[#c4c7c7]/10 overflow-hidden"
+        style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+      >
 
-            {/* Header */}
-            <div className="border-b border-amber-200 bg-amber-50 px-6 pt-6 pb-0">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-xl font-bold text-slate-900 truncate">{local.contact}</h2>
-                  {local.company && <p className="mt-0.5 text-sm text-slate-500">{local.company}</p>}
-                </div>
-                <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-amber-100 hover:text-slate-700">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              {/* Quick actions */}
-              <div className="flex gap-2 mb-3">
-                <button onClick={handleOpenGmail} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                  <Mail className="h-4 w-4" /> Email
-                </button>
-                <button onClick={handleOpenWhatsApp} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100">
-                  <MessageCircle className="h-4 w-4" /> WhatsApp
-                </button>
-              </div>
-              <button
-                onClick={() => navigate(`/business/cockpit?name=${encodeURIComponent(local.contact)}&prospectId=${prospect.id}`)}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-purple-700 mb-3"
-              >
-                <PhoneCall className="h-4 w-4" /> Ouvrir le Call Room
-              </button>
-              <button
-                onClick={() => setShowReminderForm(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-amber-700 mb-5"
-              >
-                <Bell className="h-4 w-4" /> Créer un rappel
-              </button>
-
-              {/* Tabs */}
-              <div className="flex border-b border-amber-200">
-                {([
-                  { key: 'info' as const, label: 'Informations', color: 'amber' },
-                  { key: 'notes' as const, label: "Notes d'Appel", color: 'purple' },
-                  { key: 'rappels' as const, label: 'Rappels', color: 'orange', badge: activeRemindersCount },
-                ]).map(tab => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={cn(
-                      "flex-1 pb-3 text-sm font-medium transition-all relative flex items-center justify-center gap-1.5",
-                      activeTab === tab.key ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
-                    )}
-                  >
-                    {tab.label}
-                    {tab.badge !== undefined && tab.badge > 0 && (
-                      <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-100 px-1.5 text-[10px] font-bold text-amber-700">
-                        {tab.badge}
-                      </span>
-                    )}
-                    {activeTab === tab.key && (
-                      <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600`} />
-                    )}
-                  </button>
-                ))}
-              </div>
+        {/* Header */}
+        <header className="p-8 pb-4 flex justify-between items-start">
+          <div className="flex items-center gap-5 min-w-0">
+            <div className="w-16 h-16 rounded-full bg-[#e4e2e1] flex items-center justify-center overflow-hidden shrink-0 text-2xl font-business-display font-extrabold text-stone-500">
+              {(local.contact || '?')[0]?.toUpperCase()}
             </div>
-
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-
-              {/* ─── TAB: INFO ─── */}
-              {activeTab === 'info' && (
-                <div className="space-y-6">
-
-                  {/* Stage */}
-                  <div>
-                    <label className="mb-2 block text-xs font-medium text-slate-500">Étape actuelle</label>
-                    <select
-                      value={local.stage}
-                      onChange={(e) => handleUpdate({ stage: e.target.value })}
-                      className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
-                    >
-                      {ALL_STAGES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Assignment: separate Closer and Setter dropdowns */}
-                  {canAssign && teamMembers.length > 0 && (() => {
-                    const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales' || tm.role === 'Admin')
-                    const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales' || tm.role === 'Admin')
-
-                    return (
-                      <div className="space-y-3">
-                        {/* Assign Closer */}
-                        {closers.length > 0 && (
-                          <div>
-                            <label className="mb-2 block text-xs font-medium text-slate-500">Assigner un Closer</label>
-                            <select
-                              value={closers.find(c => c.id === (local as any).assigned_to)?.id || ''}
-                              onChange={(e) => handleUpdate({ assigned_to: e.target.value || null } as any)}
-                              className="w-full rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none"
-                            >
-                              <option value="">Aucun closer assigné</option>
-                              {closers.map(tm => (
-                                <option key={tm.id} value={tm.id}>
-                                  {tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-
-                        {/* Assign Setter (owner, HOS, Admin) */}
-                        {(!isTeamMember || isHosOrAdmin) && setters.length > 0 && (
-                          <div>
-                            <label className="mb-2 block text-xs font-medium text-slate-500">Assigner un Setter</label>
-                            <select
-                              value={setters.find(s => s.id === (local as any).assigned_setter)?.id || ''}
-                              onChange={(e) => {
-                                const setterId = e.target.value || null
-                                const updates: any = { assigned_setter: setterId }
-                                // Auto-assign as closer if Setter-Closer with 'self' scope
-                                if (setterId) {
-                                  const selected = teamMembers.find(tm => tm.id === setterId)
-                                  if (selected?.role === 'Setter-Closer' && selected?.setter_scope === 'self') {
-                                    updates.assigned_to = setterId
-                                  }
-                                }
-                                handleUpdate(updates)
-                              }}
-                              className="w-full rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm text-slate-900 focus:border-purple-500 focus:outline-none"
-                            >
-                              <option value="">Aucun setter assigné</option>
-                              {setters.map(tm => (
-                                <option key={tm.id} value={tm.id}>
-                                  {tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })()}
-
-                  {/* Campagne d'origine */}
-                  {campaign && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900 mb-2">Campagne d'origine</h3>
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                        <p className="text-sm font-medium text-slate-700">{campaign.name}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Offre / Formule */}
-                  <div>
-                    <label className="mb-2 block text-xs font-medium text-slate-500">Offre / Formule</label>
-                    <select
-                      value={(local as any).formula_id || ''}
-                      onChange={(e) => {
-                        const fId = e.target.value || null
-                        const selected = allFormulas.find(f => f.id === fId)
-                        handleUpdate({ formula_id: fId, value: selected?.price || 0 } as any)
-                        setFormula(selected || null)
-                      }}
-                      className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
-                    >
-                      <option value="">Aucune offre</option>
-                      {allFormulas.map(f => (
-                        <option key={f.id} value={f.id}>{f.name} — {f.price}€</option>
-                      ))}
-                    </select>
-                    {formula && formula.resources && formula.resources.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {formula.resources.map((r, i) => (
-                          <a
-                            key={i}
-                            href={r.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-full bg-white border border-amber-200 px-2.5 py-1 text-xs text-amber-700 hover:bg-amber-100 transition-colors"
-                          >
-                            <ExternalLink className="h-3 w-3" /> {r.name || r.type}
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Capture custom data */}
-                  {captureData && Object.keys(captureData).length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-blue-500" /> Réponses de capture
-                      </h3>
-                      <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-2">
-                        {Object.entries(captureData).map(([key, val]) => (
-                          <div key={key} className="flex items-start gap-2">
-                            <span className="text-xs font-medium text-blue-600 min-w-0 shrink-0">{key} :</span>
-                            <span className="text-sm text-slate-700">{String(val)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Fiche Client */}
-                  <div>
-                    <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-slate-900">Fiche Client</h3>
-                      <button onClick={() => setEditingClient(!editingClient)} className="rounded p-1 text-slate-400 hover:bg-amber-50 hover:text-amber-700">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    {editingClient ? (
-                      <div className="space-y-3">
-                        <input type="text" value={editedContact} onChange={e => setEditedContact(e.target.value)} className={inputCls} placeholder="Nom" />
-                        <input type="text" value={editedCompany} onChange={e => setEditedCompany(e.target.value)} className={inputCls} placeholder="Entreprise" />
-                        <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className={inputCls} placeholder="Email" />
-                        <input type="tel" value={editedPhone} onChange={e => setEditedPhone(e.target.value)} className={inputCls} placeholder="Téléphone" />
-                        <div className="flex gap-2">
-                          <button onClick={handleSaveClient} className="flex-1 rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-700">Sauvegarder</button>
-                          <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone) }} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Annuler</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                          <Mail className="h-4 w-4 text-blue-500" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs text-slate-400">Email</p>
-                            <button onClick={handleOpenGmail} className="truncate text-sm text-slate-700 hover:text-amber-700 hover:underline text-left">{local.email || '—'}</button>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                          <Phone className="h-4 w-4 text-emerald-500" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs text-slate-400">Téléphone</p>
-                            <button onClick={handleOpenWhatsApp} className="text-sm text-slate-700 hover:text-amber-700 hover:underline text-left">{local.phone || '—'}</button>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                          <Clock className="h-4 w-4 text-purple-500" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs text-slate-400">Date de création</p>
-                            <p className="text-sm text-slate-700">
-                              {local.created_at ? new Date(local.created_at).toLocaleDateString('fr-FR', {
-                                day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                              }) : '—'}
-                            </p>
-                          </div>
-                        </div>
-                        {nextAppointment && (
-                          <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                            <Calendar className="h-4 w-4 text-amber-600" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs text-amber-600">Prochain rendez-vous</p>
-                              <p className="text-sm font-medium text-amber-800">
-                                {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString('fr-FR', {
-                                  weekday: 'short', day: 'numeric', month: 'long'
-                                })} à {nextAppointment.time?.slice(0, 5)}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Notes internes (si pas capture data) */}
-                  <div>
-                    <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-slate-900">Notes Internes</h3>
-                      <button onClick={() => setEditingNotes(!editingNotes)} className="rounded p-1 text-slate-400 hover:bg-amber-50 hover:text-amber-700">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    {editingNotes ? (
-                      <div>
-                        <textarea value={tempNotes} onChange={e => setTempNotes(e.target.value)} className={`${inputCls} resize-none`} rows={4} />
-                        <div className="mt-2 flex gap-2">
-                          <button onClick={handleSaveNotes} className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700">Enregistrer</button>
-                          <button onClick={() => setEditingNotes(false)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50">Annuler</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <p className="whitespace-pre-wrap text-sm text-slate-600">
-                          {captureData ? '(Données de capture - voir section ci-dessus)' : (local.notes || 'Aucune note')}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+            <div className="min-w-0">
+              <h2 className="text-3xl font-business-display font-extrabold tracking-tight text-stone-900 truncate">
+                {local.contact || 'Sans nom'}
+              </h2>
+              {local.company && (
+                <p className="text-stone-500 font-medium truncate">{local.company}</p>
               )}
-
-              {/* ─── TAB: NOTES D'APPEL ─── */}
-              {activeTab === 'notes' && (
-                <div className="space-y-4">
-                  {!isAddingNote ? (
-                    <button
-                      onClick={() => setIsAddingNote(true)}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50/50 py-3 text-sm font-medium text-amber-700 hover:bg-amber-50 hover:border-amber-400 transition-all"
-                    >
-                      <Plus className="h-4 w-4" /> Ajouter une note manuelle
-                    </button>
-                  ) : (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                      <h4 className="text-xs font-semibold text-amber-700 mb-2 uppercase tracking-wider">Nouvelle Note</h4>
-                      <textarea
-                        value={newNoteContent}
-                        onChange={e => setNewNoteContent(e.target.value)}
-                        placeholder="Écrivez votre note d'appel ici..."
-                        className={`${inputCls} min-h-[100px] mb-3`}
-                        autoFocus
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => { setIsAddingNote(false); setNewNoteContent('') }} className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700">Annuler</button>
-                        <button onClick={handleAddManualNote} disabled={!newNoteContent.trim()} className="px-4 py-2 rounded-lg bg-amber-600 text-sm font-bold text-white hover:bg-amber-700 disabled:opacity-50">Enregistrer</button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="h-px bg-slate-200 my-4" />
-
-                  <div className="space-y-3">
-                    {callNotes.length > 0 ? (
-                      callNotes.map(note => (
-                        <details key={note.id} className="group rounded-xl border border-slate-200 bg-white open:shadow-sm transition-all overflow-hidden">
-                          <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-slate-50 transition-colors select-none list-none [&::-webkit-details-marker]:hidden">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 group-open:bg-amber-100 group-open:text-amber-700 transition-colors">
-                                <Calendar className="h-4 w-4" />
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-semibold text-slate-900">
-                                  {new Date(note.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                                </h4>
-                                <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                                  <Clock className="h-3 w-3" />
-                                  <span>{new Date(note.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-                                  {note.author && <><span>·</span><span className="uppercase tracking-wider">{note.author}</span></>}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <button onClick={e => { e.preventDefault(); handleDeleteNote(note.id) }} className="rounded p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100">
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                              <ChevronDown className="h-5 w-5 text-slate-400 transition-transform duration-300 group-open:rotate-180" />
-                            </div>
-                          </summary>
-                          <div className="border-t border-slate-200 p-4 pt-2">
-                            <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{note.content}</p>
-                          </div>
-                        </details>
-                      ))
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 mb-3">
-                          <ClipboardList className="h-6 w-6 text-slate-400" />
-                        </div>
-                        <p className="text-sm font-medium text-slate-500">Aucune note d'appel</p>
-                        <p className="text-xs text-slate-400 mt-1">Vos notes manuelles apparaîtront ici.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* ─── TAB: RAPPELS ─── */}
-              {activeTab === 'rappels' && (
-                <div className="space-y-4">
-                  <button
-                    onClick={() => setShowReminderForm(true)}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50/50 py-3 text-sm font-medium text-amber-700 hover:bg-amber-50 hover:border-amber-400 transition-all"
-                  >
-                    <Plus className="h-4 w-4" /> Ajouter un rappel
-                  </button>
-
-                  {remindersLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
-                    </div>
-                  ) : prospectReminders.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 mb-3">
-                        <Bell className="h-6 w-6 text-slate-400" />
-                      </div>
-                      <p className="text-sm font-medium text-slate-500">Aucun rappel</p>
-                      <p className="text-xs text-slate-400 mt-1">Créez un rappel pour ce prospect.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {prospectReminders.map(reminder => {
-                        const isDone = reminder.is_done
-                        const isOverdue = !isDone && new Date(reminder.reminder_date) < new Date()
-                        const isLoading = reminderActionLoading === reminder.id
-                        return (
-                          <div
-                            key={reminder.id}
-                            className={cn(
-                              'rounded-lg border p-3 transition-all',
-                              isDone ? 'border-slate-200 bg-slate-50' : isOverdue ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'
-                            )}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1">
-                                <p className={cn('text-sm font-semibold', isDone ? 'text-slate-400 line-through' : 'text-slate-900')}>
-                                  {reminder.title}
-                                </p>
-                                {reminder.description && <p className="text-xs text-slate-400 mt-0.5 truncate">{reminder.description}</p>}
-                                <div className="flex items-center gap-2 mt-1.5">
-                                  <Clock className="h-3 w-3 text-slate-400" />
-                                  <span className={cn('text-xs', isOverdue ? 'text-red-500 font-medium' : 'text-slate-400')}>
-                                    {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                  {isDone && <span className="text-[10px] text-slate-400 font-medium uppercase">Fait</span>}
-                                  {isOverdue && <span className="text-[10px] text-red-500 font-bold uppercase">En retard</span>}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                {!isDone && (
-                                  <button onClick={() => handleMarkReminderDone(reminder.id)} disabled={isLoading} className="rounded-md p-1.5 text-emerald-500 hover:bg-emerald-50 transition-colors disabled:opacity-50">
-                                    <Check className="h-4 w-4" />
-                                  </button>
-                                )}
-                                <button onClick={() => handleDeleteReminder(reminder.id)} disabled={isLoading} className="rounded-md p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50">
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Reminder creation modal */}
-            {showReminderForm && (
-              <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowReminderForm(false)} />
-                <div className="relative w-full max-w-sm rounded-2xl border border-amber-200 bg-white shadow-2xl">
-                  <div className="flex items-center justify-between border-b border-amber-100 px-5 py-3">
-                    <h3 className="text-sm font-bold text-slate-900">Nouveau rappel</h3>
-                    <button onClick={() => setShowReminderForm(false)} className="rounded-lg p-1 text-slate-400 hover:bg-amber-50 hover:text-slate-700">
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="p-5 space-y-3">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-500">Titre *</label>
-                      <input type="text" value={reminderTitle} onChange={e => setReminderTitle(e.target.value)} placeholder="Ex: Rappeler le prospect" className={inputCls} autoFocus />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-500">Description</label>
-                      <textarea value={reminderDesc} onChange={e => setReminderDesc(e.target.value)} placeholder="Détails optionnels..." rows={2} className={`${inputCls} resize-none`} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-slate-500">Date *</label>
-                        <input type="date" value={reminderDate} onChange={e => setReminderDate(e.target.value)} className={inputCls} />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-slate-500">Heure *</label>
-                        <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)} className={inputCls} />
-                      </div>
-                    </div>
-                    <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-                      <p className="text-xs text-amber-700">
-                        <Bell className="h-3 w-3 inline mr-1" />
-                        Lié à : <span className="font-semibold">{local.contact || 'Ce prospect'}</span>
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleCreateReminder}
-                      disabled={!reminderTitle.trim() || !reminderDate || !reminderTime || reminderSubmitting}
-                      className="w-full rounded-lg bg-amber-600 py-2.5 text-sm font-bold text-white hover:bg-amber-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {reminderSubmitting ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Créer le rappel'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Footer */}
-            <div className="border-t border-amber-200 bg-amber-50 p-6">
-              <button onClick={handleDelete} className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 transition-all">
-                <Trash2 className="h-4 w-4" /> Supprimer le prospect
-              </button>
             </div>
           </div>
+          <button
+            onClick={onClose}
+            className="w-12 h-12 rounded-full bg-[#f5f3f2] flex items-center justify-center hover:bg-[#efedec] transition-colors shrink-0"
+          >
+            <X className="h-5 w-5 text-stone-900" strokeWidth={1.5} />
+          </button>
+        </header>
+
+        {/* Quick Actions */}
+        <section className="px-8 py-5 flex flex-wrap gap-3 border-b border-[#c4c7c7]/10">
+          <button
+            onClick={() => navigate(`/business/cockpit?name=${encodeURIComponent(local.contact)}&prospectId=${prospect.id}`)}
+            className="flex items-center gap-2 px-6 py-3 bg-stone-900 text-white rounded-full font-business-display font-bold text-sm tracking-wide transition-transform active:scale-95 shadow-lg shadow-stone-900/20"
+          >
+            <PhoneCall className="h-4 w-4" strokeWidth={1.5} />
+            Ouvrir le Call Room
+          </button>
+          <button
+            onClick={() => setShowReminderForm(true)}
+            className="flex items-center gap-2 px-5 py-3 bg-[#ffddb8] text-[#2a1700] rounded-full font-business-display font-bold text-sm transition-all hover:brightness-105 active:scale-95"
+          >
+            <Bell className="h-4 w-4" strokeWidth={1.5} />
+            Créer un rappel
+          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleOpenGmail}
+              className="w-12 h-12 rounded-full bg-white border border-[#c4c7c7]/20 flex items-center justify-center text-stone-900 hover:bg-[#f5f3f2] transition-colors"
+            >
+              <Mail className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+            <button
+              onClick={handleOpenWhatsApp}
+              className="w-12 h-12 rounded-full bg-white border border-[#c4c7c7]/20 flex items-center justify-center text-stone-900 hover:bg-[#f5f3f2] transition-colors"
+            >
+              <MessageCircle className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+          </div>
+        </section>
+
+        {/* Tabs */}
+        <nav className="px-8 pt-6 flex gap-8">
+          {([
+            { key: 'info' as const, label: 'Informations' },
+            { key: 'notes' as const, label: "Notes d'Appel" },
+            { key: 'rappels' as const, label: 'Rappels', badge: activeRemindersCount },
+          ]).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                'pb-4 font-business-display font-bold transition-all flex items-center gap-2',
+                activeTab === tab.key
+                  ? 'text-stone-900 font-extrabold border-b-2 border-stone-900'
+                  : 'text-stone-400 hover:text-stone-900'
+              )}
+            >
+              {tab.label}
+              {tab.badge !== undefined && tab.badge > 0 && (
+                <span className="px-2 py-0.5 bg-[#ffddb8] text-[#2a1700] text-[10px] rounded-full font-bold">
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+
+          {/* ─── TAB: INFO ─── */}
+          {activeTab === 'info' && (
+            <div className="space-y-8">
+
+              {/* Stage */}
+              <div>
+                <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Étape actuelle</label>
+                <div className="relative">
+                  <select
+                    value={local.stage}
+                    onChange={(e) => handleUpdate({ stage: e.target.value })}
+                    className={cn(SELECT_CLS, 'py-4 px-5')}
+                  >
+                    {ALL_STAGES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                </div>
+              </div>
+
+              {/* Assignment */}
+              {canAssign && teamMembers.length > 0 && (() => {
+                const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales' || tm.role === 'Admin')
+                const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales' || tm.role === 'Admin')
+
+                return (
+                  <div className="grid grid-cols-2 gap-4">
+                    {closers.length > 0 && (
+                      <div>
+                        <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Assigner un Closer</label>
+                        <div className="relative">
+                          <select
+                            value={closers.find(c => c.id === (local as any).assigned_to)?.id || ''}
+                            onChange={(e) => handleUpdate({ assigned_to: e.target.value || null } as any)}
+                            className={cn(SELECT_CLS, 'text-sm font-semibold font-sans')}
+                          >
+                            <option value="">Aucun</option>
+                            {closers.map(tm => (
+                              <option key={tm.id} value={tm.id}>
+                                {tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                        </div>
+                      </div>
+                    )}
+
+                    {(!isTeamMember || isHosOrAdmin) && setters.length > 0 && (
+                      <div>
+                        <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Assigner un Setter</label>
+                        <div className="relative">
+                          <select
+                            value={setters.find(s => s.id === (local as any).assigned_setter)?.id || ''}
+                            onChange={(e) => {
+                              const setterId = e.target.value || null
+                              const updates: any = { assigned_setter: setterId }
+                              if (setterId) {
+                                const selected = teamMembers.find(tm => tm.id === setterId)
+                                if (selected?.role === 'Setter-Closer' && selected?.setter_scope === 'self') {
+                                  updates.assigned_to = setterId
+                                }
+                              }
+                              handleUpdate(updates)
+                            }}
+                            className={cn(SELECT_CLS, 'text-sm font-semibold font-sans')}
+                          >
+                            <option value="">Aucun</option>
+                            {setters.map(tm => (
+                              <option key={tm.id} value={tm.id}>
+                                {tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Campagne d'origine */}
+              {campaign && (
+                <div>
+                  <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Campagne d'origine</label>
+                  <div className="rounded-xl bg-[#f5f3f2] px-5 py-3.5">
+                    <p className="font-business-display font-bold text-stone-900">{campaign.name}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Offre / Formule */}
+              <div>
+                <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Offre / Formule</label>
+                <div className="relative">
+                  <select
+                    value={(local as any).formula_id || ''}
+                    onChange={(e) => {
+                      const fId = e.target.value || null
+                      const selected = allFormulas.find(f => f.id === fId)
+                      handleUpdate({ formula_id: fId, value: selected?.price || 0 } as any)
+                      setFormula(selected || null)
+                    }}
+                    className={cn(SELECT_CLS, 'py-4 px-5')}
+                  >
+                    <option value="">Aucune offre</option>
+                    {allFormulas.map(f => (
+                      <option key={f.id} value={f.id}>{f.name} — {f.price}€</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                </div>
+                {formula && formula.resources && formula.resources.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {formula.resources.map((r, i) => (
+                      <a
+                        key={i}
+                        href={r.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-full bg-white border border-[#c4c7c7]/20 px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-[#f5f3f2] transition-colors"
+                      >
+                        <ExternalLink className="h-3 w-3" strokeWidth={1.5} /> {r.name || r.type}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Capture custom data */}
+              {captureData && Object.keys(captureData).length > 0 && (
+                <div>
+                  <label className={cn(LABEL_STYLE, 'block mb-2 ml-1 flex items-center gap-2')}>
+                    <FileText className="h-3.5 w-3.5" strokeWidth={1.5} /> Réponses de capture
+                  </label>
+                  <div className="rounded-xl bg-white p-5 space-y-3 border border-[#c4c7c7]/10 shadow-sm">
+                    {Object.entries(captureData).map(([key, val]) => (
+                      <div key={key} className="flex items-start gap-2">
+                        <span className="text-xs font-bold text-stone-500 min-w-0 shrink-0">{key} :</span>
+                        <span className="text-sm text-stone-900">{String(val)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Fiche Client */}
+              <section className="bg-white p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className={cn(LABEL_STYLE, 'text-xs')}>Fiche Client</h3>
+                  <button onClick={() => setEditingClient(!editingClient)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] hover:text-stone-700 transition-colors">
+                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  </button>
+                </div>
+                {editingClient ? (
+                  <div className="space-y-3">
+                    <input type="text" value={editedContact} onChange={e => setEditedContact(e.target.value)} className={INPUT_CLS} placeholder="Nom" />
+                    <input type="text" value={editedCompany} onChange={e => setEditedCompany(e.target.value)} className={INPUT_CLS} placeholder="Entreprise" />
+                    <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className={INPUT_CLS} placeholder="Email" />
+                    <input type="tel" value={editedPhone} onChange={e => setEditedPhone(e.target.value)} className={INPUT_CLS} placeholder="Téléphone" />
+                    <div className="flex gap-2 pt-2">
+                      <button onClick={handleSaveClient} className="flex-1 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">Sauvegarder</button>
+                      <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone) }} className="rounded-full border border-[#c4c7c7]/20 px-4 py-2.5 text-sm font-medium text-stone-600 hover:bg-[#f5f3f2] transition-colors">Annuler</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] flex items-center justify-center text-stone-500">
+                        <Mail className="h-5 w-5" strokeWidth={1.5} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Email</p>
+                        <button onClick={handleOpenGmail} className="text-sm font-semibold text-stone-900 hover:text-[#006c49] truncate text-left transition-colors">{local.email || '—'}</button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] flex items-center justify-center text-stone-500">
+                        <Phone className="h-5 w-5" strokeWidth={1.5} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Téléphone</p>
+                        <button onClick={handleOpenWhatsApp} className="text-sm font-semibold text-stone-900 hover:text-[#006c49] text-left transition-colors">{local.phone || '—'}</button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] flex items-center justify-center text-stone-500">
+                        <Calendar className="h-5 w-5" strokeWidth={1.5} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Date de création</p>
+                        <p className="text-sm font-semibold text-stone-900">
+                          {local.created_at ? new Date(local.created_at).toLocaleDateString('fr-FR', {
+                            day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                          }) : '—'}
+                        </p>
+                      </div>
+                    </div>
+                    {nextAppointment && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
+                          <Calendar className="h-5 w-5" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold text-[#006c49] uppercase tracking-wider">Prochain rendez-vous</p>
+                          <p className="text-sm font-semibold text-stone-900">
+                            {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString('fr-FR', {
+                              weekday: 'short', day: 'numeric', month: 'long'
+                            })} à {nextAppointment.time?.slice(0, 5)}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* Notes internes */}
+              <div>
+                <div className="flex items-center justify-between mb-2 ml-1">
+                  <label className={LABEL_STYLE}>Notes Internes</label>
+                  <button onClick={() => setEditingNotes(!editingNotes)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] hover:text-stone-700 transition-colors">
+                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  </button>
+                </div>
+                {editingNotes ? (
+                  <div>
+                    <textarea value={tempNotes} onChange={e => setTempNotes(e.target.value)} className={cn(INPUT_CLS, 'resize-none h-32')} placeholder="Ajouter un commentaire sur le profil du prospect..." />
+                    <div className="mt-3 flex gap-2">
+                      <button onClick={handleSaveNotes} className="rounded-full bg-stone-900 px-5 py-2 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">Enregistrer</button>
+                      <button onClick={() => setEditingNotes(false)} className="rounded-full border border-[#c4c7c7]/20 px-5 py-2 text-sm font-medium text-stone-600 hover:bg-[#f5f3f2] transition-colors">Annuler</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-[#f5f3f2] p-5">
+                    <p className="whitespace-pre-wrap text-sm text-stone-600">
+                      {captureData ? '(Données de capture - voir section ci-dessus)' : (local.notes || 'Aucune note')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ─── TAB: NOTES D'APPEL ─── */}
+          {activeTab === 'notes' && (
+            <div className="space-y-4">
+              {!isAddingNote ? (
+                <button
+                  onClick={() => setIsAddingNote(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-200/30 bg-[#f5f3f2]/50 py-4 text-sm font-business-display font-bold text-stone-500 hover:bg-[#f5f3f2] hover:border-stone-300 transition-all"
+                >
+                  <Plus className="h-4 w-4" strokeWidth={1.5} /> Ajouter une note manuelle
+                </button>
+              ) : (
+                <div className="rounded-xl bg-white p-5 border border-[#c4c7c7]/10 shadow-sm">
+                  <h4 className={cn(LABEL_STYLE, 'mb-3')}>Nouvelle Note</h4>
+                  <textarea
+                    value={newNoteContent}
+                    onChange={e => setNewNoteContent(e.target.value)}
+                    placeholder="Écrivez votre note d'appel ici..."
+                    className={cn(INPUT_CLS, 'min-h-[100px] mb-3')}
+                    autoFocus
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => { setIsAddingNote(false); setNewNoteContent('') }} className="px-4 py-2 text-sm font-medium text-stone-500 hover:text-stone-700 rounded-full hover:bg-[#f5f3f2] transition-colors">Annuler</button>
+                    <button onClick={handleAddManualNote} disabled={!newNoteContent.trim()} className="px-5 py-2 rounded-full bg-stone-900 text-sm font-business-display font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-colors">Enregistrer</button>
+                  </div>
+                </div>
+              )}
+
+              <div className="h-px bg-[#c4c7c7]/20 my-4" />
+
+              <div className="space-y-3">
+                {callNotes.length > 0 ? (
+                  callNotes.map(note => (
+                    <details key={note.id} className="group rounded-xl bg-white border border-[#c4c7c7]/10 open:shadow-sm transition-all overflow-hidden">
+                      <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-[#f5f3f2] transition-colors select-none list-none [&::-webkit-details-marker]:hidden">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f5f3f2] text-stone-400 group-open:bg-[#ffddb8] group-open:text-[#2a1700] transition-colors">
+                            <Calendar className="h-4 w-4" strokeWidth={1.5} />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-semibold text-stone-900">
+                              {new Date(note.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            </h4>
+                            <div className="flex items-center gap-2 text-xs text-stone-400 mt-0.5">
+                              <Clock className="h-3 w-3" strokeWidth={1.5} />
+                              <span>{new Date(note.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                              {note.author && <><span>·</span><span className="uppercase tracking-wider">{note.author}</span></>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button onClick={e => { e.preventDefault(); handleDeleteNote(note.id) }} className="rounded-full p-1.5 text-stone-400 hover:text-[#ba1a1a] hover:bg-[#ba1a1a]/5 transition-colors opacity-0 group-hover:opacity-100">
+                            <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                          </button>
+                          <ChevronDown className="h-5 w-5 text-stone-400 transition-transform duration-300 group-open:rotate-180" strokeWidth={1.5} />
+                        </div>
+                      </summary>
+                      <div className="border-t border-[#c4c7c7]/10 p-5 pt-3">
+                        <p className="text-sm text-stone-600 whitespace-pre-wrap leading-relaxed">{note.content}</p>
+                      </div>
+                    </details>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 bg-[#f5f3f2]/50">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] mb-3">
+                      <ClipboardList className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
+                    </div>
+                    <p className="text-sm font-medium text-stone-500">Aucune note d'appel</p>
+                    <p className="text-xs text-stone-400 mt-1">Vos notes manuelles apparaîtront ici.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ─── TAB: RAPPELS ─── */}
+          {activeTab === 'rappels' && (
+            <div className="space-y-4">
+              <button
+                onClick={() => setShowReminderForm(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-200/30 bg-[#f5f3f2]/50 py-4 text-sm font-business-display font-bold text-stone-500 hover:bg-[#f5f3f2] hover:border-stone-300 transition-all"
+              >
+                <Plus className="h-4 w-4" strokeWidth={1.5} /> Ajouter un rappel
+              </button>
+
+              {remindersLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-stone-400" strokeWidth={1.5} />
+                </div>
+              ) : prospectReminders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 bg-[#f5f3f2]/50">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] mb-3">
+                    <Bell className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
+                  </div>
+                  <p className="text-sm font-medium text-stone-500">Aucun rappel</p>
+                  <p className="text-xs text-stone-400 mt-1">Créez un rappel pour ce prospect.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {prospectReminders.map(reminder => {
+                    const isDone = reminder.is_done
+                    const isOverdue = !isDone && new Date(reminder.reminder_date) < new Date()
+                    const isLoading = reminderActionLoading === reminder.id
+                    return (
+                      <div
+                        key={reminder.id}
+                        className={cn(
+                          'rounded-xl p-4 transition-all',
+                          isDone ? 'bg-[#f5f3f2]' : isOverdue ? 'bg-[#ba1a1a]/5 ring-1 ring-[#ba1a1a]/10' : 'bg-white border border-[#c4c7c7]/10'
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className={cn('text-sm font-semibold', isDone ? 'text-stone-400 line-through' : 'text-stone-900')}>
+                              {reminder.title}
+                            </p>
+                            {reminder.description && <p className="text-xs text-stone-400 mt-0.5 truncate">{reminder.description}</p>}
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <Clock className="h-3 w-3 text-stone-400" strokeWidth={1.5} />
+                              <span className={cn('text-xs', isOverdue ? 'text-[#ba1a1a] font-medium' : 'text-stone-400')}>
+                                {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {isDone && <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Fait</span>}
+                              {isOverdue && <span className="text-[10px] text-[#ba1a1a] font-bold uppercase tracking-wider">En retard</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {!isDone && (
+                              <button onClick={() => handleMarkReminderDone(reminder.id)} disabled={isLoading} className="rounded-full p-2 text-[#006c49] hover:bg-[#006c49]/10 transition-colors disabled:opacity-50">
+                                <Check className="h-4 w-4" strokeWidth={1.5} />
+                              </button>
+                            )}
+                            <button onClick={() => handleDeleteReminder(reminder.id)} disabled={isLoading} className="rounded-full p-2 text-stone-400 hover:text-[#ba1a1a] hover:bg-[#ba1a1a]/5 transition-colors disabled:opacity-50">
+                              <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      </div>
+
+        {/* Reminder creation modal */}
+        {showReminderForm && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => setShowReminderForm(false)} />
+            <div className="relative w-full max-w-sm rounded-3xl bg-white shadow-2xl border border-[#c4c7c7]/10">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10">
+                <h3 className="font-business-display font-extrabold text-stone-900">Nouveau rappel</h3>
+                <button onClick={() => setShowReminderForm(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] hover:text-stone-700 transition-colors">
+                  <X className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className={cn(LABEL_STYLE, 'block mb-1.5')}>Titre *</label>
+                  <input type="text" value={reminderTitle} onChange={e => setReminderTitle(e.target.value)} placeholder="Ex: Rappeler le prospect" className={INPUT_CLS} autoFocus />
+                </div>
+                <div>
+                  <label className={cn(LABEL_STYLE, 'block mb-1.5')}>Description</label>
+                  <textarea value={reminderDesc} onChange={e => setReminderDesc(e.target.value)} placeholder="Détails optionnels..." rows={2} className={cn(INPUT_CLS, 'resize-none')} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={cn(LABEL_STYLE, 'block mb-1.5')}>Date *</label>
+                    <input type="date" value={reminderDate} onChange={e => setReminderDate(e.target.value)} className={INPUT_CLS} />
+                  </div>
+                  <div>
+                    <label className={cn(LABEL_STYLE, 'block mb-1.5')}>Heure *</label>
+                    <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)} className={INPUT_CLS} />
+                  </div>
+                </div>
+                <div className="rounded-xl bg-[#ffddb8]/30 px-4 py-3">
+                  <p className="text-xs text-[#2a1700] font-medium">
+                    <Bell className="h-3 w-3 inline mr-1" strokeWidth={1.5} />
+                    Lié à : <span className="font-bold">{local.contact || 'Ce prospect'}</span>
+                  </p>
+                </div>
+                <button
+                  onClick={handleCreateReminder}
+                  disabled={!reminderTitle.trim() || !reminderDate || !reminderTime || reminderSubmitting}
+                  className="w-full rounded-full bg-stone-900 py-3 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                >
+                  {reminderSubmitting ? <Loader2 className="h-4 w-4 animate-spin mx-auto" strokeWidth={1.5} /> : 'Créer le rappel'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <footer className="p-8 border-t border-[#c4c7c7]/10 flex justify-between items-center bg-white/20">
+          <button
+            onClick={handleDelete}
+            className="text-[#ba1a1a] font-business-display font-bold text-sm flex items-center gap-2 px-4 py-2 hover:bg-[#ba1a1a]/5 rounded-full transition-colors"
+          >
+            <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+            Supprimer le prospect
+          </button>
+          <button
+            onClick={() => handleUpdate(local)}
+            className="bg-stone-900 text-white px-8 py-3 rounded-full font-business-display font-bold text-sm transition-transform active:scale-95"
+          >
+            Enregistrer
+          </button>
+        </footer>
+      </aside>
     </div>
   )
 }

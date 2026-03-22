@@ -20,7 +20,10 @@ import {
   ToggleLeft,
   ToggleRight,
   UserPlus,
+  ArrowRight,
+  ChevronDown,
 } from 'lucide-react'
+import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 import Cropper from 'react-easy-crop'
@@ -116,10 +119,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName)
       const publicUrl = urlData.publicUrl
 
-      // Update business_users
       await updateBusinessProfile({ avatar_url: publicUrl })
-
-      // Update auth metadata (non-blocking)
       supabase.auth.updateUser({ data: { avatar_url: publicUrl } }).catch(() => {})
 
       setFormData(prev => ({ ...prev, avatar_url: publicUrl }))
@@ -146,7 +146,6 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
         owner_assignable: formData.owner_assignable,
       })
 
-      // Also update auth metadata
       await supabase.auth.updateUser({
         data: {
           full_name: formData.full_name,
@@ -181,14 +180,12 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     setLoading(true)
     setMessage({ type: '', text: '' })
     try {
-      // Verify current password
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user?.email || '',
         password: formData.currentPassword,
       })
       if (signInError) throw new Error('Mot de passe actuel incorrect.')
 
-      // Update password
       const { error: updateError } = await supabase.auth.updateUser({ password: formData.newPassword })
       if (updateError) throw updateError
 
@@ -206,7 +203,6 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     if (!confirm('Voulez-vous vraiment supprimer votre compte ? Cette action est irréversible.')) return
     setLoading(true)
     try {
-      // Schedule deletion by updating a flag (or call an API)
       const { error } = await supabase
         .from('business_users')
         .update({ deletion_scheduled_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() } as any)
@@ -239,20 +235,36 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     }
   }
 
-  const tabButtonClass = (tabName: string) => `
-    w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all
-    ${activeTab === tabName
-      ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-lg shadow-amber-500/20'
-      : 'text-slate-400 hover:bg-white/5 hover:text-white'}
-  `
+  const sidebarTab = (tab: typeof activeTab, icon: React.ReactNode, label: string) => (
+    <button
+      onClick={() => setActiveTab(tab)}
+      className={cn(
+        'flex items-center gap-4 px-6 py-4 rounded-full font-business-display font-bold text-sm tracking-wide transition-all duration-300 w-full',
+        activeTab === tab
+          ? 'bg-white shadow-[0_4px_12px_rgba(0,0,0,0.03),0_0_0_0.5px_rgba(196,199,199,0.2)] text-stone-900'
+          : 'text-stone-400 hover:translate-x-1'
+      )}
+    >
+      {icon}
+      {label}
+    </button>
+  )
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200">
+      {/* Background blurs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+        <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#006c49]/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-[#ffddb8]/20 rounded-full blur-[120px]" />
+      </div>
+      {/* Click outside to close */}
+      <div className="fixed inset-0 z-0" onClick={onClose} />
 
       {/* CROPPER OVERLAY */}
       {imageSrc && (
-        <div className="absolute inset-0 z-[200] bg-black flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900 mb-6">
+        <div className="absolute inset-0 z-[200] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-lg h-[400px] relative rounded-2xl overflow-hidden border border-stone-300 bg-stone-100 mb-6">
             <Cropper
               image={imageSrc}
               crop={crop}
@@ -265,7 +277,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
           </div>
           <div className="w-full max-w-lg space-y-6">
             <div className="flex items-center gap-4 px-4">
-              <ZoomOut className="h-5 w-5 text-slate-400" />
+              <ZoomOut className="h-5 w-5 text-stone-400" />
               <input
                 type="range"
                 value={zoom}
@@ -273,22 +285,22 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 max={3}
                 step={0.1}
                 onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                className="w-full h-2 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-[#006c49]"
               />
-              <ZoomIn className="h-5 w-5 text-slate-400" />
+              <ZoomIn className="h-5 w-5 text-stone-400" />
             </div>
             <div className="flex gap-4 justify-center">
               <button
                 onClick={() => setImageSrc(null)}
                 disabled={uploading}
-                className="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
+                className="px-6 py-3 rounded-full border border-stone-600 text-stone-300 font-bold hover:bg-stone-800 transition-colors flex items-center gap-2"
               >
                 <X className="h-4 w-4" /> Annuler
               </button>
               <button
                 onClick={showCroppedImage}
                 disabled={uploading}
-                className="px-6 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 transition-colors shadow-lg shadow-amber-500/25 flex items-center gap-2"
+                className="px-6 py-3 rounded-full bg-stone-900 text-white font-bold hover:opacity-90 transition-all shadow-lg flex items-center gap-2"
               >
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Valider la photo
@@ -298,81 +310,56 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
         </div>
       )}
 
-      <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-[#020617] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[700px] relative">
+      {/* Modal Container */}
+      <div className="relative z-10 w-full max-w-6xl h-[870px] bg-white rounded-[2rem] shadow-[0_40px_80px_rgba(27,28,27,0.08)] flex overflow-hidden">
 
-        {/* Background Gradients */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-amber-600/5 blur-[100px] rounded-full" />
-          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-orange-600/5 blur-[100px] rounded-full" />
-        </div>
-
-        {/* SIDEBAR */}
-        <div className="w-full md:w-72 border-r border-white/5 bg-slate-900/30 p-6 flex flex-col backdrop-blur-sm z-10">
-          <div className="flex items-center gap-3 mb-8 px-2">
-            <div className="h-8 w-8 rounded-lg bg-amber-600 flex items-center justify-center">
-              <User className="h-5 w-5 text-white" />
-            </div>
-            <h2 className="text-xl font-bold text-white">Paramètres</h2>
+        {/* ─── Sidebar ─── */}
+        <aside className="hidden md:flex flex-col w-80 bg-white/70 backdrop-blur-xl border-r border-[#c4c7c7]/10 py-12 px-6">
+          <div className="mb-12 px-4">
+            <h2 className="font-business-display font-extrabold text-2xl tracking-tighter text-stone-900">Settings</h2>
+            <p className="text-stone-500 text-sm mt-1">Manage your workspace</p>
           </div>
 
-          <nav className="space-y-2 flex-1">
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Compte</p>
-            <button onClick={() => setActiveTab('profile')} className={tabButtonClass('profile')}>
-              <User className="w-4 h-4" /> Profil
-            </button>
-            <button onClick={() => setActiveTab('security')} className={tabButtonClass('security')}>
-              <Lock className="w-4 h-4" /> Sécurité
-            </button>
-            <button onClick={() => setActiveTab('delete_account')} className={tabButtonClass('delete_account')}>
-              <Trash2 className="w-4 h-4 text-red-400" /> Suppression
-            </button>
-
-            <div className="my-6 h-px bg-white/5 mx-4" />
-
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Aide</p>
-            <button onClick={() => setActiveTab('support')} className={tabButtonClass('support')}>
-              <Headphones className="w-4 h-4" /> Support
-            </button>
+          <nav className="flex-1 space-y-2">
+            {sidebarTab('profile', <User className="h-5 w-5" strokeWidth={1.5} />, 'Profile')}
+            {sidebarTab('security', <Shield className="h-5 w-5" strokeWidth={1.5} />, 'Security')}
+            {sidebarTab('delete_account', <Trash2 className="h-5 w-5" strokeWidth={1.5} />, 'Delete Account')}
+            {sidebarTab('support', <Headphones className="h-5 w-5" strokeWidth={1.5} />, 'Support')}
           </nav>
 
-          <button onClick={onClose} className="mt-auto flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-white font-bold transition-colors rounded-xl hover:bg-white/5">
-            <X className="w-4 h-4" /> Fermer
-          </button>
-        </div>
-
-        {/* CONTENT */}
-        <div className="flex-1 flex flex-col bg-[#020617]/50 backdrop-blur-sm overflow-hidden text-left z-10 relative">
-          <div className="px-10 py-8 border-b border-white/5 flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold text-white text-left">
-                {activeTab === 'profile' && 'Mon Profil'}
-                {activeTab === 'security' && 'Sécurité & Connexion'}
-                {activeTab === 'support' && "Centre d'Aide"}
-                {activeTab === 'delete_account' && 'Suppression du compte'}
-              </h2>
-              <p className="text-slate-400 text-sm mt-1 text-left">
-                {activeTab === 'profile' && 'Gérez vos informations personnelles et votre rôle.'}
-                {activeTab === 'security' && "Protégez l'accès à votre compte CloseOS Business."}
-                {activeTab === 'support' && 'Une question ? Notre équipe est là pour vous.'}
-                {activeTab === 'delete_account' && 'Zone de danger : Supprimer votre compte et vos données.'}
-              </p>
+          {/* Footer */}
+          <div className="mt-auto px-4 pt-8">
+            <div className="p-6 bg-[#f5f3f2] rounded-2xl">
+              <p className="text-[10px] uppercase tracking-widest font-bold text-stone-400 mb-2">Workspace Plan</p>
+              <p className="font-business-display font-extrabold text-sm text-stone-900">CloserOS Business</p>
             </div>
           </div>
+        </aside>
 
-          <div className="flex-1 overflow-y-auto p-10 custom-scrollbar text-left">
+        {/* ─── Main Content ─── */}
+        <main className="flex-1 overflow-y-auto bg-[#fbf9f8] py-12 px-8 lg:px-16">
+          <div className="max-w-3xl">
+
+            {/* Message */}
             {message.text && (
-              <div className={`mb-8 flex items-center gap-3 p-4 rounded-xl border ${message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                {message.type === 'success' ? <Check className="h-5 w-5" /> : <X className="h-5 w-5" />}
+              <div className={cn(
+                'mb-8 flex items-center gap-3 p-5 rounded-2xl border',
+                message.type === 'success'
+                  ? 'bg-[#006c49]/5 border-[#006c49]/10 text-[#006c49]'
+                  : 'bg-red-50 border-red-200 text-red-600'
+              )}>
+                {message.type === 'success' ? <Check className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
                 <p className="font-medium text-sm">{message.text}</p>
               </div>
             )}
 
             {/* ─── PROFILE TAB ─── */}
             {activeTab === 'profile' && (
-              <form onSubmit={handleUpdateProfile} className="space-y-8 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+              <form onSubmit={handleUpdateProfile} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 mb-8 tracking-tight">Mon Profil</h3>
 
-                {/* Avatar */}
-                <div className="flex items-center gap-6 p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                <div className="flex flex-col md:flex-row gap-12 items-start">
+                  {/* Avatar */}
                   <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
                     <input
                       type="file"
@@ -382,173 +369,238 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                       accept="image/jpeg, image/png, image/webp"
                       disabled={uploading}
                     />
-                    <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/10 shadow-xl shadow-amber-500/20 group-hover:border-amber-500 transition-all">
+                    <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg bg-[#eae8e7] flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
                       {formData.avatar_url ? (
                         <img src={formData.avatar_url} alt="Profil" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-3xl font-bold text-white">
+                        <div className="w-full h-full bg-gradient-to-br from-[#ffddb8] to-[#ffb95f] flex items-center justify-center text-4xl font-business-display font-extrabold text-[#2a1700]">
                           {formData.full_name?.[0] || 'U'}
                         </div>
                       )}
                     </div>
-                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      {uploading ? <Loader2 className="h-6 w-6 text-white animate-spin" /> : <Camera className="h-6 w-6 text-white" />}
-                    </div>
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-bold text-white text-lg">Photo de profil</h3>
-                    <p className="text-sm text-slate-400 mt-1">
-                      {uploading ? 'Téléchargement en cours...' : "Cliquez sur l'image pour la modifier (JPG, PNG)."}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid gap-6">
-                  {/* Full name */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">Nom complet</label>
-                    <input
-                      type="text"
-                      disabled
-                      value={formData.full_name}
-                      className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-slate-500 cursor-not-allowed outline-none transition-all font-medium text-left"
-                    />
-                    <div className="flex items-start gap-2 mt-2 px-1">
-                      <AlertCircle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-                      <p className="text-xs text-amber-300/80 leading-relaxed text-left">Le nom est verrouillé pour garantir la stabilité de vos liens.</p>
-                    </div>
+                    <button
+                      type="button"
+                      className="absolute bottom-0 right-0 bg-stone-900 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-xl border-4 border-[#fbf9f8] hover:scale-110 transition-all"
+                    >
+                      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" strokeWidth={1.5} />}
+                    </button>
                   </div>
 
-                  {/* Phone */}
-                  <div className="space-y-2 text-left">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">Numéro de téléphone</label>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                  {/* Form fields */}
+                  <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Full name */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Nom complet</label>
+                      <input
+                        type="text"
+                        disabled
+                        value={formData.full_name}
+                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-400 cursor-not-allowed outline-none transition-all font-medium"
+                      />
+                      <div className="flex items-start gap-2 mt-1 px-1">
+                        <AlertCircle className="h-3.5 w-3.5 text-[#006c49] mt-0.5 shrink-0" strokeWidth={1.5} />
+                        <p className="text-[10px] text-stone-500 leading-relaxed">Le nom est verrouillé pour garantir la stabilité de vos liens.</p>
+                      </div>
+                    </div>
+
+                    {/* Email (read-only) */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Email</label>
+                      <input
+                        type="email"
+                        disabled
+                        value={user?.email || ''}
+                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-400 cursor-not-allowed outline-none font-medium"
+                      />
+                    </div>
+
+                    {/* Phone */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Numero de telephone</label>
                       <input
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all text-left"
+                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                         placeholder="+33 6 00 00 00 00"
                       />
                     </div>
-                  </div>
 
-                  {/* Role */}
-                  <div className="space-y-2 text-left">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">Rôle</label>
-                    <div className="relative">
-                      <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                      <select
-                        value={formData.role}
-                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all cursor-pointer appearance-none text-left"
-                      >
-                        <option value="Business Owner">Business Owner</option>
-                        <option value="Manager">Manager</option>
-                        <option value="Closer">Closer</option>
-                        <option value="Setter">Setter</option>
-                        <option value="Setter-Closer">Setter-Closer</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Owner assignable toggle */}
-                  <div
-                    onClick={() => setFormData(prev => ({ ...prev, owner_assignable: !prev.owner_assignable }))}
-                    className="flex items-center justify-between p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 transition-colors">
-                        <UserPlus className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-white text-sm">Apparaître dans les assignations</h4>
-                        <p className="text-xs text-slate-400 mt-0.5">Vous serez sélectionnable comme Closer/Setter dans les menus d'assignation</p>
+                    {/* Role */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Role</label>
+                      <div className="relative">
+                        <select
+                          value={formData.role}
+                          onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                          className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all cursor-pointer appearance-none font-medium"
+                        >
+                          <option value="Business Owner">Business Owner</option>
+                          <option value="Manager">Manager</option>
+                          <option value="Closer">Closer</option>
+                          <option value="Setter">Setter</option>
+                          <option value="Setter-Closer">Setter-Closer</option>
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" strokeWidth={1.5} />
                       </div>
                     </div>
-                    {formData.owner_assignable
-                      ? <ToggleRight className="h-7 w-7 text-amber-500 shrink-0" />
-                      : <ToggleLeft className="h-7 w-7 text-slate-500 shrink-0" />
-                    }
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50 hover:scale-[1.02]"
+                {/* Owner assignable toggle */}
+                <div
+                  onClick={() => setFormData(prev => ({ ...prev, owner_assignable: !prev.owner_assignable }))}
+                  className="mt-8 flex items-center justify-between p-6 rounded-2xl bg-white border border-[#c4c7c7]/10 shadow-sm hover:shadow-md transition-all cursor-pointer group"
                 >
-                  {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Save className="h-5 w-5" />}
-                  Enregistrer les modifications
-                </button>
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 rounded-xl bg-[#006c49]/10 text-[#006c49] group-hover:bg-[#006c49]/15 transition-colors">
+                      <UserPlus className="h-5 w-5" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-stone-900 text-sm">Apparaitre dans les assignations</h4>
+                      <p className="text-xs text-stone-500 mt-0.5">Vous serez selectionnable comme Closer/Setter dans les menus d'assignation</p>
+                    </div>
+                  </div>
+                  {formData.owner_assignable
+                    ? <ToggleRight className="h-7 w-7 text-[#006c49] shrink-0" />
+                    : <ToggleLeft className="h-7 w-7 text-stone-300 shrink-0" />
+                  }
+                </div>
+
+                {/* Security section inline */}
+                <section className="mt-16 mb-12">
+                  <div className="flex items-baseline justify-between mb-8">
+                    <h3 className="font-business-display font-extrabold text-3xl text-stone-900 tracking-tight">Securite & Connexion</h3>
+                    <span className="text-xs font-bold text-[#006c49] uppercase tracking-widest bg-[#006c49]/5 px-3 py-1 rounded-full">Proteger</span>
+                  </div>
+
+                  {/* Google Auth Banner */}
+                  {isGoogleUser && (
+                    <div className="mb-8 p-6 rounded-2xl bg-white border border-[#c4c7c7]/10 shadow-sm flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-[#eae8e7] rounded-full flex items-center justify-center">
+                          <svg className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-business-display font-bold text-sm text-stone-900">Authentification Google active</p>
+                          <p className="text-xs text-stone-500">Connecte via {user?.email}</p>
+                        </div>
+                      </div>
+                      <Check className="h-6 w-6 text-[#006c49]" strokeWidth={2} />
+                    </div>
+                  )}
+
+                  {/* Password fields */}
+                  {!isGoogleUser && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Mot de passe actuel</label>
+                        <input
+                          type="password"
+                          value={formData.currentPassword}
+                          onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+                          className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                          placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Nouveau mot de passe</label>
+                        <input
+                          type="password"
+                          value={formData.newPassword}
+                          onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                          className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                          placeholder="Entrez 8 caracteres min."
+                        />
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                {/* Footer actions */}
+                <div className="mt-12 pt-8 border-t border-[#c4c7c7]/10 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="text-sm font-business-display font-bold text-stone-400 hover:text-stone-900 transition-colors"
+                  >
+                    Ignorer les modifications
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-stone-900 text-white font-business-display font-extrabold text-sm px-10 py-5 rounded-full flex items-center gap-3 shadow-2xl shadow-stone-900/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                  >
+                    {loading ? <Loader2 className="animate-spin h-5 w-5" /> : null}
+                    Enregistrer les modifications
+                    <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                  </button>
+                </div>
               </form>
             )}
 
             {/* ─── SECURITY TAB ─── */}
             {activeTab === 'security' && (
-              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 mb-8 tracking-tight">Securite & Connexion</h3>
+
                 {isGoogleUser ? (
-                  <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex gap-4 text-left">
-                    <div className="p-3 bg-amber-500/20 rounded-xl h-fit">
-                      <Shield className="h-6 w-6 text-amber-400 shrink-0" />
+                  <div className="p-6 bg-[#006c49]/5 border border-[#006c49]/10 rounded-2xl flex gap-4">
+                    <div className="p-3 bg-[#006c49]/10 rounded-xl h-fit">
+                      <Shield className="h-6 w-6 text-[#006c49] shrink-0" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-white mb-1 text-lg text-left">Authentification Google active</h4>
-                      <p className="text-sm text-amber-200/70 leading-relaxed text-left">Votre compte est sécurisé par Google. La gestion du mot de passe se fait via Google.</p>
+                      <h4 className="font-bold text-stone-900 mb-1 text-lg">Authentification Google active</h4>
+                      <p className="text-sm text-stone-500 leading-relaxed">Votre compte est securise par Google. La gestion du mot de passe se fait via Google.</p>
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleUpdatePassword} className="space-y-6 text-left">
-                    <div className="space-y-2 text-left">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Mot de passe actuel (Requis)</label>
-                      <div className="relative text-left">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                        <input
-                          type="password"
-                          value={formData.currentPassword}
-                          onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-                          className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all text-left"
-                          placeholder="Votre mot de passe actuel"
-                          required
-                        />
-                      </div>
+                  <form onSubmit={handleUpdatePassword} className="space-y-6">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Mot de passe actuel (Requis)</label>
+                      <input
+                        type="password"
+                        value={formData.currentPassword}
+                        onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                        placeholder="Votre mot de passe actuel"
+                        required
+                      />
                     </div>
-                    <div className="space-y-2 text-left">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Nouveau mot de passe</label>
-                      <div className="relative text-left">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                        <input
-                          type="password"
-                          value={formData.newPassword}
-                          onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                          className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all text-left"
-                          placeholder="8 caractères minimum"
-                          minLength={8}
-                        />
-                      </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Nouveau mot de passe</label>
+                      <input
+                        type="password"
+                        value={formData.newPassword}
+                        onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                        placeholder="8 caracteres minimum"
+                        minLength={8}
+                      />
                     </div>
-                    <div className="space-y-2 text-left">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Confirmer le mot de passe</label>
-                      <div className="relative text-left">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                        <input
-                          type="password"
-                          value={formData.confirmPassword}
-                          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                          className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all text-left"
-                          placeholder="Répétez le mot de passe"
-                          minLength={8}
-                        />
-                      </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 ml-1">Confirmer le mot de passe</label>
+                      <input
+                        type="password"
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        className="w-full bg-[#f5f3f2] border-none rounded-xl px-5 py-4 text-stone-900 focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                        placeholder="Repetez le mot de passe"
+                        minLength={8}
+                      />
                     </div>
                     <button
                       type="submit"
                       disabled={loading || !formData.newPassword || !formData.confirmPassword || !formData.currentPassword}
-                      className="w-full bg-white/5 hover:bg-white/10 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-white/10 hover:border-white/20"
+                      className="w-full bg-stone-900 text-white px-6 py-4 rounded-full font-business-display font-extrabold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
                     >
-                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Shield className="h-5 w-5" />}
-                      Mettre à jour le mot de passe
+                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Shield className="h-5 w-5" strokeWidth={1.5} />}
+                      Mettre a jour le mot de passe
                     </button>
                   </form>
                 )}
@@ -557,21 +609,23 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
             {/* ─── DELETE ACCOUNT TAB ─── */}
             {activeTab === 'delete_account' && (
-              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                <div className="p-8 border border-red-500/20 bg-red-500/5 rounded-3xl space-y-6 text-left">
-                  <div className="flex items-center gap-4 text-red-400 text-left">
-                    <AlertCircle className="h-8 w-8" />
-                    <h3 className="text-xl font-bold">Zone de danger</h3>
+              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 mb-8 tracking-tight">Suppression du compte</h3>
+
+                <div className="p-8 border border-red-200 bg-red-50 rounded-3xl space-y-6">
+                  <div className="flex items-center gap-4 text-red-600">
+                    <AlertCircle className="h-8 w-8" strokeWidth={1.5} />
+                    <h3 className="text-xl font-business-display font-extrabold">Zone de danger</h3>
                   </div>
                   <div className="space-y-4">
-                    <p className="text-slate-400 leading-relaxed text-left">
-                      La suppression est irréversible. Toutes vos données (prospects, campagnes, objectifs, équipe) seront supprimées définitivement.
+                    <p className="text-stone-600 leading-relaxed">
+                      La suppression est irreversible. Toutes vos donnees (prospects, campagnes, objectifs, equipe) seront supprimees definitivement.
                     </p>
                     {formData.deletion_scheduled_at && (
-                      <div className="p-4 bg-red-500/20 rounded-xl border border-red-500/30">
-                        <p className="font-bold text-red-200">Compte en cours de suppression</p>
-                        <p className="text-sm text-red-300 mt-1">
-                          Prévue le : {new Date(formData.deletion_scheduled_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      <div className="p-4 bg-red-100 rounded-2xl border border-red-200">
+                        <p className="font-bold text-red-700">Compte en cours de suppression</p>
+                        <p className="text-sm text-red-600 mt-1">
+                          Prevue le : {new Date(formData.deletion_scheduled_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                         </p>
                       </div>
                     )}
@@ -580,7 +634,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     <button
                       onClick={handleCancelDeletion}
                       disabled={loading}
-                      className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold transition-all border border-slate-600"
+                      className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-stone-200 hover:bg-stone-300 text-stone-900 rounded-full font-bold transition-all"
                     >
                       {loading ? <Loader2 className="animate-spin h-5 w-5" /> : "Annuler la demande de suppression"}
                     </button>
@@ -588,9 +642,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     <button
                       onClick={handleDeleteAccount}
                       disabled={loading}
-                      className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20"
+                      className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white rounded-full font-bold transition-all border border-red-200 hover:border-red-600"
                     >
-                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <><Trash2 className="h-5 w-5" /> Supprimer mon compte et mes données</>}
+                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <><Trash2 className="h-5 w-5" strokeWidth={1.5} /> Supprimer mon compte et mes donnees</>}
                     </button>
                   )}
                 </div>
@@ -599,40 +653,50 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
             {/* ─── SUPPORT TAB ─── */}
             {activeTab === 'support' && (
-              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02] text-left">
+              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 mb-8 tracking-tight">Centre d'Aide</h3>
+
+                <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-[#c4c7c7]/10 bg-white hover:shadow-md transition-all hover:scale-[1.01]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 group-hover:text-amber-300 transition-colors">
-                        <Mail className="h-6 w-6" />
+                      <div className="p-3 rounded-xl bg-[#006c49]/10 text-[#006c49] group-hover:bg-[#006c49]/15 transition-colors">
+                        <Mail className="h-6 w-6" strokeWidth={1.5} />
                       </div>
                       <div>
-                        <h4 className="font-bold text-white text-lg">Email Support</h4>
-                        <p className="text-sm text-slate-400">Réponse sous 24h ouvrées</p>
+                        <h4 className="font-bold text-stone-900 text-lg">Email Support</h4>
+                        <p className="text-sm text-stone-500">Reponse sous 24h ouvrees</p>
                       </div>
                     </div>
-                    <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
+                    <ExternalLink className="h-5 w-5 text-stone-300 group-hover:text-stone-900 transition-colors" strokeWidth={1.5} />
                   </div>
                 </a>
 
-                <a href="#" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02] text-left">
+                <a href="#" className="group block p-6 rounded-2xl border border-[#c4c7c7]/10 bg-white hover:shadow-md transition-all hover:scale-[1.01]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors">
-                        <AlertCircle className="h-6 w-6" />
+                      <div className="p-3 rounded-xl bg-[#ffddb8]/30 text-[#2a1700] group-hover:bg-[#ffddb8]/50 transition-colors">
+                        <AlertCircle className="h-6 w-6" strokeWidth={1.5} />
                       </div>
                       <div>
-                        <h4 className="font-bold text-white text-lg">Centre d'aide & FAQ</h4>
-                        <p className="text-sm text-slate-400">Guides et tutoriels (Bientôt disponible)</p>
+                        <h4 className="font-bold text-stone-900 text-lg">Centre d'aide & FAQ</h4>
+                        <p className="text-sm text-stone-500">Guides et tutoriels (Bientot disponible)</p>
                       </div>
                     </div>
-                    <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white" />
+                    <ExternalLink className="h-5 w-5 text-stone-300 group-hover:text-stone-900 transition-colors" strokeWidth={1.5} />
                   </div>
                 </a>
               </div>
             )}
           </div>
-        </div>
+        </main>
+
+        {/* Close button (top right) */}
+        <button
+          onClick={onClose}
+          className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/70 backdrop-blur-md flex items-center justify-center text-stone-400 hover:text-stone-900 transition-all z-20 shadow-sm"
+        >
+          <X className="h-5 w-5" strokeWidth={1.5} />
+        </button>
       </div>
     </div>
   )

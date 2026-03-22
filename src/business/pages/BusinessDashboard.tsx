@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import {
   Loader2, DollarSign, TrendingUp, CalendarDays, Target, UserX, Activity,
   Megaphone, Users, Bell, ArrowUpRight, ArrowDownRight, FileDown, Circle,
-  AlertTriangle, Clock, MoreHorizontal,
+  AlertTriangle, Clock, MoreHorizontal, Search, Plus,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { BusinessReminderBell } from '../components/BusinessReminderBell'
 import { CloserDashboard } from './CloserDashboard'
 import { supabase } from '../../lib/supabase'
 
@@ -95,10 +96,12 @@ const CAMPAIGN_ICON_CLASSES: Record<string, { bg: string; text: string }> = {
   rose: { bg: 'bg-rose-100', text: 'text-rose-700' },
 }
 
+const glassCard = "bg-white/60 backdrop-blur-xl border border-neutral-900/5 shadow-[0_20px_40px_rgba(27,28,27,0.04)]"
+
 // ─── Component ───
 
 export function BusinessDashboard() {
-  const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
+  const { user, isTeamMember, teamMember, ownerUserId, businessProfile } = useBusinessAuth()
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
   const isAdmin = isTeamMember && teamMember?.role === 'Admin'
 
@@ -213,34 +216,118 @@ export function BusinessDashboard() {
     })
   }, [objectives, totalRevenue, wonProspects.length, closingRate, prospects.length, totalAppts, noshowRate])
 
+  const firstName = isTeamMember
+    ? (teamMember?.first_name || 'Utilisateur')
+    : (businessProfile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Utilisateur')
+
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-stone-400 animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-neutral-400 animate-spin" /></div>
   }
 
   return (
     <div className="space-y-10">
 
       {/* ─── Header ─── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            CloseOS
-          </h1>
-          <p className="text-[10px] text-stone-400 font-bold uppercase tracking-[0.2em] mt-1">Vue d'ensemble globale</p>
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="space-y-1">
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Bonjour, {firstName}.
+          </h2>
+          <p className="text-neutral-500 text-lg">Voici l'état de votre activité aujourd'hui.</p>
         </div>
-        <Link
-          to="/business/report"
-          className="flex items-center gap-2 bg-stone-900 text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-stone-800 transition-all active:scale-95"
-        >
-          <FileDown className="h-4 w-4" />
-          Exporter Rapport
-        </Link>
-      </div>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex">
+            <BusinessReminderBell />
+          </div>
+          <Link
+            to="/business/report"
+            className="bg-neutral-900 text-white px-8 py-3 rounded-full font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+            style={{ fontFamily: 'Manrope, sans-serif' }}
+          >
+            <FileDown className="h-4 w-4" />
+            Exporter Rapport
+          </Link>
+        </div>
+      </header>
 
-      {/* ─── KPI Cards ─── */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {/* ─── Bento Grid ─── */}
+      <div className="grid grid-cols-12 gap-6">
+
+        {/* ── Main Stats Card (col-span-8) ── */}
+        <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-8 md:p-10 flex flex-col justify-between min-h-[380px]`}>
+          <div>
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h3 className="text-2xl font-extrabold tracking-tight mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>Croissance des Revenus</h3>
+                <p className="text-sm text-neutral-500">Pipeline de vente vs Objectifs</p>
+              </div>
+              <span className={`text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1 ${revenueDelta >= 0 ? 'text-emerald-700 bg-emerald-100/80' : 'text-red-600 bg-red-100/80'}`}>
+                {revenueDelta >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+                {revenueDelta >= 0 ? '+' : ''}{revenueDelta.toFixed(1)}%
+              </span>
+            </div>
+            {/* Revenue chart bars */}
+            <div className="h-48 w-full flex items-end gap-3 px-2">
+              {[40, 65, 55, 85, 75, 45, 90, 60].map((h, i) => (
+                <div
+                  key={i}
+                  className={`flex-1 rounded-t-lg transition-all ${i === 3 ? 'bg-neutral-900' : 'bg-neutral-200/80'}`}
+                  style={{ height: `${h}%` }}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-8 pt-8 border-t border-neutral-900/5">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Opportunités</p>
+              <p className="text-2xl font-black" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue + (totalRevenue * 0.4))}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Signés</p>
+              <p className="text-2xl font-black" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Taux de Conv.</p>
+              <p className="text-2xl font-black" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Quota Ring Card (col-span-4) ── */}
+        <div className={`col-span-12 lg:col-span-4 ${glassCard} rounded-2xl p-8 flex flex-col items-center justify-center text-center`}>
+          {/* Ring progress */}
+          <div className="relative w-28 h-28 mb-6">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#e5e5e5" strokeWidth="6" />
+              <circle
+                cx="50" cy="50" r="42" fill="none"
+                stroke="#059669"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeDasharray={`${(objectiveProgress || closingRate) * 2.64} 264`}
+                className="transition-all duration-1000"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-3xl font-black" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                {(objectiveProgress || closingRate).toFixed(0)}%
+              </span>
+            </div>
+          </div>
+          <h3 className="text-xl font-extrabold mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>Quotas atteints</h3>
+          <p className="text-sm text-neutral-500 max-w-[200px]">
+            {objectiveProgress !== null
+              ? objectiveProgress >= 80 ? 'Votre équipe est en avance sur les prévisions.' : 'Progression vers l\'objectif en cours.'
+              : closingRate >= 30 ? 'Taux de closing au-dessus de la moyenne.' : 'Continuez à améliorer le closing.'}
+          </p>
+          <Link to="/business/report" className="mt-6 text-neutral-900 font-bold text-sm border-b-2 border-neutral-900/20 hover:border-neutral-900 transition-all pb-1 uppercase tracking-wide" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Voir le rapport
+          </Link>
+        </div>
+
+        {/* ── KPI Row (6 mini cards) ── */}
         {/* Revenue */}
-        <div className="bg-white/70 backdrop-blur-md border border-stone-200/20 rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform`}>
           <div className="flex justify-between items-start mb-3">
             <div className="p-2 rounded-lg bg-emerald-50">
               <DollarSign className="h-4 w-4 text-emerald-600" />
@@ -250,67 +337,63 @@ export function BusinessDashboard() {
             </span>
           </div>
           <div>
-            <p className="text-[10px] text-stone-500 uppercase font-black tracking-[0.15em] mb-1">Revenue</p>
-            <p className="text-xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Revenue</p>
+            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
           </div>
         </div>
 
         {/* Acquisition */}
-        <div className="bg-white/70 backdrop-blur-md border border-stone-200/20 rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-          <div className="flex justify-between items-start mb-3">
-            <div className="p-2 rounded-lg bg-stone-100">
-              <TrendingUp className="h-4 w-4 text-stone-600" />
-            </div>
+        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform`}>
+          <div className="p-2 rounded-lg bg-stone-100 w-fit">
+            <TrendingUp className="h-4 w-4 text-neutral-600" />
           </div>
-          <div>
-            <p className="text-[10px] text-stone-500 uppercase font-black tracking-[0.15em] mb-1">Acquisition</p>
-            <p className="text-xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>Closing {formatPct(closingRate)}</p>
+          <div className="mt-3">
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Acquisition</p>
+            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>Closing {formatPct(closingRate)}</p>
           </div>
         </div>
 
         {/* Rendez-vous */}
-        <div className="bg-white/70 backdrop-blur-md border border-stone-200/20 rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-          <div className="flex justify-between items-start mb-3">
-            <div className="p-2 rounded-lg bg-stone-100">
-              <CalendarDays className="h-4 w-4 text-stone-600" />
-            </div>
+        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform`}>
+          <div className="p-2 rounded-lg bg-stone-100 w-fit">
+            <CalendarDays className="h-4 w-4 text-neutral-600" />
           </div>
-          <div>
-            <p className="text-[10px] text-stone-500 uppercase font-black tracking-[0.15em] mb-1">Rendez-vous</p>
-            <p className="text-xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAppts.toLocaleString()}</p>
+          <div className="mt-3">
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Rendez-vous</p>
+            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAppts.toLocaleString()}</p>
           </div>
         </div>
 
         {/* Objectif */}
-        <div className="bg-white/70 backdrop-blur-md border border-stone-200/20 rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-          <div className="flex justify-between items-start mb-3">
+        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform`}>
+          <div className="flex justify-between items-start">
             <div className="p-2 rounded-lg bg-stone-100">
-              <Target className="h-4 w-4 text-stone-600" />
+              <Target className="h-4 w-4 text-neutral-600" />
             </div>
             {objectiveProgress !== null && (
-              <span className="text-xs font-bold text-stone-600">{objectiveProgress.toFixed(0)}%</span>
+              <span className="text-xs font-bold text-neutral-600">{objectiveProgress.toFixed(0)}%</span>
             )}
           </div>
-          <div>
-            <p className="text-[10px] text-stone-500 uppercase font-black tracking-[0.15em] mb-1">Objectif</p>
+          <div className="mt-3">
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Objectif</p>
             {revenueObjective ? (
               <>
                 <div className="w-full bg-stone-100 h-1.5 rounded-full mt-2 mb-2 overflow-hidden">
-                  <div className="bg-stone-900 h-full rounded-full transition-all" style={{ width: `${objectiveProgress}%` }} />
+                  <div className="bg-neutral-900 h-full rounded-full transition-all" style={{ width: `${objectiveProgress}%` }} />
                 </div>
-                <p className="text-base font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                <p className="text-base font-extrabold text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {objectiveProgress! >= 80 ? 'En bonne voie' : 'En cours'}
                 </p>
               </>
             ) : (
-              <p className="text-sm text-stone-400 mt-1">Aucun objectif</p>
+              <p className="text-sm text-neutral-400 mt-1">Aucun objectif</p>
             )}
           </div>
         </div>
 
         {/* No-Show */}
-        <div className="bg-white/70 backdrop-blur-md border border-stone-200/20 rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-          <div className="flex justify-between items-start mb-3">
+        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 ${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform`}>
+          <div className="flex justify-between items-start">
             <div className="p-2 rounded-lg bg-amber-50">
               <UserX className="h-4 w-4 text-amber-600" />
             </div>
@@ -320,15 +403,15 @@ export function BusinessDashboard() {
               </span>
             )}
           </div>
-          <div>
-            <p className="text-[10px] text-stone-500 uppercase font-black tracking-[0.15em] mb-1">No-Show</p>
-            <p className="text-xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
+          <div className="mt-3">
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">No-Show</p>
+            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
           </div>
         </div>
 
         {/* KPI Health */}
-        <div className={`bg-white/70 backdrop-blur-md rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`} style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-          <div className="flex justify-between items-start mb-3">
+        <div className={`col-span-6 sm:col-span-4 xl:col-span-2 rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform bg-white/60 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}>
+          <div className="flex justify-between items-start">
             <div className={`p-2 rounded-lg ${healthOk ? 'bg-emerald-50' : healthWarn ? 'bg-amber-50' : 'bg-red-50'}`}>
               <Activity className={`h-4 w-4 ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`} />
             </div>
@@ -339,9 +422,9 @@ export function BusinessDashboard() {
               </span>
             </div>
           </div>
-          <div>
-            <p className="text-[10px] text-stone-500 uppercase font-black tracking-[0.15em] mb-1">Santé KPI</p>
-            <p className="text-lg font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{healthLabel}</p>
+          <div className="mt-3">
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Santé KPI</p>
+            <p className="text-lg font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{healthLabel}</p>
           </div>
         </div>
       </div>
@@ -349,41 +432,41 @@ export function BusinessDashboard() {
       {/* ─── Campaigns + Objectives ─── */}
       <div className="grid grid-cols-12 gap-6">
         {/* Campagnes actives */}
-        <div className="col-span-12 lg:col-span-7 bg-white/70 backdrop-blur-md border border-stone-200/20 rounded-2xl p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+        <div className={`col-span-12 lg:col-span-7 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h3 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Campagnes actives</h3>
-              <p className="text-stone-400 text-sm mt-0.5">Performance en temps réel des flux actifs.</p>
+              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Campagnes actives</h3>
+              <p className="text-neutral-400 text-sm mt-0.5">Performance en temps réel des flux actifs.</p>
             </div>
-            <Link to="/business/campagnes" className="text-sm font-bold text-stone-900 border-b-2 border-stone-900 pb-0.5 hover:opacity-70 transition-opacity">
+            <Link to="/business/campagnes" className="text-sm font-bold text-neutral-900 border-b-2 border-neutral-900 pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Voir Entonnoir
             </Link>
           </div>
           {activeCampaigns.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-8">Aucune campagne</p>
+            <p className="text-sm text-neutral-400 text-center py-8">Aucune campagne</p>
           ) : (
             <div className="space-y-4">
               {activeCampaigns.map((c, idx) => {
                 const colorKey = CAMPAIGN_ICONS[idx % CAMPAIGN_ICONS.length]
                 const colors = CAMPAIGN_ICON_CLASSES[colorKey]
                 return (
-                  <div key={c.id} className="flex items-center justify-between p-5 bg-stone-50/80 rounded-2xl group hover:bg-white transition-all cursor-pointer">
+                  <div key={c.id} className="flex items-center justify-between p-5 bg-neutral-50/80 rounded-2xl group hover:bg-white transition-all cursor-pointer">
                     <div className="flex items-center gap-5">
                       <div className={`w-11 h-11 ${colors.bg} ${colors.text} rounded-full flex items-center justify-center`}>
                         <Megaphone className="h-5 w-5" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-stone-900">{c.name}</h4>
-                        <p className="text-stone-400 text-[10px] font-semibold uppercase tracking-wider">
+                        <h4 className="font-bold text-neutral-900">{c.name}</h4>
+                        <p className="text-neutral-400 text-[10px] font-semibold uppercase tracking-wider">
                           {c.leadCount} lead{c.leadCount !== 1 ? 's' : ''}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <p className="font-black text-lg text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>{c.leadCount.toLocaleString()}</p>
+                        <p className="font-black text-lg text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>{c.leadCount.toLocaleString()}</p>
                       </div>
-                      <span className={`text-[10px] px-3 py-1.5 rounded-full font-black tracking-widest ${c.is_active ? 'bg-emerald-600 text-white' : 'bg-stone-400 text-white'}`}>
+                      <span className={`text-[10px] px-3 py-1.5 rounded-full font-black tracking-widest ${c.is_active ? 'bg-emerald-600 text-white' : 'bg-neutral-400 text-white'}`}>
                         {c.is_active ? 'LIVE' : 'PAUSED'}
                       </span>
                     </div>
@@ -395,28 +478,28 @@ export function BusinessDashboard() {
         </div>
 
         {/* Objectifs de vente */}
-        <div className="col-span-12 lg:col-span-5 bg-white/70 backdrop-blur-md border border-stone-200/20 rounded-2xl p-8 flex flex-col" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+        <div className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-8 flex flex-col`}>
           <div className="mb-8">
-            <h3 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Objectifs de vente</h3>
-            <p className="text-stone-400 text-sm mt-0.5">Progression mensuelle vers les objectifs.</p>
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Objectifs de vente</h3>
+            <p className="text-neutral-400 text-sm mt-0.5">Progression mensuelle vers les objectifs.</p>
           </div>
           {objectivesWithProgress.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-8 flex-1 flex items-center justify-center">Aucun objectif défini</p>
+            <p className="text-sm text-neutral-400 text-center py-8 flex-1 flex items-center justify-center">Aucun objectif défini</p>
           ) : (
             <div className="flex-1 space-y-8">
               {objectivesWithProgress.map(obj => (
                 <div key={obj.id} className="space-y-2.5">
                   <div className="flex justify-between items-end">
-                    <span className="font-bold text-stone-900 text-sm">{obj.label}</span>
-                    <span className="text-xs font-black text-stone-500">
+                    <span className="font-bold text-neutral-900 text-sm">{obj.label}</span>
+                    <span className="text-xs font-black text-neutral-500">
                       {obj.progress.toFixed(0)}% ({obj.metric === 'revenue' ? formatCurrency(obj.current) : obj.current.toFixed(obj.metric.includes('rate') ? 1 : 0)} / {obj.metric === 'revenue' ? formatCurrency(obj.target_value) : obj.target_value})
                     </span>
                   </div>
-                  <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-neutral-100 h-2.5 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         obj.progress >= 80 ? 'bg-gradient-to-r from-emerald-600 to-emerald-400'
-                          : obj.progress >= 50 ? 'bg-gradient-to-r from-stone-900 to-stone-600'
+                          : obj.progress >= 50 ? 'bg-gradient-to-r from-neutral-900 to-neutral-600'
                           : 'bg-amber-400'
                       }`}
                       style={{ width: `${obj.progress}%` }}
@@ -425,9 +508,8 @@ export function BusinessDashboard() {
                 </div>
               ))}
 
-              {/* Efficiency alert if closing rate is low */}
               {closingRate < 20 && closingRate > 0 && (
-                <div className="pt-4 mt-4 border-t border-stone-100">
+                <div className="pt-4 mt-4 border-t border-neutral-100">
                   <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-100">
                     <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                     <div>
@@ -445,19 +527,19 @@ export function BusinessDashboard() {
       {/* ─── Team + Reminders ─── */}
       <div className="grid grid-cols-12 gap-6">
         {/* Performance équipe */}
-        <div className="col-span-12 lg:col-span-8 bg-white/70 backdrop-blur-md border border-stone-200/20 rounded-2xl p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+        <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-6 px-1">
-            <h3 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Performance équipe</h3>
-            <Link to="/business/team" className="px-4 py-2 bg-stone-100 hover:bg-stone-200 rounded-full text-xs font-bold transition-colors">
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Performance équipe</h3>
+            <Link to="/business/team" className="px-5 py-2.5 bg-neutral-100 hover:bg-neutral-200 rounded-full text-xs font-bold transition-colors uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Voir l'équipe
             </Link>
           </div>
           {members.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-8">Aucun membre</p>
+            <p className="text-sm text-neutral-400 text-center py-8">Aucun membre</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="text-[10px] uppercase font-black text-stone-400 tracking-[0.15em]">
+                <thead className="text-[10px] uppercase font-black text-neutral-400 tracking-[0.15em]">
                   <tr>
                     <th className="pb-5 px-3">Membre</th>
                     <th className="pb-5 px-3">Rôle</th>
@@ -465,37 +547,37 @@ export function BusinessDashboard() {
                     <th className="pb-5 px-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100">
+                <tbody className="divide-y divide-neutral-100">
                   {members.map(m => {
                     const online = isReallyOnline(m)
                     return (
-                      <tr key={m.id} className="hover:bg-stone-50/50 transition-colors">
+                      <tr key={m.id} className="hover:bg-neutral-50/50 transition-colors">
                         <td className="py-4 px-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-stone-200 flex items-center justify-center text-xs font-bold text-stone-600">
+                            <div className="w-9 h-9 rounded-full bg-neutral-200 flex items-center justify-center text-xs font-bold text-neutral-600">
                               {m.first_name[0]}{m.last_name[0]}
                             </div>
                             <div>
-                              <p className="font-bold text-sm text-stone-900">{m.first_name} {m.last_name}</p>
-                              <p className="text-[10px] text-stone-400">{m.email}</p>
+                              <p className="font-bold text-sm text-neutral-900">{m.first_name} {m.last_name}</p>
+                              <p className="text-[10px] text-neutral-400">{m.email}</p>
                             </div>
                           </div>
                         </td>
                         <td className="py-4 px-3">
-                          <span className={`text-xs font-semibold px-2.5 py-1 rounded ${ROLE_COLORS[m.role] || 'bg-stone-100 text-stone-600'}`}>
+                          <span className={`text-xs font-semibold px-2.5 py-1 rounded ${ROLE_COLORS[m.role] || 'bg-neutral-100 text-neutral-600'}`}>
                             {m.role}
                           </span>
                         </td>
                         <td className="py-4 px-3">
                           <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${online ? 'bg-emerald-500 animate-pulse' : 'bg-stone-300'}`} />
-                            <span className={`text-[10px] font-bold uppercase ${online ? 'text-emerald-600' : 'text-stone-400'}`}>
+                            <span className={`w-2 h-2 rounded-full ${online ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-300'}`} />
+                            <span className={`text-[10px] font-bold uppercase ${online ? 'text-emerald-600' : 'text-neutral-400'}`}>
                               {online ? 'Online' : 'Offline'}
                             </span>
                           </div>
                         </td>
                         <td className="py-4 px-3 text-right">
-                          <button className="text-stone-400 hover:text-stone-900 transition-colors">
+                          <button className="text-neutral-400 hover:text-neutral-900 transition-colors">
                             <MoreHorizontal className="h-4 w-4" />
                           </button>
                         </td>
@@ -509,17 +591,17 @@ export function BusinessDashboard() {
         </div>
 
         {/* Rappels & Tâches */}
-        <div className="col-span-12 lg:col-span-4 bg-white/70 backdrop-blur-md border border-stone-200/20 rounded-2xl p-8 flex flex-col" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+        <div className={`col-span-12 lg:col-span-4 ${glassCard} rounded-2xl p-8 flex flex-col`}>
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-extrabold tracking-tight text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Rappels</h3>
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Rappels</h3>
             {reminders.length > 0 && (
-              <span className="w-6 h-6 bg-stone-900 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
+              <span className="w-6 h-6 bg-neutral-900 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
                 {reminders.length}
               </span>
             )}
           </div>
           {reminders.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-8 flex-1 flex items-center justify-center">Aucun rappel en attente</p>
+            <p className="text-sm text-neutral-400 text-center py-8 flex-1 flex items-center justify-center">Aucun rappel en attente</p>
           ) : (
             <div className="space-y-3 flex-1 overflow-y-auto">
               {reminders.map(r => {
@@ -528,18 +610,18 @@ export function BusinessDashboard() {
                 return (
                   <div
                     key={r.id}
-                    className={`p-4 rounded-2xl ${isOverdue ? 'border-l-4 border-red-500 bg-red-50/50' : 'border-l-4 border-stone-300 bg-stone-50 hover:bg-white transition-all'}`}
+                    className={`p-4 rounded-2xl ${isOverdue ? 'border-l-4 border-red-500 bg-red-50/50' : 'border-l-4 border-neutral-300 bg-neutral-50 hover:bg-white transition-all'}`}
                   >
                     <div className="flex justify-between items-start mb-1">
-                      <h4 className="text-sm font-bold text-stone-900">{r.title}</h4>
-                      <span className={`text-[10px] font-black uppercase ${isOverdue ? 'text-red-500' : 'text-stone-400'}`}>
+                      <h4 className="text-sm font-bold text-neutral-900">{r.title}</h4>
+                      <span className={`text-[10px] font-black uppercase ${isOverdue ? 'text-red-500' : 'text-neutral-400'}`}>
                         {isOverdue ? 'EN RETARD' : 'À VENIR'}
                       </span>
                     </div>
                     {r.description && (
-                      <p className="text-xs text-stone-500 mb-2 line-clamp-2">{r.description}</p>
+                      <p className="text-xs text-neutral-500 mb-2 line-clamp-2">{r.description}</p>
                     )}
-                    <div className="flex items-center gap-1 text-[10px] font-bold text-stone-400">
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-neutral-400">
                       <Clock className="h-3 w-3" />
                       {rDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}, {rDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </div>
@@ -550,7 +632,7 @@ export function BusinessDashboard() {
           )}
           <Link
             to="/business/rappels"
-            className="mt-4 w-full py-3 border-2 border-dashed border-stone-200 rounded-2xl text-stone-400 text-sm font-bold hover:border-stone-900 hover:text-stone-900 transition-all text-center block"
+            className="mt-4 w-full py-3 border-2 border-dashed border-neutral-200 rounded-2xl text-neutral-400 text-sm font-bold hover:border-neutral-900 hover:text-neutral-900 transition-all text-center block"
           >
             + Créer un rappel
           </Link>

@@ -55,6 +55,7 @@ export function BusinessLayout() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   // ─── Timezone detection ───
   const browserTz = useMemo(() => getBrowserTimezone(), [])
@@ -97,37 +98,29 @@ export function BusinessLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-[#FDF6EE] overflow-hidden">
+    <div className="flex h-screen bg-[#f4f2f1] overflow-hidden">
       <BusinessSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        isCollapsed={isSidebarCollapsed}
+        onCollapseChange={setIsSidebarCollapsed}
       />
 
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        <header className="z-30 border-b border-amber-200 bg-white/80 backdrop-blur-md">
-          <div className="flex h-16 items-center justify-between px-4 sm:px-8">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="p-2 text-slate-500 hover:text-slate-900 lg:hidden"
-              >
-                <Menu className="h-6 w-6" />
-              </button>
-
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">{pageInfo.title}</h1>
-                <p className="text-xs text-slate-500">{pageInfo.subtitle}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-4">
-              <BusinessReminderBell />
-              <div className="hidden items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-50 px-3 py-1.5 xs:flex">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-amber-500"></div>
-                <span className="text-xs font-medium text-amber-700">Business</span>
-              </div>
-            </div>
+        {/* Minimal mobile header — desktop has no header bar (content has its own) */}
+        <header className="z-30 lg:hidden border-b border-neutral-900/5 bg-white/60 backdrop-blur-xl">
+          <div className="flex h-14 items-center justify-between px-4">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 text-neutral-500 hover:text-neutral-900"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+            <h1 className="text-sm font-extrabold text-neutral-900 uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {pageInfo.title}
+            </h1>
+            <BusinessReminderBell />
           </div>
         </header>
 
@@ -143,13 +136,13 @@ export function BusinessLayout() {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={handleAcceptTzChange}
-                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+                className="rounded-full bg-blue-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-blue-700 transition-colors"
               >
                 Mettre à jour
               </button>
               <button
                 onClick={handleDismissTzBanner}
-                className="rounded-lg p-1.5 text-blue-400 hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                className="rounded-full p-1.5 text-blue-400 hover:bg-blue-100 hover:text-blue-600 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -157,8 +150,12 @@ export function BusinessLayout() {
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto bg-[#FDF6EE] p-4 sm:p-8 min-h-0">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto bg-[#f4f2f1] px-6 sm:px-12 py-8 sm:py-10 min-h-0 relative">
+          {/* Background decorative gradient */}
+          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-emerald-100/20 to-transparent rounded-full -mr-64 -mt-64 blur-3xl pointer-events-none" />
+          <div className="relative z-10 max-w-[1600px] mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
 

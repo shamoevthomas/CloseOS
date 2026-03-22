@@ -20,9 +20,10 @@ import {
   Building2,
   Phone,
   Receipt,
+  MoreVertical,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 
@@ -103,9 +104,11 @@ interface BusinessSidebarProps {
   isOpen?: boolean
   onClose?: () => void
   onOpenSettings?: () => void
+  isCollapsed?: boolean
+  onCollapseChange?: (collapsed: boolean) => void
 }
 
-export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSidebarProps) {
+export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, onCollapseChange }: BusinessSidebarProps) {
   const navigate = useNavigate()
   const { logout, user, businessProfile, businessSettings, isTeamMember, teamMember } = useBusinessAuth()
   const hasAcknowledgedOnboarding = !isTeamMember || !!teamMember?.onboarding_acknowledged
@@ -122,6 +125,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
+  const sidebarRef = useRef<HTMLDivElement>(null)
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -153,6 +157,26 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
     fetchAvatar()
   }, [user?.id])
 
+  // Auto-collapse after 3 seconds on desktop
+  useEffect(() => {
+    if (window.innerWidth < 1024) return
+    const timer = setTimeout(() => {
+      onCollapseChange?.(true)
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const handleMouseEnter = useCallback(() => {
+    if (window.innerWidth < 1024) return
+    onCollapseChange?.(false)
+  }, [onCollapseChange])
+
+  const handleMouseLeave = useCallback(() => {
+    if (window.innerWidth < 1024) return
+    onCollapseChange?.(true)
+    setIsMenuOpen(false)
+  }, [onCollapseChange])
+
   const fullName = isTeamMember
     ? `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || user?.user_metadata?.full_name || 'Membre'
     : businessProfile?.full_name || user?.user_metadata?.full_name || 'Utilisateur';
@@ -161,6 +185,8 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
   const avatarUrl = isTeamMember
     ? (teamMember?.avatar_url || user?.user_metadata?.avatar_url)
     : (dbAvatarUrl || businessProfile?.avatar_url || user?.user_metadata?.avatar_url);
+
+  const collapsed = isCollapsed && window.innerWidth >= 1024
 
   return (
     <>
@@ -172,141 +198,196 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings }: BusinessSid
         />
       )}
 
-      <div className={cn(
-        "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-amber-200 bg-[#FDF6EE] transition-transform duration-300 lg:static lg:translate-x-0",
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        {/* Logo */}
-        <div className="flex h-16 items-center justify-between px-6 border-b border-amber-200">
-          <div className="flex items-center gap-3">
+      <div
+        ref={sidebarRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex flex-col bg-white/60 backdrop-blur-xl border-r border-neutral-900/5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] transition-all duration-300 ease-in-out",
+          // Desktop: static with dynamic width
+          "lg:static",
+          collapsed ? "lg:w-[72px]" : "lg:w-72",
+          // Mobile: fixed slide-in
+          isOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
+        {/* Header */}
+        <div className={cn(
+          "flex items-center h-[72px] border-b border-neutral-900/5 transition-all duration-300",
+          collapsed ? "px-4 justify-center" : "px-6 gap-3"
+        )}>
+          <div className="w-10 h-10 bg-neutral-900 flex items-center justify-center rounded-lg shadow-sm shrink-0">
             <img
               src="/logo.PNG"
-              alt="CloseOS Business"
-              className="h-12 w-auto object-contain rounded-md"
+              alt="CloseOS"
+              className="h-8 w-8 object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-white font-black text-lg" style="font-family:Manrope,sans-serif">C</span>'
+              }}
             />
           </div>
-          <button onClick={onClose} className="lg:hidden p-2 text-slate-500 hover:text-slate-900">
-            <X className="h-5 w-5" />
-          </button>
+          {!collapsed && (
+            <div className="overflow-hidden">
+              <h1 className="text-2xl font-black text-neutral-900 tracking-tighter" style={{ fontFamily: 'Manrope, sans-serif' }}>CloseOS</h1>
+              <p className="text-[10px] font-extrabold uppercase text-neutral-500 opacity-70 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>Business Suite</p>
+            </div>
+          )}
+          {!collapsed && (
+            <button onClick={onClose} className="lg:hidden ml-auto p-2 text-neutral-400 hover:text-neutral-900">
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
-        {/* Organisation block — clickable for both owner and team member */}
-        <button
-          onClick={() => { navigate('/business/organisation'); if (window.innerWidth < 1024) onClose?.(); }}
-          className="mx-3 mt-3 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 transition-colors hover:bg-amber-100"
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20 overflow-hidden shrink-0">
-            {businessSettings?.logo_url ? (
-              <img src={businessSettings.logo_url} alt="Logo" className="h-full w-full object-cover" />
-            ) : (
-              <Building2 className="h-5 w-5 text-amber-700" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <p className="text-sm font-semibold text-slate-800 truncate">
-              {businessSettings?.company_name || (isTeamMember ? 'Organisation' : 'Mon organisation')}
-            </p>
-            <p className="text-xs text-slate-500 truncate">
-              {isTeamMember ? (teamMember?.role || 'Membre') : 'Organisation'}
-            </p>
-          </div>
-        </button>
+        {/* Organisation block */}
+        {!collapsed && (
+          <button
+            onClick={() => { navigate('/business/organisation'); if (window.innerWidth < 1024) onClose?.(); }}
+            className="mx-4 mt-4 flex items-center gap-3 rounded-xl bg-neutral-900/5 px-3 py-2.5 transition-colors hover:bg-neutral-900/10"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100 overflow-hidden shrink-0">
+              {businessSettings?.logo_url ? (
+                <img src={businessSettings.logo_url} alt="Logo" className="h-full w-full object-cover" />
+              ) : (
+                <Building2 className="h-5 w-5 text-neutral-600" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-bold text-neutral-900 truncate">
+                {businessSettings?.company_name || (isTeamMember ? 'Organisation' : 'Mon organisation')}
+              </p>
+              <p className="text-[10px] text-neutral-500 font-medium truncate uppercase tracking-widest">
+                {isTeamMember ? (teamMember?.role || 'Membre') : 'Organisation'}
+              </p>
+            </div>
+          </button>
+        )}
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+        <nav className={cn(
+          "flex-1 overflow-y-auto py-4 space-y-0.5",
+          collapsed ? "px-2" : "px-4"
+        )}>
           {hasAcknowledgedOnboarding ? (
             navigation.map((item) => (
               <NavLink
-                key={item.name}
+                key={item.name + item.href}
                 to={item.href}
                 onClick={() => {
                   if (window.innerWidth < 1024) onClose?.();
                 }}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    'flex items-center gap-3 py-3 transition-all group cursor-pointer rounded-r-lg',
+                    collapsed ? 'justify-center px-2' : 'pl-4',
                     isActive
-                      ? 'bg-amber-600 text-white'
-                      : 'text-slate-600 hover:bg-amber-50 hover:text-slate-900'
+                      ? 'text-neutral-900 font-extrabold border-r-2 border-neutral-900'
+                      : 'text-neutral-500 font-medium hover:text-neutral-900 hover:bg-neutral-900/5'
                   )
                 }
+                title={collapsed ? item.name : undefined}
               >
-                <item.icon className="h-4 w-4" />
-                <span className="flex-1">{item.name}</span>
+                <item.icon className="h-5 w-5 shrink-0" />
+                {!collapsed && (
+                  <span className="text-sm font-extrabold tracking-tight uppercase truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    {item.name}
+                  </span>
+                )}
               </NavLink>
             ))
           ) : (
             <div className="px-3 py-6 text-center space-y-3">
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-                <p className="text-xs font-medium text-amber-700">Veuillez compléter l'onboarding pour accéder à la plateforme.</p>
-              </div>
+              {!collapsed && (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                  <p className="text-xs font-medium text-amber-700">Veuillez compléter l'onboarding pour accéder à la plateforme.</p>
+                </div>
+              )}
             </div>
           )}
         </nav>
 
-        {/* User Section */}
-        <div className="relative border-t border-amber-200 p-4">
-          {isMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)} />
-              <div className="absolute bottom-full left-4 right-4 z-20 mb-2 overflow-hidden rounded-xl border border-amber-200 bg-white shadow-xl">
-                {(!isTeamMember || isAdmin) && (
-                  <button
-                    onClick={() => { setIsMenuOpen(false); onOpenSettings?.() }}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-amber-50 hover:text-slate-900"
-                  >
-                    <Settings className="h-4 w-4" />
-                    Paramètres
-                  </button>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-amber-50 hover:text-red-500 border-t border-slate-100"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Déconnexion
-                </button>
-              </div>
-            </>
+        {/* Footer */}
+        <div className={cn(
+          "border-t border-neutral-900/5 space-y-1",
+          collapsed ? "p-2" : "pt-4 pb-4 px-4"
+        )}>
+          {/* Settings */}
+          {(!isTeamMember || isAdmin) && (
+            <button
+              onClick={() => { onOpenSettings?.(); setIsMenuOpen(false) }}
+              className={cn(
+                'flex items-center gap-3 py-3 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-900/5 rounded-r-lg transition-all w-full',
+                collapsed ? 'justify-center px-2' : 'pl-4'
+              )}
+              title={collapsed ? 'Settings' : undefined}
+            >
+              <Settings className="h-5 w-5 shrink-0" />
+              {!collapsed && (
+                <span className="text-sm font-extrabold tracking-tight uppercase" style={{ fontFamily: 'Manrope, sans-serif' }}>Settings</span>
+              )}
+            </button>
           )}
 
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className={cn(
-              'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
-              isMenuOpen ? 'bg-amber-50' : 'bg-amber-50/50 hover:bg-amber-50'
+          {/* User profile */}
+          <div className="relative">
+            {isMenuOpen && !collapsed && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)} />
+                <div className="absolute bottom-full left-0 right-0 z-20 mb-2 overflow-hidden rounded-xl border border-neutral-900/10 bg-white shadow-xl">
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-red-500"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Déconnexion
+                  </button>
+                </div>
+              </>
             )}
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/20 overflow-hidden">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={fullName} className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-sm font-bold text-amber-700">
-                  {initials || 'U'}
-                </span>
+
+            <button
+              onClick={() => {
+                if (collapsed) {
+                  handleLogout()
+                } else {
+                  setIsMenuOpen(!isMenuOpen)
+                }
+              }}
+              className={cn(
+                'flex items-center gap-3 rounded-xl hover:bg-neutral-900/5 transition-colors w-full',
+                collapsed ? 'justify-center p-2' : 'p-3'
               )}
-            </div>
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium text-slate-800 truncate">
-                {fullName}
-              </p>
-              <p className="text-xs text-slate-500 truncate">
-                {userRole}
-              </p>
-            </div>
-            <ChevronUp className={cn(
-              "h-4 w-4 text-slate-400 transition-transform",
-              isMenuOpen && "rotate-180"
-            )} />
-          </button>
+              title={collapsed ? fullName : undefined}
+            >
+              <div className="w-10 h-10 rounded-full bg-neutral-200 overflow-hidden shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={fullName} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm font-bold text-neutral-600">
+                    {initials || 'U'}
+                  </div>
+                )}
+              </div>
+              {!collapsed && (
+                <>
+                  <div className="flex-1 min-w-0 text-left overflow-hidden">
+                    <p className="text-sm font-bold text-neutral-900 truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>{fullName}</p>
+                    <p className="text-[10px] text-neutral-500 font-medium truncate uppercase tracking-widest">{userRole}</p>
+                  </div>
+                  <MoreVertical className="h-4 w-4 text-neutral-400 shrink-0" />
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Logout overlay */}
       {isLoggingOut && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#FDF6EE] animate-in fade-in duration-300">
-          <Loader2 className="h-10 w-10 text-amber-600 animate-spin mb-4" />
-          <p className="text-slate-800 font-medium text-lg animate-pulse">Déconnexion sécurisée...</p>
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#fbf9f8] animate-in fade-in duration-300">
+          <Loader2 className="h-10 w-10 text-neutral-900 animate-spin mb-4" />
+          <p className="text-neutral-900 font-bold text-lg animate-pulse" style={{ fontFamily: 'Manrope, sans-serif' }}>Déconnexion sécurisée...</p>
         </div>
       )}
     </>
