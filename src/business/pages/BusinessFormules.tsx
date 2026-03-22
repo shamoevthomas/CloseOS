@@ -262,7 +262,7 @@ export function BusinessFormules() {
           <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">Formules</h1>
         </div>
         {!isTeamMember && (
-          <button onClick={openCreate} className="flex items-center gap-2 bg-stone-900 text-white px-7 py-3.5 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xl text-sm">
+          <button onClick={openCreate} className="flex items-center gap-2 bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-7 py-3.5 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xl text-sm">
             <Plus className="h-4 w-4" /> Nouvelle Formule
           </button>
         )}
@@ -293,7 +293,7 @@ export function BusinessFormules() {
               <div className="flex justify-between items-start mb-6">
                 <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
                   formula.is_active
-                    ? 'bg-emerald-100 text-emerald-700'
+                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                     : 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400'
                 }`}>
                   {formula.is_active ? 'Active' : 'Inactive'}
@@ -308,7 +308,7 @@ export function BusinessFormules() {
                       <button onClick={() => openEdit(formula)} className="p-2 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button onClick={() => deleteFormula(formula)} className="p-2 hover:bg-red-50 rounded-full text-stone-400 dark:text-neutral-500 hover:text-red-500 transition-colors">
+                      <button onClick={() => deleteFormula(formula)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full text-stone-400 dark:text-neutral-500 hover:text-red-500 transition-colors">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </>
@@ -366,19 +366,19 @@ export function BusinessFormules() {
               {/* Name */}
               <div>
                 <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Nom de la formule *</label>
-                <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Formule Premium" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 text-stone-500 cursor-not-allowed' : ''}`} />
+                <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Formule Premium" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Price */}
               <div>
                 <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Prix (€)</label>
-                <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="0.00" disabled={isTeamMember || (isOwnerOnly && !!editingFormula)} className={`${inputCls} ${isTeamMember || (isOwnerOnly && !!editingFormula) ? 'bg-stone-50 text-stone-500 cursor-not-allowed' : ''}`} />
+                <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="0.00" disabled={isTeamMember || (isOwnerOnly && !!editingFormula)} className={`${inputCls} ${isTeamMember || (isOwnerOnly && !!editingFormula) ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Description */}
               <div>
                 <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Description</label>
-                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} placeholder="Décrivez cette formule..." disabled={isTeamMember} className={`${inputCls} resize-none ${isTeamMember ? 'bg-stone-50 text-stone-500 cursor-not-allowed' : ''}`} />
+                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} placeholder="Décrivez cette formule..." disabled={isTeamMember} className={`${inputCls} resize-none ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Resources */}
@@ -401,7 +401,7 @@ export function BusinessFormules() {
                         value={resource.type}
                         onChange={(e) => updateResource(idx, { type: e.target.value as Resource['type'] })}
                         disabled={isTeamMember}
-                        className={`${selectCls} ${isTeamMember ? 'bg-stone-50 text-stone-500 cursor-not-allowed' : ''}`}
+                        className={`${selectCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
                       >
                         {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
@@ -411,7 +411,7 @@ export function BusinessFormules() {
                         onChange={(e) => updateResource(idx, { name: e.target.value })}
                         placeholder="Nom"
                         disabled={isTeamMember}
-                        className={`flex-1 ${smallInputCls} ${isTeamMember ? 'bg-stone-50 text-stone-500 cursor-not-allowed' : ''}`}
+                        className={`flex-1 ${smallInputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
                       />
                       <input
                         type="url"
@@ -419,10 +419,10 @@ export function BusinessFormules() {
                         onChange={(e) => updateResource(idx, { url: e.target.value })}
                         placeholder="URL"
                         disabled={isTeamMember}
-                        className={`flex-[2] ${smallInputCls} ${isTeamMember ? 'bg-stone-50 text-stone-500 cursor-not-allowed' : ''}`}
+                        className={`flex-[2] ${smallInputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
                       />
                       {!isTeamMember && (
-                        <button onClick={() => removeResource(idx)} className="text-stone-400 hover:text-red-500 flex-shrink-0 transition-colors">
+                        <button onClick={() => removeResource(idx)} className="text-stone-400 dark:text-neutral-500 hover:text-red-500 flex-shrink-0 transition-colors">
                           <X className="h-4 w-4" />
                         </button>
                       )}
@@ -466,7 +466,7 @@ export function BusinessFormules() {
                                     setRoleRates(prev => ({ ...prev, [role]: v }))
                                   }}
                                   disabled={isHoSOrAdmin}
-                                  className={`w-20 rounded-xl border border-stone-200 dark:border-neutral-800 px-3 py-1.5 text-sm text-right font-medium text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none ${isHoSOrAdmin ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
+                                  className={`w-20 rounded-xl border border-stone-200 dark:border-neutral-800 px-3 py-1.5 text-sm text-right font-medium text-stone-900 dark:text-white bg-white dark:bg-neutral-900 focus:border-stone-900 focus:outline-none ${isHoSOrAdmin ? '!bg-stone-50 dark:!bg-neutral-800 !text-stone-500 dark:!text-neutral-400 cursor-not-allowed' : ''}`}
                                 />
                                 <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
                               </div>
@@ -543,7 +543,7 @@ export function BusinessFormules() {
                 {isTeamMember ? 'Fermer' : 'Annuler'}
               </button>
               {canEdit && (
-                <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-full bg-stone-900 px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all shadow-lg">
+                <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all shadow-lg">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {editingFormula ? 'Enregistrer' : 'Créer'}
                 </button>

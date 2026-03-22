@@ -353,11 +353,10 @@ export function BusinessProspectView({
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-stone-900/10 dark:bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Slide-over drawer */}
-      <aside className="absolute inset-y-0 right-0 w-full max-w-[580px] flex flex-col shadow-2xl rounded-l-2xl border-l border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden dark:bg-neutral-900/90"
-        style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+      <aside className="absolute inset-y-0 right-0 w-full max-w-[580px] flex flex-col shadow-2xl rounded-l-2xl border-l border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
       >
 
         {/* Header */}
@@ -429,7 +428,7 @@ export function BusinessProspectView({
                       >
                         <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
                         <span className="flex-1 text-stone-700 dark:text-neutral-200">{tag.name}</span>
-                        {isActive && <Check className="h-3.5 w-3.5 text-stone-500" strokeWidth={2} />}
+                        {isActive && <Check className="h-3.5 w-3.5 text-stone-500 dark:text-neutral-400" strokeWidth={2} />}
                       </button>
                     )
                   })}
@@ -453,7 +452,7 @@ export function BusinessProspectView({
           </button>
           <button
             onClick={() => setShowReminderForm(true)}
-            className="flex items-center gap-2 px-5 py-3 bg-[#ffddb8] text-[#2a1700] rounded-full font-business-display font-bold text-sm transition-all hover:brightness-105 active:scale-95"
+            className="flex items-center gap-2 px-5 py-3 bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 rounded-full font-business-display font-bold text-sm transition-all hover:brightness-105 active:scale-95"
           >
             <Bell className="h-4 w-4" strokeWidth={1.5} />
             Créer un rappel
@@ -493,7 +492,7 @@ export function BusinessProspectView({
             >
               {tab.label}
               {tab.badge !== undefined && tab.badge > 0 && (
-                <span className="px-2 py-0.5 bg-[#ffddb8] text-[#2a1700] text-[10px] rounded-full font-bold">
+                <span className="px-2 py-0.5 bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 text-[10px] rounded-full font-bold">
                   {tab.badge}
                 </span>
               )}
@@ -521,7 +520,7 @@ export function BusinessProspectView({
                     {customStages.length > 0 && <option disabled>──────────</option>}
                     {customStages.map(cs => <option key={`custom_${cs.id}`} value={`custom_${cs.id}`}>{cs.name}</option>)}
                   </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-5 w-5 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                 </div>
               </div>
 
@@ -548,7 +547,7 @@ export function BusinessProspectView({
                               </option>
                             ))}
                           </select>
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                         </div>
                       </div>
                     )}
@@ -579,7 +578,7 @@ export function BusinessProspectView({
                               </option>
                             ))}
                           </select>
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                         </div>
                       </div>
                     )}
@@ -616,7 +615,7 @@ export function BusinessProspectView({
                       <option key={f.id} value={f.id}>{f.name} — {f.price}€</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-5 w-5 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                 </div>
                 {formula && formula.resources && formula.resources.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-3">
@@ -668,7 +667,7 @@ export function BusinessProspectView({
                     <input type="tel" value={editedPhone} onChange={e => setEditedPhone(e.target.value)} className={INPUT_CLS} placeholder="Téléphone" />
                     <div className="flex gap-2 pt-2">
                       <button onClick={handleSaveClient} className="flex-1 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">Sauvegarder</button>
-                      <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone) }} className="rounded-full border border-[#c4c7c7]/20 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">Annuler</button>
+                      <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone) }} className="rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">Annuler</button>
                     </div>
                   </div>
                 ) : (
@@ -771,13 +770,13 @@ export function BusinessProspectView({
                     autoFocus
                   />
                   <div className="flex justify-end gap-2">
-                    <button onClick={() => { setIsAddingNote(false); setNewNoteContent('') }} className="px-4 py-2 text-sm font-medium text-stone-500 hover:text-stone-700 rounded-full hover:bg-[#f5f3f2] transition-colors">Annuler</button>
+                    <button onClick={() => { setIsAddingNote(false); setNewNoteContent('') }} className="px-4 py-2 text-sm font-medium text-stone-500 dark:text-neutral-400 hover:text-stone-700 dark:hover:text-neutral-200 rounded-full hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">Annuler</button>
                     <button onClick={handleAddManualNote} disabled={!newNoteContent.trim()} className="px-5 py-2 rounded-full bg-stone-900 text-sm font-business-display font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-colors">Enregistrer</button>
                   </div>
                 </div>
               )}
 
-              <div className="h-px bg-[#c4c7c7]/20 my-4" />
+              <div className="h-px bg-[#c4c7c7]/20 dark:bg-neutral-700 my-4" />
 
               <div className="space-y-3">
                 {callNotes.length > 0 ? (
@@ -785,7 +784,7 @@ export function BusinessProspectView({
                     <details key={note.id} className="group rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 open:shadow-sm transition-all overflow-hidden">
                       <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors select-none list-none [&::-webkit-details-marker]:hidden">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f5f3f2] text-stone-400 group-open:bg-[#ffddb8] group-open:text-[#2a1700] transition-colors">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-700 text-stone-400 dark:text-neutral-400 group-open:bg-[#ffddb8] group-open:text-[#2a1700] dark:group-open:bg-amber-700/30 dark:group-open:text-amber-200 transition-colors">
                             <Calendar className="h-4 w-4" strokeWidth={1.5} />
                           </div>
                           <div>
@@ -803,10 +802,10 @@ export function BusinessProspectView({
                           <button onClick={e => { e.preventDefault(); handleDeleteNote(note.id) }} className="rounded-full p-1.5 text-stone-400 hover:text-[#ba1a1a] hover:bg-[#ba1a1a]/5 transition-colors opacity-0 group-hover:opacity-100">
                             <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                           </button>
-                          <ChevronDown className="h-5 w-5 text-stone-400 transition-transform duration-300 group-open:rotate-180" strokeWidth={1.5} />
+                          <ChevronDown className="h-5 w-5 text-stone-400 dark:text-neutral-500 transition-transform duration-300 group-open:rotate-180" strokeWidth={1.5} />
                         </div>
                       </summary>
-                      <div className="border-t border-[#c4c7c7]/10 p-5 pt-3">
+                      <div className="border-t border-[#c4c7c7]/10 dark:border-neutral-700 p-5 pt-3">
                         <p className="text-sm text-stone-600 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">{note.content}</p>
                       </div>
                     </details>
@@ -817,7 +816,7 @@ export function BusinessProspectView({
                       <ClipboardList className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
                     </div>
                     <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">Aucune note d'appel</p>
-                    <p className="text-xs text-stone-400 mt-1">Vos notes manuelles apparaîtront ici.</p>
+                    <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">Vos notes manuelles apparaîtront ici.</p>
                   </div>
                 )}
               </div>
@@ -844,7 +843,7 @@ export function BusinessProspectView({
                     <Bell className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
                   </div>
                   <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">Aucun rappel</p>
-                  <p className="text-xs text-stone-400 mt-1">Créez un rappel pour ce prospect.</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">Créez un rappel pour ce prospect.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -857,7 +856,7 @@ export function BusinessProspectView({
                         key={reminder.id}
                         className={cn(
                           'rounded-xl p-4 transition-all',
-                          isDone ? 'bg-[#f5f3f2] dark:bg-neutral-800' : isOverdue ? 'bg-[#ba1a1a]/5 ring-1 ring-[#ba1a1a]/10' : 'bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700'
+                          isDone ? 'bg-[#f5f3f2] dark:bg-neutral-800' : isOverdue ? 'bg-[#ba1a1a]/5 dark:bg-red-900/20 ring-1 ring-[#ba1a1a]/10 dark:ring-red-500/20' : 'bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700'
                         )}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -865,7 +864,7 @@ export function BusinessProspectView({
                             <p className={cn('text-sm font-semibold', isDone ? 'text-stone-400 dark:text-neutral-500 line-through' : 'text-stone-900 dark:text-white')}>
                               {reminder.title}
                             </p>
-                            {reminder.description && <p className="text-xs text-stone-400 mt-0.5 truncate">{reminder.description}</p>}
+                            {reminder.description && <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5 truncate">{reminder.description}</p>}
                             <div className="flex items-center gap-2 mt-1.5">
                               <Clock className="h-3 w-3 text-stone-400" strokeWidth={1.5} />
                               <span className={cn('text-xs', isOverdue ? 'text-[#ba1a1a] font-medium' : 'text-stone-400')}>
@@ -925,8 +924,8 @@ export function BusinessProspectView({
                     <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)} className={INPUT_CLS} />
                   </div>
                 </div>
-                <div className="rounded-xl bg-[#ffddb8]/30 px-4 py-3">
-                  <p className="text-xs text-[#2a1700] font-medium">
+                <div className="rounded-xl bg-[#ffddb8]/30 dark:bg-amber-700/20 px-4 py-3">
+                  <p className="text-xs text-[#2a1700] dark:text-amber-200 font-medium">
                     <Bell className="h-3 w-3 inline mr-1" strokeWidth={1.5} />
                     Lié à : <span className="font-bold">{local.contact || 'Ce prospect'}</span>
                   </p>
