@@ -414,90 +414,87 @@ export function BusinessCampaigns() {
     setFormCustomFields(formCustomFields.filter((_, i) => i !== index))
   }
 
-  const inputCls = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-  const selectCls = "w-full appearance-none rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-  const smallInputCls = "rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none"
+  const inputCls = "w-full bg-transparent border-b border-[#c4c7c7]/30 py-2.5 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:border-[#006c49] focus:ring-0 outline-none transition-all font-['Inter']"
+  const selectCls = "w-full appearance-none bg-[#f5f3f2] rounded-xl border-0 px-4 py-2.5 pr-10 text-sm text-[#1b1c1b] font-medium focus:ring-1 focus:ring-[#006c49]/20 focus:outline-none"
+  const smallInputCls = "bg-transparent border-b border-[#c4c7c7]/20 px-1 py-2 text-xs text-[#1b1c1b] placeholder:text-[#444748]/40 focus:border-[#006c49] focus:ring-0 outline-none"
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-amber-600 animate-spin" /></div>
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 text-[#444748] animate-spin" /></div>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1200px] mx-auto space-y-10 pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-            <Megaphone className="h-5 w-5 text-amber-700" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">{campaigns.length} campagne{campaigns.length !== 1 ? 's' : ''}</h2>
-            <p className="text-xs text-slate-500">Gérez vos campagnes de capture de leads</p>
-          </div>
+      <header className="flex justify-between items-end">
+        <div>
+          <h2 className="text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b]">Campagnes</h2>
+          <p className="text-[#444748] mt-2 max-w-md">Gérez vos tunnels de conversion et pages de capture depuis un tableau de bord centralisé.</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors">
+        <button onClick={openCreate} className="bg-[#000000] text-white px-8 py-4 rounded-full font-['Manrope'] font-bold flex items-center gap-3 hover:bg-[#1b1c1b] transition-all active:scale-95" style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
           <Plus className="h-4 w-4" /> Nouvelle campagne
         </button>
-      </div>
+      </header>
 
       {/* Empty state */}
       {campaigns.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 py-16">
-          <Megaphone className="h-12 w-12 text-amber-300 mb-4" />
-          <h3 className="text-lg font-semibold text-slate-700 mb-1">Aucune campagne</h3>
-          <p className="text-sm text-slate-500 mb-4">Créez votre première campagne pour capturer des leads</p>
-          <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700">
-            <Plus className="h-4 w-4" /> Créer une campagne
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-24 h-24 bg-[#efedec] rounded-full flex items-center justify-center mb-6">
+            <Megaphone className="h-10 w-10 text-[#444748]/30" />
+          </div>
+          <h3 className="text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] mb-2">Aucune campagne</h3>
+          <p className="text-[#444748] max-w-xs mb-6">Créez votre première campagne pour capturer des leads</p>
+          <button onClick={openCreate} className="bg-[#000000] text-white px-8 py-3 rounded-full font-['Manrope'] font-bold active:scale-95 transition-all">
+            Créer une campagne
           </button>
         </div>
       )}
 
       {/* Campaign cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 xl:grid-cols-2">
         {campaigns.map((campaign) => {
           const leadCount = campaign.business_prospects?.[0]?.count || 0
-          const customFieldCount = (campaign.custom_fields || []).length
           return (
-            <div key={campaign.id} className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-slate-900 truncate">{campaign.name}</h3>
-                  {campaign.description && <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{campaign.description}</p>}
+            <div key={campaign.id} className="rounded-xl p-8 group hover:shadow-[0_30px_60px_rgba(0,0,0,0.06)] transition-all duration-500" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+              <div className="flex justify-between items-start mb-6">
+                <div className="flex gap-4 items-center">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${campaign.capture_type === 'without_rdv' ? 'bg-[#ffb95f]/10 text-[#b87500]' : 'bg-[#006c49]/10 text-[#006c49]'}`}>
+                    {campaign.capture_type === 'without_rdv' ? <UserPlus className="h-6 w-6" /> : <CalendarCheck className="h-6 w-6" />}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-['Manrope'] font-extrabold text-[#1b1c1b]">{campaign.name}</h3>
+                    <p className="text-sm text-[#444748]">Source: {campaign.source}</p>
+                  </div>
                 </div>
-                <button onClick={() => toggleActive(campaign)} className="ml-2 flex-shrink-0">
-                  {campaign.is_active ? <ToggleRight className="h-6 w-6 text-amber-600" /> : <ToggleLeft className="h-6 w-6 text-slate-300" />}
-                </button>
+                <div className="flex items-center gap-3">
+                  <span className={`text-[10px] font-bold uppercase tracking-tighter ${campaign.is_active ? 'text-[#006c49]' : 'text-[#444748]'}`}>
+                    {campaign.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                  <button onClick={() => toggleActive(campaign)} className="relative">
+                    <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${campaign.is_active ? 'bg-[#006c49]/20' : 'bg-[#eae8e7]'}`}>
+                      <div className={`w-3 h-3 rounded-full absolute transition-all ${campaign.is_active ? 'bg-[#006c49] right-1' : 'bg-[#747878] left-1'}`} />
+                    </div>
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 mb-3 flex-wrap">
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${campaign.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                  {campaign.is_active ? 'Active' : 'Inactive'}
-                </span>
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${campaign.capture_type === 'without_rdv' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                  {campaign.capture_type === 'without_rdv' ? <><UserPlus className="h-3 w-3" /> Inscription</> : <><CalendarCheck className="h-3 w-3" /> RDV</>}
-                </span>
-                <span className="text-xs text-slate-400">{campaign.source}</span>
+              {campaign.description && <p className="text-[#444748] mb-6 line-clamp-2">{campaign.description}</p>}
+              <div className="flex gap-3 mb-6">
+                <div className="bg-[#eae8e7] px-4 py-2 rounded-full flex items-center gap-2">
+                  {campaign.capture_type === 'without_rdv' ? <UserPlus className="h-3.5 w-3.5 text-[#444748]" /> : <CalendarCheck className="h-3.5 w-3.5 text-[#444748]" />}
+                  <span className="text-xs font-bold text-[#444748]">Capture: {campaign.capture_type === 'without_rdv' ? 'Inscription' : 'RDV'}</span>
+                </div>
+                <div className="bg-[#f5f3f2] px-4 py-2 rounded-full flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#1b1c1b]">{leadCount} Lead{leadCount !== 1 ? 's' : ''}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-4 mb-4 text-xs text-slate-500">
-                <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {leadCount} lead{leadCount !== 1 ? 's' : ''}</span>
-                {customFieldCount > 0 && <span>{customFieldCount} champ{customFieldCount !== 1 ? 's' : ''} custom</span>}
-              </div>
-              <div className="flex gap-2 mb-3">
-                <button onClick={() => openEmbedModal(campaign, 'page')} className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-[#1b1c1b] px-2.5 py-1.5 text-xs font-bold text-white hover:scale-105 active:scale-95 transition-all" title="Page entière">
-                  <Monitor className="h-3.5 w-3.5" /> Page
+              <div className="flex items-center gap-2 pt-6 border-t border-[#c4c7c7]/10">
+                <button onClick={() => openEmbedModal(campaign, 'page')} className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#1b1c1b] transition-colors">Page</button>
+                <button onClick={() => openEmbedModal(campaign, 'iframe')} className="flex-1 bg-[#f5f3f2] text-[#1b1c1b] py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#eae8e7] transition-colors">Iframe</button>
+                <button onClick={() => openEmbedModal(campaign, 'popup')} className="flex-1 bg-[#006c49]/10 text-[#006c49] py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#006c49]/20 transition-colors" style={{ border: '1px solid rgba(0,108,73,0.2)' }}>Popup</button>
+                <button onClick={() => openEdit(campaign)} className="p-3 text-[#444748] hover:text-[#1b1c1b] hover:bg-[#f5f3f2] rounded-xl transition-colors" title="Modifier">
+                  <Pencil className="h-4 w-4" />
                 </button>
-                <button onClick={() => openEmbedModal(campaign, 'iframe')} className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-[#f5f3f2] px-2.5 py-1.5 text-xs font-bold text-[#1b1c1b] hover:bg-[#eae8e7] transition-colors" title="Iframe">
-                  <Layers className="h-3.5 w-3.5" /> Iframe
-                </button>
-                <button onClick={() => openEmbedModal(campaign, 'popup')} className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-[#006c49]/10 px-2.5 py-1.5 text-xs font-bold text-[#006c49] hover:bg-[#006c49]/20 transition-colors" title="Popup">
-                  <MessageSquare className="h-3.5 w-3.5" /> Popup
-                </button>
-              </div>
-              <div className="flex gap-2 border-t border-slate-100 pt-3">
-                <button onClick={() => openEdit(campaign)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                  <Pencil className="h-3.5 w-3.5" /> Modifier
-                </button>
-                <button onClick={() => deleteCampaign(campaign)} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
-                  <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                <button onClick={() => deleteCampaign(campaign)} className="p-3 text-[#444748] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 rounded-xl transition-colors" title="Supprimer">
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -507,20 +504,20 @@ export function BusinessCampaigns() {
 
       {/* Modal Create/Edit - Tabbed */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white rounded-xl overflow-hidden" style={{ boxShadow: '0 40px 100px rgba(0,0,0,0.08)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
             {/* Modal header */}
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 flex-shrink-0">
-              <h3 className="text-lg font-bold text-slate-900">
-                {editingCampaign ? 'Modifier la campagne' : 'Nouvelle campagne'}
+            <div className="flex items-center justify-between px-8 py-5 flex-shrink-0">
+              <h3 className="text-xl font-['Manrope'] font-extrabold text-[#1b1c1b]">
+                {editingCampaign ? 'Configuration de Campagne' : 'Nouvelle Campagne'}
               </h3>
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] hover:bg-[#f5f3f2] transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-100 px-6 flex-shrink-0 overflow-x-auto">
+            <div className="flex bg-[#f5f3f2] px-8 pt-5 gap-8 border-b border-[#c4c7c7]/10 flex-shrink-0 overflow-x-auto">
               {([
                 { key: 'general' as const, label: 'Général' },
                 { key: 'landing' as const, label: 'Page de capture' },
@@ -530,10 +527,10 @@ export function BusinessCampaigns() {
                 <button
                   key={tab.key}
                   onClick={() => setModalTab(tab.key)}
-                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  className={`pb-4 text-sm font-['Manrope'] font-bold transition-colors whitespace-nowrap ${
                     modalTab === tab.key
-                      ? 'border-amber-600 text-amber-700'
-                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                      ? 'border-b-2 border-[#000000] text-[#000000]'
+                      : 'text-[#444748] hover:text-[#1b1c1b]'
                   }`}
                 >
                   {tab.label}
@@ -542,49 +539,48 @@ export function BusinessCampaigns() {
             </div>
 
             {/* Tab content - scrollable */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-8">
               {/* General tab */}
               {modalTab === 'general' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Nom de la campagne *</label>
-                    <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Campagne Facebook Mars 2026" className={inputCls} />
+                <div className="space-y-8">
+                  <div className="space-y-6">
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878]">Identification</label>
+                    <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nom de la campagne" className="w-full bg-transparent border-0 border-b border-[#c4c7c7]/30 focus:ring-0 focus:border-[#006c49] transition-all text-xl font-['Manrope'] font-bold py-3 px-0 text-[#1b1c1b] placeholder:text-[#444748]/30" />
                   </div>
 
                   {/* Capture type switch */}
-                  <div className="rounded-xl border border-slate-200 p-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-3">Type de capture</label>
-                    <div className="flex gap-3">
+                  <div className="space-y-4">
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878]">Type de Capture</label>
+                    <div className="grid grid-cols-2 gap-4">
                       <button
                         onClick={() => setFormCaptureType('with_rdv')}
-                        className={`flex-1 flex items-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                        className={`p-6 rounded-xl flex flex-col items-center text-center cursor-pointer transition-all ${
                           formCaptureType === 'with_rdv'
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            ? 'border-2 border-[#006c49] bg-[#006c49]/5'
+                            : 'border border-[#c4c7c7]/30 hover:border-[#747878]'
                         }`}
                       >
-                        <CalendarCheck className="h-4 w-4" /> Avec RDV
+                        <CalendarCheck className={`h-7 w-7 mb-3 ${formCaptureType === 'with_rdv' ? 'text-[#006c49]' : 'text-[#747878]'}`} />
+                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b]">Rendez-vous</h4>
+                        <p className="text-[10px] text-[#444748] mt-1">Planification directe</p>
                       </button>
                       <button
                         onClick={() => setFormCaptureType('without_rdv')}
-                        className={`flex-1 flex items-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                        className={`p-6 rounded-xl flex flex-col items-center text-center cursor-pointer transition-all ${
                           formCaptureType === 'without_rdv'
-                            ? 'border-purple-500 bg-purple-50 text-purple-700'
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            ? 'border-2 border-[#006c49] bg-[#006c49]/5'
+                            : 'border border-[#c4c7c7]/30 hover:border-[#747878]'
                         }`}
                       >
-                        <UserPlus className="h-4 w-4" /> Inscription seule
+                        <UserPlus className={`h-7 w-7 mb-3 ${formCaptureType === 'without_rdv' ? 'text-[#006c49]' : 'text-[#747878]'}`} />
+                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b]">Inscription</h4>
+                        <p className="text-[10px] text-[#444748] mt-1">Formulaire classique</p>
                       </button>
                     </div>
-                    <p className="text-xs text-slate-400 mt-2">
-                      {formCaptureType === 'with_rdv'
-                        ? 'Le prospect pourra choisir un créneau de rendez-vous.'
-                        : 'Capture simple sans programmation de rendez-vous.'}
-                    </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Source</label>
+                    <label className="block text-xs font-bold text-[#444748] mb-2">Source</label>
                     <div className="relative">
                       <select value={formSource} onChange={(e) => {
                         if (e.target.value === '__new__') {
@@ -596,15 +592,15 @@ export function BusinessCampaigns() {
                         {allSources.map(s => <option key={s} value={s}>{s}</option>)}
                         <option value="__new__">+ Nouvelle source</option>
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Description interne</label>
+                    <label className="block text-xs font-bold text-[#444748] mb-2">Description interne</label>
                     <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={2} placeholder="Note interne..." className={`${inputCls} resize-none`} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Paramètres UTM</label>
+                    <label className="block text-xs font-bold text-[#444748] mb-2">Paramètres UTM</label>
                     <div className="grid grid-cols-3 gap-2">
                       <input type="text" value={formUtmSource} onChange={(e) => setFormUtmSource(e.target.value)} placeholder="utm_source" className={smallInputCls} />
                       <input type="text" value={formUtmMedium} onChange={(e) => setFormUtmMedium(e.target.value)} placeholder="utm_medium" className={smallInputCls} />
@@ -612,29 +608,29 @@ export function BusinessCampaigns() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Formule associée</label>
+                    <label className="block text-xs font-bold text-[#444748] mb-2">Formule associée</label>
                     <div className="relative">
                       <select value={formFormulaId || ''} onChange={(e) => setFormFormulaId(e.target.value || null)} className={selectCls}>
                         <option value="">Aucune formule</option>
                         {formulas.map(f => <option key={f.id} value={f.id}>{f.name} — {f.price?.toFixed(2)} €</option>)}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">Les prospects capturés via cette campagne seront associés à cette formule</p>
+                    <p className="text-xs text-[#444748]/60 mt-1">Les prospects capturés via cette campagne seront associés à cette formule</p>
                   </div>
 
                   {/* RDV with Closer or Setter switch (only with_rdv) */}
                   {formCaptureType === 'with_rdv' && (
-                    <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
-                      <label className="block text-sm font-medium text-slate-700 mb-3">Rendez-vous avec</label>
+                    <div className="rounded-xl bg-[#f5f3f2]/50 p-5 border border-[#c4c7c7]/10">
+                      <label className="block text-xs font-bold text-[#444748] mb-3">Rendez-vous avec</label>
                       <div className="flex gap-3">
                         <button
                           type="button"
                           onClick={() => { setFormBookingWith('closer'); setFormBookingAssignedMembers([]) }}
-                          className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                          className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
                             formBookingWith === 'closer'
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
-                              : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                              ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                              : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
                           }`}
                         >
                           <UserCheck className="h-4 w-4" /> Closer
@@ -642,10 +638,10 @@ export function BusinessCampaigns() {
                         <button
                           type="button"
                           onClick={() => { setFormBookingWith('setter'); setFormBookingAssignedMembers([]) }}
-                          className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                          className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
                             formBookingWith === 'setter'
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
-                              : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                              ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                              : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
                           }`}
                         >
                           <UserCheck className="h-4 w-4" /> Setter
@@ -656,25 +652,25 @@ export function BusinessCampaigns() {
 
                   {/* Info banner for without_rdv */}
                   {formCaptureType === 'without_rdv' && (
-                    <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-4">
-                      <p className="text-sm font-medium text-purple-700">Campagne sans rendez-vous</p>
-                      <p className="text-xs text-purple-600 mt-1">Les leads capturés seront assignés à un Setter pour le traitement.</p>
+                    <div className="rounded-xl bg-[#f5f3f2]/50 p-5 border border-[#c4c7c7]/10">
+                      <p className="text-sm font-bold text-[#1b1c1b]">Campagne sans rendez-vous</p>
+                      <p className="text-xs text-[#444748]/60 mt-1">Les leads capturés seront assignés à un Setter pour le traitement.</p>
                     </div>
                   )}
 
                   {/* Assignment mode */}
-                  <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-3">
+                  <div className="rounded-xl bg-[#f5f3f2]/50 p-5 border border-[#c4c7c7]/10">
+                    <label className="block text-xs font-bold text-[#444748] mb-3">
                       Mode d'assignation des {formCaptureType === 'without_rdv' ? 'Setters' : (formBookingWith === 'closer' ? 'Closers' : 'Setters')}
                     </label>
                     <div className="flex gap-2 flex-wrap">
                       <button
                         type="button"
                         onClick={() => { setFormBookingAssignMode('specific'); setFormBookingAssignedMembers([]) }}
-                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                        className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
                           formBookingAssignMode === 'specific'
-                            ? 'border-amber-500 bg-amber-50 text-amber-700'
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                            : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
                         }`}
                       >
                         <UserCheck className="h-3.5 w-3.5" /> Un membre précis
@@ -682,10 +678,10 @@ export function BusinessCampaigns() {
                       <button
                         type="button"
                         onClick={() => { setFormBookingAssignMode('all_role'); setFormBookingAssignedMembers([]) }}
-                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                        className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
                           formBookingAssignMode === 'all_role'
-                            ? 'border-amber-500 bg-amber-50 text-amber-700'
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                            : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
                         }`}
                       >
                         <UsersRound className="h-3.5 w-3.5" /> Tout le rôle
@@ -693,10 +689,10 @@ export function BusinessCampaigns() {
                       <button
                         type="button"
                         onClick={() => { setFormBookingAssignMode('multiple'); setFormBookingAssignedMembers([]) }}
-                        className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                        className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
                           formBookingAssignMode === 'multiple'
-                            ? 'border-amber-500 bg-amber-50 text-amber-700'
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                            : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
                         }`}
                       >
                         <Users className="h-3.5 w-3.5" /> Plusieurs membres
@@ -723,7 +719,7 @@ export function BusinessCampaigns() {
                                 <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                               ))}
                           </select>
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
                         </div>
                       </div>
                     )}
@@ -731,15 +727,15 @@ export function BusinessCampaigns() {
                     {/* Multiple members selector */}
                     {formBookingAssignMode === 'multiple' && (
                       <div className="mt-3 space-y-2">
-                        <p className="text-xs text-slate-500">Sélectionnez les membres à inclure :</p>
-                        <div className="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-slate-200 bg-white p-2">
+                        <p className="text-xs text-[#444748]/60">Sélectionnez les membres à inclure :</p>
+                        <div className="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-[#c4c7c7]/20 bg-white p-2">
                           {teamMembers
                             .filter(m => {
                               if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
                               return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'
                             })
                             .map(m => (
-                              <label key={m.id} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-50 cursor-pointer">
+                              <label key={m.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-[#f5f3f2] cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={formBookingAssignedMembers.includes(m.id)}
@@ -750,10 +746,10 @@ export function BusinessCampaigns() {
                                       setFormBookingAssignedMembers(prev => prev.filter(id => id !== m.id))
                                     }
                                   }}
-                                  className="rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                                  className="rounded border-[#c4c7c7]/30 text-[#1b1c1b] focus:ring-[#1b1c1b]"
                                 />
-                                <span className="text-sm text-slate-700">{m.first_name} {m.last_name}</span>
-                                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{m.role}</span>
+                                <span className="text-sm text-[#1b1c1b]">{m.first_name} {m.last_name}</span>
+                                <span className="text-[10px] font-bold text-[#747878] bg-[#f5f3f2] px-1.5 py-0.5 rounded">{m.role}</span>
                               </label>
                             ))}
                         </div>
@@ -762,16 +758,16 @@ export function BusinessCampaigns() {
 
                     {/* Distribution mode (for all_role and multiple) */}
                     {(formBookingAssignMode === 'all_role' || formBookingAssignMode === 'multiple') && (
-                      <div className="mt-4 pt-3 border-t border-amber-200">
-                        <label className="block text-xs font-medium text-slate-600 mb-2">Distribution des rendez-vous</label>
+                      <div className="mt-4 pt-3 border-t border-[#c4c7c7]/15">
+                        <label className="block text-xs font-bold text-[#444748] mb-2">Distribution des rendez-vous</label>
                         <div className="flex gap-3">
                           <button
                             type="button"
                             onClick={() => setFormBookingDistribution('round_robin')}
-                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                            className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
                               formBookingDistribution === 'round_robin'
-                                ? 'border-amber-500 bg-amber-50 text-amber-700'
-                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                                ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
                             }`}
                           >
                             <ArrowRightCircle className="h-4 w-4" /> Tournante
@@ -779,16 +775,16 @@ export function BusinessCampaigns() {
                           <button
                             type="button"
                             onClick={() => setFormBookingDistribution('random')}
-                            className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                            className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
                               formBookingDistribution === 'random'
-                                ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                                ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
                             }`}
                           >
                             <Shuffle className="h-4 w-4" /> Hasard
                           </button>
                         </div>
-                        <p className="text-xs text-slate-400 mt-2">
+                        <p className="text-xs text-[#444748]/60 mt-2">
                           {formBookingDistribution === 'round_robin'
                             ? 'Les rendez-vous sont distribués à tour de rôle entre les membres.'
                             : 'Les rendez-vous sont assignés aléatoirement.'}
@@ -802,33 +798,33 @@ export function BusinessCampaigns() {
               {/* Landing page tab */}
               {modalTab === 'landing' && (
                 <div className="space-y-4">
-                  <p className="text-xs text-slate-500 mb-2">Configurez le contenu affiché à gauche de la page de capture (côté marketing)</p>
+                  <p className="text-xs text-[#444748]/60 mb-2">Configurez le contenu affiché à gauche de la page de capture (côté marketing)</p>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Titre principal</label>
+                    <label className="block text-xs font-bold text-[#444748] mb-2">Titre principal</label>
                     <input type="text" value={formLandingTitle} onChange={(e) => setFormLandingTitle(e.target.value)} placeholder="Ex: Transformez chaque lead en client." className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Sous-titre</label>
+                    <label className="block text-xs font-bold text-[#444748] mb-2">Sous-titre</label>
                     <input type="text" value={formLandingSubtitle} onChange={(e) => setFormLandingSubtitle(e.target.value)} placeholder="Ex: THE SALES OPERATING SYSTEM" className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Texte descriptif</label>
+                    <label className="block text-xs font-bold text-[#444748] mb-2">Texte descriptif</label>
                     <textarea value={formLandingText} onChange={(e) => setFormLandingText(e.target.value)} rows={3} placeholder="Décrivez votre offre, votre proposition de valeur..." className={`${inputCls} resize-none`} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">URL Vidéo (YouTube, Loom...)</label>
+                    <label className="block text-xs font-bold text-[#444748] mb-2">URL Vidéo (YouTube, Loom...)</label>
                     <input type="url" value={formLandingVideoUrl} onChange={(e) => setFormLandingVideoUrl(e.target.value)} placeholder="https://www.youtube.com/embed/..." className={inputCls} />
-                    <p className="text-xs text-slate-400 mt-1">Utilisez l'URL d'intégration (embed). Ex: https://www.youtube.com/embed/VIDEO_ID</p>
+                    <p className="text-xs text-[#444748]/60 mt-1">Utilisez l'URL d'intégration (embed). Ex: https://www.youtube.com/embed/VIDEO_ID</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Lien de redirection post-capture</label>
+                    <label className="block text-xs font-bold text-[#444748] mb-2">Lien de redirection post-capture</label>
                     <input type="url" value={formRedirectUrl} onChange={(e) => setFormRedirectUrl(e.target.value)} placeholder="https://www.example.com/merci" className={inputCls} />
-                    <p className="text-xs text-slate-400 mt-1">Optionnel — Redirige le prospect vers cette URL après soumission du formulaire</p>
+                    <p className="text-xs text-[#444748]/60 mt-1">Optionnel — Redirige le prospect vers cette URL après soumission du formulaire</p>
                   </div>
 
                   {/* Popup delay config */}
-                  <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-4">
-                    <label className="flex items-center gap-2 text-sm font-medium text-purple-700 mb-2">
+                  <div className="rounded-xl bg-[#f5f3f2]/50 p-5 border border-[#c4c7c7]/10">
+                    <label className="flex items-center gap-2 text-sm font-bold text-[#1b1c1b] mb-2">
                       <Clock className="h-4 w-4" /> Configuration du Popup
                     </label>
                     <div className="flex items-center gap-3">
@@ -846,7 +842,7 @@ export function BusinessCampaigns() {
                         <option value={60}>Après 1 minute</option>
                       </select>
                     </div>
-                    <p className="text-xs text-slate-400 mt-2">S'applique quand le format Popup est utilisé. Le site est bloqué tant que le formulaire n'est pas rempli.</p>
+                    <p className="text-xs text-[#444748]/60 mt-2">S'applique quand le format Popup est utilisé. Le site est bloqué tant que le formulaire n'est pas rempli.</p>
                   </div>
                 </div>
               )}
@@ -856,42 +852,42 @@ export function BusinessCampaigns() {
                 <div className="space-y-5">
                   {/* Required fields config */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-3">Champs obligatoires du formulaire</label>
+                    <label className="block text-xs font-bold text-[#444748] mb-3">Champs obligatoires du formulaire</label>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                      <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 px-4 py-3">
                         <div>
-                          <p className="text-sm font-medium text-slate-700">Nom</p>
-                          <p className="text-xs text-slate-400">Toujours requis</p>
+                          <p className="text-sm font-bold text-[#1b1c1b]">Nom</p>
+                          <p className="text-xs text-[#747878]">Toujours requis</p>
                         </div>
-                        <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded">Obligatoire</span>
+                        <span className="text-[10px] font-bold text-[#747878] bg-[#f5f3f2] px-2 py-1 rounded-lg">Obligatoire</span>
                       </div>
-                      <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                      <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 px-4 py-3">
                         <div>
-                          <p className="text-sm font-medium text-slate-700">Email</p>
-                          <p className="text-xs text-slate-400">Adresse email du lead</p>
+                          <p className="text-sm font-bold text-[#1b1c1b]">Email</p>
+                          <p className="text-xs text-[#747878]">Adresse email du lead</p>
                         </div>
                         <button
                           onClick={() => setFormEmailRequired(!formEmailRequired)}
                           className="flex-shrink-0"
                         >
                           {formEmailRequired
-                            ? <ToggleRight className="h-6 w-6 text-amber-600" />
-                            : <ToggleLeft className="h-6 w-6 text-slate-300" />
+                            ? <ToggleRight className="h-6 w-6 text-[#1b1c1b]" />
+                            : <ToggleLeft className="h-6 w-6 text-[#c4c7c7]" />
                           }
                         </button>
                       </div>
-                      <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                      <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 px-4 py-3">
                         <div>
-                          <p className="text-sm font-medium text-slate-700">Téléphone</p>
-                          <p className="text-xs text-slate-400">Numéro de téléphone du lead</p>
+                          <p className="text-sm font-bold text-[#1b1c1b]">Téléphone</p>
+                          <p className="text-xs text-[#747878]">Numéro de téléphone du lead</p>
                         </div>
                         <button
                           onClick={() => setFormPhoneRequired(!formPhoneRequired)}
                           className="flex-shrink-0"
                         >
                           {formPhoneRequired
-                            ? <ToggleRight className="h-6 w-6 text-amber-600" />
-                            : <ToggleLeft className="h-6 w-6 text-slate-300" />
+                            ? <ToggleRight className="h-6 w-6 text-[#1b1c1b]" />
+                            : <ToggleLeft className="h-6 w-6 text-[#c4c7c7]" />
                           }
                         </button>
                       </div>
@@ -901,26 +897,26 @@ export function BusinessCampaigns() {
                   {/* Custom Fields */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium text-slate-700">Champs personnalisés</label>
-                      <button onClick={addCustomField} className="flex items-center gap-1 text-xs font-medium text-amber-600 hover:text-amber-700">
+                      <label className="text-sm font-bold text-[#1b1c1b]">Champs personnalisés</label>
+                      <button onClick={addCustomField} className="flex items-center gap-1 text-xs font-bold text-[#1b1c1b] hover:text-[#444748]">
                         <Plus className="h-3.5 w-3.5" /> Ajouter un champ
                       </button>
                     </div>
                     {formCustomFields.length === 0 && (
-                      <p className="text-xs text-slate-400 italic">Aucun champ personnalisé. Cliquez sur "Ajouter un champ" pour en créer.</p>
+                      <p className="text-xs text-[#747878] italic">Aucun champ personnalisé. Cliquez sur "Ajouter un champ" pour en créer.</p>
                     )}
                     {formCustomFields.map((field, idx) => (
                       <div key={idx} className="flex items-center gap-2 mb-2">
                         <input type="text" value={field.label} onChange={(e) => updateCustomField(idx, { label: e.target.value })} placeholder="Nom du champ" className={`flex-1 ${smallInputCls}`} />
-                        <select value={field.type} onChange={(e) => updateCustomField(idx, { type: e.target.value as CustomField['type'] })} className={`${smallInputCls} text-slate-900`}>
+                        <select value={field.type} onChange={(e) => updateCustomField(idx, { type: e.target.value as CustomField['type'] })} className={`${smallInputCls} text-[#1b1c1b]`}>
                           <option value="text">Texte</option>
                           <option value="email">Email</option>
                           <option value="phone">Téléphone</option>
                           <option value="number">Numéro</option>
                           <option value="select">Sélection</option>
                         </select>
-                        <label className="flex items-center gap-1 text-xs text-slate-500 whitespace-nowrap">
-                          <input type="checkbox" checked={field.required} onChange={(e) => updateCustomField(idx, { required: e.target.checked })} className="rounded border-slate-300 text-amber-600 focus:ring-amber-500" />
+                        <label className="flex items-center gap-1 text-xs text-[#444748] whitespace-nowrap">
+                          <input type="checkbox" checked={field.required} onChange={(e) => updateCustomField(idx, { required: e.target.checked })} className="rounded border-[#c4c7c7]/30 text-[#1b1c1b] focus:ring-[#1b1c1b]" />
                           Requis
                         </label>
                         <button onClick={() => removeCustomField(idx)} className="text-red-400 hover:text-red-600"><X className="h-4 w-4" /></button>
@@ -938,17 +934,17 @@ export function BusinessCampaigns() {
                     <>
                       {/* Duration */}
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Durée du rendez-vous</label>
+                        <label className="block text-xs font-bold text-[#444748] mb-2">Durée du rendez-vous</label>
                         <div className="flex gap-2 flex-wrap">
                           {BOOKING_DURATIONS.map(d => (
                             <button
                               key={d.value}
                               type="button"
                               onClick={() => setFormBookingDuration(d.value)}
-                              className={`rounded-lg border-2 px-4 py-2 text-sm font-medium transition-all ${
+                              className={`rounded-xl border px-4 py-2 text-sm font-bold transition-all ${
                                 formBookingDuration === d.value
-                                  ? 'border-amber-500 bg-amber-50 text-amber-700'
-                                  : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                                  ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                  : 'bg-white text-[#444748] border-[#c4c7c7]/30 hover:border-[#c4c7c7]/60'
                               }`}
                             >
                               {d.label}
@@ -959,7 +955,7 @@ export function BusinessCampaigns() {
 
                       {/* Title */}
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Titre du rendez-vous</label>
+                        <label className="block text-xs font-bold text-[#444748] mb-2">Titre du rendez-vous</label>
                         <input
                           type="text"
                           value={formBookingTitle}
@@ -978,7 +974,7 @@ export function BusinessCampaigns() {
                               key={v.var}
                               type="button"
                               onClick={() => setFormBookingTitle(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + v.var)}
-                              className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-mono text-slate-600 hover:bg-slate-200 transition-colors"
+                              className="rounded-lg bg-[#f5f3f2] px-2 py-1 text-[10px] font-mono text-[#444748] hover:bg-[#eae8e7] transition-colors"
                               title={v.label}
                             >
                               {v.var}
@@ -989,7 +985,7 @@ export function BusinessCampaigns() {
 
                       {/* Description */}
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Description du rendez-vous</label>
+                        <label className="block text-xs font-bold text-[#444748] mb-2">Description du rendez-vous</label>
                         <textarea
                           value={formBookingDescription}
                           onChange={(e) => setFormBookingDescription(e.target.value)}
@@ -1010,7 +1006,7 @@ export function BusinessCampaigns() {
                               key={v.var}
                               type="button"
                               onClick={() => setFormBookingDescription(prev => prev + (prev && !prev.endsWith('\n') && !prev.endsWith(' ') ? ' ' : '') + v.var)}
-                              className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-mono text-slate-600 hover:bg-slate-200 transition-colors"
+                              className="rounded-lg bg-[#f5f3f2] px-2 py-1 text-[10px] font-mono text-[#444748] hover:bg-[#eae8e7] transition-colors"
                               title={v.label}
                             >
                               {v.var}
@@ -1025,11 +1021,11 @@ export function BusinessCampaigns() {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4 flex-shrink-0">
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            <div className="flex justify-end gap-3 bg-[#f5f3f2] px-6 py-4 flex-shrink-0 rounded-b-2xl">
+              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-full border border-[#c4c7c7]/30 px-5 py-2.5 text-sm font-bold text-[#444748] hover:bg-white transition-colors">
                 Annuler
               </button>
-              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50">
+              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-full bg-[#1b1c1b] px-5 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {editingCampaign ? 'Enregistrer' : 'Créer'}
               </button>
@@ -1438,27 +1434,27 @@ export function BusinessCampaigns() {
       {isNewSourceModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">Nouvelle source</h3>
+            <h3 className="text-lg font-extrabold text-[#1b1c1b] mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>Nouvelle source</h3>
             <input
               type="text"
               value={newSourceName}
               onChange={(e) => setNewSourceName(e.target.value)}
               placeholder="Nom de la source"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:border-amber-500 focus:outline-none mb-4"
+              className="w-full bg-transparent border-b border-[#c4c7c7]/30 px-0 py-2.5 text-[#1b1c1b] focus:border-[#006c49] focus:outline-none mb-4 transition-colors"
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleCreateSource()}
             />
             <div className="flex gap-3">
               <button
                 onClick={() => { setIsNewSourceModalOpen(false); setNewSourceName('') }}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-xl transition-colors"
+                className="flex-1 border border-[#c4c7c7]/30 hover:bg-[#f5f3f2] text-[#444748] font-bold py-2.5 rounded-full transition-colors"
               >
                 Annuler
               </button>
               <button
                 onClick={handleCreateSource}
                 disabled={!newSourceName.trim() || savingSource}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-medium py-2.5 rounded-xl transition-colors"
+                className="flex-1 bg-[#1b1c1b] hover:scale-105 active:scale-95 disabled:opacity-50 text-white font-bold py-2.5 rounded-full transition-all"
               >
                 {savingSource ? 'Création...' : 'Créer'}
               </button>
