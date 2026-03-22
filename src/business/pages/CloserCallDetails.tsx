@@ -563,8 +563,8 @@ export function CloserCallDetails() {
   if (!call) {
     return (
       <div className="text-center py-16">
-        <p className="text-stone-500">Appel introuvable</p>
-        <button onClick={() => navigate('/business/appels')} className="mt-4 text-stone-900 font-semibold hover:underline">Retour aux appels</button>
+        <p className="text-stone-500 dark:text-neutral-400">Appel introuvable</p>
+        <button onClick={() => navigate('/business/appels')} className="mt-4 text-stone-900 dark:text-white font-semibold hover:underline">Retour aux appels</button>
       </div>
     )
   }
@@ -609,8 +609,8 @@ export function CloserCallDetails() {
               className={cn(
                 'p-5 rounded-xl border-2 text-left transition-all cursor-pointer',
                 isSelected
-                  ? 'bg-white border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
-                  : 'bg-stone-50/50 border-stone-200/40 hover:bg-white hover:border-stone-300'
+                  ? 'bg-white dark:bg-neutral-800 border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                  : 'bg-stone-50/50 dark:bg-neutral-800/50 border-stone-200/40 dark:border-neutral-700/40 hover:bg-white dark:hover:bg-neutral-800 hover:border-stone-300 dark:hover:border-neutral-600'
               )}
             >
               <div className="mb-3">
@@ -618,7 +618,7 @@ export function CloserCallDetails() {
               </div>
               <p className={cn(
                 "font-['Manrope'] font-bold text-sm",
-                isSelected ? 'text-stone-900' : 'text-stone-500'
+                isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400'
               )}>
                 {outcome.label}
               </p>
@@ -641,7 +641,7 @@ export function CloserCallDetails() {
       <div className="mb-10">
         <button
           onClick={() => navigate('/business/appels')}
-          className="mb-6 flex items-center gap-2 text-stone-400 hover:text-stone-700 transition-colors font-['Manrope'] font-semibold"
+          className="mb-6 flex items-center gap-2 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors font-['Manrope'] font-semibold"
         >
           <ArrowLeft className="h-5 w-5" /> Retour
         </button>
@@ -654,10 +654,10 @@ export function CloserCallDetails() {
           </div>
         )}
 
-        <h1 className="font-['Manrope'] text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 mb-2">
+        <h1 className="font-['Manrope'] text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">
           {isReadonly ? "Détails de l'appel avec" : isSetterCloser ? "Résumé d'appel avec" : 'Résumé de Vente avec'} {call.contact_name}
         </h1>
-        <div className="flex items-center gap-2 text-stone-500">
+        <div className="flex items-center gap-2 text-stone-500 dark:text-neutral-400">
           <Clock className="h-4 w-4" />
           <span className="text-sm font-medium">
             {new Date(call.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -667,23 +667,23 @@ export function CloserCallDetails() {
           </span>
         </div>
         {prospect && prospectFormula && (
-          <div className="mt-4 inline-flex items-center gap-3 rounded-xl bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm px-5 py-3">
+          <div className="mt-4 inline-flex items-center gap-3 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-neutral-700 shadow-sm px-5 py-3">
             <Award className="h-4 w-4 text-emerald-600" />
             <div>
-              <p className="text-xs text-stone-400">Offre liée</p>
-              <p className="text-sm font-bold text-stone-900 font-['Manrope']">{prospectFormula.name} - {prospectFormula.price}€</p>
+              <p className="text-xs text-stone-400 dark:text-neutral-500">Offre liée</p>
+              <p className="text-sm font-bold text-stone-900 dark:text-white font-['Manrope']">{prospectFormula.name} - {prospectFormula.price}€</p>
             </div>
           </div>
         )}
         {prospect && !prospectFormula && (
-          <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-stone-50/50 border border-stone-200/40 px-5 py-3">
-            <p className="text-sm text-stone-500">Aucune offre liée à ce prospect</p>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-stone-50/50 dark:bg-neutral-800/50 border border-stone-200/40 dark:border-neutral-700/30 px-5 py-3">
+            <p className="text-sm text-stone-500 dark:text-neutral-400">Aucune offre liée à ce prospect</p>
           </div>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-8 mb-10 border-b border-stone-200/60">
+      <div className="flex gap-8 mb-10 border-b border-stone-200/60 dark:border-neutral-700/60">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -691,8 +691,8 @@ export function CloserCallDetails() {
             className={cn(
               "pb-4 font-['Manrope'] font-semibold transition-colors",
               activeTab === tab.id
-                ? "text-stone-900 border-b-2 border-stone-900 font-bold"
-                : "text-stone-400 hover:text-stone-600"
+                ? "text-stone-900 dark:text-white border-b-2 border-stone-900 dark:border-white font-bold"
+                : "text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300"
             )}
           >
             {tab.label}
@@ -714,48 +714,48 @@ export function CloserCallDetails() {
 
             {/* Won: Payment Terms & Commission */}
             {selectedOutcome === 'won' && (
-              <section className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 space-y-5">
+              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-7 space-y-5">
                 <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-emerald-600" /> Détails de la vente
                 </h3>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-stone-700">Montant de la vente <span className="text-red-500">*</span></label>
+                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Montant de la vente <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <input
                       type="number" min="0" step="0.01"
                       value={amount || ''}
                       onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
                       placeholder="Ex: 5000"
-                      className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-3 pr-12 text-lg text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                      className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-3 pr-12 text-lg text-stone-900 dark:text-white placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 font-medium">€</div>
                   </div>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-stone-700">Mode de paiement</label>
+                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Mode de paiement</label>
                   <div className="flex gap-3">
                     <button onClick={() => setPaymentType('comptant')}
                       className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-[\"Manrope\"]',
-                        paymentType === 'comptant' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 bg-stone-50/50 text-stone-500 hover:border-stone-300')}>
+                        paymentType === 'comptant' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 dark:border-neutral-700/40 bg-stone-50/50 dark:bg-neutral-800/50 text-stone-500 dark:text-neutral-400 hover:border-stone-300 dark:hover:border-neutral-600')}>
                       Comptant
                     </button>
                     <button onClick={() => setPaymentType('installments')}
                       className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-[\"Manrope\"]',
-                        paymentType === 'installments' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 bg-stone-50/50 text-stone-500 hover:border-stone-300')}>
+                        paymentType === 'installments' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 dark:border-neutral-700/40 bg-stone-50/50 dark:bg-neutral-800/50 text-stone-500 dark:text-neutral-400 hover:border-stone-300 dark:hover:border-neutral-600')}>
                       Plusieurs fois
                     </button>
                   </div>
                 </div>
                 {paymentType === 'installments' && (
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-stone-700">Nombre de mensualités</label>
+                    <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Nombre de mensualités</label>
                     <select value={installmentsCount} onChange={(e) => setInstallmentsCount(parseInt(e.target.value))}
-                      className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
+                      className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
                       {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
                         <option key={num} value={num}>{num} mois</option>
                       ))}
                     </select>
-                    <p className="mt-2 text-sm text-stone-500">
+                    <p className="mt-2 text-sm text-stone-500 dark:text-neutral-400">
                       Montant par mois: <span className="text-emerald-600 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
                     </p>
                   </div>
@@ -768,11 +768,11 @@ export function CloserCallDetails() {
                     </div>
                     <p className="text-2xl font-extrabold text-emerald-600 font-['Manrope']">{totalCommission.toFixed(2)} €</p>
                     {paymentType === 'installments' && (
-                      <p className="mt-1 text-sm text-stone-600">
+                      <p className="mt-1 text-sm text-stone-600 dark:text-neutral-300">
                         Tu recevras: <span className="font-semibold text-emerald-600">{monthlyCommission.toFixed(2)}€/mois</span>
                       </p>
                     )}
-                    <p className="mt-2 text-xs text-stone-400">Taux de commission: {commissionRate}%</p>
+                    <p className="mt-2 text-xs text-stone-400 dark:text-neutral-500">Taux de commission: {commissionRate}%</p>
                   </div>
                 )}
               </section>
@@ -780,27 +780,27 @@ export function CloserCallDetails() {
 
             {/* Follow up (closer outcome) */}
             {selectedOutcome === 'followup' && (
-              <section className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 space-y-5">
+              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-7 space-y-5">
                 <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
                   <Clock className="h-5 w-5 text-stone-500" /> Informations de suivi
                 </h3>
                 <div>
-                  <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700">
+                  <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-neutral-200">
                     <Calendar className="h-4 w-4" /> Date de reprogrammation <span className="text-red-500">*</span>
                   </label>
                   <input type="datetime-local" value={followupDate} onChange={(e) => setFollowupDate(e.target.value)}
-                    className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
+                    className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-stone-700">Motif du report <span className="text-red-500">*</span></label>
+                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Motif du report <span className="text-red-500">*</span></label>
                   <select value={followupReason} onChange={(e) => { setFollowupReason(e.target.value); if (e.target.value !== 'Autre') setFollowupReasonOther('') }}
-                    className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
+                    className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
                     <option value="">Sélectionnez un motif</option>
                     {objectionReasons.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                   {followupReason === 'Autre' && (
                     <div className="mt-3">
-                      <label className="mb-2 block text-sm font-medium text-stone-700">Précisez le motif <span className="text-red-500">*</span></label>
+                      <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Précisez le motif <span className="text-red-500">*</span></label>
                       <input type="text" value={followupReasonOther} onChange={(e) => setFollowupReasonOther(e.target.value)}
                         placeholder="Ex: Indisponibilité exceptionnelle..."
                         className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
@@ -812,20 +812,20 @@ export function CloserCallDetails() {
 
             {/* Lost (closer outcome) */}
             {selectedOutcome === 'lost' && (
-              <section className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 space-y-5">
+              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-7 space-y-5">
                 <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
                   <XCircle className="h-5 w-5 text-stone-500" /> Raison de la perte
                 </h3>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-stone-700">Motif <span className="text-red-500">*</span></label>
+                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Motif <span className="text-red-500">*</span></label>
                   <select value={lostReason} onChange={(e) => { setLostReason(e.target.value); if (e.target.value !== 'Autre') setLostReasonOther('') }}
-                    className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
+                    className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
                     <option value="">Sélectionnez un motif</option>
                     {objectionReasons.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                   {lostReason === 'Autre' && (
                     <div className="mt-3">
-                      <label className="mb-2 block text-sm font-medium text-stone-700">Précisez le motif <span className="text-red-500">*</span></label>
+                      <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Précisez le motif <span className="text-red-500">*</span></label>
                       <input type="text" value={lostReasonOther} onChange={(e) => setLostReasonOther(e.target.value)}
                         placeholder="Ex: Prix trop élevé..."
                         className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
@@ -837,8 +837,8 @@ export function CloserCallDetails() {
 
             {/* Qualified: auto-assign for setter-closer self */}
             {selectedOutcome === 'qualified' && isSetterCloserSelf && (
-              <div className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-5">
-                <p className="text-sm text-stone-700 text-center font-['Manrope'] font-medium">
+              <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-5">
+                <p className="text-sm text-stone-700 dark:text-neutral-200 text-center font-['Manrope'] font-medium">
                   Le prospect sera automatiquement assigné à vous en tant que Closer.
                 </p>
               </div>
@@ -848,9 +848,9 @@ export function CloserCallDetails() {
             {selectedOutcome === 'qualified' && showSetterOutcomes && !isSetterCloserSelf && (
               <section>
                 <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 1 — Assigner un Closer</h3>
-                <div className="bg-white/70 backdrop-blur-xl p-7 rounded-xl border border-white/40 shadow-sm">
+                <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-7 rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm">
                   {closerMembers.length === 0 ? (
-                    <div className="flex items-center gap-2 text-sm text-stone-500 bg-stone-50 rounded-lg p-4 border border-stone-200">
+                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-800 rounded-lg p-4 border border-stone-200 dark:border-neutral-700">
                       <AlertCircle className="h-4 w-4 text-stone-400" />
                       Aucun closer dans l'équipe
                     </div>
@@ -858,11 +858,11 @@ export function CloserCallDetails() {
                     <>
                       {/* Manual closer dropdown */}
                       <div className="mb-5">
-                        <label className="mb-2 block text-xs font-medium text-stone-500">Sélectionner manuellement</label>
+                        <label className="mb-2 block text-xs font-medium text-stone-500 dark:text-neutral-400">Sélectionner manuellement</label>
                         <select
                           value={assignmentMode === 'manual' ? selectedCloser?.id || '' : ''}
                           onChange={(e) => e.target.value && handleManualSelect(e.target.value)}
-                          className="w-full rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-700 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                          className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm text-stone-700 dark:text-neutral-200 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                         >
                           <option value="">-- Choisir un closer --</option>
                           {closerMembers.map(c => (
@@ -878,7 +878,7 @@ export function CloserCallDetails() {
                             'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
                             assignmentMode === 'suivant'
                               ? 'bg-stone-900 text-white'
-                              : 'border border-stone-300 text-stone-700 hover:bg-stone-100'
+                              : 'border border-stone-300 dark:border-neutral-700 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-neutral-800'
                           )}
                         >
                           Suivant (Tournante)
@@ -889,7 +889,7 @@ export function CloserCallDetails() {
                             'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
                             assignmentMode === 'hasard'
                               ? 'bg-stone-900 text-white'
-                              : 'border border-stone-300 text-stone-700 hover:bg-stone-100'
+                              : 'border border-stone-300 dark:border-neutral-700 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-neutral-800'
                           )}
                         >
                           Hasard
@@ -897,12 +897,12 @@ export function CloserCallDetails() {
                       </div>
 
                       {selectedCloser && (
-                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 border border-stone-200/30">
-                          <div className="w-14 h-14 rounded-full bg-stone-200 flex items-center justify-center text-stone-700 font-bold text-lg shrink-0">
+                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 dark:bg-white/5 border border-stone-200/30 dark:border-neutral-700/30">
+                          <div className="w-14 h-14 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-stone-700 dark:text-neutral-200 font-bold text-lg shrink-0">
                             {selectedCloser.first_name?.[0]}{selectedCloser.last_name?.[0]}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-['Manrope'] font-extrabold text-stone-900">
+                            <h4 className="font-['Manrope'] font-extrabold text-stone-900 dark:text-white">
                               {selectedCloser.first_name} {selectedCloser.last_name}
                             </h4>
                             <p className="text-emerald-700 font-bold text-xs uppercase tracking-widest">
@@ -924,14 +924,14 @@ export function CloserCallDetails() {
             <div className="lg:col-span-5">
               <section>
                 <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 2 — Programmer le RDV</h3>
-                <div className="bg-white p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                <div className="bg-white dark:bg-neutral-800 p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   {loadingSlots ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
                       <span className="ml-2 text-sm text-stone-500">Chargement des créneaux...</span>
                     </div>
                   ) : dateKeys.length === 0 ? (
-                    <div className="flex items-center gap-2 text-sm text-stone-500 bg-stone-50 rounded-lg p-4 border border-stone-200">
+                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-800 rounded-lg p-4 border border-stone-200 dark:border-neutral-700">
                       <AlertCircle className="h-4 w-4 text-stone-400" />
                       Aucun créneau disponible pour ce closer dans les 14 prochains jours.
                     </div>
@@ -939,21 +939,21 @@ export function CloserCallDetails() {
                     <>
                       {/* Date navigation */}
                       <div className="flex justify-between items-center mb-5">
-                        <h4 className="font-['Manrope'] font-bold text-stone-900 capitalize">
+                        <h4 className="font-['Manrope'] font-bold text-stone-900 dark:text-white capitalize">
                           {currentDateSlots[0]?.dateLabel || ''}
                         </h4>
                         <div className="flex gap-2">
                           <button
                             onClick={() => setCurrentDateIndex(Math.max(0, currentDateIndex - 1))}
                             disabled={currentDateIndex === 0}
-                            className="p-2 rounded-full hover:bg-stone-100 transition-colors disabled:opacity-30"
+                            className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-700 transition-colors disabled:opacity-30"
                           >
                             <ChevronLeft className="h-5 w-5" />
                           </button>
                           <button
                             onClick={() => setCurrentDateIndex(Math.min(dateKeys.length - 1, currentDateIndex + 1))}
                             disabled={currentDateIndex >= dateKeys.length - 1}
-                            className="p-2 rounded-full hover:bg-stone-100 transition-colors disabled:opacity-30"
+                            className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-700 transition-colors disabled:opacity-30"
                           >
                             <ChevronRight className="h-5 w-5" />
                           </button>
@@ -972,7 +972,7 @@ export function CloserCallDetails() {
                                 'py-3.5 text-sm font-bold rounded-lg transition-all',
                                 isSelected
                                   ? 'bg-emerald-700 text-white shadow-md'
-                                  : 'border border-stone-200/60 text-stone-600 hover:border-emerald-600/30'
+                                  : 'border border-stone-200/60 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:border-emerald-600/30'
                               )}
                             >
                               {slot.timeLabel}
@@ -999,8 +999,8 @@ export function CloserCallDetails() {
                           <div className="flex items-center gap-2">
                             <CalendarCheck className="h-4 w-4 text-emerald-600" />
                             <div>
-                              <p className="text-sm font-semibold text-stone-900">RDV confirmé</p>
-                              <p className="text-xs text-stone-500">
+                              <p className="text-sm font-semibold text-stone-900 dark:text-white">RDV confirmé</p>
+                              <p className="text-xs text-stone-500 dark:text-neutral-400">
                                 {selectedSlot.dateLabel} — {selectedSlot.timeLabel} avec {selectedCloser.first_name} {selectedCloser.last_name}
                               </p>
                             </div>
@@ -1018,8 +1018,8 @@ export function CloserCallDetails() {
 
       {/* NOTES TAB */}
       {activeTab === 'notes' && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 h-[500px] flex flex-col">
-          <label className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-900 font-['Manrope']">
+        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-7 h-[500px] flex flex-col">
+          <label className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-900 dark:text-white font-['Manrope']">
             <FileText className="h-4 w-4 text-stone-500" /> Historique et Notes de l'appel
           </label>
           <textarea
@@ -1028,11 +1028,11 @@ export function CloserCallDetails() {
             readOnly={isReadonly}
             placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
             className={cn(
-              "flex-1 w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-3 text-base text-stone-800 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none leading-relaxed",
+              "flex-1 w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-3 text-base text-stone-800 dark:text-neutral-100 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none leading-relaxed",
               isReadonly && "cursor-default"
             )}
           />
-          <p className="mt-3 text-xs text-stone-400 flex items-center gap-1">
+          <p className="mt-3 text-xs text-stone-400 dark:text-neutral-500 flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3" />
             Ces notes s'ajouteront a l'historique des appels du prospect.
           </p>
@@ -1041,21 +1041,21 @@ export function CloserCallDetails() {
 
       {/* REMINDER TAB */}
       {activeTab === 'reminder' && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-xl border border-white/40 shadow-sm p-7 space-y-5">
+        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-7 space-y-5">
           <div className="flex items-center gap-2 mb-2">
             <Bell className="h-5 w-5 text-stone-500" />
-            <h3 className="text-lg font-bold text-stone-900 font-['Manrope']">Programmer un rappel</h3>
+            <h3 className="text-lg font-bold text-stone-900 dark:text-white font-['Manrope']">Programmer un rappel</h3>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700">Titre <span className="text-red-500">*</span></label>
+            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Titre <span className="text-red-500">*</span></label>
             <input type="text" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)}
               placeholder="Ex: Rappeler Jean pour le contrat"
               className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700">Description <span className="text-stone-400">(optionnel)</span></label>
+            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Description <span className="text-stone-400">(optionnel)</span></label>
             <textarea value={reminderDescription} onChange={(e) => setReminderDescription(e.target.value)}
               placeholder="Details supplémentaires..." rows={3}
               className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none" />
@@ -1063,18 +1063,18 @@ export function CloserCallDetails() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700">
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-neutral-200">
                 <Calendar className="h-4 w-4" /> Date <span className="text-red-500">*</span>
               </label>
               <input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)}
-                className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
+                className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
             </div>
             <div>
-              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700">
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-neutral-200">
                 <Clock className="h-4 w-4" /> Heure <span className="text-red-500">*</span>
               </label>
               <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)}
-                className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
+                className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
             </div>
           </div>
 
@@ -1094,9 +1094,9 @@ export function CloserCallDetails() {
 
       {/* Footer Actions */}
       {!isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md px-8 py-5 flex items-center justify-end gap-5 z-40 border-t border-stone-200/40">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-end gap-5 z-40 border-t border-stone-200/40 dark:border-neutral-700/40">
           <button onClick={() => navigate('/business/appels')}
-            className="px-8 py-3 rounded-full border border-stone-300 text-stone-700 font-['Manrope'] font-bold text-sm hover:bg-stone-50 transition-all">
+            className="px-8 py-3 rounded-full border border-stone-300 dark:border-neutral-700 text-stone-700 dark:text-neutral-200 font-['Manrope'] font-bold text-sm hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all">
             Annuler
           </button>
           <button onClick={handleSave} disabled={!isFormValid() || saving}
@@ -1111,7 +1111,7 @@ export function CloserCallDetails() {
         </div>
       )}
       {isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md px-8 py-5 flex items-center justify-center z-40 border-t border-stone-200/40">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-neutral-700/40">
           <button onClick={() => navigate('/business/appels')}
             className="px-10 py-3 rounded-full bg-stone-900 text-white font-['Manrope'] font-bold text-sm hover:bg-stone-800 transition-all shadow-xl active:scale-95">
             Retour aux appels
