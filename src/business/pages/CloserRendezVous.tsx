@@ -55,7 +55,29 @@ export function CloserRendezVous() {
     try {
       const res = await fetch(`${API_URL}?action=appointments-list&user_id=${effectiveUserId}`)
       const data = await res.json()
-      if (data.appointments) setAppointments(data.appointments)
+      if (data.appointments) {
+        const now = Date.now()
+        const pastIds: string[] = []
+        const appts = (data.appointments as Appointment[]).map(a => {
+          if (a.status === 'pending' || a.status === 'confirmed') {
+            const start = new Date(`${a.date}T${a.time?.slice(0, 5) || '00:00'}:00`)
+            const end = new Date(start.getTime() + (a.duration || 30) * 60000)
+            if (end.getTime() < now) {
+              pastIds.push(a.id)
+              return { ...a, status: 'done' as const }
+            }
+          }
+          return a
+        })
+        setAppointments(appts)
+        for (const id of pastIds) {
+          fetch(`${API_URL}?action=appointments-update`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: effectiveUserId, id, status: 'done' }),
+          }).catch(() => {})
+        }
+      }
     } catch (err) {
       console.error('Error fetching appointments:', err)
     } finally {

@@ -202,20 +202,49 @@ export function CloserAgenda() {
       const res = await fetch(`${API_URL}?action=appointments-list&user_id=${effectiveUserId}`)
       const data = await res.json()
       if (data.appointments) {
+        const now = Date.now()
+        const pastIds: string[] = []
+        const allAppts = (data.appointments as Appointment[]).map(a => {
+          if (a.status === 'pending' || a.status === 'confirmed') {
+            let apptDate = a.date
+            let apptTime = a.time ? a.time.slice(0, 5) : '00:00'
+            if (a.datetime_utc) {
+              const local = fromUTC(a.datetime_utc, userTimezone)
+              apptDate = local.date
+              apptTime = local.time
+            }
+            const start = new Date(`${apptDate}T${apptTime}:00`)
+            const end = new Date(start.getTime() + (a.duration || 30) * 60000)
+            if (end.getTime() < now) {
+              pastIds.push(a.id)
+              return { ...a, status: 'done' as const }
+            }
+          }
+          return a
+        })
+        // Auto-mark past appointments as done in background
+        for (const id of pastIds) {
+          fetch(`${API_URL}?action=appointments-update`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: effectiveUserId, id, status: 'done' }),
+          }).catch(() => {})
+        }
+
         if (isOwnerView) {
           if (selectedMemberId === 'perso') {
             setAppointments([])
           } else if (selectedMemberId === 'all') {
-            setAppointments(data.appointments as Appointment[])
+            setAppointments(allAppts)
           } else {
-            setAppointments((data.appointments as Appointment[]).filter(a => a.assigned_to === selectedMemberId))
+            setAppointments(allAppts.filter(a => a.assigned_to === selectedMemberId))
           }
         } else {
-          setAppointments((data.appointments as Appointment[]).filter(a => a.assigned_to === teamMember?.id))
+          setAppointments(allAppts.filter(a => a.assigned_to === teamMember?.id))
         }
       }
     } catch (err) { console.error('Error fetching appointments:', err) }
-  }, [effectiveUserId, teamMember?.id, isOwnerView, selectedMemberId])
+  }, [effectiveUserId, teamMember?.id, isOwnerView, selectedMemberId, userTimezone])
 
   const fetchReminders = useCallback(async () => {
     if (!user?.id) return
