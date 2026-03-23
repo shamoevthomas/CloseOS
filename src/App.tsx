@@ -158,7 +158,7 @@ function SmartHome() {
   const [product, setProduct] = useState<'sales' | 'business' | 'choice' | 'loading'>('loading')
 
   useEffect(() => {
-    // 1. Check query params
+    // 1. Check query params (these are intentional redirects, handle immediately)
     const params = new URLSearchParams(window.location.search)
     if (params.has('sales')) {
       localStorage.setItem('closeos_product', 'sales')
@@ -172,14 +172,21 @@ function SmartHome() {
       return
     }
 
-    // 2. Check localStorage
+    // 2. Wait for auth to finish before checking localStorage
+    //    This prevents redirecting logged-in users to /business landing
+    if (loading) return
+
+    // 3. If user is logged in, go to dashboard (Sales or Business)
+    if (user) return // handled by the render below
+
+    // 4. Check localStorage preference (only for non-logged-in users)
     const saved = localStorage.getItem('closeos_product')
     if (saved === 'sales') { setProduct('sales'); return }
     if (saved === 'business') { navigate('/business', { replace: true }); return }
 
-    // 3. No preference → show choice
+    // 5. No preference → show choice
     setProduct('choice')
-  }, [navigate])
+  }, [navigate, loading, user])
 
   // Logged-in users go straight to dashboard
   if (!loading && user) return <Navigate to="/dashboard" replace />
