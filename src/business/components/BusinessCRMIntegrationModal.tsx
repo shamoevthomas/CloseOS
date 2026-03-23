@@ -5,14 +5,14 @@ import { useBusinessProspects } from '../contexts/BusinessProspectsContext';
 import { supabase } from '../../lib/supabase';
 
 const CRM_OPTIONS = [
-  { id: 'closeos', name: 'CloseOS', description: 'CRM intégré CloseOS', color: 'bg-amber-500', textColor: 'text-amber-700', bgColor: 'bg-amber-50', borderColor: 'border-amber-300', iconBg: 'bg-[#1b1c1b]', iconText: 'text-white' },
-  { id: 'iclosed', name: 'iClosed', description: 'Connectez via Webhook', color: 'bg-purple-500', textColor: 'text-purple-700', bgColor: 'bg-purple-50', borderColor: 'border-purple-300', iconBg: 'bg-emerald-100', iconText: 'text-emerald-700' },
-  { id: 'hubspot', name: 'HubSpot', description: 'Synchronisez avec HubSpot CRM', color: 'bg-orange-500', textColor: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-orange-300', iconBg: 'bg-[#ff7a59]', iconText: 'text-white' },
-  { id: 'pipedrive', name: 'Pipedrive', description: 'Connectez votre pipeline Pipedrive', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-300', iconBg: 'bg-[#222222]', iconText: 'text-white' },
-  { id: 'systemeio', name: 'Systeme.io', description: 'Importez vos contacts Systeme.io', color: 'bg-blue-500', textColor: 'text-blue-700', bgColor: 'bg-blue-50', borderColor: 'border-blue-300', iconBg: 'bg-[#00a1d4]', iconText: 'text-white' },
-  { id: 'zapier', name: 'Zapier', description: 'Importez des prospects via Zapier (webhook)', color: 'bg-[#FF4A00]', textColor: 'text-[#FF4A00]', bgColor: 'bg-orange-50', borderColor: 'border-orange-300', iconBg: 'bg-[#ff4a00]', iconText: 'text-white' },
-  { id: 'calendly', name: 'Calendly', description: 'Importez les RDV Calendly automatiquement', color: 'bg-[#006BFF]', textColor: 'text-[#006BFF]', bgColor: 'bg-blue-50', borderColor: 'border-blue-300', iconBg: 'bg-[#006bff]', iconText: 'text-white' },
-  { id: 'airtable', name: 'Airtable', description: 'Synchronisez avec votre base Airtable', color: 'bg-[#18BFFF]', textColor: 'text-[#18BFFF]', bgColor: 'bg-cyan-50', borderColor: 'border-cyan-300', iconBg: 'bg-[#18bfff]', iconText: 'text-white' },
+  { id: 'closeos', name: 'CloseOS', description: 'CRM intégré CloseOS', color: 'bg-amber-500', textColor: 'text-amber-700', bgColor: 'bg-amber-50', borderColor: 'border-amber-300', iconBg: 'bg-[#1b1c1b]', iconText: 'text-white', logo: null },
+  { id: 'iclosed', name: 'iClosed', description: 'Connectez via Webhook', color: 'bg-purple-500', textColor: 'text-purple-700', bgColor: 'bg-purple-50', borderColor: 'border-purple-300', iconBg: 'bg-emerald-100', iconText: 'text-emerald-700', logo: '/Iclosed.png' },
+  { id: 'hubspot', name: 'HubSpot', description: 'Synchronisez avec HubSpot CRM', color: 'bg-orange-500', textColor: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-orange-300', iconBg: 'bg-[#ff7a59]', iconText: 'text-white', logo: '/HubSpot.png' },
+  { id: 'pipedrive', name: 'Pipedrive', description: 'Connectez votre pipeline Pipedrive', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-300', iconBg: 'bg-[#222222]', iconText: 'text-white', logo: '/Pipedrive.png' },
+  { id: 'systemeio', name: 'Systeme.io', description: 'Importez vos contacts Systeme.io', color: 'bg-blue-500', textColor: 'text-blue-700', bgColor: 'bg-blue-50', borderColor: 'border-blue-300', iconBg: 'bg-[#00a1d4]', iconText: 'text-white', logo: '/Systemeio.png' },
+  { id: 'zapier', name: 'Zapier', description: 'Importez des prospects via Zapier (webhook)', color: 'bg-[#FF4A00]', textColor: 'text-[#FF4A00]', bgColor: 'bg-orange-50', borderColor: 'border-orange-300', iconBg: 'bg-[#ff4a00]', iconText: 'text-white', logo: '/Zapier.png' },
+  { id: 'calendly', name: 'Calendly', description: 'Importez les RDV Calendly automatiquement', color: 'bg-[#006BFF]', textColor: 'text-[#006BFF]', bgColor: 'bg-blue-50', borderColor: 'border-blue-300', iconBg: 'bg-[#006bff]', iconText: 'text-white', logo: '/Calendly.png' },
+  { id: 'airtable', name: 'Airtable', description: 'Synchronisez avec votre base Airtable', color: 'bg-[#18BFFF]', textColor: 'text-[#18BFFF]', bgColor: 'bg-cyan-50', borderColor: 'border-cyan-300', iconBg: 'bg-[#18bfff]', iconText: 'text-white', logo: '/airtable.png' },
 ];
 
 const CLOSEOS_STAGES = [
@@ -539,8 +539,12 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                       : 'hover:bg-[#eae8e7] dark:hover:bg-neutral-800'
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-xl ${crm.iconBg} ${crm.iconText} flex items-center justify-center shrink-0`}>
-                    <span className="font-bold text-sm">{crm.name[0]}</span>
+                  <div className={`w-10 h-10 rounded-xl ${crm.logo ? 'bg-white dark:bg-neutral-800' : crm.iconBg} flex items-center justify-center shrink-0 overflow-hidden`}>
+                    {crm.logo ? (
+                      <img src={crm.logo} alt={crm.name} className="w-7 h-7 object-contain" />
+                    ) : (
+                      <span className={`font-bold text-sm ${crm.iconText}`}>{crm.name[0]}</span>
+                    )}
                   </div>
                   <span className={`font-bold text-sm ${isActive ? 'text-[#1b1c1b] dark:text-white' : 'text-[#444748] dark:text-neutral-400'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{crm.name}</span>
                   {isCrmConnected && <div className="ml-auto w-2 h-2 rounded-full bg-[#006c49]" />}
@@ -555,8 +559,12 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
               <section className="max-w-2xl">
                 {/* CRM Header */}
                 <div className="flex items-center gap-6 mb-10">
-                  <div className={`w-20 h-20 rounded-2xl ${selectedCrm.iconBg} ${selectedCrm.iconText} flex items-center justify-center shadow-xl`} style={{ boxShadow: `0 10px 30px ${selectedCrm.iconBg.includes('#ff7a59') ? 'rgba(255,122,89,0.2)' : selectedCrm.iconBg.includes('#ff4a00') ? 'rgba(255,74,0,0.2)' : selectedCrm.iconBg.includes('#006bff') ? 'rgba(0,107,255,0.2)' : selectedCrm.iconBg.includes('#18bfff') ? 'rgba(24,191,255,0.2)' : 'rgba(27,28,27,0.1)'}` }}>
-                    <span className="font-extrabold text-2xl">{selectedCrm.name[0]}</span>
+                  <div className={`w-20 h-20 rounded-2xl ${selectedCrm.logo ? 'bg-white dark:bg-neutral-800' : selectedCrm.iconBg} flex items-center justify-center shadow-xl overflow-hidden`} style={{ boxShadow: `0 10px 30px ${selectedCrm.iconBg.includes('#ff7a59') ? 'rgba(255,122,89,0.2)' : selectedCrm.iconBg.includes('#ff4a00') ? 'rgba(255,74,0,0.2)' : selectedCrm.iconBg.includes('#006bff') ? 'rgba(0,107,255,0.2)' : selectedCrm.iconBg.includes('#18bfff') ? 'rgba(24,191,255,0.2)' : 'rgba(27,28,27,0.1)'}` }}>
+                    {selectedCrm.logo ? (
+                      <img src={selectedCrm.logo} alt={selectedCrm.name} className="w-14 h-14 object-contain" />
+                    ) : (
+                      <span className={`font-extrabold text-2xl ${selectedCrm.iconText}`}>{selectedCrm.name[0]}</span>
+                    )}
                   </div>
                   <div>
                     <h3 className="text-2xl md:text-3xl font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{selectedCrm.name}</h3>
