@@ -9,6 +9,7 @@ import type { IssuerProfile } from './BusinessIssuerProfilesModal'
 import type { PaymentMethod as SavedPaymentMethod } from './BusinessPaymentMethodsModal'
 // @ts-ignore
 import html2pdf from 'html2pdf.js'
+import QRCode from 'qrcode'
 
 interface BusinessInvoiceGeneratorModalProps {
   isOpen: boolean
@@ -80,8 +81,13 @@ export function BusinessInvoiceGeneratorModal({
   const [revtag, setRevtag] = useState('')
   const [stripeLink, setStripeLink] = useState('')
 
-  // Stripe Connect (kept for potential future use)
+  // Stripe Connect
   const [stripeAccountId, setStripeAccountId] = useState<string | null>(null)
+  const [useStripePayment, setUseStripePayment] = useState(true)
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false)
+  const [generatedLink, setGeneratedLink] = useState('')
+  const [qrCodeUrl, setQrCodeUrl] = useState('')
+  const [showStripeOnInvoice, setShowStripeOnInvoice] = useState(true)
 
   // Late payment penalties
   const [latePenaltyRate, setLatePenaltyRate] = useState(15)
@@ -350,6 +356,9 @@ export function BusinessInvoiceGeneratorModal({
 
       if (data?.stripe_connected && data?.stripe_account_id) {
         setStripeAccountId(data.stripe_account_id)
+        setUseStripePayment(true)
+      } else {
+        setUseStripePayment(false)
       }
     }
     checkStripe()
@@ -454,7 +463,7 @@ export function BusinessInvoiceGeneratorModal({
       toast.error('Veuillez renseigner votre Revtag')
       return false
     }
-    if (paymentMethod === 'stripe' && !stripeLink && selectedMethodId === 'custom') {
+    if (paymentMethod === 'stripe' && !stripeLink && !useStripePayment && selectedMethodId === 'custom') {
       toast.error('Veuillez renseigner votre lien de paiement Stripe')
       return false
     }
@@ -465,6 +474,44 @@ export function BusinessInvoiceGeneratorModal({
 
   const handlePreview = async () => {
     if (!validateForm()) return
+
+    // Generate Stripe link if enabled
+    if (useStripePayment && stripeAccountId) {
+      setIsGeneratingLink(true)
+      try {
+        const response = await fetch('/api/create-invoice-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: totalTTC,
+            currency: 'eur',
+            title: `Facture ${invoiceNumber}`,
+            connectedAccountId: stripeAccountId,
+            clientEmail: businessSettings?.billing_email || undefined,
+          }),
+        })
+        const data = await response.json()
+        if (data.url) {
+          setGeneratedLink(data.url)
+          setShowStripeOnInvoice(true)
+          const qrDataUrl = await QRCode.toDataURL(data.url, {
+            width: 150,
+            margin: 1,
+            color: { dark: '#0F172A', light: '#FFFFFF' },
+          })
+          setQrCodeUrl(qrDataUrl)
+        } else {
+          console.error('Erreur Link:', data)
+          toast.error('Erreur lors de la creation du lien Stripe. La facture sera generee sans.')
+        }
+      } catch (e) {
+        console.error('Erreur API:', e)
+        toast.error('Impossible de joindre le serveur de paiement.')
+      } finally {
+        setIsGeneratingLink(false)
+      }
+    }
+
     initEditableItems()
     setStep(2)
   }
@@ -504,7 +551,7 @@ export function BusinessInvoiceGeneratorModal({
       amount_ttc: editableTotalTTC,
       status,
       pdf_url: publicUrl,
-      stripe_payment_link: null,
+      stripe_payment_link: generatedLink || null,
       team_member_id: teamMember?.id || null,
       user_id: effectiveUserId,
       late_penalty_rate: latePenaltyRate,
@@ -551,6 +598,9 @@ export function BusinessInvoiceGeneratorModal({
     setEditableFooterNote('')
     setEditableInvoiceTitle('FACTURE')
     setEditableEcheance('A reception')
+    setGeneratedLink('')
+    setQrCodeUrl('')
+    setShowStripeOnInvoice(true)
     onClose()
   }
 
@@ -700,6 +750,33 @@ export function BusinessInvoiceGeneratorModal({
                 {paymentMethod === 'stripe' && <input type="text" value={stripeLink} onChange={(e) => setStripeLink(e.target.value)} placeholder="Lien Stripe" className={inputCls} />}
               </div>
 
+              {/* Stripe Connect Toggle */}
+              {stripeAccountId && (
+                <div className="rounded-xl border border-[#635BFF]/30 bg-[#635BFF]/5 dark:bg-[#635BFF]/10 p-4">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <div className="relative mt-1">
+                      <input
+                        type="checkbox"
+                        checked={useStripePayment}
+                        onChange={(e) => setUseStripePayment(e.target.checked)}
+                        className="peer sr-only"
+                      />
+                      <div className="h-5 w-9 rounded-full bg-[#c4c7c7] peer-checked:bg-[#635BFF] transition-colors"></div>
+                      <div className="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-4"></div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 text-sm font-bold text-[#1b1c1b] dark:text-white">
+                        Service de reglement en ligne (Stripe)
+                        <span className="rounded bg-[#635BFF] px-1.5 py-0.5 text-[10px] uppercase text-white font-bold">Recommande</span>
+                      </div>
+                      <p className="mt-1 text-xs text-[#635BFF]/80 dark:text-[#635BFF]/70">
+                        Ajoute un bouton de paiement securise + QR Code sur la facture pour se faire payer par CB instantanement.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
+
               {/* TVA Toggle */}
               <div className="rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-4">
                 <label className="flex cursor-pointer items-start gap-3">
@@ -757,9 +834,17 @@ export function BusinessInvoiceGeneratorModal({
               <button
                 type="button"
                 onClick={handlePreview}
+                disabled={isGeneratingLink}
                 className="w-full rounded-xl bg-[#006c49] px-6 py-3.5 font-bold text-white transition-all hover:bg-[#005a3d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Previsualiser la facture
+                {isGeneratingLink ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Generation du lien Stripe...
+                  </>
+                ) : (
+                  'Previsualiser la facture'
+                )}
               </button>
             </div>
           </div>
@@ -1005,6 +1090,27 @@ export function BusinessInvoiceGeneratorModal({
                   </button>
                 </div>
 
+                {/* Stripe visibility toggle */}
+                {generatedLink && (
+                  <div className="rounded-lg border border-[#635BFF]/20 bg-[#635BFF]/5 p-3">
+                    <label className="flex cursor-pointer items-center gap-3">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={showStripeOnInvoice}
+                          onChange={(e) => setShowStripeOnInvoice(e.target.checked)}
+                          className="peer sr-only"
+                        />
+                        <div className="h-5 w-9 rounded-full bg-[#c4c7c7] peer-checked:bg-[#635BFF] transition-colors"></div>
+                        <div className="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-4"></div>
+                      </div>
+                      <span className="text-xs font-medium text-[#1b1c1b] dark:text-white">
+                        Afficher le paiement Stripe sur la facture
+                      </span>
+                    </label>
+                  </div>
+                )}
+
                 {/* Note / Footer */}
                 <div>
                   <label className={labelCls}>Note libre (bas de facture)</label>
@@ -1037,7 +1143,7 @@ export function BusinessInvoiceGeneratorModal({
               </div>
 
               {/* ─── RIGHT: LIVE PREVIEW ─── */}
-              <div className="flex-1 overflow-y-auto bg-[#e8e6e5] dark:bg-neutral-950 p-6">
+              <div className="flex-1 overflow-y-auto bg-[#e8e6e5] dark:bg-neutral-950 p-2">
                 <div className="rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white shadow-lg mx-auto overflow-hidden" style={{ width: '210mm' }}>
                   <div
                     id="invoice-preview-content"
@@ -1227,54 +1333,87 @@ export function BusinessInvoiceGeneratorModal({
 
                     {/* Footer */}
                     <div style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px solid #e2e8f0' }}>
-                      <div style={{ maxWidth: '60%' }}>
-                        <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', marginBottom: '0.75rem' }}>
-                          Conditions de reglement
-                        </p>
-                        <div style={{ fontSize: '0.875rem', color: '#334155' }}>
-                          <p style={{ margin: '0.25rem 0' }}>
-                            <span style={{ fontWeight: 500 }}>Echeance:</span> {editableEcheance}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        {/* Left - Payment info */}
+                        <div style={{ maxWidth: '50%' }}>
+                          <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', marginBottom: '0.75rem' }}>
+                            Conditions de reglement
                           </p>
-                          <p style={{ margin: '0.25rem 0' }}>
-                            <span style={{ fontWeight: 500 }}>Mode de reglement:</span> {getPaymentMethodLabel()}
-                          </p>
-
-                          {paymentMethod === 'virement' && (
-                            <div style={{ marginTop: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem', backgroundColor: '#f8fafc', padding: '0.75rem' }}>
-                              <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#475569', marginBottom: '0.5rem' }}>Coordonnees bancaires</p>
-                              <div style={{ fontSize: '0.75rem' }}>
-                                <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>IBAN:</span> {iban}</p>
-                                <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>BIC:</span> {bic}</p>
-                                <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>Titulaire:</span> {accountHolder}</p>
-                              </div>
-                            </div>
-                          )}
-                          {paymentMethod === 'paypal' && <p style={{ margin: '0.25rem 0' }}><span style={{ fontWeight: 500 }}>PayPal:</span> {paypalEmail}</p>}
-                          {paymentMethod === 'revolut' && <p style={{ margin: '0.25rem 0' }}><span style={{ fontWeight: 500 }}>Revolut:</span> {revtag}</p>}
-                          {paymentMethod === 'stripe' && stripeLink && (
-                            <p style={{ margin: '0.25rem 0', wordBreak: 'break-all' }}>
-                              <span style={{ fontWeight: 500 }}>Lien Stripe:</span>{' '}
-                              <a href={stripeLink} style={{ color: '#2563eb', textDecoration: 'underline' }}>{stripeLink}</a>
+                          <div style={{ fontSize: '0.875rem', color: '#334155' }}>
+                            <p style={{ margin: '0.25rem 0' }}>
+                              <span style={{ fontWeight: 500 }}>Echeance:</span> {editableEcheance}
                             </p>
-                          )}
+                            <p style={{ margin: '0.25rem 0' }}>
+                              <span style={{ fontWeight: 500 }}>Mode de reglement:</span> {getPaymentMethodLabel()}
+                            </p>
 
-                          {!tvaApplicable && (
-                            <div style={{ marginTop: '1rem', borderLeft: '4px solid #006c49', backgroundColor: '#f0fdf4', padding: '0.75rem', borderRadius: '0.25rem' }}>
-                              <p style={{ fontSize: '0.75rem', fontWeight: 600, fontStyle: 'italic', color: '#0f172a', margin: 0 }}>
-                                TVA non applicable, art. 293 B du CGI
+                            {paymentMethod === 'virement' && (
+                              <div style={{ marginTop: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem', backgroundColor: '#f8fafc', padding: '0.75rem' }}>
+                                <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#475569', marginBottom: '0.5rem' }}>Coordonnees bancaires</p>
+                                <div style={{ fontSize: '0.75rem' }}>
+                                  <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>IBAN:</span> {iban}</p>
+                                  <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>BIC:</span> {bic}</p>
+                                  <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>Titulaire:</span> {accountHolder}</p>
+                                </div>
+                              </div>
+                            )}
+                            {paymentMethod === 'paypal' && <p style={{ margin: '0.25rem 0' }}><span style={{ fontWeight: 500 }}>PayPal:</span> {paypalEmail}</p>}
+                            {paymentMethod === 'revolut' && <p style={{ margin: '0.25rem 0' }}><span style={{ fontWeight: 500 }}>Revolut:</span> {revtag}</p>}
+                            {paymentMethod === 'stripe' && stripeLink && (
+                              <p style={{ margin: '0.25rem 0', wordBreak: 'break-all' }}>
+                                <span style={{ fontWeight: 500 }}>Lien Stripe:</span>{' '}
+                                <a href={stripeLink} style={{ color: '#2563eb', textDecoration: 'underline' }}>{stripeLink}</a>
+                              </p>
+                            )}
+
+                            {!tvaApplicable && (
+                              <div style={{ marginTop: '1rem', borderLeft: '4px solid #006c49', backgroundColor: '#f0fdf4', padding: '0.75rem', borderRadius: '0.25rem' }}>
+                                <p style={{ fontSize: '0.75rem', fontWeight: 600, fontStyle: 'italic', color: '#0f172a', margin: 0 }}>
+                                  TVA non applicable, art. 293 B du CGI
+                                </p>
+                              </div>
+                            )}
+
+                            <div style={{ marginTop: '0.75rem', fontSize: '0.6875rem', color: '#64748b' }}>
+                              <p style={{ margin: '0.125rem 0' }}>
+                                En cas de retard de paiement, penalites de retard au taux annuel de {latePenaltyRate}%.
+                              </p>
+                              <p style={{ margin: '0.125rem 0' }}>
+                                Indemnite forfaitaire pour frais de recouvrement : {formatCurrency(latePenaltyFixed)}.
                               </p>
                             </div>
-                          )}
-
-                          <div style={{ marginTop: '0.75rem', fontSize: '0.6875rem', color: '#64748b' }}>
-                            <p style={{ margin: '0.125rem 0' }}>
-                              En cas de retard de paiement, penalites de retard au taux annuel de {latePenaltyRate}%.
-                            </p>
-                            <p style={{ margin: '0.125rem 0' }}>
-                              Indemnite forfaitaire pour frais de recouvrement : {formatCurrency(latePenaltyFixed)}.
-                            </p>
                           </div>
                         </div>
+
+                        {/* Right - Stripe QR Code */}
+                        {showStripeOnInvoice && generatedLink && qrCodeUrl && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
+                            <div style={{ textAlign: 'right' }}>
+                              <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.25rem' }}>Payer en ligne</p>
+                              <p style={{ fontSize: '0.625rem', color: '#94a3b8', marginBottom: '0.5rem', maxWidth: '120px' }}>
+                                Scannez pour regler par CB instantanement
+                              </p>
+                              <a
+                                href={generatedLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  display: 'inline-block',
+                                  backgroundColor: '#635BFF',
+                                  color: 'white',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  padding: '0.375rem 0.75rem',
+                                  borderRadius: '0.25rem',
+                                  textDecoration: 'none',
+                                }}
+                              >
+                                Payer maintenant &rarr;
+                              </a>
+                            </div>
+                            <img src={qrCodeUrl} alt="QR Code Paiement" style={{ width: '80px', height: '80px' }} />
+                          </div>
+                        )}
                       </div>
 
                       {/* Custom note */}
