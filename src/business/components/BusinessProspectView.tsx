@@ -173,7 +173,7 @@ export function BusinessProspectView({
     handleUpdate({
       value: editedValue,
       payment_type: paymentMode,
-      installments: paymentMode === 'installments' ? editedInstallments : undefined,
+      installments: paymentMode === 'installments' ? editedInstallments : 1,
     } as any)
     setEditingPayment(false)
   }
@@ -193,7 +193,7 @@ export function BusinessProspectView({
       .order('date', { ascending: true })
       .order('time', { ascending: true })
       .limit(1)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         setNextAppointment(data || null)
       })
