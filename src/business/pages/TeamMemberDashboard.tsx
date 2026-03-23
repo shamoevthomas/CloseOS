@@ -219,7 +219,8 @@ export function TeamMemberDashboard() {
 
       {/* KPI Grid */}
       <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Revenue */}
+        {/* Revenue — hidden for fixed compensation */}
+        {teamMember?.compensation_type !== 'fixed' && (
         <Link to={kpiLink} className="bg-white dark:bg-white/5 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 rounded-full bg-[#006c49]/10 dark:bg-emerald-900/30 flex items-center justify-center text-[#006c49] dark:text-emerald-400">
@@ -229,6 +230,20 @@ export function TeamMemberDashboard() {
           <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Revenue</h3>
           <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-emerald-400">{formatCurrency(totalRevenue)}</p>
         </Link>
+        )}
+
+        {/* CA Généré — shown for fixed compensation instead of Revenue */}
+        {teamMember?.compensation_type === 'fixed' && (
+        <Link to={kpiLink} className="bg-white dark:bg-white/5 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 rounded-full bg-[#006c49]/10 dark:bg-emerald-900/30 flex items-center justify-center text-[#006c49] dark:text-emerald-400">
+              <DollarSign className="h-5 w-5" />
+            </div>
+          </div>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">CA Généré</h3>
+          <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-emerald-400">{formatCurrency(totalRevenue)}</p>
+        </Link>
+        )}
 
         {/* Closing Rate */}
         <Link to={kpiLink} className="bg-white dark:bg-white/5 rounded-xl p-8 group hover:-translate-y-1 transition-all cursor-pointer dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)', border: '0.5px solid rgba(196,199,199,0.2)' }}>

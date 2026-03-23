@@ -19,6 +19,8 @@ interface BusinessInvoiceGeneratorModalProps {
   commissionRate: number
   startDate: string
   endDate: string
+  isFixedCompensation?: boolean
+  fixedSalary?: number
 }
 
 type PaymentMethodType = 'paypal' | 'virement' | 'revolut' | 'stripe'
@@ -40,6 +42,8 @@ export function BusinessInvoiceGeneratorModal({
   commissionRate,
   startDate,
   endDate,
+  isFixedCompensation = false,
+  fixedSalary = 0,
 }: BusinessInvoiceGeneratorModalProps) {
   const { user, teamMember, ownerUserId, businessSettings } = useBusinessAuth()
   const effectiveUserId = ownerUserId || user?.id
@@ -176,6 +180,18 @@ export function BusinessInvoiceGeneratorModal({
 
   // Initialize editable items when entering step 2
   const initEditableItems = useCallback(() => {
+    if (isFixedCompensation) {
+      // Fixed compensation: single line item for fixed salary
+      setEditableItems([{
+        id: 'fixed-salary',
+        description: 'Salaire Fixe Mensuel',
+        subtitle: '',
+        count: 1,
+        unitPrice: fixedSalary,
+        section: 'closer',
+      }])
+      return
+    }
     const items: EditableLineItem[] = []
     closerLineItems.forEach((item, i) => {
       items.push({
@@ -198,7 +214,7 @@ export function BusinessInvoiceGeneratorModal({
       })
     })
     setEditableItems(items)
-  }, [closerLineItems, setterLineItems])
+  }, [closerLineItems, setterLineItems, isFixedCompensation, fixedSalary])
 
   const updateItem = (id: string, field: keyof EditableLineItem, value: any) => {
     setEditableItems(prev => prev.map(item =>

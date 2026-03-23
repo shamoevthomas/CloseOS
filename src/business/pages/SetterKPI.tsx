@@ -41,6 +41,7 @@ const formatPercent = (n: number) => n.toFixed(1)
 export function SetterKPI() {
   const { teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
+  const isFixedComp = teamMember?.compensation_type === 'fixed'
   const { prospects } = useBusinessProspects()
   const [activeTab, setActiveTab] = useState<'personal' | 'org' | 'offer' | 'campaign' | 'source'>(isOwnerView ? 'org' : 'personal')
   const [kpiConfig, setKpiConfig] = useState<KpiConfig>({ planned_calls: 20, revenue_target: 10000, commission_rate: 10 })
@@ -535,7 +536,7 @@ export function SetterKPI() {
         <KpiCard title="CA Généré" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title="Ventes Totales" value={v.sales} icon={ShoppingCart} color="blue" />
         <KpiCard title="Taux de Closing" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" subtitle={showSetterCards ? `${setterDisplay.won.length} gagnés / ${setterDisplay.qualifiedAll.length} qualifiés` : undefined} />
-        <KpiCard title={isOwnerView ? 'Commissions' : 'Mes Commissions'} value={`${formatCurrency(v.commission)} €`} icon={Award} color="stone" highlight />
+        {!isFixedComp && <KpiCard title={isOwnerView ? 'Commissions' : 'Mes Commissions'} value={`${formatCurrency(v.commission)} €`} icon={Award} color="stone" highlight />}
         <KpiCard title="Taux de No Show" value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" subtitle={showSetterCards ? `${setterDisplay.noShow.length} no shows / ${setterDisplay.qualifiedAll.length} qualifiés` : undefined} />
         <KpiCard title="Deals Perdus" value={v.lost} icon={Ban} color="stone" />
       </div>
@@ -563,6 +564,7 @@ export function SetterKPI() {
           </div>
         </div>
 
+        {!isFixedComp && (
         <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
           <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Historique Commissions</h3>
           <div className="h-56">
@@ -583,6 +585,7 @@ export function SetterKPI() {
             </ResponsiveContainer>
           </div>
         </div>
+        )}
       </div>
 
       {/* Pipeline Summary */}
@@ -591,7 +594,7 @@ export function SetterKPI() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <SummaryItem label="Total Leads" value={v.leads} icon={Users} color="indigo" dark />
           <SummaryItem label="Deals en Cours" value={v.deals} icon={Briefcase} color="cyan" dark />
-          <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />
+          {!isFixedComp && <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />}
         </div>
       </div>
       </div>{/* end pdfRef */}

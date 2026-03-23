@@ -162,6 +162,10 @@ export function CloserFactures() {
     })
   }, [savedInvoices, startDate, endDate, isTeamMember, teamMember?.id])
 
+  // Compensation type
+  const isFixedComp = teamMember?.compensation_type === 'fixed'
+  const fixedSalary = teamMember?.fixed_salary ? Number(teamMember.fixed_salary) : 0
+
   // Commission rate
   const commissionRateNum = teamMember?.commission_rate ? Number(teamMember.commission_rate) : 10
   const rate = commissionRateNum / 100
@@ -219,9 +223,9 @@ export function CloserFactures() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Factures & Commissions
+            {isFixedComp ? 'Factures & Salaire Fixe' : 'Factures & Commissions'}
           </h1>
-          <p className="text-stone-500 dark:text-neutral-400 mt-2">Suivez vos commissions et gérez vos factures</p>
+          <p className="text-stone-500 dark:text-neutral-400 mt-2">{isFixedComp ? 'Suivez votre salaire fixe et gérez vos factures' : 'Suivez vos commissions et gérez vos factures'}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <button
@@ -304,6 +308,40 @@ export function CloserFactures() {
 
       {/* KPI Cards */}
       <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
+        {isFixedComp ? (
+        <>
+        {/* Salaire Fixe */}
+        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-start mb-4">
+            <span className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
+              <Wallet className="h-5 w-5" />
+            </span>
+            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">Mensuel</span>
+          </div>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">Salaire Fixe</p>
+          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {fixedSalary.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          </p>
+        </div>
+
+        {/* CA Généré (read-only for fixed) */}
+        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-stone-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-start mb-4">
+            <span className="p-3 rounded-xl bg-stone-100 dark:bg-white/10 text-stone-600 dark:text-neutral-300">
+              <TrendingUp className="h-5 w-5" />
+            </span>
+            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</span>
+          </div>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
+          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {totalRevenue.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          </p>
+        </div>
+        </>
+        ) : (
+        <>
         {/* CA Généré */}
         <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
@@ -333,6 +371,8 @@ export function CloserFactures() {
             {commissionEstimee.toLocaleString('fr-FR')} <span className="text-base">€</span>
           </p>
         </div>
+        </>
+        )}
 
         {/* Payé */}
         <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
@@ -364,8 +404,8 @@ export function CloserFactures() {
         </div>
       </div>
 
-      {/* Détails comptant / échelonné */}
-      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-6">
+      {/* Détails comptant / échelonné — hidden for fixed compensation */}
+      {!isFixedComp && <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-6">
         <h3 className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-5 flex items-center gap-2">
           <Info className="h-4 w-4" />
           Détails de la période
@@ -425,7 +465,7 @@ export function CloserFactures() {
             </p>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Historique des factures */}
       <div className="bg-white dark:bg-white/5 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 overflow-hidden">
@@ -564,10 +604,12 @@ export function CloserFactures() {
         isOpen={isGenModalOpen}
         onClose={() => { setIsGenModalOpen(false); fetchInvoices() }}
         deals={myWonProspects}
-        commission={commissionEstimee}
-        commissionRate={commissionRateNum}
+        commission={isFixedComp ? fixedSalary : commissionEstimee}
+        commissionRate={isFixedComp ? 0 : commissionRateNum}
         startDate={startDate}
         endDate={endDate}
+        isFixedCompensation={isFixedComp}
+        fixedSalary={fixedSalary}
       />
     </div>
   )
