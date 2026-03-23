@@ -412,7 +412,8 @@ export function CloserFactures() {
       </div>
 
       {/* Détails comptant / échelonné — hidden for fixed compensation */}
-      {!isFixedComp && <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-6">
+      {!isFixedComp && (
+      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-6">
         <h3 className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-5 flex items-center gap-2">
           <Info className="h-4 w-4" />
           Détails de la période
@@ -472,7 +473,8 @@ export function CloserFactures() {
             </p>
           </div>
         </div>
-      </div>}
+      </div>
+      )}
 
       {/* Historique des factures */}
       <div className="bg-white dark:bg-white/5 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 overflow-hidden">
