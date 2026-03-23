@@ -28,7 +28,7 @@ interface CallHistoryItem {
   contact_id: number | null
 }
 
-const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 dark:ring-neutral-700 shadow-sm'
+const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 dark:ring-white/10 shadow-sm'
 
 export function CloserAppels() {
   const navigate = useNavigate()
@@ -274,10 +274,10 @@ export function CloserAppels() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Appels Récents</h2>
         <div className="flex gap-2">
-          <button className="p-2.5 bg-[#eae8e7] dark:bg-neutral-800 rounded-full hover:bg-[#dbdad9] dark:hover:bg-neutral-700 transition-colors">
+          <button className="p-2.5 bg-[#eae8e7] dark:bg-white/5 rounded-full hover:bg-[#dbdad9] dark:hover:bg-white/10 transition-colors">
             <SlidersHorizontal className="h-4 w-4 text-stone-600" strokeWidth={1.5} />
           </button>
-          <button className="p-2.5 bg-[#eae8e7] dark:bg-neutral-800 rounded-full hover:bg-[#dbdad9] dark:hover:bg-neutral-700 transition-colors">
+          <button className="p-2.5 bg-[#eae8e7] dark:bg-white/5 rounded-full hover:bg-[#dbdad9] dark:hover:bg-white/10 transition-colors">
             <MoreVertical className="h-4 w-4 text-stone-600" strokeWidth={1.5} />
           </button>
         </div>
@@ -294,7 +294,7 @@ export function CloserAppels() {
             )}
           >
             <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-[#eae8e7] dark:bg-neutral-800 rounded-xl flex items-center justify-center shadow-inner group-hover:bg-[#ffddb8] transition-colors">
+              <div className="w-16 h-16 bg-[#eae8e7] dark:bg-white/5 rounded-xl flex items-center justify-center shadow-inner group-hover:bg-[#ffddb8] transition-colors">
                 <Video className="h-7 w-7 text-stone-700 dark:text-neutral-200" strokeWidth={1.5} />
               </div>
               <div>
@@ -342,7 +342,7 @@ export function CloserAppels() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate(`/business/appels/${call.id}?readonly=1`)}
-                className="flex items-center gap-2 px-6 py-3 bg-[#eae8e7] dark:bg-neutral-800 hover:bg-[#dbdad9] dark:hover:bg-neutral-700 text-stone-900 dark:text-white rounded-full font-bold text-sm transition-all"
+                className="flex items-center gap-2 px-6 py-3 bg-[#eae8e7] dark:bg-white/5 hover:bg-[#dbdad9] dark:hover:bg-white/10 text-stone-900 dark:text-white rounded-full font-bold text-sm transition-all"
               >
                 <Eye className="h-4 w-4" strokeWidth={1.5} />
                 Détails
@@ -405,14 +405,14 @@ export function CloserAppels() {
             <button onClick={() => setIsMeetModalOpen(false)} className="absolute top-5 right-5 text-stone-300 hover:text-stone-700 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
             <h3 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white mb-8">Préparer l'appel</h3>
             <div className="space-y-5">
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 p-6">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
                 <p className="font-bold text-stone-900 dark:text-white mb-3 text-sm">1. Ouvrir Google Meet</p>
                 <button onClick={() => window.open('https://meet.google.com/new', '_blank')}
                   className="w-full flex items-center justify-center gap-2 rounded-full bg-[#006c49] px-4 py-3.5 text-sm font-bold text-white hover:opacity-90 transition-all">
                   <ExternalLink className="h-4 w-4" strokeWidth={1.5} /> Ouvrir Meet
                 </button>
               </div>
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 p-6">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
                 <p className="font-bold text-stone-900 dark:text-white mb-3 text-sm">2. Lancer le Cockpit</p>
                 <div className="relative mb-3">
                   <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />

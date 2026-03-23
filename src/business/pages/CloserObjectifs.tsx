@@ -305,7 +305,7 @@ export function CloserObjectifs() {
     return (
       <div
         key={obj.id}
-        className="bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 dark:border-neutral-700/30 hover:shadow-xl transition-all group relative overflow-hidden"
+        className="bg-white dark:bg-white/5 rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 dark:border-white/10 hover:shadow-xl transition-all group relative overflow-hidden"
       >
         {/* Verified icon for completed */}
         {isComplete && (
@@ -344,7 +344,7 @@ export function CloserObjectifs() {
             </span>
             <span className="text-sm text-stone-400 dark:text-neutral-500 font-normal">/ {formatValue(obj.metric, obj.target_value)}</span>
           </div>
-          <div className="w-full h-2 bg-stone-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-stone-100 dark:bg-white/5 rounded-full overflow-hidden">
             {progress !== null && (
               <div
                 className={cn('h-full rounded-full transition-all duration-500',
@@ -363,7 +363,7 @@ export function CloserObjectifs() {
 
         {/* Deadline footer */}
         {deadlineStr && (
-          <div className="pt-3 border-t border-stone-100 dark:border-neutral-800">
+          <div className="pt-3 border-t border-stone-100 dark:border-white/10">
             <div className="flex items-center gap-2">
               <CalendarDays className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-stone-400')} />
               <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-stone-500 dark:text-neutral-400')}>
@@ -389,7 +389,7 @@ export function CloserObjectifs() {
     return (
       <div
         key={obj.id}
-        className="bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 dark:border-neutral-700/30 hover:shadow-xl transition-all group relative overflow-hidden"
+        className="bg-white dark:bg-white/5 rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 dark:border-white/10 hover:shadow-xl transition-all group relative overflow-hidden"
       >
         {/* Completed badge */}
         {isComplete && (
@@ -440,7 +440,7 @@ export function CloserObjectifs() {
             </span>
             <span className="text-sm text-stone-400 dark:text-neutral-500 font-normal">/ {formatValue(obj.metric, obj.target_value)}</span>
           </div>
-          <div className="w-full h-2 bg-stone-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-stone-100 dark:bg-white/5 rounded-full overflow-hidden">
             {progress !== null && (
               <div
                 className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-emerald-500 to-emerald-600"
@@ -466,8 +466,8 @@ export function CloserObjectifs() {
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 border-t border-stone-100 dark:border-neutral-800 pt-3">
-          <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-neutral-800 hover:text-stone-900 dark:hover:text-white transition-colors">
+        <div className="flex gap-2 border-t border-stone-100 dark:border-white/10 pt-3">
+          <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 hover:text-stone-900 dark:hover:text-white transition-colors">
             <Pencil className="h-3.5 w-3.5" /> Modifier
           </button>
           <button onClick={() => deletePersonalObjective(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
@@ -504,7 +504,7 @@ export function CloserObjectifs() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-6 border-b border-stone-200 dark:border-neutral-800">
+      <div className="flex gap-6 border-b border-stone-200 dark:border-white/10">
         {tabs.map(tab => {
           const Icon = tab.icon
           return (
@@ -523,7 +523,7 @@ export function CloserObjectifs() {
               {tab.label}
               <span className={cn(
                 "text-xs rounded-full px-1.5 py-0.5 font-semibold",
-                activeTab === tab.id ? "bg-stone-900 dark:bg-white text-white dark:text-neutral-900" : "bg-stone-100 dark:bg-neutral-800 text-stone-400 dark:text-neutral-500"
+                activeTab === tab.id ? "bg-stone-900 dark:bg-white text-white dark:text-neutral-900" : "bg-stone-100 dark:bg-white/5 text-stone-400 dark:text-neutral-500"
               )}>
                 {tab.count}
               </span>
@@ -535,9 +535,9 @@ export function CloserObjectifs() {
       {/* Content */}
       {currentObjectives.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-40 h-40 bg-stone-50 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-8 relative">
+          <div className="w-40 h-40 bg-stone-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-8 relative">
             <Target className="h-16 w-16 text-stone-300 dark:text-neutral-600" />
-            <div className="absolute -bottom-2 -right-2 w-14 h-14 bg-white dark:bg-neutral-800 rounded-2xl shadow-xl flex items-center justify-center">
+            <div className="absolute -bottom-2 -right-2 w-14 h-14 bg-white dark:bg-white/5 rounded-2xl shadow-xl flex items-center justify-center">
               <Target className="h-6 w-6 text-emerald-600" />
             </div>
           </div>
@@ -575,13 +575,13 @@ export function CloserObjectifs() {
         <>
           <div className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-md" onClick={() => { setIsModalOpen(false); resetForm() }} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-            <div className="pointer-events-auto w-full max-w-lg max-h-[90vh] flex flex-col bg-white/70 dark:bg-neutral-900/90 backdrop-blur-2xl rounded-2xl shadow-2xl ring-1 ring-white/40 dark:ring-neutral-700 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="pointer-events-auto w-full max-w-lg max-h-[90vh] flex flex-col bg-white/70 dark:bg-neutral-900/90 backdrop-blur-2xl rounded-2xl shadow-2xl ring-1 ring-white/40 dark:ring-white/10 overflow-hidden" onClick={e => e.stopPropagation()}>
               {/* Modal header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 dark:border-neutral-800 flex-shrink-0">
+              <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 dark:border-white/10 flex-shrink-0">
                 <h3 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {editingObj ? "Modifier l'objectif" : 'Nouvel objectif personnel'}
                 </h3>
-                <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-stone-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
+                <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-stone-100 dark:hover:bg-white/5 rounded-full transition-colors">
                   <X className="h-5 w-5 text-stone-400 dark:text-neutral-500" />
                 </button>
               </div>
@@ -591,7 +591,7 @@ export function CloserObjectifs() {
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Nom de l'objectif *</label>
                   <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)}
                     placeholder="Ex: 5 ventes cette semaine"
-                    className="w-full rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+                    className="w-full rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
                 </div>
 
                 <div>
@@ -613,7 +613,7 @@ export function CloserObjectifs() {
                       onChange={(e) => setFormDescription(e.target.value)}
                       placeholder="Décrivez votre métrique personnalisée..."
                       rows={3}
-                      className="w-full rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 resize-none"
+                      className="w-full rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 resize-none"
                     />
                   </div>
                 )}
@@ -623,7 +623,7 @@ export function CloserObjectifs() {
                   <input type="number" min="0" step="any" value={formTargetValue}
                     onChange={(e) => setFormTargetValue(e.target.value)}
                     placeholder="Ex: 5"
-                    className="w-full rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+                    className="w-full rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
                 </div>
 
                 <div>
@@ -640,11 +640,11 @@ export function CloserObjectifs() {
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Date limite</label>
                   <input type="date" value={formDeadline} onChange={(e) => setFormDeadline(e.target.value)}
-                    className="w-full rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+                    className="w-full rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900" />
                 </div>
 
                 {/* Visibility toggle */}
-                <div className="rounded-xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 p-4">
+                <div className="rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {formVisibleToOwner ? (
@@ -684,9 +684,9 @@ export function CloserObjectifs() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 border-t border-stone-100 dark:border-neutral-800 px-6 py-4 flex-shrink-0">
+              <div className="flex justify-end gap-3 border-t border-stone-100 dark:border-white/10 px-6 py-4 flex-shrink-0">
                 <button onClick={() => { setIsModalOpen(false); resetForm() }}
-                  className="rounded-xl border border-stone-200 dark:border-neutral-800 px-5 py-2.5 text-sm font-semibold text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
+                  className="rounded-xl border border-stone-200 dark:border-white/10 px-5 py-2.5 text-sm font-semibold text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
                   Annuler
                 </button>
                 <button onClick={handleSave} disabled={saving}

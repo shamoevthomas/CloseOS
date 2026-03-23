@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Loader2, Building2, Briefcase, ChevronRight, Camera, User, X, Check, ZoomIn, ZoomOut, Search, Calendar } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { countries } from '../../lib/countries';
+import { PhoneInput } from './PhoneInput';
 import { supabase } from '../../lib/supabase';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../../lib/image-crop';
@@ -159,7 +160,7 @@ export function BusinessOnboardingModal() {
             first_name: tmFirstName,
             last_name: tmLastName,
             date_of_birth: tmDob || null,
-            phone: tmPhone ? `${tmCountryCode} ${tmPhone}` : null,
+            phone: tmPhone || null,
             avatar_url: tmAvatarUrl || null,
             has_onboarded: true,
           })
@@ -284,59 +285,11 @@ export function BusinessOnboardingModal() {
             {/* Téléphone */}
             <div>
               <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Téléphone</label>
-              <div className="flex gap-2">
-                <div className="relative" ref={tmCountryRef}>
-                  <button
-                    type="button"
-                    onClick={() => { setIsTmCountryOpen(!isTmCountryOpen); setTmCountrySearch(''); }}
-                    className="w-28 shrink-0 rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-3 text-stone-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-600/20 focus:outline-none text-left truncate"
-                  >
-                    {tmSelectedCountry ? `${tmSelectedCountry.dial_code} ${tmSelectedCountry.code}` : tmCountryCode}
-                  </button>
-                  {isTmCountryOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border border-stone-200/20 dark:border-neutral-700 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] z-50 overflow-hidden">
-                      <div className="sticky top-0 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl p-2 border-b border-stone-100 dark:border-neutral-800">
-                        <div className="relative">
-                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-                          <input
-                            type="text"
-                            value={tmCountrySearch}
-                            onChange={(e) => setTmCountrySearch(e.target.value)}
-                            className="w-full rounded-lg bg-stone-100/50 dark:bg-neutral-800 border-none py-2 pl-8 pr-3 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
-                            placeholder="Rechercher un pays..."
-                            autoFocus
-                          />
-                        </div>
-                      </div>
-                      <div className="overflow-y-auto max-h-48">
-                        {tmFilteredCountries.map((c) => (
-                          <button
-                            key={c.code}
-                            type="button"
-                            onClick={() => { setTmCountryCode(c.dial_code); setIsTmCountryOpen(false); setTmCountrySearch(''); }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100/50 dark:hover:bg-neutral-800 transition-colors flex items-center justify-between ${
-                              tmCountryCode === c.dial_code ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-stone-700'
-                            }`}
-                          >
-                            <span className="truncate">{c.name}</span>
-                            <span className="text-stone-400 ml-2 shrink-0">{c.dial_code}</span>
-                          </button>
-                        ))}
-                        {tmFilteredCountries.length === 0 && (
-                          <p className="px-3 py-4 text-sm text-stone-400 text-center">Aucun résultat</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <input
-                  type="tel"
-                  value={tmPhone}
-                  onChange={(e) => setTmPhone(e.target.value)}
-                  className="flex-1 rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
-                  placeholder="6 12 34 56 78"
-                />
-              </div>
+              <PhoneInput
+                value={tmPhone}
+                onChange={setTmPhone}
+                className="!bg-stone-100/50 dark:!bg-neutral-800"
+              />
             </div>
 
             <button
@@ -419,7 +372,7 @@ export function BusinessOnboardingModal() {
     try {
       await updateBusinessProfile({
         full_name: fullName,
-        phone: phone ? `${countryCode} ${phone}` : '',
+        phone: phone || '',
         role,
         avatar_url: avatarUrl || null,
         has_onboarded: true,
@@ -551,64 +504,11 @@ export function BusinessOnboardingModal() {
 
               <div>
                 <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Téléphone</label>
-                <div className="flex gap-2">
-                  {/* Searchable country code dropdown */}
-                  <div className="relative" ref={countryDropdownRef}>
-                    <button
-                      type="button"
-                      onClick={() => { setIsCountryDropdownOpen(!isCountryDropdownOpen); setCountrySearch(''); }}
-                      className="w-28 shrink-0 rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-3 text-stone-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-600/20 focus:outline-none text-left truncate"
-                    >
-                      {selectedCountry ? `${selectedCountry.dial_code} ${selectedCountry.code}` : countryCode}
-                    </button>
-                    {isCountryDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border border-stone-200/20 dark:border-neutral-700 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] z-50 overflow-hidden">
-                        <div className="sticky top-0 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl p-2 border-b border-stone-100 dark:border-neutral-800">
-                          <div className="relative">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-                            <input
-                              type="text"
-                              value={countrySearch}
-                              onChange={(e) => setCountrySearch(e.target.value)}
-                              className="w-full rounded-lg bg-stone-100/50 dark:bg-neutral-800 border-none py-2 pl-8 pr-3 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
-                              placeholder="Rechercher un pays..."
-                              autoFocus
-                            />
-                          </div>
-                        </div>
-                        <div className="overflow-y-auto max-h-48">
-                          {filteredCountries.map((c) => (
-                            <button
-                              key={c.code}
-                              type="button"
-                              onClick={() => {
-                                setCountryCode(c.dial_code);
-                                setIsCountryDropdownOpen(false);
-                                setCountrySearch('');
-                              }}
-                              className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100/50 dark:hover:bg-neutral-800 transition-colors flex items-center justify-between ${
-                                countryCode === c.dial_code ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-stone-700'
-                              }`}
-                            >
-                              <span className="truncate">{c.name}</span>
-                              <span className="text-stone-400 ml-2 shrink-0">{c.dial_code}</span>
-                            </button>
-                          ))}
-                          {filteredCountries.length === 0 && (
-                            <p className="px-3 py-4 text-sm text-stone-400 text-center">Aucun résultat</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="flex-1 rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
-                    placeholder="6 12 34 56 78"
-                  />
-                </div>
+                <PhoneInput
+                  value={phone}
+                  onChange={setPhone}
+                  className="!bg-stone-100/50 dark:!bg-neutral-800"
+                />
               </div>
 
               <div>

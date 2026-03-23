@@ -190,7 +190,7 @@ export function CloserRendezVous() {
       {/* Hero header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 dark:bg-neutral-800">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 dark:bg-white/5">
             <Calendar className="h-5 w-5 text-stone-600 dark:text-neutral-300" />
           </div>
           <div>
@@ -204,7 +204,7 @@ export function CloserRendezVous() {
           <div className="relative">
             <select
               value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-              className="appearance-none rounded-lg border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 pl-8 pr-8 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
+              className="appearance-none rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 pl-8 pr-8 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
             >
               <option value="all">Tous les statuts</option>
               <option value="pending">En attente</option>
@@ -218,13 +218,13 @@ export function CloserRendezVous() {
           <div className="flex items-center gap-1">
             <input
               type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)}
-              className="rounded-lg border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-3 py-2 text-xs text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
+              className="rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-3 py-2 text-xs text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
               placeholder="Du"
             />
             <span className="text-xs text-stone-400">au</span>
             <input
               type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)}
-              className="rounded-lg border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-3 py-2 text-xs text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
+              className="rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-3 py-2 text-xs text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
               placeholder="Au"
             />
           </div>
@@ -238,7 +238,7 @@ export function CloserRendezVous() {
 
       {/* Empty state */}
       {filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-stone-200 dark:border-neutral-800 bg-white/70 dark:bg-white/5 backdrop-blur-xl py-16">
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-stone-200 dark:border-white/10 bg-white/70 dark:bg-white/5 backdrop-blur-xl py-16">
           <Calendar className="h-12 w-12 text-stone-300 dark:text-neutral-600 mb-4" />
           <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">Aucun rendez-vous</h3>
           <p className="text-sm text-stone-500 dark:text-neutral-400">
@@ -249,9 +249,9 @@ export function CloserRendezVous() {
 
       {/* Table view */}
       {filtered.length > 0 && (
-        <div className="rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-neutral-700/30 shadow-sm overflow-hidden">
+        <div className="rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-sm overflow-hidden">
           {/* Desktop header */}
-          <div className="hidden md:grid grid-cols-12 gap-4 border-b border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-6 py-3 text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-neutral-400">
+          <div className="hidden md:grid grid-cols-12 gap-4 border-b border-stone-100 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-6 py-3 text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-neutral-400">
             <div className="col-span-2">Date & Heure</div>
             <div className="col-span-2">Contact</div>
             <div className="col-span-2">Email</div>
@@ -261,7 +261,7 @@ export function CloserRendezVous() {
             <div className="col-span-2 text-right">Actions</div>
           </div>
 
-          <div className="divide-y divide-stone-100 dark:divide-neutral-800">
+          <div className="divide-y divide-stone-100 dark:divide-white/10">
             {filtered.map((appt) => {
               const statusConf = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending
               const localDt = getLocalDateTime(appt)
@@ -281,7 +281,7 @@ export function CloserRendezVous() {
                 timeTag = { label: 'Futur', bg: 'bg-blue-50', text: 'text-blue-600' }
               }
               return (
-                <div key={appt.id} className="px-6 py-4 hover:bg-stone-50/40 dark:hover:bg-neutral-800/40 transition-colors">
+                <div key={appt.id} className="px-6 py-4 hover:bg-stone-50/40 dark:hover:bg-white/5 transition-colors">
                   {/* Desktop */}
                   <div className="hidden md:grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-2">
@@ -331,7 +331,7 @@ export function CloserRendezVous() {
                     <div className="col-span-2 flex items-center justify-end gap-1.5">
                       <button
                         onClick={() => openReassignModal(appt.id)}
-                        className="flex items-center gap-1 rounded-full border border-stone-200 dark:border-neutral-800 px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors"
+                        className="flex items-center gap-1 rounded-full border border-stone-200 dark:border-white/10 px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
                         title="Reassigner"
                       >
                         <UserCheck className="h-3.5 w-3.5" /> Reassigner
@@ -403,7 +403,7 @@ export function CloserRendezVous() {
       {reassignModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setReassignModalOpen(false)} />
-          <div className="relative w-full max-w-md rounded-xl bg-white/70 dark:bg-neutral-900/90 backdrop-blur-xl border border-white/40 dark:border-neutral-700/30 shadow-2xl p-6 animate-in zoom-in-95">
+          <div className="relative w-full max-w-md rounded-xl bg-white/70 dark:bg-neutral-900/90 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-2xl p-6 animate-in zoom-in-95">
             <button onClick={() => setReassignModalOpen(false)} className="absolute top-4 right-4 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200">
               <X className="h-5 w-5" />
             </button>
@@ -420,8 +420,8 @@ export function CloserRendezVous() {
                   className={cn(
                     'w-full text-left p-3 rounded-xl transition-colors border font-medium flex items-center justify-between',
                     selectedMemberId === m.id
-                      ? 'bg-stone-100 dark:bg-neutral-800 border-stone-400 dark:border-neutral-600 text-stone-900 dark:text-white'
-                      : 'border-stone-200 dark:border-neutral-800 hover:bg-stone-50 dark:hover:bg-neutral-800 text-stone-700 dark:text-neutral-200'
+                      ? 'bg-stone-100 dark:bg-white/10 border-stone-400 dark:border-white/20 text-stone-900 dark:text-white'
+                      : 'border-stone-200 dark:border-white/10 hover:bg-stone-50 dark:hover:bg-white/5 text-stone-700 dark:text-neutral-200'
                   )}
                 >
                   <span>{m.first_name} {m.last_name}</span>

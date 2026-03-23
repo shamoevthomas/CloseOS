@@ -609,8 +609,8 @@ export function CloserCallDetails() {
               className={cn(
                 'p-5 rounded-xl border-2 text-left transition-all cursor-pointer',
                 isSelected
-                  ? 'bg-white dark:bg-neutral-800 border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
-                  : 'bg-stone-50/50 dark:bg-neutral-800/50 border-stone-200/40 dark:border-neutral-700/40 hover:bg-white dark:hover:bg-neutral-800 hover:border-stone-300 dark:hover:border-neutral-600'
+                  ? 'bg-white dark:bg-white/5 border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                  : 'bg-stone-50/50 dark:bg-white/5 border-stone-200/40 dark:border-white/10 hover:bg-white dark:hover:bg-white/10 hover:border-stone-300 dark:hover:border-white/20'
               )}
             >
               <div className="mb-3">
@@ -667,7 +667,7 @@ export function CloserCallDetails() {
           </span>
         </div>
         {prospect && prospectFormula && (
-          <div className="mt-4 inline-flex items-center gap-3 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-neutral-700 shadow-sm px-5 py-3">
+          <div className="mt-4 inline-flex items-center gap-3 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-sm px-5 py-3">
             <Award className="h-4 w-4 text-emerald-600" />
             <div>
               <p className="text-xs text-stone-400 dark:text-neutral-500">Offre liée</p>
@@ -676,14 +676,14 @@ export function CloserCallDetails() {
           </div>
         )}
         {prospect && !prospectFormula && (
-          <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-stone-50/50 dark:bg-neutral-800/50 border border-stone-200/40 dark:border-neutral-700/30 px-5 py-3">
+          <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-stone-50/50 dark:bg-white/5 border border-stone-200/40 dark:border-white/10 px-5 py-3">
             <p className="text-sm text-stone-500 dark:text-neutral-400">Aucune offre liée à ce prospect</p>
           </div>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-8 mb-10 border-b border-stone-200/60 dark:border-neutral-700/60">
+      <div className="flex gap-8 mb-10 border-b border-stone-200/60 dark:border-white/10">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -714,7 +714,7 @@ export function CloserCallDetails() {
 
             {/* Won: Payment Terms & Commission */}
             {selectedOutcome === 'won' && (
-              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-7 space-y-5">
+              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
                 <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-emerald-600" /> Détails de la vente
                 </h3>
@@ -736,12 +736,12 @@ export function CloserCallDetails() {
                   <div className="flex gap-3">
                     <button onClick={() => setPaymentType('comptant')}
                       className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-[\"Manrope\"]',
-                        paymentType === 'comptant' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 dark:border-neutral-700/40 bg-stone-50/50 dark:bg-neutral-800/50 text-stone-500 dark:text-neutral-400 hover:border-stone-300 dark:hover:border-neutral-600')}>
+                        paymentType === 'comptant' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 text-stone-500 dark:text-neutral-400 hover:border-stone-300 dark:hover:border-white/20')}>
                       Comptant
                     </button>
                     <button onClick={() => setPaymentType('installments')}
                       className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-[\"Manrope\"]',
-                        paymentType === 'installments' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 dark:border-neutral-700/40 bg-stone-50/50 dark:bg-neutral-800/50 text-stone-500 dark:text-neutral-400 hover:border-stone-300 dark:hover:border-neutral-600')}>
+                        paymentType === 'installments' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 text-stone-500 dark:text-neutral-400 hover:border-stone-300 dark:hover:border-white/20')}>
                       Plusieurs fois
                     </button>
                   </div>
@@ -780,7 +780,7 @@ export function CloserCallDetails() {
 
             {/* Follow up (closer outcome) */}
             {selectedOutcome === 'followup' && (
-              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-7 space-y-5">
+              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
                 <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
                   <Clock className="h-5 w-5 text-stone-500" /> Informations de suivi
                 </h3>
@@ -812,7 +812,7 @@ export function CloserCallDetails() {
 
             {/* Lost (closer outcome) */}
             {selectedOutcome === 'lost' && (
-              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-7 space-y-5">
+              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
                 <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
                   <XCircle className="h-5 w-5 text-stone-500" /> Raison de la perte
                 </h3>
@@ -837,7 +837,7 @@ export function CloserCallDetails() {
 
             {/* Qualified: auto-assign for setter-closer self */}
             {selectedOutcome === 'qualified' && isSetterCloserSelf && (
-              <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-5">
+              <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-5">
                 <p className="text-sm text-stone-700 dark:text-neutral-200 text-center font-['Manrope'] font-medium">
                   Le prospect sera automatiquement assigné à vous en tant que Closer.
                 </p>
@@ -848,9 +848,9 @@ export function CloserCallDetails() {
             {selectedOutcome === 'qualified' && showSetterOutcomes && !isSetterCloserSelf && (
               <section>
                 <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 1 — Assigner un Closer</h3>
-                <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-7 rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm">
+                <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-7 rounded-xl border border-white/40 dark:border-white/10 shadow-sm">
                   {closerMembers.length === 0 ? (
-                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-800 rounded-lg p-4 border border-stone-200 dark:border-neutral-700">
+                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-white/5 rounded-lg p-4 border border-stone-200 dark:border-white/10">
                       <AlertCircle className="h-4 w-4 text-stone-400" />
                       Aucun closer dans l'équipe
                     </div>
@@ -878,7 +878,7 @@ export function CloserCallDetails() {
                             'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
                             assignmentMode === 'suivant'
                               ? 'bg-stone-900 text-white'
-                              : 'border border-stone-300 dark:border-neutral-700 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-neutral-800'
+                              : 'border border-stone-300 dark:border-white/10 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-white/5'
                           )}
                         >
                           Suivant (Tournante)
@@ -889,7 +889,7 @@ export function CloserCallDetails() {
                             'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
                             assignmentMode === 'hasard'
                               ? 'bg-stone-900 text-white'
-                              : 'border border-stone-300 dark:border-neutral-700 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-neutral-800'
+                              : 'border border-stone-300 dark:border-white/10 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-white/5'
                           )}
                         >
                           Hasard
@@ -897,8 +897,8 @@ export function CloserCallDetails() {
                       </div>
 
                       {selectedCloser && (
-                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 dark:bg-white/5 border border-stone-200/30 dark:border-neutral-700/30">
-                          <div className="w-14 h-14 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-stone-700 dark:text-neutral-200 font-bold text-lg shrink-0">
+                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 dark:bg-white/5 border border-stone-200/30 dark:border-white/10">
+                          <div className="w-14 h-14 rounded-full bg-stone-200 dark:bg-white/10 flex items-center justify-center text-stone-700 dark:text-neutral-200 font-bold text-lg shrink-0">
                             {selectedCloser.first_name?.[0]}{selectedCloser.last_name?.[0]}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -924,14 +924,14 @@ export function CloserCallDetails() {
             <div className="lg:col-span-5">
               <section>
                 <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 2 — Programmer le RDV</h3>
-                <div className="bg-white dark:bg-neutral-800 p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                <div className="bg-white dark:bg-white/5 p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   {loadingSlots ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
                       <span className="ml-2 text-sm text-stone-500">Chargement des créneaux...</span>
                     </div>
                   ) : dateKeys.length === 0 ? (
-                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-800 rounded-lg p-4 border border-stone-200 dark:border-neutral-700">
+                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-white/5 rounded-lg p-4 border border-stone-200 dark:border-white/10">
                       <AlertCircle className="h-4 w-4 text-stone-400" />
                       Aucun créneau disponible pour ce closer dans les 14 prochains jours.
                     </div>
@@ -972,7 +972,7 @@ export function CloserCallDetails() {
                                 'py-3.5 text-sm font-bold rounded-lg transition-all',
                                 isSelected
                                   ? 'bg-emerald-700 text-white shadow-md'
-                                  : 'border border-stone-200/60 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:border-emerald-600/30'
+                                  : 'border border-stone-200/60 dark:border-white/10 text-stone-600 dark:text-neutral-300 hover:border-emerald-600/30'
                               )}
                             >
                               {slot.timeLabel}
@@ -1018,7 +1018,7 @@ export function CloserCallDetails() {
 
       {/* NOTES TAB */}
       {activeTab === 'notes' && (
-        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-7 h-[500px] flex flex-col">
+        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 h-[500px] flex flex-col">
           <label className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-900 dark:text-white font-['Manrope']">
             <FileText className="h-4 w-4 text-stone-500" /> Historique et Notes de l'appel
           </label>
@@ -1041,7 +1041,7 @@ export function CloserCallDetails() {
 
       {/* REMINDER TAB */}
       {activeTab === 'reminder' && (
-        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700 shadow-sm p-7 space-y-5">
+        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
           <div className="flex items-center gap-2 mb-2">
             <Bell className="h-5 w-5 text-stone-500" />
             <h3 className="text-lg font-bold text-stone-900 dark:text-white font-['Manrope']">Programmer un rappel</h3>
@@ -1094,9 +1094,9 @@ export function CloserCallDetails() {
 
       {/* Footer Actions */}
       {!isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-end gap-5 z-40 border-t border-stone-200/40 dark:border-neutral-700/40">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-end gap-5 z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
-            className="px-8 py-3 rounded-full border border-stone-300 dark:border-neutral-700 text-stone-700 dark:text-neutral-200 font-['Manrope'] font-bold text-sm hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all">
+            className="px-8 py-3 rounded-full border border-stone-300 dark:border-white/10 text-stone-700 dark:text-neutral-200 font-['Manrope'] font-bold text-sm hover:bg-stone-50 dark:hover:bg-white/5 transition-all">
             Annuler
           </button>
           <button onClick={handleSave} disabled={!isFormValid() || saving}
@@ -1111,7 +1111,7 @@ export function CloserCallDetails() {
         </div>
       )}
       {isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-neutral-700/40">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
             className="px-10 py-3 rounded-full bg-stone-900 text-white font-['Manrope'] font-bold text-sm hover:bg-stone-800 transition-all shadow-xl active:scale-95">
             Retour aux appels

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { PhoneInput } from '../components/PhoneInput'
 import {
   User,
   Search,
@@ -842,13 +843,7 @@ export function BusinessCRM() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Téléphone</label>
-                <input
-                  type="tel"
-                  value={newPhone}
-                  onChange={(e) => setNewPhone(e.target.value)}
-                  className="w-full rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
-                  placeholder="+33 6 12 34 56 78"
-                />
+                <PhoneInput value={newPhone} onChange={setNewPhone} />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Entreprise</label>

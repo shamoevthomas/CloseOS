@@ -8,6 +8,7 @@ import {
   Link2, Copy, ExternalLink,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { PhoneInput } from '../components/PhoneInput'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { fromUTC, getTimezoneLabel } from '../../lib/timezone'
@@ -196,14 +197,8 @@ function ContactInfo({ member }: { member: TeamMember }) {
       <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-neutral-400">
         <Phone className="h-3 w-3 shrink-0" strokeWidth={1.5} />
         {editing ? (
-          <div className="flex items-center gap-1 flex-1">
-            <input
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              placeholder="+33612345678"
-              className="flex-1 min-w-0 rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1 text-xs text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 focus:outline-none transition-all"
-              onClick={e => e.stopPropagation()}
-            />
+          <div className="flex items-center gap-1 flex-1" onClick={e => e.stopPropagation()}>
+            <PhoneInput value={phone} onChange={setPhone} compact className="flex-1 min-w-0 !rounded-full !bg-stone-50 dark:!bg-neutral-800" />
             <button onClick={handleSave} disabled={saving} className="text-[#006c49] hover:text-[#005236]">
               <Check className="h-3.5 w-3.5" strokeWidth={1.5} />
             </button>

@@ -71,7 +71,7 @@ export function CloserFormules() {
 
       {/* Empty state */}
       {formulas.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200 dark:border-neutral-800 bg-stone-50 dark:bg-neutral-800 py-16">
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 py-16">
           <Package className="h-12 w-12 text-stone-300 dark:text-neutral-600 mb-4" />
           <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">Aucune formule</h3>
           <p className="text-sm text-stone-500 dark:text-neutral-400">Votre manager n'a pas encore cree de formules.</p>
@@ -83,7 +83,7 @@ export function CloserFormules() {
         {formulas.map((formula) => {
           const resources = formula.resources || []
           return (
-            <div key={formula.id} className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] hover:shadow-xl transition-all border border-stone-100/50 dark:border-neutral-700/30">
+            <div key={formula.id} className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] hover:shadow-xl transition-all border border-stone-100/50 dark:border-white/10">
               {/* Top: badge */}
               <div className="flex justify-between items-start mb-6">
                 <span className={cn(
@@ -112,14 +112,14 @@ export function CloserFormules() {
               </div>
 
               {/* Resources */}
-              <div className="py-4 border-t border-stone-100 dark:border-neutral-800">
+              <div className="py-4 border-t border-stone-100 dark:border-white/10">
                 {resources.length > 0 ? (
                   <div className="space-y-2.5">
                     <p className="text-xs font-semibold text-stone-500 dark:text-neutral-400 uppercase tracking-wide">
                       {resources.length} Ressource{resources.length !== 1 ? 's' : ''}
                     </p>
                     {resources.map((r, i) => (
-                      <div key={i} className="flex items-center gap-2.5 rounded-xl bg-stone-50 dark:bg-neutral-800 px-3 py-2">
+                      <div key={i} className="flex items-center gap-2.5 rounded-xl bg-stone-50 dark:bg-white/5 px-3 py-2">
                         <span className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-neutral-300">
                           {getResourceIcon(r.type)}
                           <span className="font-medium">{r.name || r.type}</span>

@@ -37,7 +37,7 @@ const formatCurrency = (v: number) =>
 
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
-const glassCard = "bg-white/60 backdrop-blur-xl border border-neutral-900/5 shadow-[0_20px_40px_rgba(27,28,27,0.04)]"
+const glassCard = "bg-white/60 backdrop-blur-xl border border-neutral-900/5 dark:border-white/10 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:bg-white/5"
 
 export function CloserDashboard() {
   const { user, teamMember, ownerUserId, businessSettings, userTimezone } = useBusinessAuth()
@@ -136,10 +136,10 @@ export function CloserDashboard() {
       {/* ─── Header ─── */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-1">
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Bonjour, {scrambledName}.
           </h2>
-          <p className="text-neutral-500 text-lg">Voici l'état de votre activité aujourd'hui.</p>
+          <p className="text-neutral-500 dark:text-neutral-400 text-lg">Voici l'état de votre activité aujourd'hui.</p>
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />
@@ -169,7 +169,7 @@ export function CloserDashboard() {
           </div>
           <div>
             <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Revenue</p>
-            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
+            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
           </div>
         </Link>
 
@@ -180,7 +180,7 @@ export function CloserDashboard() {
           </div>
           <div className="mt-3">
             <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Closing</p>
-            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
+            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
             <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{wonProspects.length} signés / {totalDecided} décidés</p>
           </div>
         </Link>
@@ -192,7 +192,7 @@ export function CloserDashboard() {
           </div>
           <div className="mt-3">
             <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Rendez-vous</p>
-            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingAppts.length}</p>
+            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingAppts.length}</p>
             <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">À venir</p>
           </div>
         </Link>
@@ -209,7 +209,7 @@ export function CloserDashboard() {
           </div>
           <div className="mt-3">
             <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">No-Show</p>
-            <p className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
+            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
           </div>
         </Link>
       </div>
@@ -221,10 +221,10 @@ export function CloserDashboard() {
         <div className={`col-span-12 lg:col-span-7 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Prochains rendez-vous</h3>
+              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Prochains rendez-vous</h3>
               <p className="text-neutral-400 text-sm mt-0.5">Vos prochaines consultations planifiées.</p>
             </div>
-            <Link to="/business/rendez-vous" className="text-sm font-bold text-neutral-900 border-b-2 border-neutral-900 pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <Link to="/business/rendez-vous" className="text-sm font-bold text-neutral-900 dark:text-white border-b-2 border-neutral-900 dark:border-white pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Voir tout
             </Link>
           </div>
@@ -241,17 +241,17 @@ export function CloserDashboard() {
                   <div
                     key={a.id}
                     onClick={() => navigate('/business/agenda')}
-                    className={`flex items-center justify-between p-5 bg-neutral-50/80 rounded-2xl group hover:bg-white transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`}
+                    className={`flex items-center justify-between p-5 bg-neutral-50/80 dark:bg-white/5 rounded-2xl group hover:bg-white dark:hover:bg-white/10 transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`}
                   >
                     <div className="flex items-center gap-5">
                       <div className="text-center min-w-[55px]">
                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{formatApptDate(localDt.date)}</p>
                         <p className="text-xl font-extrabold text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{localDt.time}</p>
                       </div>
-                      <div className="h-10 w-px bg-neutral-200" />
+                      <div className="h-10 w-px bg-neutral-200 dark:bg-white/10" />
                       <div>
-                        <p className="font-bold text-neutral-900">{a.prospect?.contact || 'Rendez-vous'}</p>
-                        <p className="text-sm text-neutral-400">{a.campaign?.name || `${a.duration}min`}</p>
+                        <p className="font-bold text-neutral-900 dark:text-white">{a.prospect?.contact || 'Rendez-vous'}</p>
+                        <p className="text-sm text-neutral-400 dark:text-neutral-500">{a.campaign?.name || `${a.duration}min`}</p>
                       </div>
                     </div>
                   </div>
@@ -264,7 +264,7 @@ export function CloserDashboard() {
         {/* Rappels & Tâches */}
         <div className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-8 flex flex-col`}>
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>Rappels</h3>
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Rappels</h3>
             {reminders.length > 0 && (
               <span className="w-6 h-6 bg-neutral-900 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
                 {reminders.length}
@@ -282,7 +282,7 @@ export function CloserDashboard() {
                 return (
                   <div
                     key={r.id}
-                    className={`p-4 rounded-2xl cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-4 border-red-500 bg-red-50/50' : 'border-l-4 border-neutral-300 bg-neutral-50 hover:bg-white'}`}
+                    className={`p-4 rounded-2xl cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-4 border-red-500 bg-red-50/50 dark:bg-rose-900/20' : 'border-l-4 border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10'}`}
                     onClick={() => navigate('/business/rappels')}
                   >
                     <div className="flex items-center gap-3">
@@ -300,7 +300,7 @@ export function CloserDashboard() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-1">
-                          <h4 className="text-sm font-bold text-neutral-900">{r.title}</h4>
+                          <h4 className="text-sm font-bold text-neutral-900 dark:text-white">{r.title}</h4>
                           <span className={`text-[10px] font-black uppercase ${overdue ? 'text-red-500' : 'text-neutral-400'}`}>
                             {overdue ? 'EN RETARD' : 'À VENIR'}
                           </span>
@@ -333,7 +333,7 @@ export function CloserDashboard() {
           )}
           <Link
             to="/business/rappels"
-            className="mt-4 w-full py-3 border-2 border-dashed border-neutral-200 rounded-2xl text-neutral-400 text-sm font-bold hover:border-neutral-900 hover:text-neutral-900 transition-all text-center block"
+            className="mt-4 w-full py-3 border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-2xl text-neutral-400 text-sm font-bold hover:border-neutral-900 dark:hover:border-white hover:text-neutral-900 dark:hover:text-white transition-all text-center block"
           >
             + Créer un rappel
           </Link>

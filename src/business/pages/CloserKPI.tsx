@@ -277,7 +277,7 @@ export function CloserKPI() {
   const v = getTabValues()
   const avgCommission = v.sales > 0 ? Math.round(v.commission / v.sales) : 0
 
-  const inputCls = "w-full rounded-xl border border-stone-200 dark:border-neutral-700 px-4 py-2.5 text-sm text-stone-900 dark:text-white dark:bg-neutral-800 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+  const inputCls = "w-full rounded-xl border border-stone-200 dark:border-white/10 px-4 py-2.5 text-sm text-stone-900 dark:text-white dark:bg-neutral-800 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
 
   // Member selector component
   // Tabs definition
@@ -337,7 +337,7 @@ export function CloserKPI() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 dark:bg-neutral-800">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 dark:bg-white/5">
             <TrendingUp className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
           </div>
           <div>
@@ -350,7 +350,7 @@ export function CloserKPI() {
           {!isOwnerView && (
             <button
               onClick={() => setIsConfigOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/10 transition-colors"
             >
               <Settings className="h-4 w-4" /> Configurer
             </button>
@@ -403,7 +403,7 @@ export function CloserKPI() {
               className={cn(
                 'px-4 py-2 rounded-full text-sm font-medium transition-all',
                 activeTab === tab.key
-                  ? 'bg-white dark:bg-neutral-700 text-stone-900 dark:text-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                  ? 'bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
                   : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
               )}
             >
@@ -412,7 +412,7 @@ export function CloserKPI() {
           ))}
         </div>
         {isOwnerView && teamClosers.length > 0 && (
-          <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 rounded-full border border-stone-200 dark:border-neutral-700 pl-3 pr-1 py-1 shadow-sm">
+          <div className="flex items-center gap-2 bg-white dark:bg-white/5 rounded-full border border-stone-200 dark:border-white/10 pl-3 pr-1 py-1 shadow-sm">
             <Users className="h-4 w-4 text-stone-400 shrink-0" />
             <select
               value={globalMemberId || ''}
@@ -429,20 +429,20 @@ export function CloserKPI() {
       </div>
 
       {activeTab === 'org' && (
-        <div className="rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-800 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <p className="text-sm text-stone-700">KPIs de l'organisation</p>
         </div>
       )}
 
       {activeTab === 'offer' && (
-        <div className="rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-800 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">Par Formule</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedOfferId || ''}
                 onChange={(e) => setSelectedOfferId(e.target.value)}
-                className="rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
+                className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
                 {formulas.length === 0 && <option value="">Aucune formule</option>}
                 {formulas.map(f => (
@@ -455,14 +455,14 @@ export function CloserKPI() {
       )}
 
       {activeTab === 'campaign' && (
-        <div className="rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-800 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">Par Campagne</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedCampaignId || ''}
                 onChange={(e) => setSelectedCampaignId(e.target.value)}
-                className="rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
+                className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
                 {campaigns.length === 0 && <option value="">Aucune campagne</option>}
                 {campaigns.map(c => (
@@ -475,14 +475,14 @@ export function CloserKPI() {
       )}
 
       {activeTab === 'source' && (
-        <div className="rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-800 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">Par Source</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedSource || ''}
                 onChange={(e) => setSelectedSource(e.target.value)}
-                className="rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
+                className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
                 {uniqueSources.length === 0 && <option value="">Aucune source</option>}
                 {uniqueSources.map(s => (
@@ -514,7 +514,7 @@ export function CloserKPI() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-neutral-800 rounded-2xl border border-stone-200 dark:border-neutral-800 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+        <div className="bg-white dark:bg-white/5 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
           <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Historique Taux de Closing</h3>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -535,7 +535,7 @@ export function CloserKPI() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-neutral-800 rounded-2xl border border-stone-200 dark:border-neutral-800 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+        <div className="bg-white dark:bg-white/5 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
           <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Historique Commissions</h3>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -608,7 +608,7 @@ export function CloserKPI() {
               </div>
             </div>
             <div className="flex justify-end gap-3 border-t border-stone-100 dark:border-neutral-800 px-6 py-4">
-              <button onClick={() => setIsConfigOpen(false)} className="rounded-xl border border-stone-200 dark:border-neutral-700 px-4 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
+              <button onClick={() => setIsConfigOpen(false)} className="rounded-xl border border-stone-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
                 Annuler
               </button>
               <button
@@ -629,17 +629,17 @@ export function CloserKPI() {
 
 const KpiCard = ({ title, value, icon: Icon, color, highlight }: any) => {
   const iconColors: any = {
-    emerald: 'text-emerald-600',
-    blue: 'text-blue-600',
-    purple: 'text-purple-600',
-    stone: 'text-stone-600',
-    rose: 'text-rose-600',
+    emerald: 'text-emerald-600 dark:text-emerald-400',
+    blue: 'text-blue-600 dark:text-blue-400',
+    purple: 'text-purple-600 dark:text-purple-400',
+    stone: 'text-stone-600 dark:text-stone-400',
+    rose: 'text-rose-600 dark:text-rose-400',
   }
   const iconColor = iconColors[color] || iconColors.stone
   return (
     <div className={cn(
-      'bg-white dark:bg-neutral-800 rounded-2xl border p-5 transition-all hover:shadow-md',
-      highlight ? 'border-stone-200 dark:border-neutral-700 shadow-sm' : 'border-stone-200 dark:border-neutral-800'
+      'bg-white dark:bg-white/5 rounded-2xl border p-5 transition-all hover:shadow-md dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]',
+      highlight ? 'border-stone-200 dark:border-neutral-700/50 shadow-sm' : 'border-stone-200 dark:border-neutral-700/50'
     )}>
       <div className="flex items-center gap-3 mb-3">
         <Icon className={cn('h-4 w-4', iconColor)} />

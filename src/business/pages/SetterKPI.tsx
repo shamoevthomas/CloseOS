@@ -298,7 +298,7 @@ export function SetterKPI() {
   const setterDisplay = personal
   const showSetterCards = activeTab === 'personal'
 
-  const inputCls = "w-full rounded-xl border border-stone-200 dark:border-neutral-800 px-4 py-2.5 text-sm text-stone-900 dark:text-white dark:bg-neutral-800 placeholder:text-stone-400 dark:placeholder:text-neutral-500 focus:border-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-500"
+  const inputCls = "w-full rounded-xl border border-stone-200 dark:border-white/10 px-4 py-2.5 text-sm text-stone-900 dark:text-white dark:bg-neutral-800 placeholder:text-stone-400 dark:placeholder:text-neutral-500 focus:border-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-500"
 
   // Member selector component
   // Tabs definition
@@ -355,7 +355,7 @@ export function SetterKPI() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 dark:bg-neutral-800">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 dark:bg-white/5">
             <TrendingUp className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
           </div>
           <div>
@@ -368,7 +368,7 @@ export function SetterKPI() {
           {!isOwnerView && (
             <button
               onClick={() => setIsConfigOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/10 transition-colors"
             >
               <Settings className="h-4 w-4" /> Configurer
             </button>
@@ -421,7 +421,7 @@ export function SetterKPI() {
               className={cn(
                 'px-8 py-2.5 rounded-full text-sm font-bold transition-all',
                 activeTab === tab.key
-                  ? 'bg-white dark:bg-neutral-900 text-stone-900 dark:text-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                  ? 'bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
                   : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
               )}
             >
@@ -430,7 +430,7 @@ export function SetterKPI() {
           ))}
         </div>
         {isOwnerView && teamSetters.length > 0 && (
-          <div className="flex items-center gap-2 bg-white dark:bg-neutral-900 rounded-full border border-stone-200 dark:border-neutral-700 pl-3 pr-1 py-1 shadow-sm">
+          <div className="flex items-center gap-2 bg-white dark:bg-white/5 rounded-full border border-stone-200 dark:border-white/10 pl-3 pr-1 py-1 shadow-sm">
             <Users className="h-4 w-4 text-stone-400 shrink-0" />
             <select
               value={globalMemberId || ''}
@@ -447,13 +447,13 @@ export function SetterKPI() {
       </div>
 
       {activeTab === 'offer' && (
-        <div className="rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-800 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">Par Formule</p>
             <select
               value={selectedOfferId || ''}
               onChange={(e) => setSelectedOfferId(e.target.value)}
-              className="rounded-lg border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
+              className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
             >
               {formulas.length === 0 && <option value="">Aucune formule</option>}
               {formulas.map(f => (
@@ -465,13 +465,13 @@ export function SetterKPI() {
       )}
 
       {activeTab === 'campaign' && (
-        <div className="rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-800 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">Par Campagne</p>
             <select
               value={selectedCampaignId || ''}
               onChange={(e) => setSelectedCampaignId(e.target.value)}
-              className="rounded-lg border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
+              className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
             >
               {campaigns.length === 0 && <option value="">Aucune campagne</option>}
               {campaigns.map(c => (
@@ -483,13 +483,13 @@ export function SetterKPI() {
       )}
 
       {activeTab === 'source' && (
-        <div className="rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-800 px-4 py-3">
+        <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">Par Source</p>
             <select
               value={selectedSource || ''}
               onChange={(e) => setSelectedSource(e.target.value)}
-              className="rounded-lg border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
+              className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
             >
               {uniqueSources.length === 0 && <option value="">Aucune source</option>}
               {uniqueSources.map(s => (
@@ -511,17 +511,17 @@ export function SetterKPI() {
       {/* Setter-specific KPI Cards (personal or member tab) */}
       {showSetterCards && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-neutral-800">
+          <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
             <div className="flex items-center gap-3 mb-3">
-              <PhoneIncoming className="h-4 w-4 text-purple-600" />
+              <PhoneIncoming className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400">Taux de Réponse</span>
             </div>
             <p className="text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(setterDisplay.responseRate)}%</p>
             <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{setterDisplay.responded.length} réponses / {setterDisplay.contacted.length} contactés</p>
           </div>
-          <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-neutral-800">
+          <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
             <div className="flex items-center gap-3 mb-3">
-              <CalendarCheck className="h-4 w-4 text-purple-600" />
+              <CalendarCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400">Taux de Booking</span>
             </div>
             <p className="text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(setterDisplay.bookingRate)}%</p>
@@ -542,7 +542,7 @@ export function SetterKPI() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-neutral-800">
+        <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
           <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Historique Taux de Closing</h3>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -563,7 +563,7 @@ export function SetterKPI() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-neutral-800">
+        <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
           <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Historique Commissions</h3>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -636,7 +636,7 @@ export function SetterKPI() {
               </div>
             </div>
             <div className="flex justify-end gap-3 border-t border-stone-100 dark:border-neutral-800 px-6 py-4">
-              <button onClick={() => setIsConfigOpen(false)} className="rounded-xl border border-stone-200 dark:border-neutral-800 px-4 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800">
+              <button onClick={() => setIsConfigOpen(false)} className="rounded-xl border border-stone-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/5">
                 Annuler
               </button>
               <button
@@ -657,17 +657,17 @@ export function SetterKPI() {
 
 const KpiCard = ({ title, value, icon: Icon, color, highlight, subtitle }: any) => {
   const colors: any = {
-    emerald: 'text-emerald-600',
-    blue: 'text-blue-600',
-    purple: 'text-purple-600',
-    stone: 'text-stone-600',
-    rose: 'text-rose-600',
+    emerald: 'text-emerald-600 dark:text-emerald-400',
+    blue: 'text-blue-600 dark:text-blue-400',
+    purple: 'text-purple-600 dark:text-purple-400',
+    stone: 'text-stone-600 dark:text-stone-400',
+    rose: 'text-rose-600 dark:text-rose-400',
   }
   const iconColor = colors[color] || colors.stone
   return (
     <div className={cn(
-      'bg-white dark:bg-neutral-800 rounded-2xl p-8 transition-all hover:shadow-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]',
-      highlight ? 'border border-stone-100/50 dark:border-neutral-800' : 'border border-stone-100/50 dark:border-neutral-800'
+      'bg-white dark:bg-white/5 rounded-2xl p-8 transition-all hover:shadow-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]',
+      highlight ? 'border border-stone-100/50 dark:border-neutral-700/50' : 'border border-stone-100/50 dark:border-neutral-700/50'
     )}>
       <div className="flex items-center gap-3 mb-3">
         <Icon className={cn('h-4 w-4', iconColor)} />

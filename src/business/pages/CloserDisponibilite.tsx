@@ -25,7 +25,7 @@ interface Absence {
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 const DAYS_SHORT = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.']
 
-const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 dark:ring-neutral-700 shadow-sm'
+const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 dark:ring-white/10 shadow-sm'
 
 export function CloserDisponibilite() {
   const { teamMember, ownerUserId } = useBusinessAuth()
@@ -174,7 +174,7 @@ export function CloserDisponibilite() {
       <div className="grid grid-cols-12 gap-8">
         {/* ─── Left: Weekly Slots ─── */}
         <section className="col-span-12 xl:col-span-8 space-y-6">
-          <h3 className="font-business-display font-extrabold text-2xl tracking-tight flex items-center gap-3 text-stone-900">
+          <h3 className="font-business-display font-extrabold text-2xl tracking-tight flex items-center gap-3 text-stone-900 dark:text-white">
             Créneaux hebdomadaires
           </h3>
 
@@ -198,14 +198,14 @@ export function CloserDisponibilite() {
                     )}>
                       {DAYS_SHORT[idx]}
                     </span>
-                    <div className={cn('h-2 w-2 rounded-full', hasSlots ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/30')} />
+                    <div className={cn('h-2 w-2 rounded-full', hasSlots ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/30 dark:bg-neutral-600')} />
                   </div>
 
                   <div className="flex flex-wrap gap-2 flex-grow items-center">
                     {daySlots.map(slot => (
-                      <div key={slot.id} className="flex items-center gap-2 bg-[#ffddb8] text-[#2a1700] px-4 py-2 rounded-full text-sm font-semibold">
+                      <div key={slot.id} className="flex items-center gap-2 bg-[#ffddb8] dark:bg-amber-900/30 text-[#2a1700] dark:text-amber-400 px-4 py-2 rounded-full text-sm font-semibold">
                         {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
-                        <button onClick={() => handleDeleteSlot(slot.id)} className="hover:text-[#ba1a1a] transition-colors">
+                        <button onClick={() => handleDeleteSlot(slot.id)} className="hover:text-[#ba1a1a] dark:hover:text-red-400 transition-colors">
                           <X className="h-3 w-3" strokeWidth={2} />
                         </button>
                       </div>
@@ -225,7 +225,7 @@ export function CloserDisponibilite() {
                     ) : (
                       <button
                         onClick={() => setAddingDay(idx)}
-                        className="flex items-center gap-2 border border-dashed border-[#c4c7c7] dark:border-neutral-700 px-4 py-2 rounded-full text-sm text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-neutral-800 hover:border-stone-400 transition-all"
+                        className="flex items-center gap-2 border border-dashed border-[#c4c7c7] dark:border-neutral-700/50 px-4 py-2 rounded-full text-sm text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 hover:border-stone-400 transition-all"
                       >
                         <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
                         Ajouter un créneau
@@ -245,7 +245,7 @@ export function CloserDisponibilite() {
                       {copyingDay === idx && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => { setCopyingDay(null); setSelectedCopyTargets([]) }} />
-                          <div className="absolute top-full right-0 mt-1 z-20 rounded-2xl bg-white dark:bg-neutral-800 shadow-xl ring-1 ring-black/5 dark:ring-neutral-700 py-2 min-w-[180px]">
+                          <div className="absolute top-full right-0 mt-1 z-20 rounded-2xl bg-white dark:bg-white/5 shadow-xl ring-1 ring-black/5 dark:ring-white/10 py-2 min-w-[180px] dark:backdrop-blur-xl">
                             {DAYS.map((targetDay, targetIdx) => {
                               if (targetIdx === idx) return null
                               const isSelected = selectedCopyTargets.includes(targetIdx)
@@ -255,7 +255,7 @@ export function CloserDisponibilite() {
                                   onClick={() => setSelectedCopyTargets(prev => isSelected ? prev.filter(d => d !== targetIdx) : [...prev, targetIdx])}
                                   className={cn(
                                     'w-full text-left px-4 py-2 text-sm font-medium flex items-center gap-3 transition-colors',
-                                    isSelected ? 'bg-[#006c49]/5 text-[#006c49]' : 'text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800'
+                                    isSelected ? 'bg-[#006c49]/5 text-[#006c49]' : 'text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-white/5'
                                   )}
                                 >
                                   <span className={cn(
@@ -269,7 +269,7 @@ export function CloserDisponibilite() {
                               )
                             })}
                             {selectedCopyTargets.length > 0 && (
-                              <div className="px-3 pt-2 mt-1 border-t border-stone-100 dark:border-neutral-800">
+                              <div className="px-3 pt-2 mt-1 border-t border-stone-100 dark:border-white/10">
                                 <button
                                   onClick={() => handleCopySlots(idx, selectedCopyTargets)}
                                   className="w-full rounded-full bg-stone-900 px-4 py-2.5 text-xs font-bold text-white hover:opacity-90 transition-all"
@@ -288,10 +288,10 @@ export function CloserDisponibilite() {
             })}
 
             {/* Weekend separator */}
-            <div className="flex items-center gap-4 py-2 text-stone-300 dark:text-neutral-600">
-              <div className="h-px flex-grow bg-[#c4c7c7]/20" />
+            <div className="flex items-center gap-4 py-2 text-stone-300 dark:text-neutral-500">
+              <div className="h-px flex-grow bg-[#c4c7c7]/20 dark:bg-white/10" />
               <span className="text-[10px] font-bold uppercase tracking-widest">Weekend</span>
-              <div className="h-px flex-grow bg-[#c4c7c7]/20" />
+              <div className="h-px flex-grow bg-[#c4c7c7]/20 dark:bg-white/10" />
             </div>
 
             {/* Weekend (Sat-Sun) */}
@@ -311,13 +311,13 @@ export function CloserDisponibilite() {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <span className="font-business-display font-extrabold text-lg text-stone-900 dark:text-white">{DAYS_SHORT[idx]}</span>
-                      <div className={cn('h-2 w-2 rounded-full', hasSlots ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/30')} />
+                      <div className={cn('h-2 w-2 rounded-full', hasSlots ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/30 dark:bg-neutral-600')} />
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {daySlots.map(slot => (
-                        <div key={slot.id} className="flex items-center gap-2 bg-[#ffddb8] text-[#2a1700] px-3 py-1.5 rounded-full text-xs font-bold">
+                        <div key={slot.id} className="flex items-center gap-2 bg-[#ffddb8] dark:bg-amber-900/30 text-[#2a1700] dark:text-amber-400 px-3 py-1.5 rounded-full text-xs font-bold">
                           {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
-                          <button onClick={() => handleDeleteSlot(slot.id)} className="hover:text-[#ba1a1a] transition-colors">
+                          <button onClick={() => handleDeleteSlot(slot.id)} className="hover:text-[#ba1a1a] dark:hover:text-red-400 transition-colors">
                             <X className="h-3 w-3" strokeWidth={2} />
                           </button>
                         </div>
@@ -357,14 +357,14 @@ export function CloserDisponibilite() {
           {/* Absences Card */}
           <div className={cn(GLASS_PANEL, 'rounded-2xl p-8 shadow-lg relative overflow-hidden')}>
             <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
-            <h3 className="font-business-display font-extrabold text-2xl mb-6 relative z-10 text-stone-900">Absences</h3>
+            <h3 className="font-business-display font-extrabold text-2xl mb-6 relative z-10 text-stone-900 dark:text-white">Absences</h3>
 
             <div className="space-y-4 mb-6 relative z-10">
               {absences.length === 0 ? (
                 <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-6">Aucune absence programmée</p>
               ) : (
                 absences.map(abs => (
-                  <div key={abs.id} className="flex items-center justify-between p-4 bg-[#efedec] dark:bg-neutral-800 rounded-2xl ring-1 ring-[#c4c7c7]/10 dark:ring-neutral-700">
+                  <div key={abs.id} className="flex items-center justify-between p-4 bg-[#efedec] dark:bg-white/5 rounded-2xl ring-1 ring-[#c4c7c7]/10 dark:ring-white/10">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-[#006c49]/10 rounded-xl">
                         <Calendar className="h-4 w-4 text-[#006c49]" strokeWidth={1.5} />
@@ -388,7 +388,7 @@ export function CloserDisponibilite() {
 
             {/* Absence Form */}
             {showAbsenceForm && (
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-5 mb-4 space-y-4 relative z-10">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-5 mb-4 space-y-4 relative z-10">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">Date début</label>
@@ -400,7 +400,7 @@ export function CloserDisponibilite() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-stone-400 font-bold mb-2">Motif (optionnel)</label>
+                  <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">Motif (optionnel)</label>
                   <input type="text" value={absReason} onChange={e => setAbsReason(e.target.value)} placeholder="Ex: Vacances, Formation..." className="w-full rounded-full bg-white dark:bg-neutral-800 border-none px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                 </div>
                 <div className="flex gap-3">
@@ -414,7 +414,7 @@ export function CloserDisponibilite() {
             {!showAbsenceForm && (
               <button
                 onClick={() => setShowAbsenceForm(true)}
-                className="w-full py-4 border-2 border-dashed border-[#c4c7c7] dark:border-neutral-700 hover:border-[#006c49] hover:text-[#006c49] hover:bg-[#006c49]/5 rounded-2xl transition-all flex items-center justify-center gap-2 text-stone-500 dark:text-neutral-400 relative z-10"
+                className="w-full py-4 border-2 border-dashed border-[#c4c7c7] dark:border-neutral-700/50 hover:border-[#006c49] hover:text-[#006c49] hover:bg-[#006c49]/5 rounded-2xl transition-all flex items-center justify-center gap-2 text-stone-500 dark:text-neutral-400 relative z-10"
               >
                 <Plus className="h-4 w-4" strokeWidth={1.5} />
                 <span className="text-sm font-bold">Nouvelle absence</span>
@@ -443,13 +443,13 @@ export function CloserDisponibilite() {
               </p>
             </div>
             <div className="space-y-3">
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-4">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4">
                 <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">1. Ajoutez vos créneaux pour chaque jour</p>
               </div>
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-4">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4">
                 <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">2. Indiquez vos périodes d'absence si nécessaire</p>
               </div>
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-4">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4">
                 <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">3. Modifiez ces informations à tout moment</p>
               </div>
             </div>

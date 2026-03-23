@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 import {
-  FileText, Calendar, Loader2, Receipt, ExternalLink, Filter, ChevronDown, ChevronLeft, ChevronRight, Download, User,
+  FileText, Calendar, Loader2, Receipt, ExternalLink, Filter, ChevronDown, ChevronLeft, ChevronRight, Download, User, Copy, Eye,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
@@ -20,6 +20,11 @@ interface Invoice {
   stripe_payment_link: string | null
   team_member_id: string | null
   created_at: string
+  due_date: string | null
+  issuer_name: string | null
+  issuer_company: string | null
+  late_penalty_rate: number | null
+  late_penalty_fixed: number | null
 }
 
 interface TeamMember {
@@ -282,6 +287,7 @@ export function OwnerFactures() {
                 <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Client & Offre</th>
                 <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Membre</th>
                 <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Montant TTC</th>
+                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Échéance</th>
                 <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut</th>
                 <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-right" style={{ fontFamily: 'Manrope, sans-serif' }}>Actions</th>
               </tr>
@@ -316,6 +322,18 @@ export function OwnerFactures() {
                     </td>
                     <td className="px-8 py-6 text-sm font-extrabold text-[#1b1c1b] dark:text-white">{formatCurrency(inv.amount_ttc || 0)}</td>
                     <td className="px-8 py-6">
+                      {inv.due_date ? (
+                        <span className={cn("text-xs font-semibold", inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'payé' ? "text-[#ba1a1a]" : "text-[#444748] dark:text-neutral-400")}>
+                          {new Date(inv.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          {inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'payé' && (
+                            <span className="ml-1 text-[9px] uppercase font-black text-[#ba1a1a]">Retard</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-[#444748]/40 dark:text-neutral-600">—</span>
+                      )}
+                    </td>
+                    <td className="px-8 py-6">
                       <div className="flex justify-center">
                         <select
                           value={inv.status || ''}
@@ -335,27 +353,51 @@ export function OwnerFactures() {
                       </div>
                     </td>
                     <td className="px-8 py-6 text-right">
-                      {inv.stripe_payment_link ? (
-                        <a
-                          href={inv.stripe_payment_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="bg-[#1b1c1b] text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#1b1c1b]/80 transition-all inline-block"
-                        >
-                          Payer
-                        </a>
-                      ) : (
-                        <button className="text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors">
-                          Détails
-                        </button>
-                      )}
+                      <div className="flex justify-end gap-2">
+                        {inv.stripe_payment_link && (
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(inv.stripe_payment_link!); toast.success('Lien copié') }}
+                            className="bg-[#1b1c1b] text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#1b1c1b]/80 transition-all inline-flex items-center gap-1.5"
+                            title="Copier le lien de paiement"
+                          >
+                            <Copy className="h-3 w-3" />
+                            Lien
+                          </button>
+                        )}
+                        {inv.stripe_payment_link && (
+                          <a
+                            href={inv.stripe_payment_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-[#635BFF] text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#5349E0] transition-all inline-flex items-center gap-1.5"
+                          >
+                            Payer
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                        {inv.pdf_url && (
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <a href={inv.pdf_url} target="_blank" rel="noreferrer" className="p-2 rounded-full hover:bg-[#eae8e7] dark:hover:bg-neutral-700 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors" title="Voir">
+                              <Eye className="h-4 w-4" />
+                            </a>
+                            <a href={inv.pdf_url} download className="p-2 rounded-full hover:bg-[#eae8e7] dark:hover:bg-neutral-700 text-[#444748] dark:text-neutral-400 hover:text-[#006c49] transition-colors" title="Télécharger">
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </div>
+                        )}
+                        {!inv.stripe_payment_link && !inv.pdf_url && (
+                          <button className="text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors">
+                            Détails
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-8 py-20 text-center">
+                  <td colSpan={8} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center">
                       <div className="w-16 h-16 bg-[#f5f3f2] dark:bg-neutral-700 rounded-full flex items-center justify-center mb-4">
                         <FileText className="h-8 w-8 text-[#c4c7c7]" />

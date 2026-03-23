@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { PhoneInput } from './PhoneInput'
 import {
   X,
   Shield,
@@ -184,10 +185,16 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
   const saveSidebarOrder = async () => {
     setSavingSidebar(true)
     try {
-      await updateBusinessSettings({ sidebar_order: sidebarItems.map(i => i.href) })
-      setSidebarDirty(false)
-      setMessage({ type: 'success', text: 'Ordre de la sidebar sauvegardé.' })
-    } catch {
+      const result = await updateBusinessSettings({ sidebar_order: sidebarItems.map(i => i.href) })
+      if (result?.error) {
+        console.error('Save sidebar order error:', result.error)
+        setMessage({ type: 'error', text: 'Erreur lors de la sauvegarde.' })
+      } else {
+        setSidebarDirty(false)
+        setMessage({ type: 'success', text: 'Ordre de la sidebar sauvegardé.' })
+      }
+    } catch (err) {
+      console.error('Save sidebar order exception:', err)
       setMessage({ type: 'error', text: 'Erreur lors de la sauvegarde.' })
     } finally {
       setSavingSidebar(false)
@@ -198,9 +205,13 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     setSidebarItems([...DEFAULT_OWNER_NAV])
     setSavingSidebar(true)
     try {
-      await updateBusinessSettings({ sidebar_order: null })
-      setSidebarDirty(false)
-      setMessage({ type: 'success', text: 'Ordre de la sidebar réinitialisé.' })
+      const result = await updateBusinessSettings({ sidebar_order: null })
+      if (result?.error) {
+        setMessage({ type: 'error', text: 'Erreur lors de la réinitialisation.' })
+      } else {
+        setSidebarDirty(false)
+        setMessage({ type: 'success', text: 'Ordre de la sidebar réinitialisé.' })
+      }
     } catch {
       setMessage({ type: 'error', text: 'Erreur lors de la réinitialisation.' })
     } finally {
@@ -596,12 +607,11 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     {/* Phone */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Numero de telephone</label>
-                      <input
-                        type="tel"
+                      <PhoneInput
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
-                        placeholder="+33 6 00 00 00 00"
+                        onChange={(v) => setFormData({ ...formData, phone: v })}
+                        className="!bg-[#f5f3f2] dark:!bg-neutral-800"
+                        inputClassName="flex-1 min-w-0 bg-transparent border-none py-3.5 px-3 text-sm text-stone-900 dark:text-white focus:ring-0 focus:outline-none font-medium"
                       />
                     </div>
 

@@ -501,7 +501,7 @@ export function SetterCallDetails() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-8 mb-10 border-b border-stone-200/60 dark:border-neutral-700/30">
+      <div className="flex gap-8 mb-10 border-b border-stone-200/60 dark:border-white/10">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -554,8 +554,8 @@ export function SetterCallDetails() {
                       className={cn(
                         'p-5 rounded-xl border-2 text-left transition-all cursor-pointer',
                         isSelected
-                          ? 'bg-white dark:bg-neutral-800 border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
-                          : 'bg-stone-50/50 dark:bg-neutral-800/50 border-stone-200/40 dark:border-neutral-700/30 hover:bg-white dark:hover:bg-neutral-800 hover:border-stone-300 dark:hover:border-neutral-600'
+                          ? 'bg-white dark:bg-white/5 border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                          : 'bg-stone-50/50 dark:bg-white/5 border-stone-200/40 dark:border-white/10 hover:bg-white dark:hover:bg-white/10 hover:border-stone-300 dark:hover:border-white/20'
                       )}
                     >
                       <div className="mb-3">
@@ -577,9 +577,9 @@ export function SetterCallDetails() {
             {selectedOutcome === 'qualified' && (
               <section>
                 <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 1 — Assigner un Closer</h3>
-                <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-7 rounded-xl border border-white/40 dark:border-neutral-700/30 shadow-sm">
+                <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-7 rounded-xl border border-white/40 dark:border-white/10 shadow-sm">
                   {closers.length === 0 ? (
-                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-800 rounded-lg p-4 border border-stone-200 dark:border-neutral-800">
+                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-white/5 rounded-lg p-4 border border-stone-200 dark:border-white/10">
                       <AlertCircle className="h-4 w-4 text-amber-500" />
                       Aucun closer dans l'équipe
                     </div>
@@ -607,7 +607,7 @@ export function SetterCallDetails() {
                             'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
                             assignmentMode === 'suivant'
                               ? 'bg-stone-900 dark:bg-white text-white dark:text-neutral-900'
-                              : 'border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-neutral-800'
+                              : 'border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-white/5'
                           )}
                         >
                           Suivant (Tournante)
@@ -618,7 +618,7 @@ export function SetterCallDetails() {
                             'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
                             assignmentMode === 'hasard'
                               ? 'bg-stone-900 dark:bg-white text-white dark:text-neutral-900'
-                              : 'border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-neutral-800'
+                              : 'border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-white/5'
                           )}
                         >
                           Hasard
@@ -626,8 +626,8 @@ export function SetterCallDetails() {
                       </div>
 
                       {selectedCloser && (
-                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 dark:bg-white/5 border border-stone-200/30 dark:border-neutral-700/30">
-                          <div className="w-14 h-14 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-stone-700 dark:text-neutral-200 font-bold text-lg shrink-0">
+                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 dark:bg-white/5 border border-stone-200/30 dark:border-white/10">
+                          <div className="w-14 h-14 rounded-full bg-stone-200 dark:bg-white/10 flex items-center justify-center text-stone-700 dark:text-neutral-200 font-bold text-lg shrink-0">
                             {selectedCloser.first_name?.[0]}{selectedCloser.last_name?.[0]}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -653,14 +653,14 @@ export function SetterCallDetails() {
             <div className="lg:col-span-5">
               <section>
                 <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 2 — Programmer le RDV</h3>
-                <div className="bg-white dark:bg-neutral-800 p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                <div className="bg-white dark:bg-white/5 p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   {loadingSlots ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
                       <span className="ml-2 text-sm text-stone-500">Chargement des créneaux...</span>
                     </div>
                   ) : dateKeys.length === 0 ? (
-                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-800 rounded-lg p-4 border border-stone-200 dark:border-neutral-800">
+                    <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-white/5 rounded-lg p-4 border border-stone-200 dark:border-white/10">
                       <AlertCircle className="h-4 w-4 text-amber-500" />
                       Aucun créneau disponible pour ce closer dans les 14 prochains jours.
                     </div>
@@ -701,7 +701,7 @@ export function SetterCallDetails() {
                                 'py-3.5 text-sm font-bold rounded-lg transition-all',
                                 isSelected
                                   ? 'bg-emerald-700 text-white shadow-md'
-                                  : 'border border-stone-200/60 dark:border-neutral-700/30 text-stone-600 dark:text-neutral-300 hover:border-emerald-600/30'
+                                  : 'border border-stone-200/60 dark:border-white/10 text-stone-600 dark:text-neutral-300 hover:border-emerald-600/30'
                               )}
                             >
                               {slot.timeLabel}
@@ -747,7 +747,7 @@ export function SetterCallDetails() {
 
       {/* NOTES TAB */}
       {activeTab === 'notes' && (
-        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700/30 shadow-sm p-7 h-[500px] flex flex-col">
+        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 h-[500px] flex flex-col">
           <label className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-900 dark:text-white font-['Manrope']">
             <FileText className="h-4 w-4 text-stone-500" /> Historique et Notes de l'appel
           </label>
@@ -770,7 +770,7 @@ export function SetterCallDetails() {
 
       {/* REMINDER TAB */}
       {activeTab === 'reminder' && (
-        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-neutral-700/30 shadow-sm p-7 space-y-5">
+        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
           <div className="flex items-center gap-2 mb-2">
             <Bell className="h-5 w-5 text-stone-500" />
             <h3 className="text-lg font-bold text-stone-900 dark:text-white font-['Manrope']">Programmer un rappel</h3>
@@ -823,9 +823,9 @@ export function SetterCallDetails() {
 
       {/* Footer Actions */}
       {!isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-end gap-5 z-40 border-t border-stone-200/40 dark:border-neutral-700/30">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-end gap-5 z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
-            className="px-8 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 font-['Manrope'] font-bold text-sm hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all">
+            className="px-8 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 font-['Manrope'] font-bold text-sm hover:bg-stone-50 dark:hover:bg-white/5 transition-all">
             Annuler
           </button>
           <button onClick={handleSave} disabled={!isFormValid() || saving}
@@ -840,7 +840,7 @@ export function SetterCallDetails() {
         </div>
       )}
       {isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-neutral-700/30">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
             className="px-10 py-3 rounded-full bg-stone-900 text-white font-['Manrope'] font-bold text-sm hover:bg-stone-800 transition-all shadow-xl active:scale-95">
             Retour aux appels

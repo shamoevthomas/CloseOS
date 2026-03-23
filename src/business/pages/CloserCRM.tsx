@@ -4,6 +4,7 @@ import {
   Building2, Mail, Phone, User, X, UserPlus, Tag,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { PhoneInput } from '../components/PhoneInput'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import toast from 'react-hot-toast'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -450,7 +451,7 @@ export function CloserCRM() {
                     {/* Contact */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-full bg-stone-100 dark:bg-neutral-700 flex items-center justify-center shrink-0">
+                        <div className="h-8 w-8 rounded-full bg-stone-100 dark:bg-white/10 flex items-center justify-center shrink-0">
                           <User className="h-4 w-4 text-stone-400 dark:text-neutral-500" />
                         </div>
                         <div className="min-w-0">
@@ -590,10 +591,7 @@ export function CloserCRM() {
 
               <div>
                 <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">Téléphone</label>
-                <input type="text" value={newProspectForm.phone}
-                  onChange={e => setNewProspectForm({ ...newProspectForm, phone: e.target.value })}
-                  className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl p-2.5 text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
-                  placeholder="+33 6 ..." />
+                <PhoneInput value={newProspectForm.phone} onChange={(v) => setNewProspectForm({ ...newProspectForm, phone: v })} />
               </div>
 
               <div>

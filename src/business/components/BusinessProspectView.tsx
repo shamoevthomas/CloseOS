@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { PhoneInput } from './PhoneInput'
 import { useNavigate } from 'react-router-dom'
 import {
   X, Phone, Mail, Calendar, Pencil, Trash2,
@@ -664,7 +665,7 @@ export function BusinessProspectView({
                     <input type="text" value={editedContact} onChange={e => setEditedContact(e.target.value)} className={INPUT_CLS} placeholder="Nom" />
                     <input type="text" value={editedCompany} onChange={e => setEditedCompany(e.target.value)} className={INPUT_CLS} placeholder="Entreprise" />
                     <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className={INPUT_CLS} placeholder="Email" />
-                    <input type="tel" value={editedPhone} onChange={e => setEditedPhone(e.target.value)} className={INPUT_CLS} placeholder="Téléphone" />
+                    <PhoneInput value={editedPhone} onChange={setEditedPhone} />
                     <div className="flex gap-2 pt-2">
                       <button onClick={handleSaveClient} className="flex-1 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">Sauvegarder</button>
                       <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone) }} className="rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">Annuler</button>
