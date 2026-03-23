@@ -80,6 +80,12 @@ export function CloserDashboard() {
   const noshowEligible = myProspects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
   const noshowRate = noshowEligible.length > 0 ? (noShowProspects.length / noshowEligible.length) * 100 : 0
 
+  // Booking KPI (setter): prospects assigned as setter who got booked (moved past prospect stage)
+  const isSetter = teamMember?.role === 'Setter'
+  const mySetterProspects = prospects.filter(p => p.assigned_setter === teamMember?.id)
+  const bookedProspects = mySetterProspects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const bookingRate = mySetterProspects.length > 0 ? (bookedProspects.length / mySetterProspects.length) * 100 : 0
+
   // Upcoming appointments
   const now = new Date()
   const upcomingAppts = useMemo(() => {
@@ -169,7 +175,7 @@ export function CloserDashboard() {
       </header>
 
       {/* ─── KPI Row ─── */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className={`grid grid-cols-2 ${isSetter ? 'xl:grid-cols-4' : 'xl:grid-cols-5'} gap-6`}>
 
         {/* Revenue */}
         <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
@@ -184,15 +190,29 @@ export function CloserDashboard() {
           </div>
         </Link>
 
-        {/* Closing Rate */}
+        {/* Closing Rate (Closers only) */}
+        {!isSetter && (
+          <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
+            <div className="p-2 rounded-lg bg-stone-100 w-fit">
+              <TrendingUp className="h-4 w-4 text-neutral-600" />
+            </div>
+            <div className="mt-3">
+              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Closing</p>
+              <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
+              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{wonProspects.length} signés / {totalDecided} décidés</p>
+            </div>
+          </Link>
+        )}
+
+        {/* Booking Rate */}
         <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="p-2 rounded-lg bg-stone-100 w-fit">
-            <TrendingUp className="h-4 w-4 text-neutral-600" />
+          <div className="p-2 rounded-lg bg-blue-50 w-fit">
+            <CalendarDays className="h-4 w-4 text-blue-600" />
           </div>
           <div className="mt-3">
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Closing</p>
-            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
-            <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{wonProspects.length} signés / {totalDecided} décidés</p>
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Booking</p>
+            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(bookingRate)}</p>
+            <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{bookedProspects.length} bookés / {mySetterProspects.length} prospects</p>
           </div>
         </Link>
 

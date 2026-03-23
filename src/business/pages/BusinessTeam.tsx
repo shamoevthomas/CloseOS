@@ -319,6 +319,11 @@ export function BusinessTeam() {
     return () => { supabase.removeChannel(channel) }
   }, [effectiveUserId, loadData])
 
+  const isMemberAbsent = (memberId: string) => {
+    const today = new Date().toISOString().slice(0, 10)
+    return absences.some(a => a.team_member_id === memberId && a.start_date <= today && a.end_date >= today)
+  }
+
   const handleDeleteMember = async (memberId: string) => {
     const { error } = await supabase.from('business_team_members').delete().eq('id', memberId)
     if (!error) {
@@ -547,8 +552,8 @@ export function BusinessTeam() {
                                 <span>{memberSlotsCount} créneau{memberSlotsCount !== 1 ? 'x' : ''}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <div className={cn('h-2 w-2 rounded-full', isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600')} />
-                                <span>{isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}</span>
+                                <div className={cn('h-2 w-2 rounded-full', isMemberAbsent(member.id) ? 'bg-[#ffb95f]' : isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600')} />
+                                <span>{isMemberAbsent(member.id) ? 'Absent' : isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}</span>
                               </div>
                               {member.timezone && (
                                 <div className="flex items-center gap-2">
@@ -855,9 +860,9 @@ function IndividualView({
           <div
             className={cn(
               'absolute bottom-1 right-1 w-6 h-6 rounded-full border-4 border-white dark:border-neutral-900',
-              isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600'
+              isMemberAbsent(member.id) ? 'bg-[#ffb95f]' : isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600'
             )}
-            title={isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}
+            title={isMemberAbsent(member.id) ? 'Absent' : isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}
           />
         </div>
         <div className="flex-1 text-center md:text-left">

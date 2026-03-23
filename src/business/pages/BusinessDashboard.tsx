@@ -147,26 +147,34 @@ export function BusinessDashboard() {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [objectives, setObjectives] = useState<Objective[]>([])
+  const [absences, setAbsences] = useState<{ team_member_id: string; start_date: string; end_date: string }[]>([])
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null)
   const [commissionRates, setCommissionRates] = useState<Record<string, { roles: Record<string, number>; members: Record<string, number> }>>({})
+
+  const isMemberAbsent = (memberId: string) => {
+    const today = new Date().toISOString().slice(0, 10)
+    return absences.some(a => a.team_member_id === memberId && a.start_date <= today && a.end_date >= today)
+  }
 
 
   const fetchAll = useCallback(async () => {
     if (!effectiveUserId) return
     setLoading(true)
     try {
-      const [prospectsRes, campaignsRes, appointmentsRes, membersRes, remindersRes] = await Promise.all([
+      const [prospectsRes, campaignsRes, appointmentsRes, membersRes, remindersRes, absencesRes] = await Promise.all([
         supabase.from('business_prospects').select('*').eq('user_id', effectiveUserId),
         supabase.from('business_campaigns').select('*').eq('user_id', effectiveUserId),
         supabase.from('business_appointments').select('*').eq('user_id', effectiveUserId),
         supabase.from('business_team_members').select('*').eq('business_owner_id', effectiveUserId),
         supabase.from('reminders').select('*').eq('user_id', effectiveUserId).eq('is_done', false).order('reminder_date', { ascending: true }).limit(5),
+        supabase.from('business_absences').select('team_member_id, start_date, end_date').eq('business_owner_id', effectiveUserId),
       ])
       setProspects(prospectsRes.data || [])
       setCampaigns(campaignsRes.data || [])
       setAppointments(appointmentsRes.data || [])
       setMembers(membersRes.data || [])
       setReminders(remindersRes.data || [])
+      setAbsences(absencesRes.data || [])
 
       try {
         const res = await fetch(`/api/business?action=objectives-list&user_id=${effectiveUserId}`)
@@ -644,12 +652,19 @@ export function BusinessDashboard() {
                           </span>
                         </td>
                         <td className="py-4 px-3">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${online ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-300'}`} />
-                            <span className={`text-[10px] font-bold uppercase ${online ? 'text-emerald-600' : 'text-neutral-400'}`}>
-                              {online ? 'Online' : 'Offline'}
-                            </span>
-                          </div>
+                          {isMemberAbsent(m.id) ? (
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-[#ffb95f]" />
+                              <span className="text-[10px] font-bold uppercase text-[#ffb95f]">Absent</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${online ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-300'}`} />
+                              <span className={`text-[10px] font-bold uppercase ${online ? 'text-emerald-600' : 'text-neutral-400'}`}>
+                                {online ? 'Online' : 'Offline'}
+                              </span>
+                            </div>
+                          )}
                         </td>
                         <td className="py-4 px-3 text-right">
                           {(() => {
