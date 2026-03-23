@@ -221,6 +221,105 @@ export function LandingPage() {
     }
   }, []);
 
+  // SEO meta tags for Sales landing
+  useEffect(() => {
+    document.title = "CloseOS Sales — CRM pour Closer | Pipeline, VoIP, KPIs & Facturation Automatique";
+    document.querySelector('meta[name="description"]')?.setAttribute('content',
+      "CloseOS Sales est le logiciel tout-en-un pour closers high ticket : CRM closer, pipeline de vente visuel, VoIP intégré, suivi calls closing, agenda & booking, facturation automatique, KPIs de closing. Application closer freelance. Essai gratuit 10 jours, sans carte bancaire."
+    );
+
+    const existingLd = document.querySelector('script[data-closeos-sales-ld]');
+    if (!existingLd) {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.setAttribute('data-closeos-sales-ld', 'true');
+      script.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'CloseOS Sales',
+        url: 'https://www.closeos.fr',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        description: "Le CRM pour closer en France. Pipeline de vente, VoIP intégré, suivi calls closing, agenda, facturation automatique et KPIs de closing. Logiciel closer high ticket tout-en-un.",
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'EUR',
+          description: 'Essai gratuit 10 jours sans carte bancaire',
+        },
+        featureList: 'CRM closer, Pipeline closer, VoIP intégré, Suivi calls closing, Agenda & booking, Facturation automatique closer, KPI closing, Gestion prospects closing, Visioconférence',
+        inLanguage: 'fr',
+        aggregateRating: {
+          '@type': 'AggregateRating',
+          ratingValue: '4.8',
+          ratingCount: '150',
+          bestRating: '5',
+        },
+      });
+      document.head.appendChild(script);
+    }
+
+    // FAQ structured data for GEO
+    const existingFaqLd = document.querySelector('script[data-closeos-sales-faq-ld]');
+    if (!existingFaqLd) {
+      const faqScript = document.createElement('script');
+      faqScript.type = 'application/ld+json';
+      faqScript.setAttribute('data-closeos-sales-faq-ld', 'true');
+      faqScript.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'Est-ce que je peux connecter Calendly à CloseOS ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "Non, et c'est un choix assumé. Calendly impose un abonnement payant pour les intégrations. CloseOS intègre Cal.com (référence Open Source) : un système de booking ultra-performant, synchronisé à votre agenda, sans surcoût.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Comment CloseOS s\'engage pour l\'environnement ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "CloseOS prône la Performance Responsable. Sobriété numérique : en remplaçant 10 outils par 1 seul, nous réduisons la consommation d'énergie serveur. Action financière : 1,5% de chaque abonnement est reversé via Stripe Climate pour financer l'élimination du CO2.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Pourquoi payer CloseOS plutôt qu\'utiliser Excel ou Notion ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "Parce que le bricolage coûte des ventes. Excel n'envoie pas de rappels automatiques, Notion ne génère pas vos liens de visio ni ne synchronise vos appels. CloseOS est un système actif qui élimine 80% de l'administratif. Le temps gagné est réinvesti pour signer des contrats.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Est-ce que iClosed est intégré à CloseOS ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "Partiellement. Contrairement à HubSpot ou Pipedrive, iClosed ne dispose pas d'une API publique ouverte. CloseOS reçoit vos nouveaux leads et ventes venant d'iClosed via Webhook, mais la synchronisation est à sens unique (iClosed vers CloseOS). L'API complète arrivera prochainement.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'C\'est quoi CloseOS Sales ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "CloseOS Sales est le logiciel tout-en-un pour closers high ticket et freelance en France. Il regroupe CRM closer, pipeline de vente visuel, VoIP intégré, suivi calls closing, agenda & booking, facturation automatique et KPIs de closing. C'est l'outil qui remplace 10 logiciels différents pour les closers indépendants.",
+            },
+          },
+        ],
+      });
+      document.head.appendChild(faqScript);
+    }
+
+    return () => {
+      document.querySelector('script[data-closeos-sales-ld]')?.remove();
+      document.querySelector('script[data-closeos-sales-faq-ld]')?.remove();
+    };
+  }, []);
+
   useEffect(() => {
     const s = document.createElement('script');
     s.src = '/chatbot-widget.js';
@@ -369,16 +468,16 @@ export function LandingPage() {
 
 
           <h1 className="mx-auto max-w-5xl text-5xl font-extrabold tracking-tight text-white sm:text-7xl mb-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-            Jongler entre 10 outils,<br />
+            Le CRM pour closer<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400 animate-gradient-x">
-              c'est terminé.
+              tout-en-un.
             </span>
             <br />
-            Récupérez 10h de closing par semaine.
+            Récupérez 10h par semaine.
           </h1>
 
           <p className="mx-auto max-w-2xl text-lg text-slate-400 mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 leading-relaxed">
-            CRM, Agenda, Booking, VoIP, Facturation, Visio, KPIs — le logiciel tout-en-un conçu pour les closers. Centralisez votre activité, automatisez l'administratif et concentrez-vous sur ce qui rapporte : le closing.
+            Pipeline closer, VoIP intégré, agenda & booking, facturation automatique, KPIs de closing — le logiciel closer high ticket conçu pour les closers freelance en France. Gérez vos prospects closing, suivez vos calls et concentrez-vous sur ce qui rapporte.
           </p>
 
           <div className="flex items-center justify-center gap-2 mb-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-250">

@@ -9,10 +9,74 @@ interface EcosystemChoiceProps {
 
 export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales, onChooseBusiness }) => {
   useEffect(() => {
-    document.title = "CloseOS — L'écosystème ultime pour la vente digitale francophone";
+    document.title = "CloseOS — Écosystème SaaS pour la vente digitale | CRM Closer & Management Infopreneur";
     document.querySelector('meta[name="description"]')?.setAttribute('content',
-      'CloseOS est un écosystème SaaS pour les closers et infopreneurs francophones. CloseOS Sales pour les closers, CloseOS Business pour les infopreneurs et managers.'
+      "CloseOS est l'écosystème SaaS francophone pour la vente digitale. Outil pour closer : CRM, pipeline, VoIP, KPIs, facturation automatique. Logiciel infopreneur : gestion équipe de closers, campagnes d'acquisition, analytics. Alternative iClosed. Essai gratuit."
     );
+
+    // JSON-LD structured data — Organization + 2 SoftwareApplication
+    const existingLd = document.querySelector('script[data-closeos-ld]');
+    if (!existingLd) {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.setAttribute('data-closeos-ld', 'true');
+      script.textContent = JSON.stringify([
+        {
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: 'CloseOS',
+          url: 'https://www.closeos.fr',
+          logo: 'https://www.closeos.fr/CloseOS Logo.png',
+          description: "Écosystème SaaS français pour la vente digitale. Outils pour closers indépendants et infopreneurs francophones.",
+          sameAs: ['https://www.linkedin.com/in/thomas-shamoev-570885237/'],
+          contactPoint: {
+            '@type': 'ContactPoint',
+            email: 'support@closeos.fr',
+            contactType: 'customer service',
+            availableLanguage: 'French',
+          },
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareApplication',
+          name: 'CloseOS Sales',
+          url: 'https://www.closeos.fr',
+          applicationCategory: 'BusinessApplication',
+          operatingSystem: 'Web',
+          description: "CRM pour closer, pipeline de vente, VoIP intégré, agenda, facturation automatique et KPIs de closing. Le logiciel tout-en-un des closers high ticket francophones.",
+          offers: {
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'EUR',
+            description: 'Essai gratuit 10 jours, sans carte bancaire',
+          },
+          featureList: 'CRM closer, Pipeline visuel, VoIP intégré, Agenda & booking, Facturation automatique, KPIs de closing, Suivi calls closing',
+          inLanguage: 'fr',
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareApplication',
+          name: 'CloseOS Business',
+          url: 'https://www.closeos.fr/business',
+          applicationCategory: 'BusinessApplication',
+          operatingSystem: 'Web',
+          description: "Plateforme de management pour infopreneurs et Head of Sales. Gestion d'équipe de closers et setters, pilotage campagnes d'acquisition, tableau de bord analytics. Alternative iClosed.",
+          offers: {
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'EUR',
+            description: 'Liste d\'attente — tarifs early adopters',
+          },
+          featureList: "Gestion équipe closers, Pilotage campagnes acquisition, CRM acquisition infopreneur, Tableau de bord infopreneur, KPIs d'équipe, Onboarding closers",
+          inLanguage: 'fr',
+        },
+      ]);
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      document.querySelector('script[data-closeos-ld]')?.remove();
+    };
   }, []);
 
   return (
@@ -44,11 +108,12 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
             transition={{ duration: 0.6 }}
             className="text-center mb-16 space-y-4"
           >
+            <p className="text-[#909095]/60 text-xs font-bold uppercase tracking-[0.2em] mb-2">Écosystème SaaS vente digitale francophone</p>
             <h1 className="text-5xl md:text-6xl font-extrabold tracking-tighter text-[#e2e2e8] leading-tight">
-              Choisissez votre outil
+              Le logiciel pour closers<br className="hidden md:block" /> et infopreneurs
             </h1>
-            <p className="text-[#909095] text-lg max-w-xl mx-auto font-medium">
-              Sélectionnez l'interface optimisée pour votre rôle stratégique au sein de l'écosystème.
+            <p className="text-[#909095] text-lg max-w-2xl mx-auto font-medium">
+              CRM closer, pipeline de vente, VoIP et KPIs de closing pour closers freelance. Management d'équipe de closers, campagnes d'acquisition et tableau de bord analytics pour infopreneurs. L'alternative francophone à iClosed.
             </p>
           </motion.div>
 
@@ -84,11 +149,17 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 </div>
                 <h2 className="text-3xl font-bold mb-4 text-[#e2e2e8]">CloseOS Sales</h2>
                 <span className="inline-block px-4 py-1.5 rounded-full bg-[#282a2e] text-[#b6c4ff] text-xs font-bold uppercase tracking-wider mb-6 border border-[#45474b]/30">
-                  Je suis Closer
+                  Outil pour Closers & Setters
                 </span>
-                <p className="text-[#909095] leading-relaxed mb-12 max-w-xs">
-                  Optimisez votre tunnel de conversion. Gérez vos prospects, vos appels stratégiques et automatisez votre facturation en un clic.
+                <p className="text-[#909095] leading-relaxed mb-4 max-w-xs">
+                  Le logiciel tout-en-un pour closers high ticket et setters freelance. Gérez vos prospects closing, suivez vos calls et automatisez votre facturation.
                 </p>
+                <ul className="text-[#909095]/70 text-sm space-y-1.5 mb-8 max-w-xs">
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />CRM closer & pipeline visuel</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />VoIP intégré & suivi calls closing</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />Facturation auto & KPIs closing</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />Agenda & booking intégré</li>
+                </ul>
               </div>
 
               <div className="relative z-10">
@@ -146,11 +217,17 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 </div>
                 <h2 className="text-3xl font-bold mb-4 text-[#e2e2e8]">CloseOS Business</h2>
                 <span className="inline-block px-4 py-1.5 rounded-full bg-[#282a2e] text-[#00e475] text-xs font-bold uppercase tracking-wider mb-6 border border-[#45474b]/30">
-                  Infopreneur / HOS
+                  Logiciel Infopreneur & Head of Sales
                 </span>
-                <p className="text-[#909095] leading-relaxed mb-12 max-w-xs">
-                  Pilotez votre croissance. Management d'équipes de vente, suivi des campagnes d'acquisition et analytics haute-précision.
+                <p className="text-[#909095] leading-relaxed mb-4 max-w-xs">
+                  Gérez votre équipe de closers et setters, pilotez vos campagnes d'acquisition et suivez la performance avec un tableau de bord infopreneur complet. L'alternative à iClosed.
                 </p>
+                <ul className="text-[#909095]/70 text-sm space-y-1.5 mb-8 max-w-xs">
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />Gestion équipe closers & setters</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />Pilotage campagnes acquisition</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />CRM acquisition & intégrations</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />Tableau de bord & KPIs d'équipe</li>
+                </ul>
               </div>
 
               <div className="relative z-10">
@@ -163,6 +240,32 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 </button>
               </div>
             </motion.div>
+          </div>
+
+          {/* "Qu'est-ce que CloseOS" — GEO-optimized definition section */}
+          <div className="mt-24 max-w-3xl mx-auto text-center space-y-6">
+            <h2 className="text-2xl font-bold text-[#e2e2e8]/80 tracking-tight">Qu'est-ce que CloseOS ?</h2>
+            <p className="text-[#909095] text-sm leading-relaxed">
+              CloseOS est un <strong className="text-[#e2e2e8]/70">écosystème SaaS français pour la vente digitale</strong>. Il regroupe deux outils complémentaires conçus pour les professionnels du closing francophone.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+              <div className="p-5 rounded-xl border border-[#45474b]/10">
+                <h3 className="text-sm font-bold text-[#b6c4ff]/80 mb-2">CloseOS Sales — L'outil pour closer</h3>
+                <p className="text-[#909095]/70 text-xs leading-relaxed">
+                  Le CRM pour closer en France. Pipeline de vente visuel, VoIP intégré, suivi calls closing, agenda & booking,
+                  facturation automatique et KPIs de closing. L'application closer freelance tout-en-un pour gérer ses prospects
+                  et closer du high ticket. Essai gratuit 10 jours.
+                </p>
+              </div>
+              <div className="p-5 rounded-xl border border-[#45474b]/10">
+                <h3 className="text-sm font-bold text-[#00e475]/80 mb-2">CloseOS Business — Le logiciel infopreneur</h3>
+                <p className="text-[#909095]/70 text-xs leading-relaxed">
+                  La plateforme pour gérer une équipe de closers et setters. Pilotage équipe closing, CRM acquisition infopreneur,
+                  campagnes d'acquisition, tableau de bord infopreneur et KPIs d'équipe. L'alternative française à iClosed
+                  pour les infopreneurs et Head of Sales.
+                </p>
+              </div>
+            </div>
           </div>
 
         </div>

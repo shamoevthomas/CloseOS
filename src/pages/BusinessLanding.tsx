@@ -45,6 +45,115 @@ export const BusinessLanding: React.FC = () => {
     setTimeout(() => navigate('/landing'), 500);
   };
 
+  // SEO meta tags for Business landing
+  useEffect(() => {
+    document.title = "CloseOS Business — Gérer Équipe de Closers | Logiciel Infopreneur Closing & Pilotage";
+    document.querySelector('meta[name="description"]')?.setAttribute('content',
+      "CloseOS Business est la plateforme pour gérer une équipe de closers et setters. Pilotage équipe closing, CRM acquisition infopreneur, campagnes d'acquisition, tableau de bord infopreneur, KPIs d'équipe. Alternative iClosed. Logiciel infopreneur closing francophone."
+    );
+
+    const existingLd = document.querySelector('script[data-closeos-biz-ld]');
+    if (!existingLd) {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.setAttribute('data-closeos-biz-ld', 'true');
+      script.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'CloseOS Business',
+        url: 'https://www.closeos.fr/business',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        description: "Plateforme de management pour infopreneurs et Head of Sales. Gestion d'équipe de closers et setters, pilotage campagnes d'acquisition, CRM acquisition, tableau de bord infopreneur. Alternative à iClosed, 100% en français.",
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'EUR',
+          description: 'Liste d\'attente — tarifs early adopters',
+        },
+        featureList: "Gérer équipe de closers, Pilotage équipe closing, Logiciel infopreneur closing, CRM acquisition infopreneur, Outil gestion setter closer, Piloter campagne acquisition closing, Tableau de bord infopreneur, KPIs d'équipe, Onboarding closers automatisé",
+        inLanguage: 'fr',
+      });
+      document.head.appendChild(script);
+    }
+
+    // FAQ structured data for GEO
+    const existingFaqLd = document.querySelector('script[data-closeos-biz-faq-ld]');
+    if (!existingFaqLd) {
+      const faqScript = document.createElement('script');
+      faqScript.type = 'application/ld+json';
+      faqScript.setAttribute('data-closeos-biz-faq-ld', 'true');
+      faqScript.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'A qui est destiné CloseOS Business ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "CloseOS Business est destiné à toute personne qui vend en ligne : infopreneurs, agences, Head of Sales, solopreneurs et ceux qui lancent des Challenges. Même un closer seul ou un duo setter/closer peut tirer parti de l'outil de management.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'CloseOS Business est-il compatible avec mes outils CRM actuels ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "Oui. CloseOS Business se connecte nativement à 6 plateformes : HubSpot (bidirectionnel), Pipedrive (bidirectionnel), GoHighLevel GHL (bidirectionnel), Airtable (bidirectionnel), Systeme.io (webhook) et iClosed (unidirectionnel via webhook). Le CRM intégré CloseOS Business offre les meilleures performances pour l'écosystème.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Pourquoi utiliser le CRM CloseOS si j\'ai déjà HubSpot ou Pipedrive ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "CloseOS ne remplace pas forcément votre CRM — il s'y connecte. Gardez HubSpot, Pipedrive, GoHighLevel ou Airtable comme source marketing, et utilisez CloseOS comme cockpit de closing optimisé. La synchronisation bidirectionnelle assure que chaque prospect est à jour des deux côtés. Le CRM natif CloseOS offre l'assignation automatique setter/closer, capture de leads, tracking campagnes et analytics intégrés.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Mes closers ont-ils accès à toutes les données ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "Non. Vous définissez les niveaux d'accès. Chaque closer voit uniquement ses prospects, ses KPIs et son pipeline. Les données sensibles (CA global, marges, contacts stratégiques) restent visibles par vous seul.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'C\'est quoi CloseOS Business ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "CloseOS Business est la plateforme de management pour infopreneurs et Head of Sales francophones. Elle permet de gérer une équipe de closers et setters, piloter les campagnes d'acquisition, suivre les KPIs d'équipe et automatiser l'onboarding des closers. C'est l'alternative française à iClosed, conçue pour le pilotage d'équipe closing.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Combien de closers puis-je ajouter dans CloseOS Business ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "Autant que vous voulez. CloseOS Business n'impose aucune limite sur la taille de votre équipe de closers et setters.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Les données sont-elles sécurisées et conformes au RGPD ?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "Oui. CloseOS Business est 100% conforme au RGPD. Toutes les données sont hébergées de manière sécurisée, isolées par organisation, et aucun tiers n'y a accès. Vous restez propriétaire de vos données à tout moment.",
+            },
+          },
+        ],
+      });
+      document.head.appendChild(faqScript);
+    }
+
+    return () => {
+      document.querySelector('script[data-closeos-biz-ld]')?.remove();
+      document.querySelector('script[data-closeos-biz-faq-ld]')?.remove();
+    };
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 300);
@@ -140,11 +249,11 @@ export const BusinessLanding: React.FC = () => {
             </div>
 
             <h1 className="text-5xl md:text-7xl lg:text-[80px] font-bold leading-[1.1] tracking-tight text-[#111111]">
-              L'écosystème ultime pour piloter votre business.
+              Gérez votre équipe de closers et pilotez votre acquisition.
             </h1>
-            
+
             <p className="text-stone-600 text-lg md:text-xl font-medium leading-relaxed max-w-2xl">
-              Gérez vos ventes, pilotez vos équipes et automatisez votre croissance. L'infrastructure complète pour prendre le contrôle total de votre empire d'infoproduits et scaler sereinement.
+              Le logiciel infopreneur pour le pilotage de votre équipe closing. CRM acquisition, gestion setter-closer, campagnes d'acquisition et tableau de bord analytics. L'alternative à iClosed, conçue pour les infopreneurs francophones.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-4">
@@ -218,7 +327,7 @@ export const BusinessLanding: React.FC = () => {
               </div>
               <h2 className="text-5xl md:text-6xl font-bold mb-6 text-[#111111] tracking-tight">CloseOS devient votre Système d'acquisition</h2>
               <p className="text-stone-500 text-xl max-w-3xl mx-auto font-medium">
-                Oubliez la complexité de HubSpot ou Notion. Profitez d'un CRM conçu exclusivement pour le closing haute performance.
+                Un CRM conçu exclusivement pour le closing haute performance — avec synchronisation native vers vos outils existants.
               </p>
             </div>
 
@@ -241,6 +350,50 @@ export const BusinessLanding: React.FC = () => {
               <CRMKPI index={1} title="KPI CRM • Performance" value="4,850€" description="Deal moyen encaissé" />
               <CRMKPI index={2} title="KPI CRM • Vélocité" value="12 Jours" description="Cycle de vente moyen (Lead to Close)" />
             </div>
+
+            {/* Integrations Banner */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.6 }}
+              className="mt-16 pt-16 border-t border-stone-200"
+            >
+              <div className="text-center mb-10">
+                <p className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-3">Intégrations natives</p>
+                <h3 className="text-2xl md:text-3xl font-bold text-[#111111] tracking-tight">
+                  Connectez vos outils existants. Ou utilisez tout en natif.
+                </h3>
+                <p className="text-stone-500 text-base mt-3 max-w-2xl mx-auto">
+                  CloseOS se synchronise avec vos CRM et outils d'acquisition en bidirectionnel. Gardez votre stack ou centralisez tout — c'est vous qui décidez.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {[
+                  { name: 'HubSpot', type: 'Sync bidirectionnelle' },
+                  { name: 'Pipedrive', type: 'Sync bidirectionnelle' },
+                  { name: 'GoHighLevel', type: 'Sync bidirectionnelle' },
+                  { name: 'Airtable', type: 'Sync bidirectionnelle' },
+                  { name: 'Systeme.io', type: 'Webhook' },
+                  { name: 'iClosed', type: 'Webhook' },
+                  { name: 'Google Calendar', type: 'Sync bidirectionnelle' },
+                  { name: 'Google Meet', type: 'Intégré' },
+                  { name: 'Stripe', type: 'Paiements' },
+                ].map((integration, i) => (
+                  <motion.div
+                    key={integration.name}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.3, delay: i * 0.05 }}
+                    className="flex flex-col items-center gap-1.5 px-6 py-4 bg-white rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                  >
+                    <span className="text-sm font-bold text-[#111111]">{integration.name}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">{integration.type}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
           </div>
         </motion.section>
 
@@ -271,7 +424,11 @@ export const BusinessLanding: React.FC = () => {
               />
               <FAQItem
                 question="CloseOS Business est-il compatible avec mes outils CRM actuels ?"
-                answer={<p>Oui. Tu peux connecter ton CRM existant — <strong>iClosed</strong>, <strong>HubSpot</strong> ou <strong>Pipedrive</strong> sont supportés. Cela dit, nous recommandons d'utiliser le <strong>CRM intégré CloseOS Business</strong> : c'est lui qui offre les meilleures performances et la gestion la plus simple dans cet écosystème. Tout est conçu pour fonctionner ensemble, sans friction.</p>}
+                answer={<div className="space-y-3"><p>Oui. En plus de notre propre CRM intégré, CloseOS Business se connecte nativement à <strong>6 plateformes</strong> :</p><ul className="list-disc pl-5 space-y-1"><li><strong>HubSpot</strong> — synchronisation complète bidirectionnelle</li><li><strong>Pipedrive</strong> — synchronisation complète bidirectionnelle</li><li><strong>GoHighLevel (GHL)</strong> — synchronisation complète bidirectionnelle</li><li><strong>Airtable</strong> — synchronisation complète bidirectionnelle</li><li><strong>Systeme.io</strong> — import de contacts via webhook</li><li><strong>iClosed</strong> — synchronisation unidirectionnelle via webhook</li></ul><p>Cela dit, nous recommandons d'utiliser le <strong>CRM intégré CloseOS Business</strong> : c'est lui qui offre les meilleures performances et la gestion la plus simple dans cet écosystème. Tout est conçu pour fonctionner ensemble, sans friction.</p></div>}
+              />
+              <FAQItem
+                question="Pourquoi utiliser le CRM CloseOS si j'ai déjà HubSpot ou Pipedrive ?"
+                answer={<div className="space-y-3"><p>CloseOS ne remplace pas forcément votre CRM actuel — il <strong>s'y connecte</strong>. Vous pouvez garder HubSpot, Pipedrive, GoHighLevel ou Airtable comme source de vérité marketing, et utiliser CloseOS comme <strong>cockpit de closing</strong> optimisé pour votre équipe.</p><p>La synchronisation bidirectionnelle signifie que chaque prospect ajouté ou mis à jour d'un côté est reflété de l'autre. Vos closers travaillent dans CloseOS (pipeline, appels, KPIs), et vos données marketing restent à jour dans votre stack existante.</p><p>Pour les équipes qui veulent tout centraliser, le <strong>CRM natif CloseOS</strong> offre les meilleures performances : assignation automatique setter/closer, capture de leads, tracking de campagnes et analytics intégrés sans aucune config externe.</p></div>}
               />
               <FAQItem
                 question="Mes données sont-elles sécurisées et conformes au RGPD ?"
@@ -930,7 +1087,7 @@ const rolesData: RoleData[] = [
         items: [
           'Vue Kanban drag-drop + Tableau de TOUS les prospects',
           'Assignation setter/closer : manuelle, tournante ou hasard',
-          '8 stages de prospect avec sync HubSpot, Pipedrive, iClosed',
+          '8 stages avec sync HubSpot, Pipedrive, GoHighLevel, Airtable, Systeme.io, iClosed',
           'Filtres avancés : période, membre, statut, offre',
         ],
       },

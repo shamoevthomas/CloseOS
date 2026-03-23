@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /business
+Allow: /landing
+
+Disallow: /dashboard
+Disallow: /login
+Disallow: /register
+Disallow: /business/dashboard
+Disallow: /business/login
+Disallow: /business/register
+Disallow: /api/
+
+Sitemap: https://www.closeos.fr/sitemap.xml
