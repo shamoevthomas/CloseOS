@@ -322,7 +322,7 @@ export function BusinessProspectView({
   // -- Optimistic update helper --
   const handleUpdate = (updates: Partial<BusinessProspect>) => {
     setLocal(prev => ({ ...prev, ...updates }))
-    const dbUpdates: any = { ...updates }
+    const { id: _id, ...dbUpdates }: any = { ...updates }
     if (updates.call_notes !== undefined) {
       dbUpdates.call_notes = updates.call_notes
     }
