@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
-import { TrendingUp, ChevronRight, Shield, Zap, ShieldCheck } from 'lucide-react';
+import { TrendingUp, ChevronRight } from 'lucide-react';
 
 interface EcosystemChoiceProps {
   onChooseSales: () => void;
@@ -24,26 +24,9 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
         color: '#e2e2e8',
       }}
     >
-      {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 backdrop-blur-xl">
-        <div className="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto">
-          <div className="text-2xl font-bold tracking-tight text-[#e2e2e8]">
-            CloseOS
-          </div>
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="#" className="text-[#909095] hover:text-[#e2e2e8] transition-colors">Solutions</a>
-            <a href="#" className="text-[#909095] hover:text-[#e2e2e8] transition-colors">Pricing</a>
-            <a href="#" className="text-[#909095] hover:text-[#e2e2e8] transition-colors">Support</a>
-            <button className="bg-[#e2e2e8] text-[#1a1c20] px-6 py-2 rounded-lg font-semibold hover:opacity-80 transition-opacity duration-200 ease-in-out">
-              Log In
-            </button>
-          </div>
-        </div>
-      </nav>
-
       {/* Main Content */}
       <main
-        className="flex-grow flex flex-col items-center justify-center relative pt-24 pb-12 overflow-hidden"
+        className="flex-grow flex flex-col items-center justify-center relative py-12 overflow-hidden"
         style={{
           backgroundImage:
             'radial-gradient(at 0% 0%, rgba(182, 196, 255, 0.05) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(0, 228, 117, 0.05) 0px, transparent 50%)',
@@ -182,40 +165,38 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
             </motion.div>
           </div>
 
-          {/* Bottom Trust Badges */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.4 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="mt-20 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16"
-          >
-            <div className="flex items-center gap-3">
-              <Shield className="w-5 h-5 text-[#e2e2e8]" />
-              <span className="text-xs font-semibold uppercase tracking-widest">Infrastructures sécurisées</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Zap className="w-5 h-5 text-[#e2e2e8]" />
-              <span className="text-xs font-semibold uppercase tracking-widest">Haute-performance</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="w-5 h-5 text-[#e2e2e8]" />
-              <span className="text-xs font-semibold uppercase tracking-widest">Standard Entreprise</span>
-            </div>
-          </motion.div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer
-        className="w-full py-12"
-        style={{ background: 'linear-gradient(to top, #1a1c20, transparent)', backgroundColor: '#111318' }}
-      >
-        <div className="flex flex-col md:flex-row justify-between items-center px-12 opacity-60 text-[#909095] text-[10px] uppercase tracking-[0.05rem] font-medium">
-          <div>© 2025 CloseOS. High-Performance Revenue Systems.</div>
-          <div className="flex space-x-8 mt-4 md:mt-0">
-            <a href="#" className="hover:text-[#00e475] transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-[#00e475] transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-[#00e475] transition-colors">Security</a>
+      <footer className="border-t border-white/5 py-6 pb-16" style={{ backgroundColor: '#111318' }}>
+        <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold tracking-tight text-[#e2e2e8]">CloseOS</span>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-4 text-xs text-[#909095]">
+            <span>© 2026 CloseOS.fr</span>
+            <span className="hidden sm:inline">•</span>
+            <a href="/mentions-legales" className="hover:text-[#e2e2e8] transition-colors">Mentions Légales</a>
+            <span className="hidden sm:inline">•</span>
+            <a href="/cgu" className="hover:text-[#e2e2e8] transition-colors">CGU</a>
+            <span className="hidden sm:inline">•</span>
+            <a href="/cgv" className="hover:text-[#e2e2e8] transition-colors">CGV</a>
+            <span className="hidden sm:inline">•</span>
+            <a href="/confidentialite" className="hover:text-[#e2e2e8] transition-colors">Politique de Confidentialité</a>
+          </div>
+
+          <div className="flex gap-6 text-xs">
+            <a
+              href="https://www.linkedin.com/in/thomas-shamoev-570885237/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#909095] hover:text-[#e2e2e8] transition-colors"
+            >
+              LinkedIn
+            </a>
+            <a href="mailto:support@closeos.fr" className="text-[#909095] hover:text-[#e2e2e8] transition-colors">support@closeos.fr</a>
           </div>
         </div>
       </footer>
