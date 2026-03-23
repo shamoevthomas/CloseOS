@@ -46,9 +46,7 @@ export function BusinessInvoiceGeneratorModal({
   const [selectedMethodId, setSelectedMethodId] = useState<string>('custom')
 
   // Invoice metadata
-  const [invoiceNumber, setInvoiceNumber] = useState(
-    `FAC-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
-  )
+  const [invoiceNumber, setInvoiceNumber] = useState('')
 
   // Issuer fields
   const [issuerName, setIssuerName] = useState('')
@@ -104,7 +102,10 @@ export function BusinessInvoiceGeneratorModal({
     [deals, teamMember?.id]
   )
 
-  // Group deals into line items (like Sales)
+  // Group deals into line items (like Sales), with period-aware installment proration
+  const pStart = useMemo(() => new Date(startDate), [startDate])
+  const pEnd = useMemo(() => { const d = new Date(endDate); d.setHours(23, 59, 59, 999); return d }, [endDate])
+
   const groupDeals = (dealList: BusinessProspect[]) => {
     const groups: Record<string, { description: string; count: number; total: number; unitPrice: number }> = {}
 
@@ -116,9 +117,24 @@ export function BusinessInvoiceGeneratorModal({
         : 'Paiement Comptant'
 
       const key = `${offerLabel}-${paymentLabel}`
-
       const fullValue = deal.value || 0
-      const amountInPeriod = isInstallment ? fullValue / (deal.installments || 1) : fullValue
+
+      let amountInPeriod: number
+      if (!isInstallment) {
+        amountInPeriod = fullValue
+      } else {
+        const months = deal.installments || 1
+        const monthlyValue = fullValue / months
+        const dealDate = new Date(deal.last_contact || deal.created_at || '')
+        let count = 0
+        for (let i = 0; i < months; i++) {
+          const instDate = new Date(dealDate)
+          instDate.setMonth(instDate.getMonth() + i)
+          if (instDate >= pStart && instDate <= pEnd) count++
+        }
+        amountInPeriod = monthlyValue * count
+      }
+
       const dealCommission = amountInPeriod * rate
 
       if (!groups[key]) {
@@ -161,6 +177,23 @@ export function BusinessInvoiceGeneratorModal({
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
 
   // ---------- DATA LOADING ----------
+
+  // Generate next invoice number (FAC-YYYY-XX)
+  useEffect(() => {
+    if (!effectiveUserId || !isOpen) return
+    const loadNextNumber = async () => {
+      const year = new Date().getFullYear()
+      const { count, error } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', effectiveUserId)
+        .like('invoice_number', `FAC-${year}-%`)
+
+      const next = (count || 0) + 1
+      setInvoiceNumber(`FAC-${year}-${String(next).padStart(2, '0')}`)
+    }
+    loadNextNumber()
+  }, [effectiveUserId, isOpen])
 
   // Load issuer profiles
   useEffect(() => {
@@ -482,7 +515,7 @@ export function BusinessInvoiceGeneratorModal({
 
   const handleClose = () => {
     setStep(1)
-    setInvoiceNumber(`FAC-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`)
+    setInvoiceNumber('')
     setTvaApplicable(false)
     setLatePenaltyRate(15)
     setLatePenaltyFixed(40)

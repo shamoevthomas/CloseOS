@@ -77,24 +77,76 @@ export function CloserFactures() {
 
   useEffect(() => { fetchInvoices() }, [fetchInvoices])
 
-  // Won prospects assigned to me (as closer OR setter, no double-count)
+  // Helper: check if a deal (cash or installment) overlaps the selected period
+  const isDealInPeriod = useCallback((p: typeof prospects[0], start: Date, end: Date) => {
+    const dealDate = new Date(p.last_contact || p.created_at || '')
+    if (isNaN(dealDate.getTime())) return false
+
+    const isInstallment = p.payment_type === 'installments' || (p.installments && p.installments > 1)
+
+    if (!isInstallment) {
+      // Cash: deal date must be within period
+      return dealDate >= start && dealDate <= end
+    }
+
+    // Installment: at least one monthly payment falls within the period
+    const months = p.installments || 1
+    const endDateDeal = new Date(dealDate)
+    endDateDeal.setMonth(endDateDeal.getMonth() + (months - 1))
+    return dealDate <= end && endDateDeal >= start
+  }, [])
+
+  // Helper: compute how much revenue falls within the period for a deal
+  const revenueInPeriod = useCallback((p: typeof prospects[0], start: Date, end: Date) => {
+    const fullValue = p.value || 0
+    const isInstallment = p.payment_type === 'installments' || (p.installments && p.installments > 1)
+
+    if (!isInstallment) return fullValue
+
+    const months = p.installments || 1
+    const monthlyValue = fullValue / months
+    const dealDate = new Date(p.last_contact || p.created_at || '')
+    let count = 0
+    for (let i = 0; i < months; i++) {
+      const instDate = new Date(dealDate)
+      instDate.setMonth(instDate.getMonth() + i)
+      if (instDate >= start && instDate <= end) count++
+    }
+    return monthlyValue * count
+  }, [])
+
+  // Period bounds
+  const periodStart = useMemo(() => new Date(startDate), [startDate])
+  const periodEnd = useMemo(() => {
+    const d = new Date(endDate)
+    d.setHours(23, 59, 59, 999)
+    return d
+  }, [endDate])
+
+  // Won prospects assigned to me, filtered by period
   const myWonProspects = useMemo(
     () => prospects.filter(p =>
-      p.stage === 'won' && (p.assigned_to === teamMember?.id || p.assigned_setter === teamMember?.id)
+      p.stage === 'won'
+      && (p.assigned_to === teamMember?.id || p.assigned_setter === teamMember?.id)
+      && isDealInPeriod(p, periodStart, periodEnd)
     ),
-    [prospects, teamMember?.id]
+    [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod]
   )
 
   // Closer deals only (for KPI breakdown)
   const myCloserDeals = useMemo(
-    () => prospects.filter(p => p.stage === 'won' && p.assigned_to === teamMember?.id),
-    [prospects, teamMember?.id]
+    () => prospects.filter(p =>
+      p.stage === 'won' && p.assigned_to === teamMember?.id && isDealInPeriod(p, periodStart, periodEnd)
+    ),
+    [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod]
   )
 
   // Setter deals only (not also closer, to avoid double-counting)
   const mySetterDeals = useMemo(
-    () => prospects.filter(p => p.stage === 'won' && p.assigned_setter === teamMember?.id && p.assigned_to !== teamMember?.id),
-    [prospects, teamMember?.id]
+    () => prospects.filter(p =>
+      p.stage === 'won' && p.assigned_setter === teamMember?.id && p.assigned_to !== teamMember?.id && isDealInPeriod(p, periodStart, periodEnd)
+    ),
+    [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod]
   )
 
   // Filter invoices by date range + only mine
@@ -114,22 +166,16 @@ export function CloserFactures() {
   const commissionRateNum = teamMember?.commission_rate ? Number(teamMember.commission_rate) : 10
   const rate = commissionRateNum / 100
 
-  // KPIs — compute commission taking installments into account
+  // KPIs — compute revenue & commission for the selected period (with installment proration)
   const totalRevenue = useMemo(() =>
-    myWonProspects.reduce((sum, p) => sum + (p.value || 0), 0),
-    [myWonProspects]
+    myWonProspects.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd), 0),
+    [myWonProspects, periodStart, periodEnd, revenueInPeriod]
   )
 
-  const commissionEstimee = useMemo(() => {
-    let total = 0
-    myWonProspects.forEach(p => {
-      const fullValue = p.value || 0
-      const isInstallment = p.payment_type === 'installments' || (p.installments && p.installments > 1)
-      const amountInPeriod = isInstallment ? fullValue / (p.installments || 1) : fullValue
-      total += amountInPeriod * rate
-    })
-    return total
-  }, [myWonProspects, rate])
+  const commissionEstimee = useMemo(() =>
+    myWonProspects.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd) * rate, 0),
+    [myWonProspects, periodStart, periodEnd, revenueInPeriod, rate]
+  )
 
   const pendingInvoices = useMemo(() =>
     filteredInvoices.filter(inv => ['en_attente', 'retard', 'en attente', 'à payer', 'en cours'].includes(inv.status)),
