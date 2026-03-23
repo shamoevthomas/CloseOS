@@ -5,10 +5,13 @@ import { supabase } from '../../lib/supabase'
 import {
   TrendingUp, DollarSign, FileText, CreditCard, Clock,
   Info, Eye, Download, Loader2, Plus, X, ExternalLink,
-  Building2, User, Save, AlertTriangle, Link2, Copy,
+  Building2, User, Save, AlertTriangle, Link2, Copy, Wallet,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
+import { BusinessIssuerProfilesModal } from '../components/BusinessIssuerProfilesModal'
+import { BusinessPaymentMethodsModal } from '../components/BusinessPaymentMethodsModal'
+import { BusinessStripeConnectModal } from '../components/BusinessStripeConnectModal'
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
@@ -75,6 +78,8 @@ export function CloserFactures() {
 
   // Issuer profile modal
   const [isIssuerModalOpen, setIsIssuerModalOpen] = useState(false)
+  const [isPaymentMethodsOpen, setIsPaymentMethodsOpen] = useState(false)
+  const [isStripeConnectOpen, setIsStripeConnectOpen] = useState(false)
   const [issuerCompanyName, setIssuerCompanyName] = useState('')
   const [issuerAddress, setIssuerAddress] = useState('')
   const [issuerCity, setIssuerCity] = useState('')
@@ -336,7 +341,14 @@ export function CloserFactures() {
           </h1>
           <p className="text-stone-500 dark:text-neutral-400 mt-2">Suivez vos commissions et gérez vos factures</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => setIsStripeConnectOpen(true)}
+            className="flex items-center gap-2 rounded-full bg-[#635BFF] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#5349E0] hover:shadow-lg hover:shadow-[#635BFF]/20 active:scale-95"
+          >
+            <CreditCard className="h-4 w-4" />
+            Connecter Stripe
+          </button>
           <button
             onClick={() => setIsIssuerModalOpen(true)}
             className={cn(
@@ -348,6 +360,13 @@ export function CloserFactures() {
           >
             <Building2 className="h-4 w-4" />
             {hasIssuerProfile ? 'Infos Émetteur' : 'Configurer Émetteur'}
+          </button>
+          <button
+            onClick={() => setIsPaymentMethodsOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 px-5 py-2.5 text-sm font-semibold text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors"
+          >
+            <Wallet className="h-4 w-4" />
+            Moyens de Paiement
           </button>
           <button
             onClick={() => {
@@ -657,85 +676,10 @@ export function CloserFactures() {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/*  ISSUER PROFILE MODAL                                  */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      {isIssuerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-xl border border-white/40 dark:border-white/10 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.12)] relative animate-in zoom-in-95 duration-200 max-h-[85vh] overflow-y-auto">
-            <button
-              onClick={() => setIsIssuerModalOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2.5 rounded-xl bg-stone-100 dark:bg-white/10">
-                <Building2 className="h-5 w-5 text-stone-600 dark:text-neutral-300" />
-              </div>
-              <div>
-                <h2 className="text-xl font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Profil Émetteur</h2>
-                <p className="text-xs text-stone-500 dark:text-neutral-400">Vos informations d'entreprise pour les factures</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 mt-5">
-              <div>
-                <label className={labelCls}>Nom de la société *</label>
-                <input type="text" value={issuerCompanyName} onChange={e => setIssuerCompanyName(e.target.value)} className={inputCls} placeholder="Ma Société SAS" />
-              </div>
-
-              <div>
-                <label className={labelCls}>Adresse</label>
-                <input type="text" value={issuerAddress} onChange={e => setIssuerAddress(e.target.value)} className={inputCls} placeholder="123 Rue de la Paix" />
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className={labelCls}>Ville</label>
-                  <input type="text" value={issuerCity} onChange={e => setIssuerCity(e.target.value)} className={inputCls} placeholder="Paris" />
-                </div>
-                <div>
-                  <label className={labelCls}>Code Postal</label>
-                  <input type="text" value={issuerZip} onChange={e => setIssuerZip(e.target.value)} className={inputCls} placeholder="75001" />
-                </div>
-                <div>
-                  <label className={labelCls}>Pays</label>
-                  <input type="text" value={issuerCountry} onChange={e => setIssuerCountry(e.target.value)} className={inputCls} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>SIRET *</label>
-                  <input type="text" value={issuerSiret} onChange={e => setIssuerSiret(e.target.value)} className={inputCls} placeholder="123 456 789 00012" />
-                </div>
-                <div>
-                  <label className={labelCls}>N° TVA</label>
-                  <input type="text" value={issuerTvaNumber} onChange={e => setIssuerTvaNumber(e.target.value)} className={inputCls} placeholder="FR12345678901" />
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-5 pt-4 border-t border-stone-200/50 dark:border-white/10">
-                <button
-                  onClick={() => setIsIssuerModalOpen(false)}
-                  className="flex-1 rounded-full border border-stone-300 dark:border-neutral-600 py-2.5 font-semibold text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={handleSaveIssuerProfile}
-                  disabled={issuerSaving || !issuerCompanyName || !issuerSiret}
-                  className="flex-1 rounded-full bg-stone-900 py-2.5 font-bold text-white hover:bg-stone-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {issuerSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4" /> Enregistrer</>}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modals */}
+      <BusinessIssuerProfilesModal isOpen={isIssuerModalOpen} onClose={() => setIsIssuerModalOpen(false)} />
+      <BusinessPaymentMethodsModal isOpen={isPaymentMethodsOpen} onClose={() => setIsPaymentMethodsOpen(false)} />
+      <BusinessStripeConnectModal isOpen={isStripeConnectOpen} onClose={() => setIsStripeConnectOpen(false)} />
 
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  GENERATE INVOICE MODAL                                */}
