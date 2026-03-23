@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*'
 
-export function useScrambleText(finalText: string, duration = 800) {
+export function useScrambleText(finalText: string, duration = 1800) {
   const [display, setDisplay] = useState('')
   const frameRef = useRef<number>()
   const hasRun = useRef(false)
