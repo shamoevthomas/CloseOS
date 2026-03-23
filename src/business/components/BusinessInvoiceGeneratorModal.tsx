@@ -636,7 +636,7 @@ export function BusinessInvoiceGeneratorModal({
       <div
         className={cn(
           "relative bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full",
-          step === 2 ? 'max-w-[95vw] max-h-[95vh] overflow-hidden' : 'max-w-4xl max-h-[90vh] overflow-y-auto'
+          step === 2 ? 'max-w-[90vw] max-h-[90vh] overflow-hidden' : 'max-w-4xl max-h-[90vh] overflow-y-auto'
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -1176,18 +1176,20 @@ export function BusinessInvoiceGeneratorModal({
               </div>
 
               {/* ─── RIGHT: LIVE PREVIEW ─── */}
-              <div className="flex-1 overflow-y-auto bg-white dark:bg-neutral-950" style={{ transformOrigin: 'top left' }}>
+              <div className="flex-1 overflow-auto bg-[#f0efee] dark:bg-neutral-950 p-3">
                   <div
                     id="invoice-preview-content"
                     ref={invoiceRef}
-                    className="flex flex-col justify-between"
+                    className="flex flex-col justify-between shadow-sm"
                     style={{
                       backgroundColor: 'white',
                       color: 'black',
-                      width: '100%',
+                      width: '210mm',
                       minHeight: '297mm',
-                      padding: '12mm 14mm',
+                      padding: '15mm',
                       boxSizing: 'border-box',
+                      transform: 'scale(0.55)',
+                      transformOrigin: 'top left',
                     }}
                   >
                     {/* Top content */}
