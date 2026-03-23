@@ -333,7 +333,7 @@ export function CloserKPI() {
     : 'Toutes périodes'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -503,7 +503,7 @@ export function CloserKPI() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <KpiCard title="CA Généré" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title="Ventes Totales" value={v.sales} icon={ShoppingCart} color="blue" />
         <KpiCard title="Taux de Closing" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" />
@@ -513,7 +513,7 @@ export function CloserKPI() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-white/5 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
           <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Historique Taux de Closing</h3>
           <div className="h-56">
@@ -560,7 +560,7 @@ export function CloserKPI() {
       {/* Pipeline Summary */}
       <div className="bg-stone-900 text-white rounded-2xl p-6">
         <h3 className="text-sm font-bold tracking-widest uppercase text-stone-400 mb-4">Résumé du Pipeline</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <SummaryItem label="Total Leads" value={v.leads} icon={Users} color="indigo" dark />
           <SummaryItem label="Deals en Cours" value={v.deals} icon={Briefcase} color="cyan" dark />
           <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />
@@ -657,7 +657,7 @@ const SummaryItem = ({ label, value, icon: Icon, color, dark }: any) => {
     stone: 'bg-stone-50 text-stone-600',
   }
   return (
-    <div className="flex items-center gap-4 p-3 rounded-xl transition-colors">
+    <div className="flex items-center gap-6 p-3 rounded-xl transition-colors">
       <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', colors[color])}>
         <Icon className="h-5 w-5" />
       </div>
