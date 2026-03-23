@@ -171,6 +171,8 @@ export function BusinessInvoiceGeneratorModal({
   const [editableInvoiceTitle, setEditableInvoiceTitle] = useState('FACTURE')
   const [editableEcheance, setEditableEcheance] = useState('A reception')
   const [editableFooterNote, setEditableFooterNote] = useState('')
+  const [editableCustomSectionTitle, setEditableCustomSectionTitle] = useState('Autres')
+  const [editablePenaltyText, setEditablePenaltyText] = useState('')
 
   // Initialize editable items when entering step 2
   const initEditableItems = useCallback(() => {
@@ -513,6 +515,7 @@ export function BusinessInvoiceGeneratorModal({
     }
 
     initEditableItems()
+    setEditablePenaltyText(`En cas de retard de paiement, penalites de retard au taux annuel de ${latePenaltyRate}%.\nIndemnite forfaitaire pour frais de recouvrement : ${formatCurrency(latePenaltyFixed)}.`)
     setStep(2)
   }
 
@@ -598,6 +601,8 @@ export function BusinessInvoiceGeneratorModal({
     setEditableFooterNote('')
     setEditableInvoiceTitle('FACTURE')
     setEditableEcheance('A reception')
+    setEditableCustomSectionTitle('Autres')
+    setEditablePenaltyText('')
     setGeneratedLink('')
     setQrCodeUrl('')
     setShowStripeOnInvoice(true)
@@ -1029,9 +1034,13 @@ export function BusinessInvoiceGeneratorModal({
                 {/* Custom Items (always show add button) */}
                 <div className="space-y-2">
                   {editableCustomItems.length > 0 && (
-                    <p className="text-xs font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-500">
-                      Lignes supplementaires
-                    </p>
+                    <input
+                      type="text"
+                      value={editableCustomSectionTitle}
+                      onChange={e => setEditableCustomSectionTitle(e.target.value)}
+                      className="text-xs font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-500 bg-transparent border-b border-dashed border-[#c4c7c7]/40 dark:border-neutral-600 focus:border-[#006c49] outline-none pb-1 w-full"
+                      placeholder="Titre de la section"
+                    />
                   )}
                   {editableCustomItems.map(item => (
                     <div key={item.id} className="rounded-lg border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-3 space-y-2">
@@ -1111,6 +1120,18 @@ export function BusinessInvoiceGeneratorModal({
                   </div>
                 )}
 
+                {/* Late penalty text */}
+                <div>
+                  <label className={labelCls}>Mentions penalites de retard</label>
+                  <textarea
+                    value={editablePenaltyText}
+                    onChange={e => setEditablePenaltyText(e.target.value)}
+                    rows={3}
+                    className={cn(inputCls, 'resize-none text-xs')}
+                    placeholder="Ex: En cas de retard de paiement..."
+                  />
+                </div>
+
                 {/* Note / Footer */}
                 <div>
                   <label className={labelCls}>Note libre (bas de facture)</label>
@@ -1143,8 +1164,7 @@ export function BusinessInvoiceGeneratorModal({
               </div>
 
               {/* ─── RIGHT: LIVE PREVIEW ─── */}
-              <div className="flex-1 overflow-y-auto bg-[#e8e6e5] dark:bg-neutral-950 p-2">
-                <div className="rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white shadow-lg mx-auto overflow-hidden" style={{ width: '210mm' }}>
+              <div className="flex-1 overflow-y-auto bg-white dark:bg-neutral-950">
                   <div
                     id="invoice-preview-content"
                     ref={invoiceRef}
@@ -1282,7 +1302,7 @@ export function BusinessInvoiceGeneratorModal({
                       {editableCustomItems.length > 0 && (
                         <>
                           <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>
-                            Autres
+                            {editableCustomSectionTitle}
                           </p>
                           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
                             <thead>
@@ -1374,14 +1394,11 @@ export function BusinessInvoiceGeneratorModal({
                               </div>
                             )}
 
-                            <div style={{ marginTop: '0.75rem', fontSize: '0.6875rem', color: '#64748b' }}>
-                              <p style={{ margin: '0.125rem 0' }}>
-                                En cas de retard de paiement, penalites de retard au taux annuel de {latePenaltyRate}%.
-                              </p>
-                              <p style={{ margin: '0.125rem 0' }}>
-                                Indemnite forfaitaire pour frais de recouvrement : {formatCurrency(latePenaltyFixed)}.
-                              </p>
-                            </div>
+                            {editablePenaltyText && (
+                              <div style={{ marginTop: '0.75rem', fontSize: '0.6875rem', color: '#64748b', whiteSpace: 'pre-wrap' }}>
+                                {editablePenaltyText}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -1430,7 +1447,6 @@ export function BusinessInvoiceGeneratorModal({
                       </div>
                     </div>
                   </div>
-                </div>
               </div>
             </div>
           </div>

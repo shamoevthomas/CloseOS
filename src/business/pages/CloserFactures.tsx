@@ -262,14 +262,40 @@ export function CloserFactures() {
             <input
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => {
+                const newStart = e.target.value
+                const oldStart = new Date(startDate)
+                const ns = new Date(newStart)
+                if (ns > oldStart) {
+                  const diff = (ns.getFullYear() - oldStart.getFullYear()) * 12 + ns.getMonth() - oldStart.getMonth()
+                  if (diff > 0) {
+                    const newEnd = new Date(endDate)
+                    newEnd.setMonth(newEnd.getMonth() + diff)
+                    setEndDate(newEnd.toISOString().split('T')[0])
+                  }
+                }
+                setStartDate(newStart)
+              }}
               className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-stone-900 dark:text-white"
             />
             <span className="text-stone-400">-</span>
             <input
               type="date"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={(e) => {
+                const newEnd = e.target.value
+                const oldEnd = new Date(endDate)
+                const ne = new Date(newEnd)
+                if (ne < oldEnd) {
+                  const diff = (oldEnd.getFullYear() - ne.getFullYear()) * 12 + oldEnd.getMonth() - ne.getMonth()
+                  if (diff > 0) {
+                    const newStart = new Date(startDate)
+                    newStart.setMonth(newStart.getMonth() - diff)
+                    setStartDate(newStart.toISOString().split('T')[0])
+                  }
+                }
+                setEndDate(newEnd)
+              }}
               className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-stone-900 dark:text-white"
             />
           </div>
