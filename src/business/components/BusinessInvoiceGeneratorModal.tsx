@@ -525,6 +525,12 @@ export function BusinessInvoiceGeneratorModal({
     const element = document.getElementById('invoice-preview-content')
     if (!element) throw new Error('Element de preview introuvable')
 
+    // Temporarily set A4 dimensions for PDF export
+    const prevWidth = element.style.width
+    const prevPadding = element.style.padding
+    element.style.width = '210mm'
+    element.style.padding = '20mm'
+
     const opt = {
       margin: 0,
       filename: `${invoiceNumber}.pdf`,
@@ -532,7 +538,13 @@ export function BusinessInvoiceGeneratorModal({
       html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     }
-    return html2pdf().set(opt).from(element).output('blob')
+    const blob = await html2pdf().set(opt).from(element).output('blob')
+
+    // Restore preview dimensions
+    element.style.width = prevWidth
+    element.style.padding = prevPadding
+
+    return blob
   }
 
   const uploadPdfAndSave = async (pdfBlob: Blob, status: string) => {
@@ -881,7 +893,7 @@ export function BusinessInvoiceGeneratorModal({
             {/* Split: Edit Left | Preview Right */}
             <div className="flex flex-1 min-h-0">
               {/* ─── LEFT: EDIT PANEL ─── */}
-              <div className="w-[420px] shrink-0 border-r border-[#c4c7c7]/10 dark:border-neutral-800 overflow-y-auto p-5 space-y-5">
+              <div className="w-[340px] shrink-0 border-r border-[#c4c7c7]/10 dark:border-neutral-800 overflow-y-auto p-4 space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-500 flex items-center gap-2">
                   <Pencil className="h-3.5 w-3.5" />
                   Modifier la facture
@@ -1164,7 +1176,7 @@ export function BusinessInvoiceGeneratorModal({
               </div>
 
               {/* ─── RIGHT: LIVE PREVIEW ─── */}
-              <div className="flex-1 overflow-y-auto bg-white dark:bg-neutral-950">
+              <div className="flex-1 overflow-y-auto bg-white dark:bg-neutral-950" style={{ transformOrigin: 'top left' }}>
                   <div
                     id="invoice-preview-content"
                     ref={invoiceRef}
@@ -1172,9 +1184,9 @@ export function BusinessInvoiceGeneratorModal({
                     style={{
                       backgroundColor: 'white',
                       color: 'black',
-                      width: '210mm',
+                      width: '100%',
                       minHeight: '297mm',
-                      padding: '20mm',
+                      padding: '12mm 14mm',
                       boxSizing: 'border-box',
                     }}
                   >
