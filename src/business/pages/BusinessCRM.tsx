@@ -70,9 +70,9 @@ const PERIOD_OPTIONS = [
 export function BusinessCRM() {
   const {
     prospects, updateProspect, addProspect, deleteProspect, loading,
-    syncHubspot, syncPipedrive,
-    isSyncingHubspot, isSyncingPipedrive,
-    hubspotConnected, pipedriveConnected,
+    syncHubspot, syncPipedrive, syncGhl,
+    isSyncingHubspot, isSyncingPipedrive, isSyncingGhl,
+    hubspotConnected, pipedriveConnected, ghlConnected,
     nextSyncSeconds,
   } = useBusinessProspects()
   const { businessSettings, user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
@@ -384,7 +384,7 @@ export function BusinessCRM() {
   }
 
   const crmProvider = businessSettings?.crm_provider || 'closeos'
-  const crmLabel = crmProvider === 'closeos' ? 'CloseOS' : crmProvider === 'iclosed' ? 'iClosed' : crmProvider === 'hubspot' ? 'HubSpot' : crmProvider === 'pipedrive' ? 'Pipedrive' : crmProvider
+  const crmLabel = crmProvider === 'closeos' ? 'CloseOS' : crmProvider === 'iclosed' ? 'iClosed' : crmProvider === 'hubspot' ? 'HubSpot' : crmProvider === 'pipedrive' ? 'Pipedrive' : crmProvider === 'ghl' ? 'GoHighLevel' : crmProvider
 
   if (loading) {
     return (
@@ -402,21 +402,22 @@ export function BusinessCRM() {
           <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
             crmProvider === 'hubspot' ? 'bg-orange-500' :
             crmProvider === 'pipedrive' ? 'bg-green-500' :
-            crmProvider === 'iclosed' ? 'bg-purple-500' : 'bg-amber-500'
+            crmProvider === 'iclosed' ? 'bg-purple-500' :
+            crmProvider === 'ghl' ? 'bg-[#FF6B35]' : 'bg-amber-500'
           }`}>
             <span className="text-white font-bold text-xs">{crmLabel[0]}</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold text-stone-900 dark:text-white">CRM : {crmLabel}</p>
-              {((crmProvider === 'hubspot' && hubspotConnected) || (crmProvider === 'pipedrive' && pipedriveConnected)) && (
+              {((crmProvider === 'hubspot' && hubspotConnected) || (crmProvider === 'pipedrive' && pipedriveConnected) || (crmProvider === 'ghl' && ghlConnected)) && (
                 <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
                   <Check className="h-2.5 w-2.5" /> Connecté
                 </span>
               )}
             </div>
             <p className="text-xs text-stone-500 dark:text-neutral-400">
-              {crmProvider === 'hubspot' && hubspotConnected
+              {(crmProvider === 'hubspot' && hubspotConnected) || (crmProvider === 'ghl' && ghlConnected)
                 ? `Auto-sync dans ${Math.floor(nextSyncSeconds / 60)}:${String(nextSyncSeconds % 60).padStart(2, '0')}`
                 : 'Votre pipeline de prospection'
               }
@@ -441,6 +442,16 @@ export function BusinessCRM() {
               className="flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-all disabled:opacity-50"
             >
               {isSyncingPipedrive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Sync
+            </button>
+          )}
+          {!isReadOnly && crmProvider === 'ghl' && ghlConnected && (
+            <button
+              onClick={() => syncGhl()}
+              disabled={isSyncingGhl}
+              className="flex items-center gap-1.5 rounded-lg border border-[#FF6B35]/30 bg-[#FF6B35]/10 px-3 py-1.5 text-xs font-medium text-[#FF6B35] hover:bg-[#FF6B35]/20 transition-all disabled:opacity-50"
+            >
+              {isSyncingGhl ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               Sync
             </button>
           )}

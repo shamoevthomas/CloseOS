@@ -172,6 +172,336 @@ async function pushToAirtableBusiness(supabase: any, userId: string, prospectDat
   return { success: true }
 }
 
+// ─── GHL (GoHighLevel) helpers ───
+
+const GHL_BASE_URL = 'https://services.leadconnectorhq.com'
+const GHL_API_VERSION = '2021-07-28'
+
+function ghlHeaders(accessToken: string) {
+  return {
+    Authorization: `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+    Version: GHL_API_VERSION,
+  }
+}
+
+async function getValidGhlToken(supabase: any, userId: string): Promise<string | null> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('ghl_access_token, ghl_refresh_token, ghl_token_expires_at')
+    .eq('id', userId)
+    .single()
+
+  if (!profile?.ghl_access_token) return null
+
+  const expiresAt = typeof profile.ghl_token_expires_at === 'number'
+    ? profile.ghl_token_expires_at
+    : parseInt(profile.ghl_token_expires_at || '0', 10)
+
+  if (expiresAt > 0 && Date.now() < (expiresAt - 120000)) {
+    return profile.ghl_access_token
+  }
+
+  if (!profile.ghl_refresh_token) return null
+
+  const tokenRes = await fetch(`${GHL_BASE_URL}/oauth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: process.env.GHL_CLIENT_ID || '',
+      client_secret: process.env.GHL_CLIENT_SECRET || '',
+      refresh_token: profile.ghl_refresh_token,
+    }).toString(),
+  })
+  const tokenData = await tokenRes.json()
+  if (!tokenData.access_token) return null
+
+  await supabase.from('profiles').update({
+    ghl_access_token: tokenData.access_token,
+    ghl_refresh_token: tokenData.refresh_token || profile.ghl_refresh_token,
+    ghl_token_expires_at: Date.now() + (tokenData.expires_in || 86400) * 1000,
+  }).eq('id', userId)
+
+  return tokenData.access_token
+}
+
+function mapGhlStageToCloseos(pipelineStageId: string, opportunityStatus: string, stageMapping: any = {}): string {
+  if (opportunityStatus === 'won') return 'won'
+  if (opportunityStatus === 'lost' || opportunityStatus === 'abandoned') return 'lost'
+
+  for (const [closeosStage, ghlStageId] of Object.entries(stageMapping)) {
+    if (ghlStageId === pipelineStageId) return closeosStage
+  }
+  return 'prospect'
+}
+
+function mapCloseosToGhlStatus(stage: string): string {
+  if (stage === 'won') return 'won'
+  if (stage === 'lost') return 'lost'
+  return 'open'
+}
+
+async function getGhlPipelines(supabase: any, userId: string) {
+  const accessToken = await getValidGhlToken(supabase, userId)
+  if (!accessToken) throw new Error('GHL not connected')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('ghl_location_id')
+    .eq('id', userId)
+    .single()
+
+  const locationId = profile?.ghl_location_id
+  if (!locationId) throw new Error('No GHL location ID')
+
+  const pipelinesRes = await fetch(`${GHL_BASE_URL}/opportunities/pipelines?locationId=${locationId}`, {
+    headers: ghlHeaders(accessToken),
+  })
+  if (!pipelinesRes.ok) throw new Error('Failed to fetch GHL pipelines')
+
+  const data = await pipelinesRes.json()
+  const pipelines = data.pipelines || []
+
+  const stages: any[] = []
+  for (const pipeline of pipelines) {
+    for (const stage of pipeline.stages || []) {
+      stages.push({
+        id: stage.id,
+        name: stage.name,
+        pipeline_id: pipeline.id,
+        pipeline_name: pipeline.name,
+        position: stage.position,
+      })
+    }
+  }
+  return { pipelines, stages }
+}
+
+async function syncGhlBusiness(supabase: any, userId: string) {
+  const accessToken = await getValidGhlToken(supabase, userId)
+  if (!accessToken) throw new Error('GHL not connected')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('ghl_location_id')
+    .eq('id', userId)
+    .single()
+
+  const locationId = profile?.ghl_location_id
+  if (!locationId) throw new Error('No GHL location ID')
+
+  const { data: settings } = await supabase.from('business_settings').select('ghl_config').eq('user_id', userId).single()
+  const config = settings?.ghl_config || {}
+  const { pipelineId, stageMapping } = config
+
+  // Fetch all contacts (paginated)
+  let allContacts: any[] = []
+  let startAfterId: string | undefined
+  const limit = 100
+
+  do {
+    const url = new URL(`${GHL_BASE_URL}/contacts/`)
+    url.searchParams.set('locationId', locationId)
+    url.searchParams.set('limit', String(limit))
+    if (startAfterId) url.searchParams.set('startAfterId', startAfterId)
+
+    const contactsRes = await fetch(url.toString(), { headers: ghlHeaders(accessToken) })
+    if (!contactsRes.ok) break
+    const contactsData = await contactsRes.json()
+    const contacts = contactsData.contacts || []
+    allContacts = allContacts.concat(contacts)
+    startAfterId = contacts.length >= limit ? contacts[contacts.length - 1].id : undefined
+  } while (startAfterId)
+
+  // Fetch opportunities if pipeline configured
+  let allOpportunities: any[] = []
+  if (pipelineId) {
+    let oppStartAfterId: string | undefined
+    do {
+      const url = new URL(`${GHL_BASE_URL}/opportunities/search`)
+      url.searchParams.set('location_id', locationId)
+      url.searchParams.set('pipeline_id', pipelineId)
+      url.searchParams.set('limit', String(limit))
+      if (oppStartAfterId) url.searchParams.set('startAfterId', oppStartAfterId)
+
+      const oppRes = await fetch(url.toString(), { method: 'GET', headers: ghlHeaders(accessToken) })
+      if (oppRes.ok) {
+        const oppData = await oppRes.json()
+        const opportunities = oppData.opportunities || []
+        allOpportunities = allOpportunities.concat(opportunities)
+        oppStartAfterId = opportunities.length >= limit ? opportunities[opportunities.length - 1].id : undefined
+      } else {
+        oppStartAfterId = undefined
+      }
+    } while (oppStartAfterId)
+  }
+
+  // Build opportunity lookup by contactId
+  const oppByContactId = new Map<string, any>()
+  for (const opp of allOpportunities) {
+    if (opp.contactId) oppByContactId.set(opp.contactId, opp)
+  }
+
+  // Get existing prospects
+  const { data: existingProspects } = await supabase
+    .from('business_prospects')
+    .select('id, ghl_contact_id, ghl_opportunity_id, email')
+    .eq('user_id', userId)
+
+  const existingByGhlId = new Map<string, any>()
+  const existingByEmail = new Map<string, any>()
+  ;(existingProspects || []).forEach((p: any) => {
+    if (p.ghl_contact_id) existingByGhlId.set(p.ghl_contact_id, p)
+    if (p.email) existingByEmail.set(p.email.toLowerCase(), p)
+  })
+
+  let imported = 0, updated = 0
+
+  for (const contact of allContacts) {
+    const ghlId = contact.id
+    const firstName = contact.firstName || ''
+    const lastName = contact.lastName || ''
+    const email = contact.email || ''
+    const phone = contact.phone || ''
+    const company = contact.companyName || ''
+
+    const opp = oppByContactId.get(ghlId)
+    const stage = opp
+      ? mapGhlStageToCloseos(opp.pipelineStageId || '', opp.status || '', stageMapping || {})
+      : 'prospect'
+    const value = opp?.monetaryValue || 0
+    const oppId = opp?.id || null
+
+    const existingById = existingByGhlId.get(ghlId)
+    const existingByMail = email ? existingByEmail.get(email.toLowerCase()) : null
+    const existing = existingById || existingByMail
+
+    if (existing) {
+      const updates: any = { ghl_contact_id: ghlId }
+      if (oppId) updates.ghl_opportunity_id = oppId
+      if (firstName && !existing.firstName) updates.firstName = firstName
+      if (lastName && !existing.lastName) updates.lastName = lastName
+      if (phone && !existing.phone) updates.phone = phone
+      if (company && !existing.company) updates.company = company
+      if (opp) {
+        updates.stage = stage
+        if (value > 0) updates.value = value
+      }
+      await supabase.from('business_prospects').update(updates).eq('id', existing.id)
+      updated++
+    } else {
+      const fullName = `${firstName} ${lastName}`.trim() || email || 'Contact GHL'
+      await supabase.from('business_prospects').insert([{
+        user_id: userId,
+        contact: fullName,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        email: email || null,
+        phone: phone || null,
+        company: company || null,
+        stage: stage || 'prospect',
+        value: value || undefined,
+        ghl_contact_id: ghlId,
+        ghl_opportunity_id: oppId,
+        notes: 'Source: GoHighLevel',
+        status: 'new',
+      }])
+      imported++
+    }
+  }
+
+  return { imported, updated, total: allContacts.length }
+}
+
+async function pushToGhlBusiness(supabase: any, userId: string, prospectData: any) {
+  const { stage, ghl_contact_id, ghl_opportunity_id, firstName, lastName, email, phone, company, id: prospectId } = prospectData
+  const accessToken = await getValidGhlToken(supabase, userId)
+  if (!accessToken) return { success: true, message: 'No GHL token' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('ghl_location_id')
+    .eq('id', userId)
+    .single()
+
+  const locationId = profile?.ghl_location_id
+  if (!locationId) return { success: true, message: 'No GHL location' }
+
+  const { data: settings } = await supabase.from('business_settings').select('ghl_config').eq('user_id', userId).single()
+  const config = settings?.ghl_config || {}
+  const { pipelineId, stageMapping } = config
+
+  // Upsert contact
+  let contactId = ghl_contact_id
+  const contactBody: any = { locationId }
+  if (firstName) contactBody.firstName = firstName
+  if (lastName) contactBody.lastName = lastName
+  if (email) contactBody.email = email
+  if (phone) contactBody.phone = phone
+  if (company) contactBody.companyName = company
+
+  if (contactId) {
+    await fetch(`${GHL_BASE_URL}/contacts/${contactId}`, {
+      method: 'PUT',
+      headers: ghlHeaders(accessToken),
+      body: JSON.stringify(contactBody),
+    })
+  } else {
+    const upsertRes = await fetch(`${GHL_BASE_URL}/contacts/upsert`, {
+      method: 'POST',
+      headers: ghlHeaders(accessToken),
+      body: JSON.stringify(contactBody),
+    })
+    const upsertData = await upsertRes.json()
+    if (upsertData.contact?.id) {
+      contactId = upsertData.contact.id
+      if (prospectId) {
+        await supabase.from('business_prospects').update({ ghl_contact_id: contactId }).eq('id', prospectId)
+      }
+    }
+  }
+
+  // Update or create opportunity
+  let opportunityId = ghl_opportunity_id
+  if (stage && pipelineId && contactId) {
+    const ghlStatus = mapCloseosToGhlStatus(stage)
+    const ghlStageId = stageMapping?.[stage] || null
+
+    if (opportunityId) {
+      const updateBody: any = { status: ghlStatus }
+      if (ghlStageId) updateBody.pipelineStageId = ghlStageId
+      await fetch(`${GHL_BASE_URL}/opportunities/${opportunityId}`, {
+        method: 'PUT',
+        headers: ghlHeaders(accessToken),
+        body: JSON.stringify(updateBody),
+      })
+    } else if (ghlStageId) {
+      const createRes = await fetch(`${GHL_BASE_URL}/opportunities/`, {
+        method: 'POST',
+        headers: ghlHeaders(accessToken),
+        body: JSON.stringify({
+          pipelineId,
+          pipelineStageId: ghlStageId,
+          locationId,
+          contactId,
+          name: `${firstName || ''} ${lastName || ''}`.trim() || email || 'Deal CloseOS',
+          status: ghlStatus,
+        }),
+      })
+      const createData = await createRes.json()
+      if (createData.opportunity?.id) {
+        opportunityId = createData.opportunity.id
+        if (prospectId) {
+          await supabase.from('business_prospects').update({ ghl_opportunity_id: opportunityId }).eq('id', prospectId)
+        }
+      }
+    }
+  }
+
+  return { success: true, ghl_contact_id: contactId, ghl_opportunity_id: opportunityId }
+}
+
 // ─── HubSpot helpers ───
 
 async function getValidHubspotToken(supabase: any, userId: string) {
@@ -797,6 +1127,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (rows.length > 0) {
         await supabase.from('pipedrive_stage_mapping').insert(rows)
       }
+      return res.status(200).json({ success: true })
+    }
+
+    // ─── GHL actions ───
+    if (req.method === 'GET' && action === 'ghl-pipelines') {
+      const user_id = req.query.user_id as string
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+      try {
+        const result = await getGhlPipelines(supabase, user_id)
+        return res.status(200).json(result)
+      } catch (err: any) {
+        return res.status(500).json({ error: err.message })
+      }
+    }
+
+    if (req.method === 'POST' && action === 'ghl-sync') {
+      const { user_id } = req.body
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+      try {
+        const result = await syncGhlBusiness(supabase, user_id)
+        return res.status(200).json(result)
+      } catch (err: any) {
+        return res.status(500).json({ error: err.message })
+      }
+    }
+
+    if (req.method === 'POST' && action === 'ghl-push') {
+      const { user_id, ...prospectData } = req.body
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+      try {
+        const result = await pushToGhlBusiness(supabase, user_id, prospectData)
+        return res.status(200).json(result)
+      } catch (err: any) {
+        return res.status(500).json({ error: err.message })
+      }
+    }
+
+    if (req.method === 'POST' && action === 'ghl-save-mapping') {
+      const { user_id, ghl_config } = req.body
+      if (!user_id || !ghl_config) return res.status(400).json({ error: 'user_id and ghl_config required' })
+      const { error } = await supabase.from('business_settings').update({ ghl_config }).eq('user_id', user_id)
+      if (error) return res.status(500).json({ error: error.message })
       return res.status(200).json({ success: true })
     }
 

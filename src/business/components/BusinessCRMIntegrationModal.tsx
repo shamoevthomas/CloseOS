@@ -13,6 +13,7 @@ const CRM_OPTIONS = [
   { id: 'zapier', name: 'Zapier', description: 'Importez des prospects via Zapier (webhook)', color: 'bg-[#FF4A00]', textColor: 'text-[#FF4A00]', bgColor: 'bg-orange-50', borderColor: 'border-orange-300', iconBg: 'bg-[#ff4a00]', iconText: 'text-white', logo: '/Zapier.png' },
   { id: 'calendly', name: 'Calendly', description: 'Importez les RDV Calendly automatiquement', color: 'bg-[#006BFF]', textColor: 'text-[#006BFF]', bgColor: 'bg-blue-50', borderColor: 'border-blue-300', iconBg: 'bg-[#006bff]', iconText: 'text-white', logo: '/Calendly.png' },
   { id: 'airtable', name: 'Airtable', description: 'Synchronisez avec votre base Airtable', color: 'bg-[#18BFFF]', textColor: 'text-[#18BFFF]', bgColor: 'bg-cyan-50', borderColor: 'border-cyan-300', iconBg: 'bg-[#18bfff]', iconText: 'text-white', logo: '/airtable.png' },
+  { id: 'ghl', name: 'GoHighLevel', description: 'Synchronisez avec GoHighLevel', color: 'bg-[#FF6B35]', textColor: 'text-[#FF6B35]', bgColor: 'bg-orange-50', borderColor: 'border-orange-300', iconBg: 'bg-[#FF6B35]', iconText: 'text-white', logo: '/GHL.jpg' },
 ];
 
 const CLOSEOS_STAGES = [
@@ -31,7 +32,7 @@ interface Props {
 
 export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
   const { user, businessSettings, updateBusinessSettings } = useBusinessAuth();
-  const { syncHubspot, syncPipedrive, syncAirtable, isSyncingHubspot, isSyncingPipedrive, isSyncingAirtable, hubspotConnected, pipedriveConnected, airtableConnected } = useBusinessProspects();
+  const { syncHubspot, syncPipedrive, syncAirtable, syncGhl, isSyncingHubspot, isSyncingPipedrive, isSyncingAirtable, isSyncingGhl, hubspotConnected, pipedriveConnected, airtableConnected, ghlConnected } = useBusinessProspects();
 
   const [selected, setSelected] = useState(businessSettings?.crm_provider || 'closeos');
   const [saving, setSaving] = useState(false);
@@ -80,6 +81,14 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
   const [airtableLoadingTables, setAirtableLoadingTables] = useState(false);
   const [airtableLoadingFields, setAirtableLoadingFields] = useState(false);
   const [airtableSavingConfig, setAirtableSavingConfig] = useState(false);
+
+  // GHL
+  const [ghlPipelines, setGhlPipelines] = useState<any[]>([]);
+  const [ghlStages, setGhlStages] = useState<any[]>([]);
+  const [ghlSelectedPipeline, setGhlSelectedPipeline] = useState('');
+  const [ghlMappings, setGhlMappings] = useState<Record<string, string>>({});
+  const [ghlLoadingPipelines, setGhlLoadingPipelines] = useState(false);
+  const [ghlSavingConfig, setGhlSavingConfig] = useState(false);
 
   useEffect(() => {
     if (businessSettings?.crm_provider) {
@@ -283,6 +292,88 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
     };
     load();
   }, [airtableBaseId, airtableTableId, airtableConnected, user]);
+
+  // Load GHL pipelines when selected and connected
+  useEffect(() => {
+    if (selected !== 'ghl' || !ghlConnected || !user || !isOpen) return;
+    const load = async () => {
+      setGhlLoadingPipelines(true);
+      try {
+        const res = await fetch(`/api/business-crm-sync?action=ghl-pipelines&user_id=${user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setGhlPipelines(data.pipelines || []);
+          setGhlStages(data.stages || []);
+        }
+      } catch (err) {
+        console.error('Error loading GHL pipelines:', err);
+      } finally {
+        setGhlLoadingPipelines(false);
+      }
+    };
+    load();
+  }, [selected, ghlConnected, user, isOpen]);
+
+  // Load existing GHL config
+  useEffect(() => {
+    if (selected !== 'ghl' || !user || !isOpen) return;
+    const config = businessSettings?.ghl_config;
+    if (config) {
+      setGhlSelectedPipeline(config.pipelineId || '');
+      setGhlMappings(config.stageMapping || {});
+    }
+  }, [selected, user, isOpen, businessSettings?.ghl_config]);
+
+  const handleConnectGhl = () => {
+    const clientId = process.env.GHL_CLIENT_ID || '6836b9e53fb09a61fb7fef41-mekxrg73';
+    const redirectUri = 'https://www.closeos.fr/api/ghll/callback';
+    const state = `${user?.id}__business`;
+    window.location.href = `https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&client_id=${clientId}&scope=contacts.readonly contacts.write opportunities.readonly opportunities.write locations.readonly&state=${state}`;
+  };
+
+  const handleDisconnectGhl = async () => {
+    if (!user || !window.confirm('Déconnecter GoHighLevel ?')) return;
+    await supabase.from('profiles').update({
+      ghl_access_token: null,
+      ghl_refresh_token: null,
+      ghl_token_expires_at: null,
+      ghl_location_id: null,
+    }).eq('id', user.id);
+    window.location.reload();
+  };
+
+  const handleSyncGhl = async () => {
+    setSyncResult(null);
+    const result = await syncGhl();
+    if (result) setSyncResult(result);
+  };
+
+  const handleSaveGhlConfig = async (pipelineId: string, stageMapping: Record<string, string>) => {
+    if (!user) return;
+    setGhlSavingConfig(true);
+    try {
+      await fetch('/api/business-crm-sync?action=ghl-save-mapping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, ghl_config: { pipelineId, stageMapping } }),
+      });
+    } catch (err) {
+      console.error('Error saving GHL config:', err);
+    } finally {
+      setGhlSavingConfig(false);
+    }
+  };
+
+  const handleUpdateGhlMapping = (coStage: string, ghlStageId: string) => {
+    const newMappings = { ...ghlMappings, [coStage]: ghlStageId };
+    setGhlMappings(newMappings);
+    handleSaveGhlConfig(ghlSelectedPipeline, newMappings);
+  };
+
+  const handleGhlPipelineChange = (pipelineId: string) => {
+    setGhlSelectedPipeline(pipelineId);
+    handleSaveGhlConfig(pipelineId, ghlMappings);
+  };
 
   const handleConnectAirtable = () => {
     window.location.href = `/api/webhooks?action=airtable-authorize&user_id=${user?.id}`;
@@ -496,6 +587,7 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
   const isConnected = (selected === 'hubspot' && hubspotConnected) ||
     (selected === 'pipedrive' && pipedriveConnected) ||
     (selected === 'airtable' && airtableConnected) ||
+    (selected === 'ghl' && ghlConnected) ||
     (selected === 'zapier' && !!zapierApiKey) ||
     (selected === 'calendly' && !!calendlyApiKey) ||
     selected === 'closeos';
@@ -527,6 +619,7 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
               const isCrmConnected = (crm.id === 'hubspot' && hubspotConnected) ||
                 (crm.id === 'pipedrive' && pipedriveConnected) ||
                 (crm.id === 'airtable' && airtableConnected) ||
+                (crm.id === 'ghl' && ghlConnected) ||
                 (crm.id === 'zapier' && !!zapierApiKey) ||
                 (crm.id === 'calendly' && !!calendlyApiKey);
               return (
@@ -993,6 +1086,83 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                               {airtableSavingConfig ? <><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement...</> : <><Save className="h-4 w-4" /> Sauvegarder la configuration</>}
                             </button>
                           )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {/* ─── GHL Config ─── */}
+                  {selected === 'ghl' && (
+                    <div className="space-y-6">
+                      {!ghlConnected ? (
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Connectez votre compte GoHighLevel pour synchroniser vos contacts et opportunités.</p>
+                          <button onClick={handleConnectGhl} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors">
+                            <LinkIcon className="h-4 w-4" /> Connecter GoHighLevel
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
+                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">La synchronisation auto se fait toutes les 2 minutes.</p>
+                            <div className="flex gap-4 flex-wrap">
+                              <button onClick={handleSyncGhl} disabled={isSyncingGhl} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                                {isSyncingGhl ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                Synchroniser maintenant
+                              </button>
+                              <button onClick={handleDisconnectGhl} className="px-6 py-3 border border-[#c4c7c7]/30 rounded-full font-bold text-sm text-[#444748] hover:bg-[#f5f3f2] transition-colors">
+                                Déconnecter
+                              </button>
+                            </div>
+                          </div>
+                          {syncResult && (
+                            <div className="p-4 rounded-2xl bg-[#006c49]/5 border border-[#006c49]/10 text-sm text-[#006c49] font-medium">
+                              {syncResult.imported} contacts importés, {syncResult.updated} mis à jour
+                            </div>
+                          )}
+                          {/* Pipeline selection + Stage mapping */}
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                            <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Pipeline & Mapping</h4>
+                            {ghlLoadingPipelines ? (
+                              <div className="flex items-center gap-2 text-sm text-[#444748]"><Loader2 className="h-4 w-4 animate-spin" /> Chargement...</div>
+                            ) : (
+                              <div className="space-y-6">
+                                <div className="space-y-2">
+                                  <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Pipeline</label>
+                                  <select
+                                    value={ghlSelectedPipeline}
+                                    onChange={(e) => handleGhlPipelineChange(e.target.value)}
+                                    className={selectCls}
+                                  >
+                                    <option value="">Sélectionner un pipeline</option>
+                                    {ghlPipelines.map((p: any) => (
+                                      <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                {ghlSelectedPipeline && (
+                                  <div className="grid grid-cols-2 gap-6">
+                                    {CLOSEOS_STAGES.map(stage => (
+                                      <div key={stage.id} className="space-y-2">
+                                        <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">{stage.name}</label>
+                                        <select
+                                          value={ghlMappings[stage.id] || ''}
+                                          onChange={(e) => handleUpdateGhlMapping(stage.id, e.target.value)}
+                                          className={selectCls}
+                                        >
+                                          <option value="">Sélectionner une étape</option>
+                                          {ghlStages.filter((s: any) => s.pipeline_id === ghlSelectedPipeline).map((s: any) => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </>
                       )}
                     </div>

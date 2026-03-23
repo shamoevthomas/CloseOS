@@ -23,8 +23,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!code || !state) return res.redirect('/offers?ghl_error=missing_params');
 
-    const userId = state as string;
-    console.log('[GHL] OAuth callback for user:', userId);
+    const stateStr = state as string;
+    const isBusiness = stateStr.endsWith('__business');
+    const userId = isBusiness ? stateStr.replace('__business', '') : stateStr;
+    console.log('[GHL] OAuth callback for user:', userId, isBusiness ? '(business)' : '(sales)');
 
     try {
         const tokenRes = await fetch(`${GHL_BASE_URL}/oauth/token`, {
@@ -58,12 +60,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (updateError) {
             console.error('[GHL] DB update error:', updateError);
-            return res.redirect('/offers?ghl_error=db_update_failed');
+            return res.redirect(isBusiness ? '/business/crm?ghl_error=db_update_failed' : '/offers?ghl_error=db_update_failed');
         }
 
-        return res.redirect('/offers?ghl_connected=true');
+        return res.redirect(isBusiness ? '/business/crm?ghl_connected=true' : '/offers?ghl_connected=true');
     } catch (error: any) {
         console.error('[GHL Callback] Error:', error);
-        return res.redirect('/offers?ghl_error=' + encodeURIComponent(error.message));
+        const errParam = encodeURIComponent(error.message);
+        return res.redirect(isBusiness ? `/business/crm?ghl_error=${errParam}` : `/offers?ghl_error=${errParam}`);
     }
 }

@@ -33,6 +33,8 @@ export interface BusinessProspect {
   hubspot_contact_id?: string
   systemeio_contact_id?: string
   airtable_record_id?: string
+  ghl_contact_id?: string
+  ghl_opportunity_id?: string
   avatar_url?: string
   call_notes?: {
     id: string
@@ -52,12 +54,15 @@ interface BusinessProspectsContextType {
   syncHubspot: () => Promise<{ imported: number; updated: number } | null>
   syncPipedrive: () => Promise<{ imported: number; updated: number } | null>
   syncAirtable: () => Promise<{ imported: number; updated: number } | null>
+  syncGhl: () => Promise<{ imported: number; updated: number } | null>
   isSyncingHubspot: boolean
   isSyncingPipedrive: boolean
   isSyncingAirtable: boolean
+  isSyncingGhl: boolean
   hubspotConnected: boolean
   pipedriveConnected: boolean
   airtableConnected: boolean
+  ghlConnected: boolean
   nextSyncSeconds: number
 }
 
@@ -78,9 +83,11 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   const [isSyncingHubspot, setIsSyncingHubspot] = useState(false)
   const [isSyncingPipedrive, setIsSyncingPipedrive] = useState(false)
   const [isSyncingAirtable, setIsSyncingAirtable] = useState(false)
+  const [isSyncingGhl, setIsSyncingGhl] = useState(false)
   const [hubspotConnected, setHubspotConnected] = useState(false)
   const [pipedriveConnected, setPipedriveConnected] = useState(false)
   const [airtableConnected, setAirtableConnected] = useState(false)
+  const [ghlConnected, setGhlConnected] = useState(false)
   const [nextSyncSeconds, setNextSyncSeconds] = useState(SYNC_INTERVAL_SECONDS)
 
   const crmProvider = businessSettings?.crm_provider || 'closeos'
@@ -110,13 +117,14 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('hubspot_access_token, pipedrive_access_token, airtable_access_token')
+        .select('hubspot_access_token, pipedrive_access_token, airtable_access_token, ghl_access_token')
         .eq('id', userId)
         .single()
 
       setHubspotConnected(!!profile?.hubspot_access_token)
       setPipedriveConnected(!!profile?.pipedrive_access_token)
       setAirtableConnected(!!profile?.airtable_access_token)
+      setGhlConnected(!!profile?.ghl_access_token)
     } catch (err) {
       console.error('Error checking CRM status:', err)
     }
@@ -133,6 +141,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       setHubspotConnected(false)
       setPipedriveConnected(false)
       setAirtableConnected(false)
+      setGhlConnected(false)
     }
   }, [userId, authLoading, loadProspects, checkCrmStatus])
 
@@ -149,6 +158,10 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     }
     if (params.get('airtable_connected') === 'true') {
       setAirtableConnected(true)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+    if (params.get('ghl_connected') === 'true') {
+      setGhlConnected(true)
       window.history.replaceState({}, '', window.location.pathname)
     }
   }, [])
@@ -223,6 +236,23 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
 
     return () => clearInterval(timer)
   }, [userId, authLoading, hubspotConnected, crmProvider])
+
+  // GHL Auto-Sync Timer
+  useEffect(() => {
+    if (authLoading || !userId || !ghlConnected || crmProvider !== 'ghl') return
+
+    const timer = setInterval(() => {
+      setNextSyncSeconds(prev => {
+        if (prev <= 1) {
+          syncGhlFn()
+          return SYNC_INTERVAL_SECONDS
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [userId, authLoading, ghlConnected, crmProvider])
 
   const syncHubspot = async () => {
     if (!user || isSyncingHubspot) return null
@@ -300,6 +330,66 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       return null
     } finally {
       setIsSyncingAirtable(false)
+    }
+  }
+
+  const syncGhlFn = async () => {
+    if (!user || isSyncingGhl) return null
+    setIsSyncingGhl(true)
+    try {
+      const res = await fetch('/api/business-crm-sync?action=ghl-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setNextSyncSeconds(SYNC_INTERVAL_SECONDS)
+        await loadProspects(false)
+        return data
+      } else {
+        const data = await res.json()
+        console.error('Erreur sync GHL:', data.error)
+        return null
+      }
+    } catch (error) {
+      console.error('Erreur sync GHL:', error)
+      return null
+    } finally {
+      setIsSyncingGhl(false)
+    }
+  }
+
+  const syncGhl = syncGhlFn
+
+  // Push to GHL when stage changes
+  const pushToGhlIfNeeded = async (prospect: any) => {
+    if (!user || crmProvider !== 'ghl' || !ghlConnected) return
+    try {
+      fetch('/api/business-crm-sync?action=ghl-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          id: prospect.id,
+          firstName: prospect.firstName,
+          lastName: prospect.lastName,
+          email: prospect.email,
+          phone: prospect.phone,
+          company: prospect.company,
+          stage: prospect.stage,
+          ghl_contact_id: prospect.ghl_contact_id,
+          ghl_opportunity_id: prospect.ghl_opportunity_id,
+        }),
+      }).then(res => res.json()).then(data => {
+        if (data.ghl_contact_id && !prospect.ghl_contact_id) {
+          setProspects(prev => prev.map(p =>
+            p.id === prospect.id ? { ...p, ghl_contact_id: data.ghl_contact_id, ghl_opportunity_id: data.ghl_opportunity_id } : p
+          ))
+        }
+      }).catch(err => console.error('[GHL] Push error:', err))
+    } catch (err) {
+      console.error('[GHL] Push check error:', err)
     }
   }
 
@@ -392,6 +482,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       pushToHubspotIfNeeded(data[0])
       pushToSystemeioIfNeeded(data[0])
       pushToAirtableIfNeeded(data[0])
+      pushToGhlIfNeeded(data[0])
     }
   }
 
@@ -427,6 +518,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       pushToHubspotIfNeeded(data[0])
       pushToSystemeioIfNeeded(data[0], prevStage)
       pushToAirtableIfNeeded(data[0], prevStage)
+      pushToGhlIfNeeded(data[0])
     }
   }
 
@@ -448,9 +540,9 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   return (
     <BusinessProspectsContext.Provider value={{
       prospects, addProspect, updateProspect, deleteProspect, loading,
-      syncHubspot, syncPipedrive, syncAirtable,
-      isSyncingHubspot, isSyncingPipedrive, isSyncingAirtable,
-      hubspotConnected, pipedriveConnected, airtableConnected,
+      syncHubspot, syncPipedrive, syncAirtable, syncGhl,
+      isSyncingHubspot, isSyncingPipedrive, isSyncingAirtable, isSyncingGhl,
+      hubspotConnected, pipedriveConnected, airtableConnected, ghlConnected,
       nextSyncSeconds,
     }}>
       {children}
