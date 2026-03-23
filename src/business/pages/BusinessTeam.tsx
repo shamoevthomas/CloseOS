@@ -1076,8 +1076,8 @@ function IndividualView({
                   </div>
                 )}
 
-                {/* Taux de commission — shown for commission or fixed+commission */}
-                {(compType === 'commission' || compType === 'fixed_plus_commission') && (
+                {/* Taux de commission — only shown for fixed+commission */}
+                {compType === 'fixed_plus_commission' && (
                   <div>
                     <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest mb-2">Taux de commission (%)</p>
                     <input
