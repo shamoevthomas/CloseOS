@@ -581,7 +581,7 @@ export function CloserCallDetails() {
 
   const renderOutcomeCards = (outcomes: typeof closerOutcomes, label: string, required?: boolean) => (
     <section>
-      <h3 className="font-['Manrope'] text-lg font-bold mb-5 flex items-center gap-2">
+      <h3 className="font-['Manrope'] text-lg font-bold mb-5 flex items-center gap-2 text-stone-900 dark:text-white">
         <span className="w-2 h-2 rounded-full bg-emerald-600" />
         {label} {required && <span className="text-red-500">*</span>}
       </h3>
@@ -709,13 +709,10 @@ export function CloserCallDetails() {
             {/* Closer Outcomes */}
             {renderOutcomeCards(closerOutcomes, "Résultat de l'appel — Closer", true)}
 
-            {/* Setter Outcomes (for owner/HOS/admin/setter-closer) */}
-            {showSetterOutcomes && renderOutcomeCards(setterOutcomesForOwner, "Résultat de l'appel — Setter")}
-
             {/* Won: Payment Terms & Commission */}
             {selectedOutcome === 'won' && (
               <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
-                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
+                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
                   <DollarSign className="h-5 w-5 text-emerald-600" /> Détails de la vente
                 </h3>
                 <div>
@@ -781,7 +778,7 @@ export function CloserCallDetails() {
             {/* Follow up (closer outcome) */}
             {selectedOutcome === 'followup' && (
               <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
-                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
+                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
                   <Clock className="h-5 w-5 text-stone-500" /> Informations de suivi
                 </h3>
                 <div>
@@ -813,7 +810,7 @@ export function CloserCallDetails() {
             {/* Lost (closer outcome) */}
             {selectedOutcome === 'lost' && (
               <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
-                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2">
+                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
                   <XCircle className="h-5 w-5 text-stone-500" /> Raison de la perte
                 </h3>
                 <div>
@@ -847,7 +844,7 @@ export function CloserCallDetails() {
             {/* Qualified: Closer assignment (setter outcome for owner) */}
             {selectedOutcome === 'qualified' && showSetterOutcomes && !isSetterCloserSelf && (
               <section>
-                <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 1 — Assigner un Closer</h3>
+                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">Étape 1 — Assigner un Closer</h3>
                 <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-7 rounded-xl border border-white/40 dark:border-white/10 shadow-sm">
                   {closerMembers.length === 0 ? (
                     <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-white/5 rounded-lg p-4 border border-stone-200 dark:border-white/10">
@@ -917,13 +914,16 @@ export function CloserCallDetails() {
                 </div>
               </section>
             )}
+
+            {/* Setter Outcomes (for owner/HOS/admin/setter-closer) */}
+            {showSetterOutcomes && renderOutcomeCards(setterOutcomesForOwner, "Résultat de l'appel — Setter")}
           </div>
 
           {/* Right Column: Step 2 - Scheduling */}
           {selectedOutcome === 'qualified' && selectedCloser && showSetterOutcomes && !isSetterCloserSelf && (
             <div className="lg:col-span-5">
               <section>
-                <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 2 — Programmer le RDV</h3>
+                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">Étape 2 — Programmer le RDV</h3>
                 <div className="bg-white dark:bg-white/5 p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   {loadingSlots ? (
                     <div className="flex items-center justify-center py-12">

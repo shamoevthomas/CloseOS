@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { X, ChevronLeft, Download, Loader2, Mail } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import type { BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { supabase } from '../../lib/supabase'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
@@ -13,11 +14,11 @@ import QRCode from 'qrcode'
 interface BusinessInvoiceGeneratorModalProps {
   isOpen: boolean
   onClose: () => void
-  clientName?: string
-  clientEmail?: string
-  offerName?: string
-  amountHT?: number
-  dueDate?: string
+  deals: BusinessProspect[]
+  commission: number
+  commissionRate: number
+  startDate: string
+  endDate: string
 }
 
 type PaymentMethodType = 'paypal' | 'virement' | 'revolut' | 'stripe'
@@ -25,11 +26,11 @@ type PaymentMethodType = 'paypal' | 'virement' | 'revolut' | 'stripe'
 export function BusinessInvoiceGeneratorModal({
   isOpen,
   onClose,
-  clientName: initialClientName,
-  clientEmail: initialClientEmail,
-  offerName: initialOfferName,
-  amountHT: initialAmountHT,
-  dueDate: initialDueDate,
+  deals,
+  commission,
+  commissionRate,
+  startDate,
+  endDate,
 }: BusinessInvoiceGeneratorModalProps) {
   const { user, teamMember, ownerUserId, businessSettings } = useBusinessAuth()
   const effectiveUserId = ownerUserId || user?.id
@@ -60,20 +61,9 @@ export function BusinessInvoiceGeneratorModal({
   const [issuerEmail, setIssuerEmail] = useState('')
   const [issuerPhone, setIssuerPhone] = useState('')
 
-  // Client fields
-  const [clientName, setClientName] = useState(initialClientName || '')
-  const [clientEmail, setClientEmail] = useState(initialClientEmail || '')
-
-  // Offer / Amount
-  const [offerName, setOfferName] = useState(initialOfferName || '')
-  const [amountHT, setAmountHT] = useState(initialAmountHT || 0)
-  const [dueDateStr, setDueDateStr] = useState(initialDueDate || '')
-
   // TVA
   const [tvaApplicable, setTvaApplicable] = useState(false)
   const tvaRate = 0.2
-  const tvaAmount = tvaApplicable ? amountHT * tvaRate : 0
-  const totalTTC = amountHT + tvaAmount
 
   // Payment method
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('virement')
@@ -95,22 +85,70 @@ export function BusinessInvoiceGeneratorModal({
   const [latePenaltyRate, setLatePenaltyRate] = useState(15)
   const [latePenaltyFixed, setLatePenaltyFixed] = useState(40)
 
-  // Notes
-  const [notes, setNotes] = useState('')
-
   // Loading states
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+
+  // ---------- AUTO-COMPUTED LINE ITEMS ----------
+
+  const rate = commissionRate / 100
+
+  // Closer deals: assigned_to = teamMember.id
+  const closerDeals = useMemo(() =>
+    deals.filter(d => d.assigned_to === teamMember?.id),
+    [deals, teamMember?.id]
+  )
+
+  // Setter deals: assigned_setter = teamMember.id (but not also closer)
+  const setterDeals = useMemo(() =>
+    deals.filter(d => d.assigned_setter === teamMember?.id && d.assigned_to !== teamMember?.id),
+    [deals, teamMember?.id]
+  )
+
+  // Group deals into line items (like Sales)
+  const groupDeals = (dealList: BusinessProspect[]) => {
+    const groups: Record<string, { description: string; count: number; total: number; unitPrice: number }> = {}
+
+    dealList.forEach((deal) => {
+      const isInstallment = deal.payment_type === 'installments' || (deal.installments && deal.installments > 1)
+      const offerLabel = deal.offer || 'Commission'
+      const paymentLabel = isInstallment
+        ? `Mensualite (Paiement en ${deal.installments}x)`
+        : 'Paiement Comptant'
+
+      const key = `${offerLabel}-${paymentLabel}`
+
+      const fullValue = deal.value || 0
+      const amountInPeriod = isInstallment ? fullValue / (deal.installments || 1) : fullValue
+      const dealCommission = amountInPeriod * rate
+
+      if (!groups[key]) {
+        groups[key] = {
+          description: `${offerLabel} - ${paymentLabel}`,
+          count: 0,
+          total: 0,
+          unitPrice: dealCommission,
+        }
+      }
+
+      groups[key].count++
+      groups[key].total += dealCommission
+    })
+
+    return Object.values(groups)
+  }
+
+  const closerLineItems = useMemo(() => groupDeals(closerDeals), [closerDeals, rate])
+  const setterLineItems = useMemo(() => groupDeals(setterDeals), [setterDeals, rate])
+
+  const commissionHT = commission
+  const tvaAmount = tvaApplicable ? commissionHT * tvaRate : 0
+  const totalTTC = commissionHT + tvaAmount
 
   // Receiver from businessSettings
   const receiverInfo = useMemo(() => ({
     name: businessSettings?.company_name || '',
     company: businessSettings?.raison_sociale || businessSettings?.company_name || '',
-    address: [
-      businessSettings?.billing_address,
-      [businessSettings?.billing_zip, businessSettings?.billing_city].filter(Boolean).join(' '),
-      businessSettings?.billing_country,
-    ].filter(Boolean).join(', '),
     billingAddress: businessSettings?.billing_address || '',
     billingZip: businessSettings?.billing_zip || '',
     billingCity: businessSettings?.billing_city || '',
@@ -304,12 +342,8 @@ export function BusinessInvoiceGeneratorModal({
   // ---------- FORM VALIDATION ----------
 
   const validateForm = (): boolean => {
-    if (!amountHT || amountHT <= 0) {
-      toast.error('Veuillez renseigner un montant HT valide')
-      return false
-    }
-    if (!clientName.trim()) {
-      toast.error('Veuillez renseigner le nom du client')
+    if (commissionHT <= 0) {
+      toast.error('Aucune commission a facturer sur cette periode')
       return false
     }
     if (paymentMethod === 'virement' && (!iban || !bic || !accountHolder) && selectedMethodId === 'custom') {
@@ -348,7 +382,7 @@ export function BusinessInvoiceGeneratorModal({
             currency: 'eur',
             title: `Facture ${invoiceNumber}`,
             connectedAccountId: stripeAccountId,
-            clientEmail: clientEmail || undefined,
+            clientEmail: businessSettings?.billing_email || undefined,
           }),
         })
         const data = await response.json()
@@ -403,10 +437,10 @@ export function BusinessInvoiceGeneratorModal({
     // Save to invoices table
     const { error: insertError } = await supabase.from('invoices').insert([{
       invoice_number: invoiceNumber,
-      offer_name: offerName || null,
-      client_name: clientName,
-      client_email: clientEmail || null,
-      amount_ht: amountHT,
+      offer_name: `Commission ${new Date(startDate).toLocaleDateString('fr-FR')} - ${new Date(endDate).toLocaleDateString('fr-FR')}`,
+      client_name: receiverInfo.company || receiverInfo.name,
+      client_email: businessSettings?.billing_email || null,
+      amount_ht: commissionHT,
       amount_ttc: totalTTC,
       status,
       pdf_url: publicUrl,
@@ -447,9 +481,11 @@ export function BusinessInvoiceGeneratorModal({
 
   // ---------- SEND EMAIL ----------
 
+  const recipientEmail = businessSettings?.billing_email || ''
+
   const handleSendEmail = async () => {
-    if (!clientEmail) {
-      toast.error('Aucun email client renseigne')
+    if (!recipientEmail) {
+      toast.error('Aucun email destinataire configure dans les parametres')
       return
     }
 
@@ -458,19 +494,19 @@ export function BusinessInvoiceGeneratorModal({
       const pdfBlob = await generatePdfBlob()
       const publicUrl = await uploadPdfAndSave(pdfBlob, 'envoyee')
 
+      const periodLabel = `${new Date(startDate).toLocaleDateString('fr-FR')} au ${new Date(endDate).toLocaleDateString('fr-FR')}`
       const emailPayload = {
         sender: { name: 'CloseOS Notification', email: 'support@closeos.fr' },
         replyTo: { email: issuerEmail || 'support@closeos.fr', name: issuerCompanyName || 'CloseOS' },
-        to: [{ email: clientEmail, name: clientName }],
-        subject: `Votre facture ${invoiceNumber} est disponible`,
+        to: [{ email: recipientEmail, name: receiverInfo.company || receiverInfo.name }],
+        subject: `Facture ${invoiceNumber} - Commission du ${periodLabel}`,
         htmlContent: `
           <html>
             <body>
               <h1>Bonjour,</h1>
-              <p>Veuillez trouver ci-joint votre facture n&deg; <strong>${invoiceNumber}</strong>.</p>
-              ${dueDateStr ? `<p>Date d'&eacute;ch&eacute;ance : ${new Date(dueDateStr).toLocaleDateString('fr-FR')}</p>` : ''}
+              <p>Veuillez trouver ci-joint la facture n&deg; <strong>${invoiceNumber}</strong> correspondant &agrave; la p&eacute;riode du ${periodLabel}.</p>
               <p>Vous pouvez la t&eacute;l&eacute;charger directement via ce lien : <br>
-              <a href="${publicUrl}">T&eacute;l&eacute;charger ma facture (PDF)</a></p>
+              <a href="${publicUrl}">T&eacute;l&eacute;charger la facture (PDF)</a></p>
               ${generatedLink ? `
                 <br>
                 <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
@@ -509,13 +545,7 @@ export function BusinessInvoiceGeneratorModal({
   const handleClose = () => {
     setStep(1)
     setInvoiceNumber(`FAC-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`)
-    setClientName(initialClientName || '')
-    setClientEmail(initialClientEmail || '')
-    setOfferName(initialOfferName || '')
-    setAmountHT(initialAmountHT || 0)
-    setDueDateStr(initialDueDate || '')
     setTvaApplicable(false)
-    setNotes('')
     setLatePenaltyRate(15)
     setLatePenaltyFixed(40)
     setGeneratedLink('')
@@ -630,34 +660,6 @@ export function BusinessInvoiceGeneratorModal({
                 </div>
               )}
 
-              {/* Client */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Nom du client *</label>
-                  <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} className={inputCls} placeholder="Nom complet ou raison sociale" />
-                </div>
-                <div>
-                  <label className={labelCls}>Email du client</label>
-                  <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} className={inputCls} placeholder="email@exemple.com" />
-                </div>
-              </div>
-
-              {/* Prestation / Amount */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className={labelCls}>Description / Offre</label>
-                  <input type="text" value={offerName} onChange={(e) => setOfferName(e.target.value)} className={inputCls} placeholder="Commission closing..." />
-                </div>
-                <div>
-                  <label className={labelCls}>Montant HT *</label>
-                  <input type="number" step="0.01" min="0" value={amountHT || ''} onChange={(e) => setAmountHT(parseFloat(e.target.value) || 0)} className={inputCls} placeholder="0.00" />
-                </div>
-                <div>
-                  <label className={labelCls}>Date d'echeance</label>
-                  <input type="date" value={dueDateStr} onChange={(e) => setDueDateStr(e.target.value)} className={inputCls} />
-                </div>
-              </div>
-
               {/* Payment Method Section */}
               <div className="space-y-4 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-5">
                 <h3 className="text-sm font-bold text-[#1b1c1b] dark:text-white flex items-center gap-2">
@@ -743,6 +745,37 @@ export function BusinessInvoiceGeneratorModal({
                 </label>
               </div>
 
+              {/* Late Payment Penalties */}
+              <div className="rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-400 mb-3">
+                  Penalites de retard
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Taux annuel (%)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={latePenaltyRate}
+                      onChange={(e) => setLatePenaltyRate(parseFloat(e.target.value) || 0)}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Indemnite forfaitaire (EUR)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={latePenaltyFixed}
+                      onChange={(e) => setLatePenaltyFixed(parseFloat(e.target.value) || 0)}
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Preview Button */}
               <button
                 type="button"
@@ -779,14 +812,14 @@ export function BusinessInvoiceGeneratorModal({
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleSendEmail}
-                  disabled={!clientEmail || isSendingEmail}
+                  disabled={!recipientEmail || isSendingEmail}
                   className={cn(
                     'flex items-center gap-2 rounded-full px-6 py-2 font-bold transition-all',
-                    !clientEmail
+                    !recipientEmail
                       ? 'bg-[#f5f3f2] dark:bg-neutral-800 text-[#c4c7c7] dark:text-neutral-600 cursor-not-allowed'
                       : 'bg-[#635BFF] text-white hover:bg-[#5349E0]'
                   )}
-                  title={!clientEmail ? 'Aucun email client renseigne' : 'Envoyer la facture par mail'}
+                  title={!recipientEmail ? 'Aucun email destinataire configure' : 'Envoyer la facture par mail'}
                 >
                   {isSendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                   {isSendingEmail ? 'Envoi...' : 'Envoyer par mail'}
@@ -879,45 +912,82 @@ export function BusinessInvoiceGeneratorModal({
                     </div>
                   </div>
 
-                  {/* Due date / period */}
-                  {dueDateStr && (
-                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem', marginBottom: '2rem' }}>
-                      <p style={{ fontSize: '0.875rem', color: '#334155', margin: 0 }}>
-                        <span style={{ fontWeight: 600 }}>Echeance:</span>{' '}
-                        {new Date(dueDateStr).toLocaleDateString('fr-FR')}
+                  {/* Period */}
+                  <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem', marginBottom: '2rem' }}>
+                    <p style={{ fontSize: '0.875rem', color: '#334155', margin: 0 }}>
+                      <span style={{ fontWeight: 600 }}>Periode:</span>{' '}
+                      Du {new Date(startDate).toLocaleDateString('fr-FR')} au {new Date(endDate).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+
+                  {/* Closer Line Items */}
+                  {closerLineItems.length > 0 && (
+                    <>
+                      <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>
+                        Commission Closer ({commissionRate}%)
                       </p>
-                    </div>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid #0f172a', backgroundColor: '#f8fafc' }}>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Description</th>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Qte</th>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Prix Unitaire</th>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Total HT</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {closerLineItems.map((item, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                              <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#0f172a' }}>
+                                <p style={{ fontWeight: 500, margin: 0 }}>{item.description}</p>
+                              </td>
+                              <td style={{ padding: '1rem', textAlign: 'center', fontSize: '0.875rem', color: '#0f172a' }}>{item.count}</td>
+                              <td style={{ padding: '1rem', textAlign: 'right', fontSize: '0.875rem', color: '#0f172a' }}>{formatCurrency(item.unitPrice)}</td>
+                              <td style={{ padding: '1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>{formatCurrency(item.total)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
                   )}
 
-                  {/* Items table */}
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '2rem' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '2px solid #0f172a', backgroundColor: '#f8fafc' }}>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Description</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Qte</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Prix Unitaire</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Total HT</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#0f172a' }}>
-                          <p style={{ fontWeight: 500, margin: 0 }}>{offerName || 'Prestation'}</p>
-                          {clientName && <p style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#475569' }}>Client: {clientName}</p>}
-                        </td>
-                        <td style={{ padding: '1rem', textAlign: 'center', fontSize: '0.875rem', color: '#0f172a' }}>1</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', fontSize: '0.875rem', color: '#0f172a' }}>{formatCurrency(amountHT)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>{formatCurrency(amountHT)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  {/* Setter Line Items */}
+                  {setterLineItems.length > 0 && (
+                    <>
+                      <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>
+                        Commission Setter ({commissionRate}%)
+                      </p>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid #0f172a', backgroundColor: '#f8fafc' }}>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Description</th>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Qte</th>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Prix Unitaire</th>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Total HT</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {setterLineItems.map((item, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                              <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#0f172a' }}>
+                                <p style={{ fontWeight: 500, margin: 0 }}>{item.description}</p>
+                              </td>
+                              <td style={{ padding: '1rem', textAlign: 'center', fontSize: '0.875rem', color: '#0f172a' }}>{item.count}</td>
+                              <td style={{ padding: '1rem', textAlign: 'right', fontSize: '0.875rem', color: '#0f172a' }}>{formatCurrency(item.unitPrice)}</td>
+                              <td style={{ padding: '1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>{formatCurrency(item.total)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
+                  )}
 
                   {/* Totals */}
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
                     <div style={{ width: '20rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
                         <span style={{ color: '#334155' }}>Total HT</span>
-                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatCurrency(amountHT)}</span>
+                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatCurrency(commissionHT)}</span>
                       </div>
                       {tvaApplicable && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
@@ -943,8 +1013,7 @@ export function BusinessInvoiceGeneratorModal({
                       </p>
                       <div style={{ fontSize: '0.875rem', color: '#334155' }}>
                         <p style={{ margin: '0.25rem 0' }}>
-                          <span style={{ fontWeight: 500 }}>Echeance:</span>{' '}
-                          {dueDateStr ? new Date(dueDateStr).toLocaleDateString('fr-FR') : 'A reception'}
+                          <span style={{ fontWeight: 500 }}>Echeance:</span> A reception
                         </p>
                         <p style={{ margin: '0.25rem 0' }}>
                           <span style={{ fontWeight: 500 }}>Mode de reglement:</span> {getPaymentMethodLabel()}
@@ -996,13 +1065,6 @@ export function BusinessInvoiceGeneratorModal({
                           </p>
                         </div>
 
-                        {/* Notes */}
-                        {notes && (
-                          <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#475569' }}>
-                            <p style={{ fontWeight: 500, marginBottom: '0.25rem' }}>Notes :</p>
-                            <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{notes}</p>
-                          </div>
-                        )}
                       </div>
                     </div>
 

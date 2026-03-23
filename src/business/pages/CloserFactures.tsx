@@ -77,9 +77,23 @@ export function CloserFactures() {
 
   useEffect(() => { fetchInvoices() }, [fetchInvoices])
 
-  // Won prospects assigned to me
+  // Won prospects assigned to me (as closer OR setter, no double-count)
   const myWonProspects = useMemo(
+    () => prospects.filter(p =>
+      p.stage === 'won' && (p.assigned_to === teamMember?.id || p.assigned_setter === teamMember?.id)
+    ),
+    [prospects, teamMember?.id]
+  )
+
+  // Closer deals only (for KPI breakdown)
+  const myCloserDeals = useMemo(
     () => prospects.filter(p => p.stage === 'won' && p.assigned_to === teamMember?.id),
+    [prospects, teamMember?.id]
+  )
+
+  // Setter deals only (not also closer, to avoid double-counting)
+  const mySetterDeals = useMemo(
+    () => prospects.filter(p => p.stage === 'won' && p.assigned_setter === teamMember?.id && p.assigned_to !== teamMember?.id),
     [prospects, teamMember?.id]
   )
 
@@ -96,11 +110,26 @@ export function CloserFactures() {
     })
   }, [savedInvoices, startDate, endDate, isTeamMember, teamMember?.id])
 
-  // KPIs
+  // Commission rate
+  const commissionRateNum = teamMember?.commission_rate ? Number(teamMember.commission_rate) : 10
+  const rate = commissionRateNum / 100
+
+  // KPIs — compute commission taking installments into account
   const totalRevenue = useMemo(() =>
     myWonProspects.reduce((sum, p) => sum + (p.value || 0), 0),
     [myWonProspects]
   )
+
+  const commissionEstimee = useMemo(() => {
+    let total = 0
+    myWonProspects.forEach(p => {
+      const fullValue = p.value || 0
+      const isInstallment = p.payment_type === 'installments' || (p.installments && p.installments > 1)
+      const amountInPeriod = isInstallment ? fullValue / (p.installments || 1) : fullValue
+      total += amountInPeriod * rate
+    })
+    return total
+  }, [myWonProspects, rate])
 
   const pendingInvoices = useMemo(() =>
     filteredInvoices.filter(inv => ['en_attente', 'retard', 'en attente', 'à payer', 'en cours'].includes(inv.status)),
@@ -116,11 +145,6 @@ export function CloserFactures() {
     filteredInvoices.filter(inv => inv.status === 'payé').reduce((sum, inv) => sum + (inv.amount_ttc || 0), 0),
     [filteredInvoices]
   )
-
-  const commissionEstimee = useMemo(() => {
-    const rate = teamMember?.commission_rate ? Number(teamMember.commission_rate) / 100 : 0.1
-    return totalRevenue * rate
-  }, [totalRevenue, teamMember?.commission_rate])
 
   // Update status
   const handleStatusChange = useCallback(async (invoiceId: string, newStatus: string) => {
@@ -467,6 +491,11 @@ export function CloserFactures() {
       <BusinessInvoiceGeneratorModal
         isOpen={isGenModalOpen}
         onClose={() => { setIsGenModalOpen(false); fetchInvoices() }}
+        deals={myWonProspects}
+        commission={commissionEstimee}
+        commissionRate={commissionRateNum}
+        startDate={startDate}
+        endDate={endDate}
       />
     </div>
   )

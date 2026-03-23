@@ -526,7 +526,7 @@ export function SetterCallDetails() {
           <div className="lg:col-span-7 space-y-10">
             {/* Résultat de l'appel */}
             <section>
-              <h3 className="font-['Manrope'] text-lg font-bold mb-5 flex items-center gap-2">
+              <h3 className="font-['Manrope'] text-lg font-bold mb-5 flex items-center gap-2 text-stone-900 dark:text-white">
                 <span className="w-2 h-2 rounded-full bg-emerald-600" />
                 Résultat de l'appel
               </h3>
@@ -576,7 +576,7 @@ export function SetterCallDetails() {
             {/* Étape 1 — Assigner un Closer */}
             {selectedOutcome === 'qualified' && (
               <section>
-                <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 1 — Assigner un Closer</h3>
+                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">Étape 1 — Assigner un Closer</h3>
                 <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-7 rounded-xl border border-white/40 dark:border-white/10 shadow-sm">
                   {closers.length === 0 ? (
                     <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-white/5 rounded-lg p-4 border border-stone-200 dark:border-white/10">
@@ -652,7 +652,7 @@ export function SetterCallDetails() {
           {selectedOutcome === 'qualified' && selectedCloser && (
             <div className="lg:col-span-5">
               <section>
-                <h3 className="font-['Manrope'] text-lg font-bold mb-5">Étape 2 — Programmer le RDV</h3>
+                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">Étape 2 — Programmer le RDV</h3>
                 <div className="bg-white dark:bg-white/5 p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   {loadingSlots ? (
                     <div className="flex items-center justify-center py-12">

@@ -6,6 +6,7 @@ import {
   MessageCircle, Save, Clock, Plus, ChevronDown,
   Bell, Check, Loader2, FileText, ClipboardList,
   Package, ExternalLink, PhoneCall, Tag, Camera,
+  CreditCard, Wallet,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -95,9 +96,20 @@ export function BusinessProspectView({
   }, [user?.id, ownerUserId, isTeamMember, canAssign])
 
   const [local, setLocal] = useState<BusinessProspect>(prospect)
+  // Sync local when prospect prop changes (e.g., realtime update from call details)
+  useEffect(() => {
+    setLocal(prospect)
+  }, [prospect])
   const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'rappels'>('info')
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
+
+  // Payment details
+  const [editingPayment, setEditingPayment] = useState(false)
+  const [paymentMode, setPaymentMode] = useState<'cash' | 'installments'>(prospect.payment_type === 'installments' ? 'installments' : 'cash')
+  const [editedInstallments, setEditedInstallments] = useState(prospect.installments || 1)
+  const [editedValue, setEditedValue] = useState(prospect.value || 0)
+  const [memberCommissionRate, setMemberCommissionRate] = useState(10)
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -126,6 +138,44 @@ export function BusinessProspectView({
       setAvatarUploading(false)
       if (avatarInputRef.current) avatarInputRef.current.value = ''
     }
+  }
+
+  // Load commission rate for the viewing team member
+  useEffect(() => {
+    if (!isTeamMember || !teamMember?.id) return
+    supabase.from('business_team_members').select('commission_rate').eq('id', teamMember.id).single()
+      .then(({ data }) => {
+        if (data?.commission_rate != null) setMemberCommissionRate(data.commission_rate)
+      })
+  }, [isTeamMember, teamMember?.id])
+
+  // Sync payment state when prospect changes
+  useEffect(() => {
+    setEditedValue(prospect.value || 0)
+    setPaymentMode(prospect.payment_type === 'installments' ? 'installments' : 'cash')
+    setEditedInstallments(prospect.installments || 1)
+  }, [prospect.id, prospect.value, prospect.payment_type, prospect.installments])
+
+  // Permission: owner and HOS can edit price, team members can only view
+  const isOwner = !isTeamMember
+  const canEditPayment = isOwner || isHosOrAdmin
+
+  // Payment calculations
+  const commissionRate = memberCommissionRate
+  const commissionAmount = (editedValue * commissionRate) / 100
+  const savedInstallments = local.installments || 1
+  const savedCommission = (local.value || 0) * (commissionRate / 100)
+  const savedMonthlyPayment = (local.value || 0) / savedInstallments
+  const savedMonthlyCommission = savedCommission / savedInstallments
+  const isPayingInInstallments = local.payment_type === 'installments' || (savedInstallments > 1)
+
+  const handleSavePayment = () => {
+    handleUpdate({
+      value: editedValue,
+      payment_type: paymentMode,
+      installments: paymentMode === 'installments' ? editedInstallments : undefined,
+    } as any)
+    setEditingPayment(false)
   }
 
   // Next appointment
@@ -577,6 +627,90 @@ export function BusinessProspectView({
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-5 w-5 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                 </div>
               </div>
+
+              {/* SECTION PAIEMENT — visible quand stage = won */}
+              {local.stage === 'won' && (
+                <div className="animate-in slide-in-from-top-4 fade-in duration-300">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-emerald-600 dark:text-emerald-400">
+                      <CreditCard className="h-4 w-4" /> Détails du Paiement
+                    </h3>
+                    {canEditPayment && (
+                      <button onClick={() => { setEditingPayment(!editingPayment); setEditedValue(local.value || 0); }} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                        <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      </button>
+                    )}
+                  </div>
+
+                  {editingPayment && canEditPayment ? (
+                    <div className="space-y-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-500/5 p-5">
+                      <div>
+                        <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">Montant final (€)</label>
+                        <input
+                          type="number"
+                          value={editedValue}
+                          onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
+                          className="mt-1.5 w-full rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-3 text-sm font-bold text-stone-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all"
+                        />
+                      </div>
+                      <div className="flex rounded-xl bg-stone-100 dark:bg-neutral-800 p-1">
+                        <button type="button" onClick={() => { setPaymentMode('cash'); setEditedInstallments(1); }} className={cn("flex-1 rounded-lg py-2 text-xs font-bold transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow-md" : "text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white")}>Comptant</button>
+                        <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-lg py-2 text-xs font-bold transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow-md" : "text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white")}>Plusieurs fois</button>
+                      </div>
+                      {paymentMode === 'installments' && (
+                        <div className="animate-in fade-in slide-in-from-top-1">
+                          <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">Nombre de mensualités</label>
+                          <select value={editedInstallments} onChange={(e) => setEditedInstallments(parseInt(e.target.value))} className="mt-1.5 w-full rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-3 text-sm font-medium text-stone-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all">
+                            {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{n} fois ({(editedValue / n).toFixed(2)}€/mois)</option>)}
+                          </select>
+                        </div>
+                      )}
+                      <div className="rounded-xl bg-emerald-500/10 p-4 border border-emerald-500/20">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" /> Ta Commission ({commissionRate}%)</span>
+                          <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{commissionAmount.toFixed(2)}€</span>
+                        </div>
+                        {paymentMode === 'installments' && (
+                          <p className="mt-1 text-[10px] text-emerald-500/70 dark:text-emerald-300/70">
+                            Tu recevras : {(commissionAmount / editedInstallments).toFixed(2)}€ / mois
+                          </p>
+                        )}
+                      </div>
+                      <button onClick={handleSavePayment} className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-business-display font-bold text-white hover:bg-emerald-500 transition-colors">Valider les détails</button>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/5 p-5">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Montant Vente</span>
+                        <span className="text-sm font-extrabold text-stone-900 dark:text-white">{(local.value || 0).toLocaleString()}€</span>
+                      </div>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Commission Totale ({commissionRate}%)</span>
+                        <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">+{savedCommission.toFixed(2)}€</span>
+                      </div>
+
+                      {isPayingInInstallments && (
+                        <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-stone-500 dark:text-neutral-300">Client paie (x{savedInstallments}) :</span>
+                            <span className="text-sm font-bold text-stone-900 dark:text-white">{savedMonthlyPayment.toFixed(2)}€ / mois</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Tu reçois :</span>
+                            <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{savedMonthlyCommission.toFixed(2)}€ / mois</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-2.5 border-t border-emerald-500/20 text-center mt-2.5">
+                        <span className="text-[10px] font-bold text-emerald-600/50 dark:text-emerald-300/50 uppercase tracking-widest">
+                          {isPayingInInstallments ? `Paiement en ${savedInstallments} fois` : 'Paiement Comptant'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Assignment */}
               {canAssign && teamMembers.length > 0 && (() => {
