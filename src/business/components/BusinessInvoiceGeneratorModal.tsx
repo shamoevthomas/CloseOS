@@ -527,10 +527,8 @@ export function BusinessInvoiceGeneratorModal({
 
   // ---------- INPUT CLASSES ----------
 
-  const inputCls = 'w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none transition-colors'
-  const labelCls = 'text-sm font-medium text-[#444748] dark:text-neutral-400 mb-1.5 block'
-  const sectionCls = 'rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-white/5 p-4'
-  const sectionTitleCls = 'text-xs font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-400 mb-3'
+  const inputCls = 'w-full rounded-lg border border-[#c4c7c7]/30 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none transition-colors'
+  const labelCls = 'text-sm font-medium text-[#444748] dark:text-neutral-400 mb-2 block'
 
   return (
     <div
@@ -538,7 +536,7 @@ export function BusinessInvoiceGeneratorModal({
       onClick={handleClose}
     >
       <div
-        className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="relative bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -552,7 +550,7 @@ export function BusinessInvoiceGeneratorModal({
         {/* ==================== STEP 1: CONFIGURATION ==================== */}
         {step === 1 && (
           <div className="p-8">
-            <h2 className="mb-6 text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">
+            <h2 className="mb-6 text-2xl font-bold text-[#1b1c1b] dark:text-white">
               Configuration de la Facture
             </h2>
 
@@ -569,294 +567,146 @@ export function BusinessInvoiceGeneratorModal({
                 />
               </div>
 
-              {/* ---- ISSUER SECTION ---- */}
-              <div className={sectionCls}>
-                <h3 className={sectionTitleCls}>
-                  <User className="inline h-3.5 w-3.5 mr-1.5 -mt-0.5" />
-                  Emetteur
-                </h3>
-
-                {/* Saved Profiles Dropdown */}
-                {savedProfiles.length > 0 && (
-                  <div className="mb-4">
-                    <label className={labelCls}>Profil emetteur enregistre</label>
-                    <select
-                      value={selectedProfileId}
-                      onChange={(e) => handleProfileSelect(e.target.value)}
-                      className={inputCls}
-                    >
-                      <option value="custom">Saisie manuelle...</option>
-                      {savedProfiles.map(profile => (
-                        <option key={profile.id} value={profile.id}>
-                          {profile.name} - {profile.companyName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Manual Issuer Fields */}
-                {selectedProfileId === 'custom' && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className={labelCls}>Nom / Raison Sociale</label>
-                      <input
-                        type="text"
-                        value={issuerCompanyName}
-                        onChange={(e) => setIssuerCompanyName(e.target.value)}
-                        className={inputCls}
-                        placeholder="Ex: ACME SARL, Jean Dupont EI..."
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className={labelCls}>Adresse</label>
-                        <input type="text" value={issuerAddress} onChange={(e) => setIssuerAddress(e.target.value)} className={inputCls} placeholder="123 Rue de la Paix" />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Ville</label>
-                        <input type="text" value={issuerCity} onChange={(e) => setIssuerCity(e.target.value)} className={inputCls} placeholder="Paris" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label className={labelCls}>Code Postal</label>
-                        <input type="text" value={issuerZip} onChange={(e) => setIssuerZip(e.target.value)} className={inputCls} placeholder="75001" />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Pays</label>
-                        <input type="text" value={issuerCountry} onChange={(e) => setIssuerCountry(e.target.value)} className={inputCls} placeholder="France" />
-                      </div>
-                      <div>
-                        <label className={labelCls}>SIRET</label>
-                        <input type="text" value={issuerSiret} onChange={(e) => setIssuerSiret(e.target.value)} className={inputCls} placeholder="123 456 789 00012" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className={labelCls}>Email</label>
-                        <input type="email" value={issuerEmail} onChange={(e) => setIssuerEmail(e.target.value)} className={inputCls} placeholder="contact@entreprise.com" />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Telephone</label>
-                        <input type="tel" value={issuerPhone} onChange={(e) => setIssuerPhone(e.target.value)} className={inputCls} placeholder="+33 1 23 45 67 89" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* ---- DESTINATAIRE (READ-ONLY ORG) ---- */}
-              <div className={sectionCls}>
-                <h3 className={sectionTitleCls}>
-                  <Building2 className="inline h-3.5 w-3.5 mr-1.5 -mt-0.5" />
-                  Destinataire (Organisation)
-                </h3>
-                <div className="rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800/50 p-4 space-y-1 text-sm text-[#1b1c1b] dark:text-neutral-200">
-                  {receiverInfo.company ? (
-                    <>
-                      <p className="font-bold">{receiverInfo.company}</p>
-                      {receiverInfo.billingAddress && <p className="text-[#444748] dark:text-neutral-400">{receiverInfo.billingAddress}</p>}
-                      {(receiverInfo.billingZip || receiverInfo.billingCity) && (
-                        <p className="text-[#444748] dark:text-neutral-400">
-                          {receiverInfo.billingZip} {receiverInfo.billingCity}
-                        </p>
-                      )}
-                      {receiverInfo.billingCountry && <p className="text-[#444748] dark:text-neutral-400">{receiverInfo.billingCountry}</p>}
-                      {receiverInfo.siret && <p className="text-[#444748] dark:text-neutral-400"><span className="font-medium">SIRET:</span> {receiverInfo.siret}</p>}
-                      {receiverInfo.tva && <p className="text-[#444748] dark:text-neutral-400"><span className="font-medium">TVA:</span> {receiverInfo.tva}</p>}
-                    </>
-                  ) : (
-                    <p className="text-[#444748] dark:text-neutral-400 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                      Aucune information d'organisation configuree
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* ---- CLIENT FIELDS ---- */}
-              <div className={sectionCls}>
-                <h3 className={sectionTitleCls}>Client</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelCls}>Nom du client *</label>
-                    <input
-                      type="text"
-                      value={clientName}
-                      onChange={(e) => setClientName(e.target.value)}
-                      className={inputCls}
-                      placeholder="Nom complet ou raison sociale"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Email du client</label>
-                    <input
-                      type="email"
-                      value={clientEmail}
-                      onChange={(e) => setClientEmail(e.target.value)}
-                      className={inputCls}
-                      placeholder="email@exemple.com"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* ---- OFFER / AMOUNT ---- */}
-              <div className={sectionCls}>
-                <h3 className={sectionTitleCls}>Prestation</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className={labelCls}>Description / Offre</label>
-                    <input
-                      type="text"
-                      value={offerName}
-                      onChange={(e) => setOfferName(e.target.value)}
-                      className={inputCls}
-                      placeholder="Commission closing..."
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Montant HT *</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={amountHT || ''}
-                      onChange={(e) => setAmountHT(parseFloat(e.target.value) || 0)}
-                      className={inputCls}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Date d'echeance</label>
-                    <input
-                      type="date"
-                      value={dueDateStr}
-                      onChange={(e) => setDueDateStr(e.target.value)}
-                      className={inputCls}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* ---- TVA TOGGLE ---- */}
-              <div className={sectionCls}>
-                <label className="flex cursor-pointer items-start gap-3">
-                  <div className="relative mt-0.5">
-                    <input
-                      type="checkbox"
-                      checked={tvaApplicable}
-                      onChange={(e) => setTvaApplicable(e.target.checked)}
-                      className="peer sr-only"
-                    />
-                    <div className="h-6 w-11 rounded-full bg-[#c4c7c7] peer-checked:bg-[#006c49] transition-colors"></div>
-                    <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold text-[#1b1c1b] dark:text-white">TVA Applicable ?</div>
-                    <div className="mt-0.5 text-xs text-[#444748] dark:text-neutral-400">
-                      Ajouter 20% de TVA au montant HT
-                    </div>
-                  </div>
-                </label>
-              </div>
-
-              {/* ---- PAYMENT METHOD ---- */}
-              <div className={sectionCls}>
-                <h3 className={sectionTitleCls}>
-                  <Link2 className="inline h-3.5 w-3.5 mr-1.5 -mt-0.5" />
-                  Moyen de paiement
-                </h3>
-
-                {/* Saved methods dropdown */}
-                {savedMethods.length > 0 && (
-                  <div className="mb-4">
-                    <label className={labelCls}>Methode enregistree</label>
-                    <select
-                      value={selectedMethodId}
-                      onChange={(e) => handleMethodSelect(e.target.value)}
-                      className={inputCls}
-                    >
-                      <option value="custom">Saisie manuelle...</option>
-                      {savedMethods.map(m => (
-                        <option key={m.id} value={m.id}>{m.name} ({m.type})</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Payment type pills */}
-                {selectedMethodId === 'custom' && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {(['virement', 'paypal', 'revolut', 'stripe'] as PaymentMethodType[]).map(type => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setPaymentMethod(type)}
-                        className={cn(
-                          'rounded-full border px-4 py-1.5 text-sm font-medium transition-all',
-                          paymentMethod === type
-                            ? 'bg-[#1b1c1b] dark:bg-white text-white dark:text-neutral-900 border-[#1b1c1b] dark:border-white'
-                            : 'bg-[#f5f3f2] dark:bg-white/5 text-[#444748] dark:text-neutral-300 border-[#c4c7c7]/20 dark:border-neutral-700 hover:border-[#c4c7c7]/40'
-                        )}
-                      >
-                        {type === 'virement' ? 'Virement' : type === 'paypal' ? 'PayPal' : type === 'revolut' ? 'Revolut' : 'Lien manuel'}
-                      </button>
+              {/* Saved Issuer Profiles */}
+              {savedProfiles.length > 0 && (
+                <div>
+                  <label className={labelCls}>Profil Emetteur Enregistre</label>
+                  <select
+                    value={selectedProfileId}
+                    onChange={(e) => handleProfileSelect(e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="custom">Saisie manuelle...</option>
+                    {savedProfiles.map(profile => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.name} - {profile.companyName}
+                      </option>
                     ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Manual Issuer Fields (only if custom) */}
+              {selectedProfileId === 'custom' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className={labelCls}>Nom / Raison Sociale de l'Emetteur</label>
+                    <input type="text" value={issuerCompanyName} onChange={(e) => setIssuerCompanyName(e.target.value)} className={inputCls} placeholder="Ex: ACME SARL, Jean Dupont EI..." />
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Adresse</label>
+                      <input type="text" value={issuerAddress} onChange={(e) => setIssuerAddress(e.target.value)} className={inputCls} placeholder="123 Rue de la Paix" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Ville</label>
+                      <input type="text" value={issuerCity} onChange={(e) => setIssuerCity(e.target.value)} className={inputCls} placeholder="Paris" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className={labelCls}>Code Postal</label>
+                      <input type="text" value={issuerZip} onChange={(e) => setIssuerZip(e.target.value)} className={inputCls} placeholder="75001" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Pays</label>
+                      <input type="text" value={issuerCountry} onChange={(e) => setIssuerCountry(e.target.value)} className={inputCls} placeholder="France" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>SIRET</label>
+                      <input type="text" value={issuerSiret} onChange={(e) => setIssuerSiret(e.target.value)} className={inputCls} placeholder="123 456 789 00012" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Email</label>
+                      <input type="email" value={issuerEmail} onChange={(e) => setIssuerEmail(e.target.value)} className={inputCls} placeholder="contact@entreprise.com" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Telephone</label>
+                      <input type="tel" value={issuerPhone} onChange={(e) => setIssuerPhone(e.target.value)} className={inputCls} placeholder="+33 1 23 45 67 89" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Client */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Nom du client *</label>
+                  <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} className={inputCls} placeholder="Nom complet ou raison sociale" />
+                </div>
+                <div>
+                  <label className={labelCls}>Email du client</label>
+                  <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} className={inputCls} placeholder="email@exemple.com" />
+                </div>
+              </div>
+
+              {/* Prestation / Amount */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className={labelCls}>Description / Offre</label>
+                  <input type="text" value={offerName} onChange={(e) => setOfferName(e.target.value)} className={inputCls} placeholder="Commission closing..." />
+                </div>
+                <div>
+                  <label className={labelCls}>Montant HT *</label>
+                  <input type="number" step="0.01" min="0" value={amountHT || ''} onChange={(e) => setAmountHT(parseFloat(e.target.value) || 0)} className={inputCls} placeholder="0.00" />
+                </div>
+                <div>
+                  <label className={labelCls}>Date d'echeance</label>
+                  <input type="date" value={dueDateStr} onChange={(e) => setDueDateStr(e.target.value)} className={inputCls} />
+                </div>
+              </div>
+
+              {/* Payment Method Section */}
+              <div className="space-y-4 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-5">
+                <h3 className="text-sm font-bold text-[#1b1c1b] dark:text-white flex items-center gap-2">
+                  <Download className="h-4 w-4 text-[#006c49]" />
+                  Moyen de paiement principal
+                </h3>
+
+                {savedMethods.length > 0 && (
+                  <select value={selectedMethodId} onChange={(e) => handleMethodSelect(e.target.value)} className={inputCls}>
+                    <option value="custom">Saisie manuelle...</option>
+                    {savedMethods.map(m => <option key={m.id} value={m.id}>{m.name} ({m.type})</option>)}
+                  </select>
+                )}
+
+                {selectedMethodId === 'custom' && (
+                  <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethodType)} className={inputCls}>
+                    <option value="virement">Virement Bancaire</option>
+                    <option value="paypal">PayPal</option>
+                    <option value="revolut">Revolut</option>
+                    <option value="stripe">Autre lien manuel</option>
+                  </select>
                 )}
 
                 {/* Dynamic payment fields */}
                 {paymentMethod === 'virement' && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                      <label className={labelCls}>IBAN</label>
-                      <input type="text" value={iban} onChange={(e) => setIban(e.target.value)} className={inputCls} placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX" />
-                    </div>
-                    <div>
-                      <label className={labelCls}>BIC</label>
-                      <input type="text" value={bic} onChange={(e) => setBic(e.target.value)} className={inputCls} placeholder="BNPAFRPP" />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Titulaire</label>
-                      <input type="text" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} className={inputCls} placeholder="Nom du titulaire" />
-                    </div>
+                    <input type="text" value={iban} onChange={(e) => setIban(e.target.value)} placeholder="IBAN" className={cn(inputCls, 'col-span-2')} />
+                    <input type="text" value={bic} onChange={(e) => setBic(e.target.value)} placeholder="BIC" className={inputCls} />
+                    <input type="text" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} placeholder="Titulaire" className={inputCls} />
                   </div>
                 )}
-                {paymentMethod === 'paypal' && (
-                  <div>
-                    <label className={labelCls}>Email PayPal</label>
-                    <input type="email" value={paypalEmail} onChange={(e) => setPaypalEmail(e.target.value)} className={inputCls} placeholder="paypal@email.com" />
-                  </div>
-                )}
-                {paymentMethod === 'revolut' && (
-                  <div>
-                    <label className={labelCls}>Revtag</label>
-                    <input type="text" value={revtag} onChange={(e) => setRevtag(e.target.value)} className={inputCls} placeholder="@revtag" />
-                  </div>
-                )}
-                {paymentMethod === 'stripe' && (
-                  <div>
-                    <label className={labelCls}>Lien Stripe</label>
-                    <input type="text" value={stripeLink} onChange={(e) => setStripeLink(e.target.value)} className={inputCls} placeholder="https://buy.stripe.com/..." />
-                  </div>
-                )}
+                {paymentMethod === 'paypal' && <input type="email" value={paypalEmail} onChange={(e) => setPaypalEmail(e.target.value)} placeholder="Email PayPal" className={inputCls} />}
+                {paymentMethod === 'revolut' && <input type="text" value={revtag} onChange={(e) => setRevtag(e.target.value)} placeholder="Revtag" className={inputCls} />}
+                {paymentMethod === 'stripe' && <input type="text" value={stripeLink} onChange={(e) => setStripeLink(e.target.value)} placeholder="Lien Stripe" className={inputCls} />}
               </div>
 
-              {/* ---- STRIPE CONNECT ---- */}
+              {/* Stripe Connect Toggle */}
               {stripeAccountId && (
                 <div className="rounded-xl border border-[#635BFF]/30 bg-[#635BFF]/5 dark:bg-[#635BFF]/10 p-4">
                   <label className="flex cursor-pointer items-start gap-3">
-                    <div className="relative mt-0.5">
+                    <div className="relative mt-1">
                       <input
                         type="checkbox"
                         checked={useStripePayment}
                         onChange={(e) => setUseStripePayment(e.target.checked)}
                         className="peer sr-only"
                       />
-                      <div className="h-6 w-11 rounded-full bg-[#c4c7c7] peer-checked:bg-[#635BFF] transition-colors"></div>
-                      <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
+                      <div className="h-5 w-9 rounded-full bg-[#c4c7c7] peer-checked:bg-[#635BFF] transition-colors"></div>
+                      <div className="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-4"></div>
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 text-sm font-bold text-[#1b1c1b] dark:text-white">
@@ -871,72 +721,44 @@ export function BusinessInvoiceGeneratorModal({
                 </div>
               )}
 
-              {/* ---- LATE PAYMENT PENALTIES ---- */}
-              <div className={sectionCls}>
-                <h3 className={sectionTitleCls}>Penalites de retard</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelCls}>Taux de penalite (%)</label>
+              {/* TVA Toggle */}
+              <div className="rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-4">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <div className="relative">
                     <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={latePenaltyRate}
-                      onChange={(e) => setLatePenaltyRate(parseFloat(e.target.value) || 0)}
-                      className={inputCls}
+                      type="checkbox"
+                      checked={tvaApplicable}
+                      onChange={(e) => setTvaApplicable(e.target.checked)}
+                      className="peer sr-only"
                     />
+                    <div className="h-6 w-11 rounded-full bg-[#c4c7c7] peer-checked:bg-[#006c49] transition-colors"></div>
+                    <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
                   </div>
-                  <div>
-                    <label className={labelCls}>Indemnite forfaitaire (EUR)</label>
-                    <input
-                      type="number"
-                      step="1"
-                      min="0"
-                      value={latePenaltyFixed}
-                      onChange={(e) => setLatePenaltyFixed(parseFloat(e.target.value) || 0)}
-                      className={inputCls}
-                    />
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-[#1b1c1b] dark:text-white">TVA Applicable ?</div>
+                    <div className="mt-1 text-xs text-[#444748] dark:text-neutral-400">
+                      Ajouter 20% de TVA au montant de la commission
+                    </div>
                   </div>
-                </div>
+                </label>
               </div>
 
-              {/* ---- NOTES ---- */}
-              <div>
-                <label className={labelCls}>Notes</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  className={inputCls}
-                  placeholder="Informations supplementaires..."
-                />
-              </div>
-
-              {/* ---- ACTIONS ---- */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="flex-1 rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 py-2.5 font-semibold text-[#444748] dark:text-neutral-200 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePreview}
-                  disabled={isGeneratingLink}
-                  className="flex-1 rounded-full bg-[#1b1c1b] dark:bg-white py-2.5 font-bold text-white dark:text-neutral-900 hover:bg-[#1b1c1b]/80 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isGeneratingLink ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Generation du lien Stripe...
-                    </>
-                  ) : (
-                    'Apercu \u2192'
-                  )}
-                </button>
-              </div>
+              {/* Preview Button */}
+              <button
+                type="button"
+                onClick={handlePreview}
+                disabled={isGeneratingLink}
+                className="w-full rounded-xl bg-[#006c49] px-6 py-3.5 font-bold text-white transition-all hover:bg-[#005a3d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isGeneratingLink ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Generation du lien Stripe...
+                  </>
+                ) : (
+                  'Previsualiser la facture'
+                )}
+              </button>
             </div>
           </div>
         )}

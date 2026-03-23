@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
+import { TrendingUp, ChevronRight, Shield, Zap, ShieldCheck } from 'lucide-react';
 
 interface EcosystemChoiceProps {
   onChooseSales: () => void;
@@ -15,114 +16,209 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
   }, []);
 
   return (
-    <div className="min-h-screen font-sans flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden">
-      {/* Split background — dark left, light right */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #020617 0%, #020617 30%, #0a0e1f 40%, #3a3a3a 50%, #b5b0ab 58%, #f4f2f1 68%, #f4f2f1 100%)' }} />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center w-full max-w-3xl">
-        {/* Logo — big and rounded */}
-        <motion.img
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          src="/CloseOS Logo.png"
-          alt="CloseOS"
-          className="h-20 object-contain mb-10"
-        />
-
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-6"
-        >
-          <span className="text-sm font-medium text-stone-800">
-            Bienvenue dans l'écosystème <span className="font-bold text-[#111111]">CloseOS</span>
-          </span>
-        </motion.div>
-
-        {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-          className="text-4xl md:text-5xl font-bold tracking-tight text-center mb-3 bg-gradient-to-r from-white via-white to-[#111111] bg-clip-text text-transparent"
-          style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', WebkitTextStroke: '1px rgba(0,0,0,0.4)', filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.5))' }}
-        >
-          Quel est votre profil ?
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-lg font-medium mb-12 bg-gradient-to-r from-slate-400 via-stone-400 to-stone-500 bg-clip-text text-transparent drop-shadow-[0_1px_6px_rgba(0,0,0,0.2)]"
-          style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-        >
-          Choisissez l'outil fait pour vous
-        </motion.p>
-
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-          {/* CloseOS Sales — dark card */}
-          <motion.div
-            initial={{ opacity: 0, y: 24, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            whileHover={{ scale: 1.08, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
-            className="bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-slate-700/50 p-8 flex flex-col items-center text-center hover:border-slate-600 hover:shadow-[0_25px_80px_rgba(0,0,0,0.6)] transition-shadow duration-300 cursor-pointer"
-          >
-            <img
-              src="/logo Sales.png"
-              alt="CloseOS Sales"
-              className="h-12 object-contain mb-6"
-            />
-            <h2 className="text-xl font-bold text-white mb-2">Je suis Closer</h2>
-            <p className="text-slate-400 text-sm font-medium leading-relaxed mb-8">
-              Gérez vos prospects, vos calls et votre facturation en autonomie
-            </p>
-            <button
-              onClick={onChooseSales}
-              className="w-full bg-white text-[#020617] rounded-xl py-3.5 font-bold text-sm hover:bg-slate-100 transition-all"
-            >
-              Accéder à CloseOS Sales
+    <div
+      className="min-h-screen flex flex-col selection:bg-[#b6c4ff]/30"
+      style={{
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        backgroundColor: '#111318',
+        color: '#e2e2e8',
+      }}
+    >
+      {/* Navbar */}
+      <nav className="fixed top-0 w-full z-50 backdrop-blur-xl">
+        <div className="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto">
+          <div className="text-2xl font-bold tracking-tight text-[#e2e2e8]">
+            CloseOS
+          </div>
+          <div className="hidden md:flex items-center space-x-8">
+            <a href="#" className="text-[#909095] hover:text-[#e2e2e8] transition-colors">Solutions</a>
+            <a href="#" className="text-[#909095] hover:text-[#e2e2e8] transition-colors">Pricing</a>
+            <a href="#" className="text-[#909095] hover:text-[#e2e2e8] transition-colors">Support</a>
+            <button className="bg-[#e2e2e8] text-[#1a1c20] px-6 py-2 rounded-lg font-semibold hover:opacity-80 transition-opacity duration-200 ease-in-out">
+              Log In
             </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main
+        className="flex-grow flex flex-col items-center justify-center relative pt-24 pb-12 overflow-hidden"
+        style={{
+          backgroundImage:
+            'radial-gradient(at 0% 0%, rgba(182, 196, 255, 0.05) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(0, 228, 117, 0.05) 0px, transparent 50%)',
+        }}
+      >
+        {/* Ambient Orbs */}
+        <div className="absolute top-1/4 -left-24 w-96 h-96 bg-[#b6c4ff]/5 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-1/4 -right-24 w-96 h-96 bg-[#00e475]/5 blur-[120px] rounded-full pointer-events-none" />
+
+        <div className="container max-w-6xl mx-auto px-6 relative z-10">
+          {/* Central Heading */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16 space-y-4"
+          >
+            <h1 className="text-5xl md:text-6xl font-extrabold tracking-tighter text-[#e2e2e8] leading-tight">
+              Choisissez votre outil
+            </h1>
+            <p className="text-[#909095] text-lg max-w-xl mx-auto font-medium">
+              Sélectionnez l'interface optimisée pour votre rôle stratégique au sein de l'écosystème.
+            </p>
           </motion.div>
 
-          {/* CloseOS Business — white card */}
-          <motion.div
-            initial={{ opacity: 0, y: 24, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            whileHover={{ scale: 1.08, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
-            className="bg-white rounded-3xl border border-stone-200 shadow-sm p-8 flex flex-col items-center text-center hover:shadow-[0_25px_80px_rgba(0,0,0,0.2)] transition-shadow duration-300 relative cursor-pointer"
-          >
-            {/* Badge Nouveau */}
-            <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#111111] text-white text-xs font-bold">
-              Nouveau 🚀
-            </div>
-            <img
-              src="/CloseOS Buisness.png"
-              alt="CloseOS Business"
-              className="h-12 object-contain mb-6"
-            />
-            <h2 className="text-xl font-bold text-[#111111] mb-2">Je suis Infopreneur / Manager</h2>
-            <p className="text-stone-500 text-sm font-medium leading-relaxed mb-8">
-              Pilotez votre équipe, vos campagnes d'acquisition et vos performances
-            </p>
-            <button
-              onClick={onChooseBusiness}
-              className="w-full bg-[#111111] text-white rounded-xl py-3.5 font-bold text-sm hover:opacity-90 transition-all"
+          {/* Choice Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+            {/* Card 1: CloseOS Sales */}
+            <motion.div
+              initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              onClick={onChooseSales}
+              className="group relative flex flex-col justify-between p-10 rounded-[2rem] border border-[#45474b]/10 hover:border-[#b6c4ff]/30 transition-all duration-500 overflow-hidden cursor-pointer"
+              style={{
+                background: 'rgba(40, 42, 46, 0.1)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+              }}
             >
-              Accéder à CloseOS Business
-            </button>
+              {/* Background icon */}
+              <div className="absolute top-0 right-0 p-8 text-[#b6c4ff]/10 group-hover:text-[#b6c4ff]/20 transition-colors">
+                <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="opacity-30">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="M12 4v16" />
+                  <path d="M2 12h20" />
+                  <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+                  <circle cx="16" cy="16" r="1.5" fill="currentColor" />
+                </svg>
+              </div>
+
+              <div className="relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-[#b6c4ff]/10 flex items-center justify-center mb-8 border border-[#b6c4ff]/20">
+                  <TrendingUp className="w-7 h-7 text-[#b6c4ff]" />
+                </div>
+                <h2 className="text-3xl font-bold mb-4 text-[#e2e2e8]">CloseOS Sales</h2>
+                <span className="inline-block px-4 py-1.5 rounded-full bg-[#282a2e] text-[#b6c4ff] text-xs font-bold uppercase tracking-wider mb-6 border border-[#45474b]/30">
+                  Je suis Closer
+                </span>
+                <p className="text-[#909095] leading-relaxed mb-12 max-w-xs">
+                  Optimisez votre tunnel de conversion. Gérez vos prospects, vos appels stratégiques et automatisez votre facturation en un clic.
+                </p>
+              </div>
+
+              <div className="relative z-10">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onChooseSales(); }}
+                  className="w-full flex items-center justify-between px-8 py-5 bg-[#e2e2e8] text-[#1a1c20] rounded-xl font-bold text-lg hover:opacity-90 transition-all group-hover:scale-[1.02] duration-300"
+                >
+                  Accéder
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Card 2: CloseOS Business */}
+            <motion.div
+              initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ duration: 0.7, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              onClick={onChooseBusiness}
+              className="group relative flex flex-col justify-between p-10 rounded-[2rem] border border-[#45474b]/10 hover:border-[#00e475]/30 transition-all duration-500 overflow-hidden cursor-pointer"
+              style={{
+                background: 'rgba(40, 42, 46, 0.1)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+              }}
+            >
+              {/* Background icon */}
+              <div className="absolute top-0 right-0 p-8 text-[#00e475]/10 group-hover:text-[#00e475]/20 transition-colors">
+                <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="opacity-30">
+                  <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+                  <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+                  <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+                  <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+                </svg>
+              </div>
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="w-14 h-14 rounded-2xl bg-[#00e475]/10 flex items-center justify-center border border-[#00e475]/20">
+                    <svg className="w-7 h-7 text-[#00e475]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="4" />
+                      <path d="M12 2v4" />
+                      <path d="M12 18v4" />
+                      <path d="M4.93 4.93l2.83 2.83" />
+                      <path d="M16.24 16.24l2.83 2.83" />
+                      <path d="M2 12h4" />
+                      <path d="M18 12h4" />
+                      <path d="M4.93 19.07l2.83-2.83" />
+                      <path d="M16.24 7.76l2.83-2.83" />
+                    </svg>
+                  </div>
+                  <span className="bg-[#00e475] text-[#003918] px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest">
+                    Nouveau
+                  </span>
+                </div>
+                <h2 className="text-3xl font-bold mb-4 text-[#e2e2e8]">CloseOS Business</h2>
+                <span className="inline-block px-4 py-1.5 rounded-full bg-[#282a2e] text-[#00e475] text-xs font-bold uppercase tracking-wider mb-6 border border-[#45474b]/30">
+                  Infopreneur / Manager
+                </span>
+                <p className="text-[#909095] leading-relaxed mb-12 max-w-xs">
+                  Pilotez votre croissance. Management d'équipes de vente, suivi des campagnes d'acquisition et analytics haute-précision.
+                </p>
+              </div>
+
+              <div className="relative z-10">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onChooseBusiness(); }}
+                  className="w-full flex items-center justify-between px-8 py-5 bg-[#00e475] text-[#003918] rounded-xl font-bold text-lg hover:brightness-110 transition-all group-hover:scale-[1.02] duration-300"
+                >
+                  Accéder
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Bottom Trust Badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.4 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="mt-20 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16"
+          >
+            <div className="flex items-center gap-3">
+              <Shield className="w-5 h-5 text-[#e2e2e8]" />
+              <span className="text-xs font-semibold uppercase tracking-widest">Infrastructures sécurisées</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Zap className="w-5 h-5 text-[#e2e2e8]" />
+              <span className="text-xs font-semibold uppercase tracking-widest">Haute-performance</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-[#e2e2e8]" />
+              <span className="text-xs font-semibold uppercase tracking-widest">Standard Entreprise</span>
+            </div>
           </motion.div>
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer
+        className="w-full py-12"
+        style={{ background: 'linear-gradient(to top, #1a1c20, transparent)', backgroundColor: '#111318' }}
+      >
+        <div className="flex flex-col md:flex-row justify-between items-center px-12 opacity-60 text-[#909095] text-[10px] uppercase tracking-[0.05rem] font-medium">
+          <div>© 2025 CloseOS. High-Performance Revenue Systems.</div>
+          <div className="flex space-x-8 mt-4 md:mt-0">
+            <a href="#" className="hover:text-[#00e475] transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-[#00e475] transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-[#00e475] transition-colors">Security</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
