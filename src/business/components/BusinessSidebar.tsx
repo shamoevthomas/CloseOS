@@ -122,8 +122,8 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
     else if (isHeadOfSales) baseNav = getHeadOfSalesNavigation(!!teamMember?.can_manage_campaigns)
     else baseNav = getTeamMemberNavigation(teamMember?.role)
 
-    // Apply saved sidebar order if available
-    const savedOrder = businessSettings?.sidebar_order as string[] | null
+    // Apply saved sidebar order if available (per-user: team member or owner)
+    const savedOrder = (isTeamMember ? teamMember?.sidebar_order : businessProfile?.sidebar_order) as string[] | null
     if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
       const ordered: NavItem[] = []
       for (const href of savedOrder) {
@@ -137,7 +137,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
       return ordered
     }
     return baseNav
-  }, [isTeamMember, isAdmin, isHeadOfSales, teamMember?.role, teamMember?.can_manage_campaigns, businessSettings?.sidebar_order])
+  }, [isTeamMember, isAdmin, isHeadOfSales, teamMember?.role, teamMember?.can_manage_campaigns, teamMember?.sidebar_order, businessProfile?.sidebar_order])
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)

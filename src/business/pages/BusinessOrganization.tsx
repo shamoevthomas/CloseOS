@@ -520,52 +520,6 @@ function TeamMemberOrganizationView() {
               <p className="text-sm text-[#444748] text-center py-4">Aucune information renseignée par l'organisation.</p>
             )}
           </div>
-
-          {/* Billing information */}
-          {(settings.billing_address || settings.billing_zip || settings.billing_city || settings.billing_country) && (
-            <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-              <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">Facturation</h3>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                {settings.billing_address && (
-                  <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3 sm:col-span-2">
-                    <MapPin className="h-4 w-4 text-[#747878] shrink-0" />
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Adresse de facturation</p>
-                      <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.billing_address}</p>
-                    </div>
-                  </div>
-                )}
-                {settings.billing_zip && (
-                  <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
-                    <Mail className="h-4 w-4 text-[#747878] shrink-0" />
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Code postal</p>
-                      <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.billing_zip}</p>
-                    </div>
-                  </div>
-                )}
-                {settings.billing_city && (
-                  <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
-                    <Building2 className="h-4 w-4 text-[#747878] shrink-0" />
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Ville</p>
-                      <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.billing_city}</p>
-                    </div>
-                  </div>
-                )}
-                {settings.billing_country && (
-                  <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
-                    <Globe className="h-4 w-4 text-[#747878] shrink-0" />
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Pays</p>
-                      <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.billing_country}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       )}
 

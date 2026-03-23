@@ -188,25 +188,31 @@ export function TeamMemberDashboard() {
     <div className="max-w-[1200px] mx-auto space-y-10 pb-12">
       {/* Header */}
       <header className="flex justify-between items-end">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b] dark:text-white">Bonjour {firstName}</h1>
-            <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748] dark:bg-white/10 dark:text-neutral-300'}`}>
-              {teamMember?.role}
-            </span>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 border-2 border-[#eae8e7] dark:border-white/10">
+            {(teamMember?.avatar_url || user?.user_metadata?.avatar_url) ? (
+              <img src={teamMember?.avatar_url || user?.user_metadata?.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-[#efedec] dark:bg-white/5 flex items-center justify-center">
+                <User className="h-6 w-6 text-[#747878]" />
+              </div>
+            )}
           </div>
-          <p className="text-[#444748] dark:text-neutral-400 font-medium text-lg">{companyName}</p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b] dark:text-white">Bonjour {firstName}</h1>
+              <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748] dark:bg-white/10 dark:text-neutral-300'}`}>
+                {teamMember?.role}
+              </span>
+            </div>
+            <p className="text-[#444748] dark:text-neutral-400 font-medium text-lg">{companyName}</p>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <div className="text-right">
             <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">Dernière Sync</p>
             <p className="font-bold text-[#1b1c1b] dark:text-white">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</p>
-          </div>
-          <div className="w-14 h-14 rounded-full border-2 border-[#eae8e7] dark:border-white/10 p-1">
-            <div className="w-full h-full rounded-full bg-[#efedec] dark:bg-white/5 flex items-center justify-center">
-              <User className="h-6 w-6 text-[#747878]" />
-            </div>
           </div>
         </div>
       </header>

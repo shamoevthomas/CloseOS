@@ -4,7 +4,7 @@ import { useScrambleText } from '../hooks/useScrambleText'
 import {
   Loader2, DollarSign, TrendingUp, CalendarDays, Target, UserX, Activity,
   Megaphone, Users, Bell, ArrowUpRight, ArrowDownRight, FileDown, Circle,
-  AlertTriangle, Clock, Search, Plus, X, CheckCircle2, Trash2, GitBranch,
+  AlertTriangle, Clock, Search, Plus, X, CheckCircle2, Trash2, GitBranch, User,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
@@ -330,14 +330,25 @@ export function BusinessDashboard() {
 
       {/* ─── Header ─── */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-1">
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Bonjour, {scrambledName}.
-          </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 text-lg">
-            Voici l'état de votre activité
-            {dashboardPeriod !== 'all' && <span className="ml-1 text-sm font-bold text-neutral-400">· {PERIOD_LABELS[dashboardPeriod]}</span>}
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden shrink-0 border-2 border-neutral-200 dark:border-neutral-700">
+            {(isTeamMember ? teamMember?.avatar_url : (businessProfile?.avatar_url || user?.user_metadata?.avatar_url)) ? (
+              <img src={isTeamMember ? teamMember.avatar_url : (businessProfile?.avatar_url || user?.user_metadata?.avatar_url)} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                <User className="h-6 w-6 text-neutral-400" />
+              </div>
+            )}
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Bonjour, {scrambledName}.
+            </h2>
+            <p className="text-neutral-500 dark:text-neutral-400 text-lg">
+              Voici l'état de votre activité
+              {dashboardPeriod !== 'all' && <span className="ml-1 text-sm font-bold text-neutral-400">· {PERIOD_LABELS[dashboardPeriod]}</span>}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />

@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { PhoneInput } from './PhoneInput'
 import { useNavigate } from 'react-router-dom'
 import {
   X, Phone, Mail, Calendar, Pencil, Trash2,
   MessageCircle, Save, Clock, Plus, ChevronDown,
   Bell, Check, Loader2, FileText, ClipboardList,
-  Package, ExternalLink, PhoneCall, Tag,
+  Package, ExternalLink, PhoneCall, Tag, Camera,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -96,6 +96,37 @@ export function BusinessProspectView({
 
   const [local, setLocal] = useState<BusinessProspect>(prospect)
   const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'rappels'>('info')
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('Fichier image requis'); return }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image trop lourde (max 5 Mo)'); return }
+
+    setAvatarUploading(true)
+    try {
+      const ext = file.name.split('.').pop() || 'jpg'
+      const fileName = `prospect-${prospect.id}-${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file)
+      if (uploadError) throw uploadError
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      const avatarUrl = data.publicUrl
+
+      await supabase.from('business_prospects').update({ avatar_url: avatarUrl }).eq('id', prospect.id)
+      setLocal(prev => ({ ...prev, avatar_url: avatarUrl }))
+      onUpdate(prospect.id, { avatar_url: avatarUrl })
+      toast.success('Photo mise à jour')
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur lors de l\'upload')
+    } finally {
+      setAvatarUploading(false)
+      if (avatarInputRef.current) avatarInputRef.current.value = ''
+    }
+  }
 
   // Next appointment
   const [nextAppointment, setNextAppointment] = useState<{ date: string; time: string; status: string } | null>(null)
@@ -364,9 +395,31 @@ export function BusinessProspectView({
         <header className="p-8 pb-4">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-5 min-w-0">
-              <div className="w-16 h-16 rounded-full bg-[#e4e2e1] dark:bg-neutral-800 flex items-center justify-center overflow-hidden shrink-0 text-2xl font-business-display font-extrabold text-stone-500 dark:text-neutral-400">
-                {(local.contact || '?')[0]?.toUpperCase()}
-              </div>
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                className="relative w-16 h-16 rounded-full bg-[#e4e2e1] dark:bg-neutral-800 flex items-center justify-center overflow-hidden shrink-0 text-2xl font-business-display font-extrabold text-stone-500 dark:text-neutral-400 group cursor-pointer"
+                title="Changer la photo"
+              >
+                {local.avatar_url ? (
+                  <img src={local.avatar_url} alt={local.contact} className="w-full h-full object-cover" />
+                ) : (
+                  (local.contact || '?')[0]?.toUpperCase()
+                )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                  {avatarUploading ? (
+                    <Loader2 className="h-5 w-5 text-white animate-spin" />
+                  ) : (
+                    <Camera className="h-5 w-5 text-white" />
+                  )}
+                </div>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </button>
               <div className="min-w-0">
                 <h2 className="text-3xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
                   {local.contact || 'Sans nom'}

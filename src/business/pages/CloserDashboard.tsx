@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useScrambleText } from '../hooks/useScrambleText'
 import {
   Loader2, DollarSign, TrendingUp, CalendarDays, UserX,
-  Bell, Clock, Check, AlertTriangle, FileDown,
+  Bell, Clock, Check, AlertTriangle, FileDown, User,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
@@ -135,11 +135,22 @@ export function CloserDashboard() {
 
       {/* ─── Header ─── */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-1">
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Bonjour, {scrambledName}.
-          </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 text-lg">Voici l'état de votre activité aujourd'hui.</p>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden shrink-0 border-2 border-neutral-200 dark:border-neutral-700">
+            {(teamMember?.avatar_url || user?.user_metadata?.avatar_url) ? (
+              <img src={teamMember?.avatar_url || user?.user_metadata?.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                <User className="h-6 w-6 text-neutral-400" />
+              </div>
+            )}
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Bonjour, {scrambledName}.
+            </h2>
+            <p className="text-neutral-500 dark:text-neutral-400 text-lg">Voici l'état de votre activité aujourd'hui.</p>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />

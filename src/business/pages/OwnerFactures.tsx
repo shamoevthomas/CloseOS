@@ -3,9 +3,13 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 import {
   FileText, Calendar, Loader2, Receipt, ExternalLink, Filter, ChevronDown, ChevronLeft, ChevronRight, Download, User, Copy, Eye,
+  Building2, Wallet, CreditCard,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
+import { BusinessIssuerProfilesModal } from '../components/BusinessIssuerProfilesModal'
+import { BusinessPaymentMethodsModal } from '../components/BusinessPaymentMethodsModal'
+import { BusinessStripeConnectModal } from '../components/BusinessStripeConnectModal'
 
 interface Invoice {
   id: string
@@ -68,6 +72,10 @@ export function OwnerFactures() {
   const [filterMember, setFilterMember] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
+
+  const [isIssuerProfilesOpen, setIsIssuerProfilesOpen] = useState(false)
+  const [isPaymentMethodsOpen, setIsPaymentMethodsOpen] = useState(false)
+  const [isStripeConnectOpen, setIsStripeConnectOpen] = useState(false)
 
   const now = new Date()
   const [startDate, setStartDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0])
@@ -160,12 +168,35 @@ export function OwnerFactures() {
   return (
     <div className="space-y-10">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col md:flex-row justify-between items-start gap-6">
         <div>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Factures
           </h1>
           <p className="text-[#444748] dark:text-neutral-400 mt-2">Toutes les factures de votre organisation</p>
+        </div>
+        <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={() => setIsStripeConnectOpen(true)}
+            className="flex items-center gap-2 rounded-full bg-[#635BFF] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#5349E0] hover:shadow-lg hover:shadow-[#635BFF]/20 active:scale-95"
+          >
+            <CreditCard className="h-4 w-4" />
+            Connecter Stripe
+          </button>
+          <button
+            onClick={() => setIsIssuerProfilesOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-5 py-2.5 text-sm font-semibold text-[#444748] dark:text-neutral-300 transition-all hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-[#1b1c1b] dark:hover:text-white"
+          >
+            <Building2 className="h-4 w-4" />
+            Infos Émetteur
+          </button>
+          <button
+            onClick={() => setIsPaymentMethodsOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-5 py-2.5 text-sm font-semibold text-[#444748] dark:text-neutral-300 transition-all hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-[#1b1c1b] dark:hover:text-white"
+          >
+            <Wallet className="h-4 w-4" />
+            Moyens de Paiement
+          </button>
         </div>
       </div>
 
@@ -453,6 +484,11 @@ export function OwnerFactures() {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      <BusinessIssuerProfilesModal isOpen={isIssuerProfilesOpen} onClose={() => setIsIssuerProfilesOpen(false)} />
+      <BusinessPaymentMethodsModal isOpen={isPaymentMethodsOpen} onClose={() => setIsPaymentMethodsOpen(false)} />
+      <BusinessStripeConnectModal isOpen={isStripeConnectOpen} onClose={() => setIsStripeConnectOpen(false)} />
     </div>
   )
 }

@@ -33,6 +33,7 @@ export interface BusinessProspect {
   hubspot_contact_id?: string
   systemeio_contact_id?: string
   airtable_record_id?: string
+  avatar_url?: string
   call_notes?: {
     id: string
     date: string

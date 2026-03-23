@@ -5,7 +5,7 @@ import {
   Calendar, Clock, BarChart3, GitBranch, CalendarDays, Mail,
   AlertCircle, DollarSign, ShoppingCart, Target, UserX, Ban,
   Save, CreditCard, History, LogIn, LogOut, Pencil, Check, X, Globe,
-  Link2, Copy, ExternalLink,
+  Link2, Copy, ExternalLink, Award, Percent, Receipt,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { PhoneInput } from '../components/PhoneInput'
@@ -33,6 +33,9 @@ interface TeamMember {
   pay_day?: number | null
   timezone?: string | null
   setter_scope?: string | null
+  compensation_type?: string | null
+  fixed_salary?: number | null
+  commission_rate?: number | null
   _isOwner?: boolean
 }
 
@@ -73,6 +76,18 @@ interface ConnectionLog {
   team_member_id: string
   event_type: 'connect' | 'disconnect'
   created_at: string
+}
+
+interface Bonus {
+  id: string
+  business_owner_id: string
+  team_member_id: string
+  invoice_id: string | null
+  label: string
+  amount: number
+  status: string
+  created_at: string
+  paid_at: string | null
 }
 
 const isReallyOnline = (member: TeamMember) => {
@@ -388,6 +403,9 @@ export function BusinessTeam() {
             setMembers(prev => prev.map(m => m.id === selectedMember.id ? { ...m, pay_day: day } : m))
           }}
           onDelete={isOwnerView ? () => handleDeleteMember(selectedMember.id) : undefined}
+          onMemberUpdate={(updates) => {
+            setMembers(prev => prev.map(m => m.id === selectedMember.id ? { ...m, ...updates } : m))
+          }}
         />
       </div>
     )
@@ -652,6 +670,7 @@ function IndividualView({
   connectionLogs,
   isOwnerView,
   onPayDayChange,
+  onMemberUpdate,
 }: {
   member: TeamMember
   absences: Absence[]
@@ -663,11 +682,131 @@ function IndividualView({
   onRoleChange: (role: string, setterScope?: string) => Promise<void>
   onPayDayChange: (day: number) => Promise<void>
   onDelete?: () => void
+  onMemberUpdate: (updates: Partial<TeamMember>) => void
 }) {
-  const { userTimezone } = useBusinessAuth()
+  const { userTimezone, ownerUserId, user } = useBusinessAuth()
   const color = getRoleColor(member.role)
   const [payDay, setPayDay] = useState<number>(member.pay_day || 1)
   const [savingPayDay, setSavingPayDay] = useState(false)
+
+  // ─── Compensation state ───
+  const [compType, setCompType] = useState(member.compensation_type || 'commission')
+  const [fixedSalary, setFixedSalary] = useState<string>(String(member.fixed_salary || 0))
+  const [commissionRate, setCommissionRate] = useState<string>(String(member.commission_rate ?? 10))
+  const [savingComp, setSavingComp] = useState(false)
+  const compChanged = compType !== (member.compensation_type || 'commission')
+    || fixedSalary !== String(member.fixed_salary || 0)
+    || commissionRate !== String(member.commission_rate ?? 10)
+
+  const handleSaveCompensation = async () => {
+    setSavingComp(true)
+    const updates: any = {
+      compensation_type: compType,
+      fixed_salary: parseFloat(fixedSalary) || 0,
+      commission_rate: parseFloat(commissionRate) || 0,
+    }
+    const { error } = await supabase
+      .from('business_team_members')
+      .update(updates)
+      .eq('id', member.id)
+    if (error) { toast.error('Erreur: ' + error.message) }
+    else {
+      toast.success('Rémunération mise à jour')
+      onMemberUpdate(updates)
+    }
+    setSavingComp(false)
+  }
+
+  // ─── Bonuses state ───
+  const [bonuses, setBonuses] = useState<Bonus[]>([])
+  const [loadingBonuses, setLoadingBonuses] = useState(true)
+  const [paidInvoices, setPaidInvoices] = useState<{ id: string; invoice_number: string; client_name: string; amount_ttc: number }[]>([])
+  const [newBonusLabel, setNewBonusLabel] = useState('')
+  const [newBonusAmount, setNewBonusAmount] = useState('')
+  const [newBonusInvoice, setNewBonusInvoice] = useState('')
+  const [addingBonus, setAddingBonus] = useState(false)
+  const [showBonusForm, setShowBonusForm] = useState(false)
+
+  const effectiveOwnerId = ownerUserId || user?.id
+
+  useEffect(() => {
+    if (!member.id) return
+    const loadBonuses = async () => {
+      setLoadingBonuses(true)
+      const { data } = await supabase
+        .from('business_team_bonuses')
+        .select('*')
+        .eq('team_member_id', member.id)
+        .order('created_at', { ascending: false })
+      setBonuses(data || [])
+      setLoadingBonuses(false)
+    }
+    loadBonuses()
+  }, [member.id])
+
+  // Load paid invoices for this team member (for linking bonuses)
+  useEffect(() => {
+    if (!isOwnerView || !member.id) return
+    const loadPaidInvoices = async () => {
+      const { data } = await supabase
+        .from('invoices')
+        .select('id, invoice_number, client_name, amount_ttc')
+        .eq('team_member_id', member.id)
+        .eq('status', 'payé')
+        .order('created_at', { ascending: false })
+      setPaidInvoices(data || [])
+    }
+    loadPaidInvoices()
+  }, [isOwnerView, member.id])
+
+  const handleAddBonus = async () => {
+    if (!newBonusLabel.trim() || !newBonusAmount) return
+    setAddingBonus(true)
+    const bonus = {
+      business_owner_id: effectiveOwnerId,
+      team_member_id: member.id,
+      invoice_id: newBonusInvoice || null,
+      label: newBonusLabel.trim(),
+      amount: parseFloat(newBonusAmount) || 0,
+      status: newBonusInvoice ? 'en attente' : 'en attente',
+    }
+    const { data, error } = await supabase
+      .from('business_team_bonuses')
+      .insert(bonus)
+      .select()
+      .single()
+    if (error) { toast.error('Erreur: ' + error.message) }
+    else {
+      toast.success('Prime ajoutée')
+      setBonuses(prev => [data, ...prev])
+      setNewBonusLabel('')
+      setNewBonusAmount('')
+      setNewBonusInvoice('')
+      setShowBonusForm(false)
+    }
+    setAddingBonus(false)
+  }
+
+  const handleDeleteBonus = async (bonusId: string) => {
+    const { error } = await supabase.from('business_team_bonuses').delete().eq('id', bonusId)
+    if (error) { toast.error('Erreur') }
+    else {
+      setBonuses(prev => prev.filter(b => b.id !== bonusId))
+      toast.success('Prime supprimée')
+    }
+  }
+
+  const handleMarkBonusPaid = async (bonusId: string) => {
+    const { error } = await supabase
+      .from('business_team_bonuses')
+      .update({ status: 'payé', paid_at: new Date().toISOString() })
+      .eq('id', bonusId)
+    if (error) { toast.error('Erreur') }
+    else {
+      setBonuses(prev => prev.map(b => b.id === bonusId ? { ...b, status: 'payé', paid_at: new Date().toISOString() } : b))
+      toast.success('Prime marquée comme payée')
+    }
+  }
   const [editRole, setEditRole] = useState(member.role)
   const [editSetterScope, setEditSetterScope] = useState(member.setter_scope || 'all')
   const [savingRole, setSavingRole] = useState(false)
@@ -914,6 +1053,251 @@ function IndividualView({
                     : new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
                   }
                 </p>
+              )}
+            </div>
+          )}
+
+          {/* Compensation */}
+          {isOwnerView && (
+            <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+                <DollarSign className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                Rémunération
+              </h3>
+              <div className="space-y-5">
+                <div>
+                  <label className={cn(LABEL_STYLE, 'block mb-2')}>Type de rémunération</label>
+                  <div className="grid grid-cols-3 gap-1 p-1 bg-stone-100 dark:bg-neutral-800 rounded-full">
+                    {([
+                      { value: 'commission', label: 'Commission' },
+                      { value: 'fixed', label: 'Fixe' },
+                      { value: 'fixed_plus_commission', label: 'Fixe + Com.' },
+                    ] as const).map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setCompType(opt.value)}
+                        className={cn(
+                          'py-2 text-[11px] font-bold rounded-full transition-all',
+                          compType === opt.value
+                            ? 'bg-white dark:bg-neutral-700 shadow-sm text-stone-900 dark:text-white'
+                            : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {(compType === 'fixed' || compType === 'fixed_plus_commission') && (
+                  <div>
+                    <label className={cn(LABEL_STYLE, 'block mb-2')}>Salaire fixe mensuel</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={fixedSalary}
+                        onChange={e => setFixedSalary(e.target.value)}
+                        placeholder="0"
+                        min={0}
+                        className="w-full bg-stone-50 dark:bg-neutral-800 border-none rounded-full px-4 py-3 pr-10 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 transition-all"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-stone-400 font-bold">€</span>
+                    </div>
+                  </div>
+                )}
+
+                {(compType === 'commission' || compType === 'fixed_plus_commission') && (
+                  <div>
+                    <label className={cn(LABEL_STYLE, 'block mb-2')}>Taux de commission</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={commissionRate}
+                        onChange={e => setCommissionRate(e.target.value)}
+                        placeholder="10"
+                        min={0}
+                        max={100}
+                        className="w-full bg-stone-50 dark:bg-neutral-800 border-none rounded-full px-4 py-3 pr-10 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 transition-all"
+                      />
+                      <Percent className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                    </div>
+                  </div>
+                )}
+
+                {compChanged && (
+                  <button
+                    onClick={handleSaveCompensation}
+                    disabled={savingComp}
+                    className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
+                  >
+                    {savingComp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" strokeWidth={1.5} />}
+                    Enregistrer
+                  </button>
+                )}
+
+                <div className="pt-2 border-t border-stone-100 dark:border-neutral-700">
+                  <p className="text-xs text-stone-400 dark:text-neutral-500">
+                    {compType === 'commission' && `100% commission à ${commissionRate}% sur les ventes.`}
+                    {compType === 'fixed' && `Salaire fixe de ${formatCurrency(parseFloat(fixedSalary) || 0)}/mois.`}
+                    {compType === 'fixed_plus_commission' && `${formatCurrency(parseFloat(fixedSalary) || 0)}/mois + ${commissionRate}% de commission.`}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Primes / Bonuses */}
+          {isOwnerView && (
+            <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className={cn(SECTION_TITLE)}>
+                  <Award className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                  Primes
+                </h3>
+                <button
+                  onClick={() => setShowBonusForm(!showBonusForm)}
+                  className="flex items-center gap-1.5 rounded-full bg-stone-100 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all"
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+                  Ajouter
+                </button>
+              </div>
+
+              {showBonusForm && (
+                <div className="mb-5 p-4 bg-stone-50 dark:bg-neutral-800 rounded-xl space-y-3">
+                  <input
+                    type="text"
+                    value={newBonusLabel}
+                    onChange={e => setNewBonusLabel(e.target.value)}
+                    placeholder="Libellé (ex: Prime performance Q1)"
+                    className="w-full bg-white dark:bg-neutral-700 border-none rounded-full px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:ring-2 focus:ring-[#006c49]/20"
+                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={newBonusAmount}
+                      onChange={e => setNewBonusAmount(e.target.value)}
+                      placeholder="Montant"
+                      min={0}
+                      className="w-full bg-white dark:bg-neutral-700 border-none rounded-full px-4 py-2.5 pr-10 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:ring-2 focus:ring-[#006c49]/20"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-stone-400 font-bold">€</span>
+                  </div>
+                  <div>
+                    <label className={cn(LABEL_STYLE, 'block mb-1.5')}>Liée à une facture payée (optionnel)</label>
+                    <select
+                      value={newBonusInvoice}
+                      onChange={e => setNewBonusInvoice(e.target.value)}
+                      className="w-full bg-white dark:bg-neutral-700 border-none rounded-full px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
+                    >
+                      <option value="">Aucune facture</option>
+                      {paidInvoices.map(inv => (
+                        <option key={inv.id} value={inv.id}>
+                          {inv.invoice_number} — {inv.client_name} ({formatCurrency(inv.amount_ttc)})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1.5">
+                      Si liée à une facture, la prime sera versée une fois la facture au statut « payé ».
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleAddBonus}
+                      disabled={addingBonus || !newBonusLabel.trim() || !newBonusAmount}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-4 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
+                    >
+                      {addingBonus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" strokeWidth={2} />}
+                      Ajouter
+                    </button>
+                    <button
+                      onClick={() => { setShowBonusForm(false); setNewBonusLabel(''); setNewBonusAmount(''); setNewBonusInvoice('') }}
+                      className="rounded-full bg-stone-200 dark:bg-neutral-700 px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-neutral-300 hover:opacity-90 transition-all"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {loadingBonuses ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-stone-300" />
+                </div>
+              ) : bonuses.length === 0 ? (
+                <div className="text-center py-6">
+                  <Award className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
+                  <p className="text-sm text-stone-400 dark:text-neutral-500">Aucune prime</p>
+                </div>
+              ) : (
+                <div className="space-y-0 max-h-72 overflow-y-auto">
+                  {bonuses.map((bonus, idx) => {
+                    const isPaid = bonus.status === 'payé'
+                    const isLinkedToInvoice = !!bonus.invoice_id
+                    const linkedInvoice = paidInvoices.find(i => i.id === bonus.invoice_id)
+                    const isLast = idx === bonuses.length - 1
+                    return (
+                      <div key={bonus.id} className={cn('flex items-center justify-between py-3 group', !isLast && 'border-b border-stone-100 dark:border-neutral-800')}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-bold text-stone-900 dark:text-white truncate">{bonus.label}</p>
+                            <span className={cn(
+                              'text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0',
+                              isPaid
+                                ? 'bg-[#6ffbbe]/20 dark:bg-[#6ffbbe]/10 text-[#005236] dark:text-[#6ffbbe]'
+                                : 'bg-[#ffddb8]/40 dark:bg-amber-500/10 text-[#653e00] dark:text-amber-300'
+                            )}>
+                              {isPaid ? 'Payé' : 'En attente'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-xs text-stone-400 dark:text-neutral-500">
+                              {new Date(bonus.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                            {linkedInvoice && (
+                              <p className="text-xs text-stone-400 dark:text-neutral-500 flex items-center gap-1">
+                                <Receipt className="h-3 w-3" strokeWidth={1.5} />
+                                {linkedInvoice.invoice_number}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-stone-900 dark:text-white font-business-display">
+                            {formatCurrency(bonus.amount)}
+                          </span>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {!isPaid && (
+                              <button
+                                onClick={() => handleMarkBonusPaid(bonus.id)}
+                                title="Marquer comme payé"
+                                className="p-1.5 rounded-full hover:bg-[#6ffbbe]/20 transition-colors"
+                              >
+                                <Check className="h-3.5 w-3.5 text-[#006c49]" strokeWidth={2} />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteBonus(bonus.id)}
+                              title="Supprimer"
+                              className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-red-500" strokeWidth={1.5} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {bonuses.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-stone-100 dark:border-neutral-700 flex justify-between">
+                  <p className="text-xs text-stone-400 dark:text-neutral-500">Total primes</p>
+                  <p className="text-sm font-extrabold text-stone-900 dark:text-white font-business-display">
+                    {formatCurrency(bonuses.reduce((s, b) => s + b.amount, 0))}
+                  </p>
+                </div>
               )}
             </div>
           )}

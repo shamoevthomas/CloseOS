@@ -129,27 +129,43 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
   const [savingSidebar, setSavingSidebar] = useState(false)
   const [sidebarDirty, setSidebarDirty] = useState(false)
 
-  // Init sidebar items from settings or defaults
+  // Init sidebar items — load saved order from the right source
   useEffect(() => {
-    if (!isOpen) return
-    const savedOrder = businessSettings?.sidebar_order as string[] | null
-    if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
-      // Rebuild items from saved href order, keeping only valid ones
-      const ordered: { name: string; href: string }[] = []
-      for (const href of savedOrder) {
-        const item = DEFAULT_OWNER_NAV.find(n => n.href === href)
-        if (item) ordered.push(item)
+    if (!isOpen || !user) return
+    const loadOrder = async () => {
+      let savedOrder: string[] | null = null
+      if (isTeamMember && teamMember?.id) {
+        const { data } = await supabase
+          .from('business_team_members')
+          .select('sidebar_order')
+          .eq('id', teamMember.id)
+          .single()
+        savedOrder = data?.sidebar_order as string[] | null
+      } else {
+        const { data } = await supabase
+          .from('business_users')
+          .select('sidebar_order')
+          .eq('id', user.id)
+          .single()
+        savedOrder = data?.sidebar_order as string[] | null
       }
-      // Add any new items not in saved order
-      for (const item of DEFAULT_OWNER_NAV) {
-        if (!ordered.find(o => o.href === item.href)) ordered.push(item)
+      if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+        const ordered: { name: string; href: string }[] = []
+        for (const href of savedOrder) {
+          const item = DEFAULT_OWNER_NAV.find(n => n.href === href)
+          if (item) ordered.push(item)
+        }
+        for (const item of DEFAULT_OWNER_NAV) {
+          if (!ordered.find(o => o.href === item.href)) ordered.push(item)
+        }
+        setSidebarItems(ordered)
+      } else {
+        setSidebarItems([...DEFAULT_OWNER_NAV])
       }
-      setSidebarItems(ordered)
-    } else {
-      setSidebarItems([...DEFAULT_OWNER_NAV])
+      setSidebarDirty(false)
     }
-    setSidebarDirty(false)
-  }, [isOpen, businessSettings?.sidebar_order])
+    loadOrder()
+  }, [isOpen, user, isTeamMember, teamMember?.id])
 
   const handleDragStart = useCallback((idx: number) => {
     setDragIndex(idx)
@@ -187,15 +203,20 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     setSavingSidebar(true)
     try {
       const order = sidebarItems.map(i => i.href)
-      // Direct update — bypass updateBusinessSettings to debug
-      const { error, data } = await supabase
-        .from('business_settings')
-        .update({ sidebar_order: order })
-        .eq('user_id', user.id)
-        .select('sidebar_order')
-      console.log('[saveSidebarOrder]', { error, data, order, userId: user.id })
-      if (error) {
-        setMessage({ type: 'error', text: `Erreur: ${error.message}` })
+      let result: { error: any }
+      if (isTeamMember && teamMember?.id) {
+        result = await supabase
+          .from('business_team_members')
+          .update({ sidebar_order: order })
+          .eq('id', teamMember.id)
+      } else {
+        result = await supabase
+          .from('business_users')
+          .update({ sidebar_order: order })
+          .eq('id', user.id)
+      }
+      if (result.error) {
+        setMessage({ type: 'error', text: `Erreur: ${result.error.message}` })
       } else {
         setSidebarDirty(false)
         setMessage({ type: 'success', text: 'Ordre de la sidebar sauvegardé.' })
@@ -214,12 +235,20 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     setSidebarItems([...DEFAULT_OWNER_NAV])
     setSavingSidebar(true)
     try {
-      const { error } = await supabase
-        .from('business_settings')
-        .update({ sidebar_order: null })
-        .eq('user_id', user.id)
-      if (error) {
-        setMessage({ type: 'error', text: `Erreur: ${error.message}` })
+      let result: { error: any }
+      if (isTeamMember && teamMember?.id) {
+        result = await supabase
+          .from('business_team_members')
+          .update({ sidebar_order: null })
+          .eq('id', teamMember.id)
+      } else {
+        result = await supabase
+          .from('business_users')
+          .update({ sidebar_order: null })
+          .eq('id', user.id)
+      }
+      if (result.error) {
+        setMessage({ type: 'error', text: `Erreur: ${result.error.message}` })
       } else {
         setSidebarDirty(false)
         setMessage({ type: 'success', text: 'Ordre de la sidebar réinitialisé.' })
