@@ -146,7 +146,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 </div>
                 <h2 className="text-3xl font-bold mb-4 text-[#e2e2e8]">CloseOS Business</h2>
                 <span className="inline-block px-4 py-1.5 rounded-full bg-[#282a2e] text-[#00e475] text-xs font-bold uppercase tracking-wider mb-6 border border-[#45474b]/30">
-                  Infopreneur / Manager
+                  Infopreneur / HOS
                 </span>
                 <p className="text-[#909095] leading-relaxed mb-12 max-w-xs">
                   Pilotez votre croissance. Management d'équipes de vente, suivi des campagnes d'acquisition et analytics haute-précision.

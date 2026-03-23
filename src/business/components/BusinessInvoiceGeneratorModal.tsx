@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { X, ChevronLeft, Download, Loader2, Mail, Building2, User, AlertTriangle, Link2 } from 'lucide-react'
+import { X, ChevronLeft, Download, Loader2, Mail } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 import { cn } from '../../lib/utils'
