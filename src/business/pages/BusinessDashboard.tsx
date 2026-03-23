@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useScrambleText } from '../hooks/useScrambleText'
 import {
   Loader2, DollarSign, TrendingUp, CalendarDays, Target, UserX, Activity,
   Megaphone, Users, Bell, ArrowUpRight, ArrowDownRight, FileDown, Circle,
@@ -7,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { CloserDashboard } from './CloserDashboard'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
@@ -315,11 +317,12 @@ export function BusinessDashboard() {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-1">
           <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Bonjour, {firstName}.
+            Bonjour, {scrambledName}.
           </h2>
           <p className="text-neutral-500 dark:text-neutral-400 text-lg">Voici l'état de votre activité aujourd'hui.</p>
         </div>
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <div className="hidden sm:flex">
             <BusinessReminderBell />
           </div>

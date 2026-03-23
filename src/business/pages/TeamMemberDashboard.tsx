@@ -5,6 +5,7 @@ import {
   Bell, Clock, User, Megaphone, Circle, Zap,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
 
@@ -197,6 +198,7 @@ export function TeamMemberDashboard() {
           <p className="text-[#444748] dark:text-neutral-400 font-medium text-lg">{companyName}</p>
         </div>
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <div className="text-right">
             <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">Dernière Sync</p>
             <p className="font-bold text-[#1b1c1b] dark:text-white">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</p>

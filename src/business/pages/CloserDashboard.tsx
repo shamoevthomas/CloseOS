@@ -7,6 +7,7 @@ import {
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
@@ -139,6 +140,7 @@ export function CloserDashboard() {
           <p className="text-neutral-500 text-lg">Voici l'état de votre activité aujourd'hui.</p>
         </div>
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <div className="hidden sm:flex">
             <BusinessReminderBell />
           </div>
