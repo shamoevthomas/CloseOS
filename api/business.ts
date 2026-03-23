@@ -1326,6 +1326,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ appointment: data })
     }
 
+    if (action === 'appointments-delete' && req.method === 'DELETE') {
+      const id = req.query.id as string
+      const user_id = req.query.user_id as string
+      if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
+
+      const { error } = await supabase
+        .from('business_appointments')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user_id)
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ success: true })
+    }
+
     // ─── Public capture info (no auth) ───
     if (action === 'capture-info' && req.method === 'GET') {
       const slug = req.query.slug as string

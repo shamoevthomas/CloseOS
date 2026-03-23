@@ -1,16 +1,19 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { supabase } from '../../lib/supabase'
 import {
   TrendingUp, DollarSign, ShoppingCart, Target, Award,
   Ban, Users, Briefcase, UserX, Settings, X, Save, Loader2, Package,
+  Download, CalendarDays,
 } from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
+// @ts-ignore
+import html2pdf from 'html2pdf.js'
 
 interface KpiConfig {
   planned_calls: number
@@ -52,6 +55,14 @@ export function CloserKPI() {
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   // Global member filter (persists across tabs)
   const [globalMemberId, setGlobalMemberId] = useState<string | null>(null)
+
+  // Period filter
+  const [periodFrom, setPeriodFrom] = useState('')
+  const [periodTo, setPeriodTo] = useState('')
+
+  // PDF export
+  const pdfRef = useRef<HTMLDivElement>(null)
+  const [exporting, setExporting] = useState(false)
 
   // Load KPI config
   useEffect(() => {
@@ -142,6 +153,18 @@ export function CloserKPI() {
     setIsConfigOpen(false)
   }
 
+  // Period-filtered prospects
+  const periodProspects = useMemo(() => {
+    if (!periodFrom && !periodTo) return prospects
+    return prospects.filter(p => {
+      if (!p.created_at) return false
+      const d = p.created_at.slice(0, 10)
+      if (periodFrom && d < periodFrom) return false
+      if (periodTo && d > periodTo) return false
+      return true
+    })
+  }, [prospects, periodFrom, periodTo])
+
   // Helper: compute closer KPIs for a set of prospects
   const computeCloserKpis = (src: any[]) => {
     const won = src.filter((p: any) => p.stage === 'won')
@@ -159,7 +182,7 @@ export function CloserKPI() {
   }
 
   // Personal KPIs
-  const myProspects = prospects.filter(p => p.assigned_to === teamMember?.id)
+  const myProspects = periodProspects.filter(p => p.assigned_to === teamMember?.id)
   const personal = computeCloserKpis(myProspects)
   const commission = Math.round(personal.revenue * (kpiConfig.commission_rate / 100))
 
@@ -176,17 +199,17 @@ export function CloserKPI() {
   }
 
   // Org KPIs (filtered by member if selected)
-  const orgProspects = useMemo(() => filterByMember(prospects, globalMemberId), [prospects, globalMemberId])
+  const orgProspects = useMemo(() => filterByMember(periodProspects, globalMemberId), [periodProspects, globalMemberId])
   const org = computeCloserKpis(orgProspects)
   const orgCommission = Math.round(org.revenue * (kpiConfig.commission_rate / 100))
 
   // Per-formula KPIs
   const formulaProspects = useMemo(() => {
     if (!selectedOfferId) return []
-    const base = isOwnerView ? prospects : myProspects
+    const base = isOwnerView ? periodProspects : myProspects
     const filtered = base.filter(p => (p as any).offer_id === selectedOfferId || (p as any).formula_id === selectedOfferId)
     return filterByMember(filtered, globalMemberId)
-  }, [isOwnerView, myProspects, prospects, selectedOfferId, globalMemberId])
+  }, [isOwnerView, myProspects, periodProspects, selectedOfferId, globalMemberId])
 
   const formula = computeCloserKpis(formulaProspects)
   const formulaCommission = Math.round(formula.revenue * (kpiConfig.commission_rate / 100))
@@ -194,7 +217,7 @@ export function CloserKPI() {
   // Per-campaign KPIs
   const campaignProspects = useMemo(() => {
     if (!selectedCampaignId) return []
-    const base = isOwnerView ? prospects : myProspects
+    const base = isOwnerView ? periodProspects : myProspects
     const filtered = base.filter(p => (p as any).campaign_id === selectedCampaignId)
     return filterByMember(filtered, globalMemberId)
   }, [isOwnerView, myProspects, prospects, selectedCampaignId, globalMemberId])
@@ -206,7 +229,7 @@ export function CloserKPI() {
   const sourceProspects = useMemo(() => {
     if (!selectedSource) return []
     const campaignIds = campaigns.filter(c => (c.source || 'Direct') === selectedSource).map(c => c.id)
-    const base = isOwnerView ? prospects : myProspects
+    const base = isOwnerView ? periodProspects : myProspects
     const filtered = base.filter(p => campaignIds.includes((p as any).campaign_id))
     return filterByMember(filtered, globalMemberId)
   }, [isOwnerView, myProspects, prospects, selectedSource, campaigns, globalMemberId])
@@ -273,6 +296,30 @@ export function CloserKPI() {
         { key: 'source' as const, label: 'Par Source' },
       ]
 
+  const handleExportPdf = async () => {
+    if (!pdfRef.current) return
+    setExporting(true)
+    try {
+      const periodLabel = periodFrom || periodTo
+        ? `${periodFrom || '...'} → ${periodTo || '...'}`
+        : 'Toutes périodes'
+      const opt = {
+        margin: 10,
+        filename: `KPI-Closer-${new Date().toISOString().slice(0, 10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff', windowWidth: 900 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+      }
+      await html2pdf().set(opt).from(pdfRef.current).save()
+      toast.success('PDF exporté')
+    } catch (err) {
+      console.error('PDF export error:', err)
+      toast.error("Erreur lors de l'export PDF")
+    } finally {
+      setExporting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -280,6 +327,10 @@ export function CloserKPI() {
       </div>
     )
   }
+
+  const periodLabel = periodFrom || periodTo
+    ? `${periodFrom ? new Date(periodFrom + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '...'} → ${periodTo ? new Date(periodTo + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '...'}`
+    : 'Toutes périodes'
 
   return (
     <div className="space-y-6">
@@ -295,12 +346,49 @@ export function CloserKPI() {
             <p className="text-sm text-stone-500 dark:text-neutral-400">{isOwnerView ? "Vue d'ensemble de l'équipe" : 'Vos indicateurs de performance'}</p>
           </div>
         </div>
-        {!isOwnerView && (
+        <div className="flex items-center gap-2">
+          {!isOwnerView && (
+            <button
+              onClick={() => setIsConfigOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-700 transition-colors"
+            >
+              <Settings className="h-4 w-4" /> Configurer
+            </button>
+          )}
           <button
-            onClick={() => setIsConfigOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-700 transition-colors"
+            onClick={handleExportPdf}
+            disabled={exporting}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-stone-900 dark:bg-white text-sm font-bold text-white dark:text-stone-900 hover:opacity-90 transition-all disabled:opacity-50 active:scale-95"
           >
-            <Settings className="h-4 w-4" /> Configurer
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            Exporter PDF
+          </button>
+        </div>
+      </div>
+
+      {/* Period selector */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <CalendarDays className="h-4 w-4 text-stone-400" />
+        <span className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Période</span>
+        <input
+          type="date"
+          value={periodFrom}
+          onChange={e => setPeriodFrom(e.target.value)}
+          className="rounded-full bg-stone-100 dark:bg-neutral-800 border-0 px-3 py-1.5 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+        />
+        <span className="text-stone-400">→</span>
+        <input
+          type="date"
+          value={periodTo}
+          onChange={e => setPeriodTo(e.target.value)}
+          className="rounded-full bg-stone-100 dark:bg-neutral-800 border-0 px-3 py-1.5 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+        />
+        {(periodFrom || periodTo) && (
+          <button
+            onClick={() => { setPeriodFrom(''); setPeriodTo('') }}
+            className="text-xs text-stone-500 hover:text-stone-900 dark:hover:text-white font-medium transition-colors"
+          >
+            Réinitialiser
           </button>
         )}
       </div>
@@ -406,6 +494,14 @@ export function CloserKPI() {
         </div>
       )}
 
+      {/* PDF export content */}
+      <div ref={pdfRef}>
+      {/* PDF header (hidden on screen, visible in PDF) */}
+      <div className="hidden print:block mb-6">
+        <h1 className="text-2xl font-extrabold text-stone-900">Performance Closer — {periodLabel}</h1>
+        <p className="text-sm text-stone-500">Exporté le {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <KpiCard title="CA Généré" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
@@ -470,6 +566,7 @@ export function CloserKPI() {
           <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />
         </div>
       </div>
+      </div>{/* end pdfRef */}
 
       {/* Config Modal (team members only) */}
       {isConfigOpen && !isOwnerView && (

@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   ChevronLeft, ChevronRight, Calendar, Clock, User, Bell, X, Loader2,
-  Video, Phone, MapPin, ExternalLink, RefreshCw, Plus, ChevronDown, FileText, Megaphone,
+  Video, Phone, MapPin, ExternalLink, RefreshCw, Plus, ChevronDown, FileText, Megaphone, Trash2,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import { fromUTC } from '../../lib/timezone'
+import toast from 'react-hot-toast'
 
 /* ─── Types ───────────────────────────────────────── */
 
@@ -455,6 +456,35 @@ export function CloserAgenda() {
       console.error('Error creating event:', err)
     } finally {
       setCreateSaving(false)
+    }
+  }
+
+  const handleDeleteEvent = async (event: CalendarEvent) => {
+    if (!effectiveUserId) return
+    if (event.type === 'appointment') {
+      if (!confirm('Supprimer cet événement ?')) return
+      try {
+        const res = await fetch(`${API_URL}?action=appointments-delete&user_id=${effectiveUserId}&id=${event.id}`, { method: 'DELETE' })
+        if (res.ok) {
+          toast.success('Événement supprimé')
+          setSelectedEvent(null)
+          fetchAppointments()
+        } else {
+          toast.error('Erreur lors de la suppression')
+        }
+      } catch {
+        toast.error('Erreur lors de la suppression')
+      }
+    } else if (event.type === 'reminder') {
+      if (!confirm('Supprimer ce rappel ?')) return
+      const { error } = await supabase.from('business_reminders').delete().eq('id', Number(event.id))
+      if (error) {
+        toast.error('Erreur lors de la suppression')
+      } else {
+        toast.success('Rappel supprimé')
+        setSelectedEvent(null)
+        fetchAppointments()
+      }
     }
   }
 
@@ -1035,23 +1065,30 @@ export function CloserAgenda() {
               })()}
             </div>
 
-            {/* Footer: Google Meet button */}
-            {(selectedEvent.hangoutLink || (selectedEvent.type === 'appointment' && selectedEvent.data)) && (
-              <div className="px-7 pb-7 pt-2 flex items-center gap-3">
-                {selectedEvent.hangoutLink && (
-                  <a
-                    href={selectedEvent.hangoutLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white hover:bg-neutral-800 transition-colors shadow-lg"
-                  >
-                    <Video className="h-4 w-4" />
-                    Rejoindre Google Meet
-                    <ExternalLink className="h-3.5 w-3.5 ml-auto" />
-                  </a>
-                )}
-              </div>
-            )}
+            {/* Footer: actions */}
+            <div className="px-7 pb-7 pt-2 flex items-center gap-3">
+              {selectedEvent.hangoutLink && (
+                <a
+                  href={selectedEvent.hangoutLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white hover:bg-neutral-800 transition-colors shadow-lg"
+                >
+                  <Video className="h-4 w-4" />
+                  Rejoindre Google Meet
+                  <ExternalLink className="h-3.5 w-3.5 ml-auto" />
+                </a>
+              )}
+              {(selectedEvent.type === 'appointment' || selectedEvent.type === 'reminder') && (
+                <button
+                  onClick={() => handleDeleteEvent(selectedEvent)}
+                  className="flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-auto"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

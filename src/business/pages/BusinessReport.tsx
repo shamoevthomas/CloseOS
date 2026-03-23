@@ -178,6 +178,7 @@ export function BusinessReport() {
   const activeLeads = filteredProspects.filter(p => ['prospect', 'qualified', 'followup'].includes(p.stage))
 
   const totalCA = wonLeads.reduce((s, p) => s + (Number(p.value) || 0), 0)
+  const totalPipeline = filteredProspects.filter(p => p.stage !== 'unqualified').reduce((s, p) => s + (Number(p.value) || 0), 0)
   const avgDeal = wonLeads.length > 0 ? totalCA / wonLeads.length : 0
   // No-shows only count if they came from follow-up stage
   const noshowFromFollowup = noshowLeads.filter(p => p.previous_stage === 'followup')
@@ -778,7 +779,7 @@ export function BusinessReport() {
             </div>
             <div>
               <h4 className="font-extrabold text-lg text-stone-900 dark:text-white">Pipeline Détaillé</h4>
-              <p className="text-sm text-stone-400 dark:text-neutral-500">Valeur totale : {formatCurrency(totalCA)}</p>
+              <p className="text-sm text-stone-400 dark:text-neutral-500">Valeur totale : {formatCurrency(totalPipeline)}</p>
             </div>
           </div>
           {/* Pipeline bar */}

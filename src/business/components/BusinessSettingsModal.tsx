@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   X,
   Shield,
@@ -22,6 +22,21 @@ import {
   UserPlus,
   ArrowRight,
   ChevronDown,
+  Monitor,
+  GripVertical,
+  LayoutDashboard,
+  GitBranch,
+  Target,
+  Megaphone,
+  BarChart3,
+  Package,
+  Calendar,
+  Bell,
+  Receipt,
+  FileText,
+  TrendingUp,
+  Users,
+  RotateCcw,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -30,17 +45,59 @@ import { supabase } from '../../lib/supabase'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
 
+// Icon map for sidebar nav items
+const NAV_ICON_MAP: Record<string, any> = {
+  '/business/dashboard': LayoutDashboard,
+  '/business/crm': GitBranch,
+  '/business/pipeline-owner': Target,
+  '/business/pipeline': Target,
+  '/business/campagnes': Megaphone,
+  '/business/acquisition': BarChart3,
+  '/business/objectifs': Target,
+  '/business/closer-objectifs': Target,
+  '/business/formules': Package,
+  '/business/appels': Phone,
+  '/business/rendez-vous': Calendar,
+  '/business/agenda': Calendar,
+  '/business/rappels': Bell,
+  '/business/factures': Receipt,
+  '/business/report': FileText,
+  '/business/setter-kpi': TrendingUp,
+  '/business/closer-kpi': TrendingUp,
+  '/business/team': Users,
+  '/business/disponibilite': Calendar,
+}
+
+const DEFAULT_OWNER_NAV: { name: string; href: string }[] = [
+  { name: 'Dashboard', href: '/business/dashboard' },
+  { name: 'CRM', href: '/business/crm' },
+  { name: 'Pipeline', href: '/business/pipeline-owner' },
+  { name: 'Campagnes', href: '/business/campagnes' },
+  { name: 'Acquisition', href: '/business/acquisition' },
+  { name: 'Objectifs', href: '/business/objectifs' },
+  { name: 'Formules', href: '/business/formules' },
+  { name: 'Appels', href: '/business/appels' },
+  { name: 'Rendez-vous', href: '/business/rendez-vous' },
+  { name: 'Agenda', href: '/business/agenda' },
+  { name: 'Rappels', href: '/business/rappels' },
+  { name: 'Factures', href: '/business/factures' },
+  { name: 'Rapport', href: '/business/report' },
+  { name: 'KPI Setter', href: '/business/setter-kpi' },
+  { name: 'KPI Closer', href: '/business/closer-kpi' },
+  { name: 'Équipe', href: '/business/team' },
+]
+
 interface BusinessSettingsModalProps {
   isOpen: boolean
   onClose: () => void
-  initialTab?: 'profile' | 'security' | 'support' | 'delete_account'
+  initialTab?: 'profile' | 'security' | 'interface' | 'support' | 'delete_account'
 }
 
 export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' }: BusinessSettingsModalProps) {
-  const { user, businessProfile, updateBusinessProfile } = useBusinessAuth()
+  const { user, businessProfile, updateBusinessProfile, businessSettings, updateBusinessSettings, isTeamMember, teamMember, refreshProfile } = useBusinessAuth()
   const { dark, toggle: toggleDark } = useTheme()
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'support' | 'delete_account'>(initialTab)
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'interface' | 'support' | 'delete_account'>(initialTab)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -64,20 +121,119 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     deletion_scheduled_at: null as string | null,
   })
 
+  // ─── Sidebar reorder state ───
+  const [sidebarItems, setSidebarItems] = useState<{ name: string; href: string }[]>([])
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [overIndex, setOverIndex] = useState<number | null>(null)
+  const [savingSidebar, setSavingSidebar] = useState(false)
+  const [sidebarDirty, setSidebarDirty] = useState(false)
+
+  // Init sidebar items from settings or defaults
+  useEffect(() => {
+    if (!isOpen) return
+    const savedOrder = businessSettings?.sidebar_order as string[] | null
+    if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+      // Rebuild items from saved href order, keeping only valid ones
+      const ordered: { name: string; href: string }[] = []
+      for (const href of savedOrder) {
+        const item = DEFAULT_OWNER_NAV.find(n => n.href === href)
+        if (item) ordered.push(item)
+      }
+      // Add any new items not in saved order
+      for (const item of DEFAULT_OWNER_NAV) {
+        if (!ordered.find(o => o.href === item.href)) ordered.push(item)
+      }
+      setSidebarItems(ordered)
+    } else {
+      setSidebarItems([...DEFAULT_OWNER_NAV])
+    }
+    setSidebarDirty(false)
+  }, [isOpen, businessSettings?.sidebar_order])
+
+  const handleDragStart = useCallback((idx: number) => {
+    setDragIndex(idx)
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent, idx: number) => {
+    e.preventDefault()
+    setOverIndex(idx)
+  }, [])
+
+  const handleDrop = useCallback((idx: number) => {
+    if (dragIndex === null || dragIndex === idx) {
+      setDragIndex(null)
+      setOverIndex(null)
+      return
+    }
+    setSidebarItems(prev => {
+      const items = [...prev]
+      const [moved] = items.splice(dragIndex, 1)
+      items.splice(idx, 0, moved)
+      return items
+    })
+    setSidebarDirty(true)
+    setDragIndex(null)
+    setOverIndex(null)
+  }, [dragIndex])
+
+  const handleDragEnd = useCallback(() => {
+    setDragIndex(null)
+    setOverIndex(null)
+  }, [])
+
+  const saveSidebarOrder = async () => {
+    setSavingSidebar(true)
+    try {
+      await updateBusinessSettings({ sidebar_order: sidebarItems.map(i => i.href) })
+      setSidebarDirty(false)
+      setMessage({ type: 'success', text: 'Ordre de la sidebar sauvegardé.' })
+    } catch {
+      setMessage({ type: 'error', text: 'Erreur lors de la sauvegarde.' })
+    } finally {
+      setSavingSidebar(false)
+    }
+  }
+
+  const resetSidebarOrder = async () => {
+    setSidebarItems([...DEFAULT_OWNER_NAV])
+    setSavingSidebar(true)
+    try {
+      await updateBusinessSettings({ sidebar_order: null })
+      setSidebarDirty(false)
+      setMessage({ type: 'success', text: 'Ordre de la sidebar réinitialisé.' })
+    } catch {
+      setMessage({ type: 'error', text: 'Erreur lors de la réinitialisation.' })
+    } finally {
+      setSavingSidebar(false)
+    }
+  }
+
   useEffect(() => {
     if (user && isOpen) {
-      setFormData(prev => ({
-        ...prev,
-        full_name: businessProfile?.full_name || user.user_metadata?.full_name || '',
-        phone: businessProfile?.phone || user.user_metadata?.phone || '',
-        role: businessProfile?.role || 'Business Owner',
-        avatar_url: businessProfile?.avatar_url || user.user_metadata?.avatar_url || '',
-        owner_assignable: businessProfile?.owner_assignable ?? false,
-        deletion_scheduled_at: null,
-      }))
+      if (isTeamMember && teamMember) {
+        setFormData(prev => ({
+          ...prev,
+          full_name: teamMember.full_name || '',
+          phone: teamMember.phone || '',
+          role: teamMember.role || 'Closer',
+          avatar_url: teamMember.avatar_url || '',
+          owner_assignable: false,
+          deletion_scheduled_at: null,
+        }))
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          full_name: businessProfile?.full_name || user.user_metadata?.full_name || '',
+          phone: businessProfile?.phone || user.user_metadata?.phone || '',
+          role: businessProfile?.role || 'Business Owner',
+          avatar_url: businessProfile?.avatar_url || user.user_metadata?.avatar_url || '',
+          owner_assignable: businessProfile?.owner_assignable ?? false,
+          deletion_scheduled_at: null,
+        }))
+      }
       setMessage({ type: '', text: '' })
     }
-  }, [user, isOpen, activeTab, businessProfile])
+  }, [user, isOpen, activeTab, businessProfile, isTeamMember, teamMember])
 
   useEffect(() => {
     if (isOpen && initialTab) setActiveTab(initialTab)
@@ -121,7 +277,12 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName)
       const publicUrl = urlData.publicUrl
 
-      await updateBusinessProfile({ avatar_url: publicUrl })
+      if (isTeamMember && teamMember) {
+        await supabase.from('business_team_members').update({ avatar_url: publicUrl }).eq('id', teamMember.id)
+        await refreshProfile()
+      } else {
+        await updateBusinessProfile({ avatar_url: publicUrl })
+      }
       supabase.auth.updateUser({ data: { avatar_url: publicUrl } }).catch(() => {})
 
       setFormData(prev => ({ ...prev, avatar_url: publicUrl }))
@@ -140,13 +301,28 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     e.preventDefault()
     setLoading(true)
     try {
-      const { error } = await updateBusinessProfile({
-        full_name: formData.full_name,
-        phone: formData.phone,
-        role: formData.role,
-        avatar_url: formData.avatar_url,
-        owner_assignable: formData.owner_assignable,
-      })
+      let error: any = null
+
+      if (isTeamMember && teamMember) {
+        const { error: tmError } = await supabase
+          .from('business_team_members')
+          .update({
+            phone: formData.phone,
+            avatar_url: formData.avatar_url,
+          })
+          .eq('id', teamMember.id)
+        error = tmError
+        if (!tmError) await refreshProfile()
+      } else {
+        const res = await updateBusinessProfile({
+          full_name: formData.full_name,
+          phone: formData.phone,
+          role: formData.role,
+          avatar_url: formData.avatar_url,
+          owner_assignable: formData.owner_assignable,
+        })
+        error = res.error
+      }
 
       await supabase.auth.updateUser({
         data: {
@@ -324,8 +500,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
           <nav className="flex-1 space-y-2">
             {sidebarTab('profile', <User className="h-5 w-5" strokeWidth={1.5} />, 'Profile')}
+            {sidebarTab('interface', <Monitor className="h-5 w-5" strokeWidth={1.5} />, 'Interface')}
             {sidebarTab('security', <Shield className="h-5 w-5" strokeWidth={1.5} />, 'Security')}
-            {sidebarTab('delete_account', <Trash2 className="h-5 w-5" strokeWidth={1.5} />, 'Delete Account')}
+            {!isTeamMember && sidebarTab('delete_account', <Trash2 className="h-5 w-5" strokeWidth={1.5} />, 'Delete Account')}
             {sidebarTab('support', <Headphones className="h-5 w-5" strokeWidth={1.5} />, 'Support')}
           </nav>
 
@@ -674,6 +851,165 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             )}
 
             {/* ─── SUPPORT TAB ─── */}
+            {/* ─── INTERFACE TAB ─── */}
+            {activeTab === 'interface' && (
+              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-8 tracking-tight">Interface</h3>
+
+                {/* Dashboard Period */}
+                <div className="p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 mb-1">Période du Dashboard</label>
+                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">Choisissez la période par défaut pour les KPI affichés sur le dashboard.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      { value: 'today', label: "Aujourd'hui" },
+                      { value: 'week', label: 'Cette semaine' },
+                      { value: 'month', label: 'Ce mois' },
+                      { value: 'year', label: "Cette année" },
+                      { value: 'all', label: 'Depuis toujours' },
+                    ] as const).map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={async () => {
+                          await updateBusinessSettings({ dashboard_period: opt.value })
+                          setMessage({ type: 'success', text: 'Période du dashboard mise à jour.' })
+                        }}
+                        className={cn(
+                          'px-4 py-2.5 rounded-full text-sm font-bold transition-all',
+                          (businessSettings?.dashboard_period || 'all') === opt.value
+                            ? 'bg-stone-900 dark:bg-white text-white dark:text-neutral-900'
+                            : 'bg-[#f5f3f2] dark:bg-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-600'
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ─── Sidebar Order ─── */}
+                <div className="p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500">Organisation de la sidebar</label>
+                    <div className="flex items-center gap-2">
+                      {businessSettings?.sidebar_order && (
+                        <button
+                          type="button"
+                          onClick={resetSidebarOrder}
+                          disabled={savingSidebar}
+                          className="flex items-center gap-1 text-[10px] font-bold text-stone-400 hover:text-stone-600 transition-colors uppercase tracking-widest"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Réinitialiser
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">Glissez-déposez les pages pour réorganiser votre sidebar.</p>
+
+                  {/* Mini sidebar preview */}
+                  <div className="flex gap-6">
+                    {/* Drag list */}
+                    <div className="flex-1 space-y-1">
+                      {sidebarItems.map((item, idx) => {
+                        const Icon = NAV_ICON_MAP[item.href] || LayoutDashboard
+                        const isDragging = dragIndex === idx
+                        const isOver = overIndex === idx && dragIndex !== idx
+                        return (
+                          <div
+                            key={item.href}
+                            draggable
+                            onDragStart={() => handleDragStart(idx)}
+                            onDragOver={(e) => handleDragOver(e, idx)}
+                            onDrop={() => handleDrop(idx)}
+                            onDragEnd={handleDragEnd}
+                            className={cn(
+                              'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab active:cursor-grabbing transition-all select-none group',
+                              isDragging
+                                ? 'opacity-40 scale-95 bg-stone-100 dark:bg-neutral-700'
+                                : 'bg-[#fbf9f8] dark:bg-neutral-900 hover:bg-stone-100 dark:hover:bg-neutral-700',
+                              isOver && 'ring-2 ring-[#006c49] ring-offset-1 bg-[#006c49]/5'
+                            )}
+                          >
+                            <GripVertical className="h-4 w-4 text-stone-300 dark:text-neutral-600 shrink-0 group-hover:text-stone-500 transition-colors" />
+                            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white dark:bg-neutral-800 shadow-sm shrink-0">
+                              <Icon className="h-3.5 w-3.5 text-stone-500 dark:text-neutral-400" />
+                            </div>
+                            <span className="text-xs font-bold text-stone-700 dark:text-neutral-300 uppercase tracking-wide truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                              {item.name}
+                            </span>
+                            <span className="ml-auto text-[10px] font-bold text-stone-300 dark:text-neutral-600 tabular-nums">
+                              {idx + 1}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Mini sidebar visual preview */}
+                    <div className="hidden sm:block w-48 shrink-0">
+                      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-stone-200/60 dark:border-neutral-700 shadow-lg overflow-hidden h-full">
+                        {/* Mini header */}
+                        <div className="px-3 py-3 border-b border-stone-100 dark:border-neutral-800 flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-md bg-stone-900 flex items-center justify-center">
+                            <span className="text-[8px] font-black text-white">C</span>
+                          </div>
+                          <div>
+                            <p className="text-[8px] font-black text-stone-900 dark:text-white leading-none">CloseOS</p>
+                            <p className="text-[6px] text-stone-400 uppercase tracking-wider">Business</p>
+                          </div>
+                        </div>
+                        {/* Mini nav items */}
+                        <div className="p-1.5 space-y-px max-h-[340px] overflow-y-auto">
+                          {sidebarItems.map((item, idx) => {
+                            const Icon = NAV_ICON_MAP[item.href] || LayoutDashboard
+                            return (
+                              <div
+                                key={item.href}
+                                className={cn(
+                                  'flex items-center gap-1.5 px-2 py-1.5 rounded-md transition-all',
+                                  idx === 0
+                                    ? 'bg-stone-900/5 dark:bg-white/5 border-r-2 border-stone-900 dark:border-white'
+                                    : 'text-stone-400 dark:text-neutral-500'
+                                )}
+                              >
+                                <Icon className={cn(
+                                  'h-2.5 w-2.5 shrink-0',
+                                  idx === 0 ? 'text-stone-900 dark:text-white' : 'text-stone-400 dark:text-neutral-500'
+                                )} />
+                                <span className={cn(
+                                  'text-[7px] font-bold uppercase tracking-tight truncate',
+                                  idx === 0 ? 'text-stone-900 dark:text-white' : 'text-stone-400 dark:text-neutral-500'
+                                )} style={{ fontFamily: 'Manrope, sans-serif' }}>
+                                  {item.name}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Save button */}
+                  {sidebarDirty && (
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={saveSidebarOrder}
+                        disabled={savingSidebar}
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-stone-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-bold hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                      >
+                        {savingSidebar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        Sauvegarder l'ordre
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {activeTab === 'support' && (
               <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-8 tracking-tight">Centre d'Aide</h3>

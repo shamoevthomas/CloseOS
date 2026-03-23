@@ -116,11 +116,28 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
   const isAdmin = isTeamMember && teamMember?.role === 'Admin'
 
   const navigation = useMemo(() => {
-    if (!isTeamMember) return ownerNavigation
-    if (isAdmin) return ownerNavigation
-    if (isHeadOfSales) return getHeadOfSalesNavigation(!!teamMember?.can_manage_campaigns)
-    return getTeamMemberNavigation(teamMember?.role)
-  }, [isTeamMember, isAdmin, isHeadOfSales, teamMember?.role, teamMember?.can_manage_campaigns])
+    let baseNav: NavItem[]
+    if (!isTeamMember) baseNav = ownerNavigation
+    else if (isAdmin) baseNav = ownerNavigation
+    else if (isHeadOfSales) baseNav = getHeadOfSalesNavigation(!!teamMember?.can_manage_campaigns)
+    else baseNav = getTeamMemberNavigation(teamMember?.role)
+
+    // Apply saved sidebar order if available
+    const savedOrder = businessSettings?.sidebar_order as string[] | null
+    if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+      const ordered: NavItem[] = []
+      for (const href of savedOrder) {
+        const item = baseNav.find(n => n.href === href)
+        if (item) ordered.push(item)
+      }
+      // Add any items not in the saved order (new pages, role-specific)
+      for (const item of baseNav) {
+        if (!ordered.find(o => o.href === item.href)) ordered.push(item)
+      }
+      return ordered
+    }
+    return baseNav
+  }, [isTeamMember, isAdmin, isHeadOfSales, teamMember?.role, teamMember?.can_manage_campaigns, businessSettings?.sidebar_order])
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -323,7 +340,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
           collapsed ? "p-2" : "pt-4 pb-4 px-4"
         )}>
           {/* Settings */}
-          {(!isTeamMember || isAdmin) && (
+          {(
             <button
               onClick={() => { onOpenSettings?.(); setIsMenuOpen(false) }}
               className={cn(
