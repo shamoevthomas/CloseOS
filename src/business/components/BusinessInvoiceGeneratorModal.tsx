@@ -525,10 +525,10 @@ export function BusinessInvoiceGeneratorModal({
     const element = document.getElementById('invoice-preview-content')
     if (!element) throw new Error('Element de preview introuvable')
 
-    // Temporarily set A4 dimensions for PDF export
-    const prevWidth = element.style.width
+    // Temporarily reset zoom and set A4 padding for PDF export
+    const prevZoom = element.style.zoom
     const prevPadding = element.style.padding
-    element.style.width = '210mm'
+    element.style.zoom = '1'
     element.style.padding = '20mm'
 
     const opt = {
@@ -540,10 +540,8 @@ export function BusinessInvoiceGeneratorModal({
     }
     const blob = await html2pdf().set(opt).from(element).output('blob')
 
-    // Restore preview dimensions
-    element.style.width = prevWidth
+    element.style.zoom = prevZoom
     element.style.padding = prevPadding
-
     return blob
   }
 
@@ -636,7 +634,7 @@ export function BusinessInvoiceGeneratorModal({
       <div
         className={cn(
           "relative bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full",
-          step === 2 ? 'max-w-[90vw] max-h-[90vh] overflow-hidden' : 'max-w-4xl max-h-[90vh] overflow-y-auto'
+          step === 2 ? 'max-h-[90vh] overflow-hidden w-fit' : 'max-w-4xl max-h-[90vh] overflow-y-auto'
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -1176,11 +1174,11 @@ export function BusinessInvoiceGeneratorModal({
               </div>
 
               {/* ─── RIGHT: LIVE PREVIEW ─── */}
-              <div className="flex-1 overflow-auto bg-[#f0efee] dark:bg-neutral-950 p-3">
+              <div className="overflow-y-auto bg-white dark:bg-neutral-950">
                   <div
                     id="invoice-preview-content"
                     ref={invoiceRef}
-                    className="flex flex-col justify-between shadow-sm"
+                    className="flex flex-col justify-between"
                     style={{
                       backgroundColor: 'white',
                       color: 'black',
@@ -1188,8 +1186,7 @@ export function BusinessInvoiceGeneratorModal({
                       minHeight: '297mm',
                       padding: '15mm',
                       boxSizing: 'border-box',
-                      transform: 'scale(0.55)',
-                      transformOrigin: 'top left',
+                      zoom: 0.62,
                     }}
                   >
                     {/* Top content */}
