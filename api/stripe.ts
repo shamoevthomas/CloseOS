@@ -192,7 +192,7 @@ async function handleConnect(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { userId, email } = req.body;
+    const { userId, email, returnPath } = req.body;
 
     if (!userId || !email) {
       throw new Error('User ID and Email are required');
@@ -223,13 +223,13 @@ async function handleConnect(req: VercelRequest, res: VercelResponse) {
     }
 
     // 3. On génère le lien magique "Onboarding" de Stripe
-    // ⚠️ Assure-toi que ta page factures est bien sur l'URL /invoices ou change le chemin ci-dessous
     const origin = req.headers.origin || 'https://closeos.fr';
+    const redirectPath = returnPath || '/factures';
 
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${origin}/factures`, // S'il annule
-      return_url: `${origin}/factures?stripe_connected=true`, // S'il réussit
+      refresh_url: `${origin}${redirectPath}`,
+      return_url: `${origin}${redirectPath}?stripe_connected=true`,
       type: 'account_onboarding',
     });
 

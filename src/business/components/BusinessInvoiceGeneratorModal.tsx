@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { X, ChevronLeft, Download, Loader2, Mail } from 'lucide-react'
+import { X, ChevronLeft, Download, Loader2, CheckCircle2 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import type { BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { supabase } from '../../lib/supabase'
@@ -85,9 +85,8 @@ export function BusinessInvoiceGeneratorModal({
   const [latePenaltyRate, setLatePenaltyRate] = useState(15)
   const [latePenaltyFixed, setLatePenaltyFixed] = useState(40)
 
-  // Loading states
-  const [isSendingEmail, setIsSendingEmail] = useState(false)
-  const [isExporting, setIsExporting] = useState(false)
+  // Loading state
+  const [isValidating, setIsValidating] = useState(false)
 
   // ---------- AUTO-COMPUTED LINE ITEMS ----------
 
@@ -455,13 +454,13 @@ export function BusinessInvoiceGeneratorModal({
     return publicUrl
   }
 
-  // ---------- EXPORT PDF ----------
+  // ---------- VALIDATE & DOWNLOAD ----------
 
-  const handleExportPDF = async () => {
-    setIsExporting(true)
+  const handleValidate = async () => {
+    setIsValidating(true)
     try {
       const pdfBlob = await generatePdfBlob()
-      await uploadPdfAndSave(pdfBlob, 'generee')
+      await uploadPdfAndSave(pdfBlob, 'à payer')
 
       // Local download
       const link = document.createElement('a')
@@ -469,74 +468,13 @@ export function BusinessInvoiceGeneratorModal({
       link.download = `${invoiceNumber}.pdf`
       link.click()
 
-      toast.success('Facture exportee avec succes !')
+      toast.success('Facture validee et telechargee !')
       onClose()
     } catch (err) {
-      console.error('Erreur export PDF:', err)
-      toast.error('Une erreur est survenue lors de l\'export.')
+      console.error('Erreur validation facture:', err)
+      toast.error("Une erreur est survenue lors de la validation.")
     } finally {
-      setIsExporting(false)
-    }
-  }
-
-  // ---------- SEND EMAIL ----------
-
-  const recipientEmail = businessSettings?.billing_email || ''
-
-  const handleSendEmail = async () => {
-    if (!recipientEmail) {
-      toast.error('Aucun email destinataire configure dans les parametres')
-      return
-    }
-
-    setIsSendingEmail(true)
-    try {
-      const pdfBlob = await generatePdfBlob()
-      const publicUrl = await uploadPdfAndSave(pdfBlob, 'envoyee')
-
-      const periodLabel = `${new Date(startDate).toLocaleDateString('fr-FR')} au ${new Date(endDate).toLocaleDateString('fr-FR')}`
-      const emailPayload = {
-        sender: { name: 'CloseOS Notification', email: 'support@closeos.fr' },
-        replyTo: { email: issuerEmail || 'support@closeos.fr', name: issuerCompanyName || 'CloseOS' },
-        to: [{ email: recipientEmail, name: receiverInfo.company || receiverInfo.name }],
-        subject: `Facture ${invoiceNumber} - Commission du ${periodLabel}`,
-        htmlContent: `
-          <html>
-            <body>
-              <h1>Bonjour,</h1>
-              <p>Veuillez trouver ci-joint la facture n&deg; <strong>${invoiceNumber}</strong> correspondant &agrave; la p&eacute;riode du ${periodLabel}.</p>
-              <p>Vous pouvez la t&eacute;l&eacute;charger directement via ce lien : <br>
-              <a href="${publicUrl}">T&eacute;l&eacute;charger la facture (PDF)</a></p>
-              ${generatedLink ? `
-                <br>
-                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
-                  <p style="margin: 0 0 10px 0;"><strong>R&egrave;glement en ligne :</strong></p>
-                  <a href="${generatedLink}" style="background-color: #635BFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Payer par Carte Bancaire</a>
-                </div>
-              ` : ''}
-              <br>
-              <p>Cordialement,<br>${issuerCompanyName || "L'equipe"}</p>
-            </body>
-          </html>
-        `,
-        attachment: [{ url: publicUrl, name: `${invoiceNumber}.pdf` }],
-      }
-
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emailPayload),
-      })
-
-      if (!response.ok) throw new Error("Erreur lors de l'envoi de l'email")
-
-      toast.success(`Facture envoyee a ${clientEmail} !`)
-      onClose()
-    } catch (err) {
-      console.error('Erreur envoi email:', err)
-      toast.error("Une erreur est survenue lors de l'envoi.")
-    } finally {
-      setIsSendingEmail(false)
+      setIsValidating(false)
     }
   }
 
@@ -809,31 +747,14 @@ export function BusinessInvoiceGeneratorModal({
                 Modifier
               </button>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleSendEmail}
-                  disabled={!recipientEmail || isSendingEmail}
-                  className={cn(
-                    'flex items-center gap-2 rounded-full px-6 py-2 font-bold transition-all',
-                    !recipientEmail
-                      ? 'bg-[#f5f3f2] dark:bg-neutral-800 text-[#c4c7c7] dark:text-neutral-600 cursor-not-allowed'
-                      : 'bg-[#635BFF] text-white hover:bg-[#5349E0]'
-                  )}
-                  title={!recipientEmail ? 'Aucun email destinataire configure' : 'Envoyer la facture par mail'}
-                >
-                  {isSendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                  {isSendingEmail ? 'Envoi...' : 'Envoyer par mail'}
-                </button>
-
-                <button
-                  onClick={handleExportPDF}
-                  disabled={isExporting}
-                  className="flex items-center gap-2 bg-[#1b1c1b] dark:bg-white text-white dark:text-neutral-900 rounded-full px-6 py-2 font-bold hover:bg-[#1b1c1b]/80 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
-                >
-                  {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  {isExporting ? 'Export...' : 'Exporter PDF'}
-                </button>
-              </div>
+              <button
+                onClick={handleValidate}
+                disabled={isValidating}
+                className="flex items-center gap-2 bg-[#006c49] text-white rounded-full px-8 py-2.5 font-bold hover:bg-[#005a3d] transition-colors disabled:opacity-50"
+              >
+                {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {isValidating ? 'Validation...' : 'Valider la facture'}
+              </button>
             </div>
 
             {/* Invoice A4 Preview */}

@@ -49,6 +49,7 @@ export function BusinessStripeConnectModal({ isOpen, onClose }: BusinessStripeCo
         body: JSON.stringify({
           userId: user.id,
           email: user.email,
+          returnPath: '/business/factures',
         }),
       });
 
