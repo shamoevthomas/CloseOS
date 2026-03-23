@@ -691,6 +691,12 @@ function IndividualView({
 }) {
   const { userTimezone, ownerUserId, user } = useBusinessAuth()
   const color = getRoleColor(member.role)
+
+  const isMemberAbsent = (memberId: string) => {
+    const today = new Date().toISOString().slice(0, 10)
+    return absences.some(a => a.team_member_id === memberId && a.start_date <= today && a.end_date >= today)
+  }
+
   const [payDay, setPayDay] = useState<number>(member.pay_day || 1)
   const [savingPayDay, setSavingPayDay] = useState(false)
 

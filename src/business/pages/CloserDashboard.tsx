@@ -73,7 +73,6 @@ export function CloserDashboard() {
   const noShowProspects = useMemo(() => myProspects.filter(p => p.stage === 'noshow'), [myProspects])
   const lostProspects = useMemo(() => myProspects.filter(p => p.stage === 'lost'), [myProspects])
 
-  const totalRevenue = useMemo(() => wonProspects.reduce((s, p) => s + (Number(p.value) || 0), 0), [wonProspects])
   const noshowFromFollowup = noShowProspects.filter(p => p.previous_stage === 'followup')
   const totalDecided = wonProspects.length + lostProspects.length + noshowFromFollowup.length
   const closingRate = totalDecided > 0 ? (wonProspects.length / totalDecided) * 100 : 0
@@ -85,6 +84,18 @@ export function CloserDashboard() {
   const mySetterProspects = prospects.filter(p => p.assigned_setter === teamMember?.id)
   const bookedProspects = mySetterProspects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
   const bookingRate = mySetterProspects.length > 0 ? (bookedProspects.length / mySetterProspects.length) * 100 : 0
+
+  // Commission calculation
+  const commissionRate = teamMember?.commission_rate ? Number(teamMember.commission_rate) : 10
+  const rate = commissionRate / 100
+  // Closer commission: from won prospects assigned as closer
+  const closerRevenue = wonProspects.reduce((s, p) => s + (Number(p.value) || 0), 0)
+  const closerCommission = Math.round(closerRevenue * rate)
+  // Setter commission: from won prospects assigned as setter (but not also closer, to avoid double-count)
+  const wonAsSetterOnly = prospects.filter(p => p.stage === 'won' && p.assigned_setter === teamMember?.id && p.assigned_to !== teamMember?.id)
+  const setterRevenue = wonAsSetterOnly.reduce((s, p) => s + (Number(p.value) || 0), 0)
+  const setterCommission = Math.round(setterRevenue * rate)
+  const totalCommission = closerCommission + setterCommission
 
   // Upcoming appointments
   const now = new Date()
@@ -177,7 +188,7 @@ export function CloserDashboard() {
       {/* ─── KPI Row ─── */}
       <div className={`grid grid-cols-2 ${isSetter ? 'xl:grid-cols-4' : 'xl:grid-cols-5'} gap-6`}>
 
-        {/* Revenue */}
+        {/* Commission */}
         <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
           <div className="flex justify-between items-start mb-3">
             <div className="p-2 rounded-lg bg-emerald-50">
@@ -185,8 +196,11 @@ export function CloserDashboard() {
             </div>
           </div>
           <div>
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Revenue</p>
-            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Commission</p>
+            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalCommission)}</p>
+            {closerCommission > 0 && setterCommission > 0 && (
+              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">Closer {formatCurrency(closerCommission)} + Setter {formatCurrency(setterCommission)}</p>
+            )}
           </div>
         </Link>
 
