@@ -1029,6 +1029,82 @@ function IndividualView({
             </div>
           )}
 
+          {/* Rémunération */}
+          {isOwnerView && (
+            <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+                <span className="h-5 w-5 text-stone-400 flex items-center justify-center font-bold text-sm">€</span>
+                Rémunération
+              </h3>
+              <div className="space-y-4">
+                {/* Type de compensation */}
+                <div>
+                  <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest mb-2">Type de rémunération</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: 'commission', label: 'Commission' },
+                      { value: 'fixed', label: 'Fixe' },
+                      { value: 'fixed_plus_commission', label: 'Fixe + Commission' },
+                    ] as const).map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setCompType(opt.value)}
+                        className={cn(
+                          'rounded-full px-3 py-2.5 text-xs font-bold transition-all',
+                          compType === opt.value
+                            ? 'bg-stone-900 text-white dark:bg-white dark:text-stone-900'
+                            : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Salaire fixe — shown for fixed or fixed+commission */}
+                {(compType === 'fixed' || compType === 'fixed_plus_commission') && (
+                  <div>
+                    <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest mb-2">Salaire fixe mensuel (€)</p>
+                    <input
+                      type="number"
+                      value={fixedSalary}
+                      onChange={e => setFixedSalary(e.target.value)}
+                      className="w-full bg-stone-50 dark:bg-neutral-800 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 transition-all"
+                      placeholder="ex: 2000"
+                    />
+                  </div>
+                )}
+
+                {/* Taux de commission — shown for commission or fixed+commission */}
+                {(compType === 'commission' || compType === 'fixed_plus_commission') && (
+                  <div>
+                    <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest mb-2">Taux de commission (%)</p>
+                    <input
+                      type="number"
+                      value={commissionRate}
+                      onChange={e => setCommissionRate(e.target.value)}
+                      className="w-full bg-stone-50 dark:bg-neutral-800 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 transition-all"
+                      placeholder="ex: 10"
+                    />
+                  </div>
+                )}
+
+                {/* Save button */}
+                {compChanged && (
+                  <button
+                    onClick={handleSaveCompensation}
+                    disabled={savingComp}
+                    className="flex items-center gap-2 rounded-full bg-[#006c49] px-5 py-3 text-xs font-bold text-white hover:bg-[#005a3d] transition-all disabled:opacity-50"
+                  >
+                    {savingComp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" strokeWidth={1.5} />}
+                    Enregistrer
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Pay Day */}
           {isOwnerView && (
             <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
