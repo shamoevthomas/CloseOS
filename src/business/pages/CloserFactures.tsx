@@ -123,6 +123,13 @@ export function CloserFactures() {
     return d
   }, [endDate])
 
+  // Compensation type
+  const compType = teamMember?.compensation_type || 'commission'
+  const isFixedComp = compType === 'fixed'
+  const isFixedPlusComm = compType === 'fixed_plus_commission'
+  const fixedSalary = teamMember?.fixed_salary ? Number(teamMember.fixed_salary) : 0
+  const countSetterComm = teamMember?.count_setter_commission !== false
+
   // Won prospects assigned to me, filtered by period
   const myWonProspects = useMemo(
     () => prospects.filter(p => {
@@ -162,13 +169,6 @@ export function CloserFactures() {
       return true
     })
   }, [savedInvoices, startDate, endDate, isTeamMember, teamMember?.id])
-
-  // Compensation type
-  const compType = teamMember?.compensation_type || 'commission'
-  const isFixedComp = compType === 'fixed'
-  const isFixedPlusComm = compType === 'fixed_plus_commission'
-  const fixedSalary = teamMember?.fixed_salary ? Number(teamMember.fixed_salary) : 0
-  const countSetterComm = teamMember?.count_setter_commission !== false
 
   // Commission rate
   const commissionRateNum = teamMember?.commission_rate ? Number(teamMember.commission_rate) : 10
