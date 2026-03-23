@@ -28,3 +28,4 @@ dist-ssr
 .agents/
 .agent/
 .env*.local
+.claude/worktrees/
