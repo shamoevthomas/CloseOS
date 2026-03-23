@@ -36,6 +36,7 @@ interface TeamMember {
   compensation_type?: string | null
   fixed_salary?: number | null
   commission_rate?: number | null
+  count_setter_commission?: boolean | null
   _isOwner?: boolean
 }
 
@@ -704,10 +705,12 @@ function IndividualView({
   const [compType, setCompType] = useState(member.compensation_type || 'commission')
   const [fixedSalary, setFixedSalary] = useState<string>(String(member.fixed_salary || 0))
   const [commissionRate, setCommissionRate] = useState<string>(String(member.commission_rate ?? 10))
+  const [countSetterCommission, setCountSetterCommission] = useState(member.count_setter_commission !== false)
   const [savingComp, setSavingComp] = useState(false)
   const compChanged = compType !== (member.compensation_type || 'commission')
     || fixedSalary !== String(member.fixed_salary || 0)
     || commissionRate !== String(member.commission_rate ?? 10)
+    || countSetterCommission !== (member.count_setter_commission !== false)
 
   const handleSaveCompensation = async () => {
     setSavingComp(true)
@@ -715,6 +718,7 @@ function IndividualView({
       compensation_type: compType,
       fixed_salary: parseFloat(fixedSalary) || 0,
       commission_rate: parseFloat(commissionRate) || 0,
+      count_setter_commission: countSetterCommission,
     }
     const { error } = await supabase
       .from('business_team_members')
@@ -1087,6 +1091,28 @@ function IndividualView({
                       className="w-full bg-stone-50 dark:bg-neutral-800 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 transition-all"
                       placeholder="ex: 10"
                     />
+                  </div>
+                )}
+
+                {/* Setter-Closer: toggle for counting setter commissions */}
+                {member.role === 'Setter-Closer' && (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">Commissions setting</p>
+                      <p className="text-[11px] text-stone-400 dark:text-neutral-500 mt-0.5">Compter ses commissions en tant que setter</p>
+                    </div>
+                    <button
+                      onClick={() => setCountSetterCommission(!countSetterCommission)}
+                      className={cn(
+                        'relative w-11 h-6 rounded-full transition-colors',
+                        countSetterCommission ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600'
+                      )}
+                    >
+                      <span className={cn(
+                        'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow-sm',
+                        countSetterCommission && 'translate-x-5'
+                      )} />
+                    </button>
                   </div>
                 )}
 

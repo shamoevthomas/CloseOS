@@ -125,12 +125,13 @@ export function CloserFactures() {
 
   // Won prospects assigned to me, filtered by period
   const myWonProspects = useMemo(
-    () => prospects.filter(p =>
-      p.stage === 'won'
-      && (p.assigned_to === teamMember?.id || p.assigned_setter === teamMember?.id)
-      && isDealInPeriod(p, periodStart, periodEnd)
-    ),
-    [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod]
+    () => prospects.filter(p => {
+      if (p.stage !== 'won' || !isDealInPeriod(p, periodStart, periodEnd)) return false
+      if (p.assigned_to === teamMember?.id) return true
+      if (p.assigned_setter === teamMember?.id && countSetterComm) return true
+      return false
+    }),
+    [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod, countSetterComm]
   )
 
   // Closer deals only (for KPI breakdown)
@@ -141,12 +142,12 @@ export function CloserFactures() {
     [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod]
   )
 
-  // Setter deals only (not also closer, to avoid double-counting)
+  // Setter deals only (not also closer, to avoid double-counting) — empty if setter commission disabled
   const mySetterDeals = useMemo(
-    () => prospects.filter(p =>
+    () => !countSetterComm ? [] : prospects.filter(p =>
       p.stage === 'won' && p.assigned_setter === teamMember?.id && p.assigned_to !== teamMember?.id && isDealInPeriod(p, periodStart, periodEnd)
     ),
-    [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod]
+    [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod, countSetterComm]
   )
 
   // Filter invoices by date range + only mine
@@ -165,6 +166,7 @@ export function CloserFactures() {
   // Compensation type
   const isFixedComp = teamMember?.compensation_type === 'fixed'
   const fixedSalary = teamMember?.fixed_salary ? Number(teamMember.fixed_salary) : 0
+  const countSetterComm = teamMember?.count_setter_commission !== false
 
   // Commission rate
   const commissionRateNum = teamMember?.commission_rate ? Number(teamMember.commission_rate) : 10
