@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useScrambleText } from '../hooks/useScrambleText'
 import {
   Loader2, DollarSign, TrendingUp, CalendarDays, UserX,
   Bell, Clock, Check, AlertTriangle, FileDown,
@@ -111,6 +112,7 @@ export function CloserDashboard() {
   const isOverdue = (dateStr: string) => new Date(dateStr) < now
 
   const firstName = teamMember?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'Membre'
+  const scrambledName = useScrambleText(firstName)
   const kpiLink = teamMember?.role === 'Setter' ? '/business/setter-kpi' : '/business/closer-kpi'
 
   const formatApptDate = (dateStr: string) => {
@@ -135,7 +137,7 @@ export function CloserDashboard() {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-1">
           <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Bonjour, {firstName}.
+            Bonjour, {scrambledName}.
           </h2>
           <p className="text-neutral-500 text-lg">Voici l'état de votre activité aujourd'hui.</p>
         </div>

@@ -132,7 +132,7 @@ function KpiTooltip({ children, text }: { children: React.ReactNode; text: strin
 // ─── Component ───
 
 export function BusinessDashboard() {
-  const { user, isTeamMember, teamMember, ownerUserId, businessProfile, userTimezone } = useBusinessAuth()
+  const { user, isTeamMember, teamMember, ownerUserId, businessProfile, userTimezone, businessSettings } = useBusinessAuth()
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
   const isAdmin = isTeamMember && teamMember?.role === 'Admin'
 
@@ -229,9 +229,23 @@ export function BusinessDashboard() {
   const currentMonth = now.getMonth()
   const currentYear = now.getFullYear()
 
-  const wonProspects = useMemo(() => prospects.filter(p => p.stage === 'won'), [prospects])
-  const noshowProspects = useMemo(() => prospects.filter(p => p.stage === 'noshow'), [prospects])
-  const lostProspects = useMemo(() => prospects.filter(p => p.stage === 'lost'), [prospects])
+  // Filter prospects by dashboard period setting
+  const dashboardPeriod = businessSettings?.dashboard_period || 'all'
+  const periodProspects = useMemo(() => {
+    if (dashboardPeriod === 'all') return prospects
+    const cutoff = new Date()
+    if (dashboardPeriod === 'today') { cutoff.setHours(0, 0, 0, 0) }
+    else if (dashboardPeriod === 'week') { cutoff.setDate(cutoff.getDate() - cutoff.getDay()); cutoff.setHours(0, 0, 0, 0) }
+    else if (dashboardPeriod === 'month') { cutoff.setDate(1); cutoff.setHours(0, 0, 0, 0) }
+    else if (dashboardPeriod === 'year') { cutoff.setMonth(0, 1); cutoff.setHours(0, 0, 0, 0) }
+    return prospects.filter(p => p.created_at && new Date(p.created_at) >= cutoff)
+  }, [prospects, dashboardPeriod])
+
+  const PERIOD_LABELS: Record<string, string> = { today: "Aujourd'hui", week: 'Cette semaine', month: 'Ce mois', year: 'Cette année', all: 'Depuis toujours' }
+
+  const wonProspects = useMemo(() => periodProspects.filter(p => p.stage === 'won'), [periodProspects])
+  const noshowProspects = useMemo(() => periodProspects.filter(p => p.stage === 'noshow'), [periodProspects])
+  const lostProspects = useMemo(() => periodProspects.filter(p => p.stage === 'lost'), [periodProspects])
 
   const totalRevenue = useMemo(() => wonProspects.reduce((s, p) => s + (Number(p.value) || 0), 0), [wonProspects])
 
@@ -257,11 +271,11 @@ export function BusinessDashboard() {
   const noshowFromFollowup = noshowProspects.filter(p => p.previous_stage === 'followup')
   const totalDecided = wonProspects.length + lostProspects.length + noshowFromFollowup.length
   const closingRate = totalDecided > 0 ? (wonProspects.length / totalDecided) * 100 : 0
-  const noshowEligible = prospects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const noshowEligible = periodProspects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
   const noshowRate = noshowEligible.length > 0 ? (noshowProspects.length / noshowEligible.length) * 100 : 0
   const totalPipeline = useMemo(() =>
-    prospects.filter(p => p.stage !== 'unqualified').reduce((s, p) => s + (Number(p.value) || 0), 0),
-    [prospects])
+    periodProspects.filter(p => p.stage !== 'unqualified').reduce((s, p) => s + (Number(p.value) || 0), 0),
+    [periodProspects])
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
   const totalAppts = appointments.filter(a => a.date >= todayStart).length
 
@@ -301,6 +315,7 @@ export function BusinessDashboard() {
   const firstName = isTeamMember
     ? (teamMember?.first_name || 'Utilisateur')
     : (businessProfile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Utilisateur')
+  const scrambledName = useScrambleText(firstName)
 
   if (isTeamMember && !isHeadOfSales && !isAdmin) {
     return <CloserDashboard />
@@ -319,7 +334,10 @@ export function BusinessDashboard() {
           <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Bonjour, {scrambledName}.
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 text-lg">Voici l'état de votre activité aujourd'hui.</p>
+          <p className="text-neutral-500 dark:text-neutral-400 text-lg">
+            Voici l'état de votre activité
+            {dashboardPeriod !== 'all' && <span className="ml-1 text-sm font-bold text-neutral-400">· {PERIOD_LABELS[dashboardPeriod]}</span>}
+          </p>
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />
