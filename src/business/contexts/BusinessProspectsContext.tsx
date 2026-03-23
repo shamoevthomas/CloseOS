@@ -502,8 +502,11 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     // Optimistic update
     setProspects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
 
+    // Strip id from updates — column is GENERATED ALWAYS
+    const { id: _stripId, ...safeUpdates } = updates as any
+
     const { data, error } = await withRetry(
-      () => supabase.from('business_prospects').update(updates).eq('id', id).select(),
+      () => supabase.from('business_prospects').update(safeUpdates).eq('id', id).select(),
       { context: 'UpdateBusinessProspect' }
     )
 
