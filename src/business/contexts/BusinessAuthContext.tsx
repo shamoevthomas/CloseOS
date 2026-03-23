@@ -227,19 +227,31 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const updateBusinessSettings = useCallback(async (updates: any) => {
     if (!user) return { error: new Error('Not authenticated') };
 
-    const { error } = await supabase
+    // Try update first (row usually exists), fall back to upsert
+    const { error: updateError } = await supabase
       .from('business_settings')
-      .upsert({
-        user_id: user.id,
-        ...updates,
-      }, { onConflict: 'user_id' });
+      .update(updates)
+      .eq('user_id', user.id);
 
-    if (!error) {
-      // Refresh in background — don't block the caller
-      initUser(user.id);
+    if (updateError) {
+      // Row might not exist yet — try upsert
+      console.warn('Settings update failed, trying upsert:', updateError.message);
+      const { error: upsertError } = await supabase
+        .from('business_settings')
+        .upsert({
+          user_id: user.id,
+          ...updates,
+        }, { onConflict: 'user_id' });
+
+      if (upsertError) {
+        console.error('Settings upsert also failed:', upsertError.message);
+        return { error: upsertError };
+      }
     }
 
-    return { error };
+    // Refresh in background
+    initUser(user.id);
+    return { error: null };
   }, [user, initUser]);
 
   // ─── Online presence tracking for team members ───

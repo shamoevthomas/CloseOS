@@ -183,34 +183,47 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
   }, [])
 
   const saveSidebarOrder = async () => {
+    if (!user) return
     setSavingSidebar(true)
     try {
-      const result = await updateBusinessSettings({ sidebar_order: sidebarItems.map(i => i.href) })
-      if (result?.error) {
-        console.error('Save sidebar order error:', result.error)
-        setMessage({ type: 'error', text: 'Erreur lors de la sauvegarde.' })
+      const order = sidebarItems.map(i => i.href)
+      // Direct update — bypass updateBusinessSettings to debug
+      const { error, data } = await supabase
+        .from('business_settings')
+        .update({ sidebar_order: order })
+        .eq('user_id', user.id)
+        .select('sidebar_order')
+      console.log('[saveSidebarOrder]', { error, data, order, userId: user.id })
+      if (error) {
+        setMessage({ type: 'error', text: `Erreur: ${error.message}` })
       } else {
         setSidebarDirty(false)
         setMessage({ type: 'success', text: 'Ordre de la sidebar sauvegardé.' })
+        refreshProfile?.()
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Save sidebar order exception:', err)
-      setMessage({ type: 'error', text: 'Erreur lors de la sauvegarde.' })
+      setMessage({ type: 'error', text: `Exception: ${err?.message}` })
     } finally {
       setSavingSidebar(false)
     }
   }
 
   const resetSidebarOrder = async () => {
+    if (!user) return
     setSidebarItems([...DEFAULT_OWNER_NAV])
     setSavingSidebar(true)
     try {
-      const result = await updateBusinessSettings({ sidebar_order: null })
-      if (result?.error) {
-        setMessage({ type: 'error', text: 'Erreur lors de la réinitialisation.' })
+      const { error } = await supabase
+        .from('business_settings')
+        .update({ sidebar_order: null })
+        .eq('user_id', user.id)
+      if (error) {
+        setMessage({ type: 'error', text: `Erreur: ${error.message}` })
       } else {
         setSidebarDirty(false)
         setMessage({ type: 'success', text: 'Ordre de la sidebar réinitialisé.' })
+        refreshProfile?.()
       }
     } catch {
       setMessage({ type: 'error', text: 'Erreur lors de la réinitialisation.' })
@@ -882,8 +895,17 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         key={opt.value}
                         type="button"
                         onClick={async () => {
-                          await updateBusinessSettings({ dashboard_period: opt.value })
-                          setMessage({ type: 'success', text: 'Période du dashboard mise à jour.' })
+                          if (!user) return
+                          const { error } = await supabase
+                            .from('business_settings')
+                            .update({ dashboard_period: opt.value })
+                            .eq('user_id', user.id)
+                          if (error) {
+                            setMessage({ type: 'error', text: `Erreur: ${error.message}` })
+                          } else {
+                            setMessage({ type: 'success', text: 'Période du dashboard mise à jour.' })
+                            refreshProfile?.()
+                          }
                         }}
                         className={cn(
                           'px-4 py-2.5 rounded-full text-sm font-bold transition-all',
