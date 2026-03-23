@@ -27,7 +27,7 @@ export function BusinessStripeConnectModal({ isOpen, onClose }: BusinessStripeCo
       .from('profiles')
       .select('stripe_account_id, stripe_connected')
       .eq('id', user?.id)
-      .single();
+      .maybeSingle();
 
     if (data) {
       setStripeAccountId(data.stripe_account_id);

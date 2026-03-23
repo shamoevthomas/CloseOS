@@ -1080,22 +1080,9 @@ function IndividualView({
                   </div>
                 )}
 
-                {/* Taux de commission — only shown for fixed+commission */}
-                {compType === 'fixed_plus_commission' && (
-                  <div>
-                    <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest mb-2">Taux de commission (%)</p>
-                    <input
-                      type="number"
-                      value={commissionRate}
-                      onChange={e => setCommissionRate(e.target.value)}
-                      className="w-full bg-stone-50 dark:bg-neutral-800 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 transition-all"
-                      placeholder="ex: 10"
-                    />
-                  </div>
-                )}
 
                 {/* Setter-Closer: toggle for counting setter commissions */}
-                {member.role === 'Setter-Closer' && (
+                {member.role === 'Setter-Closer' && compType !== 'fixed' && (
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">Commissions setting</p>

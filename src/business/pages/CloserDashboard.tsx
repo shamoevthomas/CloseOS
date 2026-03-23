@@ -188,7 +188,7 @@ export function CloserDashboard() {
       {/* ─── KPI Row ─── */}
       <div className={`grid grid-cols-2 ${isSetter ? 'xl:grid-cols-4' : 'xl:grid-cols-5'} gap-6`}>
 
-        {/* Commission */}
+        {/* Commission / CA Généré */}
         <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
           <div className="flex justify-between items-start mb-3">
             <div className="p-2 rounded-lg bg-emerald-50">
@@ -196,9 +196,9 @@ export function CloserDashboard() {
             </div>
           </div>
           <div>
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Commission</p>
-            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalCommission)}</p>
-            {closerCommission > 0 && setterCommission > 0 && (
+            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{teamMember?.compensation_type === 'fixed' ? 'CA Généré' : 'Commission'}</p>
+            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamMember?.compensation_type === 'fixed' ? closerRevenue + setterRevenue : totalCommission)}</p>
+            {teamMember?.compensation_type !== 'fixed' && closerCommission > 0 && setterCommission > 0 && (
               <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">Closer {formatCurrency(closerCommission)} + Setter {formatCurrency(setterCommission)}</p>
             )}
           </div>

@@ -164,7 +164,9 @@ export function CloserFactures() {
   }, [savedInvoices, startDate, endDate, isTeamMember, teamMember?.id])
 
   // Compensation type
-  const isFixedComp = teamMember?.compensation_type === 'fixed'
+  const compType = teamMember?.compensation_type || 'commission'
+  const isFixedComp = compType === 'fixed'
+  const isFixedPlusComm = compType === 'fixed_plus_commission'
   const fixedSalary = teamMember?.fixed_salary ? Number(teamMember.fixed_salary) : 0
   const countSetterComm = teamMember?.count_setter_commission !== false
 
@@ -225,9 +227,9 @@ export function CloserFactures() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {isFixedComp ? 'Factures & Salaire Fixe' : 'Factures & Commissions'}
+            {isFixedComp ? 'Factures & Salaire Fixe' : isFixedPlusComm ? 'Factures & Rémunération' : 'Factures & Commissions'}
           </h1>
-          <p className="text-stone-500 dark:text-neutral-400 mt-2">{isFixedComp ? 'Suivez votre salaire fixe et gérez vos factures' : 'Suivez vos commissions et gérez vos factures'}</p>
+          <p className="text-stone-500 dark:text-neutral-400 mt-2">{isFixedComp ? 'Suivez votre salaire fixe et gérez vos factures' : isFixedPlusComm ? 'Suivez votre fixe, vos commissions et gérez vos factures' : 'Suivez vos commissions et gérez vos factures'}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <button
@@ -310,9 +312,9 @@ export function CloserFactures() {
 
       {/* KPI Cards */}
       <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
-        {isFixedComp ? (
-        <>
-        {/* Salaire Fixe */}
+
+        {/* Salaire Fixe — shown for fixed and fixed+commission */}
+        {(isFixedComp || isFixedPlusComm) && (
         <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
           <div className="flex justify-between items-start mb-4">
@@ -326,40 +328,10 @@ export function CloserFactures() {
             {fixedSalary.toLocaleString('fr-FR')} <span className="text-base">€</span>
           </p>
         </div>
+        )}
 
-        {/* CA Généré (read-only for fixed) */}
-        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-stone-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-stone-100 dark:bg-white/10 text-stone-600 dark:text-neutral-300">
-              <TrendingUp className="h-5 w-5" />
-            </span>
-            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</span>
-          </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
-          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {totalRevenue.toLocaleString('fr-FR')} <span className="text-base">€</span>
-          </p>
-        </div>
-        </>
-        ) : (
-        <>
-        {/* CA Généré */}
-        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-              <TrendingUp className="h-5 w-5" />
-            </span>
-            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</span>
-          </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
-          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {totalRevenue.toLocaleString('fr-FR')} <span className="text-base">€</span>
-          </p>
-        </div>
-
-        {/* Ma Commission */}
+        {/* Ma Commission — shown for commission and fixed+commission */}
+        {!isFixedComp && (
         <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-stone-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
           <div className="flex justify-between items-start mb-4">
@@ -373,7 +345,40 @@ export function CloserFactures() {
             {commissionEstimee.toLocaleString('fr-FR')} <span className="text-base">€</span>
           </p>
         </div>
-        </>
+        )}
+
+        {/* CA Généré — shown for fixed (read-only) */}
+        {isFixedComp && (
+        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-stone-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-start mb-4">
+            <span className="p-3 rounded-xl bg-stone-100 dark:bg-white/10 text-stone-600 dark:text-neutral-300">
+              <TrendingUp className="h-5 w-5" />
+            </span>
+            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</span>
+          </div>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
+          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {totalRevenue.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          </p>
+        </div>
+        )}
+
+        {/* CA Généré — shown for commission and fixed+commission */}
+        {!isFixedComp && (
+        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-start mb-4">
+            <span className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
+              <TrendingUp className="h-5 w-5" />
+            </span>
+            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</span>
+          </div>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
+          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {totalRevenue.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          </p>
+        </div>
         )}
 
         {/* Payé */}
@@ -611,7 +616,7 @@ export function CloserFactures() {
         startDate={startDate}
         endDate={endDate}
         isFixedCompensation={isFixedComp}
-        fixedSalary={fixedSalary}
+        fixedSalary={(isFixedComp || isFixedPlusComm) ? fixedSalary : 0}
       />
     </div>
   )

@@ -142,7 +142,7 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
         .from('profiles')
         .select('systemeio_api_key')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       setSystemeioApiKey(data?.systemeio_api_key || '');
     };
     load();
@@ -174,7 +174,7 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
         .eq('user_id', ownerUserId)
         .eq('is_active', true)
         .limit(1)
-        .single();
+        .maybeSingle();
       if (data) {
         setZapierApiKey(data.api_key);
         setZapierKeyId(data.id);
@@ -197,7 +197,7 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
         .eq('is_active', true)
         .eq('name', 'Calendly')
         .limit(1)
-        .single();
+        .maybeSingle();
       if (data) {
         setCalendlyApiKey(data.api_key);
         setCalendlyKeyId(data.id);

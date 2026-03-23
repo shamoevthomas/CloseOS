@@ -119,7 +119,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
         .from('profiles')
         .select('hubspot_access_token, pipedrive_access_token, airtable_access_token, ghl_access_token')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
       setHubspotConnected(!!profile?.hubspot_access_token)
       setPipedriveConnected(!!profile?.pipedrive_access_token)

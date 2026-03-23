@@ -193,6 +193,17 @@ export function BusinessInvoiceGeneratorModal({
       return
     }
     const items: EditableLineItem[] = []
+    // Add fixed salary line for fixed+commission
+    if (fixedSalary > 0) {
+      items.push({
+        id: 'fixed-salary',
+        description: 'Salaire Fixe Mensuel',
+        subtitle: '',
+        count: 1,
+        unitPrice: fixedSalary,
+        section: 'closer',
+      })
+    }
     closerLineItems.forEach((item, i) => {
       items.push({
         id: `closer-${i}`,
@@ -370,7 +381,7 @@ export function BusinessInvoiceGeneratorModal({
         .from('profiles')
         .select('stripe_account_id, stripe_connected')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       if (data?.stripe_connected && data?.stripe_account_id) {
         setStripeAccountId(data.stripe_account_id)
