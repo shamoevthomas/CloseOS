@@ -156,9 +156,9 @@ export function BusinessProspectView({
     setEditedInstallments(prospect.installments || 1)
   }, [prospect.id, prospect.value, prospect.payment_type, prospect.installments])
 
-  // Permission: owner and HOS can edit price, team members can only view
+  // Permission: everyone can edit payment mode/installments, only owner+HOS can edit price
   const isOwner = !isTeamMember
-  const canEditPayment = isOwner || isHosOrAdmin
+  const canEditPrice = isOwner || isHosOrAdmin
 
   // Payment calculations
   const commissionRate = memberCommissionRate
@@ -635,24 +635,29 @@ export function BusinessProspectView({
                     <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-emerald-600 dark:text-emerald-400">
                       <CreditCard className="h-4 w-4" /> Détails du Paiement
                     </h3>
-                    {canEditPayment && (
-                      <button onClick={() => { setEditingPayment(!editingPayment); setEditedValue(local.value || 0); }} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
-                        <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
-                      </button>
-                    )}
+                    <button onClick={() => { setEditingPayment(!editingPayment); setEditedValue(local.value || 0); }} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                      <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    </button>
                   </div>
 
-                  {editingPayment && canEditPayment ? (
+                  {editingPayment ? (
                     <div className="space-y-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-500/5 p-5">
-                      <div>
-                        <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">Montant final (€)</label>
-                        <input
-                          type="number"
-                          value={editedValue}
-                          onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
-                          className="mt-1.5 w-full rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-3 text-sm font-bold text-stone-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all"
-                        />
-                      </div>
+                      {canEditPrice ? (
+                        <div>
+                          <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">Montant final (€)</label>
+                          <input
+                            type="number"
+                            value={editedValue}
+                            onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
+                            className="mt-1.5 w-full rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-3 text-sm font-bold text-stone-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-stone-500 dark:text-neutral-400">Montant Vente</span>
+                          <span className="text-sm font-extrabold text-stone-900 dark:text-white">{(editedValue).toLocaleString()}€</span>
+                        </div>
+                      )}
                       <div className="flex rounded-xl bg-stone-100 dark:bg-neutral-800 p-1">
                         <button type="button" onClick={() => { setPaymentMode('cash'); setEditedInstallments(1); }} className={cn("flex-1 rounded-lg py-2 text-xs font-bold transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow-md" : "text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white")}>Comptant</button>
                         <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-lg py-2 text-xs font-bold transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow-md" : "text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white")}>Plusieurs fois</button>
