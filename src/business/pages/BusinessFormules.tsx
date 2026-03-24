@@ -190,10 +190,7 @@ export function BusinessFormules() {
         resources: formResources,
         team_id: formTeamId || null,
       }
-      // Owner cannot change price when editing
-      if (!editingFormula) {
-        payload.price = parseFloat(formPrice) || 0
-      }
+      payload.price = parseFloat(formPrice) || 0
       let savedFormulaId = editingFormula?.id
       if (editingFormula) {
         const res = await fetch(`${API_URL}?action=formulas-update`, {
@@ -394,7 +391,7 @@ export function BusinessFormules() {
               {/* Price */}
               <div>
                 <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Prix (€)</label>
-                <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="0.00" disabled={isTeamMember || (isOwnerOnly && !!editingFormula)} className={`${inputCls} ${isTeamMember || (isOwnerOnly && !!editingFormula) ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="0.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Description */}

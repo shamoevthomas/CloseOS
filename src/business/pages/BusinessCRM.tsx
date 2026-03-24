@@ -135,7 +135,7 @@ export function BusinessCRM() {
     // Team members
     import('../../lib/supabase').then(({ supabase }) => {
       Promise.all([
-        supabase.from('business_team_members').select('id, first_name, last_name, role, team_id, owner_assignable').eq('business_owner_id', effectiveUserId),
+        supabase.from('business_team_members').select('id, first_name, last_name, role, team_id, owner_assignable, count_setter_commission').eq('business_owner_id', effectiveUserId),
         supabase.from('business_users').select('id, full_name, email, owner_assignable').eq('id', effectiveUserId).single(),
         supabase.from('business_teams').select('id, name').eq('business_owner_id', effectiveUserId).order('position'),
       ]).then(([tmRes, ownerRes, teamsRes]) => {
@@ -364,6 +364,13 @@ export function BusinessCRM() {
     } else {
       // Owner/HoS/Admin: from picker (optional)
       closerId = newCloserId || null
+      // If setter is a Setter-Closer with "set pour soi-même", auto-assign as closer too
+      if (!closerId && setterId) {
+        const setterMember = allTeamMembers.find((m: any) => m.id === setterId)
+        if (setterMember?.role === 'Setter-Closer' && setterMember?.count_setter_commission !== false) {
+          closerId = setterId
+        }
+      }
     }
 
     setAddLoading(true)

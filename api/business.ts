@@ -2203,6 +2203,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         prospect = inserted
       }
 
+      // Auto-assign closer if setter is a Setter-Closer with "set pour soi-même"
+      if (assigned_member_id && campaign.booking_with === 'setter') {
+        const { data: assignedMember } = await supabase
+          .from('business_team_members')
+          .select('id, role, count_setter_commission')
+          .eq('id', assigned_member_id)
+          .single()
+
+        if (assignedMember?.role === 'Setter-Closer' && assignedMember?.count_setter_commission !== false) {
+          await supabase
+            .from('business_prospects')
+            .update({ assigned_to: assigned_member_id })
+            .eq('id', prospect.id)
+          prospect.assigned_to = assigned_member_id
+        }
+      }
+
       // Create appointment if date/time provided
       let appointment = null
       if (date && time) {
