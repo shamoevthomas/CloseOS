@@ -28,7 +28,13 @@ const DAYS_SHORT = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.']
 const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 dark:ring-white/10 shadow-sm'
 
 export function CloserDisponibilite() {
-  const { teamMember, ownerUserId } = useBusinessAuth()
+  const { teamMember, ownerUserId, isTeamMember, user } = useBusinessAuth()
+
+  // Owner mode: owner uses their own user.id as business_owner_id, no team_member_id
+  const isOwner = !isTeamMember
+  const effectiveOwnerId = isOwner ? user?.id : ownerUserId
+  const effectiveTeamMemberId = isOwner ? null : teamMember?.id
+
   const [slots, setSlots] = useState<Slot[]>([])
   const [absences, setAbsences] = useState<Absence[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,40 +56,52 @@ export function CloserDisponibilite() {
   const [absReason, setAbsReason] = useState('')
 
   const fetchData = useCallback(async () => {
-    if (!teamMember?.id) return
+    if (!effectiveOwnerId && !effectiveTeamMemberId) return
     setLoading(true)
     try {
+      let slotsQuery = supabase.from('business_availability_slots').select('*')
+      let absQuery = supabase.from('business_absences').select('*')
+
+      if (isOwner) {
+        slotsQuery = slotsQuery.eq('business_owner_id', effectiveOwnerId!).is('team_member_id', null)
+        absQuery = absQuery.eq('business_owner_id', effectiveOwnerId!).is('team_member_id', null)
+      } else {
+        slotsQuery = slotsQuery.eq('team_member_id', effectiveTeamMemberId!)
+        absQuery = absQuery.eq('team_member_id', effectiveTeamMemberId!)
+      }
+
       const [slotsRes, absRes] = await Promise.all([
-        supabase.from('business_availability_slots').select('*').eq('team_member_id', teamMember.id).order('day_of_week').order('start_time'),
-        supabase.from('business_absences').select('*').eq('team_member_id', teamMember.id).order('start_date', { ascending: false }),
+        slotsQuery.order('day_of_week').order('start_time'),
+        absQuery.order('start_date', { ascending: false }),
       ])
       setSlots(slotsRes.data || [])
       setAbsences(absRes.data || [])
     } finally {
       setLoading(false)
     }
-  }, [teamMember?.id])
+  }, [effectiveOwnerId, effectiveTeamMemberId, isOwner])
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  const storageKey = isOwner ? `dispo-onboarding-owner-${effectiveOwnerId}` : `dispo-onboarding-${effectiveTeamMemberId}`
+
   useEffect(() => {
-    if (!loading && slots.length === 0 && teamMember?.id) {
-      const dismissed = localStorage.getItem(`dispo-onboarding-${teamMember.id}`)
+    if (!loading && slots.length === 0 && (effectiveTeamMemberId || effectiveOwnerId)) {
+      const dismissed = localStorage.getItem(storageKey)
       if (!dismissed) {
         setShowOnboardingPopup(true)
       }
     }
-  }, [loading, slots.length, teamMember?.id])
+  }, [loading, slots.length, effectiveTeamMemberId, effectiveOwnerId, storageKey])
 
   const dismissOnboarding = () => {
-    if (teamMember?.id) {
-      localStorage.setItem(`dispo-onboarding-${teamMember.id}`, 'true')
-    }
+    localStorage.setItem(storageKey, 'true')
     setShowOnboardingPopup(false)
   }
 
-  // Notify owner + HOS when availability/absence changes
+  // Notify owner + HOS when availability/absence changes (skip if owner is editing their own)
   const notifyOwnerAndHoS = async (title: string, description: string) => {
+    if (isOwner) return // Owner doesn't need to notify themselves
     if (!teamMember?.id || !ownerUserId) return
     try {
       // Owner notification
@@ -114,17 +132,18 @@ export function CloserDisponibilite() {
     }
   }
 
-  const memberName = `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || 'Un membre'
+  const memberName = isOwner ? 'Owner' : (`${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || 'Un membre')
 
   const handleAddSlot = async (dayOfWeek: number) => {
-    if (!teamMember?.id || !ownerUserId) return
-    const { error } = await supabase.from('business_availability_slots').insert([{
-      team_member_id: teamMember.id,
-      business_owner_id: ownerUserId,
+    if (!effectiveOwnerId && !effectiveTeamMemberId) return
+    const insertData: any = {
+      business_owner_id: effectiveOwnerId,
       day_of_week: dayOfWeek,
       start_time: newStart,
       end_time: newEnd,
-    }])
+    }
+    if (effectiveTeamMemberId) insertData.team_member_id = effectiveTeamMemberId
+    const { error } = await supabase.from('business_availability_slots').insert([insertData])
     if (error) { toast.error('Erreur'); return }
     await notifyOwnerAndHoS(
       `Disponibilité modifiée — ${memberName}`,
@@ -151,18 +170,19 @@ export function CloserDisponibilite() {
   }
 
   const handleCopySlots = async (fromDay: number, targetDays: number[]) => {
-    if (!teamMember?.id || !ownerUserId || targetDays.length === 0) return
+    if ((!effectiveOwnerId && !effectiveTeamMemberId) || targetDays.length === 0) return
     const sourceSlots = slots.filter(s => s.day_of_week === fromDay)
     if (sourceSlots.length === 0) { toast.error('Aucun créneau à copier'); return }
     for (const toDay of targetDays) {
       for (const slot of sourceSlots) {
-        await supabase.from('business_availability_slots').insert([{
-          team_member_id: teamMember.id,
-          business_owner_id: ownerUserId,
+        const insertData: any = {
+          business_owner_id: effectiveOwnerId,
           day_of_week: toDay,
           start_time: slot.start_time,
           end_time: slot.end_time,
-        }])
+        }
+        if (effectiveTeamMemberId) insertData.team_member_id = effectiveTeamMemberId
+        await supabase.from('business_availability_slots').insert([insertData])
       }
     }
     const names = targetDays.map(d => DAYS[d]).join(', ')
@@ -177,14 +197,15 @@ export function CloserDisponibilite() {
   }
 
   const handleAddAbsence = async () => {
-    if (!teamMember?.id || !ownerUserId || !absStartDate || !absEndDate) return
-    const { error } = await supabase.from('business_absences').insert([{
-      team_member_id: teamMember.id,
-      business_owner_id: ownerUserId,
+    if ((!effectiveOwnerId && !effectiveTeamMemberId) || !absStartDate || !absEndDate) return
+    const insertData: any = {
+      business_owner_id: effectiveOwnerId,
       start_date: absStartDate,
       end_date: absEndDate,
       reason: absReason || null,
-    }])
+    }
+    if (effectiveTeamMemberId) insertData.team_member_id = effectiveTeamMemberId
+    const { error } = await supabase.from('business_absences').insert([insertData])
     if (error) { toast.error('Erreur'); return }
     const fmtStart = new Date(absStartDate).toLocaleDateString('fr-FR')
     const fmtEnd = new Date(absEndDate).toLocaleDateString('fr-FR')

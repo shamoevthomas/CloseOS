@@ -21,6 +21,7 @@ import {
   Phone,
   Receipt,
   MoreVertical,
+  Clock,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
@@ -49,6 +50,7 @@ const ownerNavigation: NavItem[] = [
   { name: 'Rapport', href: '/business/report', icon: FileText },
   { name: 'KPI Setter', href: '/business/setter-kpi', icon: TrendingUp },
   { name: 'KPI Closer', href: '/business/closer-kpi', icon: TrendingUp },
+  { name: 'Disponibilité', href: '/business/disponibilite', icon: Clock },
   { name: 'Équipe', href: '/business/team', icon: Users },
 ]
 
@@ -69,6 +71,7 @@ const getHeadOfSalesNavigation = (canManageCampaigns?: boolean): NavItem[] => {
     { name: 'Rapport', href: '/business/report', icon: FileText },
     { name: 'KPI Setter', href: '/business/setter-kpi', icon: TrendingUp },
     { name: 'KPI Closer', href: '/business/closer-kpi', icon: TrendingUp },
+    { name: 'Disponibilité', href: '/business/disponibilite', icon: Clock },
     { name: 'Équipe', href: '/business/team', icon: Users },
   ]
   return nav

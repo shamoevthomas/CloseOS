@@ -27,6 +27,7 @@ const OWNER_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/closers': { title: 'Closers', subtitle: 'Gérez vos closers et suivez leurs performances' },
   '/business/setters': { title: 'Setters', subtitle: 'Gérez vos setters et suivez leurs performances' },
   '/business/organisation': { title: 'Organisation', subtitle: 'Gérez les informations de votre organisation' },
+  '/business/disponibilite': { title: 'Disponibilité', subtitle: 'Gérez vos créneaux et absences' },
 }
 
 const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {

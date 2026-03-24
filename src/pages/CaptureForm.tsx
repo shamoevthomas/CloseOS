@@ -801,25 +801,23 @@ export function CaptureForm() {
                   <div>
                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-4">Créneaux disponibles</h3>
                     {selectedDate ? (
-                      <div className="space-y-2">
-                        {(freeMode ? TIME_SLOTS : (availableTimesForDate || []).map(s => s.time)).map(slot => (
-                          <button
-                            key={slot}
-                            onClick={() => setSelectedTime(slot)}
-                            className={`w-full py-3.5 px-5 rounded-full text-sm font-bold transition-all flex items-center justify-between ${
-                              selectedTime === slot
-                                ? 'bg-[#1b1c1b] text-white shadow-lg'
-                                : 'border border-[#c4c7c7]/30 text-[#1b1c1b] hover:border-[#006c49]'
-                            }`}
-                          >
-                            <span>{slot}</span>
-                            {selectedTime === slot ? (
-                              <CheckCircle2 className="h-4 w-4" />
-                            ) : (
-                              <svg className="h-4 w-4 text-[#444748]/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            )}
-                          </button>
-                        ))}
+                      <div className="max-h-72 overflow-y-auto pr-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          {(freeMode ? TIME_SLOTS : (availableTimesForDate || []).map(s => s.time)).map(slot => (
+                            <button
+                              key={slot}
+                              onClick={() => setSelectedTime(slot)}
+                              className={`py-3 px-4 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                                selectedTime === slot
+                                  ? 'bg-[#1b1c1b] text-white shadow-lg'
+                                  : 'border border-[#c4c7c7]/30 text-[#1b1c1b] hover:border-[#006c49]'
+                              }`}
+                            >
+                              <span>{slot}</span>
+                              {selectedTime === slot && <CheckCircle2 className="h-4 w-4" />}
+                            </button>
+                          ))}
+                        </div>
                         {!freeMode && availableTimesForDate && availableTimesForDate.length === 0 && (
                           <p className="text-xs text-[#444748]/40 mt-2">Aucun créneau disponible ce jour. Essayez une autre date.</p>
                         )}
