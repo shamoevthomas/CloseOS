@@ -36,8 +36,48 @@ function calculateAge(dateString: string): number | null {
   return age;
 }
 
+function getDeviceFingerprint(): string {
+  const key = 'closeos_device_id';
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID() + '-' + navigator.userAgent.slice(0, 50).replace(/\s/g, '_');
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+async function registerDeviceAfterOnboarding(userId: string) {
+  try {
+    const fingerprint = getDeviceFingerprint();
+    const token = crypto.randomUUID();
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+
+    // Remove any existing token for this device
+    await supabase
+      .from('business_device_tokens')
+      .delete()
+      .eq('user_id', userId)
+      .eq('device_fingerprint', fingerprint);
+
+    // Insert new device token
+    await supabase
+      .from('business_device_tokens')
+      .insert({
+        user_id: userId,
+        device_fingerprint: fingerprint,
+        token,
+        expires_at: expires.toISOString(),
+      });
+
+    localStorage.setItem('closeos_device_token', token);
+  } catch {
+    // Non-blocking — worst case user will see A2F on next login
+  }
+}
+
 export function BusinessOnboardingModal() {
-  const { user, businessProfile, businessSettings, hasOnboarded, loading: authLoading, updateBusinessProfile, updateBusinessSettings, isTeamMember, teamMember, refreshProfile } = useBusinessAuth();
+  const { user, businessProfile, businessSettings, hasOnboarded, loading: authLoading, updateBusinessProfile, updateBusinessSettings, isTeamMember, teamMember, refreshProfile, setNeedsVerification } = useBusinessAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -166,6 +206,13 @@ export function BusinessOnboardingModal() {
           })
           .eq('id', teamMember.id);
         if (error) throw error;
+
+        // Auto-register device after onboarding to skip A2F on first session
+        if (user?.id) {
+          await registerDeviceAfterOnboarding(user.id);
+          setNeedsVerification(false);
+        }
+
         await refreshProfile();
       } catch (err) {
         console.error('Team member onboarding error:', err);
@@ -384,6 +431,12 @@ export function BusinessOnboardingModal() {
         niche,
         niche_custom: niche === 'Autre' ? nicheCustom : null,
       });
+
+      // Auto-register device after onboarding to skip A2F on first session
+      if (user?.id) {
+        await registerDeviceAfterOnboarding(user.id);
+        setNeedsVerification(false);
+      }
     } catch (err) {
       console.error('Onboarding error:', err);
     } finally {

@@ -50,7 +50,7 @@ const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 export function BusinessLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isTeamMember, teamMember, businessProfile, user, refreshProfile, needsVerification, setNeedsVerification, logout } = useBusinessAuth()
+  const { isTeamMember, teamMember, businessProfile, user, refreshProfile, needsVerification, setNeedsVerification, logout, hasOnboarded } = useBusinessAuth()
   const pageTitles = isTeamMember ? TEAM_PAGE_TITLES : OWNER_PAGE_TITLES
 
   // Handle dynamic routes like /business/appels/:id
@@ -102,7 +102,8 @@ export function BusinessLayout() {
   }
 
   // Verification gate for Google OAuth or returning sessions (must be after all hooks)
-  if (needsVerification && user) {
+  // Skip A2F for new accounts that haven't completed onboarding yet
+  if (needsVerification && user && hasOnboarded) {
     return (
       <BusinessVerification
         userId={user.id}
