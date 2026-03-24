@@ -437,7 +437,7 @@ function AuthenticatedApp() {
         </Route>
       </Routes>
 
-      {user && !location.pathname.startsWith('/business') && (
+      {user && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/capture') && (
         <>
           <TrialExpiredModal />
           <OnboardingWrapper onComplete={() => {
