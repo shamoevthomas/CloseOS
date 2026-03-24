@@ -58,6 +58,8 @@ export function SetterKPI() {
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   // Global member filter (persists across tabs)
   const [globalMemberId, setGlobalMemberId] = useState<string | null>(null)
+  // Formula commission rates
+  const [formulaCommRates, setFormulaCommRates] = useState<Record<string, { roles: Record<string, number>; members: Record<string, number> }>>({})
 
   // Period filter
   const [periodFrom, setPeriodFrom] = useState('')
@@ -146,6 +148,25 @@ export function SetterKPI() {
       })
   }, [effectiveOwnerId])
 
+  // Load formula commission rates
+  useEffect(() => {
+    if (!effectiveOwnerId) return
+    supabase.from('business_formula_commissions').select('formula_id, role, rate, team_member_id')
+      .eq('business_owner_id', effectiveOwnerId)
+      .then(({ data }) => {
+        const map: Record<string, { roles: Record<string, number>; members: Record<string, number> }> = {}
+        ;(data || []).forEach(c => {
+          if (!map[c.formula_id]) map[c.formula_id] = { roles: {}, members: {} }
+          if (c.team_member_id) {
+            map[c.formula_id].members[c.team_member_id] = c.rate
+          } else if (c.role) {
+            map[c.formula_id].roles[c.role] = c.rate
+          }
+        })
+        setFormulaCommRates(map)
+      })
+  }, [effectiveOwnerId])
+
   const saveConfig = async () => {
     if (!teamMember?.id || !effectiveOwnerId) return
     const { error } = await supabase.from('business_kpi_config').upsert({
@@ -182,6 +203,32 @@ export function SetterKPI() {
     return src.filter(p => p.assigned_setter === memberId)
   }
 
+  // Compute setter commission using formula-level rates
+  // For each won prospect: look up the commission rate for role "Setter" (or member-specific override)
+  // Falls back to kpiConfig.commission_rate if no formula rate is configured
+  const computeSetterCommission = (wonProspects: any[], memberId?: string) => {
+    let total = 0
+    for (const p of wonProspects) {
+      const value = p.value || 0
+      if (!value) continue
+      const formulaId = p.formula_id || p.offer_id
+      const rates = formulaId ? formulaCommRates[formulaId] : null
+      if (rates) {
+        // Member-specific rate first, then role "Setter"
+        if (memberId && rates.members[memberId] !== undefined) {
+          total += value * rates.members[memberId] / 100
+        } else if (rates.roles['Setter'] !== undefined) {
+          total += value * rates.roles['Setter'] / 100
+        } else {
+          total += value * (kpiConfig.commission_rate / 100)
+        }
+      } else {
+        total += value * (kpiConfig.commission_rate / 100)
+      }
+    }
+    return Math.round(total)
+  }
+
   // Setter prospects = prospects assigned to this setter via assigned_setter
   const myProspects = periodProspects.filter(p => p.assigned_setter === teamMember?.id)
 
@@ -214,12 +261,12 @@ export function SetterKPI() {
 
   // Personal KPIs
   const personal = computeSetterKpis(myProspects, teamMember?.id)
-  const commission = Math.round(personal.revenue * (kpiConfig.commission_rate / 100))
+  const commission = computeSetterCommission(personal.won, teamMember?.id)
 
   // Org KPIs (filtered by member if selected) — uses computeSetterKpis for consistency
   const orgProspects = useMemo(() => filterByMember(periodProspects, globalMemberId), [periodProspects, globalMemberId])
   const orgKpis = computeSetterKpis(orgProspects)
-  const orgCommission = Math.round(orgKpis.revenue * (kpiConfig.commission_rate / 100))
+  const orgCommission = computeSetterCommission(orgKpis.won, globalMemberId || undefined)
 
   // Per-formula KPIs — uses computeSetterKpis for consistency
   const formulaProspects = useMemo(() => {
@@ -230,7 +277,7 @@ export function SetterKPI() {
   }, [isOwnerView, myProspects, periodProspects, selectedOfferId, globalMemberId])
 
   const formulaKpis = computeSetterKpis(formulaProspects)
-  const formulaCommission = Math.round(formulaKpis.revenue * (kpiConfig.commission_rate / 100))
+  const formulaCommission = computeSetterCommission(formulaKpis.won, globalMemberId || teamMember?.id)
 
   // Per-campaign KPIs
   const campaignProspects = useMemo(() => {
@@ -241,7 +288,7 @@ export function SetterKPI() {
   }, [isOwnerView, myProspects, periodProspects, selectedCampaignId, globalMemberId])
 
   const campaignKpis = computeSetterKpis(campaignProspects)
-  const campaignCommission = Math.round(campaignKpis.revenue * (kpiConfig.commission_rate / 100))
+  const campaignCommission = computeSetterCommission(campaignKpis.won, globalMemberId || teamMember?.id)
 
   // Per-source KPIs
   const sourceProspects = useMemo(() => {
@@ -253,7 +300,7 @@ export function SetterKPI() {
   }, [isOwnerView, myProspects, periodProspects, selectedSource, campaigns, globalMemberId])
 
   const sourceKpis = computeSetterKpis(sourceProspects)
-  const sourceCommission = Math.round(sourceKpis.revenue * (kpiConfig.commission_rate / 100))
+  const sourceCommission = computeSetterCommission(sourceKpis.won, globalMemberId || teamMember?.id)
 
   // Chart data: group prospects by month
   const chartData = useMemo(() => {
@@ -266,7 +313,7 @@ export function SetterKPI() {
       monthMap[key].total++
       if (p.stage === 'won') {
         monthMap[key].won++
-        monthMap[key].commission += Math.round((p.value || 0) * (kpiConfig.commission_rate / 100))
+        monthMap[key].commission += computeSetterCommission([p], globalMemberId || teamMember?.id)
       }
     })
     return Object.entries(monthMap)
