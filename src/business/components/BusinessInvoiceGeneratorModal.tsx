@@ -978,7 +978,7 @@ export function BusinessInvoiceGeneratorModal({
                 {editableCloserItems.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-bold uppercase tracking-widest text-[#006c49]">
-                      Lignes Closer ({commissionRate}%)
+                      Lignes Closer
                     </p>
                     {editableCloserItems.map(item => (
                       <div key={item.id} className="rounded-lg border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-3 space-y-2">
@@ -1042,7 +1042,7 @@ export function BusinessInvoiceGeneratorModal({
                 {editableSetterItems.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-bold uppercase tracking-widest text-[#006c49]">
-                      Lignes Setter ({commissionRate}%)
+                      Lignes Setter
                     </p>
                     {editableSetterItems.map(item => (
                       <div key={item.id} className="rounded-lg border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-3 space-y-2">
@@ -1312,7 +1312,7 @@ export function BusinessInvoiceGeneratorModal({
                       {editableCloserItems.length > 0 && (
                         <>
                           <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>
-                            Commission Closer ({commissionRate}%)
+                            Commission Closer
                           </p>
                           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
                             <thead>
@@ -1343,7 +1343,7 @@ export function BusinessInvoiceGeneratorModal({
                       {editableSetterItems.length > 0 && (
                         <>
                           <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>
-                            Commission Setter ({commissionRate}%)
+                            Commission Setter
                           </p>
                           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
                             <thead>
