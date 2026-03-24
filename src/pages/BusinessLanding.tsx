@@ -562,14 +562,15 @@ const TeamManagement = () => (
       <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-6">
         <Layers className="size-6 text-stone-800" />
       </div>
-      <h3 className="text-2xl font-bold text-[#111111] mb-3">Gestion de l'Équipe simplifiée</h3>
+      <h3 className="text-2xl font-bold text-[#111111] mb-3">Gestion de l'Équipe complète</h3>
       <p className="text-stone-500 mb-8">
-        Pilotez vos closers avec une précision chirurgicale. Visualisez qui est en ligne, gérez les performances individuelles et intégrez de nouveaux talents en un clic.
+        Organisez vos closers et setters en équipes, suivez qui est en ligne en temps réel, gérez les disponibilités, absences, primes et commissions individuelles. Invitez de nouveaux membres en un clic avec des rôles prédéfinis.
       </p>
     </div>
     <div className="space-y-3">
       <TeamMember index={0} name="Julien Durand" role="Closer Senior" conv="34%" />
-      <TeamMember index={1} name="Marie Lefebvre" role="Closer Junior" conv="21%" />
+      <TeamMember index={1} name="Marie Lefebvre" role="Setter" conv="21%" />
+      <TeamMember index={2} name="Sophie Martin" role="Setter-Closer" conv="28%" />
     </div>
   </motion.div>
 );
@@ -1125,10 +1126,12 @@ const rolesData: RoleData[] = [
         icon: <Users className="size-5" />,
         title: 'Équipe & Organisation',
         items: [
-          'Statut online temps réel (heartbeat 60s)',
-          'Vue détaillée : KPI, pipeline, historique connexion 7j',
-          'Invitation par lien avec rôle prédéfini',
-          'Profil entreprise + contenu par rôle personnalisable',
+          'Créez des équipes et groupez vos closers/setters',
+          'Statut online temps réel + historique connexion 7j',
+          'Disponibilités, absences, primes et commissions par membre',
+          '5 rôles : Closer, Setter, Setter-Closer, Head of Sales, Admin',
+          'Invitation par lien + onboarding personnalisable par rôle',
+          'Objectifs individuels et collectifs avec suivi progression',
         ],
       },
       {
