@@ -107,9 +107,13 @@ export function EmailCapturePopup({ closerName, shareLinkId }: EmailCapturePopup
               </button>
             </form>
 
+            <p className="mt-3 text-center text-[9px] text-[#444748]/40 leading-relaxed">
+              En continuant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées dans notre base de données.
+            </p>
+
             <button
               onClick={handleDismiss}
-              className="mt-4 w-full text-center text-[10px] font-bold uppercase tracking-widest text-[#444748]/40 hover:text-[#444748] transition-colors"
+              className="mt-3 w-full text-center text-[10px] font-bold uppercase tracking-widest text-[#444748]/40 hover:text-[#444748] transition-colors"
             >
               Non merci
             </button>

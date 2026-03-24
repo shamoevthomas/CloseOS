@@ -242,18 +242,30 @@ export const BusinessLanding: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="flex flex-col items-center gap-8 max-w-4xl mx-auto"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm">
-              <span className="text-sm font-medium text-stone-800">
-                🚀 Déjà <span className="font-bold bg-gradient-to-r from-[#ff2f2f] via-[#ef7b16] to-[#d511fd] text-transparent bg-clip-text">+150 closers</span> qui valident CloseOS Sales
-              </span>
+            <div className="flex items-center gap-3 flex-wrap justify-center">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
+                <span className="text-xs font-bold text-emerald-700">RGPD</span>
+              </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm">
+                <span className="text-sm font-medium text-stone-800">
+                  🚀 Déjà <span className="font-bold bg-gradient-to-r from-[#ff2f2f] via-[#ef7b16] to-[#d511fd] text-transparent bg-clip-text">+150 closers</span> qui valident CloseOS Sales
+                </span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
+                <span className="text-xs font-bold text-emerald-700">Eco-responsable</span>
+              </div>
             </div>
 
             <h1 className="text-5xl md:text-7xl lg:text-[80px] font-bold leading-[1.1] tracking-tight text-[#111111]">
               Gérez votre équipe de closers et pilotez votre acquisition.
             </h1>
 
+            <p className="text-stone-500 text-base font-semibold bg-red-50 border border-red-100 px-5 py-2.5 rounded-full">
+              70% des infopreneurs perdent du CA parce qu'ils ne savent pas quoi améliorer.
+            </p>
+
             <p className="text-stone-600 text-lg md:text-xl font-medium leading-relaxed max-w-2xl">
-              Le logiciel infopreneur pour le pilotage de votre équipe closing. CRM acquisition, gestion setter-closer, campagnes d'acquisition et tableau de bord analytics. L'alternative à iClosed, conçue pour les infopreneurs francophones.
+              CRM, équipe, campagnes, KPIs — tout ce dont un infopreneur a besoin pour structurer son acquisition et scaler.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-4">
@@ -263,6 +275,17 @@ export const BusinessLanding: React.FC = () => {
               >
                 Rejoindre la liste d'attente — Tarifs early adopters le 4 avril
               </button>
+            </div>
+
+            <div className="flex items-center gap-3 mt-6">
+              <div className="flex -space-x-3">
+                {['U1', 'U2', 'U3', 'U4'].map((u) => (
+                  <img key={u} src={`/${u}.png`} alt="" className="w-9 h-9 rounded-full border-2 border-white object-cover" />
+                ))}
+              </div>
+              <p className="text-sm text-stone-500 font-medium">
+                Validé par <span className="font-bold text-[#111111]">+12 infopreneurs</span> francophones
+              </p>
             </div>
 
           </motion.div>
@@ -360,7 +383,7 @@ export const BusinessLanding: React.FC = () => {
               className="mt-16 pt-16 border-t border-stone-200"
             >
               <div className="text-center mb-10">
-                <p className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-3">Intégrations natives</p>
+                <p className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-3">11+ intégrations natives · 6 000+ via Zapier</p>
                 <h3 className="text-2xl md:text-3xl font-bold text-[#111111] tracking-tight">
                   Connectez vos outils existants. Ou utilisez tout en natif.
                 </h3>
@@ -389,7 +412,7 @@ export const BusinessLanding: React.FC = () => {
                       ].map((integration) => (
                         <div
                           key={`${dup}-${integration.name}`}
-                          className="flex flex-col items-center gap-2 px-8 py-5 bg-white rounded-2xl border border-stone-200 shadow-sm min-w-[160px]"
+                          className="flex flex-col items-center gap-2 px-8 py-5 bg-white rounded-2xl border border-stone-200 shadow-sm min-w-[160px] transition-transform duration-300 hover:scale-110 hover:shadow-md hover:z-20"
                         >
                           <img src={integration.logo} alt={integration.name} className="h-8 w-auto object-contain" />
                           <span className="text-sm font-bold text-[#111111]">{integration.name}</span>
@@ -401,11 +424,59 @@ export const BusinessLanding: React.FC = () => {
                 </div>
               </div>
             </motion.div>
+
+            <div className="flex justify-center mt-12">
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center justify-center rounded-xl h-14 px-8 text-white text-lg font-semibold shadow-lg hover:-translate-y-1 transition-all bg-[#111111]"
+              >
+                Rejoindre la liste d'attente
+              </button>
+            </div>
           </div>
         </motion.section>
 
         {/* Features by Role Section */}
         <FeaturesByRole />
+
+        <div className="flex justify-center -mt-8 mb-16">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center rounded-xl h-14 px-8 text-white text-lg font-semibold shadow-lg hover:-translate-y-1 transition-all bg-[#111111]"
+          >
+            Rejoindre la liste d'attente
+          </button>
+        </div>
+
+        {/* Demo Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8 }}
+          className="px-6 md:px-20 py-24 max-w-5xl mx-auto"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-3">Démo personnalisée</p>
+              <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight mb-4">
+                Réservez une démo avec notre équipe
+              </h2>
+              <p className="text-stone-500 text-lg mb-6">
+                15 minutes pour découvrir comment CloseOS peut s'adapter à votre business. On vous montre l'outil, on répond à vos questions.
+              </p>
+              <ul className="space-y-3 text-stone-600 font-medium">
+                <li className="flex items-center gap-3"><CheckCircle className="size-5 text-emerald-500 shrink-0" /> Démo adaptée à votre structure</li>
+                <li className="flex items-center gap-3"><CheckCircle className="size-5 text-emerald-500 shrink-0" /> Réponses à toutes vos questions</li>
+                <li className="flex items-center gap-3"><CheckCircle className="size-5 text-emerald-500 shrink-0" /> Sans engagement, 100% gratuit</li>
+              </ul>
+            </div>
+            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-2 min-h-[450px] flex items-center justify-center">
+              {/* TODO: Remplacer par l'embed Calendly / Cal.com */}
+              <p className="text-stone-400 font-medium">Calendrier de réservation à intégrer</p>
+            </div>
+          </div>
+        </motion.section>
 
         {/* FAQ Section */}
         <motion.section 

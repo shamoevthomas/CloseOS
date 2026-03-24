@@ -710,11 +710,9 @@ export function CaptureForm() {
                 >
                   {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>S'inscrire</span><ArrowRight className="h-5 w-5" /></>}
                 </button>
-                {!isEmbed && (
-                  <p className="text-center text-xs text-[#444748]/40 mt-6 font-medium">
-                    En vous inscrivant, vous acceptez nos conditions d'utilisation.
-                  </p>
-                )}
+                <p className="text-center text-[10px] text-[#444748]/40 mt-6 font-medium leading-relaxed">
+                  En continuant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées dans notre base de données.
+                </p>
               </div>
             )}
 
@@ -841,11 +839,9 @@ export function CaptureForm() {
                     {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Confirmer le rendez-vous</span><ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" /></>}
                   </button>
 
-                  {!isEmbed && (
-                    <p className="text-center text-xs text-[#444748]/40 mt-6 font-medium">
-                      En réservant, vous acceptez nos conditions d'utilisation.
-                    </p>
-                  )}
+                  <p className="text-center text-[10px] text-[#444748]/40 mt-6 font-medium leading-relaxed">
+                    En continuant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées dans notre base de données.
+                  </p>
                 </div>
               </div>
             </div>}
