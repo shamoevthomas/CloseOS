@@ -152,6 +152,7 @@ export function CloserFactures() {
   const isFixedPlusComm = compType === 'fixed_plus_commission'
   const fixedSalary = teamMember?.fixed_salary ? Number(teamMember.fixed_salary) : 0
   const countSetterComm = teamMember?.count_setter_commission !== false
+  const isSetterCloser = teamMember?.role === 'Setter-Closer'
 
   // Won prospects assigned to me, filtered by period
   const myWonProspects = useMemo(
@@ -172,12 +173,16 @@ export function CloserFactures() {
     [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod]
   )
 
-  // Setter deals only (not also closer, to avoid double-counting) — empty if setter commission disabled
+  // Setter deals — for Setter-Closer, include deals they also closed (they get both commissions)
   const mySetterDeals = useMemo(
-    () => !countSetterComm ? [] : prospects.filter(p =>
-      p.stage === 'won' && p.assigned_setter === teamMember?.id && p.assigned_to !== teamMember?.id && isDealInPeriod(p, periodStart, periodEnd)
-    ),
-    [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod, countSetterComm]
+    () => !countSetterComm ? [] : prospects.filter(p => {
+      if (p.stage !== 'won' || p.assigned_setter !== teamMember?.id || !isDealInPeriod(p, periodStart, periodEnd)) return false
+      // Setter-Closer gets setter commission even on deals they also closed
+      if (isSetterCloser) return true
+      // Other roles: exclude deals they also closed to avoid double-counting
+      return p.assigned_to !== teamMember?.id
+    }),
+    [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod, countSetterComm, isSetterCloser]
   )
 
   // Filter invoices by date range + only mine
@@ -197,7 +202,6 @@ export function CloserFactures() {
   const commissionRateNum = teamMember?.commission_rate ? Number(teamMember.commission_rate) : 10
   const fallbackRate = commissionRateNum / 100
 
-  const isSetterCloser = teamMember?.role === 'Setter-Closer'
   const memberId = teamMember?.id
   const memberRole = teamMember?.role
 
