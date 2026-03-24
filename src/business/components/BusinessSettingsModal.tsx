@@ -1694,6 +1694,39 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                   G&eacute;rez votre organisation et ses donn&eacute;es.
                 </p>
 
+                {/* Weekly Report Toggle */}
+                <div
+                  onClick={async () => {
+                    if (!user) return
+                    const newVal = !(businessSettings?.weekly_report_enabled ?? true)
+                    const { error } = await supabase
+                      .from('business_settings')
+                      .update({ weekly_report_enabled: newVal })
+                      .eq('user_id', user.id)
+                    if (error) {
+                      setMessage({ type: 'error', text: `Erreur: ${error.message}` })
+                    } else {
+                      setMessage({ type: 'success', text: newVal ? 'Rapport hebdomadaire activé.' : 'Rapport hebdomadaire désactivé.' })
+                      refreshProfile?.()
+                    }
+                  }}
+                  className="flex items-center justify-between p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 rounded-xl bg-stone-900/10 dark:bg-white/10 text-stone-900 dark:text-white group-hover:bg-stone-900/15 dark:group-hover:bg-white/15 transition-colors">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-stone-900 dark:text-white text-sm">Rapport hebdomadaire</h4>
+                      <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">Recevez chaque dimanche un email avec le rapport PDF et CSV de la semaine</p>
+                    </div>
+                  </div>
+                  {(businessSettings?.weekly_report_enabled ?? true)
+                    ? <ToggleRight className="h-7 w-7 text-[#006c49] shrink-0" />
+                    : <ToggleLeft className="h-7 w-7 text-stone-300 shrink-0" />
+                  }
+                </div>
+
                 {resetStep === 'idle' && (
                   <div className="mt-8 p-6 rounded-2xl border border-red-200/50 dark:border-red-500/20 bg-red-50/30 dark:bg-red-500/5">
                     <div className="flex items-start gap-4">
