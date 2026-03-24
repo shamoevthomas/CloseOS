@@ -2430,6 +2430,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (campErr || !campaign) return res.status(404).json({ error: 'Campaign not found or inactive' })
 
+      // L'owner n'est pas un team_member — ne pas l'assigner dans les FK prospect/appointment
+      const isOwnerAssigned = assigned_member_id === campaign.user_id
+      const prospectAssignId = isOwnerAssigned ? null : assigned_member_id
+
       // Create prospect (or upgrade partial lead)
       const nameParts = name.trim().split(' ')
       const firstName = nameParts[0] || ''
@@ -2450,7 +2454,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Upgrade partial to full prospect
           const { data: updated, error: upErr } = await supabase
             .from('business_prospects')
-            .update({ contact: name, firstName, lastName, phone: phone || data.phone, stage: 'prospect', formula_id: campaign.formula_id || null, notes: custom_data ? JSON.stringify(custom_data) : null, ...(assigned_member_id ? { [campaign.booking_with === 'setter' ? 'assigned_setter' : 'assigned_to']: assigned_member_id } : {}) })
+            .update({ contact: name, firstName, lastName, phone: phone || data.phone, stage: 'prospect', formula_id: campaign.formula_id || null, notes: custom_data ? JSON.stringify(custom_data) : null, ...(prospectAssignId ? { [campaign.booking_with === 'setter' ? 'assigned_setter' : 'assigned_to']: prospectAssignId } : {}) })
             .eq('id', data.id)
             .select()
             .single()
@@ -2473,7 +2477,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             campaign_id: campaign.id,
             formula_id: campaign.formula_id || null,
             notes: custom_data ? JSON.stringify(custom_data) : null,
-            ...(assigned_member_id ? { [campaign.booking_with === 'setter' ? 'assigned_setter' : 'assigned_to']: assigned_member_id } : {}),
+            ...(prospectAssignId ? { [campaign.booking_with === 'setter' ? 'assigned_setter' : 'assigned_to']: prospectAssignId } : {}),
           })
           .select()
           .single()
@@ -2483,7 +2487,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Auto-assign closer if setter is a Setter-Closer with "set pour soi-même"
-      if (assigned_member_id && campaign.booking_with === 'setter') {
+      if (prospectAssignId && campaign.booking_with === 'setter') {
         const { data: assignedMember } = await supabase
           .from('business_team_members')
           .select('id, role, count_setter_commission')
@@ -2514,7 +2518,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             status: 'pending',
             datetime_utc: datetime_utc || null,
             timezone: prospect_timezone || null,
-            assigned_to: assigned_member_id || null,
+            assigned_to: prospectAssignId || null,
           })
           .select()
           .single()
