@@ -39,7 +39,8 @@ const formatCurrency = (n: number) => n.toLocaleString('fr-FR')
 const formatPercent = (n: number) => n.toFixed(1)
 
 export function CloserKPI() {
-  const { teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
+  const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
+  const effectiveOwnerId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const isFixedComp = teamMember?.compensation_type === 'fixed'
   const { prospects } = useBusinessProspects()
@@ -86,8 +87,8 @@ export function CloserKPI() {
 
   // Load formulas for per-offer tab
   useEffect(() => {
-    if (!ownerUserId) return
-    fetch(`/api/business?action=formulas-list&user_id=${ownerUserId}`)
+    if (!effectiveOwnerId) return
+    fetch(`/api/business?action=formulas-list&user_id=${effectiveOwnerId}`)
       .then(r => r.json())
       .then(data => {
         if (data.formulas) {
@@ -98,20 +99,20 @@ export function CloserKPI() {
         }
       })
       .catch(() => {})
-  }, [ownerUserId])
+  }, [effectiveOwnerId])
 
   // Load team closers + Owner/HoS for member selector
   useEffect(() => {
-    if (!ownerUserId) return
+    if (!effectiveOwnerId) return
     Promise.all([
       supabase
         .from('business_team_members')
         .select('id, first_name, last_name, role')
-        .eq('business_owner_id', ownerUserId),
+        .eq('business_owner_id', effectiveOwnerId),
       supabase
         .from('business_users')
         .select('id, full_name')
-        .eq('id', ownerUserId)
+        .eq('id', effectiveOwnerId)
         .single(),
     ]).then(([tmRes, ownerRes]) => {
       const allMembers: TeamCloser[] = []
@@ -124,15 +125,15 @@ export function CloserKPI() {
       }
       setTeamClosers(allMembers)
     })
-  }, [ownerUserId])
+  }, [effectiveOwnerId])
 
   // Load campaigns
   useEffect(() => {
-    if (!ownerUserId) return
+    if (!effectiveOwnerId) return
     supabase
       .from('business_campaigns')
       .select('id, name, source')
-      .eq('user_id', ownerUserId)
+      .eq('user_id', effectiveOwnerId)
       .then(({ data }) => {
         if (data && data.length > 0) {
           setCampaigns(data)
@@ -140,13 +141,13 @@ export function CloserKPI() {
           if (!selectedSource) setSelectedSource(data[0].source || 'Direct')
         }
       })
-  }, [ownerUserId])
+  }, [effectiveOwnerId])
 
   const saveConfig = async () => {
-    if (!teamMember?.id || !ownerUserId) return
+    if (!teamMember?.id || !effectiveOwnerId) return
     const { error } = await supabase.from('business_kpi_config').upsert({
       team_member_id: teamMember.id,
-      business_owner_id: ownerUserId,
+      business_owner_id: effectiveOwnerId,
       config: kpiConfig,
     }, { onConflict: 'team_member_id' })
     if (error) { toast.error('Erreur de sauvegarde'); return }
