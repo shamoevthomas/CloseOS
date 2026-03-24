@@ -73,6 +73,7 @@ export function CloserDashboard() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [formulaCommRates, setFormulaCommRates] = useState<Record<string, { roles: Record<string, number>, members: Record<string, number> }>>({})
 
   const fetchData = useCallback(async () => {
     if (!teamMember?.id || !ownerUserId || !user?.id) return
@@ -93,6 +94,29 @@ export function CloserDashboard() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  // Fetch formula-level commission rates
+  const effectiveOwnerId = ownerUserId || user?.id
+  useEffect(() => {
+    if (!effectiveOwnerId) return
+    ;(async () => {
+      const { data } = await supabase
+        .from('business_formula_commissions')
+        .select('formula_id, role, rate, team_member_id')
+        .eq('business_owner_id', effectiveOwnerId)
+      if (!data) return
+      const map: Record<string, { roles: Record<string, number>, members: Record<string, number> }> = {}
+      for (const row of data) {
+        if (!map[row.formula_id]) map[row.formula_id] = { roles: {}, members: {} }
+        if (row.team_member_id) {
+          map[row.formula_id].members[row.team_member_id] = row.rate
+        } else {
+          map[row.formula_id].roles[row.role] = row.rate
+        }
+      }
+      setFormulaCommRates(map)
+    })()
+  }, [effectiveOwnerId])
+
   // KPI from assigned prospects
   const myProspects = prospects.filter(p => p.assigned_to === teamMember?.id)
   const wonProspects = useMemo(() => myProspects.filter(p => p.stage === 'won'), [myProspects])
@@ -111,16 +135,49 @@ export function CloserDashboard() {
   const bookedProspects = mySetterProspects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
   const bookingRate = mySetterProspects.length > 0 ? (bookedProspects.length / mySetterProspects.length) * 100 : 0
 
-  // Commission calculation
+  // Commission calculation with formula-level rates
   const commissionRate = teamMember?.commission_rate ? Number(teamMember.commission_rate) : 10
-  const rate = commissionRate / 100
-  // Closer commission: from won prospects assigned as closer
+  const fallbackRate = commissionRate / 100
+  const isSetterCloser = teamMember?.role === 'Setter-Closer'
+  const memberId = teamMember?.id
+  const memberRole = teamMember?.role
+
   const closerRevenue = wonProspects.reduce((s, p) => s + (Number(p.value) || 0), 0)
-  const closerCommission = Math.round(closerRevenue * rate)
-  // Setter commission: from won prospects assigned as setter (but not also closer, to avoid double-count)
-  const wonAsSetterOnly = prospects.filter(p => p.stage === 'won' && p.assigned_setter === teamMember?.id && p.assigned_to !== teamMember?.id)
-  const setterRevenue = wonAsSetterOnly.reduce((s, p) => s + (Number(p.value) || 0), 0)
-  const setterCommission = Math.round(setterRevenue * rate)
+  const closerCommission = useMemo(() => Math.round(wonProspects.reduce((sum, p) => {
+    const value = Number(p.value) || 0
+    const formulaId = p.formula_id || (p as any).offer_id
+    const rates = formulaId ? formulaCommRates[formulaId] : null
+    let r = fallbackRate
+    if (rates) {
+      if (memberId && rates.members[memberId] !== undefined) r = rates.members[memberId] / 100
+      else if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer'] !== undefined) r = rates.roles['Setter-Closer'] / 100
+      else if (rates.roles['Closer'] !== undefined) r = rates.roles['Closer'] / 100
+    }
+    return sum + value * r
+  }, 0)), [wonProspects, formulaCommRates, memberId, memberRole, fallbackRate])
+
+  // Setter commission: for Setter-Closer, include deals they also closed
+  const wonAsSetter = useMemo(() => prospects.filter(p => {
+    if (p.stage !== 'won' || p.assigned_setter !== teamMember?.id) return false
+    if (isSetterCloser) return true
+    return p.assigned_to !== teamMember?.id
+  }), [prospects, teamMember?.id, isSetterCloser])
+
+  const setterRevenue = wonAsSetter.reduce((s, p) => s + (Number(p.value) || 0), 0)
+  const setterCommission = useMemo(() => Math.round(wonAsSetter.reduce((sum, p) => {
+    const value = Number(p.value) || 0
+    const formulaId = p.formula_id || (p as any).offer_id
+    const rates = formulaId ? formulaCommRates[formulaId] : null
+    let r = fallbackRate
+    if (rates) {
+      if (memberId && rates.members[`${memberId}:setter`] !== undefined) r = rates.members[`${memberId}:setter`] / 100
+      else if (memberId && rates.members[memberId] !== undefined && memberRole !== 'Setter-Closer') r = rates.members[memberId] / 100
+      else if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer:setter'] !== undefined) r = rates.roles['Setter-Closer:setter'] / 100
+      else if (rates.roles['Setter'] !== undefined) r = rates.roles['Setter'] / 100
+    }
+    return sum + value * r
+  }, 0)), [wonAsSetter, formulaCommRates, memberId, memberRole, fallbackRate])
+
   const totalCommission = closerCommission + setterCommission
 
   // Upcoming appointments
@@ -215,7 +272,7 @@ export function CloserDashboard() {
       <div className={`grid grid-cols-2 ${isSetter ? 'xl:grid-cols-4' : 'xl:grid-cols-5'} gap-6`}>
 
         {/* Commission / CA Généré */}
-        <KpiTooltip text={teamMember?.compensation_type === 'fixed' ? "Chiffre d'affaires total généré par vos prospects gagnés (stage « Gagné »). Somme de la valeur de chaque prospect signé." : `Commission totale calculée sur vos ventes signées au taux de ${commissionRate}%. Inclut vos commissions closer et setter si applicable.`}>
+        <KpiTooltip text={teamMember?.compensation_type === 'fixed' ? "Chiffre d'affaires total généré par vos prospects gagnés (stage « Gagné »). Somme de la valeur de chaque prospect signé." : `Commission totale calculée sur vos ventes signées. Inclut vos commissions closer et setter si applicable.`}>
           <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
             <div className="flex justify-between items-start mb-3">
               <div className="p-2 rounded-lg bg-emerald-50">
