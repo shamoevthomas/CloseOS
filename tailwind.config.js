@@ -29,9 +29,14 @@ export default {
           '60%': { transform: 'rotate(-4deg)' },
           '75%': { transform: 'rotate(2deg)' },
         },
+        'scroll-left': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
         wiggle: 'wiggle 1s ease-in-out infinite',
+        'scroll-left': 'scroll-left 30s linear infinite',
       },
     },
   },

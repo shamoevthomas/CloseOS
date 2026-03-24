@@ -368,30 +368,37 @@ export const BusinessLanding: React.FC = () => {
                   CloseOS se synchronise avec vos CRM et outils d'acquisition en bidirectionnel. Gardez votre stack ou centralisez tout — c'est vous qui décidez.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                {[
-                  { name: 'HubSpot', type: 'Sync bidirectionnelle' },
-                  { name: 'Pipedrive', type: 'Sync bidirectionnelle' },
-                  { name: 'GoHighLevel', type: 'Sync bidirectionnelle' },
-                  { name: 'Airtable', type: 'Sync bidirectionnelle' },
-                  { name: 'Systeme.io', type: 'Webhook' },
-                  { name: 'iClosed', type: 'Webhook' },
-                  { name: 'Google Calendar', type: 'Sync bidirectionnelle' },
-                  { name: 'Google Meet', type: 'Intégré' },
-                  { name: 'Stripe', type: 'Paiements' },
-                ].map((integration, i) => (
-                  <motion.div
-                    key={integration.name}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.3, delay: i * 0.05 }}
-                    className="flex flex-col items-center gap-1.5 px-6 py-4 bg-white rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
-                  >
-                    <span className="text-sm font-bold text-[#111111]">{integration.name}</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">{integration.type}</span>
-                  </motion.div>
-                ))}
+              <div className="relative overflow-hidden">
+                <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#fbf9f8] to-transparent z-10 pointer-events-none" />
+                <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[#fbf9f8] to-transparent z-10 pointer-events-none" />
+                <div className="flex animate-scroll-left gap-6 w-max">
+                  {[...Array(2)].map((_, dup) => (
+                    <div key={dup} className="flex gap-6">
+                      {[
+                        { name: 'HubSpot', logo: '/HubSpot.png', type: 'Sync bidirectionnelle' },
+                        { name: 'Pipedrive', logo: '/Pipedrive.png', type: 'Sync bidirectionnelle' },
+                        { name: 'GoHighLevel', logo: '/GHL.jpg', type: 'Sync bidirectionnelle' },
+                        { name: 'Airtable', logo: '/airtable.png', type: 'Sync bidirectionnelle' },
+                        { name: 'Systeme.io', logo: '/Systemeio.png', type: 'Webhook' },
+                        { name: 'iClosed', logo: '/Iclosed.png', type: 'Webhook' },
+                        { name: 'Google Calendar', logo: '/Gcalendar.svg.png', type: 'Sync bidirectionnelle' },
+                        { name: 'Stripe', logo: '/Stripe.png', type: 'Paiements' },
+                        { name: 'Calendly', logo: '/Calendly.png', type: 'Webhook' },
+                        { name: 'Zapier', logo: '/Zapier.png', type: 'Automatisation' },
+                        { name: 'Cal.com', logo: '/Calcom.png', type: 'Sync bidirectionnelle' },
+                      ].map((integration) => (
+                        <div
+                          key={`${dup}-${integration.name}`}
+                          className="flex flex-col items-center gap-2 px-8 py-5 bg-white rounded-2xl border border-stone-200 shadow-sm min-w-[160px]"
+                        >
+                          <img src={integration.logo} alt={integration.name} className="h-8 w-auto object-contain" />
+                          <span className="text-sm font-bold text-[#111111]">{integration.name}</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">{integration.type}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             </motion.div>
           </div>
