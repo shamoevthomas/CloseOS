@@ -204,11 +204,6 @@ export function CloserKPI() {
     return { won, noShow, lost, revenue, closedTotal, conversionRate, noShowRate }
   }
 
-  // Personal KPIs
-  const myProspects = periodProspects.filter(p => p.assigned_to === teamMember?.id)
-  const personal = computeCloserKpis(myProspects)
-  const commission = computeCloserCommission(personal.won, teamMember?.id)
-
   // Unique sources from campaigns
   const uniqueSources = useMemo(() => {
     const sources = new Set(campaigns.map(c => c.source || 'Direct'))
@@ -245,6 +240,11 @@ export function CloserKPI() {
     }
     return Math.round(total)
   }
+
+  // Personal KPIs
+  const myProspects = periodProspects.filter(p => p.assigned_to === teamMember?.id)
+  const personal = computeCloserKpis(myProspects)
+  const commission = computeCloserCommission(personal.won, teamMember?.id)
 
   // Org KPIs (filtered by member if selected)
   const orgProspects = useMemo(() => filterByMember(periodProspects, globalMemberId), [periodProspects, globalMemberId])
