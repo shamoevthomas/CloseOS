@@ -14,6 +14,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { fromUTC, getTimezoneLabel } from '../../lib/timezone'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { InviteMemberModal } from '../components/InviteMemberModal'
+import { TeamKanban } from '../components/TeamKanban'
 import toast from 'react-hot-toast'
 
 interface TeamMember {
@@ -37,6 +38,7 @@ interface TeamMember {
   fixed_salary?: number | null
   commission_rate?: number | null
   count_setter_commission?: boolean | null
+  team_id?: string | null
   _isOwner?: boolean
 }
 
@@ -339,6 +341,10 @@ export function BusinessTeam() {
   const memberAppointments = useMemo(() => selectedMember ? appointments.filter(a => a.assigned_to === selectedMember.id) : [], [selectedMember, appointments])
   const memberLogs = useMemo(() => selectedMember ? connectionLogs.filter(l => l.team_member_id === selectedMember.id) : [], [selectedMember, connectionLogs])
 
+  const handleMemberTeamChange = useCallback((memberId: string, teamId: string | null) => {
+    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, team_id: teamId } : m))
+  }, [])
+
   const roleGroups = useMemo(() => {
     return members.reduce<Record<string, TeamMember[]>>((acc, member) => {
       const role = member.role || 'Sans rôle'
@@ -491,6 +497,12 @@ export function BusinessTeam() {
           </div>
         )
       })()}
+
+      {/* ─── Team Kanban Organisation ─── */}
+      <TeamKanban
+        members={members}
+        onMemberTeamChange={handleMemberTeamChange}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Object.entries(roleGroups).map(([role, roleMembers]) => {
