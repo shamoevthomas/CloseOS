@@ -107,6 +107,7 @@ export function BusinessLayout() {
       <BusinessVerification
         userId={user.id}
         email={user.email || ''}
+        authMethod={user.app_metadata?.provider === 'google' ? 'google' : 'classic'}
         onVerified={async () => {
           setNeedsVerification(false);
         }}

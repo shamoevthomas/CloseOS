@@ -24,7 +24,7 @@ export default function BusinessLogin() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [pendingVerification, setPendingVerification] = useState<{ userId: string; email: string } | null>(null);
+  const [pendingVerification, setPendingVerification] = useState<{ userId: string; email: string; authMethod: 'google' | 'classic' } | null>(null);
 
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
@@ -96,7 +96,7 @@ export default function BusinessLogin() {
             await refreshProfile();
             navigate('/business/dashboard');
           } else {
-            setPendingVerification({ userId, email: userEmail });
+            setPendingVerification({ userId, email: userEmail, authMethod: 'classic' });
             setLoading(false);
           }
         } else {
@@ -133,6 +133,7 @@ export default function BusinessLogin() {
       <BusinessVerification
         userId={pendingVerification.userId}
         email={pendingVerification.email}
+        authMethod={pendingVerification.authMethod}
         onVerified={async () => {
           await refreshProfile();
           navigate('/business/dashboard');

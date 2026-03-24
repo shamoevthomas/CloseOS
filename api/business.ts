@@ -2366,7 +2366,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
       if (!BREVO_API_KEY) return res.status(500).json({ error: 'BREVO_API_KEY missing' })
 
-      const htmlContent = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;background-color:#0a0a0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0f;padding:40px 20px;"><tr><td align="center"><table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;"><tr><td style="padding-bottom:32px;text-align:center;"><div style="font-size:28px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Close<span style="color:#6366f1;">OS</span></div></td></tr><tr><td style="background:linear-gradient(135deg,#13131f 0%,#1a1a2e 100%);border:1px solid rgba(99,102,241,0.2);border-radius:16px;padding:40px;"><h1 style="margin:0 0 8px;font-size:22px;font-weight:600;color:#ffffff;text-align:center;">Code de v&#233;rification</h1><p style="margin:0 0 32px;font-size:15px;color:#9ca3af;text-align:center;line-height:1.5;">Utilisez le code ci-dessous pour v&#233;rifier votre connexion &#224; CloseOS Business.</p><div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:12px;padding:24px;text-align:center;margin-bottom:32px;"><div style="font-size:36px;font-weight:700;color:#6366f1;letter-spacing:8px;font-family:monospace;">${displayCode}</div></div><p style="margin:0 0 24px;font-size:13px;color:#6b7280;text-align:center;line-height:1.5;">Ce code expire dans <strong style="color:#9ca3af;">10 minutes</strong>. Ne le partagez avec personne.</p><div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:10px;padding:16px;margin-bottom:0;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:24px;vertical-align:top;padding-right:12px;"><div style="font-size:16px;line-height:1;">&#9888;&#65039;</div></td><td><p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.5;">Si vous n'avez pas tent&#233; de vous connecter, ignorez cet e-mail. Quelqu'un a peut-&#234;tre saisi votre adresse par erreur.</p></td></tr></table></div></td></tr><tr><td style="padding-top:32px;text-align:center;"><p style="margin:0 0 8px;font-size:12px;color:#4b5563;">&copy; 2025 CloseOS - Tous droits r&#233;serv&#233;s</p><p style="margin:0;font-size:11px;color:#374151;">Cet e-mail a &#233;t&#233; envoy&#233; automatiquement, merci de ne pas y r&#233;pondre.</p></td></tr></table></td></tr></table></body></html>`
+      const htmlContent = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:42px;color:#111111;text-align:left;line-height:1.1;">Code de<br>v&#233;rification</h1><p class="inter" style="margin:0 0 48px;font-size:16px;color:#1b1c1b;text-align:left;">Utilisez le code ci-dessous pour v&#233;rifier votre connexion &#224; CloseOS Business.</p><div style="background-color:#f5f3f2;border-radius:48px;padding:40px 24px;text-align:center;margin-bottom:48px;"><div class="manrope" style="font-size:48px;color:#111111;letter-spacing:12px;margin-left:12px;">${displayCode}</div></div><p class="inter" style="margin:0 0 32px;font-size:14px;color:#1b1c1b;text-align:left;">Ce code expire dans <strong style="color:#111111;">10 minutes</strong>. Ne le partagez avec personne.</p><div style="background-color:#fbf9f8;border-radius:24px;padding:24px;border-left:4px solid #ffb95f;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:20px;line-height:1;">&#128161;</div></td><td><p class="inter" style="margin:0;font-size:13px;color:#1b1c1b;">Si vous n'avez pas tent&#233; de vous connecter, ignorez cet e-mail. Quelqu'un a peut-&#234;tre saisi votre adresse par erreur.</p></td></tr></table></div></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p><p class="inter" style="margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a &#233;t&#233; envoy&#233; automatiquement, merci de ne pas y r&#233;pondre.</p></td></tr></table></td></tr></table></body></html>`
 
       const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
@@ -2387,7 +2387,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ─── Verify code & create device token ───
     if (action === 'verify-code') {
-      const { user_id, code, device_fingerprint } = req.body
+      const { user_id, code, device_fingerprint, auth_method } = req.body
       if (!user_id || !code || !device_fingerprint) {
         return res.status(400).json({ error: 'user_id, code and device_fingerprint required' })
       }
@@ -2414,6 +2414,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Create device token (7 days)
       const token = crypto.randomBytes(48).toString('hex')
+      const revokeToken = crypto.randomBytes(32).toString('hex')
       const tokenExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
 
       // Remove old tokens for this device
@@ -2425,9 +2426,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { error: tokenErr } = await supabase
         .from('business_device_tokens')
-        .insert({ user_id, device_fingerprint, token, expires_at: tokenExpires })
+        .insert({ user_id, device_fingerprint, token, revoke_token: revokeToken, expires_at: tokenExpires })
 
       if (tokenErr) return res.status(500).json({ error: tokenErr.message })
+
+      // ─── Send new device notification email ───
+      try {
+        // Get user email
+        const { data: authUser } = await supabase.auth.admin.getUserById(user_id)
+        const userEmail = authUser?.user?.email
+        if (userEmail) {
+          // IP & location from Vercel headers
+          const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 'Inconnue'
+          const city = (req.headers['x-vercel-ip-city'] as string) || ''
+          const country = (req.headers['x-vercel-ip-country'] as string) || ''
+          const locationStr = [city, country].filter(Boolean).join(', ') || 'Inconnue'
+
+          // Parse user-agent for device name
+          const ua = (req.headers['user-agent'] as string) || ''
+          let deviceName = 'Appareil inconnu'
+          if (/iPhone/i.test(ua)) deviceName = 'iPhone'
+          else if (/iPad/i.test(ua)) deviceName = 'iPad'
+          else if (/Android.*Mobile/i.test(ua)) deviceName = 'Smartphone Android'
+          else if (/Android/i.test(ua)) deviceName = 'Tablette Android'
+          else if (/Macintosh|Mac OS/i.test(ua)) deviceName = 'Mac'
+          else if (/Windows/i.test(ua)) deviceName = 'PC Windows'
+          else if (/Linux/i.test(ua)) deviceName = 'PC Linux'
+          else if (/CrOS/i.test(ua)) deviceName = 'Chromebook'
+
+          const isGoogle = auth_method === 'google'
+          const passwordMsg = isGoogle
+            ? 'Pensez &#224; changer votre mot de passe Google.'
+            : 'Pensez &#224; changer votre mot de passe.'
+
+          const now = new Date()
+          const dateStr = now.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })
+
+          const revokeUrl = `https://www.closeos.fr/api/business-revoke-device?token=${revokeToken}`
+
+          const BREVO_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+          if (BREVO_KEY) {
+            const notifHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:42px;color:#111111;text-align:left;line-height:1.1;">Nouvelle<br>connexion</h1><p class="inter" style="margin:0 0 40px;font-size:16px;color:#1b1c1b;text-align:left;">Un nouvel appareil vient de se connecter &#224; votre compte CloseOS Business.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:40px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td class="inter" style="padding:8px 0;font-size:14px;color:#1b1c1b;opacity:0.6;width:120px;">Appareil</td><td class="inter" style="padding:8px 0;font-size:14px;color:#111111;font-weight:500;">${deviceName}</td></tr><tr><td class="inter" style="padding:8px 0;font-size:14px;color:#1b1c1b;opacity:0.6;width:120px;">Adresse IP</td><td class="inter" style="padding:8px 0;font-size:14px;color:#111111;font-weight:500;">${ip}</td></tr><tr><td class="inter" style="padding:8px 0;font-size:14px;color:#1b1c1b;opacity:0.6;width:120px;">Localisation</td><td class="inter" style="padding:8px 0;font-size:14px;color:#111111;font-weight:500;">${locationStr}</td></tr><tr><td class="inter" style="padding:8px 0;font-size:14px;color:#1b1c1b;opacity:0.6;width:120px;">Date</td><td class="inter" style="padding:8px 0;font-size:14px;color:#111111;font-weight:500;">${dateStr}</td></tr><tr><td class="inter" style="padding:8px 0;font-size:14px;color:#1b1c1b;opacity:0.6;width:120px;">M&#233;thode</td><td class="inter" style="padding:8px 0;font-size:14px;color:#111111;font-weight:500;">${isGoogle ? 'Google' : 'Email / Mot de passe'}</td></tr></table></div><div style="background-color:#fbf9f8;border-radius:24px;padding:24px;border-left:4px solid #ef4444;margin-bottom:40px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:20px;line-height:1;">&#9888;&#65039;</div></td><td><p class="inter" style="margin:0;font-size:13px;color:#1b1c1b;">Si vous n'&#234;tes pas &#224; l'origine de cette connexion, r&#233;voquez-la imm&#233;diatement et s&#233;curisez votre compte. ${passwordMsg}</p></td></tr></table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center"><a href="${revokeUrl}" style="display:inline-block;background-color:#ef4444;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">R&#233;voquer cette connexion</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p><p class="inter" style="margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a &#233;t&#233; envoy&#233; automatiquement, merci de ne pas y r&#233;pondre.</p></td></tr></table></td></tr></table></body></html>`
+
+            await fetch('https://api.brevo.com/v3/smtp/email', {
+              method: 'POST',
+              headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+              body: JSON.stringify({
+                sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+                to: [{ email: userEmail }],
+                subject: 'Nouvelle connexion détectée sur votre compte CloseOS',
+                htmlContent: notifHtml
+              })
+            })
+          }
+        }
+      } catch (notifErr) {
+        console.error('[business] Notification email error:', notifErr)
+        // Don't block verification if notification fails
+      }
 
       return res.status(200).json({ success: true, token })
     }
@@ -2449,6 +2505,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .maybeSingle()
 
       return res.status(200).json({ verified: !!deviceToken })
+    }
+
+    // ─── Revoke device from email link (GET) ───
+    if (action === 'revoke-device') {
+      const revokeToken = req.query.token as string
+      if (!revokeToken) {
+        return res.status(400).send('<html><body><h1>Lien invalide</h1></body></html>')
+      }
+
+      const { data: deviceRow } = await supabase
+        .from('business_device_tokens')
+        .select('id')
+        .eq('revoke_token', revokeToken)
+        .maybeSingle()
+
+      if (!deviceRow) {
+        return res.status(200).setHeader('Content-Type', 'text/html').send(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>body{margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}.card{background:#fff;border-radius:48px;padding:64px 48px;max-width:500px;width:90%;text-align:center;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1)}.manrope{font-family:'Manrope',Arial,sans-serif;font-weight:800;letter-spacing:-0.04em}</style></head><body><div class="card"><div class="manrope" style="font-size:28px;color:#111;margin-bottom:24px;">Close<span style="color:#a03cf8;">OS</span></div><div style="font-size:48px;margin-bottom:16px;">&#9989;</div><h1 class="manrope" style="font-size:28px;color:#111;margin:0 0 16px;">D&#233;j&#224; r&#233;voqu&#233;</h1><p style="font-size:15px;color:#1b1c1b;opacity:0.7;line-height:1.6;">Cette connexion a d&#233;j&#224; &#233;t&#233; r&#233;voqu&#233;e ou le lien a expir&#233;.</p></div></body></html>`)
+      }
+
+      await supabase
+        .from('business_device_tokens')
+        .delete()
+        .eq('id', deviceRow.id)
+
+      return res.status(200).setHeader('Content-Type', 'text/html').send(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>body{margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}.card{background:#fff;border-radius:48px;padding:64px 48px;max-width:500px;width:90%;text-align:center;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1)}.manrope{font-family:'Manrope',Arial,sans-serif;font-weight:800;letter-spacing:-0.04em}</style></head><body><div class="card"><div class="manrope" style="font-size:28px;color:#111;margin-bottom:24px;">Close<span style="color:#a03cf8;">OS</span></div><div style="font-size:48px;margin-bottom:16px;">&#128721;</div><h1 class="manrope" style="font-size:28px;color:#111;margin:0 0 16px;">Connexion r&#233;voqu&#233;e</h1><p style="font-size:15px;color:#1b1c1b;opacity:0.7;line-height:1.6;margin-bottom:32px;">L'appareil a &#233;t&#233; d&#233;connect&#233; avec succ&#232;s. Il devra se rev&#233;rifier pour acc&#233;der &#224; votre compte.</p><a href="https://www.closeos.fr/business/login" style="display:inline-block;background-color:#111;color:#fff;font-family:'Inter',Helvetica,sans-serif;font-size:14px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:99px;">Retour &#224; CloseOS</a></div></body></html>`)
     }
 
     return res.status(400).json({ error: 'Invalid action' })

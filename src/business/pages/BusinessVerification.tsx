@@ -4,6 +4,7 @@ import { ShieldCheck, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 interface BusinessVerificationProps {
   userId: string;
   email: string;
+  authMethod?: 'google' | 'classic';
   onVerified: (token: string) => void;
   onCancel: () => void;
 }
@@ -18,7 +19,7 @@ function getDeviceFingerprint(): string {
   return id;
 }
 
-export default function BusinessVerification({ userId, email, onVerified, onCancel }: BusinessVerificationProps) {
+export default function BusinessVerification({ userId, email, authMethod = 'classic', onVerified, onCancel }: BusinessVerificationProps) {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -103,7 +104,8 @@ export default function BusinessVerification({ userId, email, onVerified, onCanc
         body: JSON.stringify({
           user_id: userId,
           code: fullCode,
-          device_fingerprint: getDeviceFingerprint()
+          device_fingerprint: getDeviceFingerprint(),
+          auth_method: authMethod
         })
       });
       const data = await res.json();
@@ -188,7 +190,7 @@ export default function BusinessVerification({ userId, email, onVerified, onCanc
                 onChange={e => handleInput(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
                 disabled={loading || sending}
-                className="w-12 h-14 text-center text-xl font-bold bg-stone-100/50 dark:bg-neutral-800 border-none rounded-xl text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all disabled:opacity-50"
+                className="w-12 h-14 text-center text-xl font-bold bg-stone-100/50 dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 rounded-xl text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all disabled:opacity-50"
               />
             </div>
           ))}
