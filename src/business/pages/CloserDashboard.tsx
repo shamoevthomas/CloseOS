@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useScrambleText } from '../hooks/useScrambleText'
 import {
@@ -38,6 +38,32 @@ const formatCurrency = (v: number) =>
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
 const glassCard = "bg-white/60 backdrop-blur-xl border border-neutral-900/5 dark:border-white/10 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:bg-white/5"
+
+function KpiTooltip({ children, text }: { children: React.ReactNode; text: string }) {
+  const [show, setShow] = useState(false)
+  const [pos, setPos] = useState<'bottom' | 'top'>('bottom')
+  const ref = useRef<HTMLDivElement>(null)
+
+  const handleEnter = () => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect()
+      setPos(rect.bottom + 120 > window.innerHeight ? 'top' : 'bottom')
+    }
+    setShow(true)
+  }
+
+  return (
+    <div className="relative" ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)}>
+      {children}
+      {show && (
+        <div className={`absolute z-50 left-1/2 -translate-x-1/2 w-56 px-3 py-2.5 rounded-xl bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[11px] leading-relaxed font-medium shadow-xl pointer-events-none ${pos === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
+          {text}
+          <div className={`absolute left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-neutral-900 dark:bg-neutral-100 ${pos === 'bottom' ? '-top-1' : '-bottom-1'}`} />
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function CloserDashboard() {
   const { user, teamMember, ownerUserId, businessSettings, userTimezone } = useBusinessAuth()
@@ -189,74 +215,84 @@ export function CloserDashboard() {
       <div className={`grid grid-cols-2 ${isSetter ? 'xl:grid-cols-4' : 'xl:grid-cols-5'} gap-6`}>
 
         {/* Commission / CA Généré */}
-        <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="flex justify-between items-start mb-3">
-            <div className="p-2 rounded-lg bg-emerald-50">
-              <DollarSign className="h-4 w-4 text-emerald-600" />
+        <KpiTooltip text={teamMember?.compensation_type === 'fixed' ? "Chiffre d'affaires total généré par vos prospects gagnés (stage « Gagné »). Somme de la valeur de chaque prospect signé." : `Commission totale calculée sur vos ventes signées au taux de ${commissionRate}%. Inclut vos commissions closer et setter si applicable.`}>
+          <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="p-2 rounded-lg bg-emerald-50">
+                <DollarSign className="h-4 w-4 text-emerald-600" />
+              </div>
             </div>
-          </div>
-          <div>
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{teamMember?.compensation_type === 'fixed' ? 'CA Généré' : 'Commission'}</p>
-            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamMember?.compensation_type === 'fixed' ? closerRevenue + setterRevenue : totalCommission)}</p>
-            {teamMember?.compensation_type !== 'fixed' && closerCommission > 0 && setterCommission > 0 && (
-              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">Closer {formatCurrency(closerCommission)} + Setter {formatCurrency(setterCommission)}</p>
-            )}
-          </div>
-        </Link>
+            <div>
+              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{teamMember?.compensation_type === 'fixed' ? 'CA Généré' : 'Commission'}</p>
+              <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamMember?.compensation_type === 'fixed' ? closerRevenue + setterRevenue : totalCommission)}</p>
+              {teamMember?.compensation_type !== 'fixed' && closerCommission > 0 && setterCommission > 0 && (
+                <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">Closer {formatCurrency(closerCommission)} + Setter {formatCurrency(setterCommission)}</p>
+              )}
+            </div>
+          </Link>
+        </KpiTooltip>
 
         {/* Closing Rate (Closers only) */}
         {!isSetter && (
-          <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-            <div className="p-2 rounded-lg bg-stone-100 w-fit">
-              <TrendingUp className="h-4 w-4 text-neutral-600" />
-            </div>
-            <div className="mt-3">
-              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Closing</p>
-              <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
-              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{wonProspects.length} signés / {totalDecided} décidés</p>
-            </div>
-          </Link>
+          <KpiTooltip text="Taux de closing : pourcentage de prospects convertis en vente. Calculé : prospects gagnés ÷ (gagnés + perdus + no-shows ayant eu un rendez-vous).">
+            <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
+              <div className="p-2 rounded-lg bg-stone-100 w-fit">
+                <TrendingUp className="h-4 w-4 text-neutral-600" />
+              </div>
+              <div className="mt-3">
+                <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Closing</p>
+                <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
+                <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{wonProspects.length} signés / {totalDecided} décidés</p>
+              </div>
+            </Link>
+          </KpiTooltip>
         )}
 
         {/* Booking Rate */}
-        <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="p-2 rounded-lg bg-blue-50 w-fit">
-            <CalendarDays className="h-4 w-4 text-blue-600" />
-          </div>
-          <div className="mt-3">
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Booking</p>
-            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(bookingRate)}</p>
-            <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{bookedProspects.length} bookés / {mySetterProspects.length} prospects</p>
-          </div>
-        </Link>
+        <KpiTooltip text="Taux de booking : pourcentage de prospects contactés qui ont été bookés (passés au-delà du stade prospect). Calculé : bookés ÷ total prospects assignés en tant que setter.">
+          <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
+            <div className="p-2 rounded-lg bg-blue-50 w-fit">
+              <CalendarDays className="h-4 w-4 text-blue-600" />
+            </div>
+            <div className="mt-3">
+              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Booking</p>
+              <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(bookingRate)}</p>
+              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{bookedProspects.length} bookés / {mySetterProspects.length} prospects</p>
+            </div>
+          </Link>
+        </KpiTooltip>
 
         {/* Appointments */}
-        <Link to="/business/rendez-vous" className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="p-2 rounded-lg bg-stone-100 w-fit">
-            <CalendarDays className="h-4 w-4 text-neutral-600" />
-          </div>
-          <div className="mt-3">
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Rendez-vous</p>
-            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingAppts.length}</p>
-            <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">À venir</p>
-          </div>
-        </Link>
+        <KpiTooltip text="Nombre total de rendez-vous planifiés à venir (confirmés et en attente) à partir d'aujourd'hui.">
+          <Link to="/business/rendez-vous" className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
+            <div className="p-2 rounded-lg bg-stone-100 w-fit">
+              <CalendarDays className="h-4 w-4 text-neutral-600" />
+            </div>
+            <div className="mt-3">
+              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Rendez-vous</p>
+              <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingAppts.length}</p>
+              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">À venir</p>
+            </div>
+          </Link>
+        </KpiTooltip>
 
         {/* No-Show Rate */}
-        <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}>
-          <div className="flex justify-between items-start">
-            <div className="p-2 rounded-lg bg-amber-50">
-              <UserX className="h-4 w-4 text-amber-600" />
+        <KpiTooltip text="Taux de no-show : pourcentage de prospects absents au rendez-vous. Calculé : no-shows ÷ total des prospects qualifiés ayant eu un rendez-vous (exclut prospect, non-qualifié, pas de réponse).">
+          <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
+            <div className="flex justify-between items-start">
+              <div className="p-2 rounded-lg bg-amber-50">
+                <UserX className="h-4 w-4 text-amber-600" />
+              </div>
+              {noshowRate > 5 && (
+                <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">!</span>
+              )}
             </div>
-            {noshowRate > 5 && (
-              <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">!</span>
-            )}
-          </div>
-          <div className="mt-3">
-            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">No-Show</p>
-            <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
-          </div>
-        </Link>
+            <div className="mt-3">
+              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">No-Show</p>
+              <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
+            </div>
+          </Link>
+        </KpiTooltip>
       </div>
 
       {/* ─── Two Column: RDV + Rappels ─── */}
