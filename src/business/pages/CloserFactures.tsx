@@ -713,6 +713,7 @@ export function CloserFactures() {
         endDate={endDate}
         isFixedCompensation={isFixedComp}
         fixedSalary={(isFixedComp || isFixedPlusComm) ? fixedSalary : 0}
+        formulaCommRates={formulaCommRates}
       />
     </div>
   )

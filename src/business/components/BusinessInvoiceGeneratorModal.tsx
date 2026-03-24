@@ -21,6 +21,7 @@ interface BusinessInvoiceGeneratorModalProps {
   endDate: string
   isFixedCompensation?: boolean
   fixedSalary?: number
+  formulaCommRates?: Record<string, { roles: Record<string, number>, members: Record<string, number> }>
 }
 
 type PaymentMethodType = 'paypal' | 'virement' | 'revolut' | 'stripe'
@@ -44,6 +45,7 @@ export function BusinessInvoiceGeneratorModal({
   endDate,
   isFixedCompensation = false,
   fixedSalary = 0,
+  formulaCommRates = {},
 }: BusinessInvoiceGeneratorModalProps) {
   const { user, teamMember, ownerUserId, businessSettings } = useBusinessAuth()
   const effectiveUserId = ownerUserId || user?.id
@@ -102,7 +104,35 @@ export function BusinessInvoiceGeneratorModal({
 
   // ---------- AUTO-COMPUTED LINE ITEMS ----------
 
-  const rate = commissionRate / 100
+  const fallbackRate = commissionRate / 100
+  const isSetterCloser = teamMember?.role === 'Setter-Closer'
+  const memberId = teamMember?.id
+  const memberRole = teamMember?.role
+
+  // Per-deal closer commission rate (formula-level)
+  const getCloserRate = useCallback((deal: BusinessProspect) => {
+    const formulaId = deal.formula_id || (deal as any).offer_id
+    const rates = formulaId ? formulaCommRates[formulaId] : null
+    if (rates) {
+      if (memberId && rates.members[memberId] !== undefined) return rates.members[memberId] / 100
+      if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer'] !== undefined) return rates.roles['Setter-Closer'] / 100
+      if (rates.roles['Closer'] !== undefined) return rates.roles['Closer'] / 100
+    }
+    return fallbackRate
+  }, [formulaCommRates, memberId, memberRole, fallbackRate])
+
+  // Per-deal setter commission rate (formula-level)
+  const getSetterRate = useCallback((deal: BusinessProspect) => {
+    const formulaId = deal.formula_id || (deal as any).offer_id
+    const rates = formulaId ? formulaCommRates[formulaId] : null
+    if (rates) {
+      if (memberId && rates.members[`${memberId}:setter`] !== undefined) return rates.members[`${memberId}:setter`] / 100
+      if (memberId && rates.members[memberId] !== undefined && memberRole !== 'Setter-Closer') return rates.members[memberId] / 100
+      if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer:setter'] !== undefined) return rates.roles['Setter-Closer:setter'] / 100
+      if (rates.roles['Setter'] !== undefined) return rates.roles['Setter'] / 100
+    }
+    return fallbackRate
+  }, [formulaCommRates, memberId, memberRole, fallbackRate])
 
   // Closer deals: assigned_to = teamMember.id
   const closerDeals = useMemo(() =>
@@ -110,17 +140,21 @@ export function BusinessInvoiceGeneratorModal({
     [deals, teamMember?.id]
   )
 
-  // Setter deals: assigned_setter = teamMember.id (but not also closer)
+  // Setter deals: for Setter-Closer, include deals they also closed
   const setterDeals = useMemo(() =>
-    deals.filter(d => d.assigned_setter === teamMember?.id && d.assigned_to !== teamMember?.id),
-    [deals, teamMember?.id]
+    deals.filter(d => {
+      if (d.assigned_setter !== teamMember?.id) return false
+      if (isSetterCloser) return true
+      return d.assigned_to !== teamMember?.id
+    }),
+    [deals, teamMember?.id, isSetterCloser]
   )
 
   // Group deals into line items (like Sales), with period-aware installment proration
   const pStart = useMemo(() => new Date(startDate), [startDate])
   const pEnd = useMemo(() => { const d = new Date(endDate); d.setHours(23, 59, 59, 999); return d }, [endDate])
 
-  const groupDeals = (dealList: BusinessProspect[]) => {
+  const groupDeals = (dealList: BusinessProspect[], getRateFn: (deal: BusinessProspect) => number) => {
     const groups: Record<string, { description: string; count: number; total: number; unitPrice: number }> = {}
 
     dealList.forEach((deal) => {
@@ -149,7 +183,7 @@ export function BusinessInvoiceGeneratorModal({
         amountInPeriod = monthlyValue * count
       }
 
-      const dealCommission = amountInPeriod * rate
+      const dealCommission = amountInPeriod * getRateFn(deal)
 
       if (!groups[key]) {
         groups[key] = {
@@ -167,8 +201,8 @@ export function BusinessInvoiceGeneratorModal({
     return Object.values(groups)
   }
 
-  const closerLineItems = useMemo(() => groupDeals(closerDeals), [closerDeals, rate])
-  const setterLineItems = useMemo(() => groupDeals(setterDeals), [setterDeals, rate])
+  const closerLineItems = useMemo(() => groupDeals(closerDeals, getCloserRate), [closerDeals, getCloserRate])
+  const setterLineItems = useMemo(() => groupDeals(setterDeals, getSetterRate), [setterDeals, getSetterRate])
 
   // ---------- EDITABLE LINE ITEMS (Step 2) ----------
   const [editableItems, setEditableItems] = useState<EditableLineItem[]>([])
