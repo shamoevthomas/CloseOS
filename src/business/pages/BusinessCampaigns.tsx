@@ -60,6 +60,7 @@ interface TeamMember {
   last_name: string
   role: string
   team_id?: string | null
+  owner_assignable?: boolean
 }
 
 interface BusinessTeam {
@@ -207,12 +208,12 @@ export function BusinessCampaigns() {
     if (!effectiveUserId) return
     const { supabase } = await import('../../lib/supabase')
     const [tmRes, ownerRes, teamsRes] = await Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role, team_id').eq('business_owner_id', effectiveUserId),
-      supabase.from('business_users').select('id, full_name').eq('id', effectiveUserId).single(),
+      supabase.from('business_team_members').select('id, first_name, last_name, role, team_id, owner_assignable').eq('business_owner_id', effectiveUserId),
+      supabase.from('business_users').select('id, full_name, owner_assignable').eq('id', effectiveUserId).single(),
       supabase.from('business_teams').select('id, name').eq('business_owner_id', effectiveUserId).order('position'),
     ])
-    const members: TeamMember[] = (tmRes.data || []).map((m: any) => ({ id: m.id, first_name: m.first_name, last_name: m.last_name, role: m.role, team_id: m.team_id }))
-    if (ownerRes.data) {
+    const members: TeamMember[] = (tmRes.data || []).map((m: any) => ({ id: m.id, first_name: m.first_name, last_name: m.last_name, role: m.role, team_id: m.team_id, owner_assignable: m.owner_assignable }))
+    if (ownerRes.data && ownerRes.data.owner_assignable) {
       members.unshift({
         id: ownerRes.data.id,
         first_name: (ownerRes.data.full_name || 'Owner').split(' ')[0],
@@ -754,8 +755,8 @@ export function BusinessCampaigns() {
                             {filteredTeamMembers
                               .filter(m => {
                                 const assignRole = formCaptureType === 'without_rdv' ? 'setter' : formBookingWith
-                                if (assignRole === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
-                                return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'
+                                if (assignRole === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
+                                return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
                               })
                               .map(m => (
                                 <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
@@ -773,8 +774,8 @@ export function BusinessCampaigns() {
                         <div className="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-2">
                           {filteredTeamMembers
                             .filter(m => {
-                              if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
-                              return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'
+                              if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
+                              return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
                             })
                             .map(m => (
                               <label key={m.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 cursor-pointer">

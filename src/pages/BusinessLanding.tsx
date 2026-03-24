@@ -277,16 +277,9 @@ export const BusinessLanding: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex items-center gap-3 mt-6">
-              <div className="flex -space-x-3">
-                {['U1', 'U2', 'U3', 'U4'].map((u) => (
-                  <img key={u} src={`/${u}.png`} alt="" className="w-9 h-9 rounded-full border-2 border-white object-cover" />
-                ))}
-              </div>
-              <p className="text-sm text-stone-500 font-medium">
-                Validé par <span className="font-bold text-[#111111]">+12 infopreneurs</span> francophones
-              </p>
-            </div>
+            <p className="text-sm text-stone-500 font-medium mt-6">
+              Validé par <span className="font-bold text-[#111111]">+12 infopreneurs</span> francophones
+            </p>
 
           </motion.div>
         </section>
