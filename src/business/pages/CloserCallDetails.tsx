@@ -16,9 +16,11 @@ import toast from 'react-hot-toast'
 
 const objectionReasons = [
   'Je dois y réfléchir',
-  'Manque de budget',
+  'Argent/budget',
   'Doit en parler',
   "C'est pas le moment",
+  'Peur',
+  'Ecran de fumée',
   'Autre'
 ]
 
@@ -350,7 +352,6 @@ export function CloserCallDetails() {
     }
     if (selectedOutcome === 'lost') {
       if (!lostReason) return false
-      if (lostReason === 'Autre' && !lostReasonOther.trim()) return false
     }
     if (selectedOutcome === 'qualified' && !isSetterCloserSelf && (!selectedCloser || !selectedSlot)) return false
     if (selectedOutcome === 'booklater' && (!reminderTitle || !reminderDate || !reminderTime)) return false
@@ -377,8 +378,8 @@ export function CloserCallDetails() {
         technicalSummary += `\n- Motif: ${reason}\n- Rappel: ${new Date(followupDate).toLocaleDateString('fr-FR')}`
       }
       if (selectedOutcome === 'lost') {
-        const reason = lostReason === 'Autre' ? lostReasonOther : lostReason
-        technicalSummary += `\n- Motif: ${reason}`
+        technicalSummary += `\n- Motif: ${lostReason}`
+        if (lostReasonOther.trim()) technicalSummary += `\n- Détails: ${lostReasonOther}`
       }
       if (selectedOutcome === 'qualified') {
         if (isSetterCloserSelf) {
@@ -407,6 +408,10 @@ export function CloserCallDetails() {
           updates.value = amount
           updates.payment_type = paymentType
           updates.installments = paymentType === 'installments' ? installmentsCount : null
+        }
+        if (selectedOutcome === 'lost') {
+          updates.loss_reason = lostReason
+          updates.loss_details = lostReasonOther.trim() || null
         }
         if (selectedOutcome === 'qualified') {
           if (isSetterCloserSelf && teamMember?.id) {
@@ -815,17 +820,17 @@ export function CloserCallDetails() {
                 </h3>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Motif <span className="text-red-500">*</span></label>
-                  <select value={lostReason} onChange={(e) => { setLostReason(e.target.value); if (e.target.value !== 'Autre') setLostReasonOther('') }}
+                  <select value={lostReason} onChange={(e) => setLostReason(e.target.value)}
                     className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
                     <option value="">Sélectionnez un motif</option>
                     {objectionReasons.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
-                  {lostReason === 'Autre' && (
+                  {lostReason && (
                     <div className="mt-3">
-                      <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Précisez le motif <span className="text-red-500">*</span></label>
+                      <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Détails</label>
                       <input type="text" value={lostReasonOther} onChange={(e) => setLostReasonOther(e.target.value)}
-                        placeholder="Ex: Prix trop élevé..."
-                        className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
+                        placeholder="Précisez les détails..."
+                        className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-neutral-500 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
                     </div>
                   )}
                 </div>

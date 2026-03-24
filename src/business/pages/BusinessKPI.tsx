@@ -19,6 +19,9 @@ import {
   Area,
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -144,6 +147,30 @@ function computeKpis(prospects: any[]) {
 }
 
 // ============================================================================
+// LOSS REASON CHART HELPERS
+// ============================================================================
+
+const LOSS_REASON_COLORS: Record<string, string> = {
+  'Je dois y réfléchir': '#6366f1',
+  'Argent/budget': '#f59e0b',
+  'Doit en parler': '#8b5cf6',
+  "C'est pas le moment": '#64748b',
+  'Peur': '#ef4444',
+  'Ecran de fumée': '#f97316',
+  'Autre': '#a1a1aa',
+}
+const LOSS_REASON_FALLBACK_COLOR = '#d4d4d8'
+
+function computeLossReasonData(prospects: any[]) {
+  const lost = prospects.filter(p => p.stage === 'lost' && p.loss_reason)
+  const counts: Record<string, number> = {}
+  lost.forEach(p => { counts[p.loss_reason] = (counts[p.loss_reason] || 0) + 1 })
+  return Object.entries(counts)
+    .map(([name, value]) => ({ name, value, color: LOSS_REASON_COLORS[name] || LOSS_REASON_FALLBACK_COLOR }))
+    .sort((a, b) => b.value - a.value)
+}
+
+// ============================================================================
 // TABS
 // ============================================================================
 
@@ -206,6 +233,9 @@ export function BusinessKPI() {
 
   // ---- GLOBAL KPIs ----
   const globalKpis = useMemo(() => computeKpis(filteredProspects), [filteredProspects])
+
+  // ---- LOSS REASON DATA (for pie chart) ----
+  const lossReasonData = useMemo(() => computeLossReasonData(filteredProspects), [filteredProspects])
 
   // ---- MONTHLY DATA for charts ----
   const monthlyData = useMemo(() => {
@@ -488,6 +518,42 @@ export function BusinessKPI() {
               </div>
             </div>
           </div>
+
+          {/* Loss Reason Pie Chart */}
+          {lossReasonData.length > 0 && (
+          <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+            <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Raisons de Perte</h3>
+            <div className="flex flex-col lg:flex-row items-center gap-8">
+              <div className="w-64 h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={lossReasonData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value">
+                      {lossReasonData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v: number) => [v, 'Deals']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex-1 space-y-3">
+                {lossReasonData.map(d => {
+                  const total = lossReasonData.reduce((s, r) => s + r.value, 0)
+                  return (
+                    <div key={d.name} className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                        <span className="text-sm font-medium text-stone-700 dark:text-neutral-200">{d.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-stone-900 dark:text-white">{d.value}</span>
+                        <span className="text-xs text-stone-400 dark:text-neutral-500 w-10 text-right">{total > 0 ? Math.round((d.value / total) * 100) : 0}%</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+          )}
         </div>
       )}
 
@@ -545,6 +611,44 @@ export function BusinessKPI() {
               </ResponsiveContainer>
             </div>
           </div>
+
+          {/* Period Loss Reason Pie Chart */}
+          {(() => {
+            const periodLossData = computeLossReasonData(periodProspects)
+            if (periodLossData.length === 0) return null
+            const total = periodLossData.reduce((s, r) => s + r.value, 0)
+            return (
+              <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Raisons de Perte — {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}</h3>
+                <div className="flex flex-col lg:flex-row items-center gap-8">
+                  <div className="w-64 h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={periodLossData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value">
+                          {periodLossData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v: number) => [v, 'Deals']} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    {periodLossData.map(d => (
+                      <div key={d.name} className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                          <span className="text-sm font-medium text-stone-700 dark:text-neutral-200">{d.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-bold text-stone-900 dark:text-white">{d.value}</span>
+                          <span className="text-xs text-stone-400 dark:text-neutral-500 w-10 text-right">{total > 0 ? Math.round((d.value / total) * 100) : 0}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
 
@@ -753,6 +857,44 @@ export function BusinessKPI() {
                 </div>
               </div>
             </div>
+
+            {/* Member Loss Reason Pie Chart */}
+            {(() => {
+              const memberLossData = computeLossReasonData(memberProspects)
+              if (memberLossData.length === 0) return null
+              const total = memberLossData.reduce((s, r) => s + r.value, 0)
+              return (
+                <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+                  <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Raisons de Perte</h3>
+                  <div className="flex flex-col lg:flex-row items-center gap-8">
+                    <div className="w-64 h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={memberLossData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value">
+                            {memberLossData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                          </Pie>
+                          <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v: number) => [v, 'Deals']} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      {memberLossData.map(d => (
+                        <div key={d.name} className="flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                            <span className="text-sm font-medium text-stone-700 dark:text-neutral-200">{d.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold text-stone-900 dark:text-white">{d.value}</span>
+                            <span className="text-xs text-stone-400 dark:text-neutral-500 w-10 text-right">{total > 0 ? Math.round((d.value / total) * 100) : 0}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Pipeline Summary */}
             <div className="bg-stone-900 rounded-2xl p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)] flex flex-wrap justify-between items-center gap-8">

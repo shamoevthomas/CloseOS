@@ -12,6 +12,7 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { CloserDashboard } from './CloserDashboard'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 
 // ─── Types ───
 
@@ -282,6 +283,20 @@ export function BusinessDashboard() {
   const wonProspects = useMemo(() => periodProspects.filter(p => p.stage === 'won'), [periodProspects])
   const noshowProspects = useMemo(() => periodProspects.filter(p => p.stage === 'noshow'), [periodProspects])
   const lostProspects = useMemo(() => periodProspects.filter(p => p.stage === 'lost'), [periodProspects])
+
+  // Loss reason pie chart
+  const LOSS_REASON_COLORS: Record<string, string> = {
+    'Je dois y réfléchir': '#6366f1', 'Argent/budget': '#f59e0b', 'Doit en parler': '#8b5cf6',
+    "C'est pas le moment": '#64748b', 'Peur': '#ef4444', 'Ecran de fumée': '#f97316', 'Autre': '#a1a1aa',
+  }
+  const lossReasonData = useMemo(() => {
+    const lost = periodProspects.filter(p => p.stage === 'lost' && p.loss_reason)
+    const counts: Record<string, number> = {}
+    lost.forEach(p => { counts[p.loss_reason!] = (counts[p.loss_reason!] || 0) + 1 })
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value, color: LOSS_REASON_COLORS[name] || '#d4d4d8' }))
+      .sort((a, b) => b.value - a.value)
+  }, [periodProspects])
 
   const totalRevenue = useMemo(() => wonProspects.reduce((s, p) => s + (Number(p.value) || 0), 0), [wonProspects])
 
@@ -847,6 +862,42 @@ export function BusinessDashboard() {
           </Link>
         </div>
       </div>
+
+      {/* ─── Loss Reason Pie Chart ─── */}
+      {lossReasonData.length > 0 && (
+      <div className={`${glassCard} rounded-2xl p-8`}>
+        <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>Raisons de Perte</h3>
+        <div className="flex flex-col lg:flex-row items-center gap-8">
+          <div className="w-56 h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={lossReasonData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3} dataKey="value">
+                  {lossReasonData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Pie>
+                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v: number) => [v, 'Deals']} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex-1 space-y-3">
+            {lossReasonData.map(d => {
+              const total = lossReasonData.reduce((s, r) => s + r.value, 0)
+              return (
+                <div key={d.name} className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                    <span className="text-sm font-medium text-stone-700 dark:text-neutral-200">{d.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-stone-900 dark:text-white">{d.value}</span>
+                    <span className="text-xs text-stone-400 dark:text-neutral-500 w-10 text-right">{total > 0 ? Math.round((d.value / total) * 100) : 0}%</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+      )}
 
       {/* Reminder Detail Modal */}
       {selectedReminder && (

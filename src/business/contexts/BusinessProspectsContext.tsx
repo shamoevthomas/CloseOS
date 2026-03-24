@@ -42,6 +42,8 @@ export interface BusinessProspect {
     content: string
     author?: string
   }[]
+  loss_reason?: string
+  loss_details?: string
 }
 
 interface BusinessProspectsContextType {

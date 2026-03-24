@@ -8,7 +8,7 @@ import {
   Download, CalendarDays,
 } from 'lucide-react'
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
@@ -220,6 +220,9 @@ export function CloserKPI() {
   // For each won prospect: look up the commission rate for role "Closer" (or member-specific override)
   // Falls back to kpiConfig.commission_rate if no formula rate is configured
   const computeCloserCommission = (wonProspects: any[], memberId?: string) => {
+    // Find member role to determine which rate key to use
+    const member = memberId ? teamClosers.find(m => m.id === memberId) : null
+    const memberRole = member?.role
     let total = 0
     for (const p of wonProspects) {
       const value = p.value || 0
@@ -227,8 +230,12 @@ export function CloserKPI() {
       const formulaId = p.formula_id || p.offer_id
       const rates = formulaId ? formulaCommRates[formulaId] : null
       if (rates) {
+        // Member-specific rate first (the default key for Setter-Closers is their closing rate)
         if (memberId && rates.members[memberId] !== undefined) {
           total += value * rates.members[memberId] / 100
+        } else if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer'] !== undefined) {
+          // Setter-Closer closing rate
+          total += value * rates.roles['Setter-Closer'] / 100
         } else if (rates.roles['Closer'] !== undefined) {
           total += value * rates.roles['Closer'] / 100
         } else {
@@ -324,6 +331,21 @@ export function CloserKPI() {
 
   const v = getTabValues()
   const avgCommission = v.sales > 0 ? Math.round(v.commission / v.sales) : 0
+
+  // Loss reason pie chart data
+  const LOSS_REASON_COLORS: Record<string, string> = {
+    'Je dois y réfléchir': '#6366f1', 'Argent/budget': '#f59e0b', 'Doit en parler': '#8b5cf6',
+    "C'est pas le moment": '#64748b', 'Peur': '#ef4444', 'Ecran de fumée': '#f97316', 'Autre': '#a1a1aa',
+  }
+  const lossReasonData = useMemo(() => {
+    const tabSource = activeTab === 'personal' ? myProspects : activeTab === 'org' ? orgProspects : activeTab === 'offer' ? formulaProspects : activeTab === 'campaign' ? campaignProspects : activeTab === 'source' ? sourceProspects : orgProspects
+    const lost = tabSource.filter((p: any) => p.stage === 'lost' && p.loss_reason)
+    const counts: Record<string, number> = {}
+    lost.forEach((p: any) => { counts[p.loss_reason] = (counts[p.loss_reason] || 0) + 1 })
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value, color: LOSS_REASON_COLORS[name] || '#d4d4d8' }))
+      .sort((a, b) => b.value - a.value)
+  }, [myProspects, orgProspects, formulaProspects, campaignProspects, sourceProspects, activeTab])
 
   const inputCls = "w-full rounded-xl border border-stone-200 dark:border-white/10 px-4 py-2.5 text-sm text-stone-900 dark:text-white dark:bg-neutral-800 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
 
@@ -606,6 +628,42 @@ export function CloserKPI() {
         </div>
         )}
       </div>
+
+      {/* Loss Reason Pie Chart */}
+      {lossReasonData.length > 0 && (
+      <div className="bg-white dark:bg-white/5 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
+        <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Raisons de Perte</h3>
+        <div className="flex flex-col lg:flex-row items-center gap-8">
+          <div className="w-56 h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={lossReasonData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3} dataKey="value">
+                  {lossReasonData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Pie>
+                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v: number) => [v, 'Deals']} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex-1 space-y-3">
+            {lossReasonData.map(d => {
+              const total = lossReasonData.reduce((s, r) => s + r.value, 0)
+              return (
+                <div key={d.name} className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                    <span className="text-sm font-medium text-stone-700 dark:text-neutral-200">{d.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-stone-900 dark:text-white">{d.value}</span>
+                    <span className="text-xs text-stone-400 dark:text-neutral-500 w-10 text-right">{total > 0 ? Math.round((d.value / total) * 100) : 0}%</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+      )}
 
       {/* Pipeline Summary */}
       <div className="bg-stone-900 text-white rounded-2xl p-6">

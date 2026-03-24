@@ -207,6 +207,9 @@ export function SetterKPI() {
   // For each won prospect: look up the commission rate for role "Setter" (or member-specific override)
   // Falls back to kpiConfig.commission_rate if no formula rate is configured
   const computeSetterCommission = (wonProspects: any[], memberId?: string) => {
+    // Find member role to determine which rate key to use
+    const member = memberId ? teamSetters.find(m => m.id === memberId) : null
+    const memberRole = member?.role
     let total = 0
     for (const p of wonProspects) {
       const value = p.value || 0
@@ -214,9 +217,15 @@ export function SetterKPI() {
       const formulaId = p.formula_id || p.offer_id
       const rates = formulaId ? formulaCommRates[formulaId] : null
       if (rates) {
-        // Member-specific rate first, then role "Setter"
-        if (memberId && rates.members[memberId] !== undefined) {
+        // Member-specific setter override first (key = "memberId:setter")
+        if (memberId && rates.members[`${memberId}:setter`] !== undefined) {
+          total += value * rates.members[`${memberId}:setter`] / 100
+        } else if (memberId && rates.members[memberId] !== undefined && memberRole !== 'Setter-Closer') {
+          // Member-specific rate (only for pure Setters, not Setter-Closers since their default key is closing rate)
           total += value * rates.members[memberId] / 100
+        } else if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer:setter'] !== undefined) {
+          // Setter-Closer setting rate
+          total += value * rates.roles['Setter-Closer:setter'] / 100
         } else if (rates.roles['Setter'] !== undefined) {
           total += value * rates.roles['Setter'] / 100
         } else {
