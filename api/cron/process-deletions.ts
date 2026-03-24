@@ -1,5 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
+export const config = {
+    runtime: 'edge',
+};
+
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const brevoApiKey = process.env.BREVO_API_KEY!;

@@ -18,11 +18,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/cron/process-deletions", "destination": "/api/cron?action=process-deletions" },
-    { "source": "/api/cron/generate-invoices", "destination": "/api/cron?action=generate-invoices" },
-    { "source": "/api/cron/lifecycle-emails", "destination": "/api/cron?action=lifecycle-emails" },
-    { "source": "/api/cron/weekly-report", "destination": "/api/cron?action=weekly-report" },
-
     { "source": "/api/hubspot/callback", "destination": "/api/hubspot?action=callback" },
     { "source": "/api/hubspot/sync", "destination": "/api/hubspot?action=sync" },
     { "source": "/api/hubspot/push", "destination": "/api/hubspot?action=push" },
