@@ -123,6 +123,9 @@ export function BusinessReport() {
   const [autreFilterPeriod, setAutreFilterPeriod] = useState(0)
   const [autreFilterCampaign, setAutreFilterCampaign] = useState<string>('all')
   const [autreFilterCloser, setAutreFilterCloser] = useState<string>('all')
+  const [autreFilterTeam, setAutreFilterTeam] = useState<string>('all')
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
+  const [allTeamMembers, setAllTeamMembers] = useState<{ id: string; team_id: string | null }[]>([])
 
   const [members, setMembers] = useState<TeamMember[]>([])
   const [prospects, setProspects] = useState<Prospect[]>([])
@@ -160,6 +163,18 @@ export function BusinessReport() {
   }, [effectiveUserId])
 
   useEffect(() => { fetchAll() }, [fetchAll])
+
+  // Fetch teams for Autre modal filter
+  useEffect(() => {
+    if (!effectiveUserId) return
+    Promise.all([
+      supabase.from('business_teams').select('id, name').eq('business_owner_id', effectiveUserId),
+      supabase.from('business_team_members').select('id, team_id').eq('business_owner_id', effectiveUserId),
+    ]).then(([teamsRes, membersRes]) => {
+      if (teamsRes.data) setTeams(teamsRes.data)
+      if (membersRes.data) setAllTeamMembers(membersRes.data)
+    })
+  }, [effectiveUserId])
 
   // ─── Filter by period ───
   const cutoff = useMemo(() => {
@@ -291,6 +306,11 @@ export function BusinessReport() {
       .filter(p => !autreCutoff || new Date(p.created_at) >= autreCutoff)
       .filter(p => autreFilterCampaign === 'all' || p.campaign_id === autreFilterCampaign)
       .filter(p => autreFilterCloser === 'all' || p.assigned_to === autreFilterCloser)
+      .filter(p => {
+        if (autreFilterTeam === 'all') return true
+        const teamMemberIds = allTeamMembers.filter(m => m.team_id === autreFilterTeam).map(m => m.id)
+        return teamMemberIds.includes(p.assigned_to || '')
+      })
       .map(p => {
         const closer = members.find(m => m.id === p.assigned_to)
         return {
@@ -302,7 +322,7 @@ export function BusinessReport() {
         }
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [prospects, members, autreFilterPeriod, autreFilterCampaign, autreFilterCloser])
+  }, [prospects, members, autreFilterPeriod, autreFilterCampaign, autreFilterCloser, autreFilterTeam, allTeamMembers])
 
   // ─── CA bar per campaign ───
   const caBarData = useMemo(() =>
@@ -785,6 +805,19 @@ export function BusinessReport() {
                   <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
                 ))}
               </select>
+              {/* Team */}
+              {teams.length > 0 && (
+                <select
+                  value={autreFilterTeam}
+                  onChange={e => setAutreFilterTeam(e.target.value)}
+                  className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
+                >
+                  <option value="all">Toutes les équipes</option>
+                  {teams.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Table */}

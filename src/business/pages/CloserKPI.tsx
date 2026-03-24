@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase'
 import {
   TrendingUp, DollarSign, ShoppingCart, Target, Award,
   Ban, Users, Briefcase, UserX, Settings, X, Save, Loader2, Package,
-  Download, CalendarDays,
+  Download, CalendarDays, ArrowRight, Filter,
 } from 'lucide-react'
 import {
   AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -61,6 +61,13 @@ export function CloserKPI() {
   const [formulaCommRates, setFormulaCommRates] = useState<Record<string, { roles: Record<string, number>; members: Record<string, number> }>>({})
   const [periodFrom, setPeriodFrom] = useState('')
   const [periodTo, setPeriodTo] = useState('')
+
+  // Autre modal
+  const [showAutreModal, setShowAutreModal] = useState(false)
+  const [autreFilterCloser, setAutreFilterCloser] = useState<string>('all')
+  const [autreFilterTeam, setAutreFilterTeam] = useState<string>('all')
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
+  const [allTeamMembers, setAllTeamMembers] = useState<{ id: string; team_id: string | null }[]>([])
 
   // PDF export
   const pdfRef = useRef<HTMLDivElement>(null)
@@ -126,6 +133,18 @@ export function CloserKPI() {
         ))
       }
       setTeamClosers(allMembers)
+    })
+  }, [effectiveOwnerId])
+
+  // Load teams + member team_ids
+  useEffect(() => {
+    if (!effectiveOwnerId) return
+    Promise.all([
+      supabase.from('business_teams').select('id, name').eq('business_owner_id', effectiveOwnerId),
+      supabase.from('business_team_members').select('id, team_id').eq('business_owner_id', effectiveOwnerId),
+    ]).then(([teamsRes, membersRes]) => {
+      if (teamsRes.data) setTeams(teamsRes.data)
+      if (membersRes.data) setAllTeamMembers(membersRes.data)
     })
   }, [effectiveOwnerId])
 
@@ -355,6 +374,50 @@ export function CloserKPI() {
       .map(([name, value]) => ({ name, value, color: LOSS_REASON_COLORS[name] || '#d4d4d8' }))
       .sort((a, b) => b.value - a.value)
   }, [myProspects, orgProspects, formulaProspects, campaignProspects, sourceProspects, activeTab])
+
+  // Autre details for modal
+  const autreDetails = useMemo(() => {
+    const tabSource = activeTab === 'personal' ? myProspects : activeTab === 'org' ? orgProspects : activeTab === 'offer' ? formulaProspects : activeTab === 'campaign' ? campaignProspects : activeTab === 'source' ? sourceProspects : orgProspects
+    const teamMemberIds = autreFilterTeam !== 'all' ? allTeamMembers.filter(m => m.team_id === autreFilterTeam).map(m => m.id) : null
+    return tabSource
+      .filter((p: any) => p.stage === 'lost')
+      .filter((p: any) => {
+        let reason = p.loss_reason
+        if (!reason && Array.isArray(p.call_notes)) {
+          for (let i = p.call_notes.length - 1; i >= 0; i--) {
+            const match = p.call_notes[i].content?.match(/- Motif: (.+)/)
+            if (match) { reason = match[1]; break }
+          }
+        }
+        return reason === 'Autre'
+      })
+      .filter((p: any) => autreFilterCloser === 'all' || p.assigned_to === autreFilterCloser)
+      .filter((p: any) => !teamMemberIds || teamMemberIds.includes(p.assigned_to))
+      .map((p: any) => {
+        const closer = teamClosers.find(m => m.id === p.assigned_to)
+        return {
+          id: p.id,
+          motif: p.loss_details || 'Non précisé',
+          prospect: p.contact || p.company || `Prospect #${p.id}`,
+          closer: closer ? `${closer.first_name} ${closer.last_name}`.trim() : 'Non assigné',
+          date: p.created_at,
+        }
+      })
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }, [myProspects, orgProspects, formulaProspects, campaignProspects, sourceProspects, activeTab, autreFilterCloser, autreFilterTeam, allTeamMembers, teamClosers])
+
+  const openAutreModal = () => {
+    // Pre-fill closer filter based on current view
+    if (globalMemberId) {
+      setAutreFilterCloser(globalMemberId)
+    } else if (activeTab === 'personal' && !isOwnerView && teamMember) {
+      setAutreFilterCloser(teamMember.id)
+    } else {
+      setAutreFilterCloser('all')
+    }
+    setAutreFilterTeam('all')
+    setShowAutreModal(true)
+  }
 
   const inputCls = "w-full rounded-xl border border-stone-200 dark:border-white/10 px-4 py-2.5 text-sm text-stone-900 dark:text-white dark:bg-neutral-800 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
 
@@ -656,11 +719,17 @@ export function CloserKPI() {
           <div className="flex-1 space-y-3">
             {lossReasonData.map(d => {
               const total = lossReasonData.reduce((s, r) => s + r.value, 0)
+              const isAutre = d.name === 'Autre'
               return (
-                <div key={d.name} className="flex justify-between items-center">
+                <div
+                  key={d.name}
+                  className={`flex justify-between items-center ${isAutre ? 'cursor-pointer hover:bg-stone-50 dark:hover:bg-neutral-800 -mx-3 px-3 py-1.5 rounded-xl transition-colors' : ''}`}
+                  onClick={isAutre ? openAutreModal : undefined}
+                >
                   <div className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-                    <span className="text-sm font-medium text-stone-700 dark:text-neutral-200">{d.name}</span>
+                    <span className={`text-sm font-medium text-stone-700 dark:text-neutral-200 ${isAutre ? 'underline decoration-dashed underline-offset-4' : ''}`}>{d.name}</span>
+                    {isAutre && <ArrowRight className="h-3.5 w-3.5 text-stone-400" />}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-bold text-stone-900 dark:text-white">{d.value}</span>
@@ -672,6 +741,90 @@ export function CloserKPI() {
           </div>
         </div>
       </div>
+      )}
+
+      {/* Autre Loss Reasons Modal */}
+      {showAutreModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAutreModal(false)} />
+          <div className="relative w-full max-w-3xl max-h-[85vh] bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-stone-200/20 dark:border-neutral-700 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-neutral-800">
+              <div>
+                <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">Détail des motifs « Autre »</h3>
+                <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{autreDetails.length} résultat{autreDetails.length > 1 ? 's' : ''}</p>
+              </div>
+              <button onClick={() => setShowAutreModal(false)} className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors">
+                <X className="h-5 w-5 text-stone-500" />
+              </button>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-b border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50">
+              <Filter className="h-4 w-4 text-stone-400 shrink-0" />
+              {/* Closer */}
+              <select
+                value={autreFilterCloser}
+                onChange={e => setAutreFilterCloser(e.target.value)}
+                className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
+              >
+                <option value="all">Tous les closers</option>
+                {teamClosers.map(m => (
+                  <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
+                ))}
+              </select>
+              {/* Team */}
+              {teams.length > 0 && (
+                <select
+                  value={autreFilterTeam}
+                  onChange={e => setAutreFilterTeam(e.target.value)}
+                  className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
+                >
+                  <option value="all">Toutes les équipes</option>
+                  {teams.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Table */}
+            <div className="overflow-y-auto flex-1">
+              {autreDetails.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-stone-400 dark:text-neutral-500">
+                  <UserX className="h-10 w-10 mb-3 opacity-50" />
+                  <p className="text-sm font-medium">Aucun motif « Autre » trouvé</p>
+                  <p className="text-xs mt-1">Essayez de modifier les filtres</p>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-stone-100 dark:border-neutral-800">
+                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Motif</th>
+                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Prospect</th>
+                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Closer</th>
+                      <th className="text-right text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {autreDetails.map((row: any) => (
+                      <tr key={row.id} className="border-b border-stone-50 dark:border-neutral-800/50 hover:bg-stone-50/50 dark:hover:bg-neutral-800/30 transition-colors">
+                        <td className="px-6 py-3.5 text-sm font-medium text-stone-900 dark:text-white max-w-[200px]">
+                          <span className="line-clamp-2">{row.motif}</span>
+                        </td>
+                        <td className="px-6 py-3.5 text-sm text-stone-600 dark:text-neutral-300">{row.prospect}</td>
+                        <td className="px-6 py-3.5 text-sm text-stone-600 dark:text-neutral-300">{row.closer}</td>
+                        <td className="px-6 py-3.5 text-xs text-stone-400 dark:text-neutral-500 text-right whitespace-nowrap">
+                          {new Date(row.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Pipeline Summary */}
