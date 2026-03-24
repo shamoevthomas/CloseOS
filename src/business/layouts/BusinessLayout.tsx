@@ -53,23 +53,6 @@ export function BusinessLayout() {
   const { isTeamMember, teamMember, businessProfile, user, refreshProfile, needsVerification, setNeedsVerification, logout } = useBusinessAuth()
   const pageTitles = isTeamMember ? TEAM_PAGE_TITLES : OWNER_PAGE_TITLES
 
-  // Verification gate for Google OAuth or returning sessions
-  if (needsVerification && user) {
-    return (
-      <BusinessVerification
-        userId={user.id}
-        email={user.email || ''}
-        onVerified={async () => {
-          setNeedsVerification(false);
-        }}
-        onCancel={async () => {
-          await logout();
-          navigate('/business/login', { replace: true });
-        }}
-      />
-    );
-  }
-
   // Handle dynamic routes like /business/appels/:id
   const basePath = location.pathname.replace(/\/[^/]+$/, '')
   const pageInfo = pageTitles[location.pathname] || pageTitles[basePath] || { title: 'CloseOS Business', subtitle: '' }
@@ -116,6 +99,23 @@ export function BusinessLayout() {
   const handleDismissTzBanner = () => {
     setTzBannerVisible(false)
     setTzBannerDismissed(true)
+  }
+
+  // Verification gate for Google OAuth or returning sessions (must be after all hooks)
+  if (needsVerification && user) {
+    return (
+      <BusinessVerification
+        userId={user.id}
+        email={user.email || ''}
+        onVerified={async () => {
+          setNeedsVerification(false);
+        }}
+        onCancel={async () => {
+          await logout();
+          navigate('/business/login', { replace: true });
+        }}
+      />
+    );
   }
 
   return (
