@@ -447,26 +447,31 @@ export const BusinessLanding: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8 }}
-          className="px-6 md:px-20 py-24 max-w-5xl mx-auto"
+          className="px-6 md:px-20 py-24 max-w-6xl mx-auto"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
+          <div className="space-y-8">
+            <div className="text-center max-w-2xl mx-auto">
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-3">Démo personnalisée</p>
               <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight mb-4">
                 Réservez une démo avec notre équipe
               </h2>
-              <p className="text-stone-500 text-lg mb-6">
+              <p className="text-stone-500 text-lg mb-4">
                 15 minutes pour découvrir comment CloseOS peut s'adapter à votre business. On vous montre l'outil, on répond à vos questions.
               </p>
-              <ul className="space-y-3 text-stone-600 font-medium">
-                <li className="flex items-center gap-3"><CheckCircle className="size-5 text-emerald-500 shrink-0" /> Démo adaptée à votre structure</li>
-                <li className="flex items-center gap-3"><CheckCircle className="size-5 text-emerald-500 shrink-0" /> Réponses à toutes vos questions</li>
-                <li className="flex items-center gap-3"><CheckCircle className="size-5 text-emerald-500 shrink-0" /> Sans engagement, 100% gratuit</li>
-              </ul>
+              <div className="flex flex-wrap justify-center gap-6 text-stone-600 font-medium text-sm">
+                <span className="flex items-center gap-2"><CheckCircle className="size-4 text-emerald-500 shrink-0" /> Démo adaptée à votre structure</span>
+                <span className="flex items-center gap-2"><CheckCircle className="size-4 text-emerald-500 shrink-0" /> Réponses à toutes vos questions</span>
+                <span className="flex items-center gap-2"><CheckCircle className="size-4 text-emerald-500 shrink-0" /> 100% gratuit</span>
+              </div>
             </div>
-            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-2 min-h-[450px] flex items-center justify-center">
-              {/* TODO: Remplacer par l'embed Calendly / Cal.com */}
-              <p className="text-stone-400 font-medium">Calendrier de réservation à intégrer</p>
+            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
+              <iframe
+                src="https://www.closeos.fr/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&bg=fafafa&layout=horizontal"
+                width="100%"
+                height="800"
+                frameBorder="0"
+                style={{ border: 'none', borderRadius: '12px' }}
+              />
             </div>
           </div>
         </motion.section>
