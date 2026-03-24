@@ -2532,6 +2532,77 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).setHeader('Content-Type', 'text/html').send(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>body{margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}.card{background:#fff;border-radius:48px;padding:64px 48px;max-width:500px;width:90%;text-align:center;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1)}.manrope{font-family:'Manrope',Arial,sans-serif;font-weight:800;letter-spacing:-0.04em}</style></head><body><div class="card"><div class="manrope" style="font-size:28px;color:#111;margin-bottom:24px;">Close<span style="color:#a03cf8;">OS</span></div><div style="font-size:48px;margin-bottom:16px;">&#128721;</div><h1 class="manrope" style="font-size:28px;color:#111;margin:0 0 16px;">Connexion r&#233;voqu&#233;e</h1><p style="font-size:15px;color:#1b1c1b;opacity:0.7;line-height:1.6;margin-bottom:32px;">L'appareil a &#233;t&#233; d&#233;connect&#233; avec succ&#232;s. Il devra se rev&#233;rifier pour acc&#233;der &#224; votre compte.</p><a href="https://www.closeos.fr/business/login" style="display:inline-block;background-color:#111;color:#fff;font-family:'Inter',Helvetica,sans-serif;font-size:14px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:99px;">Retour &#224; CloseOS</a></div></body></html>`)
     }
 
+    // ─── Send notification email ───
+    if (action === 'send-notification-email') {
+      const { user_ids, title, description } = req.body
+      if (!user_ids || !title) return res.status(400).json({ error: 'user_ids and title required' })
+
+      const BREVO_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      if (!BREVO_KEY) return res.status(500).json({ error: 'BREVO_API_KEY missing' })
+
+      const ids: string[] = Array.isArray(user_ids) ? user_ids : [user_ids]
+      const emails: string[] = []
+
+      for (const uid of ids) {
+        const { data: authUser } = await supabase.auth.admin.getUserById(uid)
+        if (authUser?.user?.email) emails.push(authUser.user.email)
+      }
+
+      if (emails.length === 0) return res.status(200).json({ success: true, sent: 0 })
+
+      const descHtml = description
+        ? `<p class="inter" style="margin:0 0 48px;font-size:16px;color:#1b1c1b;text-align:left;">${description}</p>`
+        : ''
+
+      const htmlContent = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:36px;color:#111111;text-align:left;line-height:1.1;">${title}</h1>${descHtml}<div style="background-color:#f5f3f2;border-radius:24px;padding:24px;margin-bottom:40px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:20px;line-height:1;">&#128276;</div></td><td><p class="inter" style="margin:0;font-size:14px;color:#1b1c1b;">Cette notification a &#233;t&#233; g&#233;n&#233;r&#233;e automatiquement par CloseOS Business.</p></td></tr></table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center"><a href="https://www.closeos.fr/business/dashboard" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Voir sur CloseOS</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p><p class="inter" style="margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a &#233;t&#233; envoy&#233; automatiquement, merci de ne pas y r&#233;pondre.</p></td></tr></table></td></tr></table></body></html>`
+
+      // Send to all recipients
+      for (const email of emails) {
+        await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+            to: [{ email }],
+            subject: title,
+            htmlContent
+          })
+        })
+      }
+
+      return res.status(200).json({ success: true, sent: emails.length })
+    }
+
+    // ─── Send invitation email ───
+    if (action === 'send-invitation-email') {
+      const { email, role, link, inviter_name, organization_name } = req.body
+      if (!email || !role || !link) return res.status(400).json({ error: 'email, role and link required' })
+
+      const BREVO_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      if (!BREVO_KEY) return res.status(500).json({ error: 'BREVO_API_KEY missing' })
+
+      const inviterDisplay = inviter_name || 'Votre manager'
+      const orgDisplay = organization_name || 'CloseOS Business'
+
+      const htmlContent = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:42px;color:#111111;text-align:left;line-height:1.1;">Vous &#234;tes<br>invit&#233;(e)</h1><p class="inter" style="margin:0 0 40px;font-size:16px;color:#1b1c1b;text-align:left;"><strong style="color:#111111;">${inviterDisplay}</strong> vous invite &#224; rejoindre son &#233;quipe sur CloseOS Business en tant que <strong style="color:#111111;">${role}</strong>.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:40px;text-align:center;"><p class="inter" style="margin:0 0 8px;font-size:14px;color:#1b1c1b;opacity:0.6;">Votre r&#244;le</p><p class="manrope" style="margin:0;font-size:24px;color:#111111;">${role}</p></div><table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:32px;"><tr><td align="center"><a href="${link}" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Accepter l'invitation</a></td></tr></table><p class="inter" style="margin:0;font-size:13px;color:#1b1c1b;opacity:0.5;text-align:center;">Ce lien expire dans 7 jours.</p></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p><p class="inter" style="margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a &#233;t&#233; envoy&#233; automatiquement, merci de ne pas y r&#233;pondre.</p></td></tr></table></td></tr></table></body></html>`
+
+      const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+          to: [{ email }],
+          subject: `${inviterDisplay} vous invite à rejoindre ${orgDisplay}`,
+          htmlContent
+        })
+      })
+
+      const emailData = await emailRes.json()
+      if (!emailRes.ok) return res.status(500).json({ error: `Email error: ${JSON.stringify(emailData)}` })
+
+      return res.status(200).json({ success: true })
+    }
+
     return res.status(400).json({ error: 'Invalid action' })
   } catch (err: any) {
     console.error('[business] Error:', err)

@@ -63,6 +63,8 @@
     { "source": "/api/business-verify-code", "destination": "/api/business?action=verify-code" },
     { "source": "/api/business-check-device", "destination": "/api/business?action=check-device" },
     { "source": "/api/business-revoke-device", "destination": "/api/business?action=revoke-device" },
+    { "source": "/api/business-send-notification-email", "destination": "/api/business?action=send-notification-email" },
+    { "source": "/api/business-send-invitation-email", "destination": "/api/business?action=send-invitation-email" },
 
     { "source": "/(.*)", "destination": "/index.html" }
   ]

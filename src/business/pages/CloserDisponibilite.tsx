@@ -82,6 +82,40 @@ export function CloserDisponibilite() {
     setShowOnboardingPopup(false)
   }
 
+  // Notify owner + HOS when availability/absence changes
+  const notifyOwnerAndHoS = async (title: string, description: string) => {
+    if (!teamMember?.id || !ownerUserId) return
+    try {
+      // Owner notification
+      const rows: { user_id: string; title: string; description: string; reminder_date: string; is_done: boolean }[] = [
+        { user_id: ownerUserId, title, description, reminder_date: new Date().toISOString(), is_done: false },
+      ]
+      // HOS notifications
+      const { data: hosMembers } = await supabase
+        .from('business_team_members')
+        .select('user_id')
+        .eq('business_owner_id', ownerUserId)
+        .in('role', ['Head of Sales', 'Admin'])
+      if (hosMembers) {
+        for (const hos of hosMembers) {
+          if (hos.user_id) rows.push({ user_id: hos.user_id, title, description, reminder_date: new Date().toISOString(), is_done: false })
+        }
+      }
+      await supabase.from('reminders').insert(rows)
+      // Send email notification
+      const userIds = rows.map(r => r.user_id)
+      fetch('/api/business-send-notification-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_ids: userIds, title, description })
+      }).catch(() => {})
+    } catch (err) {
+      console.error('Notification error:', err)
+    }
+  }
+
+  const memberName = `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || 'Un membre'
+
   const handleAddSlot = async (dayOfWeek: number) => {
     if (!teamMember?.id || !ownerUserId) return
     const { error } = await supabase.from('business_availability_slots').insert([{
@@ -92,6 +126,10 @@ export function CloserDisponibilite() {
       end_time: newEnd,
     }])
     if (error) { toast.error('Erreur'); return }
+    await notifyOwnerAndHoS(
+      `Disponibilité modifiée — ${memberName}`,
+      `Nouveau créneau ${DAYS[dayOfWeek]} ${newStart}–${newEnd}`
+    )
     toast.success('Créneau ajouté')
     setAddingDay(null)
     setNewStart('09:00')
@@ -100,8 +138,15 @@ export function CloserDisponibilite() {
   }
 
   const handleDeleteSlot = async (id: number) => {
+    const slot = slots.find(s => s.id === id)
     const { error } = await supabase.from('business_availability_slots').delete().eq('id', id)
     if (error) { toast.error('Erreur'); return }
+    if (slot) {
+      await notifyOwnerAndHoS(
+        `Disponibilité modifiée — ${memberName}`,
+        `Créneau supprimé ${DAYS[slot.day_of_week]} ${slot.start_time}–${slot.end_time}`
+      )
+    }
     setSlots(prev => prev.filter(s => s.id !== id))
   }
 
@@ -121,6 +166,10 @@ export function CloserDisponibilite() {
       }
     }
     const names = targetDays.map(d => DAYS[d]).join(', ')
+    await notifyOwnerAndHoS(
+      `Disponibilité modifiée — ${memberName}`,
+      `Créneaux copiés de ${DAYS[fromDay]} vers ${names}`
+    )
     toast.success(`Créneaux copiés vers ${names}`)
     setCopyingDay(null)
     setSelectedCopyTargets([])
@@ -137,6 +186,12 @@ export function CloserDisponibilite() {
       reason: absReason || null,
     }])
     if (error) { toast.error('Erreur'); return }
+    const fmtStart = new Date(absStartDate).toLocaleDateString('fr-FR')
+    const fmtEnd = new Date(absEndDate).toLocaleDateString('fr-FR')
+    await notifyOwnerAndHoS(
+      `Absence programmée — ${memberName}`,
+      `Du ${fmtStart} au ${fmtEnd}${absReason ? ` (${absReason})` : ''}`
+    )
     toast.success('Absence ajoutée')
     setShowAbsenceForm(false)
     setAbsStartDate(''); setAbsEndDate(''); setAbsReason('')

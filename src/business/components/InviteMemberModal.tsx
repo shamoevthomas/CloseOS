@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Copy, Check, Loader2, Link as LinkIcon } from 'lucide-react';
+import { X, Copy, Check, Loader2, Link as LinkIcon, Send, Mail } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 
 const DEFAULT_ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Admin', 'Head of Sales'];
@@ -10,13 +10,17 @@ interface Props {
 }
 
 export function InviteMemberModal({ isOpen, onClose }: Props) {
-  const { user, businessSettings } = useBusinessAuth();
+  const { user, businessProfile, businessSettings } = useBusinessAuth();
   const [selectedRole, setSelectedRole] = useState('Closer');
   const [loading, setLoading] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [canManageCampaigns, setCanManageCampaigns] = useState(false);
   const [setterScope, setSetterScope] = useState<'self' | 'all'>('self');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -60,12 +64,42 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!inviteEmail || !generatedLink) return;
+    setEmailSending(true);
+    setEmailError(null);
+    try {
+      const res = await fetch('/api/business-send-invitation-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail,
+          role: selectedRole,
+          link: generatedLink,
+          inviter_name: businessProfile?.full_name || user?.user_metadata?.full_name || 'Votre manager',
+          organization_name: businessSettings?.company_name || '',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur');
+      setEmailSent(true);
+    } catch (err: any) {
+      setEmailError(err.message || "Impossible d'envoyer l'email");
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
   const handleClose = () => {
     setGeneratedLink(null);
     setSelectedRole('Closer');
     setCopied(false);
     setCanManageCampaigns(false);
     setSetterScope('self');
+    setInviteEmail('');
+    setEmailSending(false);
+    setEmailSent(false);
+    setEmailError(null);
     onClose();
   };
 
@@ -205,6 +239,42 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
                 </button>
               </div>
               <p className="text-xs text-emerald-600 mt-2">Ce lien expire dans 7 jours.</p>
+            </div>
+
+            {/* Send invitation by email */}
+            <div className="rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 p-4">
+              <p className="text-sm font-semibold text-stone-900 dark:text-white mb-3">
+                <Mail className="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
+                Envoyer par email
+              </p>
+              {emailSent ? (
+                <div className="flex items-center gap-2 text-emerald-600">
+                  <Check className="h-4 w-4" />
+                  <p className="text-sm font-medium">Invitation envoyée à {inviteEmail}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => { setInviteEmail(e.target.value); setEmailError(null); }}
+                      placeholder="email@exemple.com"
+                      className="flex-1 rounded-full bg-white dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 py-2.5 px-4 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-stone-900/10"
+                    />
+                    <button
+                      onClick={handleSendEmail}
+                      disabled={emailSending || !inviteEmail}
+                      className="rounded-full bg-stone-900 dark:bg-white dark:text-black p-2.5 text-white hover:bg-stone-800 active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      {emailSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {emailError && (
+                    <p className="text-xs text-red-500 mt-2">{emailError}</p>
+                  )}
+                </>
+              )}
             </div>
 
             <button

@@ -633,6 +633,26 @@ export function BusinessInvoiceGeneratorModal({
     }])
     if (insertError) throw insertError
 
+    // Notify owner when a team member creates an invoice
+    if (teamMember?.id && effectiveUserId) {
+      const memberName = `${teamMember.first_name || ''} ${teamMember.last_name || ''}`.trim() || 'Un membre'
+      const notifTitle = `Nouvelle facture de ${memberName}`
+      const notifDesc = `${invoiceNumber} — ${editableTotalTTC.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € TTC`
+      await supabase.from('reminders').insert([{
+        user_id: effectiveUserId,
+        title: notifTitle,
+        description: notifDesc,
+        reminder_date: new Date().toISOString(),
+        is_done: false,
+      }]).then(({ error }) => { if (error) console.error('Notification error:', error) })
+      // Send email notification
+      fetch('/api/business-send-notification-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_ids: [effectiveUserId], title: notifTitle, description: notifDesc })
+      }).catch(() => {})
+    }
+
     return publicUrl
   }
 
