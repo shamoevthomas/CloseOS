@@ -735,11 +735,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Code invalide')
-      // Org reset — refresh to reflect empty state
-      await refreshProfile()
-      setResetStep('idle')
-      setResetCode(['', '', '', '', '', ''])
-      onClose()
+      // Org reset — reload immediately to reflect empty state
       window.location.reload()
     } catch (err: any) {
       setResetError(err.message)

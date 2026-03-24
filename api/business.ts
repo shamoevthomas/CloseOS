@@ -2746,6 +2746,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // 2. Delete org-level data by business_owner_id
         await Promise.all([
           supabase.from('business_team_members').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_teams').delete().eq('business_owner_id', ownerId),
           supabase.from('business_prospects').delete().eq('business_owner_id', ownerId),
           supabase.from('business_campaigns').delete().eq('business_owner_id', ownerId),
           supabase.from('business_appointments').delete().eq('business_owner_id', ownerId),
@@ -2755,7 +2756,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           supabase.from('business_custom_sources').delete().eq('business_owner_id', ownerId),
           supabase.from('business_booking_links').delete().eq('business_owner_id', ownerId),
           supabase.from('business_invitations').delete().eq('inviter_id', ownerId),
-          supabase.from('business_device_tokens').delete().eq('user_id', ownerId),
           supabase.from('business_verification_codes').delete().eq('user_id', ownerId),
           supabase.from('reminders').delete().eq('user_id', ownerId),
         ])
