@@ -2611,13 +2611,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .maybeSingle()
       const orgName = settings?.company_name || 'CloseOS Business'
 
-      // Compute KPI for each member and send email
+      // Compute KPI for each member and send email (fire-and-forget to avoid timeout)
       const BREVO_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      const emailPromises: Promise<any>[] = []
       if (BREVO_KEY && members && members.length > 0) {
-        for (const member of members) {
-          if (!member.user_id) continue
-          const { data: authUser } = await supabase.auth.admin.getUserById(member.user_id)
-          const memberEmail = authUser?.user?.email
+        // Fetch all auth users in parallel
+        const authResults = await Promise.all(
+          members.filter(m => m.user_id).map(m => supabase.auth.admin.getUserById(m.user_id).then(r => ({ member: m, email: r.data?.user?.email })))
+        )
+
+        for (const { member, email: memberEmail } of authResults) {
           if (!memberEmail) continue
 
           const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Membre'
@@ -2699,60 +2702,69 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Send email with CSV attachment
           const notifHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:42px;color:#111111;text-align:left;line-height:1.1;">Organisation<br>r&#233;initialis&#233;e</h1><p class="inter" style="margin:0 0 40px;font-size:16px;color:#1b1c1b;text-align:left;">Bonjour <strong style="color:#111111;">${memberName}</strong>,</p><p class="inter" style="margin:0 0 40px;font-size:16px;color:#1b1c1b;text-align:left;">L'organisation <strong style="color:#111111;">${orgName}</strong> a &#233;t&#233; r&#233;initialis&#233;e par son propri&#233;taire. Votre compte a &#233;t&#233; supprim&#233; de la plateforme.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:24px;margin-bottom:40px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:20px;line-height:1;">&#128206;</div></td><td><p class="inter" style="margin:0;font-size:14px;color:#1b1c1b;">Vous trouverez en pi&#232;ce jointe un <strong>export de vos KPI personnels</strong> au format CSV.</p></td></tr></table></div><div style="background-color:#fbf9f8;border-radius:24px;padding:24px;border-left:4px solid #ffb95f;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:20px;line-height:1;">&#128161;</div></td><td><p class="inter" style="margin:0;font-size:13px;color:#1b1c1b;">Si vous pensez qu'il s'agit d'une erreur, contactez directement le propri&#233;taire de l'organisation.</p></td></tr></table></div></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p><p class="inter" style="margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a &#233;t&#233; envoy&#233; automatiquement, merci de ne pas y r&#233;pondre.</p></td></tr></table></td></tr></table></body></html>`
 
-          await fetch('https://api.brevo.com/v3/smtp/email', {
-            method: 'POST',
-            headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
-            body: JSON.stringify({
-              sender: { name: 'CloseOS', email: 'support@closeos.fr' },
-              to: [{ email: memberEmail }],
-              subject: `Votre organisation ${orgName} a été réinitialisée`,
-              htmlContent: notifHtml,
-              attachment: [{ content: csvBase64, name: `KPI_${memberName.replace(/\s/g, '_')}.csv` }]
-            })
-          })
+          // Fire-and-forget: don't await individual emails
+          emailPromises.push(
+            fetch('https://api.brevo.com/v3/smtp/email', {
+              method: 'POST',
+              headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+              body: JSON.stringify({
+                sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+                to: [{ email: memberEmail }],
+                subject: `Votre organisation ${orgName} a été réinitialisée`,
+                htmlContent: notifHtml,
+                attachment: [{ content: csvBase64, name: `KPI_${memberName.replace(/\s/g, '_')}.csv` }]
+              })
+            }).catch(() => {})
+          )
         }
       }
 
-      // Delete ALL organization data
-      // 1. Delete team member related data
-      if (members && members.length > 0) {
-        const memberIds = members.map(m => m.id)
-        const memberUserIds = members.filter(m => m.user_id).map(m => m.user_id)
+      // Delete ALL organization data (run emails + deletions in parallel)
+      const deletionWork = async () => {
+        // 1. Delete team member related data
+        if (members && members.length > 0) {
+          const memberIds = members.map(m => m.id)
+          const memberUserIds = members.filter(m => m.user_id).map(m => m.user_id)
 
+          await Promise.all([
+            supabase.from('business_objectives').delete().in('team_member_id', memberIds),
+            supabase.from('business_personal_objectives').delete().in('team_member_id', memberIds),
+            supabase.from('business_availability_slots').delete().in('team_member_id', memberIds),
+            supabase.from('business_absences').delete().in('team_member_id', memberIds),
+            supabase.from('business_user_scripts').delete().in('team_member_id', memberIds),
+            supabase.from('business_kpi_config').delete().in('team_member_id', memberIds),
+            supabase.from('business_connection_log').delete().in('team_member_id', memberIds),
+            supabase.from('business_device_tokens').delete().in('user_id', memberUserIds),
+            supabase.from('business_verification_codes').delete().in('user_id', memberUserIds),
+            supabase.from('reminders').delete().in('user_id', memberUserIds),
+          ])
+
+          // Delete auth users in parallel
+          await Promise.all(memberUserIds.map(uid => supabase.auth.admin.deleteUser(uid).catch(() => {})))
+        }
+
+        // 2. Delete org-level data by business_owner_id
         await Promise.all([
-          supabase.from('business_objectives').delete().in('team_member_id', memberIds),
-          supabase.from('business_personal_objectives').delete().in('team_member_id', memberIds),
-          supabase.from('business_availability_slots').delete().in('team_member_id', memberIds),
-          supabase.from('business_absences').delete().in('team_member_id', memberIds),
-          supabase.from('business_user_scripts').delete().in('team_member_id', memberIds),
-          supabase.from('business_kpi_config').delete().in('team_member_id', memberIds),
-          supabase.from('business_connection_log').delete().in('team_member_id', memberIds),
-          supabase.from('business_device_tokens').delete().in('user_id', memberUserIds),
-          supabase.from('business_verification_codes').delete().in('user_id', memberUserIds),
-          supabase.from('reminders').delete().in('user_id', memberUserIds),
+          supabase.from('business_team_members').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_prospects').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_campaigns').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_appointments').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_formulas').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_formula_commissions').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_objectives').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_custom_sources').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_booking_links').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_invitations').delete().eq('inviter_id', ownerId),
+          supabase.from('business_device_tokens').delete().eq('user_id', ownerId),
+          supabase.from('business_verification_codes').delete().eq('user_id', ownerId),
+          supabase.from('reminders').delete().eq('user_id', ownerId),
         ])
-
-        // Delete auth users for all team members
-        for (const uid of memberUserIds) {
-          await supabase.auth.admin.deleteUser(uid).catch(() => {})
-        }
       }
 
-      // 2. Delete org-level data by business_owner_id
+      // Run emails and deletions concurrently
       await Promise.all([
-        supabase.from('business_team_members').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_prospects').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_campaigns').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_appointments').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_formulas').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_formula_commissions').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_objectives').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_custom_sources').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_booking_links').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_invitations').delete().eq('inviter_id', ownerId),
-        supabase.from('business_device_tokens').delete().eq('user_id', ownerId),
-        supabase.from('business_verification_codes').delete().eq('user_id', ownerId),
-        supabase.from('reminders').delete().eq('user_id', ownerId),
+        ...emailPromises,
+        deletionWork(),
       ])
 
       return res.status(200).json({ success: true })
