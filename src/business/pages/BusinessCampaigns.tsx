@@ -911,12 +911,9 @@ export function BusinessCampaigns() {
                         </div>
                         <button
                           onClick={() => setFormEmailRequired(!formEmailRequired)}
-                          className="flex-shrink-0"
+                          className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors ${formEmailRequired ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
                         >
-                          {formEmailRequired
-                            ? <ToggleRight className="h-6 w-6 text-[#1b1c1b]" />
-                            : <ToggleLeft className="h-6 w-6 text-[#c4c7c7]" />
-                          }
+                          {formEmailRequired ? 'Obligatoire' : 'Optionnel'}
                         </button>
                       </div>
                       <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
@@ -926,12 +923,9 @@ export function BusinessCampaigns() {
                         </div>
                         <button
                           onClick={() => setFormPhoneRequired(!formPhoneRequired)}
-                          className="flex-shrink-0"
+                          className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors ${formPhoneRequired ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
                         >
-                          {formPhoneRequired
-                            ? <ToggleRight className="h-6 w-6 text-[#1b1c1b]" />
-                            : <ToggleLeft className="h-6 w-6 text-[#c4c7c7]" />
-                          }
+                          {formPhoneRequired ? 'Obligatoire' : 'Optionnel'}
                         </button>
                       </div>
                     </div>
@@ -958,10 +952,13 @@ export function BusinessCampaigns() {
                           <option value="number">Numéro</option>
                           <option value="select">Sélection</option>
                         </select>
-                        <label className="flex items-center gap-1 text-xs text-[#444748] dark:text-neutral-400 whitespace-nowrap">
-                          <input type="checkbox" checked={field.required} onChange={(e) => updateCustomField(idx, { required: e.target.checked })} className="rounded border-[#c4c7c7]/30 text-[#1b1c1b] focus:ring-[#1b1c1b]" />
-                          Requis
-                        </label>
+                        <button
+                          type="button"
+                          onClick={() => updateCustomField(idx, { required: !field.required })}
+                          className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${field.required ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
+                        >
+                          {field.required ? 'Obligatoire' : 'Optionnel'}
+                        </button>
                         <button onClick={() => removeCustomField(idx)} className="text-red-400 hover:text-red-600"><X className="h-4 w-4" /></button>
                       </div>
                     ))}
