@@ -46,6 +46,7 @@ export function CloserFactures() {
 
   const [savedInvoices, setSavedInvoices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [formulaCommRates, setFormulaCommRates] = useState<Record<string, { roles: Record<string, number>, members: Record<string, number> }>>({})
 
   const now = new Date()
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -76,6 +77,28 @@ export function CloserFactures() {
   }, [effectiveUserId])
 
   useEffect(() => { fetchInvoices() }, [fetchInvoices])
+
+  // Fetch formula-level commission rates
+  useEffect(() => {
+    if (!effectiveUserId) return
+    ;(async () => {
+      const { data } = await supabase
+        .from('business_formula_commissions')
+        .select('formula_id, role, rate, team_member_id')
+        .eq('business_owner_id', effectiveUserId)
+      if (!data) return
+      const map: Record<string, { roles: Record<string, number>, members: Record<string, number> }> = {}
+      for (const row of data) {
+        if (!map[row.formula_id]) map[row.formula_id] = { roles: {}, members: {} }
+        if (row.team_member_id) {
+          map[row.formula_id].members[row.team_member_id] = row.rate
+        } else {
+          map[row.formula_id].roles[row.role] = row.rate
+        }
+      }
+      setFormulaCommRates(map)
+    })()
+  }, [effectiveUserId])
 
   // Helper: check if a deal (cash or installment) overlaps the selected period
   const isDealInPeriod = useCallback((p: typeof prospects[0], start: Date, end: Date) => {
@@ -170,9 +193,38 @@ export function CloserFactures() {
     })
   }, [savedInvoices, startDate, endDate, isTeamMember, teamMember?.id])
 
-  // Commission rate
+  // Commission rate (fallback)
   const commissionRateNum = teamMember?.commission_rate ? Number(teamMember.commission_rate) : 10
-  const rate = commissionRateNum / 100
+  const fallbackRate = commissionRateNum / 100
+
+  const isSetterCloser = teamMember?.role === 'Setter-Closer'
+  const memberId = teamMember?.id
+  const memberRole = teamMember?.role
+
+  // Compute closer commission for a prospect using formula-level rates
+  const getCloserRate = useCallback((p: any) => {
+    const formulaId = p.formula_id || p.offer_id
+    const rates = formulaId ? formulaCommRates[formulaId] : null
+    if (rates) {
+      if (memberId && rates.members[memberId] !== undefined) return rates.members[memberId] / 100
+      if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer'] !== undefined) return rates.roles['Setter-Closer'] / 100
+      if (rates.roles['Closer'] !== undefined) return rates.roles['Closer'] / 100
+    }
+    return fallbackRate
+  }, [formulaCommRates, memberId, memberRole, fallbackRate])
+
+  // Compute setter commission for a prospect using formula-level rates
+  const getSetterRate = useCallback((p: any) => {
+    const formulaId = p.formula_id || p.offer_id
+    const rates = formulaId ? formulaCommRates[formulaId] : null
+    if (rates) {
+      if (memberId && rates.members[`${memberId}:setter`] !== undefined) return rates.members[`${memberId}:setter`] / 100
+      if (memberId && rates.members[memberId] !== undefined && memberRole !== 'Setter-Closer') return rates.members[memberId] / 100
+      if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer:setter'] !== undefined) return rates.roles['Setter-Closer:setter'] / 100
+      if (rates.roles['Setter'] !== undefined) return rates.roles['Setter'] / 100
+    }
+    return fallbackRate
+  }, [formulaCommRates, memberId, memberRole, fallbackRate])
 
   // KPIs — compute revenue & commission for the selected period (with installment proration)
   const totalRevenue = useMemo(() =>
@@ -180,22 +232,17 @@ export function CloserFactures() {
     [myWonProspects, periodStart, periodEnd, revenueInPeriod]
   )
 
-  const commissionEstimee = useMemo(() =>
-    myWonProspects.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd) * rate, 0),
-    [myWonProspects, periodStart, periodEnd, revenueInPeriod, rate]
-  )
-
-  const isSetterCloser = teamMember?.role === 'Setter-Closer'
-
   const commissionCloser = useMemo(() =>
-    myCloserDeals.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd) * rate, 0),
-    [myCloserDeals, periodStart, periodEnd, revenueInPeriod, rate]
+    myCloserDeals.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd) * getCloserRate(p), 0),
+    [myCloserDeals, periodStart, periodEnd, revenueInPeriod, getCloserRate]
   )
 
   const commissionSetter = useMemo(() =>
-    mySetterDeals.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd) * rate, 0),
-    [mySetterDeals, periodStart, periodEnd, revenueInPeriod, rate]
+    mySetterDeals.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd) * getSetterRate(p), 0),
+    [mySetterDeals, periodStart, periodEnd, revenueInPeriod, getSetterRate]
   )
+
+  const commissionEstimee = commissionCloser + commissionSetter
 
   const pendingInvoices = useMemo(() =>
     filteredInvoices.filter(inv => ['en_attente', 'retard', 'en attente', 'à payer', 'en cours'].includes(inv.status)),
