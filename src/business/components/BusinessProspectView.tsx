@@ -628,6 +628,72 @@ export function BusinessProspectView({
                 </div>
               </div>
 
+              {/* SECTION RAISON DE PERTE — visible quand stage = lost */}
+              {local.stage === 'lost' && (() => {
+                const isAssignedSetter = isTeamMember && teamMember?.id === (local as any).assigned_setter
+                const canEditLoss = !isTeamMember || isHosOrAdmin || isAssignedSetter
+                // Parse from call_notes if loss_reason is empty
+                let displayReason = (local as any).loss_reason || ''
+                let displayDetails = (local as any).loss_details || ''
+                if (!displayReason && Array.isArray(local.call_notes)) {
+                  for (let i = local.call_notes.length - 1; i >= 0; i--) {
+                    const match = local.call_notes[i].content?.match(/- Motif: (.+)/)
+                    if (match) { displayReason = match[1]; break }
+                  }
+                }
+                const lossReasons = ['Je dois y réfléchir', 'Argent/budget', 'Doit en parler', "C'est pas le moment", 'Peur', 'Ecran de fumée', 'Autre']
+                return (
+                  <div className="animate-in slide-in-from-top-4 fade-in duration-300">
+                    <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-red-600 dark:text-red-400 mb-3">
+                      <X className="h-4 w-4" /> Raison de la perte
+                    </h3>
+                    <div className="space-y-3 rounded-2xl border border-red-500/20 bg-red-500/5 dark:bg-red-500/5 p-5">
+                      {canEditLoss ? (
+                        <>
+                          <div>
+                            <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1.5 block">Motif</label>
+                            <div className="relative">
+                              <select
+                                value={displayReason}
+                                onChange={(e) => handleUpdate({ loss_reason: e.target.value } as any)}
+                                className={cn(SELECT_CLS, 'text-sm py-3')}
+                              >
+                                <option value="">Sélectionnez un motif</option>
+                                {lossReasons.map(r => <option key={r} value={r}>{r}</option>)}
+                              </select>
+                              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400" strokeWidth={1.5} />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1.5 block">Détails</label>
+                            <input
+                              type="text"
+                              value={displayDetails}
+                              onChange={(e) => handleUpdate({ loss_details: e.target.value } as any)}
+                              placeholder="Précisez les détails..."
+                              className={INPUT_CLS}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1 block">Motif</label>
+                            <p className="text-sm font-medium text-stone-900 dark:text-white">{displayReason || '—'}</p>
+                          </div>
+                          {displayDetails && (
+                            <div>
+                              <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1 block">Détails</label>
+                              <p className="text-sm text-stone-700 dark:text-neutral-300">{displayDetails}</p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
+
               {/* SECTION PAIEMENT — visible quand stage = won */}
               {local.stage === 'won' && (
                 <div className="animate-in slide-in-from-top-4 fade-in duration-300">

@@ -162,9 +162,18 @@ const LOSS_REASON_COLORS: Record<string, string> = {
 const LOSS_REASON_FALLBACK_COLOR = '#d4d4d8'
 
 function computeLossReasonData(prospects: any[]) {
-  const lost = prospects.filter(p => p.stage === 'lost' && p.loss_reason)
+  const lost = prospects.filter(p => p.stage === 'lost')
   const counts: Record<string, number> = {}
-  lost.forEach(p => { counts[p.loss_reason] = (counts[p.loss_reason] || 0) + 1 })
+  lost.forEach(p => {
+    let reason = p.loss_reason
+    if (!reason && Array.isArray(p.call_notes)) {
+      for (let i = p.call_notes.length - 1; i >= 0; i--) {
+        const match = p.call_notes[i].content?.match(/- Motif: (.+)/)
+        if (match) { reason = match[1]; break }
+      }
+    }
+    if (reason) counts[reason] = (counts[reason] || 0) + 1
+  })
   return Object.entries(counts)
     .map(([name, value]) => ({ name, value, color: LOSS_REASON_COLORS[name] || LOSS_REASON_FALLBACK_COLOR }))
     .sort((a, b) => b.value - a.value)
