@@ -210,6 +210,8 @@ export function CaptureForm() {
   const paramTc = searchParams.get('tc')
   const paramBr = searchParams.get('br')
   const paramFont = searchParams.get('font')
+  const paramLayout = searchParams.get('layout')
+  const isHorizontal = paramLayout === 'horizontal'
 
   const primaryColor = paramPc ? `#${paramPc}` : '#2563eb'
   const bgColor = paramBg ? `#${paramBg}` : '#ffffff'
@@ -558,7 +560,7 @@ export function CaptureForm() {
 
         {/* RIGHT SIDE - Form + Calendar */}
         <div className={`flex-1 flex items-start justify-center ${isEmbed ? 'p-4' : 'px-5 sm:px-8 lg:px-12 py-8 lg:py-12'}`}>
-          <div className={`w-full max-w-xl ${isEmbed ? '' : 'bg-white rounded-2xl p-8 md:p-12 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'}`} style={{ boxShadow: isEmbed ? undefined : 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
+          <div className={`w-full ${isHorizontal ? 'max-w-5xl' : 'max-w-xl'} ${isEmbed ? '' : 'bg-white rounded-2xl p-8 md:p-12 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'}`} style={{ boxShadow: isEmbed ? undefined : 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
 
             {/* Mobile header */}
             {!isEmbed && (
@@ -577,9 +579,14 @@ export function CaptureForm() {
               </div>
             )}
 
+            {/* Horizontal layout wrapper */}
+            <div className={isHorizontal && !isInscriptionMode ? 'flex gap-10' : ''}>
+            {/* Left column in horizontal mode */}
+            <div className={isHorizontal && !isInscriptionMode ? 'flex-1 min-w-0' : ''}>
+
             {/* INFO SECTION - collapsible */}
-            <div className={`transition-all duration-500 ease-in-out ${infoCollapsed ? 'max-h-16 overflow-hidden' : 'max-h-[800px]'}`}>
-              {infoCollapsed && (
+            <div className={`transition-all duration-500 ease-in-out ${!isHorizontal && infoCollapsed ? 'max-h-16 overflow-hidden' : 'max-h-[2000px]'}`}>
+              {!isHorizontal && infoCollapsed && (
                 <button
                   onClick={() => setInfoCollapsed(false)}
                   className="w-full flex items-center justify-between rounded-full border border-[#006c49]/20 bg-[#006c49]/5 px-5 py-3 mb-6 text-left transition-colors hover:bg-[#006c49]/10"
@@ -683,8 +690,8 @@ export function CaptureForm() {
                     </div>
                   ))}
 
-                  {/* Manual continue button for RDV mode */}
-                  {!isInscriptionMode && (
+                  {/* Manual continue button for RDV mode (hidden in horizontal layout) */}
+                  {!isInscriptionMode && !isHorizontal && (
                     <button
                       onClick={() => setInfoCollapsed(true)}
                       disabled={!isInfoComplete}
@@ -716,8 +723,10 @@ export function CaptureForm() {
               </div>
             )}
 
+            </div>{/* End left column */}
+
             {/* CALENDAR SECTION - RDV mode only */}
-            {!isInscriptionMode && <div className="relative mt-4">
+            {!isInscriptionMode && <div className={`relative ${isHorizontal ? 'flex-1 min-w-0' : 'mt-4'}`}>
               {/* Overlay */}
               {!isInfoComplete && (
                 <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] rounded-2xl flex items-center justify-center cursor-not-allowed">
@@ -735,7 +744,7 @@ export function CaptureForm() {
                   <h2 className={`text-2xl font-bold ${isInfoComplete ? 'text-[#1b1c1b]' : 'text-[#1b1c1b]/40'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>Choisissez un créneau</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className={`grid gap-10 ${isHorizontal ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
                   {/* Calendar */}
                   <div>
                     <div className="flex items-center justify-between mb-4 px-1">
@@ -845,6 +854,8 @@ export function CaptureForm() {
                 </div>
               </div>
             </div>}
+
+            </div>{/* End horizontal layout wrapper */}
           </div>
         </div>
       </div>

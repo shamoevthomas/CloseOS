@@ -353,6 +353,7 @@ export function BusinessCampaigns() {
   const [styleBgColor, setStyleBgColor] = useState('#ffffff')
   const [styleTextColor, setStyleTextColor] = useState('#0f172a')
   const [styleRadius, setStyleRadius] = useState(12)
+  const [styleLayout, setStyleLayout] = useState<'vertical' | 'horizontal'>('vertical')
 
   const FONTS = [
     { label: 'Inter (défaut)', value: 'Inter, system-ui, sans-serif' },
@@ -373,6 +374,7 @@ export function BusinessCampaigns() {
     setStyleBgColor('#ffffff')
     setStyleTextColor('#0f172a')
     setStyleRadius(12)
+    setStyleLayout('vertical')
   }
 
   const getCaptureUrl = (slug: string) => `${window.location.origin}/capture/${slug}`
@@ -385,6 +387,7 @@ export function BusinessCampaigns() {
     if (styleTextColor !== '#0f172a') params.set('tc', styleTextColor.replace('#', ''))
     if (styleRadius !== 12) params.set('br', String(styleRadius))
     if (styleFont !== 'Inter, system-ui, sans-serif') params.set('font', styleFont.split(',')[0].trim())
+    if (styleLayout === 'horizontal') params.set('layout', 'horizontal')
     return params.toString()
   }
 
@@ -394,7 +397,7 @@ export function BusinessCampaigns() {
     if (!embedModalCampaign) return ''
     const url = getStyledIframeUrl(embedModalCampaign.slug)
     return `<iframe src="${url}" width="100%" height="800" frameborder="0" style="border:none;border-radius:${styleRadius}px;"></iframe>`
-  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont])
+  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, styleLayout])
 
   const getPopupCode = useMemo(() => {
     if (!embedModalCampaign) return ''
@@ -422,7 +425,7 @@ export function BusinessCampaigns() {
   });
 })();
 </script>`
-  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont])
+  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, styleLayout])
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text); toast.success(`${label} copié !`)
@@ -1227,6 +1230,37 @@ export function BusinessCampaigns() {
                         </div>
                       </div>
 
+                      {/* Layout */}
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Disposition</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            onClick={() => setStyleLayout('vertical')}
+                            className={`flex flex-col items-center gap-1.5 rounded-xl py-2.5 px-2 text-[10px] font-bold transition-all ${
+                              styleLayout === 'vertical' ? 'bg-[#1b1c1b] text-white' : 'bg-[#f5f3f2] dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 hover:bg-[#eae8e7] dark:hover:bg-neutral-700'
+                            }`}
+                          >
+                            <div className="flex flex-col gap-0.5 w-5">
+                              <div className={`h-3 rounded-sm ${styleLayout === 'vertical' ? 'bg-white/40' : 'bg-[#444748]/20'}`} />
+                              <div className={`h-5 rounded-sm ${styleLayout === 'vertical' ? 'bg-white/40' : 'bg-[#444748]/20'}`} />
+                            </div>
+                            Vertical
+                          </button>
+                          <button
+                            onClick={() => setStyleLayout('horizontal')}
+                            className={`flex flex-col items-center gap-1.5 rounded-xl py-2.5 px-2 text-[10px] font-bold transition-all ${
+                              styleLayout === 'horizontal' ? 'bg-[#1b1c1b] text-white' : 'bg-[#f5f3f2] dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 hover:bg-[#eae8e7] dark:hover:bg-neutral-700'
+                            }`}
+                          >
+                            <div className="flex gap-0.5 w-8">
+                              <div className={`h-5 flex-1 rounded-sm ${styleLayout === 'horizontal' ? 'bg-white/40' : 'bg-[#444748]/20'}`} />
+                              <div className={`h-5 flex-1 rounded-sm ${styleLayout === 'horizontal' ? 'bg-white/40' : 'bg-[#444748]/20'}`} />
+                            </div>
+                            Horizontal
+                          </button>
+                        </div>
+                      </div>
+
                       {/* Styled link copy */}
                       <button
                         onClick={() => {
@@ -1236,6 +1270,7 @@ export function BusinessCampaigns() {
                           if (styleTextColor !== '#0f172a') params.set('tc', styleTextColor.replace('#', ''))
                           if (styleRadius !== 12) params.set('br', String(styleRadius))
                           if (styleFont !== 'Inter, system-ui, sans-serif') params.set('font', styleFont.split(',')[0].trim())
+                          if (styleLayout === 'horizontal') params.set('layout', 'horizontal')
                           const url = params.toString() ? `${getCaptureUrl(embedModalCampaign.slug)}?${params.toString()}` : getCaptureUrl(embedModalCampaign.slug)
                           copyToClipboard(url, 'Lien personnalisé')
                         }}
@@ -1259,6 +1294,7 @@ export function BusinessCampaigns() {
                             if (styleTextColor !== '#0f172a') params.set('tc', styleTextColor.replace('#', ''))
                             if (styleRadius !== 12) params.set('br', String(styleRadius))
                             if (styleFont !== 'Inter, system-ui, sans-serif') params.set('font', styleFont.split(',')[0].trim())
+                            if (styleLayout === 'horizontal') params.set('layout', 'horizontal')
                             return params.toString() ? `${getCaptureUrl(embedModalCampaign.slug)}?${params.toString()}` : getCaptureUrl(embedModalCampaign.slug)
                           })()}
                           className="w-full h-full min-h-[450px]"
