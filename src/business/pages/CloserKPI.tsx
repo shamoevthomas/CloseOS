@@ -121,7 +121,9 @@ export function CloserKPI() {
         allMembers.push({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
       }
       if (tmRes.data) {
-        allMembers.push(...tmRes.data)
+        allMembers.push(...tmRes.data.filter((m: TeamCloser) =>
+          ['Closer', 'Setter-Closer', 'Head of Sales'].includes(m.role)
+        ))
       }
       setTeamClosers(allMembers)
     })

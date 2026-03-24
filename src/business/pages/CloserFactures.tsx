@@ -185,6 +185,18 @@ export function CloserFactures() {
     [myWonProspects, periodStart, periodEnd, revenueInPeriod, rate]
   )
 
+  const isSetterCloser = teamMember?.role === 'Setter-Closer'
+
+  const commissionCloser = useMemo(() =>
+    myCloserDeals.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd) * rate, 0),
+    [myCloserDeals, periodStart, periodEnd, revenueInPeriod, rate]
+  )
+
+  const commissionSetter = useMemo(() =>
+    mySetterDeals.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd) * rate, 0),
+    [mySetterDeals, periodStart, periodEnd, revenueInPeriod, rate]
+  )
+
   const pendingInvoices = useMemo(() =>
     filteredInvoices.filter(inv => ['en_attente', 'retard', 'en attente', 'à payer', 'en cours'].includes(inv.status)),
     [filteredInvoices]
@@ -330,8 +342,8 @@ export function CloserFactures() {
         </div>
         )}
 
-        {/* Ma Commission — shown for commission and fixed+commission */}
-        {!isFixedComp && (
+        {/* Ma Commission — split for Setter-Closer, single for others */}
+        {!isFixedComp && !isSetterCloser && (
         <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-stone-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
           <div className="flex justify-between items-start mb-4">
@@ -345,6 +357,37 @@ export function CloserFactures() {
             {commissionEstimee.toLocaleString('fr-FR')} <span className="text-base">€</span>
           </p>
         </div>
+        )}
+
+        {!isFixedComp && isSetterCloser && (
+        <>
+        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-start mb-4">
+            <span className="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <DollarSign className="h-5 w-5" />
+            </span>
+            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myCloserDeals.length} deal{myCloserDeals.length !== 1 ? 's' : ''}</span>
+          </div>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">Commission Closer</p>
+          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {commissionCloser.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          </p>
+        </div>
+        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-start mb-4">
+            <span className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <DollarSign className="h-5 w-5" />
+            </span>
+            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{mySetterDeals.length} deal{mySetterDeals.length !== 1 ? 's' : ''}</span>
+          </div>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">Commission Setter</p>
+          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {commissionSetter.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          </p>
+        </div>
+        </>
         )}
 
         {/* CA Généré — shown for fixed (read-only) */}

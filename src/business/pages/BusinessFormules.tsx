@@ -162,10 +162,14 @@ export function BusinessFormules() {
     }
 
     // Member-level overrides
-    for (const [memberId, rate] of Object.entries(memberRates)) {
+    for (const [key, rate] of Object.entries(memberRates)) {
       if (rate !== null) {
-        const member = teamMembers.find(m => m.id === memberId)
-        rows.push({ business_owner_id: effectiveUserId!, formula_id: formulaId, role: member?.role || null, team_member_id: memberId, rate })
+        // Keys like "memberId:setter" store setter-closer setter overrides
+        const isSetterKey = key.endsWith(':setter')
+        const realMemberId = isSetterKey ? key.replace(':setter', '') : key
+        const member = teamMembers.find(m => m.id === realMemberId)
+        const roleVal = isSetterKey ? 'Setter-Closer:setter' : (member?.role || null)
+        rows.push({ business_owner_id: effectiveUserId!, formula_id: formulaId, role: roleVal, team_member_id: key, rate })
       }
     }
 
@@ -474,45 +478,87 @@ export function BusinessFormules() {
                   <div className="space-y-2">
                     {activeRoles.map(role => {
                       const roleRate = roleRates[role] ?? 0
+                      const isSetterCloser = role === 'Setter-Closer'
+                      const setterCloserSetterRate = roleRates['Setter-Closer:setter'] ?? 0
                       const roleMembers = commissionMembers.filter(m => m.role === role)
                       const isExpanded = expandedRoles[role] || false
+                      const rateInputCls = `w-20 rounded-xl border border-stone-200 dark:border-neutral-800 px-3 py-1.5 text-sm text-right font-medium text-stone-900 dark:text-white bg-white dark:bg-neutral-900 focus:border-stone-900 focus:outline-none ${isHoSOrAdmin ? '!bg-stone-50 dark:!bg-neutral-800 !text-stone-500 dark:!text-neutral-400 cursor-not-allowed' : ''}`
 
                       return (
                         <div key={role} className="rounded-2xl border border-stone-200 dark:border-neutral-800 overflow-hidden">
                           {/* Role row */}
-                          <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-neutral-800">
+                          <div className={`flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-neutral-800 ${isSetterCloser ? 'flex-wrap' : ''}`}>
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <Users className="h-3.5 w-3.5 text-stone-400 dark:text-neutral-500 shrink-0" />
                               <span className="text-sm font-semibold text-stone-800 dark:text-neutral-100">{role}</span>
                               <span className="text-xs text-stone-400 dark:text-neutral-500">({roleMembers.length})</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  step="0.5"
-                                  value={roleRate}
-                                  onChange={e => {
-                                    const v = parseFloat(e.target.value) || 0
-                                    setRoleRates(prev => ({ ...prev, [role]: v }))
-                                  }}
-                                  disabled={isHoSOrAdmin}
-                                  className={`w-20 rounded-xl border border-stone-200 dark:border-neutral-800 px-3 py-1.5 text-sm text-right font-medium text-stone-900 dark:text-white bg-white dark:bg-neutral-900 focus:border-stone-900 focus:outline-none ${isHoSOrAdmin ? '!bg-stone-50 dark:!bg-neutral-800 !text-stone-500 dark:!text-neutral-400 cursor-not-allowed' : ''}`}
-                                />
-                                <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
+                            {isSetterCloser ? (
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">Closing</span>
+                                  <input
+                                    type="number" min="0" max="100" step="0.5"
+                                    value={roleRate}
+                                    onChange={e => {
+                                      const v = parseFloat(e.target.value) || 0
+                                      setRoleRates(prev => ({ ...prev, [role]: v }))
+                                    }}
+                                    disabled={isHoSOrAdmin}
+                                    className={rateInputCls}
+                                  />
+                                  <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">Setting</span>
+                                  <input
+                                    type="number" min="0" max="100" step="0.5"
+                                    value={setterCloserSetterRate}
+                                    onChange={e => {
+                                      const v = parseFloat(e.target.value) || 0
+                                      setRoleRates(prev => ({ ...prev, 'Setter-Closer:setter': v }))
+                                    }}
+                                    disabled={isHoSOrAdmin}
+                                    className={rateInputCls}
+                                  />
+                                  <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
+                                </div>
+                                {!isHoSOrAdmin && (
+                                  <button
+                                    onClick={() => setExpandedRoles(prev => ({ ...prev, [role]: !prev[role] }))}
+                                    className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-colors"
+                                  >
+                                    {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                    Avancé
+                                  </button>
+                                )}
                               </div>
-                              {!isHoSOrAdmin && (
-                                <button
-                                  onClick={() => setExpandedRoles(prev => ({ ...prev, [role]: !prev[role] }))}
-                                  className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-colors"
-                                >
-                                  {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                                  Avancé
-                                </button>
-                              )}
-                            </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="number" min="0" max="100" step="0.5"
+                                    value={roleRate}
+                                    onChange={e => {
+                                      const v = parseFloat(e.target.value) || 0
+                                      setRoleRates(prev => ({ ...prev, [role]: v }))
+                                    }}
+                                    disabled={isHoSOrAdmin}
+                                    className={rateInputCls}
+                                  />
+                                  <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
+                                </div>
+                                {!isHoSOrAdmin && (
+                                  <button
+                                    onClick={() => setExpandedRoles(prev => ({ ...prev, [role]: !prev[role] }))}
+                                    className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-colors"
+                                  >
+                                    {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                    Avancé
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           {/* Expanded member list */}
@@ -522,6 +568,65 @@ export function BusinessFormules() {
                                 const memberRate = memberRates[member.id] ?? null
                                 const displayRate = memberRate !== null ? memberRate : roleRate
                                 const isOverridden = memberRate !== null
+
+                                if (isSetterCloser) {
+                                  const memberSetterRate = memberRates[member.id + ':setter'] ?? null
+                                  const displaySetterRate = memberSetterRate !== null ? memberSetterRate : setterCloserSetterRate
+                                  const isSetterOverridden = memberSetterRate !== null
+                                  const hasAnyOverride = isOverridden || isSetterOverridden
+
+                                  return (
+                                    <div key={member.id} className="flex items-center gap-3 px-4 py-2.5 pl-10 flex-wrap">
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-sm text-stone-700 dark:text-neutral-200">{member.first_name} {member.last_name}</span>
+                                        {hasAnyOverride && (
+                                          <span className="ml-2 text-[10px] font-bold text-stone-900 dark:text-white bg-stone-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded-full">Personnalisé</span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-[10px] font-bold uppercase tracking-wide text-stone-400 dark:text-neutral-500">Clo.</span>
+                                          <input
+                                            type="number" min="0" max="100" step="0.5"
+                                            value={displayRate}
+                                            onChange={e => {
+                                              const v = parseFloat(e.target.value) || 0
+                                              setMemberRates(prev => ({ ...prev, [member.id]: v }))
+                                            }}
+                                            className={`w-20 rounded-xl border px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
+                                              isOverridden ? 'border-stone-400 dark:border-neutral-600 text-stone-900 dark:text-white bg-stone-50 dark:bg-neutral-800' : 'border-stone-200 dark:border-neutral-800 text-stone-600 dark:text-neutral-300'
+                                            }`}
+                                          />
+                                          <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-[10px] font-bold uppercase tracking-wide text-stone-400 dark:text-neutral-500">Set.</span>
+                                          <input
+                                            type="number" min="0" max="100" step="0.5"
+                                            value={displaySetterRate}
+                                            onChange={e => {
+                                              const v = parseFloat(e.target.value) || 0
+                                              setMemberRates(prev => ({ ...prev, [member.id + ':setter']: v }))
+                                            }}
+                                            className={`w-20 rounded-xl border px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
+                                              isSetterOverridden ? 'border-stone-400 dark:border-neutral-600 text-stone-900 dark:text-white bg-stone-50 dark:bg-neutral-800' : 'border-stone-200 dark:border-neutral-800 text-stone-600 dark:text-neutral-300'
+                                            }`}
+                                          />
+                                          <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
+                                        </div>
+                                        {hasAnyOverride && (
+                                          <button
+                                            onClick={() => setMemberRates(prev => ({ ...prev, [member.id]: null, [member.id + ':setter']: null }))}
+                                            className="ml-1 text-xs text-stone-400 dark:text-neutral-500 hover:text-red-500 transition-colors"
+                                            title="Réinitialiser au taux du rôle"
+                                          >
+                                            <X className="h-3.5 w-3.5" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )
+                                }
 
                                 return (
                                   <div key={member.id} className="flex items-center gap-3 px-4 py-2.5 pl-10">
@@ -533,10 +638,7 @@ export function BusinessFormules() {
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <input
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        step="0.5"
+                                        type="number" min="0" max="100" step="0.5"
                                         value={displayRate}
                                         onChange={e => {
                                           const v = parseFloat(e.target.value) || 0
