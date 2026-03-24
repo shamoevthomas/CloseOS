@@ -2595,7 +2595,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data: allProspects } = await supabase
         .from('business_prospects')
         .select('id, stage, value, assigned_to, assigned_setter, formula_id, campaign_id, created_at')
-        .eq('business_owner_id', ownerId)
+        .eq('user_id', ownerId)
 
       // Get formula commissions for KPI
       const { data: allCommissions } = await supabase
@@ -2719,15 +2719,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      // Delete ALL organization data (run emails + deletions in parallel)
+      // Delete ALL organization data
+      // Column mapping verified against actual DB schema:
+      //   business_owner_id: absences, availability_slots, booking_links, call_history,
+      //     connection_log, custom_stages, formula_commissions, kpi_config,
+      //     personal_objectives, round_robin_state, team_bonuses, team_members,
+      //     teams, user_scripts
+      //   user_id: appointments, campaigns, custom_sources, formulas, objectives,
+      //     prospects, verification_codes, webhook_keys, invoices, reminders
+      //   owner_id: tags
+      //   inviter_id: invitations
       const deletionWork = async () => {
-        // 1. Delete team member related data
+        // 1. Delete team member related data + auth accounts
         if (members && members.length > 0) {
           const memberIds = members.map(m => m.id)
           const memberUserIds = members.filter(m => m.user_id).map(m => m.user_id)
 
           await Promise.all([
-            supabase.from('business_objectives').delete().in('team_member_id', memberIds),
+            // Tables with team_member_id FK
             supabase.from('business_personal_objectives').delete().in('team_member_id', memberIds),
             supabase.from('business_availability_slots').delete().in('team_member_id', memberIds),
             supabase.from('business_absences').delete().in('team_member_id', memberIds),
@@ -2735,7 +2744,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             supabase.from('business_kpi_config').delete().in('team_member_id', memberIds),
             supabase.from('business_connection_log').delete().in('team_member_id', memberIds),
             supabase.from('business_team_bonuses').delete().in('team_member_id', memberIds),
-            supabase.from('business_reminders').delete().in('team_member_id', memberIds),
+            // Tables with user_id FK (member auth user IDs)
             supabase.from('business_device_tokens').delete().in('user_id', memberUserIds),
             supabase.from('business_verification_codes').delete().in('user_id', memberUserIds),
             supabase.from('reminders').delete().in('user_id', memberUserIds),
@@ -2745,26 +2754,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           await Promise.all(memberUserIds.map(uid => supabase.auth.admin.deleteUser(uid).catch(() => {})))
         }
 
-        // 2. Delete org-level data (prospect_tags cascade automatically via FK)
+        // 2. Delete all org data with CORRECT column names per table
         await Promise.all([
+          // --- Tables using business_owner_id ---
           supabase.from('business_team_members').delete().eq('business_owner_id', ownerId),
           supabase.from('business_teams').delete().eq('business_owner_id', ownerId),
-          supabase.from('business_prospects').delete().eq('business_owner_id', ownerId),
-          supabase.from('business_campaigns').delete().eq('business_owner_id', ownerId),
-          supabase.from('business_appointments').delete().eq('business_owner_id', ownerId),
-          supabase.from('business_formulas').delete().eq('business_owner_id', ownerId),
           supabase.from('business_formula_commissions').delete().eq('business_owner_id', ownerId),
-          supabase.from('business_objectives').delete().eq('business_owner_id', ownerId),
-          supabase.from('business_custom_sources').delete().eq('business_owner_id', ownerId),
           supabase.from('business_custom_stages').delete().eq('business_owner_id', ownerId),
           supabase.from('business_booking_links').delete().eq('business_owner_id', ownerId),
           supabase.from('business_call_history').delete().eq('business_owner_id', ownerId),
           supabase.from('business_round_robin_state').delete().eq('business_owner_id', ownerId),
-          supabase.from('business_invitations').delete().eq('inviter_id', ownerId),
-          supabase.from('business_tags').delete().eq('owner_id', ownerId),
+          // --- Tables using user_id ---
+          supabase.from('business_prospects').delete().eq('user_id', ownerId),
+          supabase.from('business_campaigns').delete().eq('user_id', ownerId),
+          supabase.from('business_appointments').delete().eq('user_id', ownerId),
+          supabase.from('business_formulas').delete().eq('user_id', ownerId),
+          supabase.from('business_objectives').delete().eq('user_id', ownerId),
+          supabase.from('business_custom_sources').delete().eq('user_id', ownerId),
           supabase.from('business_webhook_keys').delete().eq('user_id', ownerId),
           supabase.from('business_verification_codes').delete().eq('user_id', ownerId),
+          supabase.from('invoices').delete().eq('user_id', ownerId),
           supabase.from('reminders').delete().eq('user_id', ownerId),
+          // --- Tables using owner_id ---
+          supabase.from('business_tags').delete().eq('owner_id', ownerId),
+          // --- Tables using inviter_id ---
+          supabase.from('business_invitations').delete().eq('inviter_id', ownerId),
         ])
 
         // 3. Reset business_settings to fresh state (keep the row, clear all data)
