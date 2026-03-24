@@ -2336,6 +2336,121 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true })
     }
 
+    // ─── Send verification code ───
+    if (action === 'send-verification-code') {
+      const { user_id, email } = req.body
+      if (!user_id || !email) return res.status(400).json({ error: 'user_id and email required' })
+
+      // Generate 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString()
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 min
+
+      // Invalidate old codes
+      await supabase
+        .from('business_verification_codes')
+        .update({ used: true })
+        .eq('user_id', user_id)
+        .eq('used', false)
+
+      // Insert new code
+      const { error: insertErr } = await supabase
+        .from('business_verification_codes')
+        .insert({ user_id, code, expires_at: expiresAt })
+
+      if (insertErr) return res.status(500).json({ error: insertErr.message })
+
+      // Format code with space: "847 291"
+      const displayCode = code.slice(0, 3) + ' ' + code.slice(3)
+
+      // Send email via Brevo
+      const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      if (!BREVO_API_KEY) return res.status(500).json({ error: 'BREVO_API_KEY missing' })
+
+      const htmlContent = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;background-color:#0a0a0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0f;padding:40px 20px;"><tr><td align="center"><table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;"><tr><td style="padding-bottom:32px;text-align:center;"><div style="font-size:28px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Close<span style="color:#6366f1;">OS</span></div></td></tr><tr><td style="background:linear-gradient(135deg,#13131f 0%,#1a1a2e 100%);border:1px solid rgba(99,102,241,0.2);border-radius:16px;padding:40px;"><h1 style="margin:0 0 8px;font-size:22px;font-weight:600;color:#ffffff;text-align:center;">Code de v&#233;rification</h1><p style="margin:0 0 32px;font-size:15px;color:#9ca3af;text-align:center;line-height:1.5;">Utilisez le code ci-dessous pour v&#233;rifier votre connexion &#224; CloseOS Business.</p><div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:12px;padding:24px;text-align:center;margin-bottom:32px;"><div style="font-size:36px;font-weight:700;color:#6366f1;letter-spacing:8px;font-family:monospace;">${displayCode}</div></div><p style="margin:0 0 24px;font-size:13px;color:#6b7280;text-align:center;line-height:1.5;">Ce code expire dans <strong style="color:#9ca3af;">10 minutes</strong>. Ne le partagez avec personne.</p><div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:10px;padding:16px;margin-bottom:0;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:24px;vertical-align:top;padding-right:12px;"><div style="font-size:16px;line-height:1;">&#9888;&#65039;</div></td><td><p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.5;">Si vous n'avez pas tent&#233; de vous connecter, ignorez cet e-mail. Quelqu'un a peut-&#234;tre saisi votre adresse par erreur.</p></td></tr></table></div></td></tr><tr><td style="padding-top:32px;text-align:center;"><p style="margin:0 0 8px;font-size:12px;color:#4b5563;">&copy; 2025 CloseOS - Tous droits r&#233;serv&#233;s</p><p style="margin:0;font-size:11px;color:#374151;">Cet e-mail a &#233;t&#233; envoy&#233; automatiquement, merci de ne pas y r&#233;pondre.</p></td></tr></table></td></tr></table></body></html>`
+
+      const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+          to: [{ email }],
+          subject: 'Votre code de vérification CloseOS',
+          htmlContent
+        })
+      })
+
+      const emailData = await emailRes.json()
+      if (!emailRes.ok) return res.status(500).json({ error: `Email error: ${JSON.stringify(emailData)}` })
+
+      return res.status(200).json({ success: true })
+    }
+
+    // ─── Verify code & create device token ───
+    if (action === 'verify-code') {
+      const { user_id, code, device_fingerprint } = req.body
+      if (!user_id || !code || !device_fingerprint) {
+        return res.status(400).json({ error: 'user_id, code and device_fingerprint required' })
+      }
+
+      // Find valid code
+      const { data: codeRow } = await supabase
+        .from('business_verification_codes')
+        .select('*')
+        .eq('user_id', user_id)
+        .eq('code', code.replace(/\s/g, ''))
+        .eq('used', false)
+        .gte('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!codeRow) return res.status(401).json({ error: 'Code invalide ou expiré' })
+
+      // Mark code as used
+      await supabase
+        .from('business_verification_codes')
+        .update({ used: true })
+        .eq('id', codeRow.id)
+
+      // Create device token (7 days)
+      const token = crypto.randomBytes(48).toString('hex')
+      const tokenExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+
+      // Remove old tokens for this device
+      await supabase
+        .from('business_device_tokens')
+        .delete()
+        .eq('user_id', user_id)
+        .eq('device_fingerprint', device_fingerprint)
+
+      const { error: tokenErr } = await supabase
+        .from('business_device_tokens')
+        .insert({ user_id, device_fingerprint, token, expires_at: tokenExpires })
+
+      if (tokenErr) return res.status(500).json({ error: tokenErr.message })
+
+      return res.status(200).json({ success: true, token })
+    }
+
+    // ─── Check device token ───
+    if (action === 'check-device') {
+      const { user_id, device_fingerprint, token } = req.body
+      if (!user_id || !device_fingerprint || !token) {
+        return res.status(400).json({ verified: false })
+      }
+
+      const { data: deviceToken } = await supabase
+        .from('business_device_tokens')
+        .select('*')
+        .eq('user_id', user_id)
+        .eq('device_fingerprint', device_fingerprint)
+        .eq('token', token)
+        .gte('expires_at', new Date().toISOString())
+        .maybeSingle()
+
+      return res.status(200).json({ verified: !!deviceToken })
+    }
+
     return res.status(400).json({ error: 'Invalid action' })
   } catch (err: any) {
     console.error('[business] Error:', err)

@@ -4,24 +4,27 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Loader2, Check, AlertCircle, KeyRound } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { supabase } from '../../lib/supabase';
+import BusinessVerification, { getDeviceFingerprint } from './BusinessVerification';
 
 export default function BusinessLogin() {
   const navigate = useNavigate();
-  const { login, user, loading: authLoading, businessProfile, isTeamMember, refreshProfile } = useBusinessAuth();
+  const { login, user, loading: authLoading, businessProfile, isTeamMember, refreshProfile, needsVerification } = useBusinessAuth();
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && !needsVerification) {
       if (businessProfile || isTeamMember) {
         navigate('/business/dashboard', { replace: true });
       }
     }
-  }, [user, authLoading, businessProfile, isTeamMember, navigate]);
+  }, [user, authLoading, businessProfile, isTeamMember, navigate, needsVerification]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [pendingVerification, setPendingVerification] = useState<{ userId: string; email: string } | null>(null);
 
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
@@ -57,6 +60,23 @@ export default function BusinessLogin() {
     }
   };
 
+  const checkDeviceToken = async (userId: string): Promise<boolean> => {
+    const token = localStorage.getItem('closeos_device_token');
+    const fingerprint = getDeviceFingerprint();
+    if (!token) return false;
+    try {
+      const res = await fetch('/api/business-check-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, device_fingerprint: fingerprint, token })
+      });
+      const data = await res.json();
+      return !!data.verified;
+    } catch {
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -68,8 +88,21 @@ export default function BusinessLogin() {
         setError(result.error.message || "Email ou mot de passe incorrect");
         setLoading(false);
       } else {
-        await refreshProfile();
-        navigate('/business/dashboard');
+        const userId = result.data?.user?.id;
+        const userEmail = result.data?.user?.email || email;
+        if (userId) {
+          const deviceOk = await checkDeviceToken(userId);
+          if (deviceOk) {
+            await refreshProfile();
+            navigate('/business/dashboard');
+          } else {
+            setPendingVerification({ userId, email: userEmail });
+            setLoading(false);
+          }
+        } else {
+          await refreshProfile();
+          navigate('/business/dashboard');
+        }
       }
     } catch (err) {
       setError("Une erreur est survenue.");
@@ -94,6 +127,23 @@ export default function BusinessLogin() {
       setGoogleLoading(false);
     }
   };
+
+  if (pendingVerification) {
+    return (
+      <BusinessVerification
+        userId={pendingVerification.userId}
+        email={pendingVerification.email}
+        onVerified={async () => {
+          await refreshProfile();
+          navigate('/business/dashboard');
+        }}
+        onCancel={async () => {
+          setPendingVerification(null);
+          await supabase.auth.signOut();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-[#f5f3f0] dark:bg-neutral-900" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>

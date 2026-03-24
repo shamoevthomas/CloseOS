@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BusinessSidebar } from '../components/BusinessSidebar'
 import { BusinessSettingsModal } from '../components/BusinessSettingsModal'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
@@ -9,6 +9,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessThemeProvider, useTheme } from '../contexts/BusinessThemeContext'
 import { supabase } from '../../lib/supabase'
 import { getBrowserTimezone, getTimezoneLabel } from '../../lib/timezone'
+import BusinessVerification from '../pages/BusinessVerification'
 
 const OWNER_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/dashboard': { title: 'Dashboard', subtitle: "Vue d'ensemble de votre business" },
@@ -48,8 +49,26 @@ const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 
 export function BusinessLayout() {
   const location = useLocation()
-  const { isTeamMember, teamMember, businessProfile, user, refreshProfile } = useBusinessAuth()
+  const navigate = useNavigate()
+  const { isTeamMember, teamMember, businessProfile, user, refreshProfile, needsVerification, setNeedsVerification, logout } = useBusinessAuth()
   const pageTitles = isTeamMember ? TEAM_PAGE_TITLES : OWNER_PAGE_TITLES
+
+  // Verification gate for Google OAuth or returning sessions
+  if (needsVerification && user) {
+    return (
+      <BusinessVerification
+        userId={user.id}
+        email={user.email || ''}
+        onVerified={async () => {
+          setNeedsVerification(false);
+        }}
+        onCancel={async () => {
+          await logout();
+          navigate('/business/login', { replace: true });
+        }}
+      />
+    );
+  }
 
   // Handle dynamic routes like /business/appels/:id
   const basePath = location.pathname.replace(/\/[^/]+$/, '')

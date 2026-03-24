@@ -59,6 +59,9 @@
     { "source": "/api/business-invitation", "destination": "/api/business?action=invitation" },
     { "source": "/api/business-crm-sync", "destination": "/api/business" },
     { "source": "/api/business-welcome-email", "destination": "/api/business?action=welcome-email" },
+    { "source": "/api/business-send-verification-code", "destination": "/api/business?action=send-verification-code" },
+    { "source": "/api/business-verify-code", "destination": "/api/business?action=verify-code" },
+    { "source": "/api/business-check-device", "destination": "/api/business?action=check-device" },
 
     { "source": "/(.*)", "destination": "/index.html" }
   ]

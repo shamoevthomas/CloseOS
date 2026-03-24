@@ -4,6 +4,16 @@ import { getBrowserTimezone } from '../../lib/timezone';
 
 const BusinessAuthContext = createContext<any>(null);
 
+function getDeviceFingerprint(): string {
+  const key = 'closeos_device_id';
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID() + '-' + navigator.userAgent.slice(0, 50).replace(/\s/g, '_');
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
 export function BusinessAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [businessProfile, setBusinessProfile] = useState<any>(null);
@@ -12,6 +22,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const [teamMember, setTeamMember] = useState<any>(null);
   const [isTeamMember, setIsTeamMember] = useState(false);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const isMountedRef = useRef(true);
   // Guard: tracks the latest initUser call to discard stale results
   const initVersionRef = useRef(0);
@@ -107,6 +118,24 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     setTeamMember(null);
     setIsTeamMember(false);
     setOwnerUserId(null);
+    setNeedsVerification(false);
+  }, []);
+
+  const checkDeviceVerified = useCallback(async (userId: string): Promise<boolean> => {
+    const token = localStorage.getItem('closeos_device_token');
+    const fingerprint = getDeviceFingerprint();
+    if (!token) return false;
+    try {
+      const res = await fetch('/api/business-check-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, device_fingerprint: fingerprint, token })
+      });
+      const data = await res.json();
+      return !!data.verified;
+    } catch {
+      return false;
+    }
   }, []);
 
   useEffect(() => {
@@ -146,6 +175,9 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
 
       if (currentUser) {
         await initUser(currentUser.id);
+        // Check device verification
+        const deviceOk = await checkDeviceVerified(currentUser.id);
+        if (isMountedRef.current) setNeedsVerification(!deviceOk);
       } else {
         clearUserData();
       }
@@ -370,6 +402,8 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       isTeamMember,
       ownerUserId,
       userTimezone,
+      needsVerification,
+      setNeedsVerification,
       refreshProfile: async () => {
         if (user) {
           await initUser(user.id);
