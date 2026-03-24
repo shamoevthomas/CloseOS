@@ -22,6 +22,7 @@ interface Formula {
   resources: Resource[]
   is_active: boolean
   created_at: string
+  team_id?: string | null
 }
 
 interface FormulaCommission {
@@ -35,6 +36,12 @@ interface TeamMemberBasic {
   first_name: string
   last_name: string
   role: string
+  team_id?: string | null
+}
+
+interface BusinessTeam {
+  id: string
+  name: string
 }
 
 const RESOURCE_TYPES: Resource['type'][] = ['PDF', 'Vidéo', 'Lien', 'Autre']
@@ -66,6 +73,8 @@ export function BusinessFormules() {
   const [memberRates, setMemberRates] = useState<Record<string, number | null>>({})
   const [expandedRoles, setExpandedRoles] = useState<Record<string, boolean>>({})
   const [teamMembers, setTeamMembers] = useState<TeamMemberBasic[]>([])
+  const [teams, setTeams] = useState<BusinessTeam[]>([])
+  const [formTeamId, setFormTeamId] = useState<string | null>(null)
 
   const fetchFormulas = useCallback(async () => {
     if (!effectiveUserId) return
@@ -82,13 +91,18 @@ export function BusinessFormules() {
 
   useEffect(() => { fetchFormulas() }, [fetchFormulas])
 
-  // Fetch team members once (for commission section)
+  // Fetch team members + teams (for commission section)
   useEffect(() => {
     if (!effectiveUserId || !canSeeCommissions) return
     supabase.from('business_team_members')
-      .select('id, first_name, last_name, role')
+      .select('id, first_name, last_name, role, team_id')
       .eq('business_owner_id', effectiveUserId)
       .then(({ data }) => { if (data) setTeamMembers(data) })
+    supabase.from('business_teams')
+      .select('id, name')
+      .eq('business_owner_id', effectiveUserId)
+      .order('position')
+      .then(({ data }) => setTeams(data || []))
   }, [effectiveUserId, canSeeCommissions])
 
   // Load commissions for a formula
@@ -115,6 +129,7 @@ export function BusinessFormules() {
     setFormName(''); setFormPrice(''); setFormDescription('')
     setFormResources([]); setEditingFormula(null)
     setRoleRates({}); setMemberRates({}); setExpandedRoles({})
+    setFormTeamId(null)
   }
 
   const openCreate = () => { resetForm(); setIsModalOpen(true) }
@@ -125,6 +140,7 @@ export function BusinessFormules() {
     setFormPrice(formula.price?.toString() || '0')
     setFormDescription(formula.description || '')
     setFormResources(formula.resources || [])
+    setFormTeamId(formula.team_id || null)
     setRoleRates({}); setMemberRates({}); setExpandedRoles({})
     try {
       if (canSeeCommissions) await loadFormulaCommissions(formula.id)
@@ -168,6 +184,7 @@ export function BusinessFormules() {
         name: formName,
         description: formDescription || null,
         resources: formResources,
+        team_id: formTeamId || null,
       }
       // Owner cannot change price when editing
       if (!editingFormula) {
@@ -242,8 +259,9 @@ export function BusinessFormules() {
     }
   }
 
-  // Commission helpers
-  const activeRoles = ROLES.filter(r => teamMembers.some(m => m.role === r))
+  // Commission helpers - filter by team when selected
+  const commissionMembers = formTeamId ? teamMembers.filter(m => m.team_id === formTeamId) : teamMembers
+  const activeRoles = ROLES.filter(r => commissionMembers.some(m => m.role === r))
 
   const inputCls = "w-full rounded-2xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900"
   const smallInputCls = "rounded-xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2 text-xs text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 focus:border-stone-900 focus:outline-none"
@@ -381,6 +399,21 @@ export function BusinessFormules() {
                 <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} placeholder="Décrivez cette formule..." disabled={isTeamMember} className={`${inputCls} resize-none ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
               </div>
 
+              {/* Team assignment */}
+              {teams.length > 0 && canEdit && (
+                <div>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Équipe assignée</label>
+                  <div className="relative">
+                    <select value={formTeamId || ''} onChange={(e) => setFormTeamId(e.target.value || null)} className={selectCls}>
+                      <option value="">Toute l'équipe</option>
+                      {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
+                  </div>
+                  <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">Les commissions avancées ne montreront que les membres de cette équipe.</p>
+                </div>
+              )}
+
               {/* Resources */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -441,7 +474,7 @@ export function BusinessFormules() {
                   <div className="space-y-2">
                     {activeRoles.map(role => {
                       const roleRate = roleRates[role] ?? 0
-                      const roleMembers = teamMembers.filter(m => m.role === role)
+                      const roleMembers = commissionMembers.filter(m => m.role === role)
                       const isExpanded = expandedRoles[role] || false
 
                       return (

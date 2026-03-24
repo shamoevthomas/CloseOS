@@ -98,8 +98,10 @@ export function BusinessPipeline() {
   const [selectedStages, setSelectedStages] = useState<string[]>([])
   const [selectedOffers, setSelectedOffers] = useState<string[]>([])
 
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [teamMembers, setTeamMembers] = useState<(TeamMember & { team_id?: string | null })[]>([])
   const [formulas, setFormulas] = useState<Formula[]>([])
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([])
 
   // Tags
   const [tags, setTags] = useState<BusinessTag[]>([])
@@ -160,15 +162,17 @@ export function BusinessPipeline() {
   useEffect(() => {
     if (!effectiveUserId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
+      supabase.from('business_team_members').select('id, first_name, last_name, role, team_id').eq('business_owner_id', effectiveUserId),
       supabase.from('business_users').select('id, full_name').eq('id', effectiveUserId).single(),
-    ]).then(([tmRes, ownerRes]) => {
+      supabase.from('business_teams').select('id, name').eq('business_owner_id', effectiveUserId).order('position'),
+    ]).then(([tmRes, ownerRes, teamsRes]) => {
       const list = tmRes.data || []
       if (ownerRes.data) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
-        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
+        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner', team_id: null })
       }
       setTeamMembers(list)
+      setTeams(teamsRes.data || [])
     })
     fetch(`/api/business?action=formulas-list&user_id=${effectiveUserId}`)
       .then(r => r.json())
@@ -211,6 +215,12 @@ export function BusinessPipeline() {
       result = result.filter(p => p.created_at && new Date(p.created_at) >= cutoff)
     }
 
+    // Teams filter
+    if (selectedTeams.length > 0) {
+      const teamMemberIds = new Set(teamMembers.filter(m => m.team_id && selectedTeams.includes(m.team_id)).map(m => m.id))
+      result = result.filter(p => p.assigned_to && teamMemberIds.has(p.assigned_to))
+    }
+
     // Members (assigned_to)
     if (selectedMembers.length > 0) {
       result = result.filter(p => p.assigned_to && selectedMembers.includes(p.assigned_to))
@@ -238,9 +248,9 @@ export function BusinessPipeline() {
     }
 
     return result
-  }, [prospects, searchQuery, selectedPeriod, selectedMembers, selectedStages, selectedOffers, selectedTags, prospectTags])
+  }, [prospects, searchQuery, selectedPeriod, selectedMembers, selectedStages, selectedOffers, selectedTags, selectedTeams, teamMembers, prospectTags])
 
-  const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0 || selectedTags.length > 0
+  const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0 || selectedTags.length > 0 || selectedTeams.length > 0
 
   // Count prospects per filter value (based on unfiltered prospects)
   const filterCounts = useMemo(() => {
@@ -283,6 +293,7 @@ export function BusinessPipeline() {
     setSelectedStages([])
     setSelectedOffers([])
     setSelectedTags([])
+    setSelectedTeams([])
   }
 
   const toggleMultiSelect = (arr: string[], setArr: (v: string[]) => void, val: string) => {
@@ -398,6 +409,29 @@ export function BusinessPipeline() {
                 ))}
               </div>
             </div>
+
+            {/* Teams */}
+            {teams.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-stone-500 mb-2">Équipe</label>
+                <div className="flex flex-wrap gap-1">
+                  {teams.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => toggleMultiSelect(selectedTeams, setSelectedTeams, t.id)}
+                      className={cn(
+                        'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
+                        selectedTeams.includes(t.id)
+                          ? 'bg-stone-900 text-white'
+                          : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
+                      )}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Members */}
             <div>

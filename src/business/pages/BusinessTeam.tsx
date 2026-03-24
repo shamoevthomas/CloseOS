@@ -498,12 +498,6 @@ export function BusinessTeam() {
         )
       })()}
 
-      {/* ─── Team Kanban Organisation ─── */}
-      <TeamKanban
-        members={members}
-        onMemberTeamChange={handleMemberTeamChange}
-      />
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Object.entries(roleGroups).map(([role, roleMembers]) => {
             const color = getRoleColor(role)
@@ -592,6 +586,12 @@ export function BusinessTeam() {
           })}
         </div>
 
+
+      {/* ─── Team Kanban Organisation ─── */}
+      <TeamKanban
+        members={members}
+        onMemberTeamChange={handleMemberTeamChange}
+      />
 
       {isOwnerView && (
         <InviteMemberModal

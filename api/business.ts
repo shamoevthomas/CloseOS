@@ -1246,7 +1246,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'formulas-create' && req.method === 'POST') {
-      const { user_id, name, price, description, resources } = req.body
+      const { user_id, name, price, description, resources, team_id } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -1273,6 +1273,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           description: description || null,
           resources: resources || [],
           is_active: true,
+          team_id: team_id || null,
         })
         .select()
         .single()
@@ -1551,7 +1552,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'campaigns-create' && req.method === 'POST') {
-      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay, booking_duration, booking_title, booking_description, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution } = req.body
+      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay, booking_duration, booking_title, booking_description, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, team_id } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -1596,6 +1597,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           booking_assign_mode: booking_assign_mode || 'all_role',
           booking_assigned_members: booking_assigned_members || [],
           booking_distribution: booking_distribution || 'round_robin',
+          team_id: team_id || null,
         })
         .select()
         .single()
@@ -2281,6 +2283,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from('business_team_members')
         .update({ onboarding_acknowledged: true })
         .eq('id', team_member_id)
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ success: true })
+    }
+
+    // ─── HOS update onboarding / custom tabs ───
+    if (action === 'update-org-content' && req.method === 'PUT') {
+      const { team_member_id, onboarding_sections, role_onboarding_sections, custom_tabs } = req.body
+      if (!team_member_id) return res.status(400).json({ error: 'team_member_id required' })
+
+      // Verify team member is HOS or Admin
+      const { data: member } = await supabase
+        .from('business_team_members')
+        .select('id, role, business_owner_id')
+        .eq('id', team_member_id)
+        .single()
+
+      if (!member) return res.status(404).json({ error: 'Team member not found' })
+      if (member.role !== 'Head of Sales' && member.role !== 'Admin') {
+        return res.status(403).json({ error: 'Unauthorized' })
+      }
+
+      const updates: Record<string, any> = {}
+      if (onboarding_sections !== undefined) updates.onboarding_sections = onboarding_sections
+      if (role_onboarding_sections !== undefined) updates.role_onboarding_sections = role_onboarding_sections
+      if (custom_tabs !== undefined) updates.custom_tabs = custom_tabs
+
+      const { error } = await supabase
+        .from('business_settings')
+        .update(updates)
+        .eq('user_id', member.business_owner_id)
 
       if (error) return res.status(500).json({ error: error.message })
       return res.status(200).json({ success: true })

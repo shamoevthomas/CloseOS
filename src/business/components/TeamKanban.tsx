@@ -59,8 +59,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
 
   const isOwner = !isTeamMember
   const isHOS = isTeamMember && teamMember?.role === 'Head of Sales'
-  const isAdmin = isTeamMember && teamMember?.role === 'Admin'
-  const canEdit = isOwner || isHOS || isAdmin
+  const canEdit = isOwner || isHOS
   // Only owner can drag HOS/Admin
   const canDragRole = (role: string) => {
     if (role === 'Head of Sales' || role === 'Admin') return isOwner

@@ -46,6 +46,13 @@ interface TeamMember {
   avatar_url: string | null
   is_online?: boolean
   last_heartbeat_at?: string | null
+  team_id?: string | null
+}
+
+interface BusinessTeam {
+  id: string
+  name: string
+  position: number
 }
 
 const isReallyOnline = (m: TeamMember) => {
@@ -150,6 +157,8 @@ export function BusinessDashboard() {
   const [absences, setAbsences] = useState<{ team_member_id: string; start_date: string; end_date: string }[]>([])
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null)
   const [commissionRates, setCommissionRates] = useState<Record<string, { roles: Record<string, number>; members: Record<string, number> }>>({})
+  const [teams, setTeams] = useState<BusinessTeam[]>([])
+  const [teamTab, setTeamTab] = useState<'all' | 'teams'>('all')
 
   const isMemberAbsent = (memberId: string) => {
     const today = new Date().toISOString().slice(0, 10)
@@ -161,13 +170,14 @@ export function BusinessDashboard() {
     if (!effectiveUserId) return
     setLoading(true)
     try {
-      const [prospectsRes, campaignsRes, appointmentsRes, membersRes, remindersRes, absencesRes] = await Promise.all([
+      const [prospectsRes, campaignsRes, appointmentsRes, membersRes, remindersRes, absencesRes, teamsRes] = await Promise.all([
         supabase.from('business_prospects').select('*').eq('user_id', effectiveUserId),
         supabase.from('business_campaigns').select('*').eq('user_id', effectiveUserId),
         supabase.from('business_appointments').select('*').eq('user_id', effectiveUserId),
         supabase.from('business_team_members').select('*').eq('business_owner_id', effectiveUserId),
         supabase.from('reminders').select('*').eq('user_id', effectiveUserId).eq('is_done', false).order('reminder_date', { ascending: true }).limit(5),
         supabase.from('business_absences').select('team_member_id, start_date, end_date').eq('business_owner_id', effectiveUserId),
+        supabase.from('business_teams').select('*').eq('business_owner_id', effectiveUserId).order('position'),
       ])
       setProspects(prospectsRes.data || [])
       setCampaigns(campaignsRes.data || [])
@@ -175,6 +185,7 @@ export function BusinessDashboard() {
       setMembers(membersRes.data || [])
       setReminders(remindersRes.data || [])
       setAbsences(absencesRes.data || [])
+      setTeams(teamsRes.data || [])
 
       try {
         const res = await fetch(`/api/business?action=objectives-list&user_id=${effectiveUserId}`)
@@ -232,22 +243,39 @@ export function BusinessDashboard() {
     setReminders(prev => prev.filter(r => r.id !== id))
   }
 
+  // ─── HOS team filtering ───
+  const hosTeamMemberIds = useMemo(() => {
+    if (!isHeadOfSales || !teamMember?.team_id) return null
+    return new Set(members.filter(m => m.team_id === teamMember.team_id).map(m => m.id))
+  }, [isHeadOfSales, teamMember, members])
+
+  const visibleMembers = useMemo(() => {
+    if (hosTeamMemberIds) return members.filter(m => hosTeamMemberIds.has(m.id))
+    return members
+  }, [members, hosTeamMemberIds])
+
   // ─── KPI calculations ───
   const now = new Date()
   const currentMonth = now.getMonth()
   const currentYear = now.getFullYear()
 
+  // Filter prospects: HOS sees only their team's prospects
+  const baseProspects = useMemo(() => {
+    if (!hosTeamMemberIds) return prospects
+    return prospects.filter(p => p.assigned_to && hosTeamMemberIds.has(p.assigned_to))
+  }, [prospects, hosTeamMemberIds])
+
   // Filter prospects by dashboard period setting
   const dashboardPeriod = businessSettings?.dashboard_period || 'all'
   const periodProspects = useMemo(() => {
-    if (dashboardPeriod === 'all') return prospects
+    if (dashboardPeriod === 'all') return baseProspects
     const cutoff = new Date()
     if (dashboardPeriod === 'today') { cutoff.setHours(0, 0, 0, 0) }
     else if (dashboardPeriod === 'week') { cutoff.setDate(cutoff.getDate() - cutoff.getDay()); cutoff.setHours(0, 0, 0, 0) }
     else if (dashboardPeriod === 'month') { cutoff.setDate(1); cutoff.setHours(0, 0, 0, 0) }
     else if (dashboardPeriod === 'year') { cutoff.setMonth(0, 1); cutoff.setHours(0, 0, 0, 0) }
-    return prospects.filter(p => p.created_at && new Date(p.created_at) >= cutoff)
-  }, [prospects, dashboardPeriod])
+    return baseProspects.filter(p => p.created_at && new Date(p.created_at) >= cutoff)
+  }, [baseProspects, dashboardPeriod])
 
   const PERIOD_LABELS: Record<string, string> = { today: "Aujourd'hui", week: 'Cette semaine', month: 'Ce mois', year: 'Cette année', all: 'Depuis toujours' }
 
@@ -298,10 +326,10 @@ export function BusinessDashboard() {
 
   const activeCampaigns = useMemo(() => {
     return campaigns.map(c => {
-      const leadCount = prospects.filter(p => p.campaign_id === c.id).length
+      const leadCount = baseProspects.filter(p => p.campaign_id === c.id).length
       return { ...c, leadCount }
     })
-  }, [campaigns, prospects])
+  }, [campaigns, baseProspects])
 
   const objectivesWithProgress = useMemo(() => {
     return objectives.map(obj => {
@@ -310,7 +338,7 @@ export function BusinessDashboard() {
         case 'revenue': current = totalRevenue; break
         case 'sales_count': current = wonProspects.length; break
         case 'conversion_rate': current = closingRate; break
-        case 'leads': current = prospects.length; break
+        case 'leads': current = baseProspects.length; break
         case 'appointments': current = totalAppts; break
         case 'noshow_rate': current = noshowRate; break
         default: current = 0
@@ -318,7 +346,7 @@ export function BusinessDashboard() {
       const progress = obj.target_value > 0 ? Math.min((current / obj.target_value) * 100, 100) : 0
       return { ...obj, current, progress }
     })
-  }, [objectives, totalRevenue, wonProspects.length, closingRate, prospects.length, totalAppts, noshowRate])
+  }, [objectives, totalRevenue, wonProspects.length, closingRate, baseProspects.length, totalAppts, noshowRate])
 
   const firstName = isTeamMember
     ? (teamMember?.first_name || 'Utilisateur')
@@ -608,79 +636,162 @@ export function BusinessDashboard() {
         {/* Performance équipe */}
         <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-6 px-1">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Équipe</h3>
+            <div className="flex items-center gap-4">
+              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Équipe</h3>
+              {teams.length > 0 && (
+                <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-full p-0.5">
+                  <button
+                    onClick={() => setTeamTab('all')}
+                    className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${teamTab === 'all' ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}`}
+                  >
+                    Tous
+                  </button>
+                  <button
+                    onClick={() => setTeamTab('teams')}
+                    className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${teamTab === 'teams' ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}`}
+                  >
+                    Équipes
+                  </button>
+                </div>
+              )}
+            </div>
             <Link to="/business/team" className="px-5 py-2.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-full text-xs font-bold text-neutral-900 dark:text-white transition-colors uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Voir l'équipe
             </Link>
           </div>
-          {members.length === 0 ? (
-            <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">Aucun membre</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="text-[10px] uppercase font-black text-neutral-400 dark:text-neutral-500 tracking-[0.15em]">
-                  <tr>
-                    <th className="pb-5 px-3">Membre</th>
-                    <th className="pb-5 px-3">Rôle</th>
-                    <th className="pb-5 px-3">Statut</th>
-                    <th className="pb-5 px-3 text-right">Com</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
-                  {members.map(m => {
-                    const online = isReallyOnline(m)
-                    return (
-                      <tr key={m.id} onClick={() => navigate(`/business/team?member=${m.id}`)} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer">
-                        <td className="py-4 px-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 overflow-hidden shrink-0">
+
+          {/* All members tab */}
+          {teamTab === 'all' && (
+            <>
+              {visibleMembers.length === 0 ? (
+                <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">Aucun membre</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="text-[10px] uppercase font-black text-neutral-400 dark:text-neutral-500 tracking-[0.15em]">
+                      <tr>
+                        <th className="pb-5 px-3">Membre</th>
+                        <th className="pb-5 px-3">Rôle</th>
+                        <th className="pb-5 px-3">Statut</th>
+                        <th className="pb-5 px-3 text-right">Com</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
+                      {visibleMembers.map(m => {
+                        const online = isReallyOnline(m)
+                        return (
+                          <tr key={m.id} onClick={() => navigate(`/business/team?member=${m.id}`)} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer">
+                            <td className="py-4 px-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 overflow-hidden shrink-0">
+                                  {m.avatar_url ? (
+                                    <img src={m.avatar_url} alt={`${m.first_name} ${m.last_name}`} className="h-full w-full object-cover" />
+                                  ) : (
+                                    <>{m.first_name[0]}{m.last_name[0]}</>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-sm text-neutral-900 dark:text-white">{m.first_name} {m.last_name}</p>
+                                  <p className="text-[10px] text-neutral-400 dark:text-neutral-500">{m.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-3">
+                              <span className={`text-xs font-semibold px-2.5 py-1 rounded ${ROLE_COLORS[m.role] || 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'}`}>
+                                {m.role}
+                              </span>
+                            </td>
+                            <td className="py-4 px-3">
+                              {isMemberAbsent(m.id) ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-[#ffb95f]" />
+                                  <span className="text-[10px] font-bold uppercase text-[#ffb95f]">Absent</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <span className={`w-2 h-2 rounded-full ${online ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-300'}`} />
+                                  <span className={`text-[10px] font-bold uppercase ${online ? 'text-emerald-600' : 'text-neutral-400'}`}>
+                                    {online ? 'Online' : 'Offline'}
+                                  </span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-4 px-3 text-right">
+                              {(() => {
+                                const com = getMemberCommission(m.id, m.role)
+                                return com > 0 ? (
+                                  <span className="text-sm font-bold text-emerald-600">{com.toLocaleString()} €</span>
+                                ) : (
+                                  <span className="text-xs text-neutral-300 dark:text-neutral-600">—</span>
+                                )
+                              })()}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Teams tab */}
+          {teamTab === 'teams' && (
+            <div className="space-y-5">
+              {teams.map(team => {
+                const teamMembersList = visibleMembers.filter(m => m.team_id === team.id)
+                const teamCA = teamMembersList.reduce((total, m) => {
+                  const memberWon = baseProspects.filter(p => p.stage === 'won' && p.assigned_to === m.id)
+                  return total + memberWon.reduce((s, p) => s + (Number(p.value) || 0), 0)
+                }, 0)
+                return (
+                  <div key={team.id} className="rounded-2xl bg-neutral-50/80 dark:bg-neutral-800/50 p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+                          <Users className="h-3.5 w-3.5 text-neutral-500 dark:text-neutral-400" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-sm text-neutral-900 dark:text-white">{team.name}</h4>
+                          <p className="text-[10px] text-neutral-400 dark:text-neutral-500">{teamMembersList.length} membre{teamMembersList.length !== 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-black text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamCA)}</p>
+                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase font-bold tracking-wider">CA généré</p>
+                      </div>
+                    </div>
+                    {teamMembersList.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {teamMembersList.map(m => (
+                          <button
+                            key={m.id}
+                            onClick={() => navigate(`/business/team?member=${m.id}`)}
+                            className="flex items-center gap-2 bg-white dark:bg-neutral-800 rounded-full px-3 py-1.5 hover:shadow-md transition-all"
+                          >
+                            <div className="w-6 h-6 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center text-[9px] font-bold text-neutral-500 dark:text-neutral-400 overflow-hidden shrink-0">
                               {m.avatar_url ? (
-                                <img src={m.avatar_url} alt={`${m.first_name} ${m.last_name}`} className="h-full w-full object-cover" />
+                                <img src={m.avatar_url} alt="" className="h-full w-full object-cover" />
                               ) : (
                                 <>{m.first_name[0]}{m.last_name[0]}</>
                               )}
                             </div>
-                            <div>
-                              <p className="font-bold text-sm text-neutral-900 dark:text-white">{m.first_name} {m.last_name}</p>
-                              <p className="text-[10px] text-neutral-400 dark:text-neutral-500">{m.email}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-3">
-                          <span className={`text-xs font-semibold px-2.5 py-1 rounded ${ROLE_COLORS[m.role] || 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'}`}>
-                            {m.role}
-                          </span>
-                        </td>
-                        <td className="py-4 px-3">
-                          {isMemberAbsent(m.id) ? (
-                            <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-[#ffb95f]" />
-                              <span className="text-[10px] font-bold uppercase text-[#ffb95f]">Absent</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${online ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-300'}`} />
-                              <span className={`text-[10px] font-bold uppercase ${online ? 'text-emerald-600' : 'text-neutral-400'}`}>
-                                {online ? 'Online' : 'Offline'}
-                              </span>
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-4 px-3 text-right">
-                          {(() => {
-                            const com = getMemberCommission(m.id, m.role)
-                            return com > 0 ? (
-                              <span className="text-sm font-bold text-emerald-600">{com.toLocaleString()} €</span>
-                            ) : (
-                              <span className="text-xs text-neutral-300 dark:text-neutral-600">—</span>
-                            )
-                          })()}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                            <span className="text-xs font-bold text-neutral-900 dark:text-white">{m.first_name}</span>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isReallyOnline(m) ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-600'}`} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {teamMembersList.length === 0 && (
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500 text-center py-3">Aucun membre dans cette équipe</p>
+                    )}
+                  </div>
+                )
+              })}
+              {teams.length === 0 && (
+                <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">Aucune équipe créée</p>
+              )}
             </div>
           )}
         </div>

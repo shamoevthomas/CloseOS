@@ -56,6 +56,12 @@ interface TeamMember {
   full_name: string
   email: string
   role: string
+  team_id?: string | null
+}
+
+interface BusinessTeam {
+  id: string
+  name: string
 }
 
 // ============================================================================
@@ -141,9 +147,9 @@ function computeKpis(prospects: any[]) {
 // TABS
 // ============================================================================
 
-type Tab = 'global' | 'period' | 'team'
+type Tab = 'global' | 'period' | 'team' | 'equipe'
 
-const TABS: { key: Tab; label: string }[] = [
+const BASE_TABS: { key: Tab; label: string }[] = [
   { key: 'global', label: 'Global' },
   { key: 'period', label: 'Par Période' },
   { key: 'team', label: 'Par Membre' },
@@ -161,13 +167,14 @@ export function BusinessKPI() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+  const [teams, setTeams] = useState<BusinessTeam[]>([])
 
-  // Fetch team members
+  // Fetch team members + teams
   useEffect(() => {
     if (!effectiveUserId) return
     supabase
       .from('business_team_members')
-      .select('id, user_id, first_name, last_name, email, role')
+      .select('id, user_id, first_name, last_name, email, role, team_id')
       .eq('business_owner_id', effectiveUserId)
       .then(({ data }) => {
         setTeamMembers((data || []).map(m => ({
@@ -175,7 +182,19 @@ export function BusinessKPI() {
           full_name: `${m.first_name} ${m.last_name}`.trim(),
         })))
       })
+    supabase
+      .from('business_teams')
+      .select('id, name')
+      .eq('business_owner_id', effectiveUserId)
+      .order('position')
+      .then(({ data }) => setTeams(data || []))
   }, [effectiveUserId])
+
+  const TABS = useMemo(() => {
+    const tabs = [...BASE_TABS]
+    if (teams.length > 0) tabs.push({ key: 'equipe', label: 'Par Équipe' })
+    return tabs
+  }, [teams])
 
   // ---- GLOBAL KPIs ----
   const globalKpis = useMemo(() => computeKpis(prospects), [prospects])
@@ -743,6 +762,89 @@ export function BusinessKPI() {
           </div>
         )
       })()}
+
+      {/* ============ EQUIPE TAB ============ */}
+      {activeTab === 'equipe' && (
+        <div className="space-y-6">
+          {teams.map(team => {
+            const teamMembersList = teamMembers.filter(m => m.team_id === team.id)
+            const teamProspects = prospects.filter(p => p.assigned_to && teamMembersList.some(m => m.id === p.assigned_to))
+            const teamWon = teamProspects.filter(p => p.stage === 'won')
+            const teamLost = teamProspects.filter(p => p.stage === 'lost')
+            const teamNoshow = teamProspects.filter(p => p.stage === 'noshow')
+            const teamCA = teamWon.reduce((s, p) => s + (p.value || 0), 0)
+            const teamDecided = teamWon.length + teamLost.length + teamNoshow.length
+            const teamConv = teamDecided > 0 ? (teamWon.length / teamDecided) * 100 : 0
+
+            return (
+              <div key={team.id} className="bg-white dark:bg-neutral-800 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50 overflow-hidden">
+                <div className="px-5 py-4 border-b border-stone-100 dark:border-neutral-700 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-stone-100 dark:bg-neutral-700 flex items-center justify-center">
+                      <Users className="h-4 w-4 text-stone-500 dark:text-neutral-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-stone-900 dark:text-white">{team.name}</h3>
+                      <p className="text-[10px] text-stone-400 dark:text-neutral-500">{teamMembersList.length} membre{teamMembersList.length !== 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6 text-right">
+                    <div>
+                      <p className="text-[10px] text-stone-400 dark:text-neutral-500 uppercase font-bold tracking-wider">CA</p>
+                      <p className="text-lg font-extrabold text-emerald-700">{formatCurrency(teamCA)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-stone-400 dark:text-neutral-500 uppercase font-bold tracking-wider">Ventes</p>
+                      <p className="text-lg font-extrabold text-stone-900 dark:text-white">{teamWon.length}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-stone-400 dark:text-neutral-500 uppercase font-bold tracking-wider">Conv.</p>
+                      <p className="text-lg font-extrabold text-purple-700">{teamConv.toFixed(1)}%</p>
+                    </div>
+                  </div>
+                </div>
+                {teamMembersList.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-stone-50/50 dark:bg-neutral-800/50">
+                          <th className="text-left px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">Nom</th>
+                          <th className="text-left px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">Rôle</th>
+                          <th className="text-center px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">Prospects</th>
+                          <th className="text-center px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">Ventes</th>
+                          <th className="text-center px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">CA</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 dark:divide-neutral-700">
+                        {teamMembersList.map(member => {
+                          const mp = prospects.filter(p => p.assigned_to === member.id)
+                          const mw = mp.filter(p => p.stage === 'won')
+                          const mCA = mw.reduce((s, p) => s + (p.value || 0), 0)
+                          return (
+                            <tr
+                              key={member.id}
+                              onClick={() => { setActiveTab('team'); setSelectedMemberId(member.id) }}
+                              className="hover:bg-stone-50 dark:hover:bg-neutral-700 transition-colors cursor-pointer"
+                            >
+                              <td className="px-5 py-3 font-medium text-stone-900 dark:text-white">{member.full_name}</td>
+                              <td className="px-5 py-3 text-stone-400 dark:text-neutral-500 capitalize">{member.role}</td>
+                              <td className="px-5 py-3 text-center text-stone-900 dark:text-white">{mp.length}</td>
+                              <td className="px-5 py-3 text-center text-stone-900 dark:text-white">{mw.length}</td>
+                              <td className="px-5 py-3 text-center text-emerald-700 font-medium">{formatCurrency(mCA)}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 text-center py-6">Aucun membre dans cette équipe</p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

@@ -607,14 +607,16 @@ function TeamMemberOrganizationView() {
 // ─── Main Page ───
 
 export function BusinessOrganization() {
-  const { user, businessSettings, businessProfile, updateBusinessSettings, isTeamMember } = useBusinessAuth()
+  const { user, businessSettings, businessProfile, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile } = useBusinessAuth()
 
-  // Team member → read-only spectator view
-  if (isTeamMember) {
+  const isHoS = isTeamMember && (teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin')
+
+  // Team member (non-HOS) → read-only spectator view
+  if (isTeamMember && !isHoS) {
     return <TeamMemberOrganizationView />
   }
 
-  const [activeTab, setActiveTab] = useState('organisation')
+  const [activeTab, setActiveTab] = useState(isHoS ? 'onboarding' : 'organisation')
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -730,8 +732,25 @@ export function BusinessOrganization() {
     setLoading(true)
     setMessage({ type: '', text: '' })
     try {
-      const { error } = await updateBusinessSettings(formData)
-      if (error) throw error
+      if (isHoS) {
+        // HOS: save only onboarding + custom tabs via API
+        const res = await fetch('/api/business?action=update-org-content', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            team_member_id: teamMember.id,
+            onboarding_sections: formData.onboarding_sections,
+            role_onboarding_sections: formData.role_onboarding_sections,
+            custom_tabs: formData.custom_tabs,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Erreur')
+        await refreshProfile()
+      } else {
+        const { error } = await updateBusinessSettings(formData)
+        if (error) throw error
+      }
       setMessage({ type: 'success', text: 'Organisation mise à jour avec succès !' })
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Erreur lors de la sauvegarde.' })
@@ -784,7 +803,7 @@ export function BusinessOrganization() {
     <div className="max-w-5xl mx-auto pb-12">
 
       {/* ─── Cropper overlay ─── */}
-      {imageSrc && (
+      {!isHoS && imageSrc && (
         <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-[#444748]/20 bg-[#1b1c1b] mb-6">
             <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} />
@@ -836,7 +855,7 @@ export function BusinessOrganization() {
       <div className="flex gap-10 mb-10 border-b border-[#c4c7c7]/10 dark:border-neutral-800 overflow-x-auto">
         {/* Fixed tabs */}
         {[
-          { key: 'organisation', label: 'ORGANISATION' },
+          ...(!isHoS ? [{ key: 'organisation', label: 'ORGANISATION' }] : []),
           { key: 'onboarding', label: 'ONBOARDING' },
         ].map(tab => (
           <button
@@ -906,7 +925,7 @@ export function BusinessOrganization() {
       </div>
 
       {/* ═══════════════════ ORGANISATION TAB ═══════════════════ */}
-      {activeTab === 'organisation' && (
+      {!isHoS && activeTab === 'organisation' && (
         <div className="animate-in fade-in duration-300">
           <div className="grid grid-cols-12 gap-10">
             {/* Branding Card */}

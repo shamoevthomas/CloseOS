@@ -43,6 +43,7 @@ interface Campaign {
   booking_assign_mode: 'specific' | 'all_role' | 'multiple'
   booking_assigned_members: string[]
   booking_distribution: 'round_robin' | 'random'
+  team_id: string | null
   created_at: string
   business_prospects: { count: number }[]
 }
@@ -58,6 +59,12 @@ interface TeamMember {
   first_name: string
   last_name: string
   role: string
+  team_id?: string | null
+}
+
+interface BusinessTeam {
+  id: string
+  name: string
 }
 
 const DEFAULT_SOURCES = ['Insta', 'LinkedIn', 'ADS', 'Organique']
@@ -85,9 +92,13 @@ export function BusinessCampaigns() {
 
   // Team members for booking assignment
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [teams, setTeams] = useState<BusinessTeam[]>([])
 
   // Formulas for dropdown
   const [formulas, setFormulas] = useState<Formula[]>([])
+
+  // Team assignment
+  const [formTeamId, setFormTeamId] = useState<string | null>(null)
 
   // Custom sources
   const [customSources, setCustomSources] = useState<{ id: string; name: string }[]>([])
@@ -195,20 +206,23 @@ export function BusinessCampaigns() {
   const fetchTeamMembers = useCallback(async () => {
     if (!effectiveUserId) return
     const { supabase } = await import('../../lib/supabase')
-    const [tmRes, ownerRes] = await Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
+    const [tmRes, ownerRes, teamsRes] = await Promise.all([
+      supabase.from('business_team_members').select('id, first_name, last_name, role, team_id').eq('business_owner_id', effectiveUserId),
       supabase.from('business_users').select('id, full_name').eq('id', effectiveUserId).single(),
+      supabase.from('business_teams').select('id, name').eq('business_owner_id', effectiveUserId).order('position'),
     ])
-    const members: TeamMember[] = (tmRes.data || []).map((m: any) => ({ id: m.id, first_name: m.first_name, last_name: m.last_name, role: m.role }))
+    const members: TeamMember[] = (tmRes.data || []).map((m: any) => ({ id: m.id, first_name: m.first_name, last_name: m.last_name, role: m.role, team_id: m.team_id }))
     if (ownerRes.data) {
       members.unshift({
         id: ownerRes.data.id,
         first_name: (ownerRes.data.full_name || 'Owner').split(' ')[0],
         last_name: (ownerRes.data.full_name || '').split(' ').slice(1).join(' '),
         role: 'Owner',
+        team_id: null,
       })
     }
     setTeamMembers(members)
+    setTeams(teamsRes.data || [])
   }, [effectiveUserId])
 
   useEffect(() => { fetchCampaigns(); fetchFormulas(); fetchTeamMembers(); fetchCustomSources() }, [fetchCampaigns, fetchFormulas, fetchTeamMembers, fetchCustomSources])
@@ -224,6 +238,7 @@ export function BusinessCampaigns() {
     setFormBookingDuration(30); setFormBookingTitle(''); setFormBookingDescription('')
     setFormBookingWith('closer'); setFormBookingAssignMode('all_role')
     setFormBookingAssignedMembers([]); setFormBookingDistribution('round_robin')
+    setFormTeamId(null)
   }
 
   const openCreate = () => { resetForm(); setIsModalOpen(true) }
@@ -245,12 +260,19 @@ export function BusinessCampaigns() {
     setFormBookingDuration(campaign.booking_duration ?? 30)
     setFormBookingTitle(campaign.booking_title || '')
     setFormBookingDescription(campaign.booking_description || '')
+    setFormTeamId(campaign.team_id || null)
     setFormBookingWith(campaign.booking_with || 'closer')
     setFormBookingAssignMode(campaign.booking_assign_mode || 'all_role')
     setFormBookingAssignedMembers(campaign.booking_assigned_members || [])
     setFormBookingDistribution(campaign.booking_distribution || 'round_robin')
     setModalTab('general'); setIsModalOpen(true)
   }
+
+  // Filter team members by selected team
+  const filteredTeamMembers = useMemo(() => {
+    if (!formTeamId) return teamMembers
+    return teamMembers.filter(m => m.team_id === formTeamId || m.role === 'Owner')
+  }, [teamMembers, formTeamId])
 
   const getPayload = () => ({
     user_id: effectiveUserId, name: formName, description: formDescription, source: formSource,
@@ -270,6 +292,7 @@ export function BusinessCampaigns() {
     booking_assign_mode: formBookingAssignMode,
     booking_assigned_members: formBookingAssignedMembers,
     booking_distribution: formBookingDistribution,
+    team_id: formTeamId || null,
   })
 
   const handleSave = async () => {
@@ -548,6 +571,25 @@ export function BusinessCampaigns() {
                     <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nom de la campagne" className="w-full bg-transparent border-0 border-b border-[#c4c7c7]/30 dark:border-neutral-700 focus:ring-0 focus:border-[#006c49] transition-all text-xl font-['Manrope'] font-bold py-3 px-0 text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/30 dark:placeholder:text-neutral-500" />
                   </div>
 
+                  {/* Team assignment */}
+                  {teams.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Équipe assignée</label>
+                      <div className="relative">
+                        <select
+                          value={formTeamId || ''}
+                          onChange={(e) => { setFormTeamId(e.target.value || null); setFormBookingAssignedMembers([]) }}
+                          className={selectCls}
+                        >
+                          <option value="">Toute l'équipe</option>
+                          {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
+                      </div>
+                      <p className="text-[10px] text-[#444748]/60 dark:text-neutral-500 mt-1">Les bookings et assignations seront limités aux membres de cette équipe.</p>
+                    </div>
+                  )}
+
                   {/* Capture type switch */}
                   <div className="space-y-4">
                     <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">Type de Capture</label>
@@ -709,7 +751,7 @@ export function BusinessCampaigns() {
                             className={selectCls}
                           >
                             <option value="">Choisir un membre</option>
-                            {teamMembers
+                            {filteredTeamMembers
                               .filter(m => {
                                 const assignRole = formCaptureType === 'without_rdv' ? 'setter' : formBookingWith
                                 if (assignRole === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
@@ -729,7 +771,7 @@ export function BusinessCampaigns() {
                       <div className="mt-3 space-y-2">
                         <p className="text-xs text-[#444748]/60 dark:text-neutral-500">Sélectionnez les membres à inclure :</p>
                         <div className="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-2">
-                          {teamMembers
+                          {filteredTeamMembers
                             .filter(m => {
                               if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner'
                               return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner'

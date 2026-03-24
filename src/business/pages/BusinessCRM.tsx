@@ -85,7 +85,9 @@ export function BusinessCRM() {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const [selectedStages, setSelectedStages] = useState<string[]>([])
   const [selectedOffers, setSelectedOffers] = useState<string[]>([])
-  const [allTeamMembers, setAllTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string }[]>([])
+  const [allTeamMembers, setAllTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string; team_id?: string | null }[]>([])
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [isIntegrationModalOpen, setIsIntegrationModalOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
@@ -133,20 +135,23 @@ export function BusinessCRM() {
     // Team members
     import('../../lib/supabase').then(({ supabase }) => {
       Promise.all([
-        supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
+        supabase.from('business_team_members').select('id, first_name, last_name, role, team_id').eq('business_owner_id', effectiveUserId),
         supabase.from('business_users').select('id, full_name, email, owner_assignable').eq('id', effectiveUserId).single(),
-      ]).then(([tmRes, ownerRes]) => {
+        supabase.from('business_teams').select('id, name').eq('business_owner_id', effectiveUserId).order('position'),
+      ]).then(([tmRes, ownerRes, teamsRes]) => {
         const all = tmRes.data || []
         const ownerMember = (ownerRes.data?.owner_assignable) ? {
           id: ownerRes.data.id,
           first_name: (ownerRes.data.full_name || 'Owner').split(' ')[0] || 'Owner',
           last_name: (ownerRes.data.full_name || '').split(' ').slice(1).join(' ') || '',
           role: 'Owner',
+          team_id: null as string | null,
         } : null
         // All members for filter panel
         const allList = [...all]
         if (ownerMember) allList.unshift(ownerMember)
         setAllTeamMembers(allList)
+        setTeams(teamsRes.data || [])
         // Setters/Closers for add modal
         const setters = all.filter((m: any) => m.role === 'Setter' || m.role === 'Setter-Closer')
         if (ownerMember) setters.unshift(ownerMember)
@@ -231,7 +236,7 @@ export function BusinessCRM() {
     return teamSetters[Math.floor(Math.random() * teamSetters.length)]
   }, [teamSetters])
 
-  const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0 || selectedTags.length > 0
+  const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0 || selectedTags.length > 0 || selectedTeams.length > 0
 
   // Count prospects per filter value
   const filterCounts = useMemo(() => {
@@ -269,6 +274,7 @@ export function BusinessCRM() {
     setSelectedStages([])
     setSelectedOffers([])
     setSelectedTags([])
+    setSelectedTeams([])
   }
 
   const toggleMultiSelect = (arr: string[], setArr: (v: string[]) => void, val: string) => {
@@ -293,6 +299,11 @@ export function BusinessCRM() {
       const cutoff = new Date()
       cutoff.setDate(cutoff.getDate() - selectedPeriod)
       result = result.filter(p => p.created_at && new Date(p.created_at) >= cutoff)
+    }
+
+    if (selectedTeams.length > 0) {
+      const teamMemberIds = new Set(allTeamMembers.filter(m => m.team_id && selectedTeams.includes(m.team_id)).map(m => m.id))
+      result = result.filter(p => p.assigned_to && teamMemberIds.has(p.assigned_to))
     }
 
     if (selectedMembers.length > 0) {
@@ -555,6 +566,29 @@ export function BusinessCRM() {
                 ))}
               </div>
             </div>
+
+            {/* Teams */}
+            {teams.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">Équipe</label>
+                <div className="flex flex-wrap gap-1">
+                  {teams.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => toggleMultiSelect(selectedTeams, setSelectedTeams, t.id)}
+                      className={cn(
+                        'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
+                        selectedTeams.includes(t.id)
+                          ? 'bg-stone-900 text-white'
+                          : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
+                      )}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Members */}
             <div>

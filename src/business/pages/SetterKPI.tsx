@@ -503,7 +503,7 @@ export function SetterKPI() {
       )}
 
       {/* PDF export content */}
-      <div ref={pdfRef}>
+      <div ref={pdfRef} className="space-y-6">
       {/* PDF header (hidden on screen, visible in PDF) */}
       <div className="hidden print:block mb-6">
         <h1 className="text-2xl font-extrabold text-stone-900">Performance Setter — {periodLabel}</h1>
