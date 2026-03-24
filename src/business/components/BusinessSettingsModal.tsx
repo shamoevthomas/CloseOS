@@ -120,6 +120,15 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
   const [resetResendCountdown, setResetResendCountdown] = useState(0)
   const resetInputRefs = useRef<(HTMLInputElement | null)[]>([])
 
+  // ─── Delete owner account state ───
+  const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm' | 'export' | 'code'>('idle')
+  const [deleteCode, setDeleteCode] = useState(['', '', '', '', '', ''])
+  const [deleteSending, setDeleteSending] = useState(false)
+  const [deleteVerifying, setDeleteVerifying] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleteResendCountdown, setDeleteResendCountdown] = useState(0)
+  const deleteInputRefs = useRef<(HTMLInputElement | null)[]>([])
+
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -381,6 +390,13 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     return () => clearTimeout(t)
   }, [resetResendCountdown])
 
+  // Delete owner countdown
+  useEffect(() => {
+    if (deleteResendCountdown <= 0) return
+    const t = setTimeout(() => setDeleteResendCountdown(deleteResendCountdown - 1), 1000)
+    return () => clearTimeout(t)
+  }, [deleteResendCountdown])
+
   if (!isOpen) return null
 
   const isGoogleUser = user?.app_metadata?.provider === 'google'
@@ -522,40 +538,72 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     }
   }
 
-  // ─── Delete account ───
-  const handleDeleteAccount = async () => {
-    if (!confirm('Voulez-vous vraiment supprimer votre compte ? Cette action est irréversible.')) return
-    setLoading(true)
+  // ─── Delete owner account ───
+  const sendDeleteCode = async () => {
+    if (!user?.id || !user?.email) return
+    setDeleteSending(true)
+    setDeleteError(null)
     try {
-      const { error } = await supabase
-        .from('business_users')
-        .update({ deletion_scheduled_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() } as any)
-        .eq('id', user?.id)
-      if (error) throw error
-      setFormData(prev => ({ ...prev, deletion_scheduled_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() }))
-      setMessage({ type: 'success', text: 'Demande de suppression enregistrée. Votre compte sera supprimé dans 30 jours.' })
+      const res = await fetch('/api/business-send-delete-owner-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, email: user.email })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
+      setDeleteStep('code')
+      setDeleteResendCountdown(60)
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Erreur' })
+      setDeleteError(err.message)
     } finally {
-      setLoading(false)
+      setDeleteSending(false)
     }
   }
 
-  const handleCancelDeletion = async () => {
-    if (!confirm('Voulez-vous annuler la suppression de votre compte ?')) return
-    setLoading(true)
+  const handleDeleteInput = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return
+    const newCode = [...deleteCode]
+    newCode[index] = value.slice(-1)
+    setDeleteCode(newCode)
+    setDeleteError(null)
+    if (value && index < 5) deleteInputRefs.current[index + 1]?.focus()
+    if (newCode.every(d => d !== '')) confirmDelete(newCode.join(''))
+  }
+
+  const handleDeleteKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !deleteCode[index] && index > 0) deleteInputRefs.current[index - 1]?.focus()
+  }
+
+  const handleDeletePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    if (pasted.length === 6) {
+      setDeleteCode(pasted.split(''))
+      deleteInputRefs.current[5]?.focus()
+      confirmDelete(pasted)
+    }
+  }
+
+  const confirmDelete = async (fullCode: string) => {
+    if (!user?.id) return
+    setDeleteVerifying(true)
+    setDeleteError(null)
     try {
-      const { error } = await supabase
-        .from('business_users')
-        .update({ deletion_scheduled_at: null } as any)
-        .eq('id', user?.id)
-      if (error) throw error
-      setFormData(prev => ({ ...prev, deletion_scheduled_at: null }))
-      setMessage({ type: 'success', text: 'La demande de suppression a été annulée.' })
+      const res = await fetch('/api/business-delete-owner-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, code: fullCode })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Code invalide')
+      await supabase.auth.signOut()
+      window.location.href = '/business/login'
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Erreur' })
+      setDeleteError(err.message)
+      setDeleteCode(['', '', '', '', '', ''])
+      deleteInputRefs.current[0]?.focus()
     } finally {
-      setLoading(false)
+      setDeleteVerifying(false)
     }
   }
 
@@ -1072,45 +1120,179 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
             {/* ─── DELETE ACCOUNT TAB ─── */}
             {activeTab === 'delete_account' && (
-              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-8 tracking-tight">Suppression du compte</h3>
+              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-2 tracking-tight">Suppression du compte</h3>
+                <p className="text-stone-500 dark:text-neutral-400 text-sm">
+                  Supprimez d&eacute;finitivement votre compte et toutes les donn&eacute;es de votre organisation.
+                </p>
 
-                <div className="p-8 border border-red-200 bg-red-50 rounded-3xl space-y-6">
-                  <div className="flex items-center gap-4 text-red-600">
-                    <AlertCircle className="h-8 w-8" strokeWidth={1.5} />
-                    <h3 className="text-xl font-business-display font-extrabold">Zone de danger</h3>
-                  </div>
-                  <div className="space-y-4">
-                    <p className="text-stone-600 dark:text-neutral-300 leading-relaxed">
-                      La suppression est irreversible. Toutes vos donnees (prospects, campagnes, objectifs, equipe) seront supprimees definitivement.
-                    </p>
-                    {formData.deletion_scheduled_at && (
-                      <div className="p-4 bg-red-100 rounded-2xl border border-red-200">
-                        <p className="font-bold text-red-700">Compte en cours de suppression</p>
-                        <p className="text-sm text-red-600 mt-1">
-                          Prevue le : {new Date(formData.deletion_scheduled_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                        </p>
+                {/* Step 0: Idle — delete button */}
+                {deleteStep === 'idle' && (
+                  <div className="mt-8 p-6 rounded-2xl border border-red-200/50 dark:border-red-500/20 bg-red-50/30 dark:bg-red-500/5">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2.5 rounded-xl bg-red-100 dark:bg-red-500/10 shrink-0">
+                        <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
                       </div>
-                    )}
+                      <div className="flex-1">
+                        <h4 className="font-bold text-stone-900 dark:text-white text-sm">Supprimer mon compte</h4>
+                        <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1 leading-relaxed">
+                          Cette action est <strong className="text-red-600">irr&eacute;versible</strong>. Votre compte, votre organisation, tous les membres de l'&eacute;quipe et toutes les donn&eacute;es seront d&eacute;finitivement supprim&eacute;s.
+                        </p>
+                        <button
+                          onClick={() => setDeleteStep('confirm')}
+                          className="mt-4 px-6 py-2.5 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all"
+                        >
+                          Supprimer mon compte
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  {formData.deletion_scheduled_at ? (
-                    <button
-                      onClick={handleCancelDeletion}
-                      disabled={loading}
-                      className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-stone-200 hover:bg-stone-300 text-stone-900 rounded-full font-bold transition-all"
-                    >
-                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : "Annuler la demande de suppression"}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleDeleteAccount}
-                      disabled={loading}
-                      className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white rounded-full font-bold transition-all border border-red-200 hover:border-red-600"
-                    >
-                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <><Trash2 className="h-5 w-5" strokeWidth={1.5} /> Supprimer mon compte et mes donnees</>}
-                    </button>
-                  )}
-                </div>
+                )}
+
+                {/* Step 1: Confirmation */}
+                {deleteStep === 'confirm' && (
+                  <div className="mt-8 p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+                    <div className="text-center">
+                      <div className="text-5xl mb-4">&#9888;&#65039;</div>
+                      <h4 className="font-business-display font-extrabold text-xl text-stone-900 dark:text-white mb-3">
+                        &Ecirc;tes-vous s&ucirc;r ?
+                      </h4>
+                      <p className="text-sm text-stone-500 dark:text-neutral-400 leading-relaxed mb-6">
+                        Cette action va <strong className="text-red-600">supprimer d&eacute;finitivement</strong> votre compte et toutes les donn&eacute;es de votre organisation. Cette action est irr&eacute;versible.
+                      </p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setDeleteStep('idle')}
+                          className="flex-1 px-6 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 text-sm font-bold hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all"
+                        >
+                          Annuler
+                        </button>
+                        <button
+                          onClick={() => setDeleteStep('export')}
+                          className="flex-1 px-6 py-3 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all"
+                        >
+                          Continuer
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2: Export reminder */}
+                {deleteStep === 'export' && (
+                  <div className="mt-8 p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+                    <div className="text-center">
+                      <div className="text-5xl mb-4">&#128230;</div>
+                      <h4 className="font-business-display font-extrabold text-xl text-stone-900 dark:text-white mb-3">
+                        Exportez vos donn&eacute;es
+                      </h4>
+                      <p className="text-sm text-stone-500 dark:text-neutral-400 leading-relaxed mb-6">
+                        Avant de supprimer votre compte, pensez &agrave; exporter vos donn&eacute;es importantes. Une fois supprim&eacute;, rien ne pourra &ecirc;tre r&eacute;cup&eacute;r&eacute;.
+                      </p>
+                      <div className="text-left space-y-2 mb-8">
+                        {[
+                          { name: 'Rapport', href: '/business/report' },
+                          { name: 'KPI Closer', href: '/business/closer-kpi' },
+                          { name: 'KPI Setter', href: '/business/setter-kpi' },
+                          { name: 'Pipeline', href: '/business/pipeline-owner' },
+                          { name: 'Factures', href: '/business/factures' },
+                          { name: 'CRM (Prospects)', href: '/business/crm' },
+                          { name: '&Eacute;quipe', href: '/business/team' },
+                        ].map((page) => (
+                          <a
+                            key={page.href}
+                            href={page.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between p-3 rounded-xl bg-stone-50 dark:bg-neutral-700/50 hover:bg-stone-100 dark:hover:bg-neutral-700 transition-colors group"
+                          >
+                            <span className="text-sm font-medium text-stone-700 dark:text-neutral-200" dangerouslySetInnerHTML={{ __html: page.name }} />
+                            <ExternalLink className="h-4 w-4 text-stone-400 group-hover:text-stone-600 dark:group-hover:text-neutral-300 transition-colors" />
+                          </a>
+                        ))}
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setDeleteStep('confirm')}
+                          className="flex-1 px-6 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 text-sm font-bold hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all"
+                        >
+                          Retour
+                        </button>
+                        <button
+                          onClick={sendDeleteCode}
+                          disabled={deleteSending}
+                          className="flex-1 px-6 py-3 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
+                        >
+                          {deleteSending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "J'ai export\u00e9, continuer"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: Verification code */}
+                {deleteStep === 'code' && (
+                  <div className="mt-8 p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+                    <div className="text-center">
+                      <div className="text-4xl mb-4">&#128274;</div>
+                      <h4 className="font-business-display font-extrabold text-xl text-stone-900 dark:text-white mb-2">
+                        Code de confirmation
+                      </h4>
+                      <p className="text-sm text-stone-500 dark:text-neutral-400 mb-6">
+                        Un code a &eacute;t&eacute; envoy&eacute; &agrave; <strong className="text-stone-700 dark:text-neutral-300">{user?.email}</strong>
+                      </p>
+
+                      {deleteError && (
+                        <div className="mb-4 flex items-center justify-center gap-2 p-3 bg-red-50/60 border border-red-200/30 rounded-xl text-red-600 text-xs font-medium">
+                          <AlertCircle className="h-4 w-4 shrink-0" />
+                          {deleteError}
+                        </div>
+                      )}
+
+                      <div className="flex justify-center gap-2.5 mb-6" onPaste={handleDeletePaste}>
+                        {deleteCode.map((digit, i) => (
+                          <div key={i} className="relative">
+                            {i === 3 && <div className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-stone-300 dark:bg-neutral-600" />}
+                            <input
+                              ref={el => { deleteInputRefs.current[i] = el }}
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={1}
+                              value={digit}
+                              onChange={e => handleDeleteInput(i, e.target.value)}
+                              onKeyDown={e => handleDeleteKeyDown(i, e)}
+                              disabled={deleteVerifying}
+                              className="w-11 h-13 text-center text-lg font-bold bg-stone-100/50 dark:bg-neutral-700 border border-stone-300 dark:border-neutral-600 rounded-xl text-stone-900 dark:text-white focus:ring-2 focus:ring-red-500/30 focus:border-red-500 outline-none transition-all disabled:opacity-50"
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      {deleteVerifying && (
+                        <div className="flex justify-center mb-4">
+                          <Loader2 className="h-5 w-5 animate-spin text-red-600" />
+                        </div>
+                      )}
+
+                      <div className="mb-6">
+                        {deleteResendCountdown > 0 ? (
+                          <p className="text-xs text-stone-400">Renvoyer dans {deleteResendCountdown}s</p>
+                        ) : (
+                          <button onClick={sendDeleteCode} disabled={deleteSending} className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50">
+                            Renvoyer le code
+                          </button>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => { setDeleteStep('idle'); setDeleteCode(['', '', '', '', '', '']); setDeleteError(null) }}
+                        className="text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

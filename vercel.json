@@ -69,6 +69,8 @@
     { "source": "/api/business-send-invitation-email", "destination": "/api/business?action=send-invitation-email" },
     { "source": "/api/business-send-reset-org-code", "destination": "/api/business?action=send-reset-org-code" },
     { "source": "/api/business-reset-organization", "destination": "/api/business?action=reset-organization" },
+    { "source": "/api/business-send-delete-owner-code", "destination": "/api/business?action=send-delete-owner-code" },
+    { "source": "/api/business-delete-owner-account", "destination": "/api/business?action=delete-owner-account" },
 
     { "source": "/(.*)", "destination": "/index.html" }
   ]

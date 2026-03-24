@@ -2758,6 +2758,208 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true })
     }
 
+    // ─── Send delete owner account verification code ───
+    if (action === 'send-delete-owner-code') {
+      const { user_id, email } = req.body
+      if (!user_id || !email) return res.status(400).json({ error: 'user_id and email required' })
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString()
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString()
+
+      await supabase.from('business_verification_codes').update({ used: true }).eq('user_id', user_id).eq('used', false)
+      const { error: insertErr } = await supabase.from('business_verification_codes').insert({ user_id, code, expires_at: expiresAt })
+      if (insertErr) return res.status(500).json({ error: insertErr.message })
+
+      const displayCode = code.slice(0, 3) + ' ' + code.slice(3)
+      const BREVO_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      if (!BREVO_KEY) return res.status(500).json({ error: 'BREVO_API_KEY missing' })
+
+      const htmlContent = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:42px;color:#111111;text-align:left;line-height:1.1;">Suppression<br>de compte</h1><p class="inter" style="margin:0 0 48px;font-size:16px;color:#1b1c1b;text-align:left;">Vous avez demand&#233; la suppression d&#233;finitive de votre compte CloseOS Business. Entrez le code ci-dessous pour confirmer.</p><div style="background-color:#f5f3f2;border-radius:48px;padding:40px 24px;text-align:center;margin-bottom:48px;"><div class="manrope" style="font-size:48px;color:#111111;letter-spacing:12px;margin-left:12px;">${displayCode}</div></div><p class="inter" style="margin:0 0 32px;font-size:14px;color:#1b1c1b;text-align:left;">Ce code expire dans <strong style="color:#111111;">10 minutes</strong>. Ne le partagez avec personne.</p><div style="background-color:#fbf9f8;border-radius:24px;padding:24px;border-left:4px solid #ef4444;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:20px;line-height:1;">&#9888;&#65039;</div></td><td><p class="inter" style="margin:0;font-size:13px;color:#1b1c1b;"><strong style="color:#ef4444;">Action irr&#233;versible.</strong> Votre compte, votre organisation, vos donn&#233;es et les comptes de tous vos membres seront d&#233;finitivement supprim&#233;s.</p></td></tr></table></div></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p><p class="inter" style="margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a &#233;t&#233; envoy&#233; automatiquement, merci de ne pas y r&#233;pondre.</p></td></tr></table></td></tr></table></body></html>`
+
+      await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+          to: [{ email }],
+          subject: 'Suppression de compte — CloseOS Business',
+          htmlContent
+        })
+      })
+
+      return res.status(200).json({ success: true })
+    }
+
+    // ─── Delete owner account (verify code + delete everything + owner account) ───
+    if (action === 'delete-owner-account') {
+      const { user_id, code } = req.body
+      if (!user_id || !code) return res.status(400).json({ error: 'user_id and code required' })
+
+      // Verify code
+      const { data: codeRow } = await supabase
+        .from('business_verification_codes')
+        .select('*')
+        .eq('user_id', user_id)
+        .eq('code', code.replace(/\s/g, ''))
+        .eq('used', false)
+        .gte('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!codeRow) return res.status(401).json({ error: 'Code invalide ou expiré' })
+      await supabase.from('business_verification_codes').update({ used: true }).eq('id', codeRow.id)
+
+      const ownerId = user_id
+
+      // Get all team members
+      const { data: members } = await supabase
+        .from('business_team_members')
+        .select('*')
+        .eq('business_owner_id', ownerId)
+
+      // Get all prospects for KPI
+      const { data: allProspects } = await supabase
+        .from('business_prospects')
+        .select('id, stage, value, assigned_to, assigned_setter, formula_id, campaign_id, created_at')
+        .eq('business_owner_id', ownerId)
+
+      // Get formula commissions
+      const { data: allCommissions } = await supabase
+        .from('business_formula_commissions')
+        .select('*')
+        .eq('business_owner_id', ownerId)
+
+      // Get organization name
+      const { data: settings } = await supabase
+        .from('business_settings')
+        .select('company_name')
+        .eq('user_id', ownerId)
+        .maybeSingle()
+      const orgName = settings?.company_name || 'CloseOS Business'
+
+      // Send notification email with KPI CSV to each team member
+      const BREVO_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      if (BREVO_KEY && members && members.length > 0) {
+        for (const member of members) {
+          if (!member.user_id) continue
+          const { data: authUser } = await supabase.auth.admin.getUserById(member.user_id)
+          const memberEmail = authUser?.user?.email
+          if (!memberEmail) continue
+
+          const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Membre'
+          const prospects = allProspects || []
+
+          const isCloser = member.role === 'Closer' || member.role === 'Setter-Closer'
+          const isSetter = member.role === 'Setter' || member.role === 'Setter-Closer'
+
+          const closerProspects = prospects.filter(p => p.assigned_to === member.id)
+          const setterProspects = prospects.filter(p => p.assigned_setter === member.id)
+          const closerWon = closerProspects.filter(p => p.stage === 'won')
+          const closerLost = closerProspects.filter(p => p.stage === 'lost')
+          const closerNoShow = closerProspects.filter(p => p.stage === 'noshow')
+          const closerRevenue = closerWon.reduce((s, p) => s + (p.value || 0), 0)
+          const setterContacted = setterProspects.filter(p => p.stage !== 'prospect')
+          const setterBooked = setterProspects.filter(p => ['qualified', 'won', 'lost', 'noshow', 'followup'].includes(p.stage))
+          const setterWon = setterProspects.filter(p => p.stage === 'won')
+          const setterRevenue = setterWon.reduce((s, p) => s + (p.value || 0), 0)
+
+          let closerCommission = 0, setterCommission = 0
+          const commissions = allCommissions || []
+          if (isCloser) {
+            for (const p of closerWon) {
+              const mc = commissions.find(c => c.formula_id === p.formula_id && c.role_key === member.id)
+              const rc = commissions.find(c => c.formula_id === p.formula_id && c.role_key === 'Closer')
+              closerCommission += (p.value || 0) * (mc?.rate ?? rc?.rate ?? 0) / 100
+            }
+          }
+          if (isSetter) {
+            for (const p of setterWon) {
+              const mc = commissions.find(c => c.formula_id === p.formula_id && c.role_key === `${member.id}:setter`)
+              const rc = commissions.find(c => c.formula_id === p.formula_id && c.role_key === 'Setter')
+              setterCommission += (p.value || 0) * (mc?.rate ?? rc?.rate ?? 0) / 100
+            }
+          }
+
+          let csvLines = ['Métrique,Valeur', `Nom,${memberName}`, `Rôle,${member.role}`, `Organisation,${orgName}`, `Date export,${new Date().toLocaleDateString('fr-FR')}`, '']
+          if (isCloser) {
+            const closerTotal = closerWon.length + closerLost.length + closerNoShow.length
+            csvLines.push('--- KPI Closer ---,', `Prospects assignés,${closerProspects.length}`, `Gagnés,${closerWon.length}`, `Perdus,${closerLost.length}`, `No-show,${closerNoShow.length}`, `Taux de conversion,${closerTotal > 0 ? ((closerWon.length / closerTotal) * 100).toFixed(1) : 0}%`, `Chiffre d'affaires,${closerRevenue.toFixed(2)} €`, `Commission closer,${closerCommission.toFixed(2)} €`)
+          }
+          if (isSetter) {
+            csvLines.push('', '--- KPI Setter ---,', `Prospects settés,${setterProspects.length}`, `Contactés,${setterContacted.length}`, `RDV bookés,${setterBooked.length}`, `Taux de booking,${setterContacted.length > 0 ? ((setterBooked.length / setterContacted.length) * 100).toFixed(1) : 0}%`, `Gagnés (via setting),${setterWon.length}`, `CA généré,${setterRevenue.toFixed(2)} €`, `Commission setter,${setterCommission.toFixed(2)} €`)
+          }
+
+          const csvBase64 = Buffer.from(csvLines.join('\n'), 'utf-8').toString('base64')
+
+          const notifHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:42px;color:#111111;text-align:left;line-height:1.1;">Organisation<br>supprim&#233;e</h1><p class="inter" style="margin:0 0 40px;font-size:16px;color:#1b1c1b;text-align:left;">Bonjour <strong style="color:#111111;">${memberName}</strong>,</p><p class="inter" style="margin:0 0 40px;font-size:16px;color:#1b1c1b;text-align:left;">L'organisation <strong style="color:#111111;">${orgName}</strong> a &#233;t&#233; d&#233;finitivement supprim&#233;e par son propri&#233;taire. Votre compte a &#233;t&#233; supprim&#233; de la plateforme.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:24px;margin-bottom:40px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:20px;line-height:1;">&#128206;</div></td><td><p class="inter" style="margin:0;font-size:14px;color:#1b1c1b;">Vous trouverez en pi&#232;ce jointe un <strong>export de vos KPI personnels</strong> au format CSV.</p></td></tr></table></div><div style="background-color:#fbf9f8;border-radius:24px;padding:24px;border-left:4px solid #ffb95f;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:20px;line-height:1;">&#128161;</div></td><td><p class="inter" style="margin:0;font-size:13px;color:#1b1c1b;">Merci d'avoir utilis&#233; CloseOS Business. Nous esp&#233;rons vous revoir bient&#244;t.</p></td></tr></table></div></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p><p class="inter" style="margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a &#233;t&#233; envoy&#233; automatiquement, merci de ne pas y r&#233;pondre.</p></td></tr></table></td></tr></table></body></html>`
+
+          await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+            body: JSON.stringify({
+              sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+              to: [{ email: memberEmail }],
+              subject: `L'organisation ${orgName} a été supprimée`,
+              htmlContent: notifHtml,
+              attachment: [{ content: csvBase64, name: `KPI_${memberName.replace(/\s/g, '_')}.csv` }]
+            })
+          })
+        }
+      }
+
+      // Delete ALL organization data (same as reset-organization)
+      if (members && members.length > 0) {
+        const memberIds = members.map(m => m.id)
+        const memberUserIds = members.filter(m => m.user_id).map(m => m.user_id)
+
+        await Promise.all([
+          supabase.from('business_objectives').delete().in('team_member_id', memberIds),
+          supabase.from('business_personal_objectives').delete().in('team_member_id', memberIds),
+          supabase.from('business_availability_slots').delete().in('team_member_id', memberIds),
+          supabase.from('business_absences').delete().in('team_member_id', memberIds),
+          supabase.from('business_user_scripts').delete().in('team_member_id', memberIds),
+          supabase.from('business_kpi_config').delete().in('team_member_id', memberIds),
+          supabase.from('business_connection_log').delete().in('team_member_id', memberIds),
+          supabase.from('business_device_tokens').delete().in('user_id', memberUserIds),
+          supabase.from('business_verification_codes').delete().in('user_id', memberUserIds),
+          supabase.from('reminders').delete().in('user_id', memberUserIds),
+        ])
+
+        for (const uid of memberUserIds) {
+          await supabase.auth.admin.deleteUser(uid).catch(() => {})
+        }
+      }
+
+      // Delete org-level data
+      await Promise.all([
+        supabase.from('business_team_members').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_prospects').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_campaigns').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_appointments').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_formulas').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_formula_commissions').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_objectives').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_custom_sources').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_booking_links').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_invitations').delete().eq('inviter_id', ownerId),
+        supabase.from('business_device_tokens').delete().eq('user_id', ownerId),
+        supabase.from('business_verification_codes').delete().eq('user_id', ownerId),
+        supabase.from('reminders').delete().eq('user_id', ownerId),
+      ])
+
+      // Delete owner's own data
+      await Promise.all([
+        supabase.from('business_settings').delete().eq('user_id', ownerId),
+        supabase.from('business_users').delete().eq('id', ownerId),
+      ])
+
+      // Delete owner's auth account
+      await supabase.auth.admin.deleteUser(ownerId).catch(() => {})
+
+      return res.status(200).json({ success: true })
+    }
+
     // ─── Send leave verification code ───
     if (action === 'send-leave-code') {
       const { user_id, email } = req.body
