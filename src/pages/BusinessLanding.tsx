@@ -466,7 +466,7 @@ export const BusinessLanding: React.FC = () => {
             </div>
             <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
               <iframe
-                src="https://www.closeos.fr/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&bg=fafafa&layout=horizontal"
+                src="https://www.closeos.fr/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&bg=f7f7f7&layout=horizontal"
                 width="100%"
                 height="800"
                 frameBorder="0"

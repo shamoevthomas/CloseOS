@@ -6,6 +6,148 @@ import { fromZonedTime } from 'date-fns-tz'
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
+// ─── Google Calendar helpers ───
+
+const GOOGLE_CLIENT_ID = '786115803806-plsj5610jgmsif4m3na35s50td7pppbd.apps.googleusercontent.com'
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+const GOOGLE_CALENDAR_API = 'https://www.googleapis.com/calendar/v3'
+
+async function exchangeGoogleCode(code: string, redirectUri: string): Promise<{ access_token: string; refresh_token: string; expires_in: number; scope: string } | null> {
+  const res = await fetch(GOOGLE_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    }).toString(),
+  })
+  const data = await res.json()
+  if (!data.access_token) return null
+  return data
+}
+
+async function refreshGoogleToken(refreshToken: string): Promise<{ access_token: string; expires_in: number } | null> {
+  const res = await fetch(GOOGLE_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }).toString(),
+  })
+  const data = await res.json()
+  if (!data.access_token) return null
+  return data
+}
+
+async function getGoogleAccessToken(supabase: any, userId: string): Promise<string | null> {
+  const { data: tokenRow } = await supabase
+    .from('business_google_calendar_tokens')
+    .select('access_token, refresh_token, expires_at')
+    .eq('user_id', userId)
+    .single()
+
+  if (!tokenRow?.refresh_token) return null
+
+  // Check if current access token is still valid (with 2min buffer)
+  if (tokenRow.access_token && tokenRow.expires_at) {
+    const expiresAt = new Date(tokenRow.expires_at).getTime()
+    if (Date.now() < expiresAt - 120000) {
+      return tokenRow.access_token
+    }
+  }
+
+  // Refresh the token
+  const refreshed = await refreshGoogleToken(tokenRow.refresh_token)
+  if (!refreshed) return null
+
+  const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+  await supabase
+    .from('business_google_calendar_tokens')
+    .update({ access_token: refreshed.access_token, expires_at: newExpiresAt, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+
+  return refreshed.access_token
+}
+
+async function fetchGoogleCalendarEvents(accessToken: string, timeMin: string, timeMax: string): Promise<{ start: string; end: string }[]> {
+  try {
+    const url = new URL(`${GOOGLE_CALENDAR_API}/calendars/primary/events`)
+    url.searchParams.set('timeMin', timeMin)
+    url.searchParams.set('timeMax', timeMax)
+    url.searchParams.set('singleEvents', 'true')
+    url.searchParams.set('orderBy', 'startTime')
+    url.searchParams.set('maxResults', '250')
+
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+
+    return (data.items || [])
+      .filter((item: any) => item.start?.dateTime && item.end?.dateTime) // Skip all-day events
+      .map((item: any) => ({
+        start: item.start.dateTime,
+        end: item.end.dateTime,
+      }))
+  } catch {
+    return []
+  }
+}
+
+async function createGoogleCalendarEvent(accessToken: string, event: {
+  summary: string; description?: string; startDateTime: string; endDateTime: string;
+  timeZone: string; withMeet?: boolean; attendeeEmail?: string;
+}): Promise<{ success: boolean; hangoutLink?: string; eventId?: string }> {
+  try {
+    const body: any = {
+      summary: event.summary,
+      description: event.description || '',
+      start: { dateTime: event.startDateTime, timeZone: event.timeZone },
+      end: { dateTime: event.endDateTime, timeZone: event.timeZone },
+    }
+
+    if (event.attendeeEmail) {
+      body.attendees = [{ email: event.attendeeEmail }]
+    }
+
+    if (event.withMeet) {
+      body.conferenceData = {
+        createRequest: {
+          requestId: `closeos-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          conferenceSolutionKey: { type: 'hangoutsMeet' },
+        },
+      }
+    }
+
+    const url = new URL(`${GOOGLE_CALENDAR_API}/calendars/primary/events`)
+    if (event.withMeet) url.searchParams.set('conferenceDataVersion', '1')
+
+    const res = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!res.ok) return { success: false }
+    const data = await res.json()
+    const hangoutLink = data.hangoutLink || data.conferenceData?.entryPoints?.[0]?.uri
+    return { success: true, hangoutLink, eventId: data.id }
+  } catch {
+    return { success: false }
+  }
+}
+
 // ─── Airtable helpers ───
 
 const AIRTABLE_API = 'https://api.airtable.com/v0'
@@ -1753,6 +1895,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true })
     }
 
+    // ─── Google Calendar: exchange auth code for tokens ───
+    if (action === 'google-calendar-connect' && req.method === 'POST') {
+      const { code, user_id } = req.body
+      if (!code || !user_id) return res.status(400).json({ error: 'code and user_id required' })
+
+      // @react-oauth/google uses 'postmessage' as redirect_uri for auth-code flow
+      const tokens = await exchangeGoogleCode(code, 'postmessage')
+      if (!tokens) return res.status(400).json({ error: 'Failed to exchange code' })
+
+      const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+
+      // Upsert tokens
+      const { error } = await supabase
+        .from('business_google_calendar_tokens')
+        .upsert({
+          user_id,
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          expires_at: expiresAt,
+          scope: tokens.scope || '',
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' })
+
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ access_token: tokens.access_token })
+    }
+
+    // ─── Google Calendar: refresh access token ───
+    if (action === 'google-calendar-refresh' && req.method === 'GET') {
+      const user_id = req.query.user_id as string
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+
+      const accessToken = await getGoogleAccessToken(supabase, user_id)
+      if (!accessToken) return res.status(200).json({ access_token: null })
+      return res.status(200).json({ access_token: accessToken })
+    }
+
+    // ─── Google Calendar: disconnect ───
+    if (action === 'google-calendar-disconnect' && req.method === 'POST') {
+      const { user_id } = req.body
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+
+      await supabase.from('business_google_calendar_tokens').delete().eq('user_id', user_id)
+      return res.status(200).json({ success: true })
+    }
+
     // ─── Capture slots: real availability for campaign (no auth) ───
     if (action === 'capture-slots' && req.method === 'GET') {
       const slug = req.query.slug as string
@@ -1787,34 +1975,112 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         memberIds = (members || []).map((m: any) => m.id)
       }
 
+      // Separate owner from team members
+      const ownerId = campaign.user_id
+      const isOwnerIncluded = memberIds.includes(ownerId)
+      const teamMemberIds = memberIds.filter(id => id !== ownerId)
+
       if (memberIds.length === 0) {
         // No members configured — return free mode (all slots available)
         return res.status(200).json({ slots: [], freeMode: true })
       }
 
-      // Fetch member timezones
-      const { data: memberTzData } = await supabase
-        .from('business_team_members')
-        .select('id, timezone')
-        .in('id', memberIds)
+      // Fetch member timezones (team members + owner)
       const memberTimezones: Record<string, string> = {}
-      for (const m of (memberTzData || [])) {
-        memberTimezones[m.id] = m.timezone || 'Europe/Paris'
+      if (teamMemberIds.length > 0) {
+        const { data: memberTzData } = await supabase
+          .from('business_team_members')
+          .select('id, timezone')
+          .in('id', teamMemberIds)
+        for (const m of (memberTzData || [])) {
+          memberTimezones[m.id] = m.timezone || 'Europe/Paris'
+        }
+      }
+      if (isOwnerIncluded) {
+        const { data: ownerData } = await supabase
+          .from('business_users')
+          .select('timezone')
+          .eq('id', ownerId)
+          .single()
+        memberTimezones[ownerId] = ownerData?.timezone || 'Europe/Paris'
       }
 
       const today = new Date().toISOString().split('T')[0]
       const now = new Date()
 
       // Fetch availability, absences, and appointments for ALL members in parallel
-      const [slotsRes, absencesRes, appointmentsRes] = await Promise.all([
-        supabase.from('business_availability_slots').select('*').in('team_member_id', memberIds),
-        supabase.from('business_absences').select('start_date, end_date, team_member_id').in('team_member_id', memberIds).gte('end_date', today),
-        supabase.from('business_appointments').select('date, time, duration, assigned_to').in('assigned_to', memberIds).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed']),
-      ])
+      const fetchPromises: Promise<any>[] = []
 
-      const allSlots = slotsRes.data || []
-      const allAbsences = absencesRes.data || []
+      // Slots: team members + owner (owner has team_member_id IS NULL)
+      if (teamMemberIds.length > 0) {
+        fetchPromises.push(supabase.from('business_availability_slots').select('*').in('team_member_id', teamMemberIds))
+      } else {
+        fetchPromises.push(Promise.resolve({ data: [] }))
+      }
+      if (isOwnerIncluded) {
+        fetchPromises.push(supabase.from('business_availability_slots').select('*').eq('business_owner_id', ownerId).is('team_member_id', null))
+      } else {
+        fetchPromises.push(Promise.resolve({ data: [] }))
+      }
+
+      // Absences: team members + owner
+      if (teamMemberIds.length > 0) {
+        fetchPromises.push(supabase.from('business_absences').select('start_date, end_date, team_member_id, business_owner_id').in('team_member_id', teamMemberIds).gte('end_date', today))
+      } else {
+        fetchPromises.push(Promise.resolve({ data: [] }))
+      }
+      if (isOwnerIncluded) {
+        fetchPromises.push(supabase.from('business_absences').select('start_date, end_date, team_member_id, business_owner_id').eq('business_owner_id', ownerId).is('team_member_id', null).gte('end_date', today))
+      } else {
+        fetchPromises.push(Promise.resolve({ data: [] }))
+      }
+
+      // Appointments
+      fetchPromises.push(
+        supabase.from('business_appointments').select('date, time, duration, assigned_to').in('assigned_to', memberIds).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
+      )
+
+      const [teamSlotsRes, ownerSlotsRes, teamAbsRes, ownerAbsRes, appointmentsRes] = await Promise.all(fetchPromises)
+
+      // Normalize owner slots to use ownerId as "member_id" for unified processing
+      const ownerSlots = (ownerSlotsRes.data || []).map((s: any) => ({ ...s, team_member_id: ownerId }))
+      const ownerAbsences = (ownerAbsRes.data || []).map((a: any) => ({ ...a, team_member_id: ownerId }))
+
+      const allSlots = [...(teamSlotsRes.data || []), ...ownerSlots]
+      const allAbsences = [...(teamAbsRes.data || []), ...ownerAbsences]
       const allAppointments = appointmentsRes.data || []
+
+      // ─── Google Calendar conflict checking ───
+      // Map member_id → auth user_id for Google Calendar token lookup
+      const memberToAuthUserId: Record<string, string> = {}
+      if (isOwnerIncluded) {
+        memberToAuthUserId[ownerId] = ownerId // owner's member_id IS the user_id
+      }
+      if (teamMemberIds.length > 0) {
+        const { data: tmUsers } = await supabase
+          .from('business_team_members')
+          .select('id, user_id')
+          .in('id', teamMemberIds)
+        for (const tm of (tmUsers || [])) {
+          if (tm.user_id) memberToAuthUserId[tm.id] = tm.user_id
+        }
+      }
+
+      // Fetch Google Calendar events for each connected member (in parallel)
+      const googleEventsPerMember: Record<string, { start: string; end: string }[]> = {}
+      const timeMin30 = now.toISOString()
+      const timeMax30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+      const gcalPromises = Object.entries(memberToAuthUserId).map(async ([memberId, authUserId]) => {
+        try {
+          const token = await getGoogleAccessToken(supabase, authUserId)
+          if (token) {
+            const events = await fetchGoogleCalendarEvents(token, timeMin30, timeMax30)
+            if (events.length > 0) googleEventsPerMember[memberId] = events
+          }
+        } catch { /* skip if no token or error */ }
+      })
+      await Promise.all(gcalPromises)
 
       // Build available slots per member, keyed by UTC datetime
       const availableSlots: { date: string; time: string; member_ids: string[]; datetime_utc: string }[] = []
@@ -1858,7 +2124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (slotTime <= now) continue
               }
 
-              // Check conflicts
+              // Check appointment conflicts
               const hasConflict = memberAppts.some((appt: any) => {
                 const [aH, aM] = appt.time.split(':').map(Number)
                 const apptStart = aH * 60 + aM
@@ -1866,6 +2132,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return mins < apptEnd && (mins + duration) > apptStart
               })
               if (hasConflict) continue
+
+              // Check Google Calendar conflicts
+              const gcalEvents = googleEventsPerMember[memberId]
+              if (gcalEvents && gcalEvents.length > 0) {
+                const slotStartUtc = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
+                const slotEndUtc = slotStartUtc + duration * 60 * 1000
+                const hasGcalConflict = gcalEvents.some(ev => {
+                  const evStart = new Date(ev.start).getTime()
+                  const evEnd = new Date(ev.end).getTime()
+                  return slotStartUtc < evEnd && slotEndUtc > evStart
+                })
+                if (hasGcalConflict) continue
+              }
 
               // Convert member's local time to UTC
               const localDateTimeStr = `${dateStr}T${timeStr}:00`
@@ -2242,6 +2521,74 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (apptErr) return res.status(500).json({ error: apptErr.message })
         appointment = appt
+
+        // ─── Create Google Calendar event for the assigned member ───
+        if (assigned_member_id && campaign.capture_type === 'with_rdv') {
+          try {
+            // Find the auth user_id for this member
+            let assignedAuthUserId: string | null = null
+            if (assigned_member_id === campaign.user_id) {
+              // Owner
+              assignedAuthUserId = campaign.user_id
+            } else {
+              const { data: tmData } = await supabase
+                .from('business_team_members')
+                .select('user_id')
+                .eq('id', assigned_member_id)
+                .single()
+              assignedAuthUserId = tmData?.user_id || null
+            }
+
+            if (assignedAuthUserId) {
+              const gcalToken = await getGoogleAccessToken(supabase, assignedAuthUserId)
+              if (gcalToken) {
+                // Get member timezone
+                let memberTz = 'Europe/Paris'
+                if (assigned_member_id === campaign.user_id) {
+                  const { data: ownerTz } = await supabase.from('business_users').select('timezone').eq('id', campaign.user_id).single()
+                  memberTz = ownerTz?.timezone || 'Europe/Paris'
+                } else {
+                  const { data: tmTz } = await supabase.from('business_team_members').select('timezone').eq('id', assigned_member_id).single()
+                  memberTz = tmTz?.timezone || 'Europe/Paris'
+                }
+
+                const apptDuration = campaign.booking_duration || 30
+                const startDateTime = `${date}T${time}:00`
+                const [eH, eM] = time.split(':').map(Number)
+                const endMins = eH * 60 + eM + apptDuration
+                const endTime = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
+                const endDateTime = `${date}T${endTime}:00`
+
+                const summary = campaign.booking_title || `Rendez-vous avec ${name}`
+                const description = campaign.booking_description
+                  ? `${campaign.booking_description}\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
+                  : `Rendez-vous CloseOS\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
+
+                const gcalResult = await createGoogleCalendarEvent(gcalToken, {
+                  summary,
+                  description,
+                  startDateTime,
+                  endDateTime,
+                  timeZone: memberTz,
+                  withMeet: true,
+                  attendeeEmail: email || undefined,
+                })
+
+                if (gcalResult.success && gcalResult.hangoutLink) {
+                  // Save Google Meet link to the appointment
+                  await supabase
+                    .from('business_appointments')
+                    .update({ google_meet_link: gcalResult.hangoutLink })
+                    .eq('id', appointment.id)
+                  appointment.google_meet_link = gcalResult.hangoutLink
+                }
+              }
+            }
+          } catch (gcalErr) {
+            // Don't fail the booking if Google Calendar fails
+            console.error('[capture-submit] Google Calendar event creation failed:', gcalErr)
+          }
+        }
       }
 
       return res.status(200).json({ prospect, appointment, redirect_url: campaign.redirect_url || null })

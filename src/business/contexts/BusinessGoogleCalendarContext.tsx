@@ -4,6 +4,9 @@ import { useGoogleLogin } from '@react-oauth/google'
 // @ts-ignore
 import axios from 'axios'
 import { useBusinessAuth } from './BusinessAuthContext'
+import { supabase } from '../../lib/supabase'
+
+const API_URL = import.meta.env.VITE_SUPABASE_URL ? `${window.location.origin}/api/business` : '/api/business'
 
 interface GoogleCalendarEvent {
   id: string
@@ -42,15 +45,31 @@ export function BusinessGoogleCalendarProvider({ children }: { children: ReactNo
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  // Load token from localStorage on mount, then try to get a fresh one from DB
   useEffect(() => {
     if (userId) {
       const savedToken = localStorage.getItem(getStorageKey(userId))
-      setAccessToken(savedToken)
+      if (savedToken) setAccessToken(savedToken)
+      // Try to refresh from server-side stored token
+      refreshAccessTokenFromServer(userId)
     } else {
       setAccessToken(null)
       setGoogleEvents([])
     }
   }, [userId])
+
+  const refreshAccessTokenFromServer = async (uid: string) => {
+    try {
+      const res = await fetch(`${API_URL}?action=google-calendar-refresh&user_id=${uid}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.access_token) {
+          setAccessToken(data.access_token)
+          localStorage.setItem(getStorageKey(uid), data.access_token)
+        }
+      }
+    } catch { /* silent */ }
+  }
 
   const fetchEvents = async (token: string) => {
     if (!token) return
@@ -100,22 +119,35 @@ export function BusinessGoogleCalendarProvider({ children }: { children: ReactNo
     } catch (error: any) {
       console.error("Erreur Google Calendar:", error)
       if (error.response?.status === 401 && userId) {
-        localStorage.removeItem(getStorageKey(userId))
-        setAccessToken(null)
-        setGoogleEvents([])
+        // Token expired — try to refresh from server
+        await refreshAccessTokenFromServer(userId)
       }
     } finally {
       setIsLoading(false)
     }
   }
 
+  // Auth-code flow: sends code to server which exchanges for access_token + refresh_token
   const login = useGoogleLogin({
-    onSuccess: async (tokenResponse: any) => {
-      const token = tokenResponse.access_token
-      if (userId) {
-        setAccessToken(token)
-        localStorage.setItem(getStorageKey(userId), token)
-        await fetchEvents(token)
+    flow: 'auth-code',
+    onSuccess: async (codeResponse: any) => {
+      if (!userId) return
+      try {
+        const res = await fetch(`${API_URL}?action=google-calendar-connect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: codeResponse.code, user_id: userId }),
+        })
+        const data = await res.json()
+        if (data.access_token) {
+          setAccessToken(data.access_token)
+          localStorage.setItem(getStorageKey(userId), data.access_token)
+          await fetchEvents(data.access_token)
+        } else {
+          alert('Erreur lors de la connexion à Google Calendar')
+        }
+      } catch {
+        alert('Erreur lors de la connexion à Google Calendar')
       }
     },
     onError: () => alert('Erreur lors de la connexion à Google Calendar'),
@@ -161,15 +193,25 @@ export function BusinessGoogleCalendarProvider({ children }: { children: ReactNo
     } catch (error: any) {
       console.error('Erreur création événement Google:', error)
       if (error.response?.status === 401 && userId) {
-        localStorage.removeItem(getStorageKey(userId))
-        setAccessToken(null)
+        // Try refresh and retry once
+        await refreshAccessTokenFromServer(userId)
       }
       return { success: false }
     }
   }
 
-  const logout = () => {
-    if (userId) localStorage.removeItem(getStorageKey(userId))
+  const logout = async () => {
+    if (userId) {
+      localStorage.removeItem(getStorageKey(userId))
+      // Also remove server-side token
+      try {
+        await fetch(`${API_URL}?action=google-calendar-disconnect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId }),
+        })
+      } catch { /* silent */ }
+    }
     setAccessToken(null)
     setGoogleEvents([])
   }
