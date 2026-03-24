@@ -2734,6 +2734,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             supabase.from('business_user_scripts').delete().in('team_member_id', memberIds),
             supabase.from('business_kpi_config').delete().in('team_member_id', memberIds),
             supabase.from('business_connection_log').delete().in('team_member_id', memberIds),
+            supabase.from('business_team_bonuses').delete().in('team_member_id', memberIds),
+            supabase.from('business_reminders').delete().in('team_member_id', memberIds),
             supabase.from('business_device_tokens').delete().in('user_id', memberUserIds),
             supabase.from('business_verification_codes').delete().in('user_id', memberUserIds),
             supabase.from('reminders').delete().in('user_id', memberUserIds),
@@ -2743,7 +2745,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           await Promise.all(memberUserIds.map(uid => supabase.auth.admin.deleteUser(uid).catch(() => {})))
         }
 
-        // 2. Delete org-level data by business_owner_id
+        // 2. Delete org-level data (prospect_tags cascade automatically via FK)
         await Promise.all([
           supabase.from('business_team_members').delete().eq('business_owner_id', ownerId),
           supabase.from('business_teams').delete().eq('business_owner_id', ownerId),
@@ -2754,11 +2756,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           supabase.from('business_formula_commissions').delete().eq('business_owner_id', ownerId),
           supabase.from('business_objectives').delete().eq('business_owner_id', ownerId),
           supabase.from('business_custom_sources').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_custom_stages').delete().eq('business_owner_id', ownerId),
           supabase.from('business_booking_links').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_call_history').delete().eq('business_owner_id', ownerId),
+          supabase.from('business_round_robin_state').delete().eq('business_owner_id', ownerId),
           supabase.from('business_invitations').delete().eq('inviter_id', ownerId),
+          supabase.from('business_tags').delete().eq('owner_id', ownerId),
+          supabase.from('business_webhook_keys').delete().eq('user_id', ownerId),
           supabase.from('business_verification_codes').delete().eq('user_id', ownerId),
           supabase.from('reminders').delete().eq('user_id', ownerId),
         ])
+
+        // 3. Reset business_settings to fresh state (keep the row, clear all data)
+        await supabase.from('business_settings').update({
+          company_name: null,
+          team_size: null,
+          niche: null,
+          niche_custom: null,
+          crm_provider: 'closeos',
+          custom_roles: [],
+          logo_url: null,
+          description: null,
+          website: null,
+          address: null,
+          org_phone: null,
+          org_email: null,
+          onboarding_message: null,
+          onboarding_video_url: null,
+          onboarding_checklist: [],
+          raison_sociale: null,
+          billing_address: null,
+          billing_zip: null,
+          billing_city: null,
+          billing_country: 'France',
+          siret: null,
+          tva_number: null,
+          custom_sections: [],
+          custom_tabs: [],
+          onboarding_sections: [],
+          airtable_config: {},
+          ghl_config: {},
+          dashboard_period: 'all',
+          weekly_report_enabled: true,
+        }).eq('user_id', ownerId)
       }
 
       // Run emails and deletions concurrently
