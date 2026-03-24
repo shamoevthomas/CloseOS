@@ -367,6 +367,20 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     if (isOpen && initialTab) setActiveTab(initialTab)
   }, [isOpen, initialTab])
 
+  // Leave countdown
+  useEffect(() => {
+    if (leaveResendCountdown <= 0) return
+    const t = setTimeout(() => setLeaveResendCountdown(leaveResendCountdown - 1), 1000)
+    return () => clearTimeout(t)
+  }, [leaveResendCountdown])
+
+  // Reset countdown
+  useEffect(() => {
+    if (resetResendCountdown <= 0) return
+    const t = setTimeout(() => setResetResendCountdown(resetResendCountdown - 1), 1000)
+    return () => clearTimeout(t)
+  }, [resetResendCountdown])
+
   if (!isOpen) return null
 
   const isGoogleUser = user?.app_metadata?.provider === 'google'
@@ -545,12 +559,6 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     }
   }
 
-  // Leave countdown
-  useEffect(() => {
-    if (leaveResendCountdown <= 0) return
-    const t = setTimeout(() => setLeaveResendCountdown(leaveResendCountdown - 1), 1000)
-    return () => clearTimeout(t)
-  }, [leaveResendCountdown])
 
   const sendLeaveCode = async () => {
     if (!user?.id || !user?.email) return
@@ -621,12 +629,6 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     }
   }
 
-  // ─── Reset organisation (owner) ───
-  useEffect(() => {
-    if (resetResendCountdown <= 0) return
-    const t = setTimeout(() => setResetResendCountdown(resetResendCountdown - 1), 1000)
-    return () => clearTimeout(t)
-  }, [resetResendCountdown])
 
   const sendResetCode = async () => {
     if (!user?.id || !user?.email) return
