@@ -105,10 +105,10 @@ export function SetterCallDetails() {
   useEffect(() => {
     if (!effectiveOwnerId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, email, role').eq('business_owner_id', effectiveOwnerId),
+      supabase.from('business_team_members').select('id, first_name, last_name, email, role, owner_assignable').eq('business_owner_id', effectiveOwnerId),
       supabase.from('business_users').select('id, full_name, email, owner_assignable').eq('id', effectiveOwnerId).single(),
     ]).then(([tmRes, ownerRes]) => {
-      const closerList = (tmRes.data || []).filter((m: any) => m.role?.toLowerCase() === 'closer')
+      const closerList = (tmRes.data || []).filter((m: any) => m.role?.toLowerCase() === 'closer' || m.owner_assignable)
       if (ownerRes.data?.owner_assignable) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
         closerList.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', email: ownerRes.data.email || '', role: 'Owner' })

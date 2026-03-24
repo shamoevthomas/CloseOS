@@ -22,7 +22,6 @@ import {
   ToggleRight,
   UserPlus,
   ArrowRight,
-  ChevronDown,
   Monitor,
   GripVertical,
   LayoutDashboard,
@@ -270,7 +269,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
           phone: teamMember.phone || '',
           role: teamMember.role || 'Closer',
           avatar_url: teamMember.avatar_url || '',
-          owner_assignable: false,
+          owner_assignable: (teamMember as any).owner_assignable ?? false,
           deletion_scheduled_at: null,
         }))
       } else {
@@ -357,12 +356,16 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
       let error: any = null
 
       if (isTeamMember && teamMember) {
+        const updatePayload: any = {
+          phone: formData.phone,
+          avatar_url: formData.avatar_url,
+        }
+        if (teamMember.role === 'Head of Sales') {
+          updatePayload.owner_assignable = formData.owner_assignable
+        }
         const { error: tmError } = await supabase
           .from('business_team_members')
-          .update({
-            phone: formData.phone,
-            avatar_url: formData.avatar_url,
-          })
+          .update(updatePayload)
           .eq('id', teamMember.id)
         error = tmError
         if (!tmError) await refreshProfile()
@@ -660,25 +663,18 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     {/* Role */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Role</label>
-                      <div className="relative">
-                        <select
-                          value={formData.role}
-                          onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                          className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all cursor-pointer appearance-none font-medium"
-                        >
-                          <option value="Business Owner">Business Owner</option>
-                          <option value="Head of Sales">Head of Sales</option>
-                          <option value="Closer">Closer</option>
-                          <option value="Setter">Setter</option>
-                          <option value="Setter-Closer">Setter-Closer</option>
-                        </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" strokeWidth={1.5} />
-                      </div>
+                      <input
+                        type="text"
+                        disabled
+                        value={formData.role}
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-400 dark:text-neutral-500 cursor-not-allowed outline-none font-medium"
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Owner assignable toggle */}
+                {/* Owner assignable toggle - only for Owner and HOS */}
+                {(!isTeamMember || teamMember?.role === 'Head of Sales') && (
                 <div
                   onClick={() => setFormData(prev => ({ ...prev, owner_assignable: !prev.owner_assignable }))}
                   className="mt-8 flex items-center justify-between p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all cursor-pointer group"
@@ -697,6 +693,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     : <ToggleLeft className="h-7 w-7 text-stone-300 shrink-0" />
                   }
                 </div>
+                )}
 
                 {/* Dark mode toggle */}
                 <div

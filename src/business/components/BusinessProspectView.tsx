@@ -83,7 +83,7 @@ export function BusinessProspectView({
     const ownerId = isTeamMember ? ownerUserId : user?.id
     if (!ownerId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role, setter_scope').eq('business_owner_id', ownerId),
+      supabase.from('business_team_members').select('id, first_name, last_name, role, setter_scope, owner_assignable').eq('business_owner_id', ownerId),
       supabase.from('business_users').select('id, full_name, email, owner_assignable').eq('id', ownerId).single(),
     ]).then(([tmRes, ownerRes]) => {
       const list = tmRes.data || []

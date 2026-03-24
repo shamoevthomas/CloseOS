@@ -161,13 +161,15 @@ const BASE_TABS: { key: Tab; label: string }[] = [
 
 export function BusinessKPI() {
   const { prospects } = useBusinessProspects()
-  const { user, ownerUserId } = useBusinessAuth()
+  const { user, ownerUserId, teamMember, isTeamMember } = useBusinessAuth()
   const effectiveUserId = ownerUserId || user?.id
+  const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const [activeTab, setActiveTab] = useState<Tab>('global')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [teams, setTeams] = useState<BusinessTeam[]>([])
+  const [globalMemberId, setGlobalMemberId] = useState<string | null>(null)
 
   // Fetch team members + teams
   useEffect(() => {
@@ -196,8 +198,14 @@ export function BusinessKPI() {
     return tabs
   }, [teams])
 
+  // ---- FILTERED PROSPECTS (by global member selector) ----
+  const filteredProspects = useMemo(() => {
+    if (!globalMemberId) return prospects
+    return prospects.filter(p => p.assigned_to === globalMemberId)
+  }, [prospects, globalMemberId])
+
   // ---- GLOBAL KPIs ----
-  const globalKpis = useMemo(() => computeKpis(prospects), [prospects])
+  const globalKpis = useMemo(() => computeKpis(filteredProspects), [filteredProspects])
 
   // ---- MONTHLY DATA for charts ----
   const monthlyData = useMemo(() => {
@@ -214,7 +222,7 @@ export function BusinessKPI() {
       }
     }
 
-    prospects.forEach(p => {
+    filteredProspects.forEach(p => {
       const d = p.created_at ? new Date(p.created_at) : null
       if (!d) return
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -231,18 +239,18 @@ export function BusinessKPI() {
       ...m,
       closing: m.total > 0 ? Math.round((m.won / m.total) * 100) : 0,
     }))
-  }, [prospects])
+  }, [filteredProspects])
 
   // ---- PERIOD KPIs ----
   const periodProspects = useMemo(() => {
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
-    return prospects.filter(p => {
+    return filteredProspects.filter(p => {
       if (!p.created_at) return false
       const d = new Date(p.created_at)
       return d.getFullYear() === year && d.getMonth() === month
     })
-  }, [prospects, currentDate])
+  }, [filteredProspects, currentDate])
 
   const periodKpis = useMemo(() => computeKpis(periodProspects), [periodProspects])
 
@@ -251,13 +259,13 @@ export function BusinessKPI() {
     const prevDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
     const year = prevDate.getFullYear()
     const month = prevDate.getMonth()
-    const prev = prospects.filter(p => {
+    const prev = filteredProspects.filter(p => {
       if (!p.created_at) return false
       const d = new Date(p.created_at)
       return d.getFullYear() === year && d.getMonth() === month
     })
     return computeKpis(prev)
-  }, [prospects, currentDate])
+  }, [filteredProspects, currentDate])
 
   function compareBadge(current: number, previous: number) {
     if (previous === 0) return null
@@ -346,21 +354,38 @@ export function BusinessKPI() {
 
   return (
     <div className="space-y-6">
-      {/* Tabs */}
-      <div className="flex p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-fit">
-        {TABS.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-8 py-2.5 rounded-full text-sm font-bold transition-all ${
-              activeTab === tab.key
-                ? 'bg-white dark:bg-neutral-700 text-stone-900 dark:text-white shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]'
-                : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Tabs + Global Member Selector */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-fit">
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-8 py-2.5 rounded-full text-sm font-bold transition-all ${
+                activeTab === tab.key
+                  ? 'bg-white dark:bg-neutral-700 text-stone-900 dark:text-white shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]'
+                  : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {isOwnerView && teamMembers.length > 0 && (
+          <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 rounded-full border border-stone-200 dark:border-neutral-700 pl-3 pr-1 py-1 shadow-sm">
+            <Users className="h-4 w-4 text-stone-400 shrink-0" />
+            <select
+              value={globalMemberId || ''}
+              onChange={(e) => setGlobalMemberId(e.target.value || null)}
+              className="bg-transparent text-sm font-semibold text-stone-900 dark:text-white pr-6 py-1.5 focus:outline-none appearance-none cursor-pointer"
+            >
+              <option value="">Tous les membres</option>
+              {teamMembers.map(m => (
+                <option key={m.id} value={m.id}>{m.full_name} ({m.role})</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* ============ GLOBAL TAB ============ */}
@@ -564,7 +589,7 @@ export function BusinessKPI() {
 
                   {/* Team members */}
                   {teamMembers.map(member => {
-                    const memberProspects = prospects.filter(p => p.assigned_to === member.id)
+                    const memberProspects = filteredProspects.filter(p => p.assigned_to === member.id)
                     const memberWon = memberProspects.filter(p => p.stage === 'won')
                     const memberLost = memberProspects.filter(p => p.stage === 'lost')
                     const memberNoshow = memberProspects.filter(p => p.stage === 'noshow')
@@ -609,7 +634,7 @@ export function BusinessKPI() {
         const member = teamMembers.find(m => m.id === selectedMemberId)
         if (!member) return null
 
-        const memberProspects = prospects.filter(p => p.assigned_to === selectedMemberId)
+        const memberProspects = filteredProspects.filter(p => p.assigned_to === selectedMemberId)
         const mWon = memberProspects.filter(p => p.stage === 'won')
         const mLost = memberProspects.filter(p => p.stage === 'lost')
         const mNoshow = memberProspects.filter(p => p.stage === 'noshow')
@@ -768,7 +793,7 @@ export function BusinessKPI() {
         <div className="space-y-6">
           {teams.map(team => {
             const teamMembersList = teamMembers.filter(m => m.team_id === team.id)
-            const teamProspects = prospects.filter(p => p.assigned_to && teamMembersList.some(m => m.id === p.assigned_to))
+            const teamProspects = filteredProspects.filter(p => p.assigned_to && teamMembersList.some(m => m.id === p.assigned_to))
             const teamWon = teamProspects.filter(p => p.stage === 'won')
             const teamLost = teamProspects.filter(p => p.stage === 'lost')
             const teamNoshow = teamProspects.filter(p => p.stage === 'noshow')
@@ -817,7 +842,7 @@ export function BusinessKPI() {
                       </thead>
                       <tbody className="divide-y divide-stone-100 dark:divide-neutral-700">
                         {teamMembersList.map(member => {
-                          const mp = prospects.filter(p => p.assigned_to === member.id)
+                          const mp = filteredProspects.filter(p => p.assigned_to === member.id)
                           const mw = mp.filter(p => p.stage === 'won')
                           const mCA = mw.reduce((s, p) => s + (p.value || 0), 0)
                           return (

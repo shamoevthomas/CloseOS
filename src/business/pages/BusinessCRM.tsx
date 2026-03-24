@@ -135,7 +135,7 @@ export function BusinessCRM() {
     // Team members
     import('../../lib/supabase').then(({ supabase }) => {
       Promise.all([
-        supabase.from('business_team_members').select('id, first_name, last_name, role, team_id').eq('business_owner_id', effectiveUserId),
+        supabase.from('business_team_members').select('id, first_name, last_name, role, team_id, owner_assignable').eq('business_owner_id', effectiveUserId),
         supabase.from('business_users').select('id, full_name, email, owner_assignable').eq('id', effectiveUserId).single(),
         supabase.from('business_teams').select('id, name').eq('business_owner_id', effectiveUserId).order('position'),
       ]).then(([tmRes, ownerRes, teamsRes]) => {
@@ -153,10 +153,10 @@ export function BusinessCRM() {
         setAllTeamMembers(allList)
         setTeams(teamsRes.data || [])
         // Setters/Closers for add modal
-        const setters = all.filter((m: any) => m.role === 'Setter' || m.role === 'Setter-Closer')
+        const setters = all.filter((m: any) => m.role === 'Setter' || m.role === 'Setter-Closer' || m.owner_assignable)
         if (ownerMember) setters.unshift(ownerMember)
         setTeamSetters(setters)
-        const closers = all.filter((m: any) => m.role === 'Closer' || m.role === 'Setter-Closer')
+        const closers = all.filter((m: any) => m.role === 'Closer' || m.role === 'Setter-Closer' || m.owner_assignable)
         if (ownerMember) closers.unshift(ownerMember)
         setTeamClosers(closers)
       })

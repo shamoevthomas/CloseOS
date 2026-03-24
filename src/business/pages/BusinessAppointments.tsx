@@ -98,10 +98,10 @@ export function BusinessAppointments() {
   useEffect(() => {
     if (!effectiveUserId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role, timezone').eq('business_owner_id', effectiveUserId),
+      supabase.from('business_team_members').select('id, first_name, last_name, role, timezone, owner_assignable').eq('business_owner_id', effectiveUserId),
       supabase.from('business_users').select('id, full_name, timezone, owner_assignable').eq('id', effectiveUserId).single(),
     ]).then(([tmRes, ownerRes]) => {
-      const list = tmRes.data || []
+      const list = (tmRes.data || []).filter((m: any) => !['Head of Sales', 'Admin'].includes(m.role) || m.owner_assignable)
       if (ownerRes.data?.owner_assignable) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
         list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner', timezone: ownerRes.data.timezone || 'Europe/Paris' })

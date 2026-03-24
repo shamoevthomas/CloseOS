@@ -855,7 +855,7 @@ export function BusinessOrganization() {
       <div className="flex gap-10 mb-10 border-b border-[#c4c7c7]/10 dark:border-neutral-800 overflow-x-auto">
         {/* Fixed tabs */}
         {[
-          ...(!isHoS ? [{ key: 'organisation', label: 'ORGANISATION' }] : []),
+          { key: 'organisation', label: 'ORGANISATION' },
           { key: 'onboarding', label: 'ONBOARDING' },
         ].map(tab => (
           <button
@@ -924,7 +924,98 @@ export function BusinessOrganization() {
         </button>
       </div>
 
-      {/* ═══════════════════ ORGANISATION TAB ═══════════════════ */}
+      {/* ═══════════════════ ORGANISATION TAB (HoS read-only) ═══════════════════ */}
+      {isHoS && activeTab === 'organisation' && (() => {
+        const settings = businessSettings || {}
+        return (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Header card */}
+            <div className="bg-white dark:bg-neutral-800 rounded-xl p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+              <div className="flex flex-col sm:flex-row gap-6">
+                <div className="w-28 h-28 rounded-full overflow-hidden shrink-0" style={{ background: 'linear-gradient(135deg, #fbf9f8 0%, #f5f3f2 100%)', border: '2px dashed rgba(196,199,199,0.3)' }}>
+                  {settings.logo_url ? (
+                    <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Building2 className="h-10 w-10 text-[#747878]" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 space-y-3">
+                  <h2 className="text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white">{settings.company_name || 'Organisation'}</h2>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-[#444748]">
+                    {settings.website && (
+                      <a href={settings.website.startsWith('http') ? settings.website : `https://${settings.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[#006c49] hover:underline transition-colors">
+                        <Globe className="h-3.5 w-3.5" />
+                        {settings.website.replace(/^https?:\/\//, '')}
+                      </a>
+                    )}
+                    {settings.niche && (
+                      <span className="px-3 py-1 rounded-full bg-[#eae8e7] text-[10px] font-bold uppercase tracking-widest text-[#444748]">
+                        {settings.niche === 'Autre' ? (settings.niche_custom || 'Autre') : settings.niche}
+                      </span>
+                    )}
+                    {settings.team_size && (
+                      <span className="px-3 py-1 rounded-full bg-[#eae8e7] text-[10px] font-bold uppercase tracking-widest text-[#444748]">
+                        {settings.team_size} pers.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Details */}
+            <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+              <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">Informations</h3>
+
+              {settings.description && (
+                <div>
+                  <p className={stoneLabelClass}>Description</p>
+                  <p className="text-sm text-[#444748] dark:text-neutral-400 leading-relaxed whitespace-pre-wrap">{settings.description}</p>
+                </div>
+              )}
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                {settings.org_email && (
+                  <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
+                    <Mail className="h-4 w-4 text-[#747878] shrink-0" />
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Email</p>
+                      <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.org_email}</p>
+                    </div>
+                  </div>
+                )}
+                {settings.org_phone && (
+                  <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
+                    <Phone className="h-4 w-4 text-[#747878] shrink-0" />
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Téléphone</p>
+                      <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.org_phone}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {settings.address && (
+                <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
+                  <MapPin className="h-4 w-4 text-[#747878] shrink-0" />
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Adresse</p>
+                    <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.address}</p>
+                  </div>
+                </div>
+              )}
+
+              {!settings.description && !settings.org_email && !settings.org_phone && !settings.address && (
+                <p className="text-sm text-[#444748] text-center py-4">Aucune information renseignée par l'organisation.</p>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ═══════════════════ ORGANISATION TAB (Owner edit) ═══════════════════ */}
       {!isHoS && activeTab === 'organisation' && (
         <div className="animate-in fade-in duration-300">
           <div className="grid grid-cols-12 gap-10">
