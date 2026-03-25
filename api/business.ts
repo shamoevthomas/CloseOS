@@ -2563,10 +2563,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const endTime = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
                 const endDateTime = `${date}T${endTime}:00`
 
-                const summary = campaign.booking_title || `Rendez-vous avec ${name}`
-                const description = campaign.booking_description
+                // Récupérer le nom du membre assigné pour les variables
+                let assigneeName = ''
+                if (assigned_member_id === campaign.user_id) {
+                  const { data: ownerProfile } = await supabase.from('business_users').select('business_name').eq('id', campaign.user_id).single()
+                  assigneeName = ownerProfile?.business_name || ''
+                } else {
+                  const { data: tmProfile } = await supabase.from('business_team_members').select('name').eq('id', assigned_member_id).single()
+                  assigneeName = tmProfile?.name || ''
+                }
+
+                // Remplacer les variables template dans le titre et la description
+                const replaceVars = (text: string) => text
+                  .replace(/\{\{lead_name\}\}/gi, name || '')
+                  .replace(/\{\{lead_email\}\}/gi, email || '')
+                  .replace(/\{\{lead_phone\}\}/gi, phone || '')
+                  .replace(/\{\{assignee_name\}\}/gi, assigneeName)
+                  .replace(/\{\{date\}\}/gi, date || '')
+                  .replace(/\{\{time\}\}/gi, time || '')
+
+                const rawTitle = campaign.booking_title || `Rendez-vous avec ${name}`
+                const summary = replaceVars(rawTitle)
+                const rawDesc = campaign.booking_description
                   ? `${campaign.booking_description}\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
                   : `Rendez-vous CloseOS\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
+                const description = replaceVars(rawDesc)
 
                 const gcalResult = await createGoogleCalendarEvent(gcalToken, {
                   summary,
@@ -2591,6 +2612,164 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           } catch (gcalErr) {
             // Don't fail the booking if Google Calendar fails
             console.error('[capture-submit] Google Calendar event creation failed:', gcalErr)
+          }
+        }
+      }
+
+      // ─── Notifications + emails après booking ───
+      if (appointment && date && time) {
+        const BREVO_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+        const apptDuration = campaign.booking_duration || 30
+
+        // Récupérer le nom du membre assigné
+        let memberDisplayName = ''
+        if (assigned_member_id === campaign.user_id) {
+          const { data: ownerP } = await supabase.from('business_users').select('business_name').eq('id', campaign.user_id).single()
+          memberDisplayName = ownerP?.business_name || 'Owner'
+        } else if (assigned_member_id) {
+          const { data: tmP } = await supabase.from('business_team_members').select('name').eq('id', assigned_member_id).single()
+          memberDisplayName = tmP?.name || ''
+        }
+
+        // Remplacer les variables template
+        const replaceBookingVars = (text: string) => text
+          .replace(/\{\{lead_name\}\}/gi, name || '')
+          .replace(/\{\{lead_email\}\}/gi, email || '')
+          .replace(/\{\{lead_phone\}\}/gi, phone || '')
+          .replace(/\{\{assignee_name\}\}/gi, memberDisplayName)
+          .replace(/\{\{date\}\}/gi, date || '')
+          .replace(/\{\{time\}\}/gi, time || '')
+
+        const eventTitle = replaceBookingVars(campaign.booking_title || `Rendez-vous avec ${name}`)
+
+        // 1) Notification in-app (reminders) pour owner + HoS + membre assigné
+        try {
+          const notifTitle = `Nouveau rendez-vous : ${name}`
+          const notifDesc = `${name} a réservé un créneau le ${date} à ${time} (${apptDuration} min)${email ? ` — ${email}` : ''}`
+
+          const reminderRows: { user_id: string; title: string; description: string; reminder_date: string; is_done: boolean }[] = []
+
+          // Toujours notifier l'owner
+          reminderRows.push({ user_id: campaign.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false })
+
+          // Notifier le membre assigné (si c'est pas l'owner)
+          if (assigned_member_id && assigned_member_id !== campaign.user_id) {
+            const { data: tmUser } = await supabase.from('business_team_members').select('user_id').eq('id', assigned_member_id).single()
+            if (tmUser?.user_id) {
+              reminderRows.push({ user_id: tmUser.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false })
+            }
+          }
+
+          // Notifier les HoS / Admin
+          const { data: hosMembers } = await supabase
+            .from('business_team_members')
+            .select('user_id')
+            .eq('business_owner_id', campaign.user_id)
+            .in('role', ['Head of Sales', 'Admin'])
+          if (hosMembers) {
+            for (const hos of hosMembers) {
+              if (hos.user_id && !reminderRows.some(r => r.user_id === hos.user_id)) {
+                reminderRows.push({ user_id: hos.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false })
+              }
+            }
+          }
+
+          await supabase.from('reminders').insert(reminderRows)
+
+          // 2) Email notification aux utilisateurs internes
+          if (BREVO_KEY) {
+            const notifUserIds = reminderRows.map(r => r.user_id)
+            const notifEmails: string[] = []
+            for (const uid of notifUserIds) {
+              const { data: authU } = await supabase.auth.admin.getUserById(uid)
+              if (authU?.user?.email) notifEmails.push(authU.user.email)
+            }
+
+            const notifHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Nouveau rendez-vous</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;"><strong>${name}</strong> a r&#233;serv&#233; un cr&#233;neau via votre page de capture.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:40px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:12px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Date</span><br><span class="inter" style="font-size:16px;color:#111111;font-weight:500;">${date} &#224; ${time}</span></td></tr><tr><td style="padding-bottom:12px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Prospect</span><br><span class="inter" style="font-size:16px;color:#111111;font-weight:500;">${name}${email ? ` &mdash; ${email}` : ''}${phone ? ` &mdash; ${phone}` : ''}</span></td></tr>${appointment.google_meet_link ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Google Meet</span><br><a href="${appointment.google_meet_link}" style="font-size:16px;color:#1a73e8;text-decoration:none;font-weight:500;">${appointment.google_meet_link}</a></td></tr>` : ''}</table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center"><a href="https://www.closeos.fr/business/rendez-vous" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Voir les rendez-vous</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
+
+            for (const em of notifEmails) {
+              fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+                body: JSON.stringify({
+                  sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+                  to: [{ email: em }],
+                  subject: `Nouveau rendez-vous : ${name} — ${date} à ${time}`,
+                  htmlContent: notifHtml,
+                })
+              }).catch(() => {})
+            }
+          }
+        } catch (notifErr) {
+          console.error('[capture-submit] Notification error:', notifErr)
+        }
+
+        // 3) Email de confirmation au prospect avec fichier ICS + lien Meet
+        if (email && BREVO_KEY) {
+          try {
+            const [eH, eM] = time.split(':').map(Number)
+            const endMins = eH * 60 + eM + apptDuration
+            const endTimeStr = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
+
+            // Générer le fichier ICS
+            const icsUid = `closeos-${appointment.id}@closeos.fr`
+            const dtStart = `${date.replace(/-/g, '')}T${time.replace(/:/g, '')}00`
+            const dtEnd = `${date.replace(/-/g, '')}T${endTimeStr.replace(/:/g, '')}00`
+            const tzId = prospect_timezone || 'Europe/Paris'
+            const meetLink = appointment.google_meet_link || ''
+            const nowStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+
+            const icsContent = [
+              'BEGIN:VCALENDAR',
+              'VERSION:2.0',
+              'PRODID:-//CloseOS//Booking//FR',
+              'CALSCALE:GREGORIAN',
+              'METHOD:REQUEST',
+              'BEGIN:VEVENT',
+              `UID:${icsUid}`,
+              `DTSTAMP:${nowStamp}`,
+              `DTSTART;TZID=${tzId}:${dtStart}`,
+              `DTEND;TZID=${tzId}:${dtEnd}`,
+              `SUMMARY:${eventTitle}`,
+              meetLink ? `LOCATION:${meetLink}` : '',
+              meetLink ? `DESCRIPTION:Rejoindre le Google Meet : ${meetLink}` : '',
+              `ORGANIZER;CN=CloseOS:mailto:support@closeos.fr`,
+              `STATUS:CONFIRMED`,
+              'END:VEVENT',
+              'END:VCALENDAR',
+            ].filter(Boolean).join('\r\n')
+
+            const icsBase64 = Buffer.from(icsContent).toString('base64')
+
+            // Date formatée en français
+            const dateObj = new Date(`${date}T${time}:00`)
+            const joursSemaine = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+            const mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+            const dateFr = `${joursSemaine[dateObj.getDay()]} ${dateObj.getDate()} ${mois[dateObj.getMonth()]} ${dateObj.getFullYear()}`
+
+            const meetSection = meetLink
+              ? `<div style="background-color:#e8f5e9;border-radius:16px;padding:24px;margin-bottom:32px;text-align:center;"><p class="inter" style="margin:0 0 12px;font-size:14px;color:#2e7d32;">Rejoignez via Google Meet</p><a href="${meetLink}" style="display:inline-block;background-color:#1a73e8;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:99px;">Rejoindre le Meet</a><p class="inter" style="margin:12px 0 0;font-size:13px;color:#2e7d32;opacity:0.7;word-break:break-all;">${meetLink}</p></div>`
+              : ''
+
+            const confirmHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Rendez-vous confirm&#233;</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;">Bonjour <strong>${name}</strong>, votre rendez-vous a bien &#233;t&#233; enregistr&#233;.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128197; Date</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${dateFr}</span></td></tr><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128337; Horaire</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${time} &mdash; ${endTimeStr} (${apptDuration} min)</span></td></tr>${memberDisplayName ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128100; Avec</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${memberDisplayName}</span></td></tr>` : ''}</table></div>${meetSection}<div style="background-color:#f5f3f2;border-radius:16px;padding:20px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:18px;line-height:1;">&#128206;</div></td><td><p class="inter" style="margin:0;font-size:14px;color:#1b1c1b;">Un fichier d'invitation (.ics) est joint &#224; cet email. Ouvrez-le pour ajouter le rendez-vous &#224; votre calendrier.</p></td></tr></table></div></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
+
+            await fetch('https://api.brevo.com/v3/smtp/email', {
+              method: 'POST',
+              headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+              body: JSON.stringify({
+                sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+                to: [{ email }],
+                subject: `Confirmation : ${eventTitle}`,
+                htmlContent: confirmHtml,
+                attachment: [{
+                  content: icsBase64,
+                  name: 'invitation.ics',
+                  type: 'text/calendar',
+                }],
+              })
+            })
+          } catch (confirmErr) {
+            console.error('[capture-submit] Confirmation email error:', confirmErr)
           }
         }
       }
