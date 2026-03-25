@@ -250,6 +250,20 @@ export function CaptureForm() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [showCountryPicker])
 
+  // Override dark body background and remove min-height in embed mode
+  useEffect(() => {
+    if (isEmbed) {
+      document.body.style.background = bgColor
+      document.body.style.minHeight = '0'
+      document.documentElement.style.minHeight = '0'
+      document.body.style.margin = '0'
+      document.body.style.overflow = 'hidden'
+    }
+    return () => { document.body.style.background = '' }
+  }, [isEmbed, bgColor])
+
+  const formRef = useRef<HTMLDivElement>(null)
+
   const today = new Date()
   const [calMonth, setCalMonth] = useState(today.getMonth())
   const [calYear, setCalYear] = useState(today.getFullYear())
@@ -257,6 +271,26 @@ export function CaptureForm() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
 
   const [infoCollapsed, setInfoCollapsed] = useState(false)
+
+  // Send height to parent iframe for dynamic resize
+  useEffect(() => {
+    if (!isEmbed || !formRef.current) return
+    let lastHeight = 0
+    const sendHeight = () => {
+      if (!formRef.current) return
+      const h = formRef.current.offsetHeight
+      if (h > 0 && h !== lastHeight) {
+        lastHeight = h
+        window.parent.postMessage({ type: 'closeos-capture-resize', height: h }, '*')
+      }
+    }
+    // Poll frequently during CSS transitions (600ms), then slow poll
+    const fast = setInterval(sendHeight, 20)
+    const timeout = setTimeout(() => clearInterval(fast), 700)
+    const slow = setInterval(sendHeight, 500)
+    sendHeight()
+    return () => { clearInterval(fast); clearInterval(slow); clearTimeout(timeout) }
+  }, [isEmbed, selectedDate, infoCollapsed])
   const prospectTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
 
   // Real availability slots from API
@@ -335,7 +369,12 @@ export function CaptureForm() {
     } else if (email.trim() && !isValidEmail(email.trim())) {
       return false // If email is optional but entered, still validate format
     }
-    if (campaign?.phone_required && !phone.trim()) return false
+    if (campaign?.phone_required) {
+      const digits = phone.replace(/\D/g, '')
+      const fmt = PHONE_FORMATS[countryCode]
+      const requiredDigits = fmt ? fmt.maxDigits : 7
+      if (digits.length < requiredDigits) return false
+    }
     for (const field of (campaign?.custom_fields || [])) {
       if (field.required && !customData[field.label]?.trim()) return false
     }
@@ -443,12 +482,12 @@ export function CaptureForm() {
   const nextMonth = () => { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1) } else setCalMonth(calMonth + 1) }
 
   if (loading) {
-    return <div className={`min-h-screen flex items-center justify-center ${isEmbed ? '' : 'bg-[#fbf9f8]'}`}><Loader2 className="h-8 w-8 text-[#006c49] animate-spin" /></div>
+    return <div className={`min-h-screen flex items-center justify-center ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`}><Loader2 className="h-8 w-8 text-[#006c49] animate-spin" /></div>
   }
 
   if (notFound) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isEmbed ? '' : 'bg-[#fbf9f8]'}`}>
+      <div className={`min-h-screen flex items-center justify-center ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`}>
         <div className="text-center">
           <div className="w-20 h-20 rounded-full bg-[#f5f3f2] flex items-center justify-center mx-auto mb-6">
             <svg className="w-8 h-8 text-[#444748]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -462,7 +501,7 @@ export function CaptureForm() {
 
   if (submitted) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isEmbed ? '' : 'bg-[#fbf9f8]'}`}>
+      <div className={`min-h-screen flex items-center justify-center ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`}>
         <div className="max-w-md mx-auto text-center p-8">
           <div className="flex justify-center mb-6">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#006c49]/10">
@@ -515,8 +554,8 @@ export function CaptureForm() {
   } : {}
 
   return (
-    <div className={`min-h-screen ${isEmbed ? '' : 'bg-[#fbf9f8]'}`} style={customStyle}>
-      <div className={`mx-auto flex flex-col lg:flex-row min-h-screen ${isEmbed ? '' : 'max-w-screen-2xl'}`}>
+    <div ref={formRef} className={`${isEmbed ? '' : 'min-h-screen'} ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`} style={customStyle}>
+      <div className={`mx-auto flex flex-col lg:flex-row ${isEmbed ? '' : 'min-h-screen max-w-screen-2xl'}`}>
 
         {/* LEFT SIDE - Marketing */}
         {!isEmbed && (
@@ -559,8 +598,8 @@ export function CaptureForm() {
         )}
 
         {/* RIGHT SIDE - Form + Calendar */}
-        <div className={`flex-1 flex items-start justify-center ${isEmbed ? 'p-4' : 'px-5 sm:px-8 lg:px-12 py-8 lg:py-12'}`}>
-          <div className={`w-full ${isHorizontal ? 'max-w-5xl' : 'max-w-xl'} ${isEmbed ? '' : 'bg-white rounded-2xl p-8 md:p-12 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'}`} style={{ boxShadow: isEmbed ? undefined : 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
+        <div className={`flex-1 flex items-start justify-center ${isEmbed ? (isHorizontal ? 'p-3' : 'p-4') : 'px-5 sm:px-8 lg:px-12 py-8 lg:py-12'}`}>
+          <div className={`w-full ${isHorizontal ? 'max-w-full' : 'max-w-xl'} ${isEmbed ? '' : 'bg-white rounded-2xl p-8 md:p-12 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'}`} style={{ boxShadow: isEmbed ? undefined : 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
 
             {/* Mobile header */}
             {!isEmbed && (
@@ -580,7 +619,7 @@ export function CaptureForm() {
             )}
 
             {/* Horizontal layout wrapper */}
-            <div className={isHorizontal && !isInscriptionMode ? 'flex gap-10' : ''}>
+            <div className={isHorizontal && !isInscriptionMode ? 'flex gap-6' : ''}>
             {/* Left column in horizontal mode */}
             <div className={isHorizontal && !isInscriptionMode ? 'flex-1 min-w-0' : ''}>
 
@@ -601,78 +640,83 @@ export function CaptureForm() {
               )}
 
               {!infoCollapsed && (
-                <div className="space-y-8 mb-8">
+                <div className={`${isHorizontal ? 'space-y-4 mb-4' : 'space-y-8 mb-8'}`}>
                   {/* Step 1 header */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-[#1b1c1b] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">1</div>
-                    <h2 className="text-2xl font-bold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Informations personnelles</h2>
+                  <div className="flex items-center gap-3">
+                    <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full bg-[#1b1c1b] flex items-center justify-center text-white font-bold flex-shrink-0`}>1</div>
+                    <h2 className={`${isHorizontal ? 'text-lg' : 'text-2xl'} font-bold text-[#1b1c1b]`} style={{ fontFamily: 'Manrope, sans-serif' }}>Informations personnelles</h2>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
+                  {/* Prénom / Nom côte à côte */}
+                  <div className={`flex gap-4 ${isHorizontal ? 'mb-2' : 'mb-0'}`}>
+                    <div className="flex-1 space-y-2">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Prénom *</label>
                       <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jean" className={inputCls} style={inputStyle} />
                     </div>
-                    <div className="space-y-2">
+                    <div className="flex-1 space-y-2">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Nom</label>
                       <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Dupont" className={inputCls} style={inputStyle} />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Email {campaign?.email_required ? '*' : ''}</label>
-                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jean@example.com" className={`${inputCls} ${email.trim() && !isValidEmail(email.trim()) ? 'border-red-400 focus:border-red-400' : ''}`} style={inputStyle} />
-                      {email.trim() && !isValidEmail(email.trim()) && (
-                        <p className="text-xs text-red-500 mt-1">Veuillez entrer une adresse email valide</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Téléphone {campaign?.phone_required ? '*' : ''}</label>
-                      <div className="relative flex gap-0 z-20" ref={countryPickerRef}>
-                        <button
-                          type="button"
-                          onClick={() => { setShowCountryPicker(!showCountryPicker); setCountrySearch('') }}
-                          className="flex items-center gap-1.5 border-b-2 border-[#c4c7c7]/30 py-3 pr-3 hover:border-[#006c49] transition-colors flex-shrink-0"
-                        >
-                          <span className="text-base">{COUNTRY_CODES.find(c => c.code === countryCode)?.flag || '🌍'}</span>
-                          <span className="text-sm text-[#1b1c1b] font-medium">{countryCode}</span>
-                          <ChevronDown className="h-3 w-3 text-[#444748]/40" />
-                        </button>
-                        {showCountryPicker && (
-                          <div className="absolute top-full left-0 z-50 mt-1 w-64 max-h-60 overflow-y-auto rounded-2xl border border-[#c4c7c7]/10 bg-white shadow-xl">
-                            <div className="sticky top-0 bg-white border-b border-[#c4c7c7]/10 p-3">
-                              <input
-                                type="text"
-                                value={countrySearch}
-                                onChange={(e) => setCountrySearch(e.target.value)}
-                                placeholder="Rechercher un pays..."
-                                className="w-full rounded-full border border-[#c4c7c7]/20 bg-[#f5f3f2] px-3.5 py-2 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:outline-none focus:ring-1 focus:ring-[#006c49]"
-                                autoFocus
-                              />
-                            </div>
-                            {COUNTRY_CODES
-                              .filter(c => !countrySearch || c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch))
-                              .map((c, i) => (
-                              <button
-                                key={`${c.code}-${c.name}-${i}`}
-                                type="button"
-                                onClick={() => { setCountryCode(c.code); setPhone(''); setShowCountryPicker(false); setCountrySearch('') }}
-                                className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left hover:bg-[#f5f3f2] transition-colors ${countryCode === c.code ? 'bg-[#006c49]/5 text-[#006c49]' : 'text-[#1b1c1b]'}`}
-                              >
-                                <span className="text-base">{c.flag}</span>
-                                <span className="flex-1 truncate">{c.name}</span>
-                                <span className="text-xs text-[#444748]/40 font-medium">{c.code}</span>
-                              </button>
-                            ))}
+                  </div>
+
+                  {/* Email */}
+                  <div className={`space-y-2 ${isHorizontal ? 'mb-2' : ''}`}>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Email {campaign?.email_required ? '*' : ''}</label>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jean@example.com" className={`${inputCls} ${email.trim() && !isValidEmail(email.trim()) ? 'border-red-400 focus:border-red-400' : ''}`} style={inputStyle} />
+                    {email.trim() && !isValidEmail(email.trim()) && (
+                      <p className="text-xs text-red-500 mt-1">Veuillez entrer une adresse email valide</p>
+                    )}
+                  </div>
+
+                  {/* Téléphone */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Téléphone {campaign?.phone_required ? '*' : ''}</label>
+                    <div className="relative flex gap-0 z-20" ref={countryPickerRef}>
+                      <button
+                        type="button"
+                        onClick={() => { setShowCountryPicker(!showCountryPicker); setCountrySearch('') }}
+                        className="flex items-center gap-1.5 border-b-2 border-[#c4c7c7]/30 py-3 pr-3 hover:border-[#006c49] transition-colors flex-shrink-0"
+                      >
+                        <span className="text-base">{COUNTRY_CODES.find(c => c.code === countryCode)?.flag || '🌍'}</span>
+                        <span className="text-sm text-[#1b1c1b] font-medium">{countryCode}</span>
+                        <ChevronDown className="h-3 w-3 text-[#444748]/40" />
+                      </button>
+                      {showCountryPicker && (
+                        <div className="absolute top-full left-0 z-50 mt-1 w-64 max-h-60 overflow-y-auto rounded-2xl border border-[#c4c7c7]/10 bg-white shadow-xl">
+                          <div className="sticky top-0 bg-white border-b border-[#c4c7c7]/10 p-3">
+                            <input
+                              type="text"
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              placeholder="Rechercher un pays..."
+                              className="w-full rounded-full border border-[#c4c7c7]/20 bg-[#f5f3f2] px-3.5 py-2 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:outline-none focus:ring-1 focus:ring-[#006c49]"
+                              autoFocus
+                            />
                           </div>
-                        )}
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(formatPhoneByCountry(e.target.value, countryCode))}
-                          placeholder={PHONE_FORMATS[countryCode] ? PHONE_FORMATS[countryCode].groups.map(g => '0'.repeat(g)).join(' ') : '6 12 34 56 78'}
-                          className="flex-1 bg-transparent border-b-2 border-[#c4c7c7]/30 py-3 pl-3 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:border-[#006c49] focus:ring-0 transition-colors outline-none font-medium"
-                          style={hasCustomStyle ? { color: textColor, borderColor: `${primaryColor}33` } : {}}
-                        />
-                      </div>
+                          {COUNTRY_CODES
+                            .filter(c => !countrySearch || c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch))
+                            .map((c, i) => (
+                            <button
+                              key={`${c.code}-${c.name}-${i}`}
+                              type="button"
+                              onClick={() => { setCountryCode(c.code); setPhone(''); setShowCountryPicker(false); setCountrySearch('') }}
+                              className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left hover:bg-[#f5f3f2] transition-colors ${countryCode === c.code ? 'bg-[#006c49]/5 text-[#006c49]' : 'text-[#1b1c1b]'}`}
+                            >
+                              <span className="text-base">{c.flag}</span>
+                              <span className="flex-1 truncate">{c.name}</span>
+                              <span className="text-xs text-[#444748]/40 font-medium">{c.code}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(formatPhoneByCountry(e.target.value, countryCode))}
+                        placeholder={PHONE_FORMATS[countryCode] ? PHONE_FORMATS[countryCode].groups.map(g => '0'.repeat(g)).join(' ') : '6 12 34 56 78'}
+                        className="flex-1 bg-transparent border-b-2 border-[#c4c7c7]/30 py-3 pl-3 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:border-[#006c49] focus:ring-0 transition-colors outline-none font-medium"
+                        style={hasCustomStyle ? { color: textColor, borderColor: `${primaryColor}33` } : {}}
+                      />
                     </div>
                   </div>
 
@@ -739,94 +783,189 @@ export function CaptureForm() {
 
               <div className={`transition-opacity duration-300 ${isInfoComplete ? 'opacity-100' : 'opacity-30 grayscale pointer-events-none'}`}>
                 {/* Step 2 header */}
-                <div className="flex items-center gap-4 mb-8">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isInfoComplete ? 'bg-[#1b1c1b] text-white' : 'border-2 border-[#c4c7c7] text-[#c4c7c7]'}`}>2</div>
-                  <h2 className={`text-2xl font-bold ${isInfoComplete ? 'text-[#1b1c1b]' : 'text-[#1b1c1b]/40'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>Choisissez un créneau</h2>
+                <div className={`flex items-center gap-3 ${isHorizontal ? 'mb-4' : 'mb-6'}`}>
+                  <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full flex items-center justify-center font-bold flex-shrink-0 ${isInfoComplete ? 'bg-[#1b1c1b] text-white' : 'border-2 border-[#c4c7c7] text-[#c4c7c7]'}`}>2</div>
+                  <h2 className={`${isHorizontal ? 'text-lg' : 'text-2xl'} font-bold ${isInfoComplete ? 'text-[#1b1c1b]' : 'text-[#1b1c1b]/40'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>Choisissez un créneau</h2>
                 </div>
 
-                <div className={`grid gap-10 ${isHorizontal ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
-                  {/* Calendar */}
+                {/* Compact horizontal layout: calendar swaps with time slots */}
+                {isHorizontal ? (
                   <div>
-                    <div className="flex items-center justify-between mb-4 px-1">
-                      <span className="text-lg font-bold text-[#1b1c1b]">{MONTHS_FR[calMonth]} {calYear}</span>
-                      <div className="flex gap-1">
-                        <button onClick={prevMonth} className="p-2 hover:bg-[#f5f3f2] rounded-full transition-colors">
-                          <ChevronLeft className="h-5 w-5 text-[#1b1c1b]" />
-                        </button>
-                        <button onClick={nextMonth} className="p-2 hover:bg-[#f5f3f2] rounded-full transition-colors">
-                          <ChevronRight className="h-5 w-5 text-[#1b1c1b]" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                      {DAYS_FR.map((d, i) => (
-                        <div key={i} className="py-1 text-[10px] font-bold text-[#444748]/40 uppercase tracking-widest">{d}</div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-7 gap-1">
-                      {calendarDays.map((day, i) => {
-                        if (!day) return <div key={`empty-${i}`} />
-                        const past = isDatePast(day)
-                        const weekend = freeMode ? isWeekend(day) : false
-                        const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
-                        const noAvailability = !freeMode && availableDates && !availableDates.has(dayStr)
-                        const disabled = past || weekend || noAvailability || !isInfoComplete
-                        const selected = selectedDate && isSameDay(day, selectedDate)
-                        const isToday = isSameDay(day, today)
-
-                        return (
-                          <button
-                            key={i}
-                            disabled={disabled}
-                            onClick={() => { setSelectedDate(day); setSelectedTime(null) }}
-                            className={`p-2.5 rounded-full text-sm font-medium transition-all ${
-                              selected
-                                ? 'bg-[#006c49] text-white shadow-lg shadow-[#006c49]/20'
-                                : isToday && !disabled
-                                  ? 'bg-[#006c49]/10 text-[#006c49] hover:bg-[#006c49]/20'
-                                  : disabled
-                                    ? 'text-[#c4c7c7] cursor-not-allowed'
-                                    : 'text-[#1b1c1b] hover:bg-[#eae8e7]'
-                            }`}
-                          >
-                            {day.getDate()}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Time slots */}
-                  <div>
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-4">Créneaux disponibles</h3>
-                    {selectedDate ? (
-                      <div className="max-h-72 overflow-y-auto pr-1">
-                        <div className="grid grid-cols-2 gap-2">
-                          {(freeMode ? TIME_SLOTS : (availableTimesForDate || []).map(s => s.time)).map(slot => (
-                            <button
-                              key={slot}
-                              onClick={() => setSelectedTime(slot)}
-                              className={`py-3 px-4 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-                                selectedTime === slot
-                                  ? 'bg-[#1b1c1b] text-white shadow-lg'
-                                  : 'border border-[#c4c7c7]/30 text-[#1b1c1b] hover:border-[#006c49]'
-                              }`}
-                            >
-                              <span>{slot}</span>
-                              {selectedTime === slot && <CheckCircle2 className="h-4 w-4" />}
+                    {/* Calendar - collapses smoothly when date is selected */}
+                    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${selectedDate ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100'}`}>
+                      <div>
+                        <div className="flex items-center justify-between mb-3 px-1">
+                          <span className="text-lg font-bold text-[#1b1c1b]">{MONTHS_FR[calMonth]} {calYear}</span>
+                          <div className="flex gap-1">
+                            <button onClick={prevMonth} className="p-2 hover:bg-[#f5f3f2] rounded-full transition-colors">
+                              <ChevronLeft className="h-5 w-5 text-[#1b1c1b]" />
                             </button>
+                            <button onClick={nextMonth} className="p-2 hover:bg-[#f5f3f2] rounded-full transition-colors">
+                              <ChevronRight className="h-5 w-5 text-[#1b1c1b]" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                          {DAYS_FR.map((d, i) => (
+                            <div key={i} className="py-1 text-[10px] font-bold text-[#444748]/40 uppercase tracking-widest">{d}</div>
                           ))}
                         </div>
-                        {!freeMode && availableTimesForDate && availableTimesForDate.length === 0 && (
-                          <p className="text-xs text-[#444748]/40 mt-2">Aucun créneau disponible ce jour. Essayez une autre date.</p>
-                        )}
+                        <div className="grid grid-cols-7 gap-1">
+                          {calendarDays.map((day, i) => {
+                            if (!day) return <div key={`empty-${i}`} />
+                            const past = isDatePast(day)
+                            const weekend = freeMode ? isWeekend(day) : false
+                            const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
+                            const noAvailability = !freeMode && availableDates && !availableDates.has(dayStr)
+                            const disabled = past || weekend || noAvailability || !isInfoComplete
+                            const selected = selectedDate && isSameDay(day, selectedDate)
+                            const isToday = isSameDay(day, today)
+                            return (
+                              <button
+                                key={i}
+                                disabled={disabled}
+                                onClick={() => { setSelectedDate(day); setSelectedTime(null) }}
+                                className={`p-2.5 rounded-full text-sm font-medium transition-all ${
+                                  selected ? 'bg-[#006c49] text-white shadow-lg shadow-[#006c49]/20'
+                                    : isToday && !disabled ? 'bg-[#006c49]/10 text-[#006c49] hover:bg-[#006c49]/20'
+                                    : disabled ? 'text-[#c4c7c7] cursor-not-allowed'
+                                    : 'text-[#1b1c1b] hover:bg-[#eae8e7]'
+                                }`}
+                              >
+                                {day.getDate()}
+                              </button>
+                            )
+                          })}
+                        </div>
                       </div>
-                    ) : (
-                      <p className="text-sm text-[#444748]/40">Sélectionnez une date pour voir les créneaux.</p>
-                    )}
+                    </div>
+
+                    {/* Time slots - appears smoothly when date is selected */}
+                    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${selectedDate ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                      {selectedDate && (
+                        <div>
+                          {/* Back button with selected date */}
+                          <button
+                            onClick={() => { setSelectedDate(null); setSelectedTime(null) }}
+                            className="flex items-center gap-3 mb-5 px-4 py-2.5 rounded-full bg-[#006c49]/8 hover:bg-[#006c49]/15 transition-colors group"
+                          >
+                            <ChevronLeft className="h-4 w-4 text-[#006c49] group-hover:-translate-x-0.5 transition-transform" />
+                            <Calendar className="h-4 w-4 text-[#006c49]" />
+                            <span className="text-sm font-bold text-[#006c49]">
+                              {selectedDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            </span>
+                            <span className="text-xs text-[#006c49]/60 font-medium">— Changer de date</span>
+                          </button>
+
+                          {/* Time slots in wide grid */}
+                          <div>
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-3">Créneaux disponibles</h3>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                              {(freeMode ? TIME_SLOTS : (availableTimesForDate || []).map(s => s.time)).map(slot => (
+                                <button
+                                  key={slot}
+                                  onClick={() => setSelectedTime(slot)}
+                                  className={`py-2.5 px-3 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                                    selectedTime === slot
+                                      ? 'bg-[#1b1c1b] text-white shadow-lg'
+                                      : 'border border-[#c4c7c7]/30 text-[#1b1c1b] hover:border-[#006c49]'
+                                  }`}
+                                >
+                                  <span>{slot}</span>
+                                  {selectedTime === slot && <CheckCircle2 className="h-3.5 w-3.5" />}
+                                </button>
+                              ))}
+                            </div>
+                            {!freeMode && availableTimesForDate && availableTimesForDate.length === 0 && (
+                              <p className="text-xs text-[#444748]/40 mt-2">Aucun créneau disponible ce jour. Essayez une autre date.</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* Vertical layout: standard side-by-side grid */
+                  <div className="grid gap-10 grid-cols-1 md:grid-cols-2">
+                    {/* Calendar */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4 px-1">
+                        <span className="text-lg font-bold text-[#1b1c1b]">{MONTHS_FR[calMonth]} {calYear}</span>
+                        <div className="flex gap-1">
+                          <button onClick={prevMonth} className="p-2 hover:bg-[#f5f3f2] rounded-full transition-colors">
+                            <ChevronLeft className="h-5 w-5 text-[#1b1c1b]" />
+                          </button>
+                          <button onClick={nextMonth} className="p-2 hover:bg-[#f5f3f2] rounded-full transition-colors">
+                            <ChevronRight className="h-5 w-5 text-[#1b1c1b]" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                        {DAYS_FR.map((d, i) => (
+                          <div key={i} className="py-1 text-[10px] font-bold text-[#444748]/40 uppercase tracking-widest">{d}</div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {calendarDays.map((day, i) => {
+                          if (!day) return <div key={`empty-${i}`} />
+                          const past = isDatePast(day)
+                          const weekend = freeMode ? isWeekend(day) : false
+                          const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
+                          const noAvailability = !freeMode && availableDates && !availableDates.has(dayStr)
+                          const disabled = past || weekend || noAvailability || !isInfoComplete
+                          const selected = selectedDate && isSameDay(day, selectedDate)
+                          const isToday = isSameDay(day, today)
+                          return (
+                            <button
+                              key={i}
+                              disabled={disabled}
+                              onClick={() => { setSelectedDate(day); setSelectedTime(null) }}
+                              className={`p-2.5 rounded-full text-sm font-medium transition-all ${
+                                selected ? 'bg-[#006c49] text-white shadow-lg shadow-[#006c49]/20'
+                                  : isToday && !disabled ? 'bg-[#006c49]/10 text-[#006c49] hover:bg-[#006c49]/20'
+                                  : disabled ? 'text-[#c4c7c7] cursor-not-allowed'
+                                  : 'text-[#1b1c1b] hover:bg-[#eae8e7]'
+                              }`}
+                            >
+                              {day.getDate()}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Time slots */}
+                    <div>
+                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-4">Créneaux disponibles</h3>
+                      {selectedDate ? (
+                        <div className="max-h-72 overflow-y-auto pr-1">
+                          <div className="grid grid-cols-2 gap-2">
+                            {(freeMode ? TIME_SLOTS : (availableTimesForDate || []).map(s => s.time)).map(slot => (
+                              <button
+                                key={slot}
+                                onClick={() => setSelectedTime(slot)}
+                                className={`py-3 px-4 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                                  selectedTime === slot
+                                    ? 'bg-[#1b1c1b] text-white shadow-lg'
+                                    : 'border border-[#c4c7c7]/30 text-[#1b1c1b] hover:border-[#006c49]'
+                                }`}
+                              >
+                                <span>{slot}</span>
+                                {selectedTime === slot && <CheckCircle2 className="h-4 w-4" />}
+                              </button>
+                            ))}
+                          </div>
+                          {!freeMode && availableTimesForDate && availableTimesForDate.length === 0 && (
+                            <p className="text-xs text-[#444748]/40 mt-2">Aucun créneau disponible ce jour. Essayez une autre date.</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-[#444748]/40">Sélectionnez une date pour voir les créneaux.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {slotsLoading && (
                   <div className="flex items-center justify-center py-6">
@@ -836,17 +975,17 @@ export function CaptureForm() {
                 )}
 
                 {/* Submit */}
-                <div className="pt-8 border-t border-[#c4c7c7]/10 mt-8">
+                <div className={`${isHorizontal ? 'pt-4 mt-4' : 'pt-6 mt-6'} border-t border-[#c4c7c7]/10`}>
                   <button
                     onClick={handleSubmit}
                     disabled={!isInfoComplete || !selectedDate || !selectedTime || submitting}
-                    className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-2xl group"
+                    className={`w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] ${isHorizontal ? 'py-3.5 text-sm' : 'py-5 text-base'} font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-2xl group`}
                     style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                   >
                     {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Confirmer le rendez-vous</span><ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" /></>}
                   </button>
 
-                  <p className="text-center text-[10px] text-[#444748]/40 mt-6 font-medium leading-relaxed">
+                  <p className={`text-center text-[10px] text-[#444748]/40 ${isHorizontal ? 'mt-3' : 'mt-6'} font-medium leading-relaxed`}>
                     En continuant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées dans notre base de données.
                   </p>
                 </div>

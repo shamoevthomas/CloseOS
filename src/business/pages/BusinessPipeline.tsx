@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
   User, ChevronDown, Search, LayoutGrid, List,
-  X, Filter, Calendar, Trash2, Plus, AlertTriangle, Tag,
+  X, Filter, Calendar, Trash2, Plus, AlertTriangle, Tag, Settings, ToggleLeft, ToggleRight, RefreshCw,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -116,6 +116,70 @@ export function BusinessPipeline() {
   const [newStageRoles, setNewStageRoles] = useState<string[]>(['Closer'])
   const [creatingStage, setCreatingStage] = useState(false)
 
+  // Pipeline auto-reset config
+  const [showResetConfig, setShowResetConfig] = useState(false)
+  const [resetConfig, setResetConfig] = useState<{
+    id?: number
+    is_active: boolean
+    frequency: 'weekly' | 'biweekly' | 'monthly'
+    stages_to_clear: string[]
+    last_reset_at?: string
+  }>({ is_active: false, frequency: 'weekly', stages_to_clear: ['won'] })
+  const [savingResetConfig, setSavingResetConfig] = useState(false)
+
+  // Load reset config
+  useEffect(() => {
+    if (!effectiveUserId) return
+    supabase
+      .from('business_pipeline_reset_config')
+      .select('*')
+      .eq('business_owner_id', effectiveUserId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setResetConfig({
+            id: data.id,
+            is_active: data.is_active,
+            frequency: data.frequency,
+            stages_to_clear: data.stages_to_clear || ['won'],
+            last_reset_at: data.last_reset_at,
+          })
+        }
+      })
+  }, [effectiveUserId])
+
+  const handleSaveResetConfig = async () => {
+    if (!effectiveUserId) return
+    setSavingResetConfig(true)
+    try {
+      const payload = {
+        business_owner_id: effectiveUserId,
+        is_active: resetConfig.is_active,
+        frequency: resetConfig.frequency,
+        stages_to_clear: resetConfig.stages_to_clear,
+        updated_at: new Date().toISOString(),
+      }
+      if (resetConfig.id) {
+        await supabase.from('business_pipeline_reset_config').update(payload).eq('id', resetConfig.id)
+      } else {
+        const { data } = await supabase.from('business_pipeline_reset_config').insert(payload).select().single()
+        if (data) setResetConfig(prev => ({ ...prev, id: data.id }))
+      }
+      toast.success('Configuration sauvegardée')
+      setShowResetConfig(false)
+    } catch {
+      toast.error('Erreur lors de la sauvegarde')
+    } finally {
+      setSavingResetConfig(false)
+    }
+  }
+
+  const FREQUENCY_OPTIONS = [
+    { value: 'weekly' as const, label: 'Toutes les semaines' },
+    { value: 'biweekly' as const, label: 'Toutes les 2 semaines' },
+    { value: 'monthly' as const, label: 'Tous les mois' },
+  ]
+
   // Merge built-in + custom stages for display
   const ALL_STAGES_WITH_CUSTOM = useMemo(() => {
     const builtIn = STAGES.map(s => ({ ...s, isCustom: false as const, customId: undefined as number | undefined }))
@@ -194,7 +258,8 @@ export function BusinessPipeline() {
 
   // Filter logic
   const filtered = useMemo(() => {
-    let result = prospects
+    // Hide prospects removed from pipeline (auto-reset)
+    let result = prospects.filter(p => p.pipeline_visible !== false)
 
     // Search
     if (searchQuery) {
@@ -364,13 +429,25 @@ export function BusinessPipeline() {
 
         {/* Add custom stage button (Owner/HOS only) */}
         {canManage && (
-          <button
-            onClick={() => setShowCreateStage(true)}
-            className="flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold bg-stone-900 text-white hover:opacity-90 transition-all"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Nouveau statut
-          </button>
+          <>
+            <button
+              onClick={() => setShowCreateStage(true)}
+              className="flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold bg-stone-900 text-white hover:opacity-90 transition-all"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              Nouveau statut
+            </button>
+            <button
+              onClick={() => setShowResetConfig(true)}
+              className="relative p-2.5 rounded-full bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
+              title="Configuration du pipeline"
+            >
+              <Settings className="h-4 w-4" />
+              {resetConfig.is_active && (
+                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-neutral-900" />
+              )}
+            </button>
+          </>
         )}
       </div>
 
@@ -1004,6 +1081,148 @@ export function BusinessPipeline() {
             setSelectedProspect(null)
           }}
         />
+      )}
+
+      {/* Pipeline Auto-Reset Config Modal */}
+      {showResetConfig && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowResetConfig(false)}>
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-stone-200/60 dark:border-neutral-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-stone-100 dark:bg-white/5 flex items-center justify-center">
+                  <RefreshCw className="h-5 w-5 text-stone-600 dark:text-neutral-300" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-stone-900 dark:text-white" style={{ fontFamily: "'Manrope', sans-serif" }}>Réinitialisation automatique</h3>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500">Vider le pipeline périodiquement</p>
+                </div>
+              </div>
+              <button onClick={() => setShowResetConfig(false)} className="p-1.5 rounded-full hover:bg-stone-100 dark:hover:bg-white/5 transition-colors">
+                <X className="w-4 h-4 text-stone-400" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-5">
+              {/* Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-stone-900 dark:text-white">Activer la réinitialisation</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">Les prospects seront retirés du pipeline mais resteront dans le CRM</p>
+                </div>
+                <button
+                  onClick={() => setResetConfig(prev => ({ ...prev, is_active: !prev.is_active }))}
+                  className="text-stone-900 dark:text-white"
+                >
+                  {resetConfig.is_active
+                    ? <ToggleRight className="h-8 w-8 text-emerald-500" />
+                    : <ToggleLeft className="h-8 w-8 text-stone-300 dark:text-neutral-600" />
+                  }
+                </button>
+              </div>
+
+              {resetConfig.is_active && (
+                <>
+                  {/* Frequency */}
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest text-stone-400 font-bold mb-2 block">Fréquence</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {FREQUENCY_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setResetConfig(prev => ({ ...prev, frequency: opt.value }))}
+                          className={cn(
+                            'rounded-xl px-3 py-2.5 text-xs font-bold transition-all border',
+                            resetConfig.frequency === opt.value
+                              ? 'bg-stone-900 text-white border-stone-900 dark:bg-white dark:text-stone-900 dark:border-white'
+                              : 'bg-white dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 border-stone-200 dark:border-neutral-700 hover:border-stone-400 dark:hover:border-neutral-500'
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Stages to clear */}
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest text-stone-400 font-bold mb-2 block">Colonnes à vider</label>
+                    <p className="text-xs text-stone-400 dark:text-neutral-500 mb-3">Sélectionnez les statuts dont les prospects seront retirés du pipeline</p>
+                    <div className="space-y-1.5 max-h-[250px] overflow-y-auto">
+                      {ALL_STAGES_WITH_CUSTOM.map(stage => {
+                        const isSelected = resetConfig.stages_to_clear.includes(stage.id)
+                        const isWon = stage.id === 'won'
+                        return (
+                          <button
+                            key={stage.id}
+                            onClick={() => {
+                              setResetConfig(prev => ({
+                                ...prev,
+                                stages_to_clear: isSelected
+                                  ? prev.stages_to_clear.filter(s => s !== stage.id)
+                                  : [...prev.stages_to_clear, stage.id],
+                              }))
+                            }}
+                            className={cn(
+                              'w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all text-left',
+                              isSelected
+                                ? 'bg-stone-100 dark:bg-white/10 text-stone-900 dark:text-white'
+                                : 'text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5'
+                            )}
+                          >
+                            <div className={cn(
+                              'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0',
+                              isSelected
+                                ? 'bg-stone-900 dark:bg-white border-stone-900 dark:border-white'
+                                : 'border-stone-300 dark:border-neutral-600'
+                            )}>
+                              {isSelected && (
+                                <svg className="w-3 h-3 text-white dark:text-stone-900" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              )}
+                            </div>
+                            <span
+                              className="w-3 h-3 rounded-full shrink-0"
+                              style={{ backgroundColor: stage.isCustom ? (stage as any).customColor : undefined }}
+                            >
+                              {!stage.isCustom && <span className={cn('block w-full h-full rounded-full', stage.color)} />}
+                            </span>
+                            <span className="flex-1">{stage.name}</span>
+                            {isWon && <span className="text-[10px] text-stone-400 uppercase tracking-widest">par défaut</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Last reset info */}
+                  {resetConfig.last_reset_at && (
+                    <div className="flex items-center gap-2 text-xs text-stone-400 dark:text-neutral-500">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Dernière réinitialisation : {new Date(resetConfig.last_reset_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-stone-200/60 dark:border-neutral-700">
+              <button
+                onClick={() => setShowResetConfig(false)}
+                className="px-5 py-2.5 rounded-full text-sm font-bold text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-white/5 transition-all"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveResetConfig}
+                disabled={savingResetConfig || (resetConfig.is_active && resetConfig.stages_to_clear.length === 0)}
+                className="px-6 py-2.5 rounded-full text-sm font-bold bg-stone-900 text-white hover:opacity-90 disabled:opacity-50 transition-all"
+              >
+                {savingResetConfig ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Create Custom Stage Modal */}

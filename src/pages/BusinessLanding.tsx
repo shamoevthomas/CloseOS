@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { motion } from 'motion/react';
 import {
@@ -35,9 +35,21 @@ import {
 export const BusinessLanding: React.FC = () => {
   const navigate = useNavigate();
   const pageRef = useRef<HTMLDivElement>(null);
+  const demoIframeRef = useRef<HTMLIFrameElement>(null);
   const [isExiting, setIsExiting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Dynamic iframe height from embed postMessage
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'closeos-capture-resize' && demoIframeRef.current) {
+        demoIframeRef.current.style.height = `${e.data.height}px`;
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
 
   const handleNavigateToSales = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -447,7 +459,7 @@ export const BusinessLanding: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8 }}
-          className="px-6 md:px-20 py-24 max-w-6xl mx-auto"
+          className="px-6 md:px-12 py-24 max-w-[1800px] mx-auto"
         >
           <div className="space-y-8">
             <div className="text-center max-w-2xl mx-auto">
@@ -466,11 +478,13 @@ export const BusinessLanding: React.FC = () => {
             </div>
             <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
               <iframe
-                src="https://www.closeos.fr/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&bg=f7f7f7&layout=horizontal"
+                ref={demoIframeRef}
+                src="/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&bg=f7f7f7&layout=horizontal"
                 width="100%"
-                height="800"
+                height="530"
                 frameBorder="0"
-                style={{ border: 'none', borderRadius: '12px' }}
+                scrolling="no"
+                style={{ border: 'none', borderRadius: '12px', overflow: 'hidden', transition: 'height 0.5s ease-in-out' }}
               />
             </div>
           </div>
@@ -561,7 +575,10 @@ export const BusinessLanding: React.FC = () => {
             src="/CloseOS Buisness.png"
           />
         </div>
-        <p className="text-stone-500 text-xs font-medium">© 2026 CloseOS. All rights reserved.</p>
+        <div className="flex items-center gap-4">
+          <Link to="/business/politique-utilisation" className="text-stone-500 hover:text-stone-700 text-xs font-medium transition-colors">Politique d'utilisation</Link>
+          <p className="text-stone-500 text-xs font-medium">&copy; 2026 CloseOS. All rights reserved.</p>
+        </div>
       </footer>
 
       {/* Fixed bottom blur cue */}

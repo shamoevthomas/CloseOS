@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 import {
-  Calendar, Clock, Plus, Trash2, Loader2, X, CalendarOff, Copy, ChevronDown,
+  Calendar, Clock, Plus, Trash2, Loader2, X, CalendarOff, Copy, ChevronDown, Settings2, Shield,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cn } from '../../lib/utils'
@@ -55,6 +55,12 @@ export function CloserDisponibilite() {
   const [absEndDate, setAbsEndDate] = useState('')
   const [absReason, setAbsReason] = useState('')
 
+  // Booking constraints
+  const [maxCallsPerDay, setMaxCallsPerDay] = useState<number | null>(null)
+  const [bufferBeforeBooking, setBufferBeforeBooking] = useState(0)
+  const [minBookingNotice, setMinBookingNotice] = useState(0)
+  const [savingConstraints, setSavingConstraints] = useState(false)
+
   const fetchData = useCallback(async () => {
     if (!effectiveOwnerId && !effectiveTeamMemberId) return
     setLoading(true)
@@ -70,12 +76,23 @@ export function CloserDisponibilite() {
         absQuery = absQuery.eq('team_member_id', effectiveTeamMemberId!)
       }
 
-      const [slotsRes, absRes] = await Promise.all([
+      // Fetch booking constraints
+      const constraintsQuery = isOwner
+        ? supabase.from('business_users').select('max_calls_per_day, buffer_before_booking, min_booking_notice').eq('id', effectiveOwnerId!).single()
+        : supabase.from('business_team_members').select('max_calls_per_day, buffer_before_booking, min_booking_notice').eq('id', effectiveTeamMemberId!).single()
+
+      const [slotsRes, absRes, constraintsRes] = await Promise.all([
         slotsQuery.order('day_of_week').order('start_time'),
         absQuery.order('start_date', { ascending: false }),
+        constraintsQuery,
       ])
       setSlots(slotsRes.data || [])
       setAbsences(absRes.data || [])
+      if (constraintsRes.data) {
+        setMaxCallsPerDay(constraintsRes.data.max_calls_per_day)
+        setBufferBeforeBooking(constraintsRes.data.buffer_before_booking || 0)
+        setMinBookingNotice(constraintsRes.data.min_booking_notice || 0)
+      }
     } finally {
       setLoading(false)
     }
@@ -217,6 +234,24 @@ export function CloserDisponibilite() {
     setShowAbsenceForm(false)
     setAbsStartDate(''); setAbsEndDate(''); setAbsReason('')
     fetchData()
+  }
+
+  const handleSaveConstraints = async () => {
+    setSavingConstraints(true)
+    try {
+      const updates = {
+        max_calls_per_day: maxCallsPerDay,
+        buffer_before_booking: bufferBeforeBooking,
+        min_booking_notice: minBookingNotice,
+      }
+      if (isOwner) {
+        await supabase.from('business_users').update(updates).eq('id', effectiveOwnerId!)
+      } else {
+        await supabase.from('business_team_members').update(updates).eq('id', effectiveTeamMemberId!)
+      }
+      toast.success('Paramètres enregistrés')
+    } catch { toast.error('Erreur') }
+    finally { setSavingConstraints(false) }
   }
 
   const handleDeleteAbsence = async (id: number) => {
@@ -496,6 +531,88 @@ export function CloserDisponibilite() {
                 <span className="text-sm font-bold">Nouvelle absence</span>
               </button>
             )}
+          </div>
+
+          {/* Booking Constraints Card */}
+          <div className={cn(GLASS_PANEL, 'rounded-2xl p-8 shadow-lg relative overflow-hidden')}>
+            <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
+            <h3 className="font-business-display font-extrabold text-2xl mb-2 relative z-10 flex items-center gap-3 text-stone-900 dark:text-white">
+              <Settings2 className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
+              Paramètres de booking
+            </h3>
+            <p className="text-xs text-stone-400 dark:text-neutral-500 mb-6 relative z-10">Ces règles s'appliquent à vos liens de réservation</p>
+
+            <div className="space-y-6 relative z-10">
+              {/* Max calls per day */}
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">
+                  Max de RDV par jour
+                </label>
+                <div className="flex items-center gap-3">
+                  <select
+                    value={maxCallsPerDay ?? ''}
+                    onChange={e => setMaxCallsPerDay(e.target.value ? Number(e.target.value) : null)}
+                    className="flex-1 rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
+                  >
+                    <option value="">Illimité</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15].map(n => (
+                      <option key={n} value={n}>{n} RDV / jour</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Buffer before booking */}
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">
+                  Temps libre avant un RDV
+                </label>
+                <p className="text-[10px] text-stone-400/70 dark:text-neutral-500/70 mb-2">Empêche les bookings trop proches d'un autre RDV</p>
+                <select
+                  value={bufferBeforeBooking}
+                  onChange={e => setBufferBeforeBooking(Number(e.target.value))}
+                  className="w-full rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
+                >
+                  <option value={0}>Pas de buffer</option>
+                  <option value={10}>10 minutes</option>
+                  <option value={15}>15 minutes</option>
+                  <option value={20}>20 minutes</option>
+                  <option value={30}>30 minutes</option>
+                  <option value={45}>45 minutes</option>
+                  <option value={60}>1 heure</option>
+                </select>
+              </div>
+
+              {/* Min booking notice */}
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">
+                  Délai minimum avant un booking
+                </label>
+                <p className="text-[10px] text-stone-400/70 dark:text-neutral-500/70 mb-2">Impossible de réserver un créneau avant ce délai</p>
+                <select
+                  value={minBookingNotice}
+                  onChange={e => setMinBookingNotice(Number(e.target.value))}
+                  className="w-full rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
+                >
+                  <option value={0}>Pas de délai</option>
+                  <option value={1}>1 heure avant</option>
+                  <option value={3}>3 heures avant</option>
+                  <option value={5}>5 heures avant</option>
+                  <option value={10}>10 heures avant</option>
+                  <option value={24}>24 heures avant</option>
+                </select>
+              </div>
+
+              {/* Save button */}
+              <button
+                onClick={handleSaveConstraints}
+                disabled={savingConstraints}
+                className="w-full py-3.5 rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 text-white text-sm font-business-display font-extrabold hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {savingConstraints ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" strokeWidth={1.5} />}
+                Enregistrer
+              </button>
+            </div>
           </div>
         </aside>
       </div>

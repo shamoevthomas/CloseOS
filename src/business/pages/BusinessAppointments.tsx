@@ -4,6 +4,7 @@ import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarCon
 import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
   ChevronDown, User, Mail, Megaphone, Users, Link2, Copy, Plus, X, Save, Video, Globe,
+  Settings, Trash2, Bell, Code2, FileText, ChevronRight, ToggleLeft, ToggleRight, Pencil, Phone,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -41,7 +42,69 @@ interface BookingLink {
   link: string
   slug: string
   team_member_id: string | null
+  description: string | null
+  redirect_url: string | null
+  email_enabled: boolean
+  email_required: boolean
+  phone_enabled: boolean
+  phone_required: boolean
   created_at: string
+}
+
+interface ReminderConfig {
+  id?: string
+  name: string
+  template_type: 'default' | 'custom'
+  timing: string
+  sender_name: string
+  subject: string
+  custom_html: string
+  is_active: boolean
+  is_manual: boolean
+}
+
+const TIMING_OPTIONS = [
+  { value: '1d', label: '1 jour avant' },
+  { value: '10h_same_day', label: '10H le jour même' },
+  { value: '5h', label: '5 heures avant' },
+  { value: '3h', label: '3 heures avant' },
+  { value: '1h', label: '1 heure avant' },
+  { value: '30m', label: '30 minutes avant' },
+  { value: '15m', label: '15 minutes avant' },
+  { value: '0m', label: 'Au moment de l\'appel' },
+]
+
+const TEMPLATE_VARIABLES = [
+  { key: '{{lead_name}}', label: 'Nom du lead' },
+  { key: '{{assignee_name}}', label: 'Nom de l\'interlocuteur' },
+  { key: '{{appointment_title}}', label: 'Titre du RDV' },
+  { key: '{{appointment_date}}', label: 'Date du RDV' },
+  { key: '{{appointment_time}}', label: 'Heure du RDV' },
+  { key: '{{google_meet_link}}', label: 'Lien Google Meet' },
+  { key: '{{reschedule_link}}', label: 'Lien de report' },
+  { key: '{{cancel_link}}', label: 'Lien d\'annulation' },
+]
+
+const DEFAULT_REMINDER: ReminderConfig = {
+  name: 'Nouveau rappel',
+  template_type: 'default',
+  timing: '1h',
+  sender_name: 'CloseOS',
+  subject: 'CloseOS - Rappel de votre rendez-vous',
+  custom_html: '',
+  is_active: true,
+  is_manual: false,
+}
+
+const DEFAULT_MANUAL_REMINDER: ReminderConfig = {
+  name: 'Rappel manuel',
+  template_type: 'default',
+  timing: 'manual',
+  sender_name: 'CloseOS',
+  subject: 'CloseOS - Rappel de votre rendez-vous',
+  custom_html: '',
+  is_active: true,
+  is_manual: true,
 }
 
 const STATUS_CONFIG: Record<string, { label: string; badgeBg: string; badgeText: string }> = {
@@ -49,6 +112,12 @@ const STATUS_CONFIG: Record<string, { label: string; badgeBg: string; badgeText:
   confirmed: { label: 'Confirmé', badgeBg: 'bg-[#006c49]/10', badgeText: 'text-[#006c49]' },
   cancelled: { label: 'Annulé', badgeBg: 'bg-red-100/80', badgeText: 'text-red-600' },
   done: { label: 'Terminé', badgeBg: 'bg-[#006c49]/10', badgeText: 'text-[#006c49]' },
+}
+
+function parseBookingNotes(notes: string | null): { name: string; email?: string; phone?: string } | null {
+  if (!notes?.startsWith('Booking: ')) return null
+  const parts = notes.slice(9).split(' — ')
+  return { name: parts[0], email: parts[1] || undefined, phone: parts[2] || undefined }
 }
 
 const API_URL = '/api/business'
@@ -77,7 +146,16 @@ export function BusinessAppointments() {
   const [newLinkLabel, setNewLinkLabel] = useState('')
   const [newLinkDuration, setNewLinkDuration] = useState(30)
   const [newLinkMemberId, setNewLinkMemberId] = useState<string>('')
+  const [newLinkDescription, setNewLinkDescription] = useState('')
+  const [newLinkRedirectUrl, setNewLinkRedirectUrl] = useState('')
+  const [newLinkEmailEnabled, setNewLinkEmailEnabled] = useState(true)
+  const [newLinkEmailRequired, setNewLinkEmailRequired] = useState(false)
+  const [newLinkPhoneEnabled, setNewLinkPhoneEnabled] = useState(true)
+  const [newLinkPhoneRequired, setNewLinkPhoneRequired] = useState(false)
   const [savingLink, setSavingLink] = useState(false)
+
+  // Detail popup
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
 
   // Personnel / Membre tabs for Setter, HOS, Owner
   const showTabs = isSetter || isOwnerOrHoS
@@ -93,6 +171,119 @@ export function BusinessAppointments() {
   const [bookNotes, setBookNotes] = useState('')
   const [bookWithMeet, setBookWithMeet] = useState(true)
   const [bookSaving, setBookSaving] = useState(false)
+
+  // Reminder config state
+  const [showReminderConfig, setShowReminderConfig] = useState(false)
+  const [reminders, setReminders] = useState<ReminderConfig[]>([])
+  const [editingReminder, setEditingReminder] = useState<ReminderConfig | null>(null)
+  const [savingReminder, setSavingReminder] = useState(false)
+  const [loadingReminders, setLoadingReminders] = useState(false)
+  const [sendingManualReminder, setSendingManualReminder] = useState<string | null>(null)
+
+  // Fetch reminders
+  useEffect(() => {
+    if (!effectiveUserId) return
+    supabase
+      .from('business_appointment_reminders')
+      .select('*')
+      .eq('business_owner_id', effectiveUserId)
+      .order('created_at', { ascending: true })
+      .then(({ data }) => setReminders(data || []))
+  }, [effectiveUserId])
+
+  const handleSaveReminder = async (reminder: ReminderConfig) => {
+    if (!effectiveUserId) return
+    setSavingReminder(true)
+    try {
+      if (reminder.id) {
+        const { error } = await supabase
+          .from('business_appointment_reminders')
+          .update({
+            name: reminder.name,
+            template_type: reminder.template_type,
+            timing: reminder.timing,
+            sender_name: reminder.sender_name,
+            subject: reminder.subject,
+            custom_html: reminder.template_type === 'custom' ? reminder.custom_html : null,
+            is_active: reminder.is_active,
+            is_manual: reminder.is_manual,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', reminder.id)
+        if (error) throw error
+        setReminders(prev => prev.map(r => r.id === reminder.id ? reminder : r))
+        toast.success('Rappel mis à jour')
+      } else {
+        const { data, error } = await supabase
+          .from('business_appointment_reminders')
+          .insert({
+            business_owner_id: effectiveUserId,
+            name: reminder.name,
+            template_type: reminder.template_type,
+            timing: reminder.timing,
+            sender_name: reminder.sender_name,
+            subject: reminder.subject,
+            custom_html: reminder.template_type === 'custom' ? reminder.custom_html : null,
+            is_active: reminder.is_active,
+            is_manual: reminder.is_manual,
+          })
+          .select()
+          .single()
+        if (error) throw error
+        if (data) setReminders(prev => [...prev, data])
+        toast.success('Rappel créé')
+      }
+      setEditingReminder(null)
+    } catch (err) {
+      console.error('Error saving reminder:', err)
+      toast.error('Erreur lors de la sauvegarde')
+    } finally {
+      setSavingReminder(false)
+    }
+  }
+
+  const handleDeleteReminder = async (id: string) => {
+    const { error } = await supabase.from('business_appointment_reminders').delete().eq('id', id)
+    if (error) { toast.error('Erreur'); return }
+    setReminders(prev => prev.filter(r => r.id !== id))
+    if (editingReminder?.id === id) setEditingReminder(null)
+    toast.success('Rappel supprimé')
+  }
+
+  const handleToggleReminder = async (reminder: ReminderConfig) => {
+    const updated = { ...reminder, is_active: !reminder.is_active }
+    await supabase
+      .from('business_appointment_reminders')
+      .update({ is_active: updated.is_active, updated_at: new Date().toISOString() })
+      .eq('id', reminder.id)
+    setReminders(prev => prev.map(r => r.id === reminder.id ? updated : r))
+    toast.success(updated.is_active ? 'Rappel activé' : 'Rappel désactivé')
+  }
+
+  const manualReminder = reminders.find(r => r.is_manual)
+
+  const handleSendManualReminder = async (appointmentId: string) => {
+    if (!effectiveUserId) return
+    setSendingManualReminder(appointmentId)
+    try {
+      const res = await fetch(`${API_URL}?action=appointment-send-reminder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: effectiveUserId,
+          appointment_id: appointmentId,
+          reminder_id: manualReminder?.id || null,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || 'Erreur envoi rappel'); return }
+      toast.success(`Rappel envoyé à ${data.sent_to}`)
+    } catch {
+      toast.error('Erreur lors de l\'envoi')
+    } finally {
+      setSendingManualReminder(null)
+    }
+  }
 
   // Fetch team members + owner for everyone (needed for booking modal + filters)
   useEffect(() => {
@@ -145,6 +336,12 @@ export function BusinessAppointments() {
         business_owner_id: ownerId,
         label: newLinkLabel.trim(),
         duration: newLinkDuration,
+        description: newLinkDescription.trim() || null,
+        redirect_url: newLinkRedirectUrl.trim() || null,
+        email_enabled: newLinkEmailEnabled,
+        email_required: newLinkEmailRequired,
+        phone_enabled: newLinkPhoneEnabled,
+        phone_required: newLinkPhoneRequired,
         link: bookingUrl,
         slug,
       })
@@ -157,6 +354,12 @@ export function BusinessAppointments() {
     setNewLinkLabel('')
     setNewLinkDuration(30)
     setNewLinkMemberId('')
+    setNewLinkDescription('')
+    setNewLinkRedirectUrl('')
+    setNewLinkEmailEnabled(true)
+    setNewLinkEmailRequired(false)
+    setNewLinkPhoneEnabled(true)
+    setNewLinkPhoneRequired(false)
     toast.success('Lien de booking créé')
   }
 
@@ -164,6 +367,67 @@ export function BusinessAppointments() {
     await supabase.from('business_booking_links').delete().eq('id', id)
     setBookingLinks(prev => prev.filter(l => l.id !== id))
     toast.success('Lien supprimé')
+  }
+
+  // Edit booking link
+  const [editingLink, setEditingLink] = useState<BookingLink | null>(null)
+  const [editLabel, setEditLabel] = useState('')
+  const [editDuration, setEditDuration] = useState(30)
+  const [editDescription, setEditDescription] = useState('')
+  const [editRedirectUrl, setEditRedirectUrl] = useState('')
+  const [editMemberId, setEditMemberId] = useState('')
+  const [editEmailEnabled, setEditEmailEnabled] = useState(true)
+  const [editEmailRequired, setEditEmailRequired] = useState(false)
+  const [editPhoneEnabled, setEditPhoneEnabled] = useState(true)
+  const [editPhoneRequired, setEditPhoneRequired] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
+
+  const handleStartEdit = (bl: BookingLink) => {
+    setEditingLink(bl)
+    setEditLabel(bl.label)
+    setEditDuration(bl.duration)
+    setEditDescription(bl.description || '')
+    setEditRedirectUrl(bl.redirect_url || '')
+    setEditMemberId(bl.team_member_id || '')
+    setEditEmailEnabled(bl.email_enabled)
+    setEditEmailRequired(bl.email_required)
+    setEditPhoneEnabled(bl.phone_enabled)
+    setEditPhoneRequired(bl.phone_required)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingLink || !editLabel.trim()) return
+    setSavingEdit(true)
+    const { error } = await supabase
+      .from('business_booking_links')
+      .update({
+        label: editLabel.trim(),
+        duration: editDuration,
+        description: editDescription.trim() || null,
+        redirect_url: editRedirectUrl.trim() || null,
+        team_member_id: editMemberId || null,
+        email_enabled: editEmailEnabled,
+        email_required: editEmailRequired,
+        phone_enabled: editPhoneEnabled,
+        phone_required: editPhoneRequired,
+      })
+      .eq('id', editingLink.id)
+    setSavingEdit(false)
+    if (error) { toast.error('Erreur lors de la mise à jour'); return }
+    setBookingLinks(prev => prev.map(l => l.id === editingLink.id ? {
+      ...l,
+      label: editLabel.trim(),
+      duration: editDuration,
+      description: editDescription.trim() || null,
+      redirect_url: editRedirectUrl.trim() || null,
+      team_member_id: editMemberId || null,
+      email_enabled: editEmailEnabled,
+      email_required: editEmailRequired,
+      phone_enabled: editPhoneEnabled,
+      phone_required: editPhoneRequired,
+    } : l))
+    setEditingLink(null)
+    toast.success('Lien mis à jour')
   }
 
   const handleCopyLink = (link: string) => {
@@ -309,7 +573,11 @@ export function BusinessAppointments() {
   // With tabs: "personnel" = my appointments, "membre" = all team
   const visibleAppointments = (() => {
     if (showTabs && activeTab === 'personnel') {
-      return appointments.filter(a => (a as any).assigned_to === myMemberId)
+      return appointments.filter(a => {
+        // Owner's personal appointments have assigned_to = null OR assigned_to = owner's id
+        if (!isTeamMember) return (a as any).assigned_to === myMemberId || (a as any).assigned_to === null
+        return (a as any).assigned_to === myMemberId
+      })
     }
     if (isCloserOnly) {
       return appointments.filter(a => (a as any).assigned_to === teamMember?.id)
@@ -392,9 +660,25 @@ export function BusinessAppointments() {
       <div className="flex flex-col gap-8">
         <div className="flex justify-between items-end flex-wrap gap-4">
           <div>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Mes Rendez-vous
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Mes Rendez-vous
+              </h1>
+              {isOwnerOrHoS && (
+                <button
+                  onClick={() => setShowReminderConfig(true)}
+                  className="p-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-all group relative"
+                  title="Configurer les rappels email"
+                >
+                  <Settings className="h-5 w-5 text-[#444748] dark:text-neutral-300 group-hover:rotate-90 transition-transform duration-300" />
+                  {reminders.filter(r => r.is_active).length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#006c49] rounded-full text-[9px] text-white font-bold flex items-center justify-center">
+                      {reminders.filter(r => r.is_active).length}
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
             <p className="text-[#444748] dark:text-neutral-300 mt-2">
               {showTabs && activeTab === 'personnel' ? 'Gérez vos rendez-vous personnels.' : showTabs && activeTab === 'membre' ? 'Tous les rendez-vous de l\'équipe.' : 'Gérez vos rendez-vous et votre calendrier.'}
             </p>
@@ -632,6 +916,395 @@ export function BusinessAppointments() {
         </>
       )}
 
+      {/* Reminder Config Modal */}
+      {showReminderConfig && (
+        <>
+          <div className="fixed inset-0 z-50 bg-[#1b1c1b]/30 backdrop-blur-md" onClick={() => { setShowReminderConfig(false); setEditingReminder(null) }} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <div className={`pointer-events-auto w-full ${editingReminder?.template_type === 'custom' ? 'max-w-6xl' : 'max-w-2xl'} max-h-[90vh] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden relative flex flex-col transition-all duration-300`} onClick={e => e.stopPropagation()}>
+              {/* Gradient accent bar */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#006c49] to-[#ffb95f]" />
+
+              <div className="flex justify-between items-start px-10 pt-10 pb-0 shrink-0">
+                <div>
+                  <h2 className="text-3xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    {editingReminder ? (editingReminder.id ? 'Modifier le rappel' : 'Nouveau rappel') : 'Rappels email'}
+                  </h2>
+                  <p className="text-sm text-[#444748] dark:text-neutral-300 mt-1">
+                    {editingReminder ? 'Configurez le contenu et le timing de votre rappel.' : 'Configurez des rappels automatiques envoyés avant vos rendez-vous.'}
+                  </p>
+                </div>
+                <button onClick={() => { if (editingReminder) { setEditingReminder(null) } else { setShowReminderConfig(false) } }} className="p-2 rounded-full hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all">
+                  <X className="h-5 w-5 text-[#444748] dark:text-neutral-300" />
+                </button>
+              </div>
+
+              <div className="p-10 pt-8 overflow-y-auto flex-1">
+                {!editingReminder ? (
+                  /* ─── Reminder List View ─── */
+                  <div className="space-y-6">
+                    {/* Manual reminder section */}
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-400 mb-3 ml-1">Rappel manuel (bouton sur les cartes)</p>
+                      {manualReminder ? (
+                        <div className={`flex items-center justify-between p-5 rounded-xl border transition-all ${manualReminder.is_active ? 'bg-white dark:bg-neutral-800 border-[#ffb95f]/30' : 'bg-[#f5f3f2]/50 dark:bg-neutral-800/30 border-[#e4e2e1]/20 dark:border-neutral-700/10 opacity-60'}`}>
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            <Bell className="h-5 w-5 text-[#ffb95f] shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-sm text-[#1b1c1b] dark:text-white truncate">{manualReminder.name}</h4>
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${manualReminder.template_type === 'custom' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
+                                  {manualReminder.template_type === 'custom' ? 'Personnalisé' : 'Standard'}
+                                </span>
+                              </div>
+                              <p className="text-xs text-[#747878] dark:text-neutral-400 mt-0.5">Envoyé manuellement depuis chaque carte de rendez-vous</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0 ml-3">
+                            <button onClick={() => setEditingReminder(manualReminder)} className="p-2 rounded-full hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-all text-[#444748] dark:text-neutral-300">
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => handleDeleteReminder(manualReminder.id!)} className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-red-400 hover:text-red-500">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setEditingReminder({ ...DEFAULT_MANUAL_REMINDER })}
+                          className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-[#ffb95f]/30 text-sm font-bold text-[#b87500] dark:text-[#ffb95f] hover:border-[#ffb95f] hover:bg-[#ffb95f]/5 transition-all"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Configurer le rappel manuel
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Separator */}
+                    <hr className="border-[#e4e2e1]/50 dark:border-neutral-700/30" />
+
+                    {/* Automatic reminders section */}
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-400 mb-3 ml-1">Rappels automatiques</p>
+                      {reminders.filter(r => !r.is_manual).length === 0 && (
+                        <div className="flex flex-col items-center py-8">
+                          <Clock className="h-10 w-10 text-[#c4c7c7] dark:text-neutral-600 mb-3" />
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">Aucun rappel automatique configuré.</p>
+                        </div>
+                      )}
+
+                      <div className="space-y-3">
+                        {reminders.filter(r => !r.is_manual).map(r => (
+                          <div key={r.id} className={`flex items-center justify-between p-5 rounded-xl border transition-all ${r.is_active ? 'bg-white dark:bg-neutral-800 border-[#e4e2e1]/50 dark:border-neutral-700/30' : 'bg-[#f5f3f2]/50 dark:bg-neutral-800/30 border-[#e4e2e1]/20 dark:border-neutral-700/10 opacity-60'}`}>
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                              <button onClick={() => handleToggleReminder(r)} className="shrink-0">
+                                {r.is_active ? (
+                                  <ToggleRight className="h-6 w-6 text-[#006c49]" />
+                                ) : (
+                                  <ToggleLeft className="h-6 w-6 text-[#c4c7c7] dark:text-neutral-500" />
+                                )}
+                              </button>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-bold text-sm text-[#1b1c1b] dark:text-white truncate">{r.name}</h4>
+                                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${r.template_type === 'custom' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
+                                    {r.template_type === 'custom' ? 'Personnalisé' : 'Standard'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-[#747878] dark:text-neutral-400 mt-0.5">
+                                  {TIMING_OPTIONS.find(t => t.value === r.timing)?.label || r.timing}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0 ml-3">
+                              <button onClick={() => setEditingReminder(r)} className="p-2 rounded-full hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-all text-[#444748] dark:text-neutral-300">
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
+                              <button onClick={() => handleDeleteReminder(r.id!)} className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-red-400 hover:text-red-500">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => setEditingReminder({ ...DEFAULT_REMINDER })}
+                        className="w-full flex items-center justify-center gap-2 p-4 mt-3 rounded-xl border-2 border-dashed border-[#e4e2e1] dark:border-neutral-700 text-sm font-bold text-[#444748] dark:text-neutral-400 hover:border-[#006c49] hover:text-[#006c49] dark:hover:border-[#006c49] dark:hover:text-[#006c49] transition-all"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter un rappel automatique
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ─── Reminder Edit View ─── */
+                  <div className="space-y-6">
+                    {/* Nom du rappel */}
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Nom du rappel</label>
+                      <input
+                        type="text"
+                        value={editingReminder.name}
+                        onChange={e => setEditingReminder({ ...editingReminder, name: e.target.value })}
+                        placeholder="Ex: Rappel J-1, Rappel 1h avant..."
+                        className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white"
+                      />
+                    </div>
+
+                    {/* Timing (hidden for manual) */}
+                    {!editingReminder.is_manual && (
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Quand envoyer</label>
+                        <select
+                          value={editingReminder.timing}
+                          onChange={e => setEditingReminder({ ...editingReminder, timing: e.target.value })}
+                          className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white"
+                        >
+                          {TIMING_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {editingReminder.is_manual && (
+                      <div className="flex items-center gap-3 p-4 rounded-xl bg-[#ffb95f]/10 border border-[#ffb95f]/20">
+                        <Bell className="h-5 w-5 text-[#b87500] shrink-0" />
+                        <p className="text-sm text-[#b87500] dark:text-[#ffb95f]">
+                          Ce rappel s'envoie manuellement via le bouton <strong>Rappel</strong> sur chaque carte de rendez-vous.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Template type toggle */}
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Type de template</label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingReminder({ ...editingReminder, template_type: 'default' })}
+                          className={`flex-1 flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm font-bold transition-all ${
+                            editingReminder.template_type === 'default'
+                              ? 'bg-[#006c49] text-white shadow-lg shadow-[#006c49]/20'
+                              : 'bg-[#f5f3f2] dark:bg-neutral-800 text-[#444748] dark:text-neutral-300 hover:bg-[#eae8e7] dark:hover:bg-neutral-700'
+                          }`}
+                        >
+                          <FileText className="h-4 w-4" />
+                          Standard
+                        </button>
+                        <button
+                          onClick={() => setEditingReminder({ ...editingReminder, template_type: 'custom' })}
+                          className={`flex-1 flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm font-bold transition-all ${
+                            editingReminder.template_type === 'custom'
+                              ? 'bg-[#006c49] text-white shadow-lg shadow-[#006c49]/20'
+                              : 'bg-[#f5f3f2] dark:bg-neutral-800 text-[#444748] dark:text-neutral-300 hover:bg-[#eae8e7] dark:hover:bg-neutral-700'
+                          }`}
+                        >
+                          <Code2 className="h-4 w-4" />
+                          Personnalisé
+                        </button>
+                      </div>
+                    </div>
+
+                    {editingReminder.template_type === 'default' ? (
+                      /* ─── Default template preview (light DA) ─── */
+                      <div className="rounded-xl overflow-hidden border border-[#e4e2e1]/50 dark:border-neutral-700/30">
+                        <iframe
+                          title="Default email preview"
+                          sandbox="allow-same-origin"
+                          className="w-full border-none"
+                          style={{ height: 620 }}
+                          srcDoc={`<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:40px 12px;">
+  <tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;">
+      <tr><td style="padding-bottom:32px;text-align:left;padding-left:16px;">
+        <div style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:22px;color:#111111;letter-spacing:-0.04em;">Close<span style="background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8;">OS</span></div>
+      </td></tr>
+      <tr><td style="background-color:#ffffff;border-radius:36px;padding:48px 36px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
+        <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 12px;font-size:32px;color:#111111;text-align:left;line-height:1.1;letter-spacing:-0.04em;">Rappel de<br>rendez-vous</h1>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 36px;font-size:14px;color:#1b1c1b;line-height:1.6;">Bonjour <strong style="color:#111111;">{{lead_name}}</strong>, ceci est un rappel pour votre rendez-vous <strong style="color:#111111;">{{appointment_title}}</strong> avec <strong style="color:#111111;">{{assignee_name}}</strong>.</p>
+        <div style="background-color:#f5f3f2;border-radius:36px;padding:28px 24px;margin-bottom:36px;">
+          <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 4px;font-size:12px;color:#1b1c1b;"><strong style="color:#111111;">Date</strong></p>
+          <p style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 16px;font-size:16px;color:#111111;letter-spacing:-0.04em;">{{appointment_date}}</p>
+          <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 4px;font-size:12px;color:#1b1c1b;"><strong style="color:#111111;">Heure</strong></p>
+          <p style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0;font-size:16px;color:#111111;letter-spacing:-0.04em;">{{appointment_time}}</p>
+        </div>
+        <a href="#" style="display:block;background-color:#111111;color:#ffffff;text-align:center;padding:14px 24px;border-radius:48px;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:14px;text-decoration:none;margin-bottom:24px;">Rejoindre le Google Meet</a>
+        <div style="text-align:center;">
+          <a href="#" style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;font-size:12px;text-decoration:underline;margin-right:20px;">Reporter le rendez-vous</a>
+          <a href="#" style="font-family:'Inter',Helvetica,sans-serif;color:#ef4444;font-size:12px;text-decoration:underline;">Annuler le rendez-vous</a>
+        </div>
+      </td></tr>
+      <tr><td style="padding-top:32px;text-align:left;padding-left:16px;">
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 6px;font-size:11px;color:#1b1c1b;opacity:0.6;">Rappel automatique envoyé via <a href="https://closeos.fr" style="color:#a03cf8;text-decoration:none;font-weight:500;">CloseOS</a></p>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:10px;color:#1b1c1b;opacity:0.5;">Cet e-mail a été envoyé automatiquement, merci de ne pas y répondre.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`}
+                        />
+                      </div>
+                    ) : (
+                      /* ─── Custom template: editor + live preview ─── */
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left: Editor fields */}
+                        <div className="space-y-5">
+                          {/* Sender name */}
+                          <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Nom d'envoi</label>
+                            <input
+                              type="text"
+                              value={editingReminder.sender_name}
+                              onChange={e => setEditingReminder({ ...editingReminder, sender_name: e.target.value })}
+                              placeholder="CloseOS"
+                              className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white"
+                            />
+                            <p className="text-[10px] text-[#747878] dark:text-neutral-500 mt-1 ml-1">L'email sera toujours envoyé depuis support@closeos.fr</p>
+                          </div>
+
+                          {/* Subject */}
+                          <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Objet de l'email</label>
+                            <div className="flex items-center gap-0">
+                              <span className="px-4 py-3 bg-[#eae8e7] dark:bg-neutral-700 rounded-l-xl text-sm font-bold text-[#444748] dark:text-neutral-300 shrink-0 border-r-0">CloseOS -</span>
+                              <input
+                                type="text"
+                                value={editingReminder.subject.replace(/^CloseOS\s*-\s*/, '')}
+                                onChange={e => setEditingReminder({ ...editingReminder, subject: `CloseOS - ${e.target.value}` })}
+                                placeholder="Rappel de votre rendez-vous"
+                                className="w-full px-5 py-3 rounded-r-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Variables reference */}
+                          <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Variables disponibles</label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {TEMPLATE_VARIABLES.map(v => (
+                                <button
+                                  key={v.key}
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(v.key)
+                                    toast.success(`${v.key} copié`)
+                                  }}
+                                  className="px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-800 text-xs font-mono text-[#006c49] dark:text-[#34d399] hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-all cursor-copy"
+                                  title={`Cliquez pour copier ${v.key}`}
+                                >
+                                  {v.key} <span className="text-[#747878] dark:text-neutral-500 font-sans ml-1">{v.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Custom HTML content */}
+                          <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Contenu HTML de l'email</label>
+                            <textarea
+                              value={editingReminder.custom_html}
+                              onChange={e => setEditingReminder({ ...editingReminder, custom_html: e.target.value })}
+                              rows={14}
+                              placeholder={`<h2>Bonjour {{lead_name}},</h2>\n<p>Votre rendez-vous <strong>{{appointment_title}}</strong> avec {{assignee_name}} approche.</p>\n<p><strong>Date :</strong> {{appointment_date}} à {{appointment_time}}</p>\n<p><a href="{{google_meet_link}}">Rejoindre le Google Meet</a></p>\n<p><a href="{{reschedule_link}}">Reporter</a> | <a href="{{cancel_link}}">Annuler</a></p>`}
+                              className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none focus:ring-2 ring-[#006c49]/20 font-mono text-xs text-[#1b1c1b] dark:text-white resize-none"
+                            />
+                            <p className="text-[10px] text-[#747878] dark:text-neutral-500 mt-1 ml-1">
+                              Le footer "Rappel automatique envoyé via CloseOS" sera ajouté automatiquement en bas de chaque email.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Right: Live preview */}
+                        <div className="flex flex-col">
+                          <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Prévisualisation</label>
+                          <div className="flex-1 rounded-xl border border-[#e4e2e1]/50 dark:border-neutral-700/30 overflow-hidden bg-[#fbf9f8] min-h-[500px]">
+                            <iframe
+                              title="Email preview"
+                              sandbox="allow-same-origin"
+                              className="w-full h-full min-h-[500px] border-none"
+                              srcDoc={(() => {
+                                const previewVars: Record<string, string> = {
+                                  lead_name: 'Jean Dupont',
+                                  assignee_name: 'Marie Martin',
+                                  appointment_title: 'RDV Découverte',
+                                  appointment_date: 'mardi 25 mars 2026',
+                                  appointment_time: '14:30',
+                                  google_meet_link: 'https://meet.google.com/abc-defg-hij',
+                                  reschedule_link: 'https://closeos.fr/appointment/reschedule/xxx',
+                                  cancel_link: 'https://closeos.fr/appointment/cancel/xxx',
+                                }
+                                let html = editingReminder.custom_html || '<p style="color:#1b1c1b;opacity:0.4;text-align:center;padding:40px;font-family:Inter,Helvetica,sans-serif;font-size:14px;">Commencez à écrire votre HTML pour voir l\'aperçu ici...</p>'
+                                for (const [key, value] of Object.entries(previewVars)) {
+                                  html = html.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value)
+                                }
+                                let subject = editingReminder.subject || 'CloseOS - Rappel de votre rendez-vous'
+                                for (const [key, value] of Object.entries(previewVars)) {
+                                  subject = subject.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value)
+                                }
+                                return `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet">
+<style>body{margin:0;padding:0;}</style>
+</head>
+<body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:20px 10px;">
+  <tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;">
+      <tr><td style="padding:12px 16px;margin-bottom:16px;">
+        <p style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;opacity:0.5;font-size:11px;margin:0 0 2px;"><strong style="opacity:0.8;">De :</strong> ${editingReminder.sender_name || 'CloseOS'} &lt;support@closeos.fr&gt;</p>
+        <p style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;opacity:0.5;font-size:11px;margin:0;"><strong style="opacity:0.8;">Objet :</strong> ${subject}</p>
+      </td></tr>
+      <tr><td style="padding-bottom:24px;text-align:left;padding-left:16px;">
+        <div style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:22px;color:#111111;letter-spacing:-0.04em;">Close<span style="background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8;">OS</span></div>
+      </td></tr>
+      <tr><td style="background-color:#ffffff;border-radius:36px;padding:40px 32px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
+        <div style="font-family:'Inter',Helvetica,sans-serif;font-size:14px;color:#1b1c1b;line-height:1.6;">${html}</div>
+      </td></tr>
+      <tr><td style="padding-top:24px;text-align:left;padding-left:16px;">
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 6px;font-size:11px;color:#1b1c1b;opacity:0.6;">Rappel envoyé via <a href="https://closeos.fr" style="color:#a03cf8;text-decoration:none;font-weight:500;">CloseOS</a></p>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:10px;color:#1b1c1b;opacity:0.5;">Cet e-mail a été envoyé automatiquement, merci de ne pas y répondre.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`
+                              })()}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex justify-between items-center pt-2">
+                      <button
+                        onClick={() => setEditingReminder(null)}
+                        className="px-6 py-3 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#444748] dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all"
+                      >
+                        Retour
+                      </button>
+                      <button
+                        onClick={() => handleSaveReminder(editingReminder)}
+                        disabled={savingReminder || !editingReminder.name.trim()}
+                        className="flex items-center gap-2 px-8 py-3 rounded-full bg-[#1b1c1b] text-white text-sm font-extrabold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-black/10 disabled:opacity-50"
+                      >
+                        {savingReminder && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {editingReminder.id ? 'Mettre à jour' : 'Créer le rappel'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Main grid: Appointments + Booking Links */}
       <div className={`grid grid-cols-1 ${showBookingSection ? 'xl:grid-cols-3' : ''} gap-8 items-start`}>
         {/* Left: Appointments List */}
@@ -681,7 +1354,7 @@ export function BusinessAppointments() {
               }
 
               return (
-                <div key={appt.id} className="bg-white dark:bg-neutral-800 p-8 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.02)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-white/50 dark:border-neutral-700/30 group hover:shadow-lg transition-all duration-500">
+                <div key={appt.id} onClick={() => setSelectedAppointment(appt)} className="bg-white dark:bg-neutral-800 p-8 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.02)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-white/50 dark:border-neutral-700/30 group hover:shadow-lg transition-all duration-500 cursor-pointer">
                   {/* Top: Status + Time + Member + Campaign */}
                   <div className="flex justify-between items-start mb-6">
                     <div className="flex flex-col gap-1">
@@ -732,13 +1405,30 @@ export function BusinessAppointments() {
                     </div>
                   )}
 
-                  {appt.title && !appt.prospect && (
-                    <p className="text-base font-semibold text-[#1b1c1b] dark:text-white mb-6">{appt.title}</p>
-                  )}
+                  {/* Booking contact info (no prospect) */}
+                  {!appt.prospect && (() => {
+                    const bk = parseBookingNotes(appt.notes)
+                    if (bk) return (
+                      <div className="flex items-center gap-4 mb-8">
+                        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center font-bold text-blue-600 text-sm">
+                          {getInitials(bk.name)}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-lg text-[#1b1c1b] dark:text-white">{bk.name}</h3>
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">Booking</span>
+                          </div>
+                          {bk.email && <p className="text-sm text-[#444748] dark:text-neutral-300">{bk.email}</p>}
+                        </div>
+                      </div>
+                    )
+                    if (appt.title) return <p className="text-base font-semibold text-[#1b1c1b] dark:text-white mb-6">{appt.title}</p>
+                    return null
+                  })()}
 
-                  {/* Bottom: Google Meet + Actions */}
+                  {/* Bottom: Google Meet + Rappel + Actions */}
                   <div className="flex items-center justify-between border-t border-[#f5f3f2] dark:border-neutral-800 pt-6">
-                    <div>
+                    <div className="flex items-center gap-4">
                       {appt.google_meet_link ? (
                         <a
                           href={appt.google_meet_link}
@@ -753,6 +1443,21 @@ export function BusinessAppointments() {
                         <span className="text-[#444748] dark:text-neutral-300/40 italic text-sm">
                           {appt.duration}min
                         </span>
+                      )}
+                      {appt.prospect?.email && (appt.status === 'pending' || appt.status === 'confirmed') && (
+                        <button
+                          onClick={() => handleSendManualReminder(appt.id)}
+                          disabled={sendingManualReminder === appt.id}
+                          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#ffb95f]/10 text-[#b87500] dark:text-[#ffb95f] text-xs font-bold hover:bg-[#ffb95f]/20 transition-all disabled:opacity-50"
+                          title="Envoyer un rappel au prospect"
+                        >
+                          {sendingManualReminder === appt.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Bell className="h-3.5 w-3.5" />
+                          )}
+                          Rappel
+                        </button>
                       )}
                     </div>
                     <div className="flex gap-3">
@@ -839,7 +1544,7 @@ export function BusinessAppointments() {
                     value={newLinkLabel}
                     onChange={e => setNewLinkLabel(e.target.value)}
                     placeholder="Ex: RDV Découverte 30min"
-                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium dark:text-white"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
                   />
                 </div>
                 <div>
@@ -847,7 +1552,7 @@ export function BusinessAppointments() {
                   <select
                     value={newLinkDuration}
                     onChange={e => setNewLinkDuration(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium dark:text-white"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
                   >
                     <option value={15}>15 min</option>
                     <option value={30}>30 min</option>
@@ -862,7 +1567,7 @@ export function BusinessAppointments() {
                     <select
                       value={newLinkMemberId}
                       onChange={e => setNewLinkMemberId(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium dark:text-white"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
                     >
                       <option value="">Pour moi</option>
                       {teamMembers.map(m => (
@@ -871,6 +1576,64 @@ export function BusinessAppointments() {
                     </select>
                   </div>
                 )}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Description</label>
+                  <textarea
+                    value={newLinkDescription}
+                    onChange={e => setNewLinkDescription(e.target.value)}
+                    placeholder="Ex: Appel découverte de 30 minutes pour discuter de votre projet"
+                    rows={2}
+                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Lien de redirection (optionnel)</label>
+                  <input
+                    type="url"
+                    value={newLinkRedirectUrl}
+                    onChange={e => setNewLinkRedirectUrl(e.target.value)}
+                    placeholder="https://exemple.com/merci"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
+                  />
+                  <p className="text-[10px] text-[#444748]/50 dark:text-neutral-500 mt-1 ml-1">Redirige le prospect après la réservation</p>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Champs du formulaire</label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                      <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-[#444748]/50" />Email</span>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => setNewLinkEmailEnabled(!newLinkEmailEnabled)} className="text-[#444748] dark:text-neutral-300">
+                          {newLinkEmailEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                        </button>
+                        {newLinkEmailEnabled && (
+                          <button
+                            onClick={() => setNewLinkEmailRequired(!newLinkEmailRequired)}
+                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition-all ${newLinkEmailRequired ? 'bg-[#006c49] text-white' : 'bg-[#f5f3f2] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                          >
+                            {newLinkEmailRequired ? 'Requis' : 'Optionnel'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                      <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-[#444748]/50" />Téléphone</span>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => setNewLinkPhoneEnabled(!newLinkPhoneEnabled)} className="text-[#444748] dark:text-neutral-300">
+                          {newLinkPhoneEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                        </button>
+                        {newLinkPhoneEnabled && (
+                          <button
+                            onClick={() => setNewLinkPhoneRequired(!newLinkPhoneRequired)}
+                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition-all ${newLinkPhoneRequired ? 'bg-[#006c49] text-white' : 'bg-[#f5f3f2] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                          >
+                            {newLinkPhoneRequired ? 'Requis' : 'Optionnel'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <button
                     onClick={() => setShowCreateLink(false)}
@@ -914,9 +1677,20 @@ export function BusinessAppointments() {
                           {bl.duration} min
                           {memberName && ` · ${memberName.first_name} ${memberName.last_name}`}
                           {!bl.team_member_id && isOwnerOrHoS && ' · Pour moi'}
+                          {bl.redirect_url && ' · Redirection'}
                         </p>
+                        {bl.description && (
+                          <p className="text-[10px] text-[#444748]/50 dark:text-neutral-400 mt-0.5 truncate max-w-[250px]">{bl.description}</p>
+                        )}
                       </div>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button
+                          onClick={() => handleStartEdit(bl)}
+                          className="p-1.5 rounded-full hover:bg-white dark:hover:bg-neutral-800 transition-all text-[#444748] dark:text-neutral-300"
+                          title="Modifier"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => handleCopyLink(bookingUrl)}
                           className="p-1.5 rounded-full hover:bg-white dark:hover:bg-neutral-800 transition-all text-[#444748] dark:text-neutral-300"
@@ -950,6 +1724,300 @@ export function BusinessAppointments() {
           </div>
         )}
       </div>
+
+      {/* Edit booking link modal */}
+      {editingLink && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setEditingLink(null)}>
+          <div className="bg-white dark:bg-neutral-900 rounded-[2rem] p-8 w-full max-w-md mx-4 shadow-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-extrabold text-[#1b1c1b] dark:text-white mb-6 shrink-0" style={{ fontFamily: 'Manrope, sans-serif' }}>Modifier le lien</h3>
+            <div className="space-y-4 overflow-y-auto flex-1 min-h-0 pr-1">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Nom du lien</label>
+                <input
+                  type="text"
+                  value={editLabel}
+                  onChange={e => setEditLabel(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Durée</label>
+                <select
+                  value={editDuration}
+                  onChange={e => setEditDuration(Number(e.target.value))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
+                >
+                  <option value={15}>15 min</option>
+                  <option value={30}>30 min</option>
+                  <option value={45}>45 min</option>
+                  <option value={60}>60 min</option>
+                  <option value={90}>90 min</option>
+                </select>
+              </div>
+              {(isOwnerOrHoS || (isSetter && canBookForOthers)) && (
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Pour qui ?</label>
+                  <select
+                    value={editMemberId}
+                    onChange={e => setEditMemberId(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
+                  >
+                    <option value="">Pour moi</option>
+                    {teamMembers.map(m => (
+                      <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Description</label>
+                <textarea
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  placeholder="Ex: Appel découverte de 30 minutes..."
+                  rows={2}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Lien de redirection (optionnel)</label>
+                <input
+                  type="url"
+                  value={editRedirectUrl}
+                  onChange={e => setEditRedirectUrl(e.target.value)}
+                  placeholder="https://exemple.com/merci"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Champs du formulaire</label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5">
+                    <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-[#444748]/50" />Email</span>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => setEditEmailEnabled(!editEmailEnabled)} className="text-[#444748] dark:text-neutral-300">
+                        {editEmailEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                      </button>
+                      {editEmailEnabled && (
+                        <button
+                          onClick={() => setEditEmailRequired(!editEmailRequired)}
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition-all ${editEmailRequired ? 'bg-[#006c49] text-white' : 'bg-white dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                        >
+                          {editEmailRequired ? 'Requis' : 'Optionnel'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5">
+                    <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-[#444748]/50" />Téléphone</span>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => setEditPhoneEnabled(!editPhoneEnabled)} className="text-[#444748] dark:text-neutral-300">
+                        {editPhoneEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                      </button>
+                      {editPhoneEnabled && (
+                        <button
+                          onClick={() => setEditPhoneRequired(!editPhoneRequired)}
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition-all ${editPhoneRequired ? 'bg-[#006c49] text-white' : 'bg-white dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                        >
+                          {editPhoneRequired ? 'Requis' : 'Optionnel'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setEditingLink(null)}
+                  className="px-4 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-xs font-bold text-[#444748] dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={savingEdit || !editLabel.trim()}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#006c49] text-white text-xs font-bold hover:shadow-md disabled:opacity-50 transition-all"
+                >
+                  {savingEdit ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                  Enregistrer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Appointment Detail Popup */}
+      {selectedAppointment && (() => {
+        const appt = selectedAppointment
+        const booking = parseBookingNotes(appt.notes)
+        const statusConf = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending
+        const localDt = appt.datetime_utc ? fromUTC(appt.datetime_utc, userTimezone) : { date: appt.date, time: appt.time?.slice(0, 5) || '00:00' }
+        const endMinutes = (() => {
+          const [h, m] = localDt.time.split(':').map(Number)
+          const total = h * 60 + m + (appt.duration || 30)
+          return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+        })()
+        const contactName = appt.prospect?.contact || booking?.name
+        const contactEmail = appt.prospect?.email || booking?.email
+        const contactPhone = appt.prospect?.phone || booking?.phone
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4" onClick={() => setSelectedAppointment(null)}>
+            <div
+              className="w-full max-w-md rounded-[2rem] bg-white dark:bg-neutral-900 shadow-2xl overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="px-7 pt-7 pb-2">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-neutral-100 dark:bg-white/5 flex items-center justify-center shrink-0">
+                    {contactName ? (
+                      <span className="text-sm font-bold text-[#1b1c1b] dark:text-white">{getInitials(contactName)}</span>
+                    ) : (
+                      <Calendar className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl font-black text-[#1b1c1b] dark:text-white leading-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
+                      {contactName || appt.title || 'Rendez-vous'}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${statusConf.badgeBg} ${statusConf.badgeText}`}>
+                        {statusConf.label}
+                      </span>
+                      {booking && !appt.prospect && (
+                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">
+                          Booking
+                        </span>
+                      )}
+                      {appt.campaign && (
+                        <span className="text-xs text-neutral-400 flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-neutral-400" />
+                          {appt.campaign.name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedAppointment(null)} className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors shrink-0 mt-1">
+                    <X className="w-4 h-4 text-neutral-400" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="px-7 py-5 space-y-5">
+                {/* Date & Time */}
+                <div className="flex items-start gap-4">
+                  <Clock className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-[#1b1c1b] dark:text-white capitalize">
+                      {new Date(localDt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      {localDt.time} — {endMinutes} ({appt.duration || 30}min)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Contact info */}
+                {contactName && (
+                  <div className="flex items-start gap-4">
+                    <User className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{contactName}</p>
+                      {(contactEmail || contactPhone) && (
+                        <div className="mt-1 space-y-0.5">
+                          {contactEmail && (
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
+                              <Mail className="h-3.5 w-3.5" />
+                              {contactEmail}
+                            </p>
+                          )}
+                          {contactPhone && (
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
+                              <Phone className="h-3.5 w-3.5" />
+                              {contactPhone}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes (only if not a booking-formatted note) */}
+                {appt.notes && !booking && (
+                  <div className="flex items-start gap-4 min-w-0">
+                    <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
+                    <div className="flex-1 min-w-0 bg-neutral-100 dark:bg-white/5 rounded-2xl p-4">
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
+                      <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed break-words overflow-hidden">{appt.notes}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer: actions */}
+              <div className="px-7 pb-7 pt-2 space-y-3">
+                {/* Google Meet */}
+                {appt.google_meet_link && (
+                  <a
+                    href={appt.google_meet_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] px-6 py-3.5 text-sm font-bold text-white hover:bg-neutral-800 transition-colors shadow-lg w-full"
+                  >
+                    <Video className="h-4 w-4" />
+                    Rejoindre Google Meet
+                  </a>
+                )}
+
+                {/* Status actions */}
+                <div className="flex items-center gap-3">
+                  {isOwnerOrHoS && appt.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => { updateStatus(appt.id, 'confirmed'); setSelectedAppointment(null) }}
+                        className="flex-1 px-6 py-3 rounded-full bg-[#006c49] text-white text-sm font-bold hover:shadow-md transition-all"
+                      >
+                        Confirmer
+                      </button>
+                      <button
+                        onClick={() => { updateStatus(appt.id, 'cancelled'); setSelectedAppointment(null) }}
+                        className="flex-1 px-6 py-3 rounded-full border border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 transition-all"
+                      >
+                        Annuler
+                      </button>
+                    </>
+                  )}
+                  {isOwnerOrHoS && appt.status === 'confirmed' && (
+                    <>
+                      <button
+                        onClick={() => { updateStatus(appt.id, 'done'); setSelectedAppointment(null) }}
+                        className="flex-1 px-6 py-3 rounded-full bg-[#006c49] text-white text-sm font-bold hover:shadow-md transition-all"
+                      >
+                        Terminer
+                      </button>
+                      <button
+                        onClick={() => { updateStatus(appt.id, 'cancelled'); setSelectedAppointment(null) }}
+                        className="flex-1 px-6 py-3 rounded-full border border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 transition-all"
+                      >
+                        Annuler
+                      </button>
+                    </>
+                  )}
+                  {(appt.status === 'cancelled' || appt.status === 'done') && (
+                    <span className="px-6 py-3 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#444748] dark:text-neutral-300/50 italic">
+                      {appt.status === 'done' ? 'Terminé' : 'Annulé'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

@@ -82,8 +82,11 @@ export default function BusinessLogin() {
     setError(null);
     setLoading(true);
 
+    // Allow pseudo login: "TEKA" → teka@closeos.local
+    const loginEmail = email.includes('@') ? email : `${email.toLowerCase()}@closeos.local`;
+
     try {
-      const result = await login({ email, password });
+      const result = await login({ email: loginEmail, password });
       if (result?.error) {
         setError(result.error.message || "Email ou mot de passe incorrect");
         setLoading(false);
@@ -91,7 +94,9 @@ export default function BusinessLogin() {
         const userId = result.data?.user?.id;
         const userEmail = result.data?.user?.email || email;
         if (userId) {
-          const deviceOk = await checkDeviceToken(userId);
+          // Skip device verification for local dev account
+          const isLocalDev = userEmail === 'teka@closeos.local';
+          const deviceOk = isLocalDev || await checkDeviceToken(userId);
           if (deviceOk) {
             await refreshProfile();
             navigate('/business/dashboard');
@@ -196,11 +201,11 @@ export default function BusinessLogin() {
               <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400 group-focus-within:text-emerald-600 transition-colors" />
               <input
                 id="login-email"
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-4 pl-12 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 transition-all placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none"
-                placeholder="nom@entreprise.com"
+                placeholder="Pseudo ou email"
                 required
               />
             </div>

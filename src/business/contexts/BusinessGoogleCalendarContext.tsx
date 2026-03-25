@@ -30,6 +30,7 @@ interface BusinessGoogleCalendarContextType {
   isLoading: boolean
   refreshEvents: () => void
   createEvent: (event: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean }) => Promise<{ success: boolean; hangoutLink?: string }>
+  deleteEvent: (googleEventId: string) => Promise<boolean>
   getAccessToken: () => string | null
 }
 
@@ -200,6 +201,27 @@ export function BusinessGoogleCalendarProvider({ children }: { children: ReactNo
     }
   }
 
+  const deleteEvent = async (googleEventId: string): Promise<boolean> => {
+    if (!accessToken) return false
+    // The id stored is "google-XXXXX", extract the real Google event ID
+    const realId = googleEventId.startsWith('google-') ? googleEventId.slice(7) : googleEventId
+    try {
+      await axios.delete(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${realId}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      )
+      // Remove from local state
+      setGoogleEvents(prev => prev.filter(e => e.id !== googleEventId))
+      return true
+    } catch (error: any) {
+      console.error('Erreur suppression événement Google:', error)
+      if (error.response?.status === 401 && userId) {
+        await refreshAccessTokenFromServer(userId)
+      }
+      return false
+    }
+  }
+
   const logout = async () => {
     if (userId) {
       localStorage.removeItem(getStorageKey(userId))
@@ -232,6 +254,7 @@ export function BusinessGoogleCalendarProvider({ children }: { children: ReactNo
         isLoading,
         refreshEvents: () => accessToken && fetchEvents(accessToken),
         createEvent,
+        deleteEvent,
         getAccessToken: () => accessToken,
       }}
     >

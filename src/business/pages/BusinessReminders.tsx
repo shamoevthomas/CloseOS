@@ -91,7 +91,7 @@ export function BusinessReminders() {
     const fetchReminders = async () => {
       setLoading(true)
       try {
-        let query = supabase.from('reminders').select('*').order('reminder_date', { ascending: true })
+        let query = supabase.from('reminders').select('*').neq('is_notification', true).order('reminder_date', { ascending: true })
         if (isTeamMember && teamMember?.id) {
           query = query.or(`assigned_to.eq.${teamMember.id},user_id.eq.${user.id}`)
         } else {

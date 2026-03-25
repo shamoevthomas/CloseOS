@@ -818,7 +818,7 @@ export function BusinessCRM() {
                         <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
                       )}
                     </td>
-                    {!isReadOnly && (
+                    {!isReadOnly && isOwnerView && (
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}

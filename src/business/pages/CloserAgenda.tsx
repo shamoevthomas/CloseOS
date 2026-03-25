@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   ChevronLeft, ChevronRight, Calendar, Clock, User, Bell, X, Loader2,
-  Video, Phone, MapPin, ExternalLink, RefreshCw, Plus, ChevronDown, FileText, Megaphone, Trash2,
+  Video, Phone, MapPin, ExternalLink, RefreshCw, Plus, ChevronDown, FileText, Megaphone, Trash2, Copy,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
@@ -9,6 +9,8 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
+import { BusinessProspectView } from '../components/BusinessProspectView'
+import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
 
 /* ─── Types ───────────────────────────────────────── */
 
@@ -145,7 +147,7 @@ interface TeamMemberOption {
 
 export function CloserAgenda() {
   const { user, teamMember, ownerUserId, isTeamMember, userTimezone } = useBusinessAuth()
-  const { googleEvents, isConnected, login, isLoading: gLoading } = useBusinessGoogleCalendar()
+  const { googleEvents, isConnected, login, isLoading: gLoading, deleteEvent: deleteGoogleEvent } = useBusinessGoogleCalendar()
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
 
@@ -174,6 +176,10 @@ export function CloserAgenda() {
   const [createGoogleMeet, setCreateGoogleMeet] = useState(false)
   const [createSaving, setCreateSaving] = useState(false)
 
+  // Prospect detail panel
+  const [prospectForView, setProspectForView] = useState<BusinessProspect | null>(null)
+  const [loadingProspect, setLoadingProspect] = useState(false)
+
   const canAssign = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer'
 
   const dayScrollRef = useRef<HTMLDivElement>(null)
@@ -195,6 +201,27 @@ export function CloserAgenda() {
       setTeamMembers(list)
     })
   }, [isOwnerView, canAssign, effectiveUserId])
+
+  // Fetch full prospect data when an appointment with prospect is selected
+  const fetchProspectForEvent = useCallback(async (prospectId: number) => {
+    if (!effectiveUserId) return
+    setLoadingProspect(true)
+    try {
+      const { data, error } = await supabase
+        .from('business_prospects')
+        .select('*')
+        .eq('id', prospectId)
+        .eq('user_id', effectiveUserId)
+        .single()
+      if (!error && data) {
+        setProspectForView(data as BusinessProspect)
+      }
+    } catch {
+      // silent
+    } finally {
+      setLoadingProspect(false)
+    }
+  }, [effectiveUserId])
 
   // Fetch data
   const fetchAppointments = useCallback(async () => {
@@ -250,7 +277,7 @@ export function CloserAgenda() {
   const fetchReminders = useCallback(async () => {
     if (!user?.id) return
     try {
-      const { data } = await supabase.from('reminders').select('*').eq('user_id', user.id).order('reminder_date', { ascending: true })
+      const { data } = await supabase.from('reminders').select('*').eq('user_id', user.id).neq('is_notification', true).order('reminder_date', { ascending: true })
       setReminders(data || [])
     } catch (err) { console.error('Error fetching reminders:', err) }
   }, [user?.id])
@@ -277,6 +304,60 @@ export function CloserAgenda() {
     }
   }, [view])
 
+  // Fetch prospect when selecting an event linked to one
+  useEffect(() => {
+    if (selectedEvent?.type === 'appointment' && selectedEvent.data?.prospect?.id) {
+      fetchProspectForEvent(selectedEvent.data.prospect.id)
+    } else if (selectedEvent?.type === 'google' && selectedEvent.id) {
+      // Google event — look up matching internal appointment
+      const googleId = selectedEvent.id.startsWith('google-') ? selectedEvent.id.slice(7) : selectedEvent.id
+      if (effectiveUserId) {
+        setLoadingProspect(true)
+        // Try by google_calendar_event_id first, then fallback by date+time
+        supabase
+          .from('business_appointments')
+          .select('prospect_id')
+          .eq('user_id', effectiveUserId)
+          .eq('google_calendar_event_id', googleId)
+          .not('prospect_id', 'is', null)
+          .maybeSingle()
+          .then(async ({ data }) => {
+            if (data?.prospect_id) {
+              fetchProspectForEvent(data.prospect_id)
+            } else {
+              // Fallback: match by date + time (HH:MM)
+              const eventDate = selectedEvent.date
+              const eventTime = selectedEvent.time?.split(' - ')[0]
+              if (eventDate && eventTime) {
+                const { data: fallback } = await supabase
+                  .from('business_appointments')
+                  .select('prospect_id')
+                  .eq('user_id', effectiveUserId)
+                  .eq('date', eventDate)
+                  .eq('time', eventTime + ':00')
+                  .not('prospect_id', 'is', null)
+                  .maybeSingle()
+                if (fallback?.prospect_id) {
+                  fetchProspectForEvent(fallback.prospect_id)
+                } else {
+                  setLoadingProspect(false)
+                  setProspectForView(null)
+                }
+              } else {
+                setLoadingProspect(false)
+                setProspectForView(null)
+              }
+            }
+          })
+          .catch(() => { setLoadingProspect(false); setProspectForView(null) })
+      } else {
+        setProspectForView(null)
+      }
+    } else {
+      setProspectForView(null)
+    }
+  }, [selectedEvent, fetchProspectForEvent, effectiveUserId])
+
   // Build unified events for a given date
   const getEventsForDate = useCallback((date: Date): CalendarEvent[] => {
     const key = formatDateKey(date)
@@ -293,7 +374,7 @@ export function CloserAgenda() {
       if (apptDate === key && a.status !== 'cancelled') {
         events.push({
           id: a.id,
-          title: a.prospect?.contact || 'Rendez-vous',
+          title: a.prospect?.contact || (a.notes?.startsWith('Booking: ') ? a.notes.slice(9).split(' — ')[0] : null) || a.title || 'Rendez-vous',
           date: apptDate,
           time: apptTime,
           type: 'appointment',
@@ -477,13 +558,23 @@ export function CloserAgenda() {
       }
     } else if (event.type === 'reminder') {
       if (!confirm('Supprimer ce rappel ?')) return
-      const { error } = await supabase.from('business_reminders').delete().eq('id', Number(event.id))
+      const reminderId = event.id.replace('rem-', '')
+      const { error } = await supabase.from('reminders').delete().eq('id', Number(reminderId))
       if (error) {
         toast.error('Erreur lors de la suppression')
       } else {
         toast.success('Rappel supprimé')
         setSelectedEvent(null)
-        fetchAppointments()
+        fetchReminders()
+      }
+    } else if (event.type === 'google') {
+      if (!confirm('Supprimer cet événement de Google Calendar ?')) return
+      const success = await deleteGoogleEvent(event.id)
+      if (success) {
+        toast.success('Événement supprimé de Google Calendar')
+        setSelectedEvent(null)
+      } else {
+        toast.error('Erreur lors de la suppression')
       }
     }
   }
@@ -919,7 +1010,8 @@ export function CloserAgenda() {
       {/* Event detail modal */}
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4" onClick={() => setSelectedEvent(null)}>
-          <div className="bg-white dark:bg-neutral-900 rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className={cn('flex gap-4 max-h-[90vh]', prospectForView ? 'w-full max-w-5xl' : 'w-full max-w-md')} onClick={e => e.stopPropagation()}>
+          <div className={cn('bg-white dark:bg-neutral-900 rounded-[2rem] shadow-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden', prospectForView ? 'w-[420px] shrink-0' : 'w-full')}>
             {/* Header: icon + title + status + close */}
             <div className="px-7 pt-7 pb-2">
               <div className="flex items-start gap-4">
@@ -992,6 +1084,28 @@ export function CloserAgenda() {
                       </div>
                     )}
 
+                    {/* Booking contact info (no prospect) */}
+                    {!a.prospect && a.notes?.startsWith('Booking: ') && (() => {
+                      const parts = a.notes.slice(9).split(' — ')
+                      const bName = parts[0], bEmail = parts[1], bPhone = parts[2]
+                      return (
+                        <div className="flex items-start gap-4">
+                          <User className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold text-neutral-900 dark:text-white">{bName}</p>
+                              <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">Booking</span>
+                            </div>
+                            {(bEmail || bPhone) && (
+                              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                                {bEmail}{bEmail && bPhone && ' · '}{bPhone}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()}
+
                     {/* Campaign row */}
                     {a.campaign && (
                       <div className="flex items-start gap-4">
@@ -1002,13 +1116,13 @@ export function CloserAgenda() {
                       </div>
                     )}
 
-                    {/* Notes row */}
-                    {a.notes && (
-                      <div className="flex items-start gap-4">
+                    {/* Notes row (skip if booking-formatted since info is shown above) */}
+                    {a.notes && !a.notes.startsWith('Booking: ') && (
+                      <div className="flex items-start gap-4 min-w-0">
                         <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
-                        <div className="flex-1 bg-neutral-100 dark:bg-white/5 rounded-2xl p-4">
+                        <div className="flex-1 min-w-0 bg-neutral-100 dark:bg-white/5 rounded-2xl p-4">
                           <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
-                          <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">{a.notes}</p>
+                          <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed break-words overflow-hidden">{a.notes}</p>
                         </div>
                       </div>
                     )}
@@ -1026,11 +1140,11 @@ export function CloserAgenda() {
                     </div>
                   )}
                   {selectedEvent.description && (
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-4 min-w-0">
                       <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
-                      <div className="flex-1 bg-neutral-100 rounded-2xl p-4">
+                      <div className="flex-1 min-w-0 bg-neutral-100 rounded-2xl p-4">
                         <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
-                        <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">{selectedEvent.description}</p>
+                        <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed break-words overflow-hidden">{selectedEvent.description}</p>
                       </div>
                     </div>
                   )}
@@ -1043,11 +1157,11 @@ export function CloserAgenda() {
                 return (
                   <>
                     {r.description && (
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-start gap-4 min-w-0">
                         <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
-                        <div className="flex-1 bg-neutral-100 dark:bg-white/5 rounded-2xl p-4">
+                        <div className="flex-1 min-w-0 bg-neutral-100 dark:bg-white/5 rounded-2xl p-4">
                           <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
-                          <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">{r.description}</p>
+                          <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed break-words overflow-hidden">{r.description}</p>
                         </div>
                       </div>
                     )}
@@ -1066,20 +1180,37 @@ export function CloserAgenda() {
             </div>
 
             {/* Footer: actions */}
-            <div className="px-7 pb-7 pt-2 flex items-center gap-3">
-              {selectedEvent.hangoutLink && (
-                <a
-                  href={selectedEvent.hangoutLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white hover:bg-neutral-800 transition-colors shadow-lg"
-                >
-                  <Video className="h-4 w-4" />
-                  Rejoindre Google Meet
-                  <ExternalLink className="h-3.5 w-3.5 ml-auto" />
-                </a>
-              )}
-              {(selectedEvent.type === 'appointment' || selectedEvent.type === 'reminder') && (
+            <div className="px-7 pb-7 pt-2 space-y-3">
+              {(() => {
+                const meetLink = selectedEvent.hangoutLink || selectedEvent.data?.google_meet_link
+                if (!meetLink) return null
+                return (
+                  <div className="space-y-2">
+                    <a
+                      href={meetLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white hover:bg-neutral-800 transition-colors shadow-lg w-full"
+                    >
+                      <Video className="h-4 w-4" />
+                      Rejoindre Google Meet
+                      <ExternalLink className="h-3.5 w-3.5 ml-auto" />
+                    </a>
+                    <div className="flex items-center gap-2 bg-neutral-100 dark:bg-white/5 rounded-xl px-4 py-2.5">
+                      <p className="flex-1 min-w-0 text-xs text-neutral-500 dark:text-neutral-400 truncate font-mono select-all">{meetLink}</p>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(meetLink); toast.success('Lien copié') }}
+                        className="shrink-0 p-1.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors text-neutral-500 dark:text-neutral-400"
+                        title="Copier le lien"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
+              <div className="flex items-center gap-3">
+              {(selectedEvent.type === 'appointment' || selectedEvent.type === 'reminder' || selectedEvent.type === 'google') && (
                 <button
                   onClick={() => handleDeleteEvent(selectedEvent)}
                   className="flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-auto"
@@ -1088,7 +1219,45 @@ export function CloserAgenda() {
                   Supprimer
                 </button>
               )}
+              </div>
             </div>
+          </div>
+
+          {/* Prospect detail panel (right side) */}
+          {prospectForView && (
+            <div className="flex-1 min-w-0 bg-white dark:bg-neutral-900 rounded-[2rem] shadow-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden relative">
+              <BusinessProspectView
+                prospect={prospectForView}
+                inline
+                onClose={() => setProspectForView(null)}
+                onUpdate={async (id, updates) => {
+                  const { error } = await supabase
+                    .from('business_prospects')
+                    .update(updates)
+                    .eq('id', id)
+                  if (!error) {
+                    setProspectForView(prev => prev ? { ...prev, ...updates } : null)
+                    toast.success('Prospect mis à jour')
+                  }
+                }}
+                onDelete={async (id) => {
+                  const { error } = await supabase
+                    .from('business_prospects')
+                    .delete()
+                    .eq('id', id)
+                  if (!error) {
+                    setProspectForView(null)
+                    toast.success('Prospect supprimé')
+                  }
+                }}
+              />
+            </div>
+          )}
+          {loadingProspect && !prospectForView && (
+            <div className="w-[400px] shrink-0 bg-white dark:bg-neutral-900 rounded-[2rem] shadow-2xl flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+            </div>
+          )}
           </div>
         </div>
       )}

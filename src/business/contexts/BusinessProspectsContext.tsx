@@ -44,6 +44,7 @@ export interface BusinessProspect {
   }[]
   loss_reason?: string
   loss_details?: string
+  pipeline_visible?: boolean
 }
 
 interface BusinessProspectsContextType {

@@ -56,6 +56,7 @@ interface BusinessProspectViewProps {
   onClose: () => void
   onUpdate: (id: number, updates: Partial<BusinessProspect>) => void
   onDelete: (id: number) => void
+  inline?: boolean
 }
 
 const API_URL = '/api/business'
@@ -65,6 +66,7 @@ export function BusinessProspectView({
   onClose,
   onUpdate,
   onDelete,
+  inline = false,
 }: BusinessProspectViewProps) {
   const navigate = useNavigate()
   const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
@@ -432,14 +434,19 @@ export function BusinessProspectView({
   }
   const captureData = getCaptureData()
 
-  return (
+  const Wrapper = inline ? ({ children }: { children: React.ReactNode }) => <>{children}</> : ({ children }: { children: React.ReactNode }) => (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-stone-900/10 dark:bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      {children}
+    </div>
+  )
 
-      {/* Slide-over drawer */}
-      <aside className="absolute inset-y-0 right-0 w-full max-w-[580px] flex flex-col shadow-2xl rounded-l-2xl border-l border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
-      >
+  return (
+    <Wrapper>
+      <aside className={inline
+        ? "flex flex-col h-full overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
+        : "absolute inset-y-0 right-0 w-full max-w-[580px] flex flex-col shadow-2xl rounded-l-2xl border-l border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
+      }>
 
         {/* Header */}
         <header className="p-8 pb-4">
@@ -1203,13 +1210,15 @@ export function BusinessProspectView({
 
         {/* Footer */}
         <footer className="p-8 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-between items-center bg-white/20 dark:bg-neutral-900/20">
-          <button
-            onClick={handleDelete}
-            className="text-[#ba1a1a] font-business-display font-bold text-sm flex items-center gap-2 px-4 py-2 hover:bg-[#ba1a1a]/5 rounded-full transition-colors"
-          >
-            <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-            Supprimer le prospect
-          </button>
+          {(isOwner || isHosOrAdmin) ? (
+            <button
+              onClick={handleDelete}
+              className="text-[#ba1a1a] font-business-display font-bold text-sm flex items-center gap-2 px-4 py-2 hover:bg-[#ba1a1a]/5 rounded-full transition-colors"
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+              Supprimer le prospect
+            </button>
+          ) : <div />}
           <button
             onClick={() => handleUpdate(local)}
             className="bg-stone-900 text-white px-8 py-3 rounded-full font-business-display font-bold text-sm transition-transform active:scale-95"
@@ -1218,6 +1227,6 @@ export function BusinessProspectView({
           </button>
         </footer>
       </aside>
-    </div>
+    </Wrapper>
   )
 }

@@ -51,6 +51,7 @@ import { ComingSoon } from './pages/ComingSoon'
 import { CGU } from './pages/CGU'
 import { CGV } from './pages/CGV'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
+import { BusinessPolitiqueUtilisation } from './pages/BusinessPolitiqueUtilisation'
 import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
 import { SubscriptionRetention } from './pages/SubscriptionRetention'
 import { SpectatorPage } from './pages/SpectatorPage'
@@ -84,6 +85,7 @@ import { BusinessPipeline } from './business/pages/BusinessPipeline'
 import { BusinessOrganization } from './business/pages/BusinessOrganization'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
 import { CaptureForm } from './pages/CaptureForm'
+import { AppointmentManage } from './pages/AppointmentManage'
 import { CloserPipeline } from './business/pages/CloserPipeline'
 import { CloserRendezVous } from './business/pages/CloserRendezVous'
 import { CloserDisponibilite } from './business/pages/CloserDisponibilite'
@@ -357,11 +359,13 @@ function AuthenticatedApp() {
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
         <Route path="/capture/:slug" element={<CaptureForm />} />
+        <Route path="/appointment/:token" element={<AppointmentManage />} />
         <Route path="/view/:token" element={<SpectatorPage />} />
         <Route path="/mentions-legales" element={<Legal />} />
         <Route path="/cgu" element={<CGU />} />
         <Route path="/cgv" element={<CGV />} />
         <Route path="/confidentialite" element={<PrivacyPolicy />} />
+        <Route path="/business/politique-utilisation" element={<BusinessPolitiqueUtilisation />} />
 
         <Route path="/landing" element={<LandingPage />} />
         <Route
@@ -437,7 +441,7 @@ function AuthenticatedApp() {
         </Route>
       </Routes>
 
-      {user && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/capture') && (
+      {user && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/capture') && !location.pathname.startsWith('/book') && (
         <>
           <TrialExpiredModal />
           <OnboardingWrapper onComplete={() => {

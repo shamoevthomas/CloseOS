@@ -175,8 +175,9 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
 
       if (currentUser) {
         await initUser(currentUser.id);
-        // Check device verification
-        const deviceOk = await checkDeviceVerified(currentUser.id);
+        // Check device verification (skip for local dev account)
+        const isLocalDev = currentUser.email === 'teka@closeos.local';
+        const deviceOk = isLocalDev || await checkDeviceVerified(currentUser.id);
         if (isMountedRef.current) setNeedsVerification(!deviceOk);
       } else {
         clearUserData();

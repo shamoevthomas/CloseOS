@@ -396,7 +396,19 @@ export function BusinessCampaigns() {
   const getIframeCode = useMemo(() => {
     if (!embedModalCampaign) return ''
     const url = getStyledIframeUrl(embedModalCampaign.slug)
-    return `<iframe src="${url}" width="100%" height="800" frameborder="0" style="border:none;border-radius:${styleRadius}px;"></iframe>`
+    return `<iframe id="closeos-embed" src="${url}" width="100%" height="530" frameborder="0" scrolling="no" style="border:none;border-radius:${styleRadius}px;overflow:hidden;transition:height 0.4s ease;"></iframe>
+<script>
+window.addEventListener('message',function(e){
+  if(e.data&&e.data.type==='closeos-capture-resize'){
+    var f=document.getElementById('closeos-embed');
+    if(f)f.style.height=e.data.height+'px';
+  }
+  if(e.data==='closeos-capture-done'){
+    var f=document.getElementById('closeos-embed');
+    if(f)f.style.height='120px';
+  }
+});
+</script>`
   }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, styleLayout])
 
   const getPopupCode = useMemo(() => {
@@ -406,7 +418,7 @@ export function BusinessCampaigns() {
     return `<!-- CloseOS Capture Popup -->
 <div id="closeos-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);justify-content:center;align-items:center;">
   <div style="position:relative;width:90%;max-width:520px;max-height:90vh;background:${styleBgColor};border-radius:${styleRadius}px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.25);">
-    <iframe src="${url}" width="100%" height="700" frameborder="0" style="border:none;display:block;"></iframe>
+    <iframe id="closeos-popup-embed" src="${url}" width="100%" height="530" frameborder="0" scrolling="no" style="border:none;display:block;overflow:hidden;transition:height 0.4s ease;"></iframe>
   </div>
 </div>
 <script>
@@ -417,6 +429,10 @@ export function BusinessCampaigns() {
   document.body.style.overflow = 'hidden';
   ${delay > 0 ? `setTimeout(function(){ overlay.style.display='flex'; }, ${delay * 1000});` : `overlay.style.display='flex';`}
   window.addEventListener('message', function(e){
+    if(e.data&&e.data.type==='closeos-capture-resize'){
+      var f=document.getElementById('closeos-popup-embed');
+      if(f)f.style.height=e.data.height+'px';
+    }
     if(e.data === 'closeos-capture-done'){
       overlay.style.display='none';
       document.body.style.overflow='';

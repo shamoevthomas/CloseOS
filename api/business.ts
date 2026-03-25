@@ -148,6 +148,35 @@ async function createGoogleCalendarEvent(accessToken: string, event: {
   }
 }
 
+async function deleteGoogleCalendarEvent(accessToken: string, eventId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${GOOGLE_CALENDAR_API}/calendars/primary/events/${eventId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    return res.ok || res.status === 404
+  } catch { return false }
+}
+
+async function updateGoogleCalendarEvent(accessToken: string, eventId: string, event: {
+  summary?: string; description?: string; startDateTime: string; endDateTime: string; timeZone: string;
+}): Promise<boolean> {
+  try {
+    const body: any = {
+      start: { dateTime: event.startDateTime, timeZone: event.timeZone },
+      end: { dateTime: event.endDateTime, timeZone: event.timeZone },
+    }
+    if (event.summary) body.summary = event.summary
+    if (event.description) body.description = event.description
+    const res = await fetch(`${GOOGLE_CALENDAR_API}/calendars/primary/events/${eventId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    return res.ok
+  } catch { return false }
+}
+
 // ─── Airtable helpers ───
 
 const AIRTABLE_API = 'https://api.airtable.com/v0'
@@ -1857,6 +1886,182 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true })
     }
 
+    // ─── Manual reminder send ───
+    if (action === 'appointment-send-reminder' && req.method === 'POST') {
+      const { user_id, appointment_id, reminder_id } = req.body
+      if (!user_id || !appointment_id) return res.status(400).json({ error: 'user_id and appointment_id required' })
+
+      // Get appointment with prospect
+      const { data: appt } = await supabase
+        .from('business_appointments')
+        .select('id, title, date, time, datetime_utc, timezone, duration, status, google_meet_link, cancel_token, reschedule_token, assigned_to, prospect_id')
+        .eq('id', appointment_id)
+        .eq('user_id', user_id)
+        .single()
+      if (!appt) return res.status(404).json({ error: 'Appointment not found' })
+
+      // Get prospect
+      let prospectName = 'Client'
+      let prospectEmail = ''
+      if (appt.prospect_id) {
+        const { data: prospect } = await supabase
+          .from('business_prospects')
+          .select('contact, email')
+          .eq('id', appt.prospect_id)
+          .single()
+        if (prospect) {
+          prospectName = prospect.contact || 'Client'
+          prospectEmail = prospect.email || ''
+        }
+      }
+      if (!prospectEmail) return res.status(400).json({ error: 'Aucun email prospect associé à ce rendez-vous' })
+
+      // Get assignee name
+      let assigneeName = 'Votre interlocuteur'
+      if (appt.assigned_to) {
+        const { data: member } = await supabase
+          .from('business_team_members')
+          .select('first_name, last_name')
+          .eq('id', appt.assigned_to)
+          .single()
+        if (member) {
+          assigneeName = `${member.first_name} ${member.last_name}`
+        } else {
+          const { data: owner } = await supabase
+            .from('business_users')
+            .select('full_name')
+            .eq('id', appt.assigned_to)
+            .single()
+          if (owner) assigneeName = owner.full_name || assigneeName
+        }
+      }
+
+      // Build vars
+      const tz = appt.timezone || 'Europe/Paris'
+      const apptDate = appt.datetime_utc ? new Date(appt.datetime_utc) : new Date(`${appt.date}T${appt.time}`)
+      const formattedDate = apptDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz })
+      const formattedTime = apptDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: tz })
+      const baseUrl = process.env.VITE_APP_URL || 'https://closeos.fr'
+      const rescheduleLink = appt.reschedule_token ? `${baseUrl}/appointment/reschedule/${appt.reschedule_token}` : ''
+      const cancelLink = appt.cancel_token ? `${baseUrl}/appointment/cancel/${appt.cancel_token}` : ''
+
+      const vars: Record<string, string> = {
+        lead_name: prospectName,
+        assignee_name: assigneeName,
+        appointment_title: appt.title || 'Rendez-vous',
+        appointment_date: formattedDate,
+        appointment_time: formattedTime,
+        google_meet_link: appt.google_meet_link || '',
+        reschedule_link: rescheduleLink,
+        cancel_link: cancelLink,
+      }
+
+      // Get reminder config (manual or specific)
+      let reminder: any = null
+      if (reminder_id) {
+        const { data } = await supabase
+          .from('business_appointment_reminders')
+          .select('*')
+          .eq('id', reminder_id)
+          .eq('business_owner_id', user_id)
+          .single()
+        reminder = data
+      }
+      if (!reminder) {
+        // Find the manual reminder config, or use default
+        const { data } = await supabase
+          .from('business_appointment_reminders')
+          .select('*')
+          .eq('business_owner_id', user_id)
+          .eq('is_manual', true)
+          .limit(1)
+          .single()
+        reminder = data
+      }
+
+      // Build email — CloseOS light DA
+      let htmlContent: string
+      let subject: string
+      let senderName = 'CloseOS'
+
+      const wrapHtml = (bodyContent: string) => `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+      <tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;">
+        <div style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:28px;color:#111111;letter-spacing:-0.04em;">Close<span style="background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8;">OS</span></div>
+      </td></tr>
+      <tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
+        ${bodyContent}
+      </td></tr>
+      <tr><td style="padding-top:48px;text-align:left;padding-left:24px;">
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">Rappel envoyé via <a href="https://closeos.fr" style="color:#a03cf8;text-decoration:none;font-weight:500;">CloseOS</a></p>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a été envoyé automatiquement, merci de ne pas y répondre.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`
+
+      if (reminder?.template_type === 'custom' && reminder.custom_html) {
+        let html = reminder.custom_html
+        for (const [key, value] of Object.entries(vars)) {
+          html = html.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value)
+        }
+        subject = reminder.subject || 'CloseOS - Rappel de votre rendez-vous'
+        for (const [key, value] of Object.entries(vars)) {
+          subject = subject.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value)
+        }
+        senderName = reminder.sender_name || 'CloseOS'
+        htmlContent = wrapHtml(`<div style="font-family:'Inter',Helvetica,sans-serif;font-size:16px;color:#1b1c1b;line-height:1.6;">${html}</div>`)
+      } else {
+        subject = 'CloseOS - Rappel de votre rendez-vous'
+        senderName = 'CloseOS'
+        const meetBtn = vars.google_meet_link ? `<a href="${vars.google_meet_link}" style="display:block;background-color:#111111;color:#ffffff;text-align:center;padding:16px 32px;border-radius:48px;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;text-decoration:none;margin-bottom:32px;">Rejoindre le Google Meet</a>` : ''
+        htmlContent = wrapHtml(`
+          <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 16px;font-size:42px;color:#111111;text-align:left;line-height:1.1;letter-spacing:-0.04em;">Rappel de<br>rendez-vous</h1>
+          <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 48px;font-size:16px;color:#1b1c1b;line-height:1.6;">Bonjour <strong style="color:#111111;">${vars.lead_name}</strong>, ceci est un rappel pour votre rendez-vous <strong style="color:#111111;">${vars.appointment_title}</strong> avec <strong style="color:#111111;">${vars.assignee_name}</strong>.</p>
+          <div style="background-color:#f5f3f2;border-radius:48px;padding:40px 32px;margin-bottom:48px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding-bottom:12px;"><p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:14px;color:#1b1c1b;"><strong style="color:#111111;">Date</strong></p><p style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:4px 0 0;font-size:20px;color:#111111;letter-spacing:-0.04em;">${vars.appointment_date}</p></td></tr>
+              <tr><td><p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:14px;color:#1b1c1b;"><strong style="color:#111111;">Heure</strong></p><p style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:4px 0 0;font-size:20px;color:#111111;letter-spacing:-0.04em;">${vars.appointment_time}</p></td></tr>
+            </table>
+          </div>
+          ${meetBtn}
+          <div style="text-align:center;">
+            ${vars.reschedule_link ? `<a href="${vars.reschedule_link}" style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;font-size:13px;text-decoration:underline;margin-right:24px;">Reporter le rendez-vous</a>` : ''}
+            ${vars.cancel_link ? `<a href="${vars.cancel_link}" style="font-family:'Inter',Helvetica,sans-serif;color:#ef4444;font-size:13px;text-decoration:underline;">Annuler le rendez-vous</a>` : ''}
+          </div>`)
+      }
+
+      // Send via Brevo
+      const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': BREVO_API_KEY || '',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { email: 'support@closeos.fr', name: senderName },
+          to: [{ email: prospectEmail, name: prospectName }],
+          subject,
+          htmlContent,
+        }),
+      })
+
+      if (!emailRes.ok) {
+        const errData = await emailRes.json().catch(() => ({}))
+        return res.status(500).json({ error: 'Erreur envoi email', details: errData })
+      }
+
+      return res.status(200).json({ success: true, sent_to: prospectEmail })
+    }
+
     // ─── Public capture info (no auth) ───
     if (action === 'capture-info' && req.method === 'GET') {
       const slug = req.query.slug as string
@@ -1985,24 +2190,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ slots: [], freeMode: true })
       }
 
-      // Fetch member timezones (team members + owner)
+      // Fetch member timezones + booking constraints (team members + owner)
       const memberTimezones: Record<string, string> = {}
+      const memberConstraints: Record<string, { max_calls_per_day: number | null; buffer_before_booking: number; min_booking_notice: number }> = {}
       if (teamMemberIds.length > 0) {
         const { data: memberTzData } = await supabase
           .from('business_team_members')
-          .select('id, timezone')
+          .select('id, timezone, max_calls_per_day, buffer_before_booking, min_booking_notice')
           .in('id', teamMemberIds)
         for (const m of (memberTzData || [])) {
           memberTimezones[m.id] = m.timezone || 'Europe/Paris'
+          memberConstraints[m.id] = {
+            max_calls_per_day: m.max_calls_per_day ?? null,
+            buffer_before_booking: m.buffer_before_booking || 0,
+            min_booking_notice: m.min_booking_notice || 0,
+          }
         }
       }
       if (isOwnerIncluded) {
         const { data: ownerData } = await supabase
           .from('business_users')
-          .select('timezone')
+          .select('timezone, max_calls_per_day, buffer_before_booking, min_booking_notice')
           .eq('id', ownerId)
           .single()
         memberTimezones[ownerId] = ownerData?.timezone || 'Europe/Paris'
+        memberConstraints[ownerId] = {
+          max_calls_per_day: ownerData?.max_calls_per_day ?? null,
+          buffer_before_booking: ownerData?.buffer_before_booking || 0,
+          min_booking_notice: ownerData?.min_booking_notice || 0,
+        }
       }
 
       const today = new Date().toISOString().split('T')[0]
@@ -2105,6 +2321,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           const memberAppts = allAppointments.filter((a: any) => a.assigned_to === memberId && a.date === dateStr)
           const memberTz = memberTimezones[memberId] || 'Europe/Paris'
+          const constraints = memberConstraints[memberId] || { max_calls_per_day: null, buffer_before_booking: 0, min_booking_notice: 0 }
+
+          // Max calls per day check
+          if (constraints.max_calls_per_day !== null && memberAppts.length >= constraints.max_calls_per_day) continue
 
           for (const slot of memberSlots) {
             const [startH, startM] = (slot as any).start_time.split(':').map(Number)
@@ -2124,24 +2344,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (slotTime <= now) continue
               }
 
-              // Check appointment conflicts
+              // Min booking notice: slot must be at least X hours in the future
+              if (constraints.min_booking_notice > 0) {
+                const slotLocalDate = new Date(dateObj)
+                slotLocalDate.setHours(h, m, 0, 0)
+                const slotUtcTime = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
+                const minNoticeMs = constraints.min_booking_notice * 60 * 60 * 1000
+                if (slotUtcTime - now.getTime() < minNoticeMs) continue
+              }
+
+              // Check appointment conflicts (with buffer)
+              const buffer = constraints.buffer_before_booking || 0
               const hasConflict = memberAppts.some((appt: any) => {
                 const [aH, aM] = appt.time.split(':').map(Number)
                 const apptStart = aH * 60 + aM
                 const apptEnd = apptStart + (appt.duration || 30)
-                return mins < apptEnd && (mins + duration) > apptStart
+                // Slot must not overlap with appointment + buffer zone
+                return mins < (apptEnd + buffer) && (mins + duration) > (apptStart - buffer)
               })
               if (hasConflict) continue
 
-              // Check Google Calendar conflicts
+              // Check Google Calendar conflicts (with buffer)
               const gcalEvents = googleEventsPerMember[memberId]
               if (gcalEvents && gcalEvents.length > 0) {
                 const slotStartUtc = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
                 const slotEndUtc = slotStartUtc + duration * 60 * 1000
+                const bufferMs = buffer * 60 * 1000
                 const hasGcalConflict = gcalEvents.some(ev => {
                   const evStart = new Date(ev.start).getTime()
                   const evEnd = new Date(ev.end).getTime()
-                  return slotStartUtc < evEnd && slotEndUtc > evStart
+                  return slotStartUtc < (evEnd + bufferMs) && slotEndUtc > (evStart - bufferMs)
                 })
                 if (hasGcalConflict) continue
               }
@@ -2174,6 +2406,270 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         distribution: campaign.booking_distribution || 'round_robin',
         duration,
       })
+    }
+
+    // ─── Appointment info by token (no auth) ───
+    if (action === 'appointment-info' && req.method === 'GET') {
+      const token = req.query.token as string
+      if (!token) return res.status(400).json({ error: 'token required' })
+
+      const { data: appt } = await supabase
+        .from('business_appointments')
+        .select('id, date, time, duration, status, timezone, cancel_token, reschedule_token, campaign_id, prospect_id, assigned_to, user_id, datetime_utc')
+        .or(`cancel_token.eq.${token},reschedule_token.eq.${token}`)
+        .single()
+
+      if (!appt) return res.status(404).json({ error: 'Appointment not found' })
+
+      // Get prospect name
+      const { data: prospect } = await supabase
+        .from('business_prospects')
+        .select('contact, firstName, lastName, email')
+        .eq('id', appt.prospect_id)
+        .single()
+
+      // Get campaign slug for reschedule
+      let campaignSlug = null
+      if (appt.campaign_id) {
+        const { data: camp } = await supabase
+          .from('business_campaigns')
+          .select('slug')
+          .eq('id', appt.campaign_id)
+          .single()
+        campaignSlug = camp?.slug
+      }
+
+      // Get assigned member name
+      let assigneeName = null
+      if (appt.assigned_to) {
+        if (appt.assigned_to === appt.user_id) {
+          const { data: owner } = await supabase.from('business_users').select('display_name').eq('id', appt.user_id).single()
+          assigneeName = owner?.display_name
+        } else {
+          const { data: member } = await supabase.from('business_team_members').select('first_name, last_name').eq('id', appt.assigned_to).single()
+          assigneeName = member ? `${member.first_name || ''} ${member.last_name || ''}`.trim() : null
+        }
+      }
+
+      return res.status(200).json({
+        id: appt.id,
+        date: appt.date,
+        time: appt.time,
+        duration: appt.duration,
+        status: appt.status,
+        timezone: appt.timezone,
+        prospect_name: prospect?.contact || `${prospect?.firstName || ''} ${prospect?.lastName || ''}`.trim(),
+        prospect_email: prospect?.email,
+        assignee_name: assigneeName,
+        campaign_slug: campaignSlug,
+        token_type: token === appt.cancel_token ? 'cancel' : 'reschedule',
+      })
+    }
+
+    // ─── Cancel appointment by token (no auth) ───
+    if (action === 'appointment-cancel' && req.method === 'POST') {
+      const { token } = req.body
+      if (!token) return res.status(400).json({ error: 'token required' })
+
+      const { data: appt } = await supabase
+        .from('business_appointments')
+        .select('id, status, user_id, assigned_to, date, time, prospect_id, campaign_id, google_calendar_event_id')
+        .eq('cancel_token', token)
+        .single()
+
+      if (!appt) return res.status(404).json({ error: 'Appointment not found' })
+      if (appt.status === 'cancelled') return res.status(200).json({ already: true })
+
+      // Cancel the appointment
+      await supabase.from('business_appointments').update({ status: 'cancelled' }).eq('id', appt.id)
+
+      // Delete Google Calendar event if exists
+      if (appt.google_calendar_event_id && appt.assigned_to) {
+        try {
+          let authUserId = appt.assigned_to === appt.user_id ? appt.user_id : null
+          if (!authUserId) {
+            const { data: tm } = await supabase.from('business_team_members').select('user_id').eq('id', appt.assigned_to).single()
+            authUserId = tm?.user_id
+          }
+          if (authUserId) {
+            const gcalToken = await getGoogleAccessToken(supabase, authUserId)
+            if (gcalToken) await deleteGoogleCalendarEvent(gcalToken, appt.google_calendar_event_id)
+          }
+        } catch {}
+      }
+
+      // Get prospect info for notification
+      const { data: prospect } = await supabase
+        .from('business_prospects')
+        .select('contact, email')
+        .eq('id', appt.prospect_id)
+        .single()
+
+      // Notify owner + assigned member + HoS
+      const notifyUserIds: string[] = [appt.user_id]
+      if (appt.assigned_to && appt.assigned_to !== appt.user_id) {
+        const { data: tm } = await supabase.from('business_team_members').select('user_id').eq('id', appt.assigned_to).single()
+        if (tm?.user_id) notifyUserIds.push(tm.user_id)
+      }
+      const { data: hosMembers } = await supabase
+        .from('business_team_members')
+        .select('user_id')
+        .eq('business_owner_id', appt.user_id)
+        .in('role', ['Head of Sales', 'Admin'])
+      for (const hos of (hosMembers || [])) {
+        if (hos.user_id && !notifyUserIds.includes(hos.user_id)) notifyUserIds.push(hos.user_id)
+      }
+
+      const title = `Rendez-vous annulé — ${prospect?.contact || 'Prospect'}`
+      const description = `Le prospect ${prospect?.contact || ''} a annulé son rendez-vous du ${appt.date} à ${appt.time}.`
+      const rows = notifyUserIds.map(uid => ({ user_id: uid, title, description, reminder_date: new Date().toISOString(), is_done: false }))
+      await supabase.from('reminders').insert(rows)
+
+      // Send email notification
+      try {
+        await fetch(`https://${req.headers.host}/api/business-send-notification-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_ids: notifyUserIds, title, description })
+        })
+      } catch {}
+
+      return res.status(200).json({ cancelled: true })
+    }
+
+    // ─── Reschedule appointment by token (no auth) ───
+    if (action === 'appointment-reschedule' && req.method === 'POST') {
+      const { token, date, time, datetime_utc, prospect_timezone } = req.body
+      if (!token || !date || !time) return res.status(400).json({ error: 'token, date and time required' })
+
+      const { data: appt } = await supabase
+        .from('business_appointments')
+        .select('id, status, user_id, assigned_to, date, time, prospect_id, campaign_id, duration, google_calendar_event_id')
+        .eq('reschedule_token', token)
+        .single()
+
+      if (!appt) return res.status(404).json({ error: 'Appointment not found' })
+
+      const oldDate = appt.date
+      const oldTime = appt.time
+      const apptDuration = appt.duration || 30
+
+      // Generate new tokens first (needed for Google Calendar description)
+      const newCancelToken = crypto.randomBytes(16).toString('hex')
+      const newRescheduleToken = crypto.randomBytes(16).toString('hex')
+
+      // Update Google Calendar event if exists
+      if (appt.google_calendar_event_id && appt.assigned_to) {
+        try {
+          let authUserId = appt.assigned_to === appt.user_id ? appt.user_id : null
+          let memberTz = 'Europe/Paris'
+          if (!authUserId) {
+            const { data: tm } = await supabase.from('business_team_members').select('user_id, timezone').eq('id', appt.assigned_to).single()
+            authUserId = tm?.user_id
+            memberTz = tm?.timezone || 'Europe/Paris'
+          } else {
+            const { data: ownerData } = await supabase.from('business_users').select('timezone').eq('id', appt.user_id).single()
+            memberTz = ownerData?.timezone || 'Europe/Paris'
+          }
+          if (authUserId) {
+            const gcalToken = await getGoogleAccessToken(supabase, authUserId)
+            if (gcalToken) {
+              const [hh, mm] = time.split(':').map(Number)
+              const endMins = hh * 60 + mm + apptDuration
+              const endH = String(Math.floor(endMins / 60)).padStart(2, '0')
+              const endM = String(endMins % 60).padStart(2, '0')
+              const newCancelLink = `https://www.closeos.fr/appointment/${newCancelToken}?action=cancel`
+              const newRescheduleLink = `https://www.closeos.fr/appointment/${newRescheduleToken}?action=reschedule`
+              await updateGoogleCalendarEvent(gcalToken, appt.google_calendar_event_id, {
+                startDateTime: `${date}T${time}:00`,
+                endDateTime: `${date}T${endH}:${endM}:00`,
+                timeZone: memberTz,
+                description: `Rendez-vous reprogrammé\n\n─────────────────\n📅 Reprogrammer : ${newRescheduleLink}\n❌ Annuler : ${newCancelLink}`,
+              })
+            }
+          }
+        } catch {}
+      }
+
+      // Update appointment with new date/time and new tokens
+      const { data: updated } = await supabase
+        .from('business_appointments')
+        .update({
+          date,
+          time,
+          datetime_utc: datetime_utc || null,
+          timezone: prospect_timezone || null,
+          status: 'pending',
+          cancel_token: newCancelToken,
+          reschedule_token: newRescheduleToken,
+        })
+        .eq('id', appt.id)
+        .select()
+        .single()
+
+      // Get prospect info
+      const { data: prospect } = await supabase
+        .from('business_prospects')
+        .select('contact, email')
+        .eq('id', appt.prospect_id)
+        .single()
+
+      // Notify owner + assigned member + HoS
+      const notifyUserIds: string[] = [appt.user_id]
+      if (appt.assigned_to && appt.assigned_to !== appt.user_id) {
+        const { data: tm } = await supabase.from('business_team_members').select('user_id').eq('id', appt.assigned_to).single()
+        if (tm?.user_id) notifyUserIds.push(tm.user_id)
+      }
+      const { data: hosMembers } = await supabase
+        .from('business_team_members')
+        .select('user_id')
+        .eq('business_owner_id', appt.user_id)
+        .in('role', ['Head of Sales', 'Admin'])
+      for (const hos of (hosMembers || [])) {
+        if (hos.user_id && !notifyUserIds.includes(hos.user_id)) notifyUserIds.push(hos.user_id)
+      }
+
+      const title = `Rendez-vous reprogrammé — ${prospect?.contact || 'Prospect'}`
+      const description = `${prospect?.contact || 'Le prospect'} a déplacé son RDV du ${oldDate} ${oldTime} au ${date} ${time}.`
+      const rows = notifyUserIds.map(uid => ({ user_id: uid, title, description, reminder_date: new Date().toISOString(), is_done: false }))
+      await supabase.from('reminders').insert(rows)
+
+      try {
+        await fetch(`https://${req.headers.host}/api/business-send-notification-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_ids: notifyUserIds, title, description })
+        })
+      } catch {}
+
+      // Send updated confirmation email to prospect
+      if (prospect?.email && updated) {
+        const apptDuration = appt.duration || 30
+        const [hh, mm] = time.split(':').map(Number)
+        const endMins = hh * 60 + mm + apptDuration
+        const endTimeStr = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
+        const dateFr = new Date(date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+        const cancelUrl = `https://www.closeos.fr/appointment/${newCancelToken}?action=cancel`
+        const rescheduleUrl = `https://www.closeos.fr/appointment/${newRescheduleToken}?action=reschedule`
+
+        const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Rendez-vous reprogrammé</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;">Bonjour <strong>${prospect.contact}</strong>, votre rendez-vous a bien été modifié.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">📅 Nouvelle date</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${dateFr}</span></td></tr><tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">🕐 Horaire</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${time} — ${endTimeStr} (${apptDuration} min)</span></td></tr></table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center" style="padding-bottom:12px;"><a href="${rescheduleUrl}" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Reprogrammer</a></td></tr><tr><td align="center"><a href="${cancelUrl}" style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#ba1a1a;text-decoration:none;">Annuler le rendez-vous</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0;font-size:13px;color:#1b1c1b;opacity:0.6;">© 2026 CloseOS - Tous droits réservés</p></td></tr></table></td></tr></table></body></html>`
+
+        try {
+          await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: { 'api-key': process.env.BREVO_API_KEY!, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+              to: [{ email: prospect.email, name: prospect.contact }],
+              subject: `Rendez-vous reprogrammé — ${dateFr}`,
+              htmlContent: html,
+            })
+          })
+        } catch {}
+      }
+
+      return res.status(200).json({ rescheduled: true, appointment: updated })
     }
 
     // ─── Passive partial lead capture (no auth) ───
@@ -2258,89 +2754,363 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .eq('user_id', link.business_owner_id)
         .single()
 
-      // If team_member_id exists, compute available slots
-      if (link.team_member_id) {
-        const today = new Date().toISOString().split('T')[0]
-        const [slotsRes, absencesRes, appointmentsRes] = await Promise.all([
-          supabase.from('business_availability_slots').select('*').eq('team_member_id', link.team_member_id),
-          supabase.from('business_absences').select('start_date, end_date').eq('team_member_id', link.team_member_id).gte('end_date', today),
-          supabase.from('business_appointments').select('date, time, duration').eq('assigned_to', link.team_member_id).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed']),
-        ])
+      const ownerId = link.business_owner_id
+      const isOwnerLink = !link.team_member_id
+      const memberId = link.team_member_id || ownerId
+      const duration = link.duration || 30
+      const today = new Date().toISOString().split('T')[0]
+      const now = new Date()
 
-        const weeklySlots = slotsRes.data || []
-        const absences = absencesRes.data || []
-        const existingAppointments = appointmentsRes.data || []
-        const duration = link.duration || 30
-        const now = new Date()
-        const availableSlots: { date: string; time: string }[] = []
+      // Fetch member constraints (booking settings)
+      let memberTz = 'Europe/Paris'
+      let constraints = { max_calls_per_day: null as number | null, buffer_before_booking: 0, min_booking_notice: 0 }
 
-        for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
-          const date = new Date(now)
-          date.setDate(date.getDate() + dayOffset)
-          const jsDay = date.getDay()
-          const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1
-          const dateStr = date.toISOString().split('T')[0]
-
-          const isAbsent = absences.some((a: any) => dateStr >= a.start_date && dateStr <= a.end_date)
-          if (isAbsent) continue
-
-          const daySlots = weeklySlots.filter((s: any) => s.day_of_week === dayOfWeek)
-          if (daySlots.length === 0) continue
-
-          const dayAppointments = existingAppointments.filter((a: any) => a.date === dateStr)
-
-          for (const slot of daySlots) {
-            const [startH, startM] = (slot as any).start_time.split(':').map(Number)
-            const [endH, endM] = (slot as any).end_time.split(':').map(Number)
-            const startMinutes = startH * 60 + startM
-            const endMinutes = endH * 60 + endM
-
-            for (let mins = startMinutes; mins + duration <= endMinutes; mins += duration) {
-              const h = Math.floor(mins / 60)
-              const m = mins % 60
-              const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-
-              if (dayOffset === 0) {
-                const slotTime = new Date(date)
-                slotTime.setHours(h, m, 0, 0)
-                if (slotTime <= now) continue
-              }
-
-              const hasConflict = dayAppointments.some((appt: any) => {
-                const [aH, aM] = appt.time.split(':').map(Number)
-                const apptStart = aH * 60 + aM
-                const apptEnd = apptStart + (appt.duration || 30)
-                return mins < apptEnd && (mins + duration) > apptStart
-              })
-              if (hasConflict) continue
-
-              availableSlots.push({ date: dateStr, time: timeStr })
-            }
-          }
+      if (isOwnerLink) {
+        const { data: ownerData } = await supabase
+          .from('business_users')
+          .select('timezone, max_calls_per_day, buffer_before_booking, min_booking_notice')
+          .eq('id', ownerId)
+          .single()
+        memberTz = ownerData?.timezone || 'Europe/Paris'
+        constraints = {
+          max_calls_per_day: ownerData?.max_calls_per_day ?? null,
+          buffer_before_booking: ownerData?.buffer_before_booking || 0,
+          min_booking_notice: ownerData?.min_booking_notice || 0,
         }
-
-        return res.status(200).json({
-          label: link.label,
-          duration: link.duration,
-          companyName: settings?.company_name || null,
-          logoUrl: settings?.logo_url || null,
-          slots: availableSlots,
-        })
+      } else {
+        const { data: tmData } = await supabase
+          .from('business_team_members')
+          .select('timezone, max_calls_per_day, buffer_before_booking, min_booking_notice')
+          .eq('id', link.team_member_id)
+          .single()
+        memberTz = tmData?.timezone || 'Europe/Paris'
+        constraints = {
+          max_calls_per_day: tmData?.max_calls_per_day ?? null,
+          buffer_before_booking: tmData?.buffer_before_booking || 0,
+          min_booking_notice: tmData?.min_booking_notice || 0,
+        }
       }
 
-      // No team member (owner link) — free mode
+      // Fetch availability, absences, appointments
+      const slotsQuery = isOwnerLink
+        ? supabase.from('business_availability_slots').select('*').eq('business_owner_id', ownerId).is('team_member_id', null)
+        : supabase.from('business_availability_slots').select('*').eq('team_member_id', link.team_member_id)
+
+      const absencesQuery = isOwnerLink
+        ? supabase.from('business_absences').select('start_date, end_date').eq('business_owner_id', ownerId).is('team_member_id', null).gte('end_date', today)
+        : supabase.from('business_absences').select('start_date, end_date').eq('team_member_id', link.team_member_id).gte('end_date', today)
+
+      const appointmentsQuery = isOwnerLink
+        ? supabase.from('business_appointments').select('date, time, duration').eq('user_id', ownerId).is('assigned_to', null).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
+        : supabase.from('business_appointments').select('date, time, duration').eq('assigned_to', link.team_member_id).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
+
+      const [slotsRes, absencesRes, appointmentsRes] = await Promise.all([slotsQuery, absencesQuery, appointmentsQuery])
+
+      const weeklySlots = slotsRes.data || []
+      const absences = absencesRes.data || []
+      const existingAppointments = appointmentsRes.data || []
+
+      // Fetch Google Calendar events for conflict checking
+      let googleEvents: { start: string; end: string }[] = []
+      try {
+        let authUserId = isOwnerLink ? ownerId : null
+        if (!isOwnerLink) {
+          const { data: tmAuth } = await supabase.from('business_team_members').select('user_id').eq('id', link.team_member_id).single()
+          authUserId = tmAuth?.user_id || null
+        }
+        if (authUserId) {
+          const gcalToken = await getGoogleAccessToken(supabase, authUserId)
+          if (gcalToken) {
+            const timeMin = now.toISOString()
+            const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            googleEvents = await fetchGoogleCalendarEvents(gcalToken, timeMin, timeMax)
+          }
+        }
+      } catch { /* skip if no token */ }
+
+      const buffer = constraints.buffer_before_booking || 0
+      const availableSlots: { date: string; time: string; datetime_utc: string }[] = []
+
+      for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
+        const dateObj = new Date(now)
+        dateObj.setDate(dateObj.getDate() + dayOffset)
+        const jsDay = dateObj.getDay()
+        const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1
+        const dateStr = dateObj.toISOString().split('T')[0]
+
+        const isAbsent = absences.some((a: any) => dateStr >= a.start_date && dateStr <= a.end_date)
+        if (isAbsent) continue
+
+        const daySlots = weeklySlots.filter((s: any) => s.day_of_week === dayOfWeek)
+        if (daySlots.length === 0) continue
+
+        const dayAppointments = existingAppointments.filter((a: any) => a.date === dateStr)
+
+        // Max calls per day check
+        if (constraints.max_calls_per_day !== null && dayAppointments.length >= constraints.max_calls_per_day) continue
+
+        for (const slot of daySlots) {
+          const [startH, startM] = (slot as any).start_time.split(':').map(Number)
+          const [endH, endM] = (slot as any).end_time.split(':').map(Number)
+          const startMinutes = startH * 60 + startM
+          const endMinutes = endH * 60 + endM
+
+          for (let mins = startMinutes; mins + duration <= endMinutes; mins += duration) {
+            const h = Math.floor(mins / 60)
+            const m = mins % 60
+            const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+
+            // Skip past times for today
+            if (dayOffset === 0) {
+              const slotTime = new Date(dateObj)
+              slotTime.setHours(h, m, 0, 0)
+              if (slotTime <= now) continue
+            }
+
+            // Min booking notice
+            if (constraints.min_booking_notice > 0) {
+              const slotUtcTime = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
+              const minNoticeMs = constraints.min_booking_notice * 60 * 60 * 1000
+              if (slotUtcTime - now.getTime() < minNoticeMs) continue
+            }
+
+            // Check appointment conflicts (with buffer)
+            const hasConflict = dayAppointments.some((appt: any) => {
+              const [aH, aM] = appt.time.split(':').map(Number)
+              const apptStart = aH * 60 + aM
+              const apptEnd = apptStart + (appt.duration || 30)
+              return mins < (apptEnd + buffer) && (mins + duration) > (apptStart - buffer)
+            })
+            if (hasConflict) continue
+
+            // Check Google Calendar conflicts (with buffer)
+            if (googleEvents.length > 0) {
+              const slotStartUtc = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
+              const slotEndUtc = slotStartUtc + duration * 60 * 1000
+              const bufferMs = buffer * 60 * 1000
+              const hasGcalConflict = googleEvents.some(ev => {
+                const evStart = new Date(ev.start).getTime()
+                const evEnd = new Date(ev.end).getTime()
+                return slotStartUtc < (evEnd + bufferMs) && slotEndUtc > (evStart - bufferMs)
+              })
+              if (hasGcalConflict) continue
+            }
+
+            // Convert to UTC
+            const utcDate = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz)
+            availableSlots.push({ date: dateStr, time: timeStr, datetime_utc: utcDate.toISOString() })
+          }
+        }
+      }
+
       return res.status(200).json({
         label: link.label,
         duration: link.duration,
+        description: link.description || null,
+        redirectUrl: link.redirect_url || null,
         companyName: settings?.company_name || null,
         logoUrl: settings?.logo_url || null,
-        freeMode: true,
+        slots: availableSlots,
       })
     }
 
     // ─── Native CloseOS booking: submit ───
+    // ─── Booking: Google Calendar + Meet + Emails only (appointment already created client-side) ───
+    if (action === 'booking-gcal-email' && req.method === 'POST') {
+      const { slug, name, email, phone, date, time, prospect_timezone, datetime_utc, appointment_id } = req.body
+      if (!appointment_id || !slug || !name || !date || !time) return res.status(400).json({ error: 'appointment_id, slug, name, date, time required' })
+
+      const { data: link } = await supabase.from('business_booking_links').select('*').eq('slug', slug).single()
+      if (!link) return res.status(404).json({ error: 'Booking link not found' })
+
+      const { data: appointment } = await supabase.from('business_appointments').select('*').eq('id', appointment_id).single()
+      if (!appointment) return res.status(404).json({ error: 'Appointment not found' })
+
+      const ownerId = link.business_owner_id
+      const isOwnerLink = !link.team_member_id
+      const apptDuration = link.duration || 30
+
+      // ─── Google Calendar event + Google Meet ───
+      try {
+        let authUserId: string | null = null
+        if (isOwnerLink) {
+          authUserId = ownerId
+        } else {
+          const { data: tmAuth } = await supabase.from('business_team_members').select('user_id').eq('id', link.team_member_id).single()
+          authUserId = tmAuth?.user_id || null
+        }
+
+        if (authUserId) {
+          const gcalToken = await getGoogleAccessToken(supabase, authUserId)
+          if (gcalToken) {
+            let memberTz = 'Europe/Paris'
+            if (isOwnerLink) {
+              const { data: ownerTz } = await supabase.from('business_users').select('timezone').eq('id', ownerId).single()
+              memberTz = ownerTz?.timezone || 'Europe/Paris'
+            } else {
+              const { data: tmTz } = await supabase.from('business_team_members').select('timezone').eq('id', link.team_member_id).single()
+              memberTz = tmTz?.timezone || 'Europe/Paris'
+            }
+
+            const startDateTime = `${date}T${time}:00`
+            const [eH, eM] = time.split(':').map(Number)
+            const endMins = eH * 60 + eM + apptDuration
+            const endTimeCalc = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
+            const endDateTime = `${date}T${endTimeCalc}:00`
+
+            let assigneeName = ''
+            if (isOwnerLink) {
+              const { data: ownerProfile } = await supabase.from('business_users').select('business_name, full_name').eq('id', ownerId).single()
+              assigneeName = ownerProfile?.full_name || ownerProfile?.business_name || ''
+            } else {
+              const { data: tmProfile } = await supabase.from('business_team_members').select('first_name, last_name').eq('id', link.team_member_id).single()
+              assigneeName = tmProfile ? `${tmProfile.first_name} ${tmProfile.last_name}` : ''
+            }
+
+            const summary = `Rendez-vous avec ${name}`
+            const cancelLink = `https://www.closeos.fr/appointment/${appointment.cancel_token}?action=cancel`
+            const rescheduleLink = `https://www.closeos.fr/appointment/${appointment.reschedule_token}?action=reschedule`
+            const description = `Rendez-vous CloseOS\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}\n\n─────────────────\n📅 Reprogrammer : ${rescheduleLink}\n❌ Annuler : ${cancelLink}`
+
+            const gcalResult = await createGoogleCalendarEvent(gcalToken, {
+              summary,
+              description,
+              startDateTime,
+              endDateTime,
+              timeZone: memberTz,
+              withMeet: true,
+              attendeeEmail: email || undefined,
+            })
+
+            if (gcalResult.success) {
+              const gcalUpdate: any = {}
+              if (gcalResult.hangoutLink) gcalUpdate.google_meet_link = gcalResult.hangoutLink
+              if (gcalResult.eventId) gcalUpdate.google_calendar_event_id = gcalResult.eventId
+              if (Object.keys(gcalUpdate).length > 0) {
+                await supabase.from('business_appointments').update(gcalUpdate).eq('id', appointment.id)
+              }
+              if (gcalResult.hangoutLink) appointment.google_meet_link = gcalResult.hangoutLink
+            }
+          }
+        }
+      } catch (gcalErr) {
+        console.error('[booking-gcal-email] Google Calendar error:', gcalErr)
+      }
+
+      // ─── Emails ───
+      const BREVO_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+
+      let memberDisplayName = ''
+      if (isOwnerLink) {
+        const { data: ownerP } = await supabase.from('business_users').select('full_name, business_name').eq('id', ownerId).single()
+        memberDisplayName = ownerP?.full_name || ownerP?.business_name || 'Owner'
+      } else {
+        const { data: tmP } = await supabase.from('business_team_members').select('first_name, last_name').eq('id', link.team_member_id).single()
+        memberDisplayName = tmP ? `${tmP.first_name} ${tmP.last_name}` : ''
+      }
+
+      // Internal notification email
+      if (BREVO_KEY) {
+        try {
+          // Get all users to notify (owner + assigned + HoS)
+          const notifUserIds: string[] = [ownerId]
+          if (!isOwnerLink && link.team_member_id) {
+            const { data: tmUser } = await supabase.from('business_team_members').select('user_id').eq('id', link.team_member_id).single()
+            if (tmUser?.user_id && tmUser.user_id !== ownerId) notifUserIds.push(tmUser.user_id)
+          }
+          const { data: hosMembers } = await supabase.from('business_team_members').select('user_id').eq('business_owner_id', ownerId).in('role', ['Head of Sales', 'Admin'])
+          if (hosMembers) {
+            for (const hos of hosMembers) {
+              if (hos.user_id && !notifUserIds.includes(hos.user_id)) notifUserIds.push(hos.user_id)
+            }
+          }
+
+          const notifEmails: string[] = []
+          for (const uid of notifUserIds) {
+            const { data: authU } = await supabase.auth.admin.getUserById(uid)
+            if (authU?.user?.email) notifEmails.push(authU.user.email)
+          }
+
+          const notifHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Nouveau rendez-vous</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;"><strong>${name}</strong> a r&#233;serv&#233; un cr&#233;neau via votre lien de booking.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:40px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:12px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Date</span><br><span class="inter" style="font-size:16px;color:#111111;font-weight:500;">${date} &#224; ${time}</span></td></tr><tr><td style="padding-bottom:12px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Prospect</span><br><span class="inter" style="font-size:16px;color:#111111;font-weight:500;">${name}${email ? ` &mdash; ${email}` : ''}${phone ? ` &mdash; ${phone}` : ''}</span></td></tr>${appointment.google_meet_link ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Google Meet</span><br><a href="${appointment.google_meet_link}" style="font-size:16px;color:#1a73e8;text-decoration:none;font-weight:500;">${appointment.google_meet_link}</a></td></tr>` : ''}</table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center"><a href="https://www.closeos.fr/business/rendez-vous" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Voir les rendez-vous</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
+
+          for (const em of notifEmails) {
+            fetch('https://api.brevo.com/v3/smtp/email', {
+              method: 'POST',
+              headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+              body: JSON.stringify({
+                sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+                to: [{ email: em }],
+                subject: `Nouveau rendez-vous : ${name} — ${date} à ${time}`,
+                htmlContent: notifHtml,
+              })
+            }).catch(() => {})
+          }
+        } catch (emailErr) {
+          console.error('[booking-gcal-email] Internal email error:', emailErr)
+        }
+
+        // Prospect confirmation email with ICS
+        if (email) {
+          try {
+            const [eH2, eM2] = time.split(':').map(Number)
+            const endMins2 = eH2 * 60 + eM2 + apptDuration
+            const endTimeStr = `${String(Math.floor(endMins2 / 60)).padStart(2, '0')}:${String(endMins2 % 60).padStart(2, '0')}`
+
+            const icsUid = `closeos-${appointment.id}@closeos.fr`
+            const dtStart = `${date.replace(/-/g, '')}T${time.replace(/:/g, '')}00`
+            const dtEnd = `${date.replace(/-/g, '')}T${endTimeStr.replace(/:/g, '')}00`
+            const tzId = prospect_timezone || 'Europe/Paris'
+            const meetLink = appointment.google_meet_link || ''
+            const nowStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+
+            const icsContent = [
+              'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//CloseOS//Booking//FR', 'CALSCALE:GREGORIAN', 'METHOD:REQUEST',
+              'BEGIN:VEVENT', `UID:${icsUid}`, `DTSTAMP:${nowStamp}`,
+              `DTSTART;TZID=${tzId}:${dtStart}`, `DTEND;TZID=${tzId}:${dtEnd}`,
+              `SUMMARY:Rendez-vous avec ${memberDisplayName || 'CloseOS'}`,
+              meetLink ? `LOCATION:${meetLink}` : '', meetLink ? `DESCRIPTION:Rejoindre le Google Meet : ${meetLink}` : '',
+              `ORGANIZER;CN=CloseOS:mailto:support@closeos.fr`, `STATUS:CONFIRMED`,
+              'END:VEVENT', 'END:VCALENDAR',
+            ].filter(Boolean).join('\r\n')
+
+            const icsBase64 = Buffer.from(icsContent).toString('base64')
+
+            const dateObj = new Date(`${date}T${time}:00`)
+            const joursSemaine = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+            const mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+            const dateFr = `${joursSemaine[dateObj.getDay()]} ${dateObj.getDate()} ${mois[dateObj.getMonth()]} ${dateObj.getFullYear()}`
+
+            const meetSection = meetLink
+              ? `<div style="background-color:#e8f5e9;border-radius:16px;padding:24px;margin-bottom:32px;text-align:center;"><p class="inter" style="margin:0 0 12px;font-size:14px;color:#2e7d32;">Rejoignez via Google Meet</p><a href="${meetLink}" style="display:inline-block;background-color:#1a73e8;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:99px;">Rejoindre le Meet</a><p class="inter" style="margin:12px 0 0;font-size:13px;color:#2e7d32;opacity:0.7;word-break:break-all;">${meetLink}</p></div>`
+              : ''
+
+            const cancelUrl = `https://www.closeos.fr/appointment/${appointment.cancel_token}?action=cancel`
+            const rescheduleUrl = `https://www.closeos.fr/appointment/${appointment.reschedule_token}?action=reschedule`
+
+            const confirmHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Rendez-vous confirm&#233;</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;">Bonjour <strong>${name}</strong>, votre rendez-vous a bien &#233;t&#233; enregistr&#233;.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128197; Date</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${dateFr}</span></td></tr><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128337; Horaire</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${time} &mdash; ${endTimeStr} (${apptDuration} min)</span></td></tr>${memberDisplayName ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128100; Avec</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${memberDisplayName}</span></td></tr>` : ''}</table></div>${meetSection}<div style="background-color:#f5f3f2;border-radius:16px;padding:20px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:18px;line-height:1;">&#128206;</div></td><td><p class="inter" style="margin:0;font-size:14px;color:#1b1c1b;">Un fichier d'invitation (.ics) est joint &#224; cet email. Ouvrez-le pour ajouter le rendez-vous &#224; votre calendrier.</p></td></tr></table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center" style="padding-bottom:12px;"><a href="${rescheduleUrl}" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Reprogrammer le rendez-vous</a></td></tr><tr><td align="center"><a href="${cancelUrl}" style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#ba1a1a;text-decoration:none;">Annuler le rendez-vous</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
+
+            await fetch('https://api.brevo.com/v3/smtp/email', {
+              method: 'POST',
+              headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+              body: JSON.stringify({
+                sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+                to: [{ email }],
+                subject: `Confirmation : Rendez-vous avec ${memberDisplayName || 'CloseOS'}`,
+                htmlContent: confirmHtml,
+                attachment: [{ content: icsBase64, name: 'invitation.ics', type: 'text/calendar' }],
+              })
+            })
+          } catch (confirmErr) {
+            console.error('[booking-gcal-email] Prospect email error:', confirmErr)
+          }
+        }
+      }
+
+      return res.status(200).json({ success: true })
+    }
+
     if (action === 'booking-submit' && req.method === 'POST') {
-      const { slug, name, email, phone, date, time, prospect_timezone, datetime_utc } = req.body
+      const { slug, name, email, phone, date, time, prospect_timezone, datetime_utc, appointment_id } = req.body
       if (!slug || !name || !date || !time) return res.status(400).json({ error: 'slug, name, date, time required' })
 
       const { data: link, error: linkErr } = await supabase
@@ -2351,18 +3121,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (linkErr || !link) return res.status(404).json({ error: 'Booking link not found' })
 
-      // Re-validate slot availability if team_member_id exists
-      if (link.team_member_id) {
-        const { data: conflicts } = await supabase
+      const ownerId = link.business_owner_id
+      const isOwnerLink = !link.team_member_id
+      const apptDuration = link.duration || 30
+      const assignedTo = link.team_member_id || null
+
+      // If appointment_id is provided, use existing appointment (created client-side)
+      let appointment: any = null
+      if (appointment_id) {
+        const { data: existingAppt } = await supabase
           .from('business_appointments')
-          .select('id, time, duration')
-          .eq('assigned_to', link.team_member_id)
-          .eq('date', date)
-          .in('status', ['upcoming', 'pending', 'confirmed'])
+          .select('*')
+          .eq('id', appointment_id)
+          .single()
+        if (existingAppt) appointment = existingAppt
+      }
+
+      // If no existing appointment, create one (fallback for direct API calls)
+      if (!appointment) {
+        // Re-validate slot availability
+        const apptQuery = isOwnerLink
+          ? supabase.from('business_appointments').select('id, time, duration').eq('user_id', ownerId).is('assigned_to', null).eq('date', date).in('status', ['upcoming', 'pending', 'confirmed'])
+          : supabase.from('business_appointments').select('id, time, duration').eq('assigned_to', link.team_member_id).eq('date', date).in('status', ['upcoming', 'pending', 'confirmed'])
+
+        const { data: conflicts } = await apptQuery
 
         const [rH, rM] = time.split(':').map(Number)
         const reqStart = rH * 60 + rM
-        const reqEnd = reqStart + (link.duration || 30)
+        const reqEnd = reqStart + apptDuration
         const hasConflict = (conflicts || []).some((appt: any) => {
           const [aH, aM] = appt.time.split(':').map(Number)
           const apptStart = aH * 60 + aM
@@ -2370,49 +3156,245 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return reqStart < apptEnd && reqEnd > apptStart
         })
         if (hasConflict) return res.status(409).json({ error: 'Ce créneau vient d\'être réservé. Veuillez en choisir un autre.' })
+
+        const { data: apptData, error: apptErr } = await supabase
+          .from('business_appointments')
+          .insert({
+            user_id: ownerId,
+            prospect_id: null,
+            assigned_to: assignedTo,
+            date,
+            time,
+            duration: apptDuration,
+            status: 'pending',
+            datetime_utc: datetime_utc || null,
+            timezone: prospect_timezone || null,
+            cancel_token: crypto.randomBytes(16).toString('hex'),
+            reschedule_token: crypto.randomBytes(16).toString('hex'),
+            notes: `Booking: ${name}${email ? ` — ${email}` : ''}${phone ? ` — ${phone}` : ''}`,
+          })
+          .select()
+          .single()
+
+        if (apptErr) return res.status(500).json({ error: apptErr.message })
+        appointment = apptData
       }
 
-      // Create prospect
-      const nameParts = name.trim().split(' ')
-      const firstName = nameParts[0] || ''
-      const lastName = nameParts.slice(1).join(' ') || ''
+      // ─── Google Calendar event + Google Meet ───
+      try {
+        let authUserId: string | null = null
+        if (isOwnerLink) {
+          authUserId = ownerId
+        } else {
+          const { data: tmAuth } = await supabase.from('business_team_members').select('user_id').eq('id', link.team_member_id).single()
+          authUserId = tmAuth?.user_id || null
+        }
 
-      const { data: prospect, error: prospErr } = await supabase
-        .from('business_prospects')
-        .insert({
-          user_id: link.business_owner_id,
-          contact: name,
-          firstName,
-          lastName,
-          email: email || '',
-          phone: phone || '',
-          stage: 'prospect',
-        })
-        .select()
-        .single()
+        if (authUserId) {
+          const gcalToken = await getGoogleAccessToken(supabase, authUserId)
+          if (gcalToken) {
+            // Get member timezone
+            let memberTz = 'Europe/Paris'
+            if (isOwnerLink) {
+              const { data: ownerTz } = await supabase.from('business_users').select('timezone').eq('id', ownerId).single()
+              memberTz = ownerTz?.timezone || 'Europe/Paris'
+            } else {
+              const { data: tmTz } = await supabase.from('business_team_members').select('timezone').eq('id', link.team_member_id).single()
+              memberTz = tmTz?.timezone || 'Europe/Paris'
+            }
 
-      if (prospErr) return res.status(500).json({ error: prospErr.message })
+            const startDateTime = `${date}T${time}:00`
+            const [eH, eM] = time.split(':').map(Number)
+            const endMins = eH * 60 + eM + apptDuration
+            const endTimeCalc = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
+            const endDateTime = `${date}T${endTimeCalc}:00`
 
-      // Create appointment with timezone data
-      const { data: appointment, error: apptErr } = await supabase
-        .from('business_appointments')
-        .insert({
-          user_id: link.business_owner_id,
-          prospect_id: prospect.id,
-          assigned_to: link.team_member_id || null,
-          date,
-          time,
-          duration: link.duration || 30,
-          status: 'pending',
-          datetime_utc: datetime_utc || null,
-          timezone: prospect_timezone || null,
-        })
-        .select()
-        .single()
+            // Get assignee name
+            let assigneeName = ''
+            if (isOwnerLink) {
+              const { data: ownerProfile } = await supabase.from('business_users').select('business_name, full_name').eq('id', ownerId).single()
+              assigneeName = ownerProfile?.full_name || ownerProfile?.business_name || ''
+            } else {
+              const { data: tmProfile } = await supabase.from('business_team_members').select('first_name, last_name').eq('id', link.team_member_id).single()
+              assigneeName = tmProfile ? `${tmProfile.first_name} ${tmProfile.last_name}` : ''
+            }
 
-      if (apptErr) return res.status(500).json({ error: apptErr.message })
+            const summary = `Rendez-vous avec ${name}`
+            const cancelLink = `https://www.closeos.fr/appointment/${appointment.cancel_token}?action=cancel`
+            const rescheduleLink = `https://www.closeos.fr/appointment/${appointment.reschedule_token}?action=reschedule`
+            const description = `Rendez-vous CloseOS\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}\n\n─────────────────\n📅 Reprogrammer : ${rescheduleLink}\n❌ Annuler : ${cancelLink}`
 
-      return res.status(200).json({ prospect, appointment })
+            const gcalResult = await createGoogleCalendarEvent(gcalToken, {
+              summary,
+              description,
+              startDateTime,
+              endDateTime,
+              timeZone: memberTz,
+              withMeet: true,
+              attendeeEmail: email || undefined,
+            })
+
+            if (gcalResult.success) {
+              const gcalUpdate: any = {}
+              if (gcalResult.hangoutLink) gcalUpdate.google_meet_link = gcalResult.hangoutLink
+              if (gcalResult.eventId) gcalUpdate.google_calendar_event_id = gcalResult.eventId
+              if (Object.keys(gcalUpdate).length > 0) {
+                await supabase.from('business_appointments').update(gcalUpdate).eq('id', appointment.id)
+              }
+              if (gcalResult.hangoutLink) appointment.google_meet_link = gcalResult.hangoutLink
+              if (gcalResult.eventId) appointment.google_calendar_event_id = gcalResult.eventId
+            }
+          }
+        }
+      } catch (gcalErr) {
+        console.error('[booking-submit] Google Calendar event creation failed:', gcalErr)
+      }
+
+      // ─── Notifications + emails ───
+      const BREVO_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+
+      // Get assignee display name for emails
+      let memberDisplayName = ''
+      if (isOwnerLink) {
+        const { data: ownerP } = await supabase.from('business_users').select('full_name, business_name').eq('id', ownerId).single()
+        memberDisplayName = ownerP?.full_name || ownerP?.business_name || 'Owner'
+      } else {
+        const { data: tmP } = await supabase.from('business_team_members').select('first_name, last_name').eq('id', link.team_member_id).single()
+        memberDisplayName = tmP ? `${tmP.first_name} ${tmP.last_name}` : ''
+      }
+
+      // 1) In-app notifications
+      try {
+        const notifTitle = `Nouveau rendez-vous : ${name}`
+        const notifDesc = `${name} a réservé un créneau le ${date} à ${time} (${apptDuration} min)${email ? ` — ${email}` : ''}`
+        const reminderRows: { user_id: string; title: string; description: string; reminder_date: string; is_done: boolean; is_notification: boolean }[] = []
+
+        // Owner
+        reminderRows.push({ user_id: ownerId, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false, is_notification: true })
+
+        // Assigned member (if not owner)
+        if (!isOwnerLink && link.team_member_id) {
+          const { data: tmUser } = await supabase.from('business_team_members').select('user_id').eq('id', link.team_member_id).single()
+          if (tmUser?.user_id) {
+            reminderRows.push({ user_id: tmUser.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false, is_notification: true })
+          }
+        }
+
+        // HoS / Admin
+        const { data: hosMembers } = await supabase
+          .from('business_team_members')
+          .select('user_id')
+          .eq('business_owner_id', ownerId)
+          .in('role', ['Head of Sales', 'Admin'])
+        if (hosMembers) {
+          for (const hos of hosMembers) {
+            if (hos.user_id && !reminderRows.some(r => r.user_id === hos.user_id)) {
+              reminderRows.push({ user_id: hos.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false, is_notification: true })
+            }
+          }
+        }
+
+        await supabase.from('reminders').insert(reminderRows)
+
+        // 2) Email notification to internal users
+        if (BREVO_KEY) {
+          const notifUserIds = reminderRows.map(r => r.user_id)
+          const notifEmails: string[] = []
+          for (const uid of notifUserIds) {
+            const { data: authU } = await supabase.auth.admin.getUserById(uid)
+            if (authU?.user?.email) notifEmails.push(authU.user.email)
+          }
+
+          const notifHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Nouveau rendez-vous</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;"><strong>${name}</strong> a r&#233;serv&#233; un cr&#233;neau via votre lien de booking.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:40px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:12px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Date</span><br><span class="inter" style="font-size:16px;color:#111111;font-weight:500;">${date} &#224; ${time}</span></td></tr><tr><td style="padding-bottom:12px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Prospect</span><br><span class="inter" style="font-size:16px;color:#111111;font-weight:500;">${name}${email ? ` &mdash; ${email}` : ''}${phone ? ` &mdash; ${phone}` : ''}</span></td></tr>${appointment.google_meet_link ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Google Meet</span><br><a href="${appointment.google_meet_link}" style="font-size:16px;color:#1a73e8;text-decoration:none;font-weight:500;">${appointment.google_meet_link}</a></td></tr>` : ''}</table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center"><a href="https://www.closeos.fr/business/rendez-vous" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Voir les rendez-vous</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
+
+          for (const em of notifEmails) {
+            fetch('https://api.brevo.com/v3/smtp/email', {
+              method: 'POST',
+              headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+              body: JSON.stringify({
+                sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+                to: [{ email: em }],
+                subject: `Nouveau rendez-vous : ${name} — ${date} à ${time}`,
+                htmlContent: notifHtml,
+              })
+            }).catch(() => {})
+          }
+        }
+      } catch (notifErr) {
+        console.error('[booking-submit] Notification error:', notifErr)
+      }
+
+      // 3) Prospect confirmation email with ICS + Meet link
+      if (email && BREVO_KEY) {
+        try {
+          const [eH, eM] = time.split(':').map(Number)
+          const endMins = eH * 60 + eM + apptDuration
+          const endTimeStr = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
+
+          const icsUid = `closeos-${appointment.id}@closeos.fr`
+          const dtStart = `${date.replace(/-/g, '')}T${time.replace(/:/g, '')}00`
+          const dtEnd = `${date.replace(/-/g, '')}T${endTimeStr.replace(/:/g, '')}00`
+          const tzId = prospect_timezone || 'Europe/Paris'
+          const meetLink = appointment.google_meet_link || ''
+          const nowStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+
+          const icsContent = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//CloseOS//Booking//FR',
+            'CALSCALE:GREGORIAN',
+            'METHOD:REQUEST',
+            'BEGIN:VEVENT',
+            `UID:${icsUid}`,
+            `DTSTAMP:${nowStamp}`,
+            `DTSTART;TZID=${tzId}:${dtStart}`,
+            `DTEND;TZID=${tzId}:${dtEnd}`,
+            `SUMMARY:Rendez-vous avec ${memberDisplayName || 'CloseOS'}`,
+            meetLink ? `LOCATION:${meetLink}` : '',
+            meetLink ? `DESCRIPTION:Rejoindre le Google Meet : ${meetLink}` : '',
+            `ORGANIZER;CN=CloseOS:mailto:support@closeos.fr`,
+            `STATUS:CONFIRMED`,
+            'END:VEVENT',
+            'END:VCALENDAR',
+          ].filter(Boolean).join('\r\n')
+
+          const icsBase64 = Buffer.from(icsContent).toString('base64')
+
+          const dateObj = new Date(`${date}T${time}:00`)
+          const joursSemaine = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+          const mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+          const dateFr = `${joursSemaine[dateObj.getDay()]} ${dateObj.getDate()} ${mois[dateObj.getMonth()]} ${dateObj.getFullYear()}`
+
+          const meetSection = meetLink
+            ? `<div style="background-color:#e8f5e9;border-radius:16px;padding:24px;margin-bottom:32px;text-align:center;"><p class="inter" style="margin:0 0 12px;font-size:14px;color:#2e7d32;">Rejoignez via Google Meet</p><a href="${meetLink}" style="display:inline-block;background-color:#1a73e8;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:99px;">Rejoindre le Meet</a><p class="inter" style="margin:12px 0 0;font-size:13px;color:#2e7d32;opacity:0.7;word-break:break-all;">${meetLink}</p></div>`
+            : ''
+
+          const cancelUrl = `https://www.closeos.fr/appointment/${appointment.cancel_token}?action=cancel`
+          const rescheduleUrl = `https://www.closeos.fr/appointment/${appointment.reschedule_token}?action=reschedule`
+
+          const confirmHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Rendez-vous confirm&#233;</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;">Bonjour <strong>${name}</strong>, votre rendez-vous a bien &#233;t&#233; enregistr&#233;.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128197; Date</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${dateFr}</span></td></tr><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128337; Horaire</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${time} &mdash; ${endTimeStr} (${apptDuration} min)</span></td></tr>${memberDisplayName ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128100; Avec</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${memberDisplayName}</span></td></tr>` : ''}</table></div>${meetSection}<div style="background-color:#f5f3f2;border-radius:16px;padding:20px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:18px;line-height:1;">&#128206;</div></td><td><p class="inter" style="margin:0;font-size:14px;color:#1b1c1b;">Un fichier d'invitation (.ics) est joint &#224; cet email. Ouvrez-le pour ajouter le rendez-vous &#224; votre calendrier.</p></td></tr></table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center" style="padding-bottom:12px;"><a href="${rescheduleUrl}" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Reprogrammer le rendez-vous</a></td></tr><tr><td align="center"><a href="${cancelUrl}" style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#ba1a1a;text-decoration:none;">Annuler le rendez-vous</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
+
+          await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+            body: JSON.stringify({
+              sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+              to: [{ email }],
+              subject: `Confirmation : Rendez-vous avec ${memberDisplayName || 'CloseOS'}`,
+              htmlContent: confirmHtml,
+              attachment: [{
+                content: icsBase64,
+                name: 'invitation.ics',
+                type: 'text/calendar',
+              }],
+            })
+          })
+        } catch (confirmErr) {
+          console.error('[booking-submit] Confirmation email error:', confirmErr)
+        }
+      }
+
+      return res.status(200).json({ appointment })
     }
 
     // ─── Public capture endpoint (no auth) ───
@@ -2519,6 +3501,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             datetime_utc: datetime_utc || null,
             timezone: prospect_timezone || null,
             assigned_to: prospectAssignId || null,
+            cancel_token: crypto.randomBytes(16).toString('hex'),
+            reschedule_token: crypto.randomBytes(16).toString('hex'),
           })
           .select()
           .single()
@@ -2584,10 +3568,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 const rawTitle = campaign.booking_title || `Rendez-vous avec ${name}`
                 const summary = replaceVars(rawTitle)
+                const cancelLink = `https://www.closeos.fr/appointment/${appointment.cancel_token}?action=cancel`
+                const rescheduleLink = `https://www.closeos.fr/appointment/${appointment.reschedule_token}?action=reschedule`
                 const rawDesc = campaign.booking_description
                   ? `${campaign.booking_description}\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
                   : `Rendez-vous CloseOS\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
-                const description = replaceVars(rawDesc)
+                const description = replaceVars(rawDesc) + `\n\n─────────────────\n📅 Reprogrammer : ${rescheduleLink}\n❌ Annuler : ${cancelLink}`
 
                 const gcalResult = await createGoogleCalendarEvent(gcalToken, {
                   summary,
@@ -2599,13 +3585,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   attendeeEmail: email || undefined,
                 })
 
-                if (gcalResult.success && gcalResult.hangoutLink) {
-                  // Save Google Meet link to the appointment
-                  await supabase
-                    .from('business_appointments')
-                    .update({ google_meet_link: gcalResult.hangoutLink })
-                    .eq('id', appointment.id)
-                  appointment.google_meet_link = gcalResult.hangoutLink
+                if (gcalResult.success) {
+                  // Save Google Meet link and event ID to the appointment
+                  const gcalUpdate: any = {}
+                  if (gcalResult.hangoutLink) gcalUpdate.google_meet_link = gcalResult.hangoutLink
+                  if (gcalResult.eventId) gcalUpdate.google_calendar_event_id = gcalResult.eventId
+                  if (Object.keys(gcalUpdate).length > 0) {
+                    await supabase
+                      .from('business_appointments')
+                      .update(gcalUpdate)
+                      .eq('id', appointment.id)
+                  }
+                  if (gcalResult.hangoutLink) appointment.google_meet_link = gcalResult.hangoutLink
+                  if (gcalResult.eventId) appointment.google_calendar_event_id = gcalResult.eventId
                 }
               }
             }
@@ -2647,16 +3639,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const notifTitle = `Nouveau rendez-vous : ${name}`
           const notifDesc = `${name} a réservé un créneau le ${date} à ${time} (${apptDuration} min)${email ? ` — ${email}` : ''}`
 
-          const reminderRows: { user_id: string; title: string; description: string; reminder_date: string; is_done: boolean }[] = []
+          const reminderRows: { user_id: string; title: string; description: string; reminder_date: string; is_done: boolean; is_notification: boolean }[] = []
 
           // Toujours notifier l'owner
-          reminderRows.push({ user_id: campaign.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false })
+          reminderRows.push({ user_id: campaign.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false, is_notification: true })
 
           // Notifier le membre assigné (si c'est pas l'owner)
           if (assigned_member_id && assigned_member_id !== campaign.user_id) {
             const { data: tmUser } = await supabase.from('business_team_members').select('user_id').eq('id', assigned_member_id).single()
             if (tmUser?.user_id) {
-              reminderRows.push({ user_id: tmUser.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false })
+              reminderRows.push({ user_id: tmUser.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false, is_notification: true })
             }
           }
 
@@ -2669,7 +3661,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (hosMembers) {
             for (const hos of hosMembers) {
               if (hos.user_id && !reminderRows.some(r => r.user_id === hos.user_id)) {
-                reminderRows.push({ user_id: hos.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false })
+                reminderRows.push({ user_id: hos.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false, is_notification: true })
               }
             }
           }
@@ -2751,7 +3743,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               ? `<div style="background-color:#e8f5e9;border-radius:16px;padding:24px;margin-bottom:32px;text-align:center;"><p class="inter" style="margin:0 0 12px;font-size:14px;color:#2e7d32;">Rejoignez via Google Meet</p><a href="${meetLink}" style="display:inline-block;background-color:#1a73e8;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:99px;">Rejoindre le Meet</a><p class="inter" style="margin:12px 0 0;font-size:13px;color:#2e7d32;opacity:0.7;word-break:break-all;">${meetLink}</p></div>`
               : ''
 
-            const confirmHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Rendez-vous confirm&#233;</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;">Bonjour <strong>${name}</strong>, votre rendez-vous a bien &#233;t&#233; enregistr&#233;.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128197; Date</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${dateFr}</span></td></tr><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128337; Horaire</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${time} &mdash; ${endTimeStr} (${apptDuration} min)</span></td></tr>${memberDisplayName ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128100; Avec</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${memberDisplayName}</span></td></tr>` : ''}</table></div>${meetSection}<div style="background-color:#f5f3f2;border-radius:16px;padding:20px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:18px;line-height:1;">&#128206;</div></td><td><p class="inter" style="margin:0;font-size:14px;color:#1b1c1b;">Un fichier d'invitation (.ics) est joint &#224; cet email. Ouvrez-le pour ajouter le rendez-vous &#224; votre calendrier.</p></td></tr></table></div></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
+            const cancelUrl = `https://www.closeos.fr/appointment/${appointment.cancel_token}?action=cancel`
+            const rescheduleUrl = `https://www.closeos.fr/appointment/${appointment.reschedule_token}?action=reschedule`
+
+            const confirmHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Rendez-vous confirm&#233;</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;">Bonjour <strong>${name}</strong>, votre rendez-vous a bien &#233;t&#233; enregistr&#233;.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128197; Date</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${dateFr}</span></td></tr><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128337; Horaire</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${time} &mdash; ${endTimeStr} (${apptDuration} min)</span></td></tr>${memberDisplayName ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128100; Avec</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${memberDisplayName}</span></td></tr>` : ''}</table></div>${meetSection}<div style="background-color:#f5f3f2;border-radius:16px;padding:20px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:18px;line-height:1;">&#128206;</div></td><td><p class="inter" style="margin:0;font-size:14px;color:#1b1c1b;">Un fichier d'invitation (.ics) est joint &#224; cet email. Ouvrez-le pour ajouter le rendez-vous &#224; votre calendrier.</p></td></tr></table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center" style="padding-bottom:12px;"><a href="${rescheduleUrl}" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Reprogrammer le rendez-vous</a></td></tr><tr><td align="center"><a href="${cancelUrl}" style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#ba1a1a;text-decoration:none;">Annuler le rendez-vous</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
 
             await fetch('https://api.brevo.com/v3/smtp/email', {
               method: 'POST',
