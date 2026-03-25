@@ -83,6 +83,7 @@ import { BusinessReport } from './business/pages/BusinessReport'
 import { BusinessPipeline } from './business/pages/BusinessPipeline'
 // BusinessClosers and BusinessSetters removed — merged into BusinessTeam
 import { BusinessOrganization } from './business/pages/BusinessOrganization'
+import BusinessTest from './business/pages/BusinessTest'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
 import { CaptureForm } from './pages/CaptureForm'
 import { AppointmentManage } from './pages/AppointmentManage'
@@ -343,6 +344,7 @@ function AuthenticatedApp() {
           <Route path="agenda" element={<TeamOnboardingGuard><CloserAgenda /></TeamOnboardingGuard>} />
           <Route path="factures" element={<TeamOnboardingGuard><FacturesRouter /></TeamOnboardingGuard>} />
           <Route path="organisation" element={<BusinessOrganization />} />
+          <Route path="test" element={<BusinessTest />} />
         </Route>
 
         {/* Business Cockpit (standalone, hors layout) */}
@@ -467,9 +469,16 @@ function AuthenticatedApp() {
 
 import { Analytics } from "@vercel/analytics/react"
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
+
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthProvider>
         <GoogleCalendarProvider>
           <PrivacyProvider>

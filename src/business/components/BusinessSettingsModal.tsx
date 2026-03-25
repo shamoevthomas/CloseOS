@@ -822,16 +822,16 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
       )}
 
       {/* Modal Container */}
-      <div className="relative z-10 w-full max-w-6xl h-[870px] bg-white dark:bg-neutral-900 rounded-[2rem] shadow-[0_40px_80px_rgba(27,28,27,0.08)] flex overflow-hidden">
+      <div className="relative z-10 w-full max-w-6xl max-h-[85vh] bg-white dark:bg-neutral-900 rounded-[2rem] shadow-[0_40px_80px_rgba(27,28,27,0.08)] flex overflow-hidden">
 
         {/* ─── Sidebar ─── */}
         <aside className="hidden md:flex flex-col w-80 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-r border-[#c4c7c7]/10 dark:border-neutral-700 py-12 px-6">
-          <div className="mb-12 px-4">
-            <h2 className="font-business-display font-extrabold text-2xl tracking-tighter text-stone-900 dark:text-white">Settings</h2>
-            <p className="text-stone-500 dark:text-neutral-400 text-sm mt-1">Manage your workspace</p>
+          <div className="mb-6 px-4">
+            <h2 className="font-business-display font-extrabold text-2xl tracking-tighter text-stone-900 dark:text-white">Paramètres</h2>
+            <p className="text-stone-500 dark:text-neutral-400 text-sm mt-1">Gérez votre espace de travail</p>
           </div>
 
-          <nav className="flex-1 space-y-2">
+          <nav className="flex-1 space-y-0.5">
             {sidebarTab('profile', <User className="h-5 w-5" strokeWidth={1.5} />, 'Profile')}
             {sidebarTab('interface', <Monitor className="h-5 w-5" strokeWidth={1.5} />, 'Interface')}
             {sidebarTab('security', <Shield className="h-5 w-5" strokeWidth={1.5} />, 'Security')}

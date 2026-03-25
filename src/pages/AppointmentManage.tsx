@@ -18,6 +18,7 @@ interface AppointmentInfo {
   prospect_email: string
   assignee_name: string | null
   campaign_slug: string | null
+  booking_slug: string | null
   token_type: 'cancel' | 'reschedule'
 }
 
@@ -67,14 +68,17 @@ export function AppointmentManage() {
 
   // Fetch available slots for reschedule
   useEffect(() => {
-    if (!info?.campaign_slug || actionParam !== 'reschedule') return
+    if (actionParam !== 'reschedule' || !info) return
+    const slug = info.campaign_slug || info.booking_slug
+    if (!slug) return
+    const action = info.campaign_slug ? 'capture-slots' : 'booking-info'
     setSlotsLoading(true)
-    fetch(`${API_URL}?action=capture-slots&slug=${info.campaign_slug}`)
+    fetch(`${API_URL}?action=${action}&slug=${slug}`)
       .then(r => r.json())
       .then(data => setSlots(data.slots || []))
       .catch(() => {})
       .finally(() => setSlotsLoading(false))
-  }, [info?.campaign_slug, actionParam])
+  }, [info?.campaign_slug, info?.booking_slug, actionParam])
 
   const handleCancel = async () => {
     if (!token || cancelling) return

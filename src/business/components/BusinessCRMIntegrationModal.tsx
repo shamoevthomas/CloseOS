@@ -11,6 +11,8 @@ const CRM_OPTIONS = [
   { id: 'pipedrive', name: 'Pipedrive', description: 'Connectez votre pipeline Pipedrive', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-300', iconBg: 'bg-[#222222]', iconText: 'text-white', logo: '/Pipedrive.png' },
   { id: 'systemeio', name: 'Systeme.io', description: 'Importez vos contacts Systeme.io', color: 'bg-blue-500', textColor: 'text-blue-700', bgColor: 'bg-blue-50', borderColor: 'border-blue-300', iconBg: 'bg-[#00a1d4]', iconText: 'text-white', logo: '/Systemeio.png' },
   { id: 'zapier', name: 'Zapier', description: 'Importez des prospects via Zapier (webhook)', color: 'bg-[#FF4A00]', textColor: 'text-[#FF4A00]', bgColor: 'bg-orange-50', borderColor: 'border-orange-300', iconBg: 'bg-[#ff4a00]', iconText: 'text-white', logo: '/Zapier.png' },
+  { id: 'make', name: 'Make', description: 'Automatisez avec Make (ex-Integromat)', color: 'bg-[#6D00CC]', textColor: 'text-[#6D00CC]', bgColor: 'bg-purple-50', borderColor: 'border-purple-300', iconBg: 'bg-[#6d00cc]', iconText: 'text-white', logo: '/make.png' },
+  { id: 'n8n', name: 'n8n', description: 'Automatisez avec n8n (open-source)', color: 'bg-[#EA4B71]', textColor: 'text-[#EA4B71]', bgColor: 'bg-pink-50', borderColor: 'border-pink-300', iconBg: 'bg-[#EA4B71]', iconText: 'text-white', logo: '/N8N.png' },
   { id: 'calendly', name: 'Calendly', description: 'Importez les RDV Calendly automatiquement', color: 'bg-[#006BFF]', textColor: 'text-[#006BFF]', bgColor: 'bg-blue-50', borderColor: 'border-blue-300', iconBg: 'bg-[#006bff]', iconText: 'text-white', logo: '/Calendly.png' },
   { id: 'airtable', name: 'Airtable', description: 'Synchronisez avec votre base Airtable', color: 'bg-[#18BFFF]', textColor: 'text-[#18BFFF]', bgColor: 'bg-cyan-50', borderColor: 'border-cyan-300', iconBg: 'bg-[#18bfff]', iconText: 'text-white', logo: '/airtable.png' },
   { id: 'ghl', name: 'GoHighLevel', description: 'Synchronisez avec GoHighLevel', color: 'bg-[#FF6B35]', textColor: 'text-[#FF6B35]', bgColor: 'bg-orange-50', borderColor: 'border-orange-300', iconBg: 'bg-[#FF6B35]', iconText: 'text-white', logo: '/GHL.jpg' },
@@ -54,6 +56,22 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
   const [zapierCopiedUrl, setZapierCopiedUrl] = useState(false);
   const [zapierCopiedKey, setZapierCopiedKey] = useState(false);
   const [zapierShowKey, setZapierShowKey] = useState(false);
+
+  // Make
+  const [makeApiKey, setMakeApiKey] = useState<string | null>(null);
+  const [makeKeyId, setMakeKeyId] = useState<string | null>(null);
+  const [makeLoading, setMakeLoading] = useState(false);
+  const [makeCopiedUrl, setMakeCopiedUrl] = useState(false);
+  const [makeCopiedKey, setMakeCopiedKey] = useState(false);
+  const [makeShowKey, setMakeShowKey] = useState(false);
+
+  // n8n
+  const [n8nApiKey, setN8nApiKey] = useState<string | null>(null);
+  const [n8nKeyId, setN8nKeyId] = useState<string | null>(null);
+  const [n8nLoading, setN8nLoading] = useState(false);
+  const [n8nCopiedUrl, setN8nCopiedUrl] = useState(false);
+  const [n8nCopiedKey, setN8nCopiedKey] = useState(false);
+  const [n8nShowKey, setN8nShowKey] = useState(false);
 
   // Systeme.io
   const [systemeioApiKey, setSystemeioApiKey] = useState('');
@@ -181,6 +199,52 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
       } else {
         setZapierApiKey(null);
         setZapierKeyId(null);
+      }
+    };
+    load();
+  }, [selected, user, isOpen]);
+
+  // Load existing Make API key
+  useEffect(() => {
+    if (selected !== 'make' || !user || !isOpen) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from('business_webhook_keys')
+        .select('id, api_key')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .eq('name', 'Make')
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setMakeApiKey(data.api_key);
+        setMakeKeyId(data.id);
+      } else {
+        setMakeApiKey(null);
+        setMakeKeyId(null);
+      }
+    };
+    load();
+  }, [selected, user, isOpen]);
+
+  // Load existing n8n API key
+  useEffect(() => {
+    if (selected !== 'n8n' || !user || !isOpen) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from('business_webhook_keys')
+        .select('id, api_key')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .eq('name', 'n8n')
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setN8nApiKey(data.api_key);
+        setN8nKeyId(data.id);
+      } else {
+        setN8nApiKey(null);
+        setN8nKeyId(null);
       }
     };
     load();
@@ -495,6 +559,82 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
     }
   };
 
+  const handleGenerateMakeKey = async () => {
+    if (!user) return;
+    setMakeLoading(true);
+    try {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const newKey = 'mk_' + Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+      const { data, error } = await supabase
+        .from('business_webhook_keys')
+        .insert({ user_id: user.id, api_key: newKey, name: 'Make' })
+        .select()
+        .single();
+      if (error) throw error;
+      setMakeApiKey(newKey);
+      setMakeKeyId(data.id);
+      setMakeShowKey(true);
+    } catch (err) {
+      console.error('Error generating Make key:', err);
+    } finally {
+      setMakeLoading(false);
+    }
+  };
+
+  const handleDeleteMakeKey = async () => {
+    if (!makeKeyId || !window.confirm('Supprimer cette clé API ? Les scénarios Make connectés ne fonctionneront plus.')) return;
+    setMakeLoading(true);
+    try {
+      await supabase.from('business_webhook_keys').delete().eq('id', makeKeyId);
+      setMakeApiKey(null);
+      setMakeKeyId(null);
+      setMakeShowKey(false);
+    } catch (err) {
+      console.error('Error deleting Make key:', err);
+    } finally {
+      setMakeLoading(false);
+    }
+  };
+
+  const handleGenerateN8nKey = async () => {
+    if (!user) return;
+    setN8nLoading(true);
+    try {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const newKey = 'n8_' + Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+      const { data, error } = await supabase
+        .from('business_webhook_keys')
+        .insert({ user_id: user.id, api_key: newKey, name: 'n8n' })
+        .select()
+        .single();
+      if (error) throw error;
+      setN8nApiKey(newKey);
+      setN8nKeyId(data.id);
+      setN8nShowKey(true);
+    } catch (err) {
+      console.error('Error generating n8n key:', err);
+    } finally {
+      setN8nLoading(false);
+    }
+  };
+
+  const handleDeleteN8nKey = async () => {
+    if (!n8nKeyId || !window.confirm('Supprimer cette clé API ? Les workflows n8n connectés ne fonctionneront plus.')) return;
+    setN8nLoading(true);
+    try {
+      await supabase.from('business_webhook_keys').delete().eq('id', n8nKeyId);
+      setN8nApiKey(null);
+      setN8nKeyId(null);
+      setN8nShowKey(false);
+    } catch (err) {
+      console.error('Error deleting n8n key:', err);
+    } finally {
+      setN8nLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const baseUrl = window.location.origin.includes('localhost') ? 'https://closeos.fr' : window.location.origin;
@@ -589,6 +729,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
     (selected === 'airtable' && airtableConnected) ||
     (selected === 'ghl' && ghlConnected) ||
     (selected === 'zapier' && !!zapierApiKey) ||
+    (selected === 'make' && !!makeApiKey) ||
+    (selected === 'n8n' && !!n8nApiKey) ||
     (selected === 'calendly' && !!calendlyApiKey) ||
     selected === 'closeos';
 
@@ -621,6 +763,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                 (crm.id === 'airtable' && airtableConnected) ||
                 (crm.id === 'ghl' && ghlConnected) ||
                 (crm.id === 'zapier' && !!zapierApiKey) ||
+                (crm.id === 'make' && !!makeApiKey) ||
+                (crm.id === 'n8n' && !!n8nApiKey) ||
                 (crm.id === 'calendly' && !!calendlyApiKey);
               return (
                 <button
@@ -896,6 +1040,127 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                           </div>
                           <div className="flex justify-end">
                             <button onClick={handleDeleteZapierKey} disabled={zapierLoading} className="text-xs text-[#444748] hover:text-[#ba1a1a] flex items-center gap-1 font-semibold transition-colors">
+                              <Trash2 className="h-3 w-3" /> Supprimer la clé
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ─── Make Config ─── */}
+                  {selected === 'make' && (
+                    <div className="space-y-6">
+                      {!makeApiKey ? (
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Générez une clé API pour connecter Make à CloseOS.</p>
+                          <button onClick={handleGenerateMakeKey} disabled={makeLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                            {makeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
+                            Générer une clé API
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                            <div className="space-y-5">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL (Make)</label>
+                                <div className="flex gap-2">
+                                  <input type="text" value={`${baseUrl}/api/zapier-webhook?type=business`} readOnly className={inputCls} />
+                                  <button onClick={() => { navigator.clipboard.writeText(`${baseUrl}/api/zapier-webhook?type=business`); setMakeCopiedUrl(true); setTimeout(() => setMakeCopiedUrl(false), 2000); }} className="p-3 rounded-xl hover:bg-[#eae8e7] transition-colors shrink-0">
+                                    {makeCopiedUrl ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4 text-[#444748]" />}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#444748]/60 uppercase">API Key (Make)</label>
+                                <div className="flex gap-2">
+                                  <div className="relative flex-1">
+                                    <input type={makeShowKey ? 'text' : 'password'} value={makeApiKey} readOnly className={inputCls + ' pr-9'} />
+                                    <button onClick={() => setMakeShowKey(!makeShowKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444748]/50 hover:text-[#1b1c1b]">
+                                      {makeShowKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                  </div>
+                                  <button onClick={() => { navigator.clipboard.writeText(makeApiKey!); setMakeCopiedKey(true); setTimeout(() => setMakeCopiedKey(false), 2000); }} className="p-3 rounded-xl hover:bg-[#eae8e7] transition-colors shrink-0">
+                                    {makeCopiedKey ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4 text-[#444748]" />}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <button onClick={handleDeleteMakeKey} disabled={makeLoading} className="text-xs text-[#444748] hover:text-[#ba1a1a] flex items-center gap-1 font-semibold transition-colors">
+                              <Trash2 className="h-3 w-3" /> Supprimer la clé
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ─── n8n Config ─── */}
+                  {selected === 'n8n' && (
+                    <div className="space-y-6">
+                      {!n8nApiKey ? (
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Générez une clé API pour connecter n8n à CloseOS. Les prospects seront importés directement dans votre pipeline.</p>
+                          <button onClick={handleGenerateN8nKey} disabled={n8nLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                            {n8nLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
+                            Générer une clé API
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                            <div className="space-y-5">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL (n8n)</label>
+                                <div className="flex gap-2">
+                                  <input type="text" value={`${baseUrl}/api/zapier-webhook?type=business`} readOnly className={inputCls} />
+                                  <button onClick={() => { navigator.clipboard.writeText(`${baseUrl}/api/zapier-webhook?type=business`); setN8nCopiedUrl(true); setTimeout(() => setN8nCopiedUrl(false), 2000); }} className="p-3 rounded-xl hover:bg-[#eae8e7] transition-colors shrink-0">
+                                    {n8nCopiedUrl ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4 text-[#444748]" />}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#444748]/60 uppercase">API Key (n8n)</label>
+                                <div className="flex gap-2">
+                                  <div className="relative flex-1">
+                                    <input type={n8nShowKey ? 'text' : 'password'} value={n8nApiKey} readOnly className={inputCls + ' pr-9'} />
+                                    <button onClick={() => setN8nShowKey(!n8nShowKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444748]/50 hover:text-[#1b1c1b]">
+                                      {n8nShowKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                  </div>
+                                  <button onClick={() => { navigator.clipboard.writeText(n8nApiKey!); setN8nCopiedKey(true); setTimeout(() => setN8nCopiedKey(false), 2000); }} className="p-3 rounded-xl hover:bg-[#eae8e7] transition-colors shrink-0">
+                                    {n8nCopiedKey ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4 text-[#444748]" />}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Instructions */}
+                          <div className="border-t border-[#c4c7c7]/10 dark:border-neutral-700 pt-6">
+                            <h5 className="font-bold text-sm mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Instructions d'intégration</h5>
+                            <ul className="space-y-4">
+                              {[
+                                'Créez un workflow n8n avec un nœud HTTP Request.',
+                                'Méthode : POST, URL : collez l\'URL ci-dessus.',
+                                'Authentication : Header Auth → Name: Authorization, Value: Bearer votre_clé.',
+                                'Body (JSON) : firstName, lastName, email, phone, company, source.',
+                              ].map((step, i) => (
+                                <li key={i} className="flex gap-3 items-start">
+                                  <span className="h-6 w-6 rounded-full bg-[#1b1c1b] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">{i + 1}</span>
+                                  <span className="text-sm text-[#444748] dark:text-neutral-300 font-medium" dangerouslySetInnerHTML={{ __html: step }} />
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="flex justify-end">
+                            <button onClick={handleDeleteN8nKey} disabled={n8nLoading} className="text-xs text-[#444748] hover:text-[#ba1a1a] flex items-center gap-1 font-semibold transition-colors">
                               <Trash2 className="h-3 w-3" /> Supprimer la clé
                             </button>
                           </div>

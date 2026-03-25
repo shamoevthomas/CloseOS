@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import {
@@ -162,6 +162,65 @@ export function BusinessObjectives() {
   }, [effectiveUserId])
 
   useEffect(() => { fetchObjectives(); fetchAppointments(); fetchMembers() }, [fetchObjectives, fetchAppointments, fetchMembers])
+
+  // Track which objectives we've already notified to avoid duplicates
+  const notifiedIdsRef = useRef<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('closeos_notified_objectives')
+      return stored ? new Set(JSON.parse(stored) as string[]) : new Set()
+    } catch { return new Set() }
+  })
+
+  // Create a notification when an objective reaches 100%
+  useEffect(() => {
+    if (!user || objectives.length === 0) return
+
+    for (const obj of objectives) {
+      const currentValue = calculateCurrentValue(obj.metric, obj.period)
+      if (currentValue === null || obj.target_value <= 0) continue
+
+      const progress = Math.round((currentValue / obj.target_value) * 100)
+      if (progress < 100) continue
+
+      // Already notified for this objective
+      const notifKey = `${obj.id}`
+      if (notifiedIdsRef.current.has(notifKey)) continue
+
+      // Mark as notified immediately to prevent duplicates
+      notifiedIdsRef.current.add(notifKey)
+      try { localStorage.setItem('closeos_notified_objectives', JSON.stringify([...notifiedIdsRef.current])) } catch {}
+
+      // Determine who to notify (owner always, + assigned member if individual)
+      const notifyUserIds: string[] = []
+      if (effectiveUserId) notifyUserIds.push(effectiveUserId)
+      if (obj.assigned_to && obj.assigned_to !== effectiveUserId) {
+        // Find the user_id of the assigned team member
+        const assignedMember = members.find(m => m.id === obj.assigned_to)
+        if (assignedMember) notifyUserIds.push(obj.assigned_to)
+      }
+
+      const memberName = getMemberName(obj.assigned_to)
+      const title = `Objectif atteint : ${obj.label}`
+      const description = memberName
+        ? `${memberName} a atteint l'objectif "${obj.label}" (${formatValue(obj.metric, currentValue)} / ${formatValue(obj.metric, obj.target_value)})`
+        : `L'objectif "${obj.label}" a ete atteint (${formatValue(obj.metric, currentValue)} / ${formatValue(obj.metric, obj.target_value)})`
+
+      for (const uid of notifyUserIds) {
+        supabase.from('reminders').insert({
+          user_id: uid,
+          title,
+          description,
+          reminder_date: new Date().toISOString(),
+          is_done: false,
+          is_notification: true,
+        }).then(({ error }) => {
+          if (error) console.error('Failed to create objective notification:', error)
+        })
+      }
+
+      toast.success(`Objectif "${obj.label}" atteint !`, { icon: '🏆' })
+    }
+  }, [objectives, prospects, appointments])
 
   const AVAILABLE_ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Head of Sales', 'Admin']
 
@@ -860,7 +919,7 @@ export function BusinessObjectives() {
                     <div>
                       <p className="text-xs text-[#444748] dark:text-neutral-300 mb-2">Sélectionnez un ou plusieurs membres</p>
                       <div className="space-y-1.5 max-h-40 overflow-y-auto rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 p-2">
-                        {members.filter(m => m.role !== 'Owner').map(m => (
+                        {members.map(m => (
                           <label key={m.id} className="flex items-center gap-2.5 rounded-full px-3 py-2 hover:bg-white dark:hover:bg-neutral-800 cursor-pointer transition-colors">
                             <input
                               type="checkbox"

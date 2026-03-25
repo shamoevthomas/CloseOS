@@ -7,28 +7,40 @@ export function Legal() {
       <div className="max-w-3xl mx-auto">
         <Link to="/" className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors mb-12 group">
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          Retour à l'accueil
+          Retour a l'accueil
         </Link>
 
         <div className="flex items-center gap-3 mb-8">
           <Info className="h-8 w-8 text-blue-500" />
-          <h1 className="text-4xl font-bold text-white">Mentions Légales</h1>
+          <h1 className="text-4xl font-bold text-white">Mentions Legales</h1>
         </div>
 
         <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 space-y-6 text-sm leading-relaxed">
-          
-          {/* IDENTITÉ */}
+
+          {/* IDENTITE */}
           <section>
-            <h2 className="text-lg font-bold text-white mb-2 uppercase tracking-wider text-blue-400">1. Éditeur du site</h2>
+            <h2 className="text-lg font-bold text-white mb-2 uppercase tracking-wider text-blue-400">1. Editeur du site</h2>
             <p>
-              Le site <strong>CloseOS.fr</strong> est édité par l'entreprise individuelle <strong>Shamoev Thomas</strong>.<br/>
-              Immatriculée au Registre National des Entreprises (RNE).
+              Le site <strong>CloseOS.fr</strong> et l'ensemble de ses services — <strong>CloseOS Sales</strong> et <strong>CloseOS Business</strong> — sont edites par l'entreprise individuelle <strong>Shamoev Thomas</strong>.<br/>
+              Immatriculee au Registre National des Entreprises (RNE).
             </p>
             <ul className="mt-2 space-y-1 list-disc list-inside text-slate-400">
               <li><strong>SIREN :</strong> 993 427 509</li>
               <li><strong>SIRET :</strong> 99342750900019</li>
-              <li><strong>Siège social :</strong> 4 Rue des Coquelicots, 68120 Pfastatt, France</li>
+              <li><strong>Siege social :</strong> 4 Rue des Coquelicots, 68120 Pfastatt, France</li>
               <li><strong>Directeur de la publication :</strong> Thomas Shamoev</li>
+            </ul>
+          </section>
+
+          <hr className="border-slate-800" />
+
+          {/* SERVICES */}
+          <section>
+            <h2 className="text-lg font-bold text-white mb-2 uppercase tracking-wider text-blue-400">2. Services proposes</h2>
+            <p>CloseOS est un ecosysteme SaaS francais pour la vente digitale, compose de deux produits complementaires :</p>
+            <ul className="mt-2 space-y-2 list-disc list-inside text-slate-400">
+              <li><strong>CloseOS Sales</strong> — Outil tout-en-un pour closers et setters freelance : CRM, pipeline de vente, agenda, booking, VoIP, facturation automatique, KPIs de closing et synchronisation CRM tiers.</li>
+              <li><strong>CloseOS Business</strong> — Plateforme de management pour infopreneurs et Head of Sales : gestion d'equipe de closers/setters, campagnes d'acquisition, CRM acquisition, rendez-vous, facturation equipe et tableau de bord analytics.</li>
             </ul>
           </section>
 
@@ -36,26 +48,26 @@ export function Legal() {
 
           {/* CONTACT */}
           <section>
-            <h2 className="text-lg font-bold text-white mb-2 uppercase tracking-wider text-blue-400">2. Contact</h2>
+            <h2 className="text-lg font-bold text-white mb-2 uppercase tracking-wider text-blue-400">3. Contact</h2>
             <p>
-              Vous pouvez contacter l'éditeur à tout moment à l'adresse suivante :<br/>
+              Vous pouvez contacter l'editeur a tout moment a l'adresse suivante :<br/>
               <a href="mailto:support@closeos.fr" className="text-white hover:underline">support@closeos.fr</a>
             </p>
           </section>
 
           <hr className="border-slate-800" />
 
-          {/* HÉBERGEMENT */}
+          {/* HEBERGEMENT */}
           <section>
-            <h2 className="text-lg font-bold text-white mb-2 uppercase tracking-wider text-blue-400">3. Hébergement</h2>
+            <h2 className="text-lg font-bold text-white mb-2 uppercase tracking-wider text-blue-400">4. Hebergement</h2>
             <p className="mb-2">
               <strong>Application Web :</strong><br/>
-              Hébergée par Vercel Inc.<br/>
+              Hebergee par Vercel Inc.<br/>
               440 N Barranca Ave #4133, Covina, CA 91723, USA.
             </p>
             <p>
-              <strong>Base de données & Authentification :</strong><br/>
-              Hébergées par Supabase Inc.<br/>
+              <strong>Base de donnees & Authentification :</strong><br/>
+              Hebergees par Supabase Inc.<br/>
               970 Toa Payoh N, #07-04, Singapore 319000.
             </p>
           </section>
@@ -63,7 +75,7 @@ export function Legal() {
         </div>
 
         <footer className="mt-12 text-center text-slate-600 text-xs">
-          Ces mentions légales sont régies par la loi française.
+          Ces mentions legales sont regies par la loi francaise.
         </footer>
       </div>
     </div>

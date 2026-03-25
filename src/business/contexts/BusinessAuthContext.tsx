@@ -47,11 +47,15 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     const version = ++initVersionRef.current;
 
     try {
+      console.log('[BusinessAuth] initUser called for:', userId);
       // Fetch business_users AND team_members in parallel
       const [profileRes, teamRes] = await Promise.all([
         supabase.from('business_users').select('*').eq('id', userId).maybeSingle(),
         supabase.from('business_team_members').select('*').eq('user_id', userId).maybeSingle(),
       ]);
+
+      console.log('[BusinessAuth] profileRes:', profileRes.data, profileRes.error);
+      console.log('[BusinessAuth] teamRes:', teamRes.data, teamRes.error);
 
       if (!isMountedRef.current || initVersionRef.current !== version) return;
 
@@ -80,16 +84,19 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       if (!profile) {
         const { data: authData } = await supabase.auth.getUser();
         if (authData?.user) {
+          const fullName = authData.user.user_metadata?.full_name || authData.user.user_metadata?.name || '';
+          const email = authData.user.email || '';
           const { data: inserted } = await supabase
             .from('business_users')
             .upsert({
               id: authData.user.id,
-              full_name: authData.user.user_metadata?.full_name || authData.user.user_metadata?.name || '',
-              email: authData.user.email || '',
+              full_name: fullName,
+              email,
             }, { onConflict: 'id' })
             .select()
             .single();
-          if (inserted) profile = inserted;
+          // Use inserted row, or create a minimal fallback so UI never shows "Utilisateur"
+          profile = inserted || { id: authData.user.id, full_name: fullName, email };
         }
       }
 
@@ -108,6 +115,8 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       });
     } catch (err) {
       console.error('Exception in initUser:', err);
+      // Ensure loading ends even on error
+      if (isMountedRef.current) setLoading(false);
     }
   }, [applyUserData]);
 
@@ -147,7 +156,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     }, 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         if (!isMountedRef.current) return;
 
         // Skip INITIAL_SESSION — let getSession handle first load to avoid double-call
@@ -157,7 +166,14 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
         setUser(currentUser);
 
         if (currentUser) {
-          await initUser(currentUser.id);
+          // TOKEN_REFRESHED: session is still valid, only re-init if user data is missing
+          if (event === 'TOKEN_REFRESHED') {
+            if (!businessProfile && !teamMember) {
+              await initUser(currentUser.id);
+            }
+          } else {
+            await initUser(currentUser.id);
+          }
         } else {
           clearUserData();
         }
@@ -192,9 +208,38 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       }
     });
 
+    // Proactive session refresh: keep session alive when tab stays open
+    const refreshInterval = setInterval(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Refresh if token expires within the next 5 minutes
+        const expiresAt = session.expires_at ?? 0;
+        if (expiresAt - Math.floor(Date.now() / 1000) < 300) {
+          await supabase.auth.refreshSession();
+        }
+      }
+    }, 60000); // Check every minute
+
+    // Re-establish session when tab becomes visible again
+    const handleVisibility = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!isMountedRef.current) return;
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser && !businessProfile && !teamMember) {
+        await initUser(currentUser.id);
+      } else if (!currentUser) {
+        clearUserData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       isMountedRef.current = false;
       clearTimeout(safetyTimeout);
+      clearInterval(refreshInterval);
+      document.removeEventListener('visibilitychange', handleVisibility);
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -260,30 +305,21 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const updateBusinessSettings = useCallback(async (updates: any) => {
     if (!user) return { error: new Error('Not authenticated') };
 
-    // Try update first (row usually exists), fall back to upsert
-    const { error: updateError } = await supabase
+    // Always upsert to handle both existing and new rows
+    const { error } = await supabase
       .from('business_settings')
-      .update(updates)
-      .eq('user_id', user.id);
+      .upsert({
+        user_id: user.id,
+        ...updates,
+      }, { onConflict: 'user_id' });
 
-    if (updateError) {
-      // Row might not exist yet — try upsert
-      console.warn('Settings update failed, trying upsert:', updateError.message);
-      const { error: upsertError } = await supabase
-        .from('business_settings')
-        .upsert({
-          user_id: user.id,
-          ...updates,
-        }, { onConflict: 'user_id' });
-
-      if (upsertError) {
-        console.error('Settings upsert also failed:', upsertError.message);
-        return { error: upsertError };
-      }
+    if (error) {
+      console.error('Settings upsert failed:', error.message);
+      return { error };
     }
 
-    // Refresh in background
-    initUser(user.id);
+    // Refresh settings in state
+    await initUser(user.id);
     return { error: null };
   }, [user, initUser]);
 

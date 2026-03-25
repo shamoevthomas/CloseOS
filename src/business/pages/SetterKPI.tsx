@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { supabase } from '../../lib/supabase'
@@ -40,6 +41,7 @@ const formatPercent = (n: number) => n.toFixed(1)
 
 export function SetterKPI() {
   const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
+  const [searchParams] = useSearchParams()
   const effectiveOwnerId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const isFixedComp = teamMember?.compensation_type === 'fixed'
@@ -52,12 +54,12 @@ export function SetterKPI() {
   const [formulas, setFormulas] = useState<Formula[]>([])
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null)
   const [teamSetters, setTeamSetters] = useState<TeamSetter[]>([])
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(searchParams.get('member'))
   const [campaigns, setCampaigns] = useState<{ id: string; name: string; source: string }[]>([])
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   // Global member filter (persists across tabs)
-  const [globalMemberId, setGlobalMemberId] = useState<string | null>(null)
+  const [globalMemberId, setGlobalMemberId] = useState<string | null>(searchParams.get('member'))
   // Formula commission rates
   const [formulaCommRates, setFormulaCommRates] = useState<Record<string, { roles: Record<string, number>; members: Record<string, number> }>>({})
 

@@ -19,6 +19,12 @@ export function BusinessReminderBell() {
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [dismissed, setDismissed] = useState<Set<number>>(new Set())
+  const [seenIds, setSeenIds] = useState<Set<number>>(() => {
+    try {
+      const stored = localStorage.getItem('closeos_seen_notifs')
+      return stored ? new Set(JSON.parse(stored) as number[]) : new Set()
+    } catch { return new Set() }
+  })
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -61,7 +67,7 @@ export function BusinessReminderBell() {
   }, [isOpen])
 
   const visibleReminders = reminders.filter(r => !dismissed.has(r.id))
-  const count = visibleReminders.length
+  const unseenCount = visibleReminders.filter(r => !seenIds.has(r.id)).length
 
   const handleMarkDone = async (id: number) => {
     const { error } = await supabase
@@ -84,18 +90,29 @@ export function BusinessReminderBell() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          const opening = !isOpen
+          setIsOpen(opening)
+          if (opening) {
+            setSeenIds(prev => {
+              const next = new Set(prev)
+              for (const r of visibleReminders) next.add(r.id)
+              try { localStorage.setItem('closeos_seen_notifs', JSON.stringify([...next])) } catch {}
+              return next
+            })
+          }
+        }}
         className={cn(
           'relative flex items-center justify-center rounded-full p-2 transition-all',
-          count > 0
+          unseenCount > 0
             ? 'text-stone-900 dark:text-white hover:bg-stone-100 dark:hover:bg-neutral-800'
             : 'text-stone-500 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-700 dark:hover:text-neutral-200'
         )}
       >
-        <Bell className={cn('h-5 w-5', count > 0 && 'animate-[wiggle_1s_ease-in-out_infinite]')} />
-        {count > 0 && (
+        <Bell className={cn('h-5 w-5', unseenCount > 0 && 'animate-[wiggle_1s_ease-in-out_infinite]')} />
+        {unseenCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white min-w-[18px] h-[18px] px-1">
-            {count > 9 ? '9+' : count}
+            {unseenCount > 9 ? '9+' : unseenCount}
           </span>
         )}
       </button>
@@ -106,9 +123,9 @@ export function BusinessReminderBell() {
             <div className="flex items-center gap-2">
               <Bell className="h-4 w-4 text-stone-500 dark:text-neutral-400" />
               <h3 className="text-sm font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">Rappels du jour</h3>
-              {count > 0 && (
+              {visibleReminders.length > 0 && (
                 <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 border border-emerald-100">
-                  {count}
+                  {visibleReminders.length}
                 </span>
               )}
             </div>

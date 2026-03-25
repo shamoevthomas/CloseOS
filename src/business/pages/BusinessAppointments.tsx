@@ -48,6 +48,7 @@ interface BookingLink {
   email_required: boolean
   phone_enabled: boolean
   phone_required: boolean
+  google_meet_enabled: boolean
   created_at: string
 }
 
@@ -152,6 +153,7 @@ export function BusinessAppointments() {
   const [newLinkEmailRequired, setNewLinkEmailRequired] = useState(false)
   const [newLinkPhoneEnabled, setNewLinkPhoneEnabled] = useState(true)
   const [newLinkPhoneRequired, setNewLinkPhoneRequired] = useState(false)
+  const [newLinkGoogleMeetEnabled, setNewLinkGoogleMeetEnabled] = useState(true)
   const [savingLink, setSavingLink] = useState(false)
 
   // Detail popup
@@ -342,6 +344,7 @@ export function BusinessAppointments() {
         email_required: newLinkEmailRequired,
         phone_enabled: newLinkPhoneEnabled,
         phone_required: newLinkPhoneRequired,
+        google_meet_enabled: newLinkGoogleMeetEnabled,
         link: bookingUrl,
         slug,
       })
@@ -360,6 +363,7 @@ export function BusinessAppointments() {
     setNewLinkEmailRequired(false)
     setNewLinkPhoneEnabled(true)
     setNewLinkPhoneRequired(false)
+    setNewLinkGoogleMeetEnabled(true)
     toast.success('Lien de booking créé')
   }
 
@@ -380,6 +384,7 @@ export function BusinessAppointments() {
   const [editEmailRequired, setEditEmailRequired] = useState(false)
   const [editPhoneEnabled, setEditPhoneEnabled] = useState(true)
   const [editPhoneRequired, setEditPhoneRequired] = useState(false)
+  const [editGoogleMeetEnabled, setEditGoogleMeetEnabled] = useState(true)
   const [savingEdit, setSavingEdit] = useState(false)
 
   const handleStartEdit = (bl: BookingLink) => {
@@ -393,6 +398,7 @@ export function BusinessAppointments() {
     setEditEmailRequired(bl.email_required)
     setEditPhoneEnabled(bl.phone_enabled)
     setEditPhoneRequired(bl.phone_required)
+    setEditGoogleMeetEnabled(bl.google_meet_enabled ?? true)
   }
 
   const handleSaveEdit = async () => {
@@ -410,6 +416,7 @@ export function BusinessAppointments() {
         email_required: editEmailRequired,
         phone_enabled: editPhoneEnabled,
         phone_required: editPhoneRequired,
+        google_meet_enabled: editGoogleMeetEnabled,
       })
       .eq('id', editingLink.id)
     setSavingEdit(false)
@@ -425,6 +432,7 @@ export function BusinessAppointments() {
       email_required: editEmailRequired,
       phone_enabled: editPhoneEnabled,
       phone_required: editPhoneRequired,
+      google_meet_enabled: editGoogleMeetEnabled,
     } : l))
     setEditingLink(null)
     toast.success('Lien mis à jour')
@@ -485,6 +493,20 @@ export function BusinessAppointments() {
       fetchAppointments()
     } catch {
       toast.error('Erreur')
+    }
+  }
+
+  const handleDeleteAppointment = async (id: string) => {
+    if (!effectiveUserId) return
+    try {
+      await fetch(`${API_URL}?action=appointments-delete&user_id=${effectiveUserId}&id=${id}`, {
+        method: 'DELETE',
+      })
+      toast.success('Rendez-vous supprimé')
+      setSelectedAppointment(null)
+      fetchAppointments()
+    } catch {
+      toast.error('Erreur lors de la suppression')
     }
   }
 
@@ -1430,15 +1452,21 @@ export function BusinessAppointments() {
                   <div className="flex items-center justify-between border-t border-[#f5f3f2] dark:border-neutral-800 pt-6">
                     <div className="flex items-center gap-4">
                       {appt.google_meet_link ? (
-                        <a
-                          href={appt.google_meet_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            window.open(appt.google_meet_link!, '_blank')
+                            if (appt.prospect?.id) {
+                              window.location.href = `/business/cockpit?name=${encodeURIComponent(appt.prospect.contact || 'Appel')}&prospectId=${appt.prospect.id}`
+                            } else {
+                              window.location.href = `/business/cockpit?name=${encodeURIComponent(appt.title || 'Appel')}`
+                            }
+                          }}
                           className="flex items-center gap-2 text-[#1b1c1b] dark:text-white font-bold text-sm hover:underline"
                         >
                           <Video className="h-4 w-4" />
                           Google Meet
-                        </a>
+                        </button>
                       ) : (
                         <span className="text-[#444748] dark:text-neutral-300/40 italic text-sm">
                           {appt.duration}min
@@ -1446,7 +1474,7 @@ export function BusinessAppointments() {
                       )}
                       {appt.prospect?.email && (appt.status === 'pending' || appt.status === 'confirmed') && (
                         <button
-                          onClick={() => handleSendManualReminder(appt.id)}
+                          onClick={(e) => { e.stopPropagation(); handleSendManualReminder(appt.id) }}
                           disabled={sendingManualReminder === appt.id}
                           className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#ffb95f]/10 text-[#b87500] dark:text-[#ffb95f] text-xs font-bold hover:bg-[#ffb95f]/20 transition-all disabled:opacity-50"
                           title="Envoyer un rappel au prospect"
@@ -1464,13 +1492,13 @@ export function BusinessAppointments() {
                       {isOwnerOrHoS && appt.status === 'pending' && (
                         <>
                           <button
-                            onClick={() => updateStatus(appt.id, 'confirmed')}
+                            onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'confirmed') }}
                             className="px-6 py-2 rounded-full bg-[#1b1c1b] text-white text-sm font-bold hover:shadow-md transition-all"
                           >
                             Confirmer
                           </button>
                           <button
-                            onClick={() => updateStatus(appt.id, 'cancelled')}
+                            onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'cancelled') }}
                             className="px-6 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] dark:bg-neutral-900 transition-all"
                           >
                             Annuler
@@ -1479,16 +1507,27 @@ export function BusinessAppointments() {
                       )}
                       {isOwnerOrHoS && appt.status === 'confirmed' && (
                         <button
-                          onClick={() => updateStatus(appt.id, 'done')}
+                          onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'done') }}
                           className="px-6 py-2 rounded-full bg-[#006c49] text-white text-sm font-bold hover:shadow-md transition-all"
                         >
                           Terminer
                         </button>
                       )}
                       {(appt.status === 'cancelled' || appt.status === 'done') && (
-                        <span className="px-6 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#444748] dark:text-neutral-300/50 italic">
-                          {appt.status === 'done' ? 'Terminé' : 'Annulé'}
-                        </span>
+                        <>
+                          <span className="px-6 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#444748] dark:text-neutral-300/50 italic">
+                            {appt.status === 'done' ? 'Terminé' : 'Annulé'}
+                          </span>
+                          {isOwnerOrHoS && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteAppointment(appt.id) }}
+                              className="px-4 py-2 rounded-full border border-red-200 dark:border-red-900/30 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center gap-1.5"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Supprimer
+                            </button>
+                          )}
+                        </>
                       )}
                       {isTeamMember && !isOwnerOrHoS && appt.status === 'pending' && (
                         <span className="px-6 py-2 rounded-full bg-amber-100/50 text-amber-700 text-sm font-bold italic">En attente</span>
@@ -1632,6 +1671,15 @@ export function BusinessAppointments() {
                         )}
                       </div>
                     </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Visioconférence</label>
+                  <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                    <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><Video className="h-3.5 w-3.5 text-[#444748]/50" />Google Meet</span>
+                    <button onClick={() => setNewLinkGoogleMeetEnabled(!newLinkGoogleMeetEnabled)} className="text-[#444748] dark:text-neutral-300">
+                      {newLinkGoogleMeetEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                    </button>
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
@@ -1826,6 +1874,15 @@ export function BusinessAppointments() {
                   </div>
                 </div>
               </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Visioconférence</label>
+                <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                  <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><Video className="h-3.5 w-3.5 text-[#444748]/50" />Google Meet</span>
+                  <button onClick={() => setEditGoogleMeetEnabled(!editGoogleMeetEnabled)} className="text-[#444748] dark:text-neutral-300">
+                    {editGoogleMeetEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   onClick={() => setEditingLink(null)}
@@ -1962,15 +2019,20 @@ export function BusinessAppointments() {
               <div className="px-7 pb-7 pt-2 space-y-3">
                 {/* Google Meet */}
                 {appt.google_meet_link && (
-                  <a
-                    href={appt.google_meet_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => {
+                      window.open(appt.google_meet_link!, '_blank')
+                      if (appt.prospect?.id) {
+                        window.location.href = `/business/cockpit?name=${encodeURIComponent(appt.prospect.contact || 'Appel')}&prospectId=${appt.prospect.id}`
+                      } else {
+                        window.location.href = `/business/cockpit?name=${encodeURIComponent(appt.title || 'Appel')}`
+                      }
+                    }}
                     className="flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] px-6 py-3.5 text-sm font-bold text-white hover:bg-neutral-800 transition-colors shadow-lg w-full"
                   >
                     <Video className="h-4 w-4" />
                     Rejoindre Google Meet
-                  </a>
+                  </button>
                 )}
 
                 {/* Status actions */}
@@ -2008,9 +2070,20 @@ export function BusinessAppointments() {
                     </>
                   )}
                   {(appt.status === 'cancelled' || appt.status === 'done') && (
-                    <span className="px-6 py-3 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#444748] dark:text-neutral-300/50 italic">
-                      {appt.status === 'done' ? 'Terminé' : 'Annulé'}
-                    </span>
+                    <>
+                      <span className="px-6 py-3 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#444748] dark:text-neutral-300/50 italic">
+                        {appt.status === 'done' ? 'Terminé' : 'Annulé'}
+                      </span>
+                      {isOwnerOrHoS && (
+                        <button
+                          onClick={() => handleDeleteAppointment(appt.id)}
+                          className="flex-1 px-6 py-3 rounded-full border border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Supprimer
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

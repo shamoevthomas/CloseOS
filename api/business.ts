@@ -1417,7 +1417,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'formulas-create' && req.method === 'POST') {
-      const { user_id, name, price, description, resources, team_id } = req.body
+      const { user_id, name, price, description, resources, team_id, billing_type, yearly_price } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -1445,6 +1445,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           resources: resources || [],
           is_active: true,
           team_id: team_id || null,
+          billing_type: billing_type || 'one_time',
+          yearly_price: yearly_price ?? null,
         })
         .select()
         .single()
@@ -1824,22 +1826,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'appointments-create' && req.method === 'POST') {
-      const { user_id, title, date, time, duration, assigned_to, notes, google_meet_link, datetime_utc, timezone } = req.body
-      if (!user_id || !date || !time) return res.status(400).json({ error: 'user_id, date, and time required' })
+      const { user_id, title, date, time, duration, assigned_to, prospect_id, notes, google_meet_link, datetime_utc, timezone, all_day } = req.body
+      if (!user_id || !date || (!time && !all_day)) return res.status(400).json({ error: 'user_id, date, and time required' })
+
+      const cancelToken = crypto.randomBytes(16).toString('hex')
+      const rescheduleToken = crypto.randomBytes(16).toString('hex')
 
       const insertPayload: Record<string, any> = {
         user_id,
         date,
-        time,
-        duration: duration || 30,
+        time: time || null,
+        duration: all_day ? 1440 : (duration || 30),
         status: 'confirmed',
         title: title || null,
         notes: notes || null,
         google_meet_link: google_meet_link || null,
         datetime_utc: datetime_utc || null,
         timezone: timezone || null,
+        cancel_token: cancelToken,
+        reschedule_token: rescheduleToken,
       }
       if (assigned_to) insertPayload.assigned_to = assigned_to
+      if (prospect_id) insertPayload.prospect_id = prospect_id
 
       const { data, error } = await supabase
         .from('business_appointments')
@@ -1851,13 +1859,221 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ appointment: data })
     }
 
+    // Send appointment confirmation email to prospect
+    if (action === 'appointment-send-confirmation' && req.method === 'POST') {
+      const { appointment_id, user_id: ownerUserId, google_meet_link: meetLink } = req.body
+      if (!appointment_id || !ownerUserId) return res.status(400).json({ error: 'appointment_id and user_id required' })
+
+      const { data: appt } = await supabase
+        .from('business_appointments')
+        .select('*, prospect:business_prospects(id, contact, email)')
+        .eq('id', appointment_id)
+        .eq('user_id', ownerUserId)
+        .single()
+
+      if (!appt?.prospect?.email) return res.status(200).json({ skipped: true, reason: 'no prospect email' })
+
+      const prospectName = appt.prospect.contact || 'Bonjour'
+      const prospectEmail = appt.prospect.email
+      const apptDate = new Date(appt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      const apptTime = (appt.time || '').slice(0, 5)
+      const finalMeetLink = meetLink || appt.google_meet_link || null
+      const baseUrl = 'https://www.closeos.fr'
+      const rescheduleUrl = appt.reschedule_token ? `${baseUrl}/appointment/${appt.reschedule_token}?action=reschedule` : ''
+      const cancelUrl = appt.cancel_token ? `${baseUrl}/appointment/${appt.cancel_token}?action=cancel` : ''
+
+      const { data: ownerProfile } = await supabase.from('business_users').select('full_name').eq('id', ownerUserId).single()
+      const businessName = ownerProfile?.full_name || 'votre interlocuteur'
+
+      let meetSection = ''
+      if (finalMeetLink) {
+        meetSection = `
+          <div style="margin-top:32px;text-align:center;">
+            <a href="${finalMeetLink}" style="display:inline-block;background-color:#111111;color:#ffffff;text-align:center;padding:18px 40px;border-radius:48px;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;text-decoration:none;letter-spacing:-0.02em;">
+              Rejoindre le Google Meet
+            </a>
+          </div>`
+      }
+
+      let linksSection = ''
+      if (rescheduleUrl || cancelUrl) {
+        linksSection = `<div style="margin-top:32px;text-align:center;">
+          <table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr>
+            ${rescheduleUrl ? `<td style="padding-right:12px;">
+              <a href="${rescheduleUrl}" style="display:inline-block;background-color:#f5f3f2;color:#111111;text-align:center;padding:14px 28px;border-radius:48px;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:13px;text-decoration:none;letter-spacing:-0.02em;">Reporter</a>
+            </td>` : ''}
+            ${cancelUrl ? `<td>
+              <a href="${cancelUrl}" style="display:inline-block;background-color:#f5f3f2;color:#ba1a1a;text-align:center;padding:14px 28px;border-radius:48px;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:13px;text-decoration:none;letter-spacing:-0.02em;">Annuler</a>
+            </td>` : ''}
+          </tr></table>
+        </div>`
+      }
+
+      const emailHtml = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+      <tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;">
+        <div style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:28px;color:#111111;letter-spacing:-0.04em;">
+          Close<span style="background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8;">OS</span>
+        </div>
+      </td></tr>
+      <tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
+
+        <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:36px;color:#111111;letter-spacing:-0.04em;line-height:1.1;margin:0 0 16px;">
+          Nouveau<br>rendez-vous
+        </h1>
+
+        <p style="font-family:'Inter',Helvetica,sans-serif;font-size:16px;color:#1b1c1b;line-height:1.6;margin:0 0 40px;">
+          Bonjour ${prospectName}, un rendez-vous a ete programme pour vous avec <strong style="color:#111111;">${businessName}</strong>.
+        </p>
+
+        <div style="background-color:#f5f3f2;border-radius:48px;padding:40px 32px;margin-bottom:40px;">
+          <table cellpadding="0" cellspacing="0" style="width:100%;">
+            <tr>
+              <td style="padding-bottom:16px;">
+                <p style="margin:0;font-family:'Inter',Helvetica,sans-serif;font-size:12px;color:#747878;text-transform:uppercase;letter-spacing:0.1em;font-weight:500;">Date</p>
+                <p style="margin:4px 0 0;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:18px;color:#111111;letter-spacing:-0.02em;">${apptDate}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-bottom:${finalMeetLink ? '16px' : '0'};">
+                <p style="margin:0;font-family:'Inter',Helvetica,sans-serif;font-size:12px;color:#747878;text-transform:uppercase;letter-spacing:0.1em;font-weight:500;">Heure</p>
+                <p style="margin:4px 0 0;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:18px;color:#111111;letter-spacing:-0.02em;">${apptTime}</p>
+              </td>
+            </tr>
+            ${finalMeetLink ? `<tr><td>
+                <p style="margin:0;font-family:'Inter',Helvetica,sans-serif;font-size:12px;color:#747878;text-transform:uppercase;letter-spacing:0.1em;font-weight:500;">Google Meet</p>
+                <a href="${finalMeetLink}" style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;color:#a03cf8;text-decoration:none;letter-spacing:-0.02em;">${finalMeetLink}</a>
+              </td></tr>` : ''}
+          </table>
+        </div>
+
+        ${meetSection}
+        ${linksSection}
+
+      </td></tr>
+      <tr><td style="padding-top:48px;text-align:left;padding-left:24px;">
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">
+          &copy; 2026 CloseOS - Tous droits reserves
+        </p>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">
+          Cet e-mail a ete envoye automatiquement, merci de ne pas y repondre.
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`
+
+      // Generate ICS calendar invitation
+      const isAllDay = !appt.time || appt.all_day
+      const uid = `closeos-appt-${appt.id}@closeos.fr`
+      const nowUtc = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+      let icsDateBlock = ''
+      if (isAllDay) {
+        const dtDate = appt.date.replace(/-/g, '')
+        const nextDay = new Date(appt.date + 'T00:00:00')
+        nextDay.setDate(nextDay.getDate() + 1)
+        const dtEnd = nextDay.toISOString().split('T')[0].replace(/-/g, '')
+        icsDateBlock = `DTSTART;VALUE=DATE:${dtDate}\nDTEND;VALUE=DATE:${dtEnd}`
+      } else {
+        const startDt = new Date(`${appt.date}T${appt.time}`).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+        const durationMins = appt.duration || 60
+        const endDt = new Date(new Date(`${appt.date}T${appt.time}`).getTime() + durationMins * 60000).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+        icsDateBlock = `DTSTART:${startDt}\nDTEND:${endDt}`
+      }
+
+      let icsDescription = `Rendez-vous avec ${businessName}`
+      if (finalMeetLink) icsDescription += `\\nGoogle Meet: ${finalMeetLink}`
+      if (rescheduleUrl) icsDescription += `\\nReporter: ${rescheduleUrl}`
+      if (cancelUrl) icsDescription += `\\nAnnuler: ${cancelUrl}`
+
+      const icsContent = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//CloseOS//FR',
+        'CALSCALE:GREGORIAN',
+        'METHOD:REQUEST',
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        `DTSTAMP:${nowUtc}`,
+        icsDateBlock,
+        `SUMMARY:${appt.title || 'Rendez-vous'}`,
+        `DESCRIPTION:${icsDescription}`,
+        `ORGANIZER;CN=${businessName}:mailto:support@closeos.fr`,
+        `ATTENDEE;CN=${prospectName};RSVP=TRUE:mailto:${prospectEmail}`,
+        ...(finalMeetLink ? [`LOCATION:${finalMeetLink}`] : []),
+        'STATUS:CONFIRMED',
+        'BEGIN:VALARM',
+        'TRIGGER:-PT15M',
+        'ACTION:DISPLAY',
+        'DESCRIPTION:Rappel rendez-vous',
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\r\n')
+
+      const icsBase64 = Buffer.from(icsContent).toString('base64')
+
+      try {
+        await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'api-key': BREVO_API_KEY || '', 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+            to: [{ email: prospectEmail, name: prospectName }],
+            subject: `Votre rendez-vous du ${apptDate}${apptTime ? ` a ${apptTime}` : ''}`,
+            htmlContent: emailHtml,
+            attachment: [{
+              content: icsBase64,
+              name: 'invitation.ics',
+            }],
+          }),
+        })
+        return res.status(200).json({ sent: true })
+      } catch (emailErr) {
+        console.error('Failed to send appointment confirmation email:', emailErr)
+        return res.status(500).json({ error: 'Email send failed' })
+      }
+    }
+
     if (action === 'appointments-update' && req.method === 'PUT') {
-      const { user_id, id, status, notes } = req.body
+      const { user_id, id, status, notes, google_meet_link } = req.body
       if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
+
+      // If cancelling, fetch appointment first for Google Calendar cleanup
+      if (status === 'cancelled') {
+        const { data: appt } = await supabase
+          .from('business_appointments')
+          .select('google_calendar_event_id, assigned_to, user_id')
+          .eq('id', id)
+          .eq('user_id', user_id)
+          .single()
+
+        if (appt?.google_calendar_event_id) {
+          try {
+            let authUserId = (!appt.assigned_to || appt.assigned_to === appt.user_id) ? appt.user_id : null
+            if (!authUserId) {
+              const { data: tm } = await supabase.from('business_team_members').select('user_id').eq('id', appt.assigned_to).single()
+              authUserId = tm?.user_id
+            }
+            if (authUserId) {
+              const gcalToken = await getGoogleAccessToken(supabase, authUserId)
+              if (gcalToken) await deleteGoogleCalendarEvent(gcalToken, appt.google_calendar_event_id)
+            }
+          } catch {}
+        }
+      }
 
       const updates: any = {}
       if (status) updates.status = status
       if (notes !== undefined) updates.notes = notes
+      if (google_meet_link !== undefined) updates.google_meet_link = google_meet_link
 
       const { data, error } = await supabase
         .from('business_appointments')
@@ -2415,7 +2631,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: appt } = await supabase
         .from('business_appointments')
-        .select('id, date, time, duration, status, timezone, cancel_token, reschedule_token, campaign_id, prospect_id, assigned_to, user_id, datetime_utc')
+        .select('id, date, time, duration, status, timezone, cancel_token, reschedule_token, campaign_id, prospect_id, assigned_to, user_id, datetime_utc, notes')
         .or(`cancel_token.eq.${token},reschedule_token.eq.${token}`)
         .single()
 
@@ -2428,8 +2644,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .eq('id', appt.prospect_id)
         .single()
 
-      // Get campaign slug for reschedule
+      // Get campaign slug or booking link slug for reschedule
       let campaignSlug = null
+      let bookingSlug = null
       if (appt.campaign_id) {
         const { data: camp } = await supabase
           .from('business_campaigns')
@@ -2437,6 +2654,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .eq('id', appt.campaign_id)
           .single()
         campaignSlug = camp?.slug
+      } else {
+        // Booking appointment — find the booking link by owner + member
+        const bQuery = appt.assigned_to && appt.assigned_to !== appt.user_id
+          ? supabase.from('business_booking_links').select('slug').eq('team_member_id', appt.assigned_to).limit(1).maybeSingle()
+          : supabase.from('business_booking_links').select('slug').eq('business_owner_id', appt.user_id).is('team_member_id', null).limit(1).maybeSingle()
+        const { data: bLink } = await bQuery
+        bookingSlug = bLink?.slug || null
       }
 
       // Get assigned member name
@@ -2451,6 +2675,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
+      // Parse booking notes for name if no prospect
+      let prospectName = prospect?.contact || `${prospect?.firstName || ''} ${prospect?.lastName || ''}`.trim()
+      if (!prospectName && appt.notes?.startsWith('Booking: ')) {
+        prospectName = appt.notes.slice(9).split(' — ')[0]
+      }
+
       return res.status(200).json({
         id: appt.id,
         date: appt.date,
@@ -2458,10 +2688,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         duration: appt.duration,
         status: appt.status,
         timezone: appt.timezone,
-        prospect_name: prospect?.contact || `${prospect?.firstName || ''} ${prospect?.lastName || ''}`.trim(),
+        prospect_name: prospectName,
         prospect_email: prospect?.email,
         assignee_name: assigneeName,
         campaign_slug: campaignSlug,
+        booking_slug: bookingSlug,
         token_type: token === appt.cancel_token ? 'cancel' : 'reschedule',
       })
     }
@@ -2522,7 +2753,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const title = `Rendez-vous annulé — ${prospect?.contact || 'Prospect'}`
       const description = `Le prospect ${prospect?.contact || ''} a annulé son rendez-vous du ${appt.date} à ${appt.time}.`
-      const rows = notifyUserIds.map(uid => ({ user_id: uid, title, description, reminder_date: new Date().toISOString(), is_done: false }))
+      const rows = notifyUserIds.map(uid => ({ user_id: uid, title, description, reminder_date: new Date().toISOString(), is_done: false, is_notification: true }))
       await supabase.from('reminders').insert(rows)
 
       // Send email notification
@@ -2631,7 +2862,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const title = `Rendez-vous reprogrammé — ${prospect?.contact || 'Prospect'}`
       const description = `${prospect?.contact || 'Le prospect'} a déplacé son RDV du ${oldDate} ${oldTime} au ${date} ${time}.`
-      const rows = notifyUserIds.map(uid => ({ user_id: uid, title, description, reminder_date: new Date().toISOString(), is_done: false }))
+      const rows = notifyUserIds.map(uid => ({ user_id: uid, title, description, reminder_date: new Date().toISOString(), is_done: false, is_notification: true }))
       await supabase.from('reminders').insert(rows)
 
       try {

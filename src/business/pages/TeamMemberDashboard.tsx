@@ -89,7 +89,7 @@ export function TeamMemberDashboard() {
     try {
       const [dashboardRes, remindersRes] = await Promise.all([
         fetch(`/api/business?action=team-dashboard&team_member_id=${teamMember.id}&owner_id=${ownerUserId}`).then(r => r.json()),
-        supabase.from('reminders').select('*').eq('user_id', user.id).eq('is_done', false).order('reminder_date', { ascending: true }).limit(5),
+        supabase.from('reminders').select('*').eq('user_id', user.id).eq('is_done', false).neq('is_notification', true).order('reminder_date', { ascending: true }).limit(5),
       ])
 
       setProspects(dashboardRes.prospects || [])

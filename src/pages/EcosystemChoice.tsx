@@ -287,7 +287,9 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
             <span className="hidden sm:inline">•</span>
             <a href="/cgv" className="hover:text-[#e2e2e8] transition-colors">CGV</a>
             <span className="hidden sm:inline">•</span>
-            <a href="/confidentialite" className="hover:text-[#e2e2e8] transition-colors">Politique de Confidentialité</a>
+            <a href="/confidentialite" className="hover:text-[#e2e2e8] transition-colors">Politique de Confidentialite</a>
+            <span className="hidden sm:inline">&bull;</span>
+            <a href="/business/politique-utilisation" className="hover:text-[#e2e2e8] transition-colors">Politique d'Utilisation Business</a>
           </div>
 
           <div className="flex gap-6 text-xs">

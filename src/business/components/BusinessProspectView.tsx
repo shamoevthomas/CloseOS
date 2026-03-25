@@ -57,6 +57,7 @@ interface BusinessProspectViewProps {
   onUpdate: (id: number, updates: Partial<BusinessProspect>) => void
   onDelete: (id: number) => void
   inline?: boolean
+  onDismissFromPipeline?: (prospectId: number, dismissed: boolean) => void
 }
 
 const API_URL = '/api/business'
@@ -67,11 +68,20 @@ export function BusinessProspectView({
   onUpdate,
   onDelete,
   inline = false,
+  onDismissFromPipeline,
 }: BusinessProspectViewProps) {
   const navigate = useNavigate()
   const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
   const { customStages } = useCustomStages()
   const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string; setter_scope?: string }[]>([])
+
+  // Pipeline dismissal state
+  const [isDismissed, setIsDismissed] = useState(false)
+  useEffect(() => {
+    if (!user?.id || !prospect.id) return
+    supabase.from('business_pipeline_dismissals').select('id').eq('user_id', user.id).eq('prospect_id', prospect.id).maybeSingle()
+      .then(({ data }) => setIsDismissed(!!data))
+  }, [user?.id, prospect.id])
 
   // Who can assign: Owner, Head of Sales, Admin, and Setters (unless setter_scope is 'self')
   const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
@@ -98,10 +108,10 @@ export function BusinessProspectView({
   }, [user?.id, ownerUserId, isTeamMember, canAssign])
 
   const [local, setLocal] = useState<BusinessProspect>(prospect)
-  // Sync local when prospect prop changes (e.g., realtime update from call details)
+  // Sync local when prospect changes (e.g., realtime update from call details)
   useEffect(() => {
     setLocal(prospect)
-  }, [prospect])
+  }, [prospect.id])
   const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'rappels'>('info')
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
@@ -215,6 +225,7 @@ export function BusinessProspectView({
   // Call notes
   const [isAddingNote, setIsAddingNote] = useState(false)
   const [newNoteContent, setNewNoteContent] = useState('')
+  const noteTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Reminders
   const [showReminderForm, setShowReminderForm] = useState(false)
@@ -256,7 +267,7 @@ export function BusinessProspectView({
   const [allFormulas, setAllFormulas] = useState<Formula[]>([])
   const [campaign, setCampaign] = useState<Campaign | null>(null)
 
-  // Sync local on prop change
+  // Sync local on prospect ID change (new prospect selected)
   useEffect(() => {
     const p = { ...prospect }
     setLocal(p)
@@ -265,7 +276,7 @@ export function BusinessProspectView({
     setEditedCompany(p.company)
     setEditedEmail(p.email)
     setEditedPhone(p.phone)
-  }, [prospect])
+  }, [prospect.id])
 
   // Fetch all formulas
   useEffect(() => {
@@ -350,16 +361,17 @@ export function BusinessProspectView({
   const callNotes: CallNote[] = local.call_notes || []
 
   const handleAddManualNote = () => {
-    if (!newNoteContent.trim()) return
+    const content = noteTextareaRef.current?.value || ''
+    if (!content.trim()) return
     const newNote: CallNote = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
-      content: newNoteContent,
+      content,
       author: 'Manuel',
     }
     const updated = [newNote, ...callNotes]
     handleUpdate({ call_notes: updated })
-    setNewNoteContent('')
+    if (noteTextareaRef.current) noteTextareaRef.current.value = ''
     setIsAddingNote(false)
   }
 
@@ -434,15 +446,7 @@ export function BusinessProspectView({
   }
   const captureData = getCaptureData()
 
-  const Wrapper = inline ? ({ children }: { children: React.ReactNode }) => <>{children}</> : ({ children }: { children: React.ReactNode }) => (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="absolute inset-0 bg-stone-900/10 dark:bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      {children}
-    </div>
-  )
-
-  return (
-    <Wrapper>
+  const content = (
       <aside className={inline
         ? "flex flex-col h-full overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
         : "absolute inset-y-0 right-0 w-full max-w-[580px] flex flex-col shadow-2xl rounded-l-2xl border-l border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
@@ -1029,15 +1033,15 @@ export function BusinessProspectView({
                 <div className="rounded-xl bg-white dark:bg-neutral-800 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm">
                   <h4 className={cn(LABEL_STYLE, 'mb-3')}>Nouvelle Note</h4>
                   <textarea
-                    value={newNoteContent}
-                    onChange={e => setNewNoteContent(e.target.value)}
+                    ref={noteTextareaRef}
+                    defaultValue=""
                     placeholder="Écrivez votre note d'appel ici..."
                     className={cn(INPUT_CLS, 'min-h-[100px] mb-3')}
                     autoFocus
                   />
                   <div className="flex justify-end gap-2">
-                    <button onClick={() => { setIsAddingNote(false); setNewNoteContent('') }} className="px-4 py-2 text-sm font-medium text-stone-500 dark:text-neutral-400 hover:text-stone-700 dark:hover:text-neutral-200 rounded-full hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">Annuler</button>
-                    <button onClick={handleAddManualNote} disabled={!newNoteContent.trim()} className="px-5 py-2 rounded-full bg-stone-900 text-sm font-business-display font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-colors">Enregistrer</button>
+                    <button onClick={() => { setIsAddingNote(false); if (noteTextareaRef.current) noteTextareaRef.current.value = '' }} className="px-4 py-2 text-sm font-medium text-stone-500 dark:text-neutral-400 hover:text-stone-700 dark:hover:text-neutral-200 rounded-full hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">Annuler</button>
+                    <button onClick={handleAddManualNote} className="px-5 py-2 rounded-full bg-stone-900 text-sm font-business-display font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-colors">Enregistrer</button>
                   </div>
                 </div>
               )}
@@ -1210,15 +1214,48 @@ export function BusinessProspectView({
 
         {/* Footer */}
         <footer className="p-8 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-between items-center bg-white/20 dark:bg-neutral-900/20">
-          {(isOwner || isHosOrAdmin) ? (
+          <div className="flex items-center gap-2">
+            {(isOwner || isHosOrAdmin) && (
+              <button
+                onClick={handleDelete}
+                className="text-[#ba1a1a] font-business-display font-bold text-sm flex items-center gap-2 px-4 py-2 hover:bg-[#ba1a1a]/5 rounded-full transition-colors"
+              >
+                <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                Supprimer
+              </button>
+            )}
             <button
-              onClick={handleDelete}
-              className="text-[#ba1a1a] font-business-display font-bold text-sm flex items-center gap-2 px-4 py-2 hover:bg-[#ba1a1a]/5 rounded-full transition-colors"
+              onClick={async () => {
+                if (!user) return
+                try {
+                  if (isDismissed) {
+                    await supabase.from('business_pipeline_dismissals').delete().eq('user_id', user.id).eq('prospect_id', prospect.id)
+                    toast.success('Prospect rajouté au pipeline')
+                    setIsDismissed(false)
+                    onDismissFromPipeline?.(prospect.id, false)
+                  } else {
+                    await supabase.from('business_pipeline_dismissals').upsert({ user_id: user.id, prospect_id: prospect.id }, { onConflict: 'user_id,prospect_id' })
+                    toast.success('Prospect retiré du pipeline')
+                    setIsDismissed(true)
+                    onDismissFromPipeline?.(prospect.id, true)
+                    onClose()
+                  }
+                } catch { toast.error('Erreur') }
+              }}
+              className={cn(
+                "font-business-display font-bold text-sm flex items-center gap-2 px-4 py-2 rounded-full transition-colors",
+                isDismissed
+                  ? "text-[#006c49] hover:bg-[#006c49]/10"
+                  : "text-stone-500 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-neutral-800"
+              )}
             >
-              <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-              Supprimer le prospect
+              {isDismissed ? (
+                <><Plus className="h-4 w-4" strokeWidth={1.5} /> Rajouter au pipeline</>
+              ) : (
+                <><X className="h-4 w-4" strokeWidth={1.5} /> Retirer du pipeline</>
+              )}
             </button>
-          ) : <div />}
+          </div>
           <button
             onClick={() => handleUpdate(local)}
             className="bg-stone-900 text-white px-8 py-3 rounded-full font-business-display font-bold text-sm transition-transform active:scale-95"
@@ -1227,6 +1264,14 @@ export function BusinessProspectView({
           </button>
         </footer>
       </aside>
-    </Wrapper>
+  )
+
+  if (inline) return content
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-hidden">
+      <div className="absolute inset-0 bg-stone-900/10 dark:bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      {content}
+    </div>
   )
 }

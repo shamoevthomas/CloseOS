@@ -96,6 +96,72 @@ const getMonthDates = (date: Date): Date[] => {
 const formatDateKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
+// Compute overlap columns for events that share time ranges
+const computeOverlapLayout = (events: { id: string; time: string; data?: any }[]) => {
+  const items = events.map(ev => {
+    const startH = getStartHourRaw(ev.time)
+    const dur = ev.time.includes(' - ') ? getDurationRaw(ev.time) : (ev.data?.duration ? ev.data.duration / 60 : 0.5)
+    return { id: ev.id, start: startH, end: startH + dur }
+  })
+  // Sort by start time
+  items.sort((a, b) => a.start - b.start)
+  const layout: Record<string, { col: number; totalCols: number }> = {}
+  const groups: typeof items[] = []
+  // Group overlapping events
+  for (const item of items) {
+    let placed = false
+    for (const group of groups) {
+      if (group.some(g => g.start < item.end && item.start < g.end)) {
+        group.push(item)
+        placed = true
+        break
+      }
+    }
+    if (!placed) groups.push([item])
+  }
+  for (const group of groups) {
+    // Assign columns greedily
+    const cols: typeof items[] = []
+    for (const item of group) {
+      let placed = false
+      for (let c = 0; c < cols.length; c++) {
+        if (!cols[c].some(g => g.start < item.end && item.start < g.end)) {
+          cols[c].push(item)
+          layout[item.id] = { col: c, totalCols: 0 }
+          placed = true
+          break
+        }
+      }
+      if (!placed) {
+        cols.push([item])
+        layout[item.id] = { col: cols.length - 1, totalCols: 0 }
+      }
+    }
+    for (const item of group) {
+      layout[item.id].totalCols = cols.length
+    }
+  }
+  return layout
+}
+
+const getStartHourRaw = (time: string) => {
+  if (!time) return 0
+  const start = time.split(' - ')[0]
+  const [h, m] = start.split(':').map(Number)
+  return h + (m || 0) / 60
+}
+
+const getDurationRaw = (time: string) => {
+  if (!time) return 1
+  const parts = time.split(' - ')
+  if (parts.length < 2) return 1
+  const [sh, sm] = parts[0].split(':').map(Number)
+  const [eh, em] = parts[1].split(':').map(Number)
+  let dur = (eh + em / 60) - (sh + sm / 60)
+  if (dur <= 0) dur += 24
+  return dur
+}
+
 const getStartHour = (time: string) => {
   if (!time) return 0
   const start = time.split(' - ')[0]
@@ -147,7 +213,7 @@ interface TeamMemberOption {
 
 export function CloserAgenda() {
   const { user, teamMember, ownerUserId, isTeamMember, userTimezone } = useBusinessAuth()
-  const { googleEvents, isConnected, login, isLoading: gLoading, deleteEvent: deleteGoogleEvent } = useBusinessGoogleCalendar()
+  const { googleEvents, isConnected, login, isLoading: gLoading, deleteEvent: deleteGoogleEvent, createEvent: createGoogleCalendarEvent } = useBusinessGoogleCalendar()
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
 
@@ -174,7 +240,22 @@ export function CloserAgenda() {
   const [createNotes, setCreateNotes] = useState('')
   const [createAssignedTo, setCreateAssignedTo] = useState('')
   const [createGoogleMeet, setCreateGoogleMeet] = useState(false)
+  const [createAllDay, setCreateAllDay] = useState(false)
   const [createSaving, setCreateSaving] = useState(false)
+  const [createLinkProspect, setCreateLinkProspect] = useState(false)
+  const [createProspectId, setCreateProspectId] = useState<number | null>(null)
+  const [prospectSearchQuery, setProspectSearchQuery] = useState('')
+  const [allProspects, setAllProspects] = useState<{ id: number; contact: string; company: string; email: string }[]>([])
+  const [prospectsLoaded, setProspectsLoaded] = useState(false)
+
+  useEffect(() => {
+    if (!createLinkProspect || prospectsLoaded || !effectiveUserId) return
+    supabase.from('business_prospects').select('id, contact, company, email').eq('user_id', effectiveUserId).order('contact')
+      .then(({ data }) => {
+        setAllProspects(data || [])
+        setProspectsLoaded(true)
+      })
+  }, [createLinkProspect, prospectsLoaded, effectiveUserId])
 
   // Prospect detail panel
   const [prospectForView, setProspectForView] = useState<BusinessProspect | null>(null)
@@ -199,6 +280,11 @@ export function CloserAgenda() {
         list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
       }
       setTeamMembers(list)
+      // Auto-select self in assignment dropdown
+      const selfId = isTeamMember ? teamMember?.id : user?.id
+      if (selfId && list.some((m: any) => m.id === selfId)) {
+        setCreateAssignedTo(selfId)
+      }
     })
   }, [isOwnerView, canAssign, effectiveUserId])
 
@@ -479,49 +565,50 @@ export function CloserAgenda() {
 
   const openCreateModal = () => {
     const now = new Date()
-    const todayStr = now.toISOString().split('T')[0]
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
     const mins = now.getMinutes()
     const startH = mins < 30 ? now.getHours() : now.getHours() + 1
-    const pad = (n: number) => n.toString().padStart(2, '0')
     setCreateTitle('')
     setCreateDate(todayStr)
     setCreateStartTime(`${pad(startH)}:${pad(mins < 30 ? 30 : 0)}`)
     setCreateEndTime(`${pad(startH + 1)}:${pad(mins < 30 ? 30 : 0)}`)
     setCreateDuration(30)
     setCreateNotes('')
-    setCreateAssignedTo(isTeamMember ? (teamMember?.id || '') : '')
+    const selfId = isTeamMember ? (teamMember?.id || '') : (user?.id || '')
+    setCreateAssignedTo(teamMembers.some(m => m.id === selfId) ? selfId : '')
     setCreateGoogleMeet(false)
+    setCreateAllDay(false)
+    setCreateLinkProspect(false)
+    setCreateProspectId(null)
+    setProspectSearchQuery('')
     setIsCreateModalOpen(true)
   }
 
   const handleCreateEvent = async () => {
-    if (!createDate || !createStartTime) return
+    if (!createDate || (!createAllDay && !createStartTime)) return
     setCreateSaving(true)
     try {
       // Compute datetime_utc
-      const localDatetime = `${createDate}T${createStartTime}:00`
+      const effectiveStartTime = createAllDay ? '00:00' : createStartTime
+      const localDatetime = `${createDate}T${effectiveStartTime}:00`
       const localDate = new Date(localDatetime)
       const datetime_utc = localDate.toISOString()
 
-      let google_meet_link: string | null = null
-      if (createGoogleMeet && isConnected) {
-        try {
-          const { createEvent: createGoogleEvent } = await import('../contexts/BusinessGoogleCalendarContext').then(() => ({ createEvent: null }))
-          // Use the google calendar context's createEvent if available
-        } catch {}
-      }
-
+      // 1. Create appointment in DB first (to get cancel/reschedule tokens)
       const payload: Record<string, any> = {
         user_id: effectiveUserId,
         title: createTitle || null,
         date: createDate,
-        time: createStartTime,
-        duration: createDuration,
+        time: createAllDay ? null : createStartTime,
+        duration: createAllDay ? 1440 : createDuration,
+        all_day: createAllDay,
         notes: createNotes || null,
         datetime_utc,
         timezone: userTimezone,
       }
-      if (createAssignedTo) payload.assigned_to = createAssignedTo
+      if (createAssignedTo && createAssignedTo !== effectiveUserId) payload.assigned_to = createAssignedTo
+      if (createLinkProspect && createProspectId) payload.prospect_id = createProspectId
 
       const res = await fetch(`${API_URL}?action=appointments-create`, {
         method: 'POST',
@@ -529,7 +616,65 @@ export function CloserAgenda() {
         body: JSON.stringify(payload),
       })
       const data = await res.json()
+      if (!res.ok) console.error('appointments-create error:', data)
+
       if (data.appointment) {
+        let savedMeetLink: string | null = null
+        // 2. Create on Google Calendar with links in description
+        if (isConnected) {
+          const appt = data.appointment
+          const baseUrl = 'https://www.closeos.fr'
+          const rescheduleLink = appt.reschedule_token ? `${baseUrl}/appointment/${appt.reschedule_token}?action=reschedule` : ''
+          const cancelLink = appt.cancel_token ? `${baseUrl}/appointment/${appt.cancel_token}?action=cancel` : ''
+
+          let description = createNotes || ''
+          if (rescheduleLink || cancelLink) {
+            description += description ? '\n\n---\n' : ''
+            if (rescheduleLink) description += `📅 Reporter le rendez-vous : ${rescheduleLink}\n`
+            if (cancelLink) description += `❌ Annuler le rendez-vous : ${cancelLink}`
+          }
+
+          const endTime = createAllDay ? '23:59' : (createEndTime || (() => {
+            const [h, m] = createStartTime.split(':').map(Number)
+            const total = h * 60 + m + createDuration
+            return `${Math.floor(total / 60) % 24}`.padStart(2, '0') + ':' + `${total % 60}`.padStart(2, '0')
+          })())
+
+          const gcalResult = await createGoogleCalendarEvent({
+            title: createTitle || 'Rendez-vous',
+            date: createDate,
+            startTime: createAllDay ? '00:00' : createStartTime,
+            endTime,
+            description,
+            withGoogleMeet: createGoogleMeet,
+            allDay: createAllDay,
+          })
+
+          // Save meet link back to appointment if generated
+          savedMeetLink = gcalResult.hangoutLink || null
+          if (gcalResult.hangoutLink) {
+            await fetch(`${API_URL}?action=appointments-update`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: effectiveUserId, id: appt.id, google_meet_link: gcalResult.hangoutLink }),
+            })
+            toast.success('Événement créé avec Google Meet')
+          }
+        }
+
+        // 3. Send confirmation email to prospect if linked and has email
+        if (createLinkProspect && createProspectId && data.appointment) {
+          fetch(`${API_URL}?action=appointment-send-confirmation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              appointment_id: data.appointment.id,
+              user_id: effectiveUserId,
+              google_meet_link: savedMeetLink || null,
+            }),
+          }).catch(err => console.error('Error sending confirmation email:', err))
+        }
+
         setIsCreateModalOpen(false)
         fetchAppointments()
       }
@@ -627,23 +772,30 @@ export function CloserAgenda() {
                   </div>
                 </div>
               )}
-              {events.filter(e => e.time).map(ev => {
+              {(() => {
+                const timedEvents = events.filter(e => e.time)
+                const overlapLayout = computeOverlapLayout(timedEvents)
+                return timedEvents.map(ev => {
                 const startH = getStartHour(ev.time)
                 const dur = ev.time.includes(' - ') ? getDuration(ev.time) : (ev.data?.duration ? ev.data.duration / 60 : 0.5)
                 const top = startH * ROW_H
                 const height = Math.max(dur * ROW_H, 36)
+                const ol = overlapLayout[ev.id] || { col: 0, totalCols: 1 }
+                const widthPct = 100 / ol.totalCols
+                const leftPct = ol.col * widthPct
                 return (
                   <div
                     key={ev.id}
                     onClick={() => setSelectedEvent(ev)}
-                    className="absolute left-2 right-2 cursor-pointer overflow-hidden px-3 py-2 transition-all hover:scale-[1.02] hover:shadow-md"
-                    style={{ top: `${top}px`, height: `${height}px`, ...getBlockStyle(ev) }}
+                    className="absolute cursor-pointer overflow-hidden px-3 py-2 transition-all hover:scale-[1.02] hover:shadow-md"
+                    style={{ top: `${top}px`, height: `${height}px`, left: `calc(${leftPct}% + 4px)`, width: `calc(${widthPct}% - 8px)`, ...getBlockStyle(ev) }}
                   >
                     <p className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-0.5">{ev.time.split(' - ')[0]}</p>
                     <p className="text-sm font-extrabold leading-tight truncate" style={{ fontFamily: "'Manrope', sans-serif" }}>{ev.title}</p>
                   </div>
                 )
-              })}
+              })
+              })()}
             </div>
           </div>
         </div>
@@ -753,17 +905,22 @@ export function CloserAgenda() {
                         </div>
                       )}
 
-                      {events.map(ev => {
+                      {(() => {
+                        const overlapLayout = computeOverlapLayout(events)
+                        return events.map(ev => {
                         const startH = getStartHour(ev.time)
                         const dur = ev.time.includes(' - ') ? getDuration(ev.time) : (ev.data?.duration ? ev.data.duration / 60 : 0.5)
                         const top = startH * ROW_H
                         const height = Math.max(dur * ROW_H, 30)
+                        const ol = overlapLayout[ev.id] || { col: 0, totalCols: 1 }
+                        const widthPct = 100 / ol.totalCols
+                        const leftPct = ol.col * widthPct
                         return (
                           <div
                             key={ev.id}
                             onClick={() => setSelectedEvent(ev)}
-                            className="absolute left-1 right-1 cursor-pointer overflow-hidden px-2.5 py-1.5 transition-all hover:scale-[1.02] hover:shadow-md"
-                            style={{ top: `${top}px`, height: `${height}px`, ...getBlockStyle(ev) }}
+                            className="absolute cursor-pointer overflow-hidden px-2.5 py-1.5 transition-all hover:scale-[1.02] hover:shadow-md"
+                            style={{ top: `${top}px`, height: `${height}px`, left: `calc(${leftPct}% + 2px)`, width: `calc(${widthPct}% - 4px)`, ...getBlockStyle(ev) }}
                           >
                             <p className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-0.5">{ev.time.split(' - ')[0]}</p>
                             <p className="truncate text-xs font-extrabold leading-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>{ev.title}</p>
@@ -784,7 +941,8 @@ export function CloserAgenda() {
                             )}
                           </div>
                         )
-                      })}
+                      })
+                      })()}
                     </div>
                   )
                 })}
@@ -1186,16 +1344,23 @@ export function CloserAgenda() {
                 if (!meetLink) return null
                 return (
                   <div className="space-y-2">
-                    <a
-                      href={meetLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => {
+                        window.open(meetLink, '_blank')
+                        const prospect = selectedEvent.data?.prospect
+                        if (prospect?.id) {
+                          window.location.href = `/business/cockpit?name=${encodeURIComponent(prospect.contact || 'Appel')}&prospectId=${prospect.id}`
+                        } else {
+                          const title = selectedEvent.title || 'Appel'
+                          window.location.href = `/business/cockpit?name=${encodeURIComponent(title)}`
+                        }
+                      }}
                       className="flex items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white hover:bg-neutral-800 transition-colors shadow-lg w-full"
                     >
                       <Video className="h-4 w-4" />
                       Rejoindre Google Meet
                       <ExternalLink className="h-3.5 w-3.5 ml-auto" />
-                    </a>
+                    </button>
                     <div className="flex items-center gap-2 bg-neutral-100 dark:bg-white/5 rounded-xl px-4 py-2.5">
                       <p className="flex-1 min-w-0 text-xs text-neutral-500 dark:text-neutral-400 truncate font-mono select-all">{meetLink}</p>
                       <button
@@ -1312,58 +1477,43 @@ export function CloserAgenda() {
                   onChange={e => setCreateDate(e.target.value)}
                   className="w-full rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:outline-none transition-colors"
                 />
-                <div className="flex items-center gap-3">
-                  <input
-                    type="time"
-                    value={createStartTime}
-                    onChange={e => setCreateStartTime(e.target.value)}
-                    className="flex-1 rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:outline-none transition-colors"
-                  />
-                  <span className="text-xs font-bold text-[#747878] dark:text-neutral-400">à</span>
-                  <input
-                    type="time"
-                    value={createEndTime}
-                    onChange={e => setCreateEndTime(e.target.value)}
-                    className="flex-1 rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:outline-none transition-colors"
-                  />
+                {/* All day switch */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#1b1c1b] dark:text-white">Toute la journée</span>
+                  <button
+                    type="button"
+                    onClick={() => setCreateAllDay(!createAllDay)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      createAllDay ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/40 dark:bg-neutral-700'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                      createAllDay ? 'translate-x-5' : 'translate-x-0'
+                    }`} style={{ position: 'absolute', left: '0.25rem' }} />
+                  </button>
                 </div>
-                {createDate && createStartTime && (
+                {!createAllDay && (
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="time"
+                      value={createStartTime}
+                      onChange={e => setCreateStartTime(e.target.value)}
+                      className="flex-1 rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:outline-none transition-colors"
+                    />
+                    <span className="text-xs font-bold text-[#747878] dark:text-neutral-400">à</span>
+                    <input
+                      type="time"
+                      value={createEndTime}
+                      onChange={e => setCreateEndTime(e.target.value)}
+                      className="flex-1 rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:outline-none transition-colors"
+                    />
+                  </div>
+                )}
+                {createDate && (createAllDay || createStartTime) && (
                   <p className="text-[10px] text-[#747878] dark:text-neutral-400">
-                    {new Date(createDate + 'T00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}, de {createStartTime} à {createEndTime || '...'}
+                    {new Date(createDate + 'T00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}{createAllDay ? ', toute la journée' : `, de ${createStartTime} à ${createEndTime || '...'}`}
                   </p>
                 )}
-              </div>
-
-              {/* Duration */}
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-3">Durée</label>
-                <div className="flex gap-2 flex-wrap">
-                  {DURATIONS.map(d => (
-                    <button
-                      key={d.value}
-                      type="button"
-                      onClick={() => {
-                        setCreateDuration(d.value)
-                        // Auto-set end time based on duration
-                        if (createStartTime) {
-                          const [h, m] = createStartTime.split(':').map(Number)
-                          const totalMins = h * 60 + m + d.value
-                          const endH = Math.floor(totalMins / 60) % 24
-                          const endM = totalMins % 60
-                          setCreateEndTime(`${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`)
-                        }
-                      }}
-                      className={cn(
-                        'rounded-xl border px-4 py-2 text-sm font-bold transition-all',
-                        createDuration === d.value
-                          ? 'bg-[#1b1c1b] dark:bg-white text-white dark:text-neutral-900 border-[#1b1c1b] dark:border-white'
-                          : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-300 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-600'
-                      )}
-                    >
-                      {d.label}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               {/* Assign to (Setter, Owner, HOS) */}
@@ -1389,6 +1539,105 @@ export function CloserAgenda() {
                 </div>
               )}
 
+              {/* Link prospect */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400">Assigné à un prospect</label>
+                  <button
+                    type="button"
+                    onClick={() => { setCreateLinkProspect(!createLinkProspect); if (createLinkProspect) { setCreateProspectId(null); setProspectSearchQuery('') } }}
+                    className={cn(
+                      'relative w-10 h-5 rounded-full transition-colors',
+                      createLinkProspect ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/40 dark:bg-neutral-700'
+                    )}
+                  >
+                    <span className={cn(
+                      'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform',
+                      createLinkProspect ? 'translate-x-5' : 'translate-x-0'
+                    )} />
+                  </button>
+                </div>
+                {createLinkProspect && (
+                  <div className="mt-3 relative">
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878]" strokeWidth={1.5} />
+                      <input
+                        type="text"
+                        value={prospectSearchQuery}
+                        onChange={e => { setProspectSearchQuery(e.target.value); setCreateProspectId(null) }}
+                        placeholder="Rechercher un prospect..."
+                        className="w-full appearance-none rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-0 pl-10 pr-4 py-2.5 text-sm font-medium text-[#1b1c1b] dark:text-white placeholder-[#c4c7c7] dark:placeholder-neutral-600 focus:ring-2 focus:ring-[#006c49]/30 focus:outline-none transition-colors"
+                      />
+                    </div>
+                    {!createProspectId && (
+                      <div className="mt-1.5 max-h-40 overflow-y-auto rounded-xl bg-white dark:bg-neutral-900 border border-[#c4c7c7]/20 dark:border-neutral-700 shadow-lg">
+                        {allProspects
+                          .filter(p => {
+                            if (!prospectSearchQuery) return true
+                            const q = prospectSearchQuery.toLowerCase()
+                            return (p.contact || '').toLowerCase().includes(q) || (p.company || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q)
+                          })
+                          .slice(0, 20)
+                          .map(p => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => { setCreateProspectId(p.id); setProspectSearchQuery(p.contact || p.company || p.email) }}
+                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors flex items-center gap-3"
+                            >
+                              <div className="h-7 w-7 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-xs font-bold text-[#747878] shrink-0">
+                                {(p.contact || '?')[0]?.toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-[#1b1c1b] dark:text-white truncate">{p.contact || 'Sans nom'}</p>
+                                {p.company && <p className="text-[11px] text-[#747878] dark:text-neutral-500 truncate">{p.company}</p>}
+                              </div>
+                            </button>
+                          ))
+                        }
+                        {allProspects.filter(p => {
+                          if (!prospectSearchQuery) return true
+                          const q = prospectSearchQuery.toLowerCase()
+                          return (p.contact || '').toLowerCase().includes(q) || (p.company || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q)
+                        }).length === 0 && (
+                          <p className="text-xs text-[#747878] dark:text-neutral-500 text-center py-4">Aucun prospect trouvé</p>
+                        )}
+                      </div>
+                    )}
+                    {createProspectId && (
+                      <div className="mt-1.5 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#006c49]/10 dark:bg-emerald-900/20">
+                        <User className="h-3.5 w-3.5 text-[#006c49] dark:text-emerald-400" strokeWidth={2} />
+                        <span className="text-xs font-bold text-[#006c49] dark:text-emerald-400 flex-1">{prospectSearchQuery}</span>
+                        <button type="button" onClick={() => { setCreateProspectId(null); setProspectSearchQuery('') }} className="text-[#006c49]/60 hover:text-[#006c49]">
+                          <X className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Google Meet */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4 text-[#747878] dark:text-neutral-400" strokeWidth={1.5} />
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400">Créer un Google Meet</label>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCreateGoogleMeet(!createGoogleMeet)}
+                  className={cn(
+                    'relative w-10 h-5 rounded-full transition-colors',
+                    createGoogleMeet ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/40 dark:bg-neutral-700'
+                  )}
+                >
+                  <span className={cn(
+                    'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform',
+                    createGoogleMeet ? 'translate-x-5' : 'translate-x-0'
+                  )} />
+                </button>
+              </div>
+
               {/* Notes */}
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-2">Notes (optionnel)</label>
@@ -1412,7 +1661,7 @@ export function CloserAgenda() {
               </button>
               <button
                 onClick={handleCreateEvent}
-                disabled={createSaving || !createDate || !createStartTime}
+                disabled={createSaving || !createDate || (!createAllDay && !createStartTime)}
                 className="flex items-center gap-2 rounded-full bg-[#1b1c1b] px-6 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
               >
                 {createSaving && <Loader2 className="h-4 w-4 animate-spin" />}

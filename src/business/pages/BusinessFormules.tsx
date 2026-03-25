@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import {
   Plus, Package, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, FileText, Video, Link2, File,
-  Percent, ChevronDown, ChevronUp, Users, Eye,
+  Percent, ChevronDown, ChevronUp, Users, Eye, Upload,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -23,6 +23,8 @@ interface Formula {
   is_active: boolean
   created_at: string
   team_id?: string | null
+  billing_type: 'one_time' | 'subscription' | 'quote'
+  yearly_price?: number | null
 }
 
 interface FormulaCommission {
@@ -67,6 +69,8 @@ export function BusinessFormules() {
   const [formPrice, setFormPrice] = useState('')
   const [formDescription, setFormDescription] = useState('')
   const [formResources, setFormResources] = useState<Resource[]>([])
+  const [formBillingType, setFormBillingType] = useState<'one_time' | 'subscription' | 'quote'>('one_time')
+  const [formYearlyPrice, setFormYearlyPrice] = useState('')
 
   // Commission state (per-formula, inside modal)
   const [roleRates, setRoleRates] = useState<Record<string, number>>({})
@@ -129,7 +133,7 @@ export function BusinessFormules() {
     setFormName(''); setFormPrice(''); setFormDescription('')
     setFormResources([]); setEditingFormula(null)
     setRoleRates({}); setMemberRates({}); setExpandedRoles({})
-    setFormTeamId(null)
+    setFormTeamId(null); setFormBillingType('one_time'); setFormYearlyPrice('')
   }
 
   const openCreate = () => { resetForm(); setIsModalOpen(true) }
@@ -141,6 +145,8 @@ export function BusinessFormules() {
     setFormDescription(formula.description || '')
     setFormResources(formula.resources || [])
     setFormTeamId(formula.team_id || null)
+    setFormBillingType(formula.billing_type || 'one_time')
+    setFormYearlyPrice(formula.yearly_price?.toString() || '')
     setRoleRates({}); setMemberRates({}); setExpandedRoles({})
     try {
       if (canSeeCommissions) await loadFormulaCommissions(formula.id)
@@ -189,6 +195,8 @@ export function BusinessFormules() {
         description: formDescription || null,
         resources: formResources,
         team_id: formTeamId || null,
+        billing_type: formBillingType,
+        yearly_price: formBillingType === 'subscription' && formYearlyPrice ? parseFloat(formYearlyPrice) : null,
       }
       payload.price = parseFloat(formPrice) || 0
       let savedFormulaId = editingFormula?.id
@@ -241,6 +249,8 @@ export function BusinessFormules() {
     } catch { toast.error('Erreur') }
   }
 
+  const [uploadingResourceIdx, setUploadingResourceIdx] = useState<number | null>(null)
+
   const addResource = () => {
     setFormResources([...formResources, { name: '', url: '', type: 'Lien' }])
   }
@@ -249,6 +259,25 @@ export function BusinessFormules() {
   }
   const removeResource = (index: number) => {
     setFormResources(formResources.filter((_, i) => i !== index))
+  }
+
+  const handlePdfUpload = async (index: number, file: File) => {
+    if (!file || file.type !== 'application/pdf') {
+      toast.error('Veuillez sélectionner un fichier PDF')
+      return
+    }
+    setUploadingResourceIdx(index)
+    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`
+    const { error } = await supabase.storage.from('resources').upload(fileName, file)
+    if (error) {
+      toast.error('Erreur lors du téléversement')
+      setUploadingResourceIdx(null)
+      return
+    }
+    const { data: { publicUrl } } = supabase.storage.from('resources').getPublicUrl(fileName)
+    updateResource(index, { url: publicUrl, name: file.name.replace(/\.pdf$/i, '') || formResources[index].name })
+    setUploadingResourceIdx(null)
+    toast.success('PDF téléversé')
   }
 
   const getResourceIcon = (type: Resource['type']) => {
@@ -344,10 +373,24 @@ export function BusinessFormules() {
 
               {/* Price */}
               <div className="mb-8">
-                <span className="text-4xl font-extrabold text-stone-900 dark:text-white">
-                  {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                </span>
-                <span className="text-stone-400 dark:text-neutral-500 text-sm ml-1">/ unique</span>
+                {formula.billing_type === 'quote' ? (
+                  <span className="text-2xl font-extrabold text-stone-900 dark:text-white">Sur devis</span>
+                ) : (
+                  <>
+                    <span className="text-4xl font-extrabold text-stone-900 dark:text-white">
+                      {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                    </span>
+                    <span className="text-stone-400 dark:text-neutral-500 text-sm ml-1">/ {formula.billing_type === 'subscription' ? 'mois' : 'unique'}</span>
+                    {formula.billing_type === 'subscription' && formula.yearly_price != null && (
+                      <div className="mt-1">
+                        <span className="text-lg font-bold text-stone-600 dark:text-neutral-300">
+                          {formula.yearly_price.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                        </span>
+                        <span className="text-stone-400 dark:text-neutral-500 text-xs ml-1">/ an</span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Footer stats */}
@@ -388,11 +431,62 @@ export function BusinessFormules() {
                 <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Formule Premium" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
               </div>
 
-              {/* Price */}
+              {/* Price (only for one_time) */}
+              {formBillingType !== 'subscription' && formBillingType !== 'quote' && (
+                <div>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Prix (€)</label>
+                  <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="0.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                </div>
+              )}
+
+              {/* Billing type */}
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Prix (€)</label>
-                <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="0.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Type de facturation</label>
+                <div className="flex gap-2">
+                  {([
+                    { value: 'one_time', label: 'Paiement unique' },
+                    { value: 'subscription', label: 'Abonnement' },
+                    { value: 'quote', label: 'Sur devis' },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => !isTeamMember && setFormBillingType(opt.value)}
+                      disabled={isTeamMember}
+                      className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
+                        formBillingType === opt.value
+                          ? 'bg-stone-900 dark:bg-white text-white dark:text-stone-900 border-stone-900 dark:border-white'
+                          : 'bg-white dark:bg-neutral-900 text-stone-500 dark:text-neutral-400 border-stone-200 dark:border-neutral-800 hover:border-stone-400 dark:hover:border-neutral-600'
+                      } ${isTeamMember ? 'cursor-not-allowed opacity-60' : ''}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* Subscription prices */}
+              {formBillingType === 'subscription' && (
+                <div className="rounded-2xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 p-5 space-y-4">
+                  <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">Tarification abonnement</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">Prix mensuel (€) *</label>
+                      <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="49.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">Prix annuel (€)</label>
+                      <input type="number" min="0" step="0.01" value={formYearlyPrice} onChange={(e) => setFormYearlyPrice(e.target.value)} placeholder="490.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                      <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">Laissez vide si pas d'option annuelle</p>
+                      {formYearlyPrice && parseFloat(formYearlyPrice) > 0 && (
+                        <p className="text-[11px] text-stone-600 dark:text-neutral-300 mt-1 font-semibold">
+                          ≈ {(parseFloat(formYearlyPrice) / 12).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / mois
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Description */}
               <div>
@@ -447,14 +541,40 @@ export function BusinessFormules() {
                         disabled={isTeamMember}
                         className={`flex-1 ${smallInputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
                       />
-                      <input
-                        type="url"
-                        value={resource.url}
-                        onChange={(e) => updateResource(idx, { url: e.target.value })}
-                        placeholder="URL"
-                        disabled={isTeamMember}
-                        className={`flex-[2] ${smallInputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
-                      />
+                      {resource.type === 'PDF' ? (
+                        resource.url ? (
+                          <div className="flex-[2] flex items-center gap-2">
+                            <a href={resource.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#006c49] font-medium truncate hover:underline flex items-center gap-1">
+                              <FileText className="h-3.5 w-3.5 flex-shrink-0" />
+                              PDF téléversé
+                            </a>
+                            {!isTeamMember && (
+                              <label className="text-[10px] font-bold text-stone-500 hover:text-stone-700 dark:text-neutral-400 dark:hover:text-neutral-200 cursor-pointer transition-colors">
+                                Changer
+                                <input type="file" accept=".pdf" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handlePdfUpload(idx, e.target.files[0]) }} />
+                              </label>
+                            )}
+                          </div>
+                        ) : (
+                          <label className={`flex-[2] flex items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 dark:border-neutral-600 px-3 py-2 cursor-pointer hover:border-stone-400 dark:hover:border-neutral-500 transition-colors ${isTeamMember ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                            {uploadingResourceIdx === idx ? (
+                              <><Loader2 className="h-3.5 w-3.5 animate-spin text-stone-400" /><span className="text-xs text-stone-400">Téléversement...</span></>
+                            ) : (
+                              <><Upload className="h-3.5 w-3.5 text-stone-400" /><span className="text-xs text-stone-500 dark:text-neutral-400">Téléverser un PDF</span></>
+                            )}
+                            <input type="file" accept=".pdf" className="hidden" disabled={isTeamMember || uploadingResourceIdx === idx} onChange={(e) => { if (e.target.files?.[0]) handlePdfUpload(idx, e.target.files[0]) }} />
+                          </label>
+                        )
+                      ) : (
+                        <input
+                          type="url"
+                          value={resource.url}
+                          onChange={(e) => updateResource(idx, { url: e.target.value })}
+                          placeholder="URL"
+                          disabled={isTeamMember}
+                          className={`flex-[2] ${smallInputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
+                        />
+                      )}
                       {!isTeamMember && (
                         <button onClick={() => removeResource(idx)} className="text-stone-400 dark:text-neutral-500 hover:text-red-500 flex-shrink-0 transition-colors">
                           <X className="h-4 w-4" />

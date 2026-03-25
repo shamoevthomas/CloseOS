@@ -176,7 +176,7 @@ export function BusinessDashboard() {
         supabase.from('business_campaigns').select('*').eq('user_id', effectiveUserId),
         supabase.from('business_appointments').select('*').eq('user_id', effectiveUserId),
         supabase.from('business_team_members').select('*').eq('business_owner_id', effectiveUserId),
-        supabase.from('reminders').select('*').eq('user_id', effectiveUserId).eq('is_done', false).order('reminder_date', { ascending: true }).limit(5),
+        supabase.from('reminders').select('*').eq('user_id', effectiveUserId).eq('is_done', false).neq('is_notification', true).order('reminder_date', { ascending: true }).limit(5),
         supabase.from('business_absences').select('team_member_id, start_date, end_date').eq('business_owner_id', effectiveUserId),
         supabase.from('business_teams').select('*').eq('business_owner_id', effectiveUserId).order('position'),
       ])

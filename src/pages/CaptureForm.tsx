@@ -255,9 +255,12 @@ export function CaptureForm() {
     if (isEmbed) {
       document.body.style.background = bgColor
       document.body.style.minHeight = '0'
-      document.documentElement.style.minHeight = '0'
       document.body.style.margin = '0'
-      document.body.style.overflow = 'hidden'
+      document.body.style.overflow = 'visible'
+      document.body.style.height = 'auto'
+      document.documentElement.style.minHeight = '0'
+      document.documentElement.style.overflow = 'visible'
+      document.documentElement.style.height = 'auto'
     }
     return () => { document.body.style.background = '' }
   }, [isEmbed, bgColor])
@@ -274,11 +277,14 @@ export function CaptureForm() {
 
   // Send height to parent iframe for dynamic resize
   useEffect(() => {
-    if (!isEmbed || !formRef.current) return
+    if (!isEmbed) return
     let lastHeight = 0
     const sendHeight = () => {
-      if (!formRef.current) return
-      const h = formRef.current.offsetHeight
+      // Measure actual content height using multiple methods for reliability
+      const docH = document.documentElement.scrollHeight
+      const bodyH = document.body.scrollHeight
+      const refH = formRef.current ? Math.max(formRef.current.scrollHeight, formRef.current.offsetHeight) : 0
+      const h = Math.max(docH, bodyH, refH)
       if (h > 0 && h !== lastHeight) {
         lastHeight = h
         window.parent.postMessage({ type: 'closeos-capture-resize', height: h }, '*')
@@ -287,9 +293,18 @@ export function CaptureForm() {
     // Poll frequently during CSS transitions (600ms), then slow poll
     const fast = setInterval(sendHeight, 20)
     const timeout = setTimeout(() => clearInterval(fast), 700)
-    const slow = setInterval(sendHeight, 500)
+    const slow = setInterval(sendHeight, 300)
     sendHeight()
-    return () => { clearInterval(fast); clearInterval(slow); clearTimeout(timeout) }
+    // ResizeObserver for layout changes (responsive breakpoints, content reflow)
+    if (formRef.current) {
+      const ro = new ResizeObserver(() => sendHeight())
+      ro.observe(formRef.current)
+      // Also recalculate on window resize
+      window.addEventListener('resize', sendHeight)
+      return () => { clearInterval(fast); clearInterval(slow); clearTimeout(timeout); ro.disconnect(); window.removeEventListener('resize', sendHeight) }
+    }
+    window.addEventListener('resize', sendHeight)
+    return () => { clearInterval(fast); clearInterval(slow); clearTimeout(timeout); window.removeEventListener('resize', sendHeight) }
   }, [isEmbed, selectedDate, infoCollapsed])
   const prospectTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
 
@@ -554,7 +569,7 @@ export function CaptureForm() {
   } : {}
 
   return (
-    <div ref={formRef} className={`${isEmbed ? '' : 'min-h-screen'} ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`} style={customStyle}>
+    <div ref={formRef} className={`${isEmbed ? '' : 'min-h-screen'} ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`} style={{ ...customStyle, ...(isEmbed ? { overflow: 'visible', height: 'auto' } : {}) }}>
       <div className={`mx-auto flex flex-col lg:flex-row ${isEmbed ? '' : 'min-h-screen max-w-screen-2xl'}`}>
 
         {/* LEFT SIDE - Marketing */}
@@ -598,7 +613,7 @@ export function CaptureForm() {
         )}
 
         {/* RIGHT SIDE - Form + Calendar */}
-        <div className={`flex-1 flex items-start justify-center ${isEmbed ? (isHorizontal ? 'p-3' : 'p-4') : 'px-5 sm:px-8 lg:px-12 py-8 lg:py-12'}`}>
+        <div className={`flex-1 flex items-start justify-center ${isEmbed ? (isHorizontal ? 'p-2 sm:p-3' : 'p-4') : 'px-5 sm:px-8 lg:px-12 py-8 lg:py-12'}`}>
           <div className={`w-full ${isHorizontal ? 'max-w-full' : 'max-w-xl'} ${isEmbed ? '' : 'bg-white rounded-2xl p-8 md:p-12 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'}`} style={{ boxShadow: isEmbed ? undefined : 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
 
             {/* Mobile header */}
@@ -619,9 +634,9 @@ export function CaptureForm() {
             )}
 
             {/* Horizontal layout wrapper */}
-            <div className={isHorizontal && !isInscriptionMode ? 'flex gap-6' : ''}>
+            <div className={isHorizontal && !isInscriptionMode ? (isEmbed ? 'flex flex-row gap-6' : 'flex flex-col md:flex-row gap-6') : ''}>
             {/* Left column in horizontal mode */}
-            <div className={isHorizontal && !isInscriptionMode ? 'flex-1 min-w-0' : ''}>
+            <div className={isHorizontal && !isInscriptionMode ? 'flex-1 min-w-0 flex flex-col' : ''}>
 
             {/* INFO SECTION - collapsible */}
             <div className={`transition-all duration-500 ease-in-out ${!isHorizontal && infoCollapsed ? 'max-h-16 overflow-hidden' : 'max-h-[2000px]'}`}>
@@ -763,6 +778,15 @@ export function CaptureForm() {
                 </button>
                 <p className="text-center text-[10px] text-[#444748]/40 mt-6 font-medium leading-relaxed">
                   En continuant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées dans notre base de données.
+                </p>
+              </div>
+            )}
+
+            {/* Powered by CloseOS - in left column */}
+            {isEmbed && (
+              <div className="mt-auto pt-6">
+                <p className="text-[10px] tracking-widest uppercase text-[#444748]/40 font-bold">
+                  Propulsé par <span className="text-[#444748]/60">CloseOS</span>
                 </p>
               </div>
             )}
@@ -993,6 +1017,7 @@ export function CaptureForm() {
             </div>}
 
             </div>{/* End horizontal layout wrapper */}
+
           </div>
         </div>
       </div>

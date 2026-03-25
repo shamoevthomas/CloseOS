@@ -51,7 +51,7 @@ const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 export function BusinessLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isTeamMember, teamMember, businessProfile, user, refreshProfile, needsVerification, setNeedsVerification, logout, hasOnboarded } = useBusinessAuth()
+  const { isTeamMember, teamMember, businessProfile, user, loading, refreshProfile, needsVerification, setNeedsVerification, logout, hasOnboarded } = useBusinessAuth()
   const pageTitles = isTeamMember ? TEAM_PAGE_TITLES : OWNER_PAGE_TITLES
 
   // Handle dynamic routes like /business/appels/:id
@@ -60,7 +60,7 @@ export function BusinessLayout() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true)
 
   // ─── Timezone detection ───
   const browserTz = useMemo(() => getBrowserTimezone(), [])
@@ -100,6 +100,24 @@ export function BusinessLayout() {
   const handleDismissTzBanner = () => {
     setTzBannerVisible(false)
     setTzBannerDismissed(true)
+  }
+
+  // Redirect to login if not authenticated after loading
+  if (!loading && !user) {
+    navigate('/business/login', { replace: true })
+    return null
+  }
+
+  // Show loading while auth is initializing
+  if (loading || (!businessProfile && !teamMember && user)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#f4f2f1]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
+          <p className="text-sm text-stone-500 font-medium">Chargement...</p>
+        </div>
+      </div>
+    )
   }
 
   // Verification gate for Google OAuth or returning sessions (must be after all hooks)
@@ -158,7 +176,7 @@ function BusinessLayoutInner({
         onCollapseChange={setIsSidebarCollapsed}
       />
 
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+      <div className={cn("flex flex-1 flex-col min-w-0 overflow-hidden transition-all duration-300", isSidebarCollapsed && "lg:ml-24")}>
         {/* Minimal mobile header — desktop has no header bar (content has its own) */}
         <header className="z-30 lg:hidden border-b border-neutral-900/5 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl">
           <div className="flex h-14 items-center justify-between px-4">

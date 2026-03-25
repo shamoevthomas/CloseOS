@@ -354,6 +354,7 @@ export function BusinessCampaigns() {
   const [styleTextColor, setStyleTextColor] = useState('#0f172a')
   const [styleRadius, setStyleRadius] = useState(12)
   const [styleLayout, setStyleLayout] = useState<'vertical' | 'horizontal'>('vertical')
+  const [embedLayout] = useState<'vertical' | 'horizontal'>('horizontal')
 
   const FONTS = [
     { label: 'Inter (défaut)', value: 'Inter, system-ui, sans-serif' },
@@ -387,7 +388,7 @@ export function BusinessCampaigns() {
     if (styleTextColor !== '#0f172a') params.set('tc', styleTextColor.replace('#', ''))
     if (styleRadius !== 12) params.set('br', String(styleRadius))
     if (styleFont !== 'Inter, system-ui, sans-serif') params.set('font', styleFont.split(',')[0].trim())
-    if (styleLayout === 'horizontal') params.set('layout', 'horizontal')
+    params.set('layout', 'horizontal')
     return params.toString()
   }
 
@@ -409,7 +410,7 @@ window.addEventListener('message',function(e){
   }
 });
 </script>`
-  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, styleLayout])
+  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, embedLayout])
 
   const getPopupCode = useMemo(() => {
     if (!embedModalCampaign) return ''
@@ -441,7 +442,7 @@ window.addEventListener('message',function(e){
   });
 })();
 </script>`
-  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, styleLayout])
+  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, embedLayout])
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text); toast.success(`${label} copié !`)

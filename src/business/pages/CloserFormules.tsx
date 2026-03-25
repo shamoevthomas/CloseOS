@@ -19,6 +19,8 @@ interface Formula {
   resources: Resource[]
   is_active: boolean
   created_at: string
+  billing_type?: 'one_time' | 'subscription' | 'quote'
+  yearly_price?: number | null
 }
 
 const API_URL = '/api/business'
@@ -106,10 +108,24 @@ export function CloserFormules() {
 
               {/* Price */}
               <div className="mb-8">
-                <span className="font-['Manrope'] text-4xl font-extrabold text-stone-900 dark:text-white">
-                  {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                </span>
-                <span className="text-stone-400 dark:text-neutral-500 text-sm ml-1">/ unique</span>
+                {formula.billing_type === 'quote' ? (
+                  <span className="font-['Manrope'] text-2xl font-extrabold text-stone-900 dark:text-white">Sur devis</span>
+                ) : (
+                  <>
+                    <span className="font-['Manrope'] text-4xl font-extrabold text-stone-900 dark:text-white">
+                      {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                    </span>
+                    <span className="text-stone-400 dark:text-neutral-500 text-sm ml-1">/ {formula.billing_type === 'subscription' ? 'mois' : 'unique'}</span>
+                    {formula.billing_type === 'subscription' && formula.yearly_price != null && (
+                      <div className="mt-1">
+                        <span className="text-lg font-bold text-stone-600 dark:text-neutral-300">
+                          {formula.yearly_price.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                        </span>
+                        <span className="text-stone-400 dark:text-neutral-500 text-xs ml-1">/ an</span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Resources */}

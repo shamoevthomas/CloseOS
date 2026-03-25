@@ -120,6 +120,22 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const [zapierCopiedKey, setZapierCopiedKey] = useState(false)
   const [zapierShowKey, setZapierShowKey] = useState(false)
 
+  // États Make
+  const [makeApiKey, setMakeApiKey] = useState<string | null>(null)
+  const [makeKeyId, setMakeKeyId] = useState<string | null>(null)
+  const [makeLoading, setMakeLoading] = useState(false)
+  const [makeCopiedUrl, setMakeCopiedUrl] = useState(false)
+  const [makeCopiedKey, setMakeCopiedKey] = useState(false)
+  const [makeShowKey, setMakeShowKey] = useState(false)
+
+  // n8n
+  const [n8nApiKey, setN8nApiKey] = useState<string | null>(null)
+  const [n8nKeyId, setN8nKeyId] = useState<string | null>(null)
+  const [n8nLoading, setN8nLoading] = useState(false)
+  const [n8nCopiedUrl, setN8nCopiedUrl] = useState(false)
+  const [n8nCopiedKey, setN8nCopiedKey] = useState(false)
+  const [n8nShowKey, setN8nShowKey] = useState(false)
+
   const [editedOffer, setEditedOffer] = useState<Offer>(() => {
     if (!offer.formulas || offer.formulas.length === 0) {
       return {
@@ -492,6 +508,128 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     }
   }
 
+  // Load existing Make API key
+  useEffect(() => {
+    if (editedOffer.crmProvider !== 'make' || !user) return
+    const load = async () => {
+      const { data } = await supabase
+        .from('webhook_keys')
+        .select('id, api_key')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .eq('name', 'Make')
+        .limit(1)
+        .maybeSingle()
+      if (data) {
+        setMakeApiKey(data.api_key)
+        setMakeKeyId(data.id)
+      } else {
+        setMakeApiKey(null)
+        setMakeKeyId(null)
+      }
+    }
+    load()
+  }, [editedOffer.crmProvider, user])
+
+  const handleGenerateMakeKey = async () => {
+    if (!user) return
+    setMakeLoading(true)
+    try {
+      const array = new Uint8Array(32)
+      crypto.getRandomValues(array)
+      const newKey = 'mk_' + Array.from(array, b => b.toString(16).padStart(2, '0')).join('')
+      const { data, error } = await supabase
+        .from('webhook_keys')
+        .insert({ user_id: user.id, api_key: newKey, name: 'Make' })
+        .select()
+        .single()
+      if (error) throw error
+      setMakeApiKey(newKey)
+      setMakeKeyId(data.id)
+      setMakeShowKey(true)
+    } catch (err) {
+      console.error('Error generating Make key:', err)
+    } finally {
+      setMakeLoading(false)
+    }
+  }
+
+  const handleDeleteMakeKey = async () => {
+    if (!makeKeyId || !window.confirm('Supprimer cette clé API ? Les scénarios Make connectés ne fonctionneront plus.')) return
+    setMakeLoading(true)
+    try {
+      await supabase.from('webhook_keys').delete().eq('id', makeKeyId)
+      setMakeApiKey(null)
+      setMakeKeyId(null)
+      setMakeShowKey(false)
+    } catch (err) {
+      console.error('Error deleting Make key:', err)
+    } finally {
+      setMakeLoading(false)
+    }
+  }
+
+  // Load existing n8n API key
+  useEffect(() => {
+    if (editedOffer.crmProvider !== 'n8n' || !user) return
+    const load = async () => {
+      const { data } = await supabase
+        .from('webhook_keys')
+        .select('id, api_key')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .eq('name', 'n8n')
+        .limit(1)
+        .maybeSingle()
+      if (data) {
+        setN8nApiKey(data.api_key)
+        setN8nKeyId(data.id)
+      } else {
+        setN8nApiKey(null)
+        setN8nKeyId(null)
+      }
+    }
+    load()
+  }, [editedOffer.crmProvider, user])
+
+  const handleGenerateN8nKey = async () => {
+    if (!user) return
+    setN8nLoading(true)
+    try {
+      const array = new Uint8Array(32)
+      crypto.getRandomValues(array)
+      const newKey = 'n8_' + Array.from(array, b => b.toString(16).padStart(2, '0')).join('')
+      const { data, error } = await supabase
+        .from('webhook_keys')
+        .insert({ user_id: user.id, api_key: newKey, name: 'n8n' })
+        .select()
+        .single()
+      if (error) throw error
+      setN8nApiKey(newKey)
+      setN8nKeyId(data.id)
+      setN8nShowKey(true)
+    } catch (err) {
+      console.error('Error generating n8n key:', err)
+    } finally {
+      setN8nLoading(false)
+    }
+  }
+
+  const handleDeleteN8nKey = async () => {
+    if (!n8nKeyId || !window.confirm('Supprimer cette clé API ? Les workflows n8n connectés ne fonctionneront plus.')) return
+    setN8nLoading(true)
+    try {
+      await supabase.from('webhook_keys').delete().eq('id', n8nKeyId)
+      setN8nApiKey(null)
+      setN8nKeyId(null)
+      setN8nShowKey(false)
+    } catch (err) {
+      console.error('Error deleting n8n key:', err)
+    } finally {
+      setN8nLoading(false)
+    }
+  }
+
   // Check Airtable connection + listen for OAuth callback
   useEffect(() => {
     if (!user) return
@@ -627,6 +765,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
   const systemeioWebhookUrl = `${baseUrl}/api/systemeio?action=webhook&user_id=${user?.id}&offer_id=${offer.id}${editedOffer.defaultFormulaId ? `&formula_id=${editedOffer.defaultFormulaId}` : ''}`
   const zapierWebhookUrl = `${baseUrl}/api/zapier-webhook?type=sales&offer_id=${offer.id}${editedOffer.defaultFormulaId ? `&formula_id=${editedOffer.defaultFormulaId}` : ''}`
+  const makeWebhookUrl = zapierWebhookUrl // Same endpoint, different key
+  const n8nWebhookUrl = zapierWebhookUrl // Same endpoint, different key
 
   const handleSave = () => {
     const mainFormula = editedOffer.formulas && editedOffer.formulas.length > 0
@@ -1387,6 +1527,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <option value="systemeio">Systeme.io</option>
                     <option value="airtable">Airtable</option>
                     <option value="zapier">Zapier</option>
+                    <option value="make">Make</option>
+                    <option value="n8n">n8n</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
                     <ChevronDown className="h-4 w-4" />
@@ -1401,6 +1543,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           offer.crmProvider === 'systemeio' ? 'bg-blue-500' :
                             offer.crmProvider === 'airtable' ? 'bg-[#18BFFF]' :
                               offer.crmProvider === 'zapier' ? 'bg-[#FF4A00]' :
+                                offer.crmProvider === 'make' ? 'bg-[#6D00CC]' :
+                                  offer.crmProvider === 'n8n' ? 'bg-[#EA4B71]' :
                                 'bg-slate-500'
                     }`} />
                   <p className="text-sm font-medium text-white capitalize">
@@ -1410,6 +1554,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           offer.crmProvider === 'systemeio' ? 'Systeme.io' :
                             offer.crmProvider === 'airtable' ? 'Airtable' :
                               offer.crmProvider === 'zapier' ? 'Zapier' :
+                                offer.crmProvider === 'make' ? 'Make' :
+                                  offer.crmProvider === 'n8n' ? 'n8n' :
                                 offer.crmProvider || 'iClosed'}
                   </p>
                 </div>
@@ -2167,6 +2313,219 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                             <li>Action : <strong className="text-slate-400">Webhooks by Zapier</strong> → <strong className="text-slate-400">POST</strong></li>
                             <li>URL : collez l'URL ci-dessus</li>
                             <li>Headers : <code className="bg-slate-800 px-1 rounded text-[10px] text-slate-400">Authorization: Bearer votre_clé</code></li>
+                            <li>Body (JSON) : <code className="bg-slate-800 px-1 rounded text-[10px] text-slate-400">firstName, lastName, email, phone, company, source</code></li>
+                          </ol>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- MAKE CONFIG --- */}
+            {editedOffer.crmProvider === 'make' && (
+              <div className="rounded-lg border border-[#6D00CC]/20 bg-[#6D00CC]/5 p-3">
+                <div className="flex items-start gap-3">
+                  <Zap className="h-5 w-5 text-[#6D00CC] mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-purple-100">Configuration Make</h4>
+
+                    {!makeApiKey ? (
+                      <div className="mt-3">
+                        <p className="text-xs text-purple-300/80 leading-relaxed mb-3">
+                          Générez une clé API pour connecter Make à cette offre. Les prospects seront importés directement dans votre pipeline.
+                        </p>
+                        <button
+                          onClick={handleGenerateMakeKey}
+                          disabled={makeLoading}
+                          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#6D00CC] py-2.5 text-sm font-bold text-white hover:bg-[#5a00aa] transition-all disabled:opacity-50"
+                        >
+                          {makeLoading ? (
+                            <><Loader2 className="h-4 w-4 animate-spin" /> Génération...</>
+                          ) : (
+                            <><Key className="h-4 w-4" /> Générer une clé API</>
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2">
+                          <div className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-emerald-400" />
+                            <span className="text-sm font-semibold text-emerald-400">Clé API active</span>
+                          </div>
+                          <button
+                            onClick={handleDeleteMakeKey}
+                            disabled={makeLoading}
+                            className="text-xs text-slate-500 hover:text-red-400 underline flex items-center gap-1"
+                          >
+                            <Trash2 className="h-3 w-3" /> Supprimer
+                          </button>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">URL du Webhook</label>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 rounded border border-[#6D00CC]/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
+                              {makeWebhookUrl}
+                            </div>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(makeWebhookUrl)
+                                setMakeCopiedUrl(true)
+                                setTimeout(() => setMakeCopiedUrl(false), 2000)
+                              }}
+                              className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                            >
+                              {makeCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Clé API (Bearer Token)</label>
+                          <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                              <input
+                                type={makeShowKey ? 'text' : 'password'}
+                                value={makeApiKey}
+                                readOnly
+                                className="w-full rounded border border-[#6D00CC]/10 bg-slate-950 p-2 pr-8 font-mono text-xs text-slate-400"
+                              />
+                              <button
+                                onClick={() => setMakeShowKey(!makeShowKey)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                              >
+                                {makeShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(makeApiKey!)
+                                setMakeCopiedKey(true)
+                                setTimeout(() => setMakeCopiedKey(false), 2000)
+                              }}
+                              className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                            >
+                              {makeCopiedKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-white/5 bg-slate-950/50 p-3">
+                          <h5 className="mb-2 text-xs font-bold text-slate-300">Configuration dans Make :</h5>
+                          <ol className="text-[11px] text-slate-500 space-y-1.5 list-decimal list-inside">
+                            <li>Créez un scénario avec votre source (Facebook Ads, Typeform...)</li>
+                            <li>Ajoutez un module <strong className="text-slate-400">HTTP</strong> → <strong className="text-slate-400">Make a request</strong></li>
+                            <li>Méthode : <strong className="text-slate-400">POST</strong>, URL : collez l'URL ci-dessus</li>
+                            <li>Headers : <code className="bg-slate-800 px-1 rounded text-[10px] text-slate-400">Authorization: Bearer votre_clé</code></li>
+                            <li>Body (JSON) : <code className="bg-slate-800 px-1 rounded text-[10px] text-slate-400">firstName, lastName, email, phone, company, source</code></li>
+                          </ol>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- N8N CONFIG --- */}
+            {editedOffer.crmProvider === 'n8n' && (
+              <div className="rounded-lg border border-[#EA4B71]/20 bg-[#EA4B71]/5 p-3">
+                <div className="flex items-start gap-3">
+                  <Zap className="h-5 w-5 text-[#EA4B71] mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-pink-100">Configuration n8n</h4>
+
+                    {!n8nApiKey ? (
+                      <div className="mt-3">
+                        <p className="text-xs text-pink-300/80 leading-relaxed mb-3">
+                          Générez une clé API pour connecter n8n à cette offre. Les prospects seront importés directement dans votre pipeline.
+                        </p>
+                        <button
+                          onClick={handleGenerateN8nKey}
+                          disabled={n8nLoading}
+                          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#EA4B71] py-2.5 text-sm font-bold text-white hover:bg-[#d4405f] transition-all disabled:opacity-50"
+                        >
+                          {n8nLoading ? (
+                            <><Loader2 className="h-4 w-4 animate-spin" /> Génération...</>
+                          ) : (
+                            <><Key className="h-4 w-4" /> Générer une clé API</>
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2">
+                          <div className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-emerald-400" />
+                            <span className="text-sm font-semibold text-emerald-400">Clé API active</span>
+                          </div>
+                          <button
+                            onClick={handleDeleteN8nKey}
+                            disabled={n8nLoading}
+                            className="text-xs text-slate-500 hover:text-red-400 underline flex items-center gap-1"
+                          >
+                            <Trash2 className="h-3 w-3" /> Supprimer
+                          </button>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">URL du Webhook</label>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 rounded border border-[#EA4B71]/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
+                              {n8nWebhookUrl}
+                            </div>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(n8nWebhookUrl)
+                                setN8nCopiedUrl(true)
+                                setTimeout(() => setN8nCopiedUrl(false), 2000)
+                              }}
+                              className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                            >
+                              {n8nCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Clé API (Bearer Token)</label>
+                          <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                              <input
+                                type={n8nShowKey ? 'text' : 'password'}
+                                value={n8nApiKey}
+                                readOnly
+                                className="w-full rounded border border-[#EA4B71]/10 bg-slate-950 p-2 pr-8 font-mono text-xs text-slate-400"
+                              />
+                              <button
+                                onClick={() => setN8nShowKey(!n8nShowKey)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                              >
+                                {n8nShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(n8nApiKey!)
+                                setN8nCopiedKey(true)
+                                setTimeout(() => setN8nCopiedKey(false), 2000)
+                              }}
+                              className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                            >
+                              {n8nCopiedKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-white/5 bg-slate-950/50 p-3">
+                          <h5 className="mb-2 text-xs font-bold text-slate-300">Configuration dans n8n :</h5>
+                          <ol className="text-[11px] text-slate-500 space-y-1.5 list-decimal list-inside">
+                            <li>Créez un workflow avec un nœud <strong className="text-slate-400">HTTP Request</strong></li>
+                            <li>Méthode : <strong className="text-slate-400">POST</strong>, URL : collez l'URL ci-dessus</li>
+                            <li>Authentication : <strong className="text-slate-400">Header Auth</strong> → Name: Authorization, Value: Bearer votre_clé</li>
                             <li>Body (JSON) : <code className="bg-slate-800 px-1 rounded text-[10px] text-slate-400">firstName, lastName, email, phone, company, source</code></li>
                           </ol>
                         </div>

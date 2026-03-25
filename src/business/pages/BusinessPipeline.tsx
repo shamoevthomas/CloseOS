@@ -85,7 +85,7 @@ export function BusinessPipeline() {
   const effectiveUserId = ownerUserId || user?.id
   const { customStages, addCustomStage, deleteCustomStage, canManage } = useCustomStages()
   const crmProvider = businessSettings?.crm_provider || 'closeos'
-  const hasCrmIntegration = crmProvider !== 'closeos' && crmProvider !== 'zapier'
+  const hasCrmIntegration = crmProvider !== 'closeos' && crmProvider !== 'zapier' && crmProvider !== 'make' && crmProvider !== 'n8n'
 
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban')
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
@@ -115,6 +115,41 @@ export function BusinessPipeline() {
   const [newStageColor, setNewStageColor] = useState('#6366f1')
   const [newStageRoles, setNewStageRoles] = useState<string[]>(['Closer'])
   const [creatingStage, setCreatingStage] = useState(false)
+
+  // Next appointments per prospect
+  const [nextAppointments, setNextAppointments] = useState<Record<number, { date: string; time: string }>>({})
+  useEffect(() => {
+    if (!effectiveUserId) return
+    const today = new Date().toISOString().split('T')[0]
+    supabase
+      .from('business_appointments')
+      .select('prospect_id, date, time')
+      .eq('user_id', effectiveUserId)
+      .gte('date', today)
+      .in('status', ['pending', 'confirmed'])
+      .order('date', { ascending: true })
+      .order('time', { ascending: true })
+      .then(({ data }) => {
+        if (!data) return
+        const map: Record<number, { date: string; time: string }> = {}
+        for (const a of data) {
+          if (a.prospect_id && !map[a.prospect_id]) {
+            map[a.prospect_id] = { date: a.date, time: a.time }
+          }
+        }
+        setNextAppointments(map)
+      })
+  }, [effectiveUserId])
+
+  // Pipeline dismissals (per-user)
+  const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set())
+  useEffect(() => {
+    if (!user?.id) return
+    supabase.from('business_pipeline_dismissals').select('prospect_id').eq('user_id', user.id)
+      .then(({ data }) => {
+        if (data) setDismissedIds(new Set(data.map(d => d.prospect_id)))
+      })
+  }, [user?.id])
 
   // Pipeline auto-reset config
   const [showResetConfig, setShowResetConfig] = useState(false)
@@ -258,8 +293,8 @@ export function BusinessPipeline() {
 
   // Filter logic
   const filtered = useMemo(() => {
-    // Hide prospects removed from pipeline (auto-reset)
-    let result = prospects.filter(p => p.pipeline_visible !== false)
+    // Hide prospects removed from pipeline (auto-reset + per-user dismissals)
+    let result = prospects.filter(p => p.pipeline_visible !== false && !dismissedIds.has(p.id))
 
     // Search
     if (searchQuery) {
@@ -313,7 +348,7 @@ export function BusinessPipeline() {
     }
 
     return result
-  }, [prospects, searchQuery, selectedPeriod, selectedMembers, selectedStages, selectedOffers, selectedTags, selectedTeams, teamMembers, prospectTags])
+  }, [prospects, searchQuery, selectedPeriod, selectedMembers, selectedStages, selectedOffers, selectedTags, selectedTeams, teamMembers, prospectTags, dismissedIds])
 
   const hasActiveFilters = selectedPeriod > 0 || selectedMembers.length > 0 || selectedStages.length > 0 || selectedOffers.length > 0 || selectedTags.length > 0 || selectedTeams.length > 0
 
@@ -732,6 +767,14 @@ export function BusinessPipeline() {
                                       {deal.email && (
                                         <p className="text-xs text-stone-400 dark:text-neutral-500 truncate mt-1">{deal.email}</p>
                                       )}
+                                      {nextAppointments[deal.id] && (
+                                        <div className="flex items-center gap-1.5 mt-2 px-2.5 py-1.5 rounded-lg bg-[#006c49]/8 dark:bg-emerald-900/20">
+                                          <Calendar className="h-3 w-3 text-[#006c49] dark:text-emerald-400 shrink-0" strokeWidth={2} />
+                                          <span className="text-[11px] font-bold text-[#006c49] dark:text-emerald-400">
+                                            {new Date(nextAppointments[deal.id].date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {nextAppointments[deal.id].time?.slice(0, 5)}
+                                          </span>
+                                        </div>
+                                      )}
                                     </div>
                                   )
                                   return snapshot.isDragging ? createPortal(child, document.body) : child
@@ -1080,6 +1123,11 @@ export function BusinessPipeline() {
             deleteProspect(id)
             setSelectedProspect(null)
           }}
+          onDismissFromPipeline={(id, dismissed) => setDismissedIds(prev => {
+            const next = new Set(prev)
+            dismissed ? next.add(id) : next.delete(id)
+            return next
+          })}
         />
       )}
 
@@ -1240,7 +1288,7 @@ export function BusinessPipeline() {
               <div className="mb-4 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3">
                 <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                 <p className="text-xs text-amber-700">
-                  Votre CRM intégré (<span className="font-bold">{crmProvider}</span>) ne prendra pas en compte les statuts personnalisés. Seul Zapier est compatible.
+                  Votre CRM intégré (<span className="font-bold">{crmProvider}</span>) ne prendra pas en compte les statuts personnalisés. Seuls Zapier et Make sont compatibles.
                 </p>
               </div>
             )}

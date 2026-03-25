@@ -43,6 +43,8 @@ const INTEGRATIONS = [
   { label: 'Cal.com', color: '#ffffff' },
   { label: 'Stripe', color: '#635BFF' },
   { label: 'Zapier', color: '#FF4A00' },
+  { label: 'Make', color: '#6D00CC' },
+  { label: 'n8n', color: '#EA4B71' },
 ];
 
 function IntegrationsBanner() {

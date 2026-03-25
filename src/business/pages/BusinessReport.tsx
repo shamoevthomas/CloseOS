@@ -9,6 +9,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts'
+import { useNavigate } from 'react-router-dom'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 // @ts-ignore
@@ -23,6 +24,7 @@ interface TeamMember {
   email: string
   role: string
   joined_at: string
+  avatar_url?: string | null
 }
 
 interface ActivityEvent {
@@ -113,6 +115,7 @@ const ROLE_COLORS: Record<string, string> = {
 
 export function BusinessReport() {
   const { user, ownerUserId } = useBusinessAuth()
+  const navigate = useNavigate()
   const effectiveUserId = ownerUserId || user?.id
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
@@ -138,8 +141,8 @@ export function BusinessReport() {
     setLoading(true)
     try {
       const [membersRes, ownerRes, prospectsRes, campaignsRes, appointmentsRes, remindersRes] = await Promise.all([
-        supabase.from('business_team_members').select('id, first_name, last_name, email, role, joined_at').eq('business_owner_id', effectiveUserId),
-        supabase.from('business_users').select('id, full_name, email, created_at').eq('id', effectiveUserId).single(),
+        supabase.from('business_team_members').select('id, first_name, last_name, email, role, joined_at, avatar_url').eq('business_owner_id', effectiveUserId),
+        supabase.from('business_users').select('id, full_name, email, created_at, avatar_url').eq('id', effectiveUserId).single(),
         supabase.from('business_prospects').select('id, stage, value, created_at, campaign_id, payment_type, installments, assigned_to, contact, loss_reason, loss_details, call_notes').eq('user_id', effectiveUserId),
         supabase.from('business_campaigns').select('id, name, views, is_active, created_at').eq('user_id', effectiveUserId),
         supabase.from('business_appointments').select('id, status, date, campaign_id, prospect_id, created_at, assigned_to').eq('user_id', effectiveUserId),
@@ -148,7 +151,7 @@ export function BusinessReport() {
       const membersList = membersRes.data || []
       if (ownerRes.data) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
-        membersList.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', email: ownerRes.data.email || '', role: 'Owner', joined_at: ownerRes.data.created_at || '' })
+        membersList.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', email: ownerRes.data.email || '', role: 'Owner', joined_at: ownerRes.data.created_at || '', avatar_url: (ownerRes.data as any).avatar_url || null })
       }
       setMembers(membersList)
       setProspects(prospectsRes.data || [])
@@ -926,10 +929,24 @@ export function BusinessReport() {
               {members.map(m => {
                 const memberWins = filteredProspects.filter(p => p.stage === 'won' && (p as any).assigned_to === m.id).length
                 return (
-                  <div key={m.id} className="flex items-center justify-between px-7 py-4 hover:bg-stone-50 dark:hover:bg-neutral-800/50 transition-colors">
+                  <div
+                    key={m.id}
+                    onClick={() => {
+                      const role = m.role
+                      if (role === 'Setter') {
+                        navigate(`/business/setter-kpi?member=${m.id}`)
+                      } else {
+                        navigate(`/business/closer-kpi?member=${m.id}`)
+                      }
+                    }}
+                    className="flex items-center justify-between px-7 py-4 hover:bg-stone-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-sm font-bold text-stone-600 dark:text-neutral-300">
-                        {m.first_name[0]}{m.last_name?.[0] || ''}
+                      <div className="w-10 h-10 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-sm font-bold text-stone-600 dark:text-neutral-300 overflow-hidden">
+                        {m.avatar_url ? (
+                          <img src={m.avatar_url} alt={`${m.first_name} ${m.last_name}`} className="w-full h-full object-cover" />
+                        ) : (
+                          <>{m.first_name[0]}{m.last_name?.[0] || ''}</>
+                        )}
                       </div>
                       <div>
                         <p className="font-bold text-stone-900 dark:text-white">{m.first_name} {m.last_name}</p>

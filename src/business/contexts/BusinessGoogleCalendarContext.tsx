@@ -29,7 +29,7 @@ interface BusinessGoogleCalendarContextType {
   logout: () => void
   isLoading: boolean
   refreshEvents: () => void
-  createEvent: (event: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean }) => Promise<{ success: boolean; hangoutLink?: string }>
+  createEvent: (event: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean; allDay?: boolean }) => Promise<{ success: boolean; hangoutLink?: string }>
   deleteEvent: (googleEventId: string) => Promise<boolean>
   getAccessToken: () => string | null
 }
@@ -155,19 +155,29 @@ export function BusinessGoogleCalendarProvider({ children }: { children: ReactNo
     scope: 'https://www.googleapis.com/auth/calendar.events',
   })
 
-  const createEvent = async (eventData: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean }): Promise<{ success: boolean; hangoutLink?: string }> => {
+  const createEvent = async (eventData: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean; allDay?: boolean }): Promise<{ success: boolean; hangoutLink?: string }> => {
     if (!accessToken) return { success: false }
     try {
-      const startDateTime = `${eventData.date}T${eventData.startTime}:00`
-      const endDateTime = `${eventData.date}T${eventData.endTime}:00`
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
 
       const body: any = {
         summary: eventData.title,
         description: eventData.description || '',
         location: eventData.location || '',
-        start: { dateTime: startDateTime, timeZone: tz },
-        end: { dateTime: endDateTime, timeZone: tz },
+      }
+
+      if (eventData.allDay) {
+        // All-day event: use date (not dateTime), end date is next day
+        const nextDay = new Date(eventData.date + 'T00:00:00')
+        nextDay.setDate(nextDay.getDate() + 1)
+        const endDate = nextDay.toISOString().split('T')[0]
+        body.start = { date: eventData.date }
+        body.end = { date: endDate }
+      } else {
+        const startDateTime = `${eventData.date}T${eventData.startTime}:00`
+        const endDateTime = `${eventData.date}T${eventData.endTime}:00`
+        body.start = { dateTime: startDateTime, timeZone: tz }
+        body.end = { dateTime: endDateTime, timeZone: tz }
       }
 
       if (eventData.withGoogleMeet) {

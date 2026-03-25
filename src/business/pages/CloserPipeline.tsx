@@ -1,14 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
-  User, ChevronDown, Search, Loader2, Building2,
+  User, ChevronDown, Search, Loader2, Building2, Calendar,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { useCustomStages } from '../hooks/useCustomStages'
+import { supabase } from '../../lib/supabase'
 
 const GLASS_CARD = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700'
 const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold'
@@ -29,15 +30,51 @@ const INACTIVE_STAGES = [
 
 export function CloserPipeline() {
   const { prospects, updateProspect, loading } = useBusinessProspects()
-  const { teamMember } = useBusinessAuth()
+  const { teamMember, user } = useBusinessAuth()
   const { getStagesForRole } = useCustomStages()
   const myCustomStages = getStagesForRole(teamMember?.role)
+
+  // Next appointments per prospect
+  const [nextAppointments, setNextAppointments] = useState<Record<number, { date: string; time: string }>>({})
+  useEffect(() => {
+    const ownerId = teamMember?.business_owner_id
+    if (!ownerId) return
+    const today = new Date().toISOString().split('T')[0]
+    supabase
+      .from('business_appointments')
+      .select('prospect_id, date, time')
+      .eq('user_id', ownerId)
+      .gte('date', today)
+      .in('status', ['pending', 'confirmed'])
+      .order('date', { ascending: true })
+      .order('time', { ascending: true })
+      .then(({ data }) => {
+        if (!data) return
+        const map: Record<number, { date: string; time: string }> = {}
+        for (const a of data) {
+          if (a.prospect_id && !map[a.prospect_id]) {
+            map[a.prospect_id] = { date: a.date, time: a.time }
+          }
+        }
+        setNextAppointments(map)
+      })
+  }, [teamMember?.business_owner_id])
+
+  // Pipeline dismissals (per-user)
+  const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set())
+  useEffect(() => {
+    if (!user?.id) return
+    supabase.from('business_pipeline_dismissals').select('prospect_id').eq('user_id', user.id)
+      .then(({ data }) => {
+        if (data) setDismissedIds(new Set(data.map(d => d.prospect_id)))
+      })
+  }, [user?.id])
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set(['noshow', 'lost']))
 
-  const myProspects = prospects.filter(p => p.assigned_to === teamMember?.id || p.assigned_setter === teamMember?.id)
+  const myProspects = prospects.filter(p => (p.assigned_to === teamMember?.id || p.assigned_setter === teamMember?.id) && !dismissedIds.has(p.id))
 
   const filteredProspects = myProspects.filter(p => {
     if (!searchQuery) return true
@@ -204,6 +241,14 @@ export function CloserPipeline() {
                                             {(deal.value || 0).toLocaleString()} €
                                           </p>
                                         </div>
+                                        {nextAppointments[deal.id] && (
+                                          <div className="flex items-center gap-1.5 mt-3 px-2.5 py-1.5 rounded-lg bg-[#006c49]/8 dark:bg-emerald-900/20">
+                                            <Calendar className="h-3 w-3 text-[#006c49] dark:text-emerald-400 shrink-0" strokeWidth={2} />
+                                            <span className="text-[11px] font-bold text-[#006c49] dark:text-emerald-400">
+                                              {new Date(nextAppointments[deal.id].date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {nextAppointments[deal.id].time?.slice(0, 5)}
+                                            </span>
+                                          </div>
+                                        )}
                                       </div>
                                     )
                                     return snapshot.isDragging ? createPortal(child, document.body) : child
@@ -414,6 +459,11 @@ export function CloserPipeline() {
             setSelectedProspect(prev => prev ? { ...prev, ...updates } : null)
           }}
           onDelete={() => {}}
+          onDismissFromPipeline={(id, dismissed) => setDismissedIds(prev => {
+            const next = new Set(prev)
+            dismissed ? next.add(id) : next.delete(id)
+            return next
+          })}
         />
       )}
     </div>

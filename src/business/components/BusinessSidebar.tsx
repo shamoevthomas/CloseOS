@@ -198,8 +198,8 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
   }, [onCollapseChange])
 
   const fullName = isTeamMember
-    ? `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || user?.user_metadata?.full_name || 'Membre'
-    : businessProfile?.full_name || user?.user_metadata?.full_name || 'Utilisateur';
+    ? `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Membre'
+    : businessProfile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Utilisateur';
   const userRole = isTeamMember ? (teamMember?.role || 'Membre') : (businessProfile?.role || 'Business Owner');
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   const avatarUrl = isTeamMember
@@ -223,50 +223,62 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col bg-white/60 dark:bg-neutral-900/80 backdrop-blur-xl border-r border-neutral-900/5 dark:border-neutral-800 shadow-[0_20px_40px_rgba(27,28,27,0.04)] transition-all duration-300 ease-in-out",
-          // Desktop: static with dynamic width
-          "lg:static",
-          collapsed ? "lg:w-[72px]" : "lg:w-72",
+          "fixed z-50 flex flex-col backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] transition-all duration-300 ease-in-out",
+          collapsed
+            ? "lg:fixed lg:left-4 lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-20 lg:rounded-[3rem] lg:border lg:border-neutral-900/5 lg:items-center lg:py-4 bg-[rgba(244,242,241,0.8)] dark:bg-neutral-900/80"
+            : "inset-y-0 left-0 lg:static lg:w-72 bg-white/60 dark:bg-neutral-900/80 border-r border-neutral-900/5 dark:border-neutral-800",
           // Mobile: fixed slide-in
           isOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0"
         )}
       >
         {/* Header */}
         <div className={cn(
-          "flex items-center h-[72px] border-b border-neutral-900/5 dark:border-neutral-800 transition-all duration-300",
-          collapsed ? "px-4 justify-center" : "px-6 gap-3"
+          "flex items-center transition-all duration-300",
+          collapsed ? "mb-4 justify-center w-full" : "h-[72px] border-b border-neutral-900/5 dark:border-neutral-800 px-6 gap-3"
         )}>
-          {collapsed && businessSettings?.logo_url ? (
-            <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-neutral-100 flex items-center justify-center">
-              <img
-                src={businessSettings.logo_url}
-                alt={businessSettings?.company_name || 'Organisation'}
-                className="h-full w-full object-cover"
-              />
-            </div>
+          {collapsed ? (
+            businessSettings?.logo_url ? (
+              <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-neutral-100 flex items-center justify-center">
+                <img
+                  src={businessSettings.logo_url}
+                  alt={businessSettings?.company_name || 'Organisation'}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-12 h-12 bg-neutral-900 flex items-center justify-center rounded-xl shadow-sm shrink-0">
+                <img
+                  src="/logo.PNG"
+                  alt="CloseOS"
+                  className="h-8 w-8 object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-white font-black text-lg" style="font-family:Manrope,sans-serif">C</span>'
+                  }}
+                />
+              </div>
+            )
           ) : (
-            <div className="w-10 h-10 bg-neutral-900 flex items-center justify-center rounded-lg shadow-sm shrink-0">
-              <img
-                src="/logo.PNG"
-                alt="CloseOS"
-                className="h-8 w-8 object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-white font-black text-lg" style="font-family:Manrope,sans-serif">C</span>'
-                }}
-              />
-            </div>
-          )}
-          {!collapsed && (
-            <div className="overflow-hidden">
-              <h1 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tighter" style={{ fontFamily: 'Manrope, sans-serif' }}>CloseOS</h1>
-              <p className="text-[10px] font-extrabold uppercase text-neutral-500 dark:text-neutral-400 opacity-70 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>Business Suite</p>
-            </div>
-          )}
-          {!collapsed && (
-            <button onClick={onClose} className="lg:hidden ml-auto p-2 text-neutral-400 hover:text-neutral-900">
-              <X className="h-5 w-5" />
-            </button>
+            <>
+              <div className="w-10 h-10 bg-neutral-900 flex items-center justify-center rounded-lg shadow-sm shrink-0">
+                <img
+                  src="/logo.PNG"
+                  alt="CloseOS"
+                  className="h-8 w-8 object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-white font-black text-lg" style="font-family:Manrope,sans-serif">C</span>'
+                  }}
+                />
+              </div>
+              <div className="overflow-hidden">
+                <h1 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tighter" style={{ fontFamily: 'Manrope, sans-serif' }}>CloseOS</h1>
+                <p className="text-[10px] font-extrabold uppercase text-neutral-500 dark:text-neutral-400 opacity-70 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>Business Suite</p>
+              </div>
+              <button onClick={onClose} className="lg:hidden ml-auto p-2 text-neutral-400 hover:text-neutral-900">
+                <X className="h-5 w-5" />
+              </button>
+            </>
           )}
         </div>
 
@@ -296,11 +308,17 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
 
         {/* Navigation */}
         <nav className={cn(
-          "flex-1 overflow-y-auto py-4 space-y-0.5",
-          collapsed ? "px-2" : "px-4"
+          "flex-1 overflow-y-auto space-y-1",
+          collapsed ? "w-full flex flex-col items-center px-0 py-2 gap-1" : "py-4 px-4"
         )}>
           {hasAcknowledgedOnboarding ? (
-            navigation.map((item) => (
+            (collapsed
+              ? navigation.filter((item) => {
+                  const cutoff = ['Rapport', 'KPI Setter', 'KPI Closer', 'Disponibilité', 'Équipe', 'Organisation']
+                  return !cutoff.includes(item.name)
+                })
+              : navigation
+            ).map((item) => (
               <NavLink
                 key={item.name + item.href}
                 to={item.href}
@@ -309,11 +327,20 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
                 }}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-3 py-3 transition-all group cursor-pointer rounded-r-lg',
-                    collapsed ? 'justify-center px-2' : 'pl-4',
-                    isActive
-                      ? 'text-neutral-900 dark:text-white font-extrabold border-r-2 border-neutral-900 dark:border-white'
-                      : 'text-neutral-500 dark:text-neutral-400 font-medium hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5'
+                    'flex items-center transition-all group cursor-pointer',
+                    collapsed
+                      ? cn(
+                          'w-12 h-12 justify-center rounded-xl',
+                          isActive
+                            ? 'text-neutral-900 dark:text-white bg-neutral-900/5 dark:bg-white/10 border-l-2 border-neutral-900 dark:border-white'
+                            : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5'
+                        )
+                      : cn(
+                          'gap-3 py-3 pl-4 rounded-r-lg',
+                          isActive
+                            ? 'text-neutral-900 dark:text-white font-extrabold border-r-2 border-neutral-900 dark:border-white'
+                            : 'text-neutral-500 dark:text-neutral-400 font-medium hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5'
+                        )
                   )
                 }
                 title={collapsed ? item.name : undefined}
@@ -339,28 +366,26 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
 
         {/* Footer */}
         <div className={cn(
-          "border-t border-neutral-900/5 dark:border-neutral-800 space-y-1",
-          collapsed ? "p-2" : "pt-4 pb-4 px-4"
+          "border-t border-neutral-900/5 dark:border-neutral-800",
+          collapsed ? "pt-4 mt-2 flex flex-col items-center gap-3 w-full" : "pt-4 pb-4 px-4 space-y-1"
         )}>
           {/* Settings */}
-          {(
-            <button
-              onClick={() => { onOpenSettings?.(); setIsMenuOpen(false) }}
-              className={cn(
-                'flex items-center gap-3 py-3 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5 rounded-r-lg transition-all w-full',
-                collapsed ? 'justify-center px-2' : 'pl-4'
-              )}
-              title={collapsed ? 'Settings' : undefined}
-            >
-              <Settings className="h-5 w-5 shrink-0" />
-              {!collapsed && (
-                <span className="text-sm font-extrabold tracking-tight uppercase" style={{ fontFamily: 'Manrope, sans-serif' }}>Settings</span>
-              )}
-            </button>
-          )}
+          <button
+            onClick={() => { onOpenSettings?.(); setIsMenuOpen(false) }}
+            className={cn(
+              'flex items-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5 transition-all',
+              collapsed ? 'w-12 h-12 justify-center rounded-xl' : 'gap-3 py-3 pl-4 rounded-r-lg w-full'
+            )}
+            title={collapsed ? 'Settings' : undefined}
+          >
+            <Settings className="h-5 w-5 shrink-0" />
+            {!collapsed && (
+              <span className="text-sm font-extrabold tracking-tight uppercase" style={{ fontFamily: 'Manrope, sans-serif' }}>Settings</span>
+            )}
+          </button>
 
           {/* User profile */}
-          <div className="relative">
+          <div className={cn("relative", collapsed && "flex justify-center")}>
             {isMenuOpen && !collapsed && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)} />
@@ -385,16 +410,24 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
                 }
               }}
               className={cn(
-                'flex items-center gap-3 rounded-xl hover:bg-neutral-900/5 dark:hover:bg-white/5 transition-colors w-full',
-                collapsed ? 'justify-center p-2' : 'p-3'
+                'flex items-center hover:bg-neutral-900/5 dark:hover:bg-white/5 transition-colors',
+                collapsed ? 'justify-center' : 'gap-3 rounded-xl p-3 w-full'
               )}
               title={collapsed ? fullName : undefined}
             >
-              <div className="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden shrink-0">
+              <div className={cn(
+                "rounded-full overflow-hidden shrink-0",
+                collapsed
+                  ? "w-12 h-12 border-2 border-white/50 shadow-sm hover:ring-2 hover:ring-neutral-900/20 transition-all cursor-pointer"
+                  : "w-10 h-10 bg-neutral-200 dark:bg-neutral-700"
+              )}>
                 {avatarUrl ? (
                   <img src={avatarUrl} alt={fullName} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm font-bold text-neutral-600">
+                  <div className={cn(
+                    "w-full h-full flex items-center justify-center text-sm font-bold text-neutral-600",
+                    collapsed && "bg-neutral-200"
+                  )}>
                     {initials || 'U'}
                   </div>
                 )}

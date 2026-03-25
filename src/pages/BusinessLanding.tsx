@@ -219,7 +219,9 @@ export const BusinessLanding: React.FC = () => {
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
             <a href="#features" className="hover:text-[#111111] transition-colors">Management</a>
             <a href="#crm" className="hover:text-[#111111] transition-colors">CRM</a>
+            <a href="#integrations" className="hover:text-[#111111] transition-colors">Intégrations</a>
             <a href="#roles" className="hover:text-[#111111] transition-colors">Rôles</a>
+            <a href="#demo" className="hover:text-[#111111] transition-colors">Démo</a>
             <a href="#faq" className="hover:text-[#111111] transition-colors">FAQ</a>
           </div>
 
@@ -237,9 +239,9 @@ export const BusinessLanding: React.FC = () => {
         </div>
       </nav>
 
-      <main className="flex flex-col flex-1 pt-24">
+      <main className="flex flex-col flex-1 pt-16">
         {/* Hero Section */}
-        <section className="px-6 md:px-20 py-16 md:py-24 max-w-6xl mx-auto text-center relative">
+        <section className="px-6 md:px-20 py-10 md:py-14 max-w-6xl mx-auto text-center relative">
           
           {/* Abstract Background Blobs */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[500px] opacity-30 pointer-events-none -z-10">
@@ -296,13 +298,58 @@ export const BusinessLanding: React.FC = () => {
           </motion.div>
         </section>
 
+        {/* Compact Integrations Strip */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}
+          id="integrations"
+          className="px-6 md:px-20 pt-2 pb-4 max-w-7xl mx-auto"
+        >
+          <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-stone-400 mb-1">Integrations natives : synchronisez vos outils existants</p>
+          <p className="text-center text-[11px] text-stone-400 mb-5">12+ integrations natives · 7 000+ via Zapier, Make & n8n</p>
+          <div className="relative overflow-hidden">
+            <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#f4f2f1] to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#f4f2f1] to-transparent z-10 pointer-events-none" />
+            <div className="flex animate-scroll-left gap-4 w-max">
+              {[...Array(2)].map((_, dup) => (
+                <div key={dup} className="flex gap-4">
+                  {[
+                    { name: 'HubSpot', logo: '/HubSpot.png' },
+                    { name: 'Pipedrive', logo: '/Pipedrive.png' },
+                    { name: 'GoHighLevel', logo: '/GHL.jpg' },
+                    { name: 'Airtable', logo: '/airtable.png' },
+                    { name: 'Systeme.io', logo: '/Systemeio.png' },
+                    { name: 'iClosed', logo: '/Iclosed.png' },
+                    { name: 'Google Calendar', logo: '/Gcalendar.svg.png' },
+                    { name: 'Stripe', logo: '/Stripe.png' },
+                    { name: 'Calendly', logo: '/Calendly.png' },
+                    { name: 'Zapier', logo: '/Zapier.png' },
+                    { name: 'Make', logo: '/make.png' },
+                    { name: 'n8n', logo: '/N8N.png' },
+                  ].map((integration) => (
+                    <div
+                      key={`${dup}-${integration.name}`}
+                      className="flex items-center gap-2.5 px-4 py-2.5 bg-white rounded-xl border border-stone-200/80 shadow-sm min-w-[130px]"
+                    >
+                      <img src={integration.logo} alt={integration.name} className="h-5 w-auto object-contain" />
+                      <span className="text-xs font-semibold text-[#111111] whitespace-nowrap">{integration.name}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.section>
+
         {/* Dashboard Macro Section (Bento Grid) */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="px-6 md:px-20 py-24 max-w-7xl mx-auto" 
+          className="px-6 md:px-20 py-24 max-w-7xl mx-auto"
           id="features"
         >
           <div className="text-center mb-16 space-y-4">
@@ -379,64 +426,13 @@ export const BusinessLanding: React.FC = () => {
               <CRMKPI index={2} title="KPI CRM • Vélocité" value="12 Jours" description="Cycle de vente moyen (Lead to Close)" />
             </div>
 
-            {/* Integrations Banner */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6 }}
-              className="mt-16 pt-16 border-t border-stone-200"
-            >
-              <div className="text-center mb-10">
-                <p className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-3">11+ intégrations natives · 6 000+ via Zapier</p>
-                <h3 className="text-2xl md:text-3xl font-bold text-[#111111] tracking-tight">
-                  Connectez vos outils existants. Ou utilisez tout en natif.
-                </h3>
-                <p className="text-stone-500 text-base mt-3 max-w-2xl mx-auto">
-                  CloseOS se synchronise avec vos CRM et outils d'acquisition en bidirectionnel. Gardez votre stack ou centralisez tout — c'est vous qui décidez.
-                </p>
-              </div>
-              <div className="relative overflow-hidden">
-                <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#fbf9f8] to-transparent z-10 pointer-events-none" />
-                <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[#fbf9f8] to-transparent z-10 pointer-events-none" />
-                <div className="flex animate-scroll-left gap-6 w-max">
-                  {[...Array(2)].map((_, dup) => (
-                    <div key={dup} className="flex gap-6">
-                      {[
-                        { name: 'HubSpot', logo: '/HubSpot.png', type: 'Sync bidirectionnelle' },
-                        { name: 'Pipedrive', logo: '/Pipedrive.png', type: 'Sync bidirectionnelle' },
-                        { name: 'GoHighLevel', logo: '/GHL.jpg', type: 'Sync bidirectionnelle' },
-                        { name: 'Airtable', logo: '/airtable.png', type: 'Sync bidirectionnelle' },
-                        { name: 'Systeme.io', logo: '/Systemeio.png', type: 'Webhook' },
-                        { name: 'iClosed', logo: '/Iclosed.png', type: 'Webhook' },
-                        { name: 'Google Calendar', logo: '/Gcalendar.svg.png', type: 'Sync bidirectionnelle' },
-                        { name: 'Stripe', logo: '/Stripe.png', type: 'Paiements' },
-                        { name: 'Calendly', logo: '/Calendly.png', type: 'Webhook' },
-                        { name: 'Zapier', logo: '/Zapier.png', type: 'Automatisation' },
-                        { name: 'Cal.com', logo: '/Calcom.png', type: 'Sync bidirectionnelle' },
-                      ].map((integration) => (
-                        <div
-                          key={`${dup}-${integration.name}`}
-                          className="flex flex-col items-center gap-2 px-8 py-5 bg-white rounded-2xl border border-stone-200 shadow-sm min-w-[160px] transition-transform duration-300 hover:scale-110 hover:shadow-md hover:z-20"
-                        >
-                          <img src={integration.logo} alt={integration.name} className="h-8 w-auto object-contain" />
-                          <span className="text-sm font-bold text-[#111111]">{integration.name}</span>
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">{integration.type}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-
             <div className="flex justify-center mt-12">
-              <button
-                onClick={() => setIsModalOpen(true)}
+              <a
+                href="#demo"
                 className="flex items-center justify-center rounded-xl h-14 px-8 text-white text-lg font-semibold shadow-lg hover:-translate-y-1 transition-all bg-[#111111]"
               >
-                Rejoindre la liste d'attente
-              </button>
+                Réserver une démo
+              </a>
             </div>
           </div>
         </motion.section>
@@ -459,7 +455,8 @@ export const BusinessLanding: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8 }}
-          className="px-6 md:px-12 py-24 max-w-[1800px] mx-auto"
+          id="demo"
+          className="px-6 md:px-12 pt-24 pb-8 max-w-[1800px] mx-auto"
         >
           <div className="space-y-8">
             <div className="text-center max-w-2xl mx-auto">
@@ -476,15 +473,16 @@ export const BusinessLanding: React.FC = () => {
                 <span className="flex items-center gap-2"><CheckCircle className="size-4 text-emerald-500 shrink-0" /> 100% gratuit</span>
               </div>
             </div>
-            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
+            <div className="max-w-[1200px] mx-auto">
               <iframe
                 ref={demoIframeRef}
-                src="/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&bg=f7f7f7&layout=horizontal"
+                id="closeos-embed"
+                src="/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&layout=horizontal"
                 width="100%"
-                height="530"
+                height={530}
                 frameBorder="0"
                 scrolling="no"
-                style={{ border: 'none', borderRadius: '12px', overflow: 'hidden', transition: 'height 0.5s ease-in-out' }}
+                style={{ border: 'none', borderRadius: 12, overflow: 'hidden', transition: 'height 0.4s ease' }}
               />
             </div>
           </div>
@@ -496,7 +494,7 @@ export const BusinessLanding: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="px-6 md:px-20 py-32 bg-[#f4f2f1]" 
+          className="px-6 md:px-20 pt-16 pb-32 bg-[#f4f2f1]"
           id="faq"
         >
           <div className="max-w-3xl mx-auto">
@@ -657,7 +655,7 @@ const TeamManagement = () => (
       </div>
       <h3 className="text-2xl font-bold text-[#111111] mb-3">Gestion de l'Équipe complète</h3>
       <p className="text-stone-500 mb-8">
-        Organisez vos closers et setters en équipes, suivez qui est en ligne en temps réel, gérez les disponibilités, absences, primes et commissions individuelles. Invitez de nouveaux membres en un clic avec des rôles prédéfinis.
+        Créez des équipes dédiées (Closers, Setters, mixtes), assignez des rôles précis (Closer, Setter, Setter-Closer, Head of Sales, Admin) et suivez en temps réel qui est connecté. Gérez les disponibilités, absences, primes et commissions de chaque membre. Invitez par lien avec onboarding automatique adapté au rôle.
       </p>
     </div>
     <div className="space-y-3">
@@ -1219,12 +1217,12 @@ const rolesData: RoleData[] = [
         icon: <Users className="size-5" />,
         title: 'Équipe & Organisation',
         items: [
-          'Créez des équipes et groupez vos closers/setters',
-          'Statut online temps réel + historique connexion 7j',
-          'Disponibilités, absences, primes et commissions par membre',
-          '5 rôles : Closer, Setter, Setter-Closer, Head of Sales, Admin',
-          'Invitation par lien + onboarding personnalisable par rôle',
-          'Objectifs individuels et collectifs avec suivi progression',
+          'Créez des équipes dédiées et groupez closers/setters par spécialité',
+          'Statut online temps réel + historique connexion 7j de chaque membre',
+          'Disponibilités, absences, primes et commissions individuelles par membre',
+          '5 rôles avec permissions : Closer, Setter, Setter-Closer, Head of Sales, Admin',
+          'Invitation par lien unique + onboarding automatique adapté au rôle assigné',
+          'Objectifs individuels et collectifs avec suivi de progression en temps réel',
         ],
       },
       {
@@ -1378,7 +1376,7 @@ const FeaturesByRole = () => {
   }, [activeRole]);
 
   return (
-    <section id="roles" className="px-6 md:px-20 py-24 max-w-7xl mx-auto">
+    <section id="roles" className="px-4 sm:px-6 md:px-20 py-16 sm:py-24 max-w-7xl mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 16, filter: 'blur(4px)' }}
         whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -1389,16 +1387,18 @@ const FeaturesByRole = () => {
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
           <span className="text-sm font-semibold text-stone-800">Fonctionnalités par Rôle</span>
         </div>
-        <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight text-balance">
+        <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-[#111111] tracking-tight text-balance">
           Chaque rôle a ses outils. Chaque outil a sa place.
         </h2>
-        <p className="text-stone-500 text-lg max-w-2xl mx-auto text-pretty">
+        <p className="text-stone-500 text-base sm:text-lg max-w-2xl mx-auto text-pretty">
           Owner, Closer, Setter ou Setter-Closer — chacun accède exactement à ce dont il a besoin, rien de plus.
         </p>
       </motion.div>
 
       {/* Role Tabs — Liquid Glass */}
-      <div className="flex justify-center mb-12">
+      {/* Role Tabs — Desktop: single row with bubble / Mobile: 2x2 grid */}
+      {/* Desktop */}
+      <div className="hidden sm:flex justify-center mb-12">
         <div
           ref={tabContainerRef}
           className="relative inline-flex rounded-2xl border border-stone-200/50 bg-stone-100/80 backdrop-blur-sm shadow-[0_0_9px_rgba(0,0,0,0.06),0_3px_12px_rgba(0,0,0,0.08)] p-1.5"
@@ -1408,7 +1408,7 @@ const FeaturesByRole = () => {
               key={role.id}
               ref={(el) => { if (el) tabRefs.current.set(role.id, el); }}
               onClick={() => setActiveRole(role.id)}
-              className="relative z-10 flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-bold transition-colors duration-300 cursor-pointer select-none"
+              className="relative z-10 flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-bold transition-colors duration-300 cursor-pointer select-none whitespace-nowrap"
               style={{ color: activeRole === role.id ? '#111111' : '#78716c' }}
             >
               {role.icon}
@@ -1430,11 +1430,28 @@ const FeaturesByRole = () => {
               mass: 0.8,
             }}
           >
-            {/* Glass gradient overlays */}
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/60 via-transparent to-transparent opacity-70 pointer-events-none" />
             <div className="absolute inset-0 rounded-xl bg-gradient-to-tl from-white/30 via-transparent to-transparent opacity-50 pointer-events-none" />
           </motion.div>
         </div>
+      </div>
+
+      {/* Mobile: 2x2 grid */}
+      <div className="sm:hidden grid grid-cols-2 gap-2 mb-10 px-2">
+        {rolesData.map((role) => (
+          <button
+            key={role.id}
+            onClick={() => setActiveRole(role.id)}
+            className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${
+              activeRole === role.id
+                ? 'bg-white text-[#111111] shadow-md border border-stone-200'
+                : 'bg-stone-100/80 text-stone-400 border border-transparent'
+            }`}
+          >
+            {role.icon}
+            {role.label}
+          </button>
+        ))}
       </div>
 
       {/* Role Content */}
@@ -1445,7 +1462,7 @@ const FeaturesByRole = () => {
         transition={{ duration: 0.5, ease: roleEase }}
       >
         {/* Role Header */}
-        <div className="bg-[#111111] text-white rounded-3xl p-8 md:p-12 mb-6 relative overflow-hidden">
+        <div className="bg-[#111111] text-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 mb-6 relative overflow-hidden">
           <div className={`absolute top-0 right-0 w-96 h-96 bg-gradient-to-br ${currentRole.color} rounded-full blur-[120px] opacity-30 -translate-y-1/2 translate-x-1/3 pointer-events-none`} />
           <div className="relative z-10 max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
@@ -1454,7 +1471,7 @@ const FeaturesByRole = () => {
               </div>
               <span className="text-sm font-bold uppercase tracking-[0.15em] opacity-70">{currentRole.tagline}</span>
             </div>
-            <h3 className="text-3xl md:text-4xl font-bold tracking-tight mb-4" style={{ lineHeight: '1.1' }}>
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-4" style={{ lineHeight: '1.1' }}>
               {currentRole.label}
             </h3>
             <p className="text-lg opacity-80 font-medium leading-relaxed max-w-xl">
@@ -1464,14 +1481,14 @@ const FeaturesByRole = () => {
         </div>
 
         {/* Feature Cards */}
-        <div className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3`}>
+        <div className={`grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3`}>
           {currentRole.features.map((feature, i) => (
             <motion.div
               key={feature.title}
               initial={{ opacity: 0, y: 16, filter: 'blur(4px)' }}
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               transition={{ duration: 0.5, delay: i * 0.08, ease: roleEase }}
-              className="bg-white rounded-2xl p-7 border border-stone-200 shadow-sm hover:shadow-md transition-shadow duration-300"
+              className="bg-white rounded-2xl p-5 sm:p-7 border border-stone-200 shadow-sm hover:shadow-md transition-shadow duration-300"
             >
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-[#111111] flex-shrink-0">
