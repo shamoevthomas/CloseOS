@@ -6,12 +6,16 @@ CloseOS is a Francophone SaaS platform for digital sales professionals (closers)
 
 ## Tech Stack
 
-- **Frontend**: React 19, TypeScript 5.9, Vite 7, Tailwind CSS 3
+- **Frontend**: React 19.2, TypeScript 5.9, Vite 7.2, Tailwind CSS 3.4
 - **Backend**: Vercel Serverless Functions (Node.js)
 - **Database**: Supabase (PostgreSQL) with Row Level Security
 - **Auth**: Supabase Auth (email/password + Google OAuth)
 - **Payments**: Stripe + Stripe Connect
-- **Integrations**: HubSpot, Pipedrive, Cal.com, Daily.co, Brevo, GoHighLevel, SystemeIO, Zapier, Airtable, Google Calendar
+- **Video/Animation**: Remotion (video generation), Motion (animations)
+- **Charts**: Recharts 3.7
+- **PDF**: jsPDF, html2pdf.js
+- **Drag & Drop**: @hello-pangea/dnd
+- **Integrations**: HubSpot, Pipedrive, Cal.com, Daily.co, Brevo, GoHighLevel, SystemeIO, Zapier, Airtable, Google Calendar, FirstPromoter
 
 ## Quick Commands
 
@@ -30,33 +34,63 @@ lsof -ti:5173 | xargs kill -9
 
 ```
 src/
-  App.tsx                    # Router + context providers (~40 routes)
+  App.tsx                    # Router + context providers (50+ routes)
   main.tsx                   # Entry point (React DOM, GoogleOAuthProvider)
-  pages/                     # Individual user pages (Dashboard, Pipeline, Contacts, etc.)
-  components/                # Shared React components (modals, forms, UI)
-  contexts/                  # Global state (Auth, Prospects, Offers, Calls, Meetings, etc.)
-  lib/                       # Utilities (supabase client, helpers, timezone, countries)
-  layouts/                   # Layout wrappers
+  pages/                     # Individual user pages (37 files: Dashboard, Pipeline, Contacts, etc.)
+  components/                # Shared React components (36 files: modals, forms, UI)
+    settings/                # Settings modal (SettingsModal subdirectory)
+  contexts/                  # Global state (11 contexts)
+    AuthContext.tsx           # Primary user authentication
+    ProspectsContext.tsx      # Sales prospects management
+    OffersContext.tsx         # Offers/deals
+    CallsContext.tsx          # Call tracking
+    MeetingsContext.tsx       # Meeting scheduling
+    NotificationsContext.tsx  # In-app notifications
+    MessagesContext.tsx       # Messaging
+    GoogleCalendarContext.tsx # Google Calendar sync
+    InternalContactsContext.tsx # Team contacts
+    PrivacyContext.tsx        # Data masking/privacy
+    UpgradeContext.tsx        # Subscription upgrade prompts
+  lib/                       # Utilities (7 files)
+    supabase.ts              # Supabase client initialization
+    supabaseHelpers.ts       # Database helper functions
+    utils.ts                 # cn() utility for Tailwind class merging
+    timezone.ts              # Timezone data
+    countries.ts             # Country data
+    image-crop.ts            # Image processing
+    firstpromoter.ts         # Referral tracking integration
+  layouts/                   # Layout wrappers (Layout.tsx)
   business/                  # Business/team module (separate architecture)
-    pages/                   # Business pages (BusinessDashboard, BusinessCRM, CloserKPI, etc.)
-    components/              # Business-specific components
-    contexts/                # Business state (BusinessAuth, BusinessProspects, etc.)
+    pages/                   # Business pages (37 files)
+    components/              # Business-specific components (15 files)
+    contexts/                # Business state (4 contexts)
+      BusinessAuthContext.tsx
+      BusinessProspectsContext.tsx
+      BusinessGoogleCalendarContext.tsx
+      BusinessThemeContext.tsx
     hooks/                   # Custom hooks (useScrambleText, useCustomStages)
     layouts/                 # BusinessLayout wrapper
 
-api/                         # Vercel serverless functions
+api/                         # Vercel serverless functions (22 files)
   account.ts                 # User account management
   stripe.ts                  # Stripe payment processing
+  stripe-webhook.ts          # Stripe webhook handler
   subscription.ts            # Subscription lifecycle
   email.ts                   # Email sending (Brevo)
   hubspot.ts                 # HubSpot CRM integration
   pipedrive.ts               # Pipedrive CRM integration
   business.ts                # Business account operations
   cal.ts                     # Cal.com calendar integration
+  ghll.ts                    # GoHighLevel integration
+  ghll/callback.ts           # GoHighLevel OAuth callback
+  presence.ts                # User presence tracking
+  systemeio.ts               # SystemeIO integration
+  webhooks.ts                # Generic webhook handling
+  zapier-webhook.ts          # Zapier webhook handler
   cron/                      # Scheduled background jobs (7 cron tasks)
 
 supabase/
-  migrations/                # Database schema migrations (46 files)
+  migrations/                # Database schema migrations (40 files)
 
 public/                      # Static assets (logos, favicons, images)
 ```
@@ -64,15 +98,16 @@ public/                      # Static assets (logos, favicons, images)
 ## Architecture & Patterns
 
 ### Dual Module Architecture
-- **Individual routes**: `/dashboard`, `/pipeline`, `/contacts`, `/offers`, `/calls`, `/invoices`, `/kpi`, `/agenda`
-- **Business routes**: `/business/*` with separate `BusinessAuthContext`
-- **Public routes**: `/`, `/login`, `/register`, `/booking/*`
-- **Legal routes**: `/cgu`, `/cgv`, `/privacy`, `/legal`
+- **Individual routes**: `/dashboard`, `/pipeline`, `/contacts`, `/offers`, `/appels`, `/factures`, `/kpi`, `/agenda`, `/telephony`, `/ai-coach`, `/rendez-vous`, `/messages`, `/reminders`
+- **Business routes**: `/business/*` with separate `BusinessAuthContext` (dashboard, crm, team, organisation, campagnes, acquisition, objectifs, formules, pipeline-owner, closer-kpi, setter-kpi, report, etc.)
+- **Public routes**: `/`, `/login`, `/register`, `/book/:slug`, `/capture/:slug`, `/appointment/:token`
+- **Legal routes**: `/mentions-legales`, `/cgu`, `/cgv`, `/confidentialite`
+- **Payment/Onboarding**: `/checkout`, `/return`, `/welcome-founder`, `/retention`
 
 ### State Management
 - **React Context API** for all global state - no Redux or Zustand
-- Separate contexts per domain: `AuthContext`, `ProspectsContext`, `OffersContext`, `CallsContext`, `MeetingsContext`, `NotificationsContext`, etc.
-- Business module has its own parallel contexts: `BusinessAuthContext`, `BusinessProspectsContext`, etc.
+- 11 individual contexts: `AuthContext`, `ProspectsContext`, `OffersContext`, `CallsContext`, `MeetingsContext`, `NotificationsContext`, `MessagesContext`, `GoogleCalendarContext`, `InternalContactsContext`, `PrivacyContext`, `UpgradeContext`
+- 4 business contexts: `BusinessAuthContext`, `BusinessProspectsContext`, `BusinessGoogleCalendarContext`, `BusinessThemeContext`
 
 ### Data Flow
 1. Authentication via Supabase Auth
@@ -99,7 +134,9 @@ public/                      # Static assets (logos, favicons, images)
 - Custom design tokens in `tailwind.config.js`:
   - Primary color: `#00E676` (bright green)
   - Dark background: `#020617`, card: `#0f172a`
+  - Business theme: `#493627` (business-primary) with separate background tokens
   - Fonts: Manrope (display), Playfair Display (serif)
+  - Custom animations: `wiggle`, `scroll-left`
 
 ### File Naming
 - React components: PascalCase (`Dashboard.tsx`, `SettingsModal.tsx`)
@@ -114,7 +151,7 @@ public/                      # Static assets (logos, favicons, images)
 
 | File | Purpose |
 |------|---------|
-| `vercel.json` | Deployment config, cron schedules, API rewrites (45+ routes) |
+| `vercel.json` | Deployment config, cron schedules, API rewrites (54 routes) |
 | `vite.config.ts` | Dev server config, API proxy to `close-os.vercel.app` |
 | `tailwind.config.js` | Design tokens, custom colors, fonts, animations |
 | `eslint.config.js` | Flat config with TS + React Hooks rules |
@@ -176,3 +213,16 @@ No formal test framework is configured. Testing is done via:
 1. Create a new migration file in `supabase/migrations/`
 2. Follow the existing naming pattern: `YYYYMMDDHHMMSS_description.sql`
 3. Apply via Supabase CLI or dashboard
+
+## Feature Documentation
+
+The repo contains 30+ markdown files documenting specific feature implementations and fixes. Key examples:
+- `B2B-B2C-IMPLEMENTATION.md` - B2B vs B2C targeting logic
+- `KPI-DASHBOARD-IMPLEMENTATION.md` - KPI metrics and rendering
+- `PIPELINE-FILTERS-IMPLEMENTATION.md` - Pipeline filtering logic
+- `NOTIFICATION-SYSTEM-COMPLETE.md` - Notification infrastructure
+- `GOOGLE_CALENDAR_SETUP.md` - Calendar integration setup
+- `COMMISSION-REMOVAL-AND-CARD-TITLES.md` - Commission system changes
+- `local-connexion.md` - Local development setup guide
+
+These files serve as implementation logs and troubleshooting references.
