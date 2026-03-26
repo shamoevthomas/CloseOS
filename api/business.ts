@@ -5157,20 +5157,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Determine whether to use stripeAccount header
-      // If self-connect: query directly (data is on the platform account itself)
-      const stripeOpts = isSelfConnect ? undefined : { stripeAccount: accountId }
+      let useDirectQuery = isSelfConnect
 
       // List customers
       let customerCount = 0
       try {
-        const customers = isSelfConnect
+        const customers = useDirectQuery
           ? await s.customers.list({ limit: 5 })
           : await s.customers.list({ limit: 5 }, { stripeAccount: accountId })
         customerCount = customers.data.length
-        console.log(`[stripe-sync-all] Customers found: ${customerCount} (self_connect=${isSelfConnect})`)
-        if (customerCount > 0) {
-          console.log('[stripe-sync-all] Sample customer:', customers.data[0].email, customers.data[0].name)
-        }
+        console.log(`[stripe-sync-all] Customers found: ${customerCount} (direct=${useDirectQuery})`)
       } catch (err: any) {
         console.error('[stripe-sync-all] Cannot list customers:', err.message)
       }
@@ -5183,7 +5179,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         while (hasMore) {
           const params: Stripe.SubscriptionListParams = { limit: 100, status: 'all' }
           if (startingAfter) params.starting_after = startingAfter
-          const batch = isSelfConnect
+          const batch = useDirectQuery
             ? await s.subscriptions.list(params)
             : await s.subscriptions.list(params, { stripeAccount: accountId })
           allSubs = allSubs.concat(batch.data)
@@ -5194,7 +5190,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('[stripe-sync-all] Cannot list subscriptions:', err.message)
         return res.status(200).json({ synced: 0, created: 0, matched: 0, reason: 'subscription_list_error', error: err.message, accountInfo })
       }
-      console.log(`[stripe-sync-all] Found ${allSubs.length} subscriptions (self_connect=${isSelfConnect})`)
+
+      // FALLBACK: if connected account has 0 data, try platform account directly
+      // This handles the case where the user's subscriptions live on the platform account
+      if (allSubs.length === 0 && !useDirectQuery) {
+        console.log('[stripe-sync-all] Connected account empty, trying platform account as fallback...')
+        useDirectQuery = true
+        try {
+          const platformCustomers = await s.customers.list({ limit: 5 })
+          customerCount = platformCustomers.data.length
+          console.log(`[stripe-sync-all] Platform customers: ${customerCount}`)
+        } catch {}
+
+        hasMore = true
+        startingAfter = undefined
+        try {
+          while (hasMore) {
+            const params: Stripe.SubscriptionListParams = { limit: 100, status: 'all' }
+            if (startingAfter) params.starting_after = startingAfter
+            const batch = await s.subscriptions.list(params)
+            allSubs = allSubs.concat(batch.data)
+            hasMore = batch.has_more
+            if (batch.data.length > 0) startingAfter = batch.data[batch.data.length - 1].id
+          }
+        } catch (err: any) {
+          console.error('[stripe-sync-all] Platform fallback also failed:', err.message)
+        }
+
+        if (allSubs.length > 0) {
+          console.log(`[stripe-sync-all] Found ${allSubs.length} subscriptions on platform account (fallback)`)
+          // Update profile to use platform account ID for future queries
+          const platformId = accountInfo.platform_id
+          if (platformId) {
+            await supabase.from('profiles').update({ stripe_account_id: platformId }).eq('id', user_id)
+            accountInfo.switched_to_platform = true
+            console.log(`[stripe-sync-all] Switched stripe_account_id to platform: ${platformId}`)
+          }
+        }
+      }
+
+      console.log(`[stripe-sync-all] Total subscriptions found: ${allSubs.length}`)
 
       // Fetch existing prospects for this owner
       const { data: existingProspects } = await supabase
@@ -5218,7 +5253,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id
         let customer: Stripe.Customer
         try {
-          customer = isSelfConnect
+          customer = useDirectQuery
             ? await s.customers.retrieve(customerId) as Stripe.Customer
             : await s.customers.retrieve(customerId, { stripeAccount: accountId }) as Stripe.Customer
         } catch { continue }

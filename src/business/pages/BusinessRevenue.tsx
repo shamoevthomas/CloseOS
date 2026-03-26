@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   DollarSign, TrendingUp, TrendingDown, Users, UserMinus, Percent,
-  Loader2, CreditCard, Plus, Trash2, Pencil, Check, X, AlertCircle, RefreshCw,
+  Loader2, CreditCard, Plus, Trash2, Pencil, Check, X, AlertCircle, RefreshCw, Unplug,
 } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -96,6 +96,21 @@ export function BusinessRevenue() {
 
   // Charge editing
   const [syncing, setSyncing] = useState(false)
+  const [disconnecting, setDisconnecting] = useState(false)
+
+  const disconnectStripe = useCallback(async () => {
+    if (!user?.id) return
+    if (!confirm('Voulez-vous vraiment deconnecter votre compte Stripe ? Les donnees existantes seront conservees.')) return
+    setDisconnecting(true)
+    try {
+      await supabase.from('profiles').update({ stripe_connected: false }).eq('id', user.id)
+      setStripeConnected(false)
+      toast.success('Compte Stripe deconnecte')
+    } catch {
+      toast.error('Erreur lors de la deconnexion')
+    }
+    setDisconnecting(false)
+  }, [user?.id])
   const [addingCharge, setAddingCharge] = useState<'fixed' | 'variable' | null>(null)
   const [newLabel, setNewLabel] = useState('')
   const [newAmount, setNewAmount] = useState('')
@@ -314,13 +329,23 @@ export function BusinessRevenue() {
             </button>
           ))}
           {stripeConnected && (
-            <button
-              onClick={() => syncStripeData().then(ok => ok && fetchRevenue())}
-              className="p-2 rounded-full text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-white dark:hover:bg-neutral-700 transition-all"
-              title="Re-synchroniser Stripe"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </button>
+            <>
+              <button
+                onClick={() => syncStripeData().then(ok => ok && fetchRevenue())}
+                className="p-2 rounded-full text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-white dark:hover:bg-neutral-700 transition-all"
+                title="Re-synchroniser Stripe"
+              >
+                <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={disconnectStripe}
+                disabled={disconnecting}
+                className="p-2 rounded-full text-[#444748] dark:text-neutral-400 hover:text-[#ba1a1a] hover:bg-[#ba1a1a]/10 transition-all"
+                title="Deconnecter Stripe"
+              >
+                <Unplug className="h-4 w-4" />
+              </button>
+            </>
           )}
         </div>
       </div>
