@@ -5256,10 +5256,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let created = 0, matched = 0
 
       for (const sub of allSubs) {
-        // Skip if already linked
-        if (existingBySub.has(sub.id)) continue
-
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id
+
+        const item = sub.items.data[0]
+        let amount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0
+        const interval = item?.price?.recurring?.interval || 'month'
+
+        // Apply discount/coupon if present
+        const discount = sub.discount
+        if (discount?.coupon) {
+          if (discount.coupon.percent_off) {
+            amount = Math.round(amount * (1 - discount.coupon.percent_off / 100) * 100) / 100
+          } else if (discount.coupon.amount_off) {
+            amount = Math.max(0, amount - discount.coupon.amount_off / 100)
+          }
+        }
+
+        // If already linked, just update the amount/status (handles discount changes)
+        if (existingBySub.has(sub.id)) {
+          // Find the prospect with this subscription
+          const prospectId = (existingProspects || []).find(p => p.stripe_subscription_id === sub.id)?.id
+          if (prospectId) {
+            await supabase.from('business_prospects').update({
+              subscription_amount: amount,
+              subscription_status: sub.status,
+              subscription_interval: interval,
+              last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
+              next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+            }).eq('id', prospectId)
+            // Also update the payment amount if exists
+            await supabase.from('business_payments').update({ amount }).eq('stripe_invoice_id', `sync_${sub.id}`)
+          }
+          continue
+        }
+
         let customer: Stripe.Customer
         try {
           customer = useDirectQuery
@@ -5268,10 +5298,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } catch { continue }
 
         if (!customer.email) continue
-
-        const item = sub.items.data[0]
-        const amount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0
-        const interval = item?.price?.recurring?.interval || 'month'
 
         const stripeData = {
           stripe_customer_id: customer.id,
