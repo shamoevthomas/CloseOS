@@ -123,9 +123,12 @@ export function BusinessRevenue() {
         body: JSON.stringify({ user_id: user.id }),
       })
       const json = await res.json()
+      console.log('[stripe-sync] Response:', JSON.stringify(json))
       if (json.synced > 0) {
         toast.success(`${json.created} fiche(s) creee(s), ${json.matched} matchee(s) depuis Stripe`)
         return true
+      } else if (json.total_subscriptions === 0 && json.accountInfo) {
+        console.warn('[stripe-sync] 0 subscriptions found. Account info:', json.accountInfo)
       }
     } catch {
       console.error('Sync Stripe failed')

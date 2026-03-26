@@ -19,6 +19,19 @@ const stripe = new Stripe(stripeSecretKey, {
     httpClient: Stripe.createFetchHttpClient(),
 });
 
+// ─── Helper: detect if connected account IS the platform account ─────────────
+
+let _platformId: string | null = null;
+async function isSelfConnect(connectedAccountId: string): Promise<boolean> {
+    try {
+        if (!_platformId) {
+            const platform = await stripe.accounts.retrieve();
+            _platformId = platform.id;
+        }
+        return _platformId === connectedAccountId;
+    } catch { return false; }
+}
+
 // ─── Helper: find owner by connected account ID ─────────────────────────────
 
 async function findOwnerByStripeAccount(accountId: string): Promise<string | null> {
@@ -113,6 +126,10 @@ export default async function handler(req: Request) {
         return new Response(JSON.stringify({ received: true, skipped: 'unknown_account' }), { status: 200 });
     }
 
+    // Detect if the connected account IS the platform account (self-connect)
+    const selfConnect = await isSelfConnect(connectedAccountId);
+    const stripeOpts = selfConnect ? undefined : { stripeAccount: connectedAccountId };
+
     try {
         switch (event.type) {
 
@@ -125,9 +142,10 @@ export default async function handler(req: Request) {
                     : subscription.customer.id;
 
                 // Fetch customer email from connected account
-                const customer = await stripe.customers.retrieve(customerId, {
-                    stripeAccount: connectedAccountId,
-                }) as Stripe.Customer;
+                const customer = (selfConnect
+                    ? await stripe.customers.retrieve(customerId)
+                    : await stripe.customers.retrieve(customerId, { stripeAccount: connectedAccountId })
+                ) as Stripe.Customer;
 
                 if (!customer.email) {
                     console.log('No email on Stripe customer, cannot auto-match');
@@ -320,9 +338,10 @@ export default async function handler(req: Request) {
                     // Fetch full customer details if needed
                     if (customerId && (!customerEmail || !customerName)) {
                         try {
-                            const cust = await stripe.customers.retrieve(customerId, {
-                                stripeAccount: connectedAccountId,
-                            }) as Stripe.Customer;
+                            const cust = (selfConnect
+                                ? await stripe.customers.retrieve(customerId)
+                                : await stripe.customers.retrieve(customerId, { stripeAccount: connectedAccountId })
+                            ) as Stripe.Customer;
                             customerEmail = customerEmail || cust.email;
                             customerName = customerName || cust.name;
                             customerPhone = cust.phone || null;
@@ -335,12 +354,13 @@ export default async function handler(req: Request) {
 
                         if (existingByEmail) {
                             // Link existing prospect to this subscription
-                            const sub = await stripe.subscriptions.retrieve(subscriptionId, {
-                                stripeAccount: connectedAccountId,
-                            });
-                            const cust = await stripe.customers.retrieve(customerId, {
-                                stripeAccount: connectedAccountId,
-                            }) as Stripe.Customer;
+                            const sub = selfConnect
+                                ? await stripe.subscriptions.retrieve(subscriptionId)
+                                : await stripe.subscriptions.retrieve(subscriptionId, { stripeAccount: connectedAccountId });
+                            const cust = (selfConnect
+                                ? await stripe.customers.retrieve(customerId)
+                                : await stripe.customers.retrieve(customerId, { stripeAccount: connectedAccountId })
+                            ) as Stripe.Customer;
                             await updateProspectStripeData(existingByEmail.id, sub, cust, 'webhook');
 
                             await supabaseAdmin

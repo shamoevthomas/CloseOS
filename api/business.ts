@@ -5049,6 +5049,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const stripeKey = process.env.STRIPE_SECRET_KEY
     const getStripe = () => new Stripe(stripeKey as string)
 
+    // Helper: detect if connected account IS the platform account (self-connect)
+    let _platformAccountId: string | null = null
+    async function isSelfConnectAccount(s: Stripe, connectedAccountId: string): Promise<boolean> {
+      try {
+        if (!_platformAccountId) {
+          const platform = await s.accounts.retrieve()
+          _platformAccountId = platform.id
+        }
+        return _platformAccountId === connectedAccountId
+      } catch { return false }
+    }
+
     // ─── Auto-match prospect to Stripe on stage=won (Method 2) ───
     if (action === 'auto-match-stripe' && req.method === 'POST') {
       const { user_id, prospect_id, email } = req.body
@@ -5061,14 +5073,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const s = getStripe()
-      const customers = await s.customers.list({ email, limit: 1 }, { stripeAccount: profile.stripe_account_id })
+      const selfConnect = await isSelfConnectAccount(s, profile.stripe_account_id)
+      const customers = selfConnect
+        ? await s.customers.list({ email, limit: 1 })
+        : await s.customers.list({ email, limit: 1 }, { stripeAccount: profile.stripe_account_id })
 
       if (customers.data.length === 0) {
         return res.status(200).json({ matched: false, reason: 'no_customer_found' })
       }
 
       const customer = customers.data[0]
-      const subs = await s.subscriptions.list({ customer: customer.id, limit: 1, status: 'all' }, { stripeAccount: profile.stripe_account_id })
+      const subs = selfConnect
+        ? await s.subscriptions.list({ customer: customer.id, limit: 1, status: 'all' })
+        : await s.subscriptions.list({ customer: customer.id, limit: 1, status: 'all' }, { stripeAccount: profile.stripe_account_id })
 
       if (subs.data.length === 0) {
         return res.status(200).json({ matched: false, reason: 'no_subscription_found', stripe_customer_id: customer.id })
@@ -5115,31 +5132,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const s = getStripe()
       const accountId = profile.stripe_account_id
 
-      // Diagnostic: check connected account state
+      // Check if connected account is the SAME as the platform account
+      // (i.e. user connected their own platform Stripe account)
+      let isSelfConnect = false
       let accountInfo: any = {}
       try {
-        const acct = await s.accounts.retrieve(accountId)
+        const platformAcct = await s.accounts.retrieve() // no ID = platform's own account
+        const connectedAcct = await s.accounts.retrieve(accountId)
+        isSelfConnect = platformAcct.id === connectedAcct.id
         accountInfo = {
-          id: acct.id,
-          type: acct.type,
-          charges_enabled: acct.charges_enabled,
-          payouts_enabled: acct.payouts_enabled,
-          details_submitted: acct.details_submitted,
-          email: acct.email,
-          business_type: acct.business_type,
+          platform_id: platformAcct.id,
+          connected_id: connectedAcct.id,
+          is_self_connect: isSelfConnect,
+          type: connectedAcct.type,
+          charges_enabled: connectedAcct.charges_enabled,
+          payouts_enabled: connectedAcct.payouts_enabled,
+          details_submitted: connectedAcct.details_submitted,
+          email: connectedAcct.email,
         }
-        console.log('[stripe-sync-all] Connected account:', JSON.stringify(accountInfo))
+        console.log('[stripe-sync-all] Account info:', JSON.stringify(accountInfo))
       } catch (err: any) {
         console.error('[stripe-sync-all] Cannot retrieve account:', err.message)
         return res.status(200).json({ synced: 0, created: 0, matched: 0, reason: 'account_error', error: err.message, accountId })
       }
 
-      // Try listing customers first (simpler check)
+      // Determine whether to use stripeAccount header
+      // If self-connect: query directly (data is on the platform account itself)
+      const stripeOpts = isSelfConnect ? undefined : { stripeAccount: accountId }
+
+      // List customers
       let customerCount = 0
       try {
-        const customers = await s.customers.list({ limit: 5 }, { stripeAccount: accountId })
+        const customers = isSelfConnect
+          ? await s.customers.list({ limit: 5 })
+          : await s.customers.list({ limit: 5 }, { stripeAccount: accountId })
         customerCount = customers.data.length
-        console.log(`[stripe-sync-all] Customers on connected account: ${customerCount}`)
+        console.log(`[stripe-sync-all] Customers found: ${customerCount} (self_connect=${isSelfConnect})`)
         if (customerCount > 0) {
           console.log('[stripe-sync-all] Sample customer:', customers.data[0].email, customers.data[0].name)
         }
@@ -5155,7 +5183,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         while (hasMore) {
           const params: Stripe.SubscriptionListParams = { limit: 100, status: 'all' }
           if (startingAfter) params.starting_after = startingAfter
-          const batch = await s.subscriptions.list(params, { stripeAccount: accountId })
+          const batch = isSelfConnect
+            ? await s.subscriptions.list(params)
+            : await s.subscriptions.list(params, { stripeAccount: accountId })
           allSubs = allSubs.concat(batch.data)
           hasMore = batch.has_more
           if (batch.data.length > 0) startingAfter = batch.data[batch.data.length - 1].id
@@ -5164,7 +5194,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('[stripe-sync-all] Cannot list subscriptions:', err.message)
         return res.status(200).json({ synced: 0, created: 0, matched: 0, reason: 'subscription_list_error', error: err.message, accountInfo })
       }
-      console.log(`[stripe-sync-all] Found ${allSubs.length} subscriptions on account ${accountId}`)
+      console.log(`[stripe-sync-all] Found ${allSubs.length} subscriptions (self_connect=${isSelfConnect})`)
 
       // Fetch existing prospects for this owner
       const { data: existingProspects } = await supabase
@@ -5188,7 +5218,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id
         let customer: Stripe.Customer
         try {
-          customer = await s.customers.retrieve(customerId, { stripeAccount: accountId }) as Stripe.Customer
+          customer = isSelfConnect
+            ? await s.customers.retrieve(customerId) as Stripe.Customer
+            : await s.customers.retrieve(customerId, { stripeAccount: accountId }) as Stripe.Customer
         } catch { continue }
 
         if (!customer.email) continue
@@ -5290,11 +5322,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const s = getStripe()
-      const customers = await s.customers.list({ email, limit: 10 }, { stripeAccount: profile.stripe_account_id })
+      const selfConnect = await isSelfConnectAccount(s, profile.stripe_account_id)
+      const customers = selfConnect
+        ? await s.customers.list({ email, limit: 10 })
+        : await s.customers.list({ email, limit: 10 }, { stripeAccount: profile.stripe_account_id })
 
       const results = await Promise.all(
         customers.data.map(async (cust) => {
-          const subs = await s.subscriptions.list({ customer: cust.id, limit: 5, status: 'all' }, { stripeAccount: profile.stripe_account_id })
+          const subs = selfConnect
+            ? await s.subscriptions.list({ customer: cust.id, limit: 5, status: 'all' })
+            : await s.subscriptions.list({ customer: cust.id, limit: 5, status: 'all' }, { stripeAccount: profile.stripe_account_id })
           return {
             id: cust.id,
             email: cust.email,
@@ -5328,7 +5365,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!profile?.stripe_account_id) return res.status(400).json({ error: 'Stripe not connected' })
 
       const s = getStripe()
-      const sub = await s.subscriptions.retrieve(stripe_subscription_id, { stripeAccount: profile.stripe_account_id })
+      const selfConnect = await isSelfConnectAccount(s, profile.stripe_account_id)
+      const sub = selfConnect
+        ? await s.subscriptions.retrieve(stripe_subscription_id)
+        : await s.subscriptions.retrieve(stripe_subscription_id, { stripeAccount: profile.stripe_account_id })
       const item = sub.items.data[0]
 
       await supabase.from('business_prospects').update({
