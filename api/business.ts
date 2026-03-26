@@ -5175,24 +5175,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let allSubs: Stripe.Subscription[] = []
       let hasMore = true
       let startingAfter: string | undefined
-      try {
-        while (hasMore) {
-          const params: Stripe.SubscriptionListParams = { limit: 100, status: 'all' }
-          if (startingAfter) params.starting_after = startingAfter
-          const batch = useDirectQuery
-            ? await s.subscriptions.list(params)
-            : await s.subscriptions.list(params, { stripeAccount: accountId })
-          allSubs = allSubs.concat(batch.data)
-          hasMore = batch.has_more
-          if (batch.data.length > 0) startingAfter = batch.data[batch.data.length - 1].id
+      // Only sync active/trialing subscriptions (skip canceled test subs)
+      const syncStatuses: Stripe.SubscriptionListParams['status'][] = ['active', 'trialing', 'past_due']
+      for (const syncStatus of syncStatuses) {
+        hasMore = true
+        startingAfter = undefined
+        try {
+          while (hasMore) {
+            const params: Stripe.SubscriptionListParams = { limit: 100, status: syncStatus }
+            if (startingAfter) params.starting_after = startingAfter
+            const batch = useDirectQuery
+              ? await s.subscriptions.list(params)
+              : await s.subscriptions.list(params, { stripeAccount: accountId })
+            allSubs = allSubs.concat(batch.data)
+            hasMore = batch.has_more
+            if (batch.data.length > 0) startingAfter = batch.data[batch.data.length - 1].id
+          }
+        } catch (err: any) {
+          console.error(`[stripe-sync-all] Cannot list ${syncStatus} subscriptions:`, err.message)
         }
-      } catch (err: any) {
-        console.error('[stripe-sync-all] Cannot list subscriptions:', err.message)
-        return res.status(200).json({ synced: 0, created: 0, matched: 0, reason: 'subscription_list_error', error: err.message, accountInfo })
+      }
+      if (allSubs.length === 0 && !useDirectQuery) {
+        // No error return here, try fallback below
       }
 
       // FALLBACK: if connected account has 0 data, try platform account directly
-      // This handles the case where the user's subscriptions live on the platform account
       if (allSubs.length === 0 && !useDirectQuery) {
         console.log('[stripe-sync-all] Connected account empty, trying platform account as fallback...')
         useDirectQuery = true
@@ -5202,19 +5209,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.log(`[stripe-sync-all] Platform customers: ${customerCount}`)
         } catch {}
 
-        hasMore = true
-        startingAfter = undefined
-        try {
-          while (hasMore) {
-            const params: Stripe.SubscriptionListParams = { limit: 100, status: 'all' }
-            if (startingAfter) params.starting_after = startingAfter
-            const batch = await s.subscriptions.list(params)
-            allSubs = allSubs.concat(batch.data)
-            hasMore = batch.has_more
-            if (batch.data.length > 0) startingAfter = batch.data[batch.data.length - 1].id
+        for (const syncStatus of syncStatuses) {
+          hasMore = true
+          startingAfter = undefined
+          try {
+            while (hasMore) {
+              const params: Stripe.SubscriptionListParams = { limit: 100, status: syncStatus }
+              if (startingAfter) params.starting_after = startingAfter
+              const batch = await s.subscriptions.list(params)
+              allSubs = allSubs.concat(batch.data)
+              hasMore = batch.has_more
+              if (batch.data.length > 0) startingAfter = batch.data[batch.data.length - 1].id
+            }
+          } catch (err: any) {
+            console.error(`[stripe-sync-all] Platform fallback ${syncStatus} failed:`, err.message)
           }
-        } catch (err: any) {
-          console.error('[stripe-sync-all] Platform fallback also failed:', err.message)
         }
 
         if (allSubs.length > 0) {
